@@ -4,20 +4,29 @@ import { prisma } from './db.js';
 
 const router = Router();
 
+// Optional API key guard: enabled when process.env.API_KEY is set
+function requireApiKey(req: any, res: any, next: any) {
+  const expected = process.env.API_KEY;
+  if (!expected) return next();
+  const provided = req.headers['x-api-key'] as string | undefined;
+  if (provided && provided === expected) return next();
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
 const benchmarkSchema = z.object({
   cpuModel: z.string().min(1),
   gpuModel: z.string().optional().nullable(),
-  ramGB: z.number().int().nonnegative(),
+  ramGB: z.coerce.number().int().nonnegative(),
   os: z.string().min(1),
   codec: z.string().min(1),
   preset: z.string().min(1),
-  fps: z.number().nonnegative(),
-  vmaf: z.number().min(0).max(100).optional().nullable(),
-  fileSizeBytes: z.number().int().nonnegative(),
+  fps: z.coerce.number().nonnegative(),
+  vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
+  fileSizeBytes: z.coerce.number().int().nonnegative(),
   notes: z.string().optional().nullable(),
 });
 
-router.post('/submit', async (req, res) => {
+router.post('/submit', requireApiKey, async (req, res) => {
   const parse = benchmarkSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });

@@ -17,6 +17,8 @@ services:
   server:
     build:
       context: ./server
+    env_file:
+      - ./.env
     environment:
       NODE_ENV: production
       PORT: ${PORT:-3001}
@@ -27,6 +29,22 @@ services:
     ports:
       - '3001:3001'
     command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      server:
+        condition: service_started
+    ports:
+      - "8443:443"
+      - "8080:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     restart: unless-stopped
 
 volumes:
