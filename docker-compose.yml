@@ -1,0 +1,29 @@
+version: '3.9'
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: benchmarks
+    ports:
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d benchmarks']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  server:
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://app:app@db:5432/benchmarks?schema=public
+      PORT: 3001
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+volumes:
+  db_data:

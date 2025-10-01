@@ -1,0 +1,35 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-benchmarks}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U app -d benchmarks']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  server:
+    build:
+      context: ./server
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3001}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-benchmarks}?schema=public}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - '3001:3001'
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    restart: unless-stopped
+
+volumes:
+  db_data:
+
+
