@@ -64,7 +64,7 @@ services:
       server:
         condition: service_started
       frontend:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8443:443"
       - "8080:80"
