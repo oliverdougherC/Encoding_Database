@@ -1,4 +1,5 @@
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -123,7 +124,7 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264") -> Dic
             total_frames = 0
         fps = (total_frames / elapsed) if total_frames > 0 else 0.0
         size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
-        return {"fps": fps, "fileSizeBytes": size, "_encode_rc": proc.returncode}
+        return {"fps": fps, "fileSizeBytes": size, "_encode_rc": proc.returncode, "elapsedMs": int(round(elapsed * 1000))}
 
 
 def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
@@ -172,10 +173,22 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
         "preset": preset,
         "fps": float(result["fps"]),
         "fileSizeBytes": int(result["fileSizeBytes"]),
+        "runMs": int(result.get("elapsedMs") or 0),
     }
     if vmaf is not None:
         payload["vmaf"] = float(vmaf)
     return payload
+
+
+def sha256_of_file(path: str) -> str:
+    hasher = hashlib.sha256()
+    with open(path, 'rb') as f:
+        while True:
+            chunk = f.read(1024 * 1024)
+            if not chunk:
+                break
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
 def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0) -> None:
@@ -230,6 +243,8 @@ def main(argv: List[str]) -> int:
         return 4
 
     hardware = detect_hardware()
+    input_hash = sha256_of_file(input_path)
+    client_version = "client/0.1.0"
     try:
         presets = [s.strip() for s in args.presets.split(",") if s.strip()]
     except Exception:
@@ -239,6 +254,29 @@ def main(argv: List[str]) -> int:
     for preset in presets:
         print(f"Running preset: {preset}...")
         payload = run_single_benchmark(hardware, input_path, preset=preset, codec=args.codec, enable_vmaf=(not args.disable_vmaf))
+        # Attach submission metadata
+        payload["ffmpegVersion"] = ffmpeg_version
+        payload["encoderName"] = args.codec
+        payload["clientVersion"] = client_version
+        payload["inputHash"] = input_hash
+        # Prefer elapsed from first encode
+        run_ms = None
+        try:
+            run_ms = int(payload.get("runMs") or 0)  # if previously set
+        except Exception:
+            run_ms = None
+        # We have elapsed from run_ffmpeg_test result
+        try:
+            run_ms = int(run_ms or 0) or int(payload.get("_elapsedMs", 0))
+        except Exception:
+            pass
+        if "_elapsedMs" in payload:
+            del payload["_elapsedMs"]
+        # Fix: we didn't include elapsed in payload; add from result
+        try:
+            payload["runMs"] = int(payload.get("runMs") or 0) or int(result.get("elapsedMs") or 0)
+        except Exception:
+            pass
         all_payloads.append(payload)
         if args.no_submit:
             print(f"Dry-run: not submitting preset={preset}")
