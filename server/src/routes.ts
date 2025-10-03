@@ -7,10 +7,10 @@ const router = Router();
 // Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
 const benchmarkSchema = z.object({
-  cpuModel: z.string().min(1),
+  cpuModel: z.string().min(3),
   gpuModel: z.string().optional().nullable(),
   ramGB: z.coerce.number().int().nonnegative(),
-  os: z.string().min(1),
+  os: z.string().min(3),
   codec: z.string().min(1),
   preset: z.string().min(1),
   fps: z.coerce.number().nonnegative(),
@@ -40,10 +40,11 @@ router.post('/submit', async (req, res) => {
     // Heuristics: ensure plausible values
     const isCodecOk = typeof data.codec === 'string' && data.codec.length <= 64;
     const isPresetOk = typeof data.preset === 'string' && data.preset.length <= 64;
-    const isFpsOk = data.fps >= 0 && data.fps <= 5000; // broad cap
-    const isSizeOk = data.fileSizeBytes >= 0 && data.fileSizeBytes <= 1000 * 1024 * 1024; // <= 1GB
-    const inputHashOk = !data.inputHash || CANONICAL_INPUT_HASHES.has(data.inputHash);
-    const status: 'pending' | 'accepted' = (isCodecOk && isPresetOk && isFpsOk && isSizeOk && inputHashOk) ? 'accepted' : 'pending';
+    const isFpsOk = data.fps >= 0.1 && data.fps <= 5000; // broad cap but >0
+    const isSizeOk = data.fileSizeBytes >= 10 * 1024 && data.fileSizeBytes <= 1000 * 1024 * 1024; // >=10KB and <=1GB
+    const namesOk = data.cpuModel.trim().length >= 3 && data.os.trim().length >= 3;
+    const inputHashOk = !!data.inputHash && CANONICAL_INPUT_HASHES.has(data.inputHash);
+    const status: 'pending' | 'accepted' = (inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk)) ? 'accepted' : 'pending';
 
     const created = await prisma.benchmark.create({ data: {
       cpuModel: data.cpuModel,
@@ -66,6 +67,15 @@ router.post('/submit', async (req, res) => {
     res.status(201).json(created);
   } catch (err) {
     res.status(500).json({ error: 'Failed to insert benchmark' });
+  }
+});
+
+router.get('/query', async (_req, res) => {
+  try {
+    const rows = await prisma.benchmark.findMany({ where: { status: 'accepted' }, orderBy: { createdAt: 'desc' } });
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch benchmarks' });
   }
 });
 
