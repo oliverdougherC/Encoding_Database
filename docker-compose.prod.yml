@@ -43,6 +43,7 @@ services:
       context: ./frontend
     environment:
       NODE_ENV: production
+      INTERNAL_API_BASE_URL: http://server:3001
       # Public base URL for API calls from the Next.js app (server and client)
       NEXT_PUBLIC_API_BASE_URL: https://encodingdb.platinumlabs.dev
     depends_on:
