@@ -23,6 +23,7 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+ENV HOST=0.0.0.0
 EXPOSE 3000
 
 # Copy production deps and build output
@@ -32,6 +33,7 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/next.config.ts ./next.config.ts
 
-CMD ["npm", "run", "start"]
+# Explicitly bind to 0.0.0.0 so Nginx in the same Docker network can reach it
+CMD ["node", "node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "3000"]
 
 
