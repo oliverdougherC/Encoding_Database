@@ -16,6 +16,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      - name: Install curl, jq, python3
+        run: sudo apt-get update && sudo apt-get install -y curl jq python3
+
       - name: Copy env
         run: cp env.example .env && sed -i 's/CORS_ORIGIN=.*/CORS_ORIGIN=http:\/\/localhost:3000/' .env && sed -i 's/API_KEY=.*/API_KEY=ci_key/' .env && sed -i 's/RATE_LIMIT_MAX=.*/RATE_LIMIT_MAX=50/' .env
 
@@ -33,6 +36,10 @@ jobs:
 
       - name: Run hardening tests
         run: bash scripts/api_hardening_test.sh
+        env:
+          API_BASE_URL: http://localhost:3001
+          API_KEY: ci_key
+          ALLOW_MUTATION_REMOTE: '0'
 
       - name: Compose logs on failure
         if: failure()
