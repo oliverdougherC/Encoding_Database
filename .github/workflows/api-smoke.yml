@@ -9,6 +9,9 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup curl and jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
@@ -47,5 +50,12 @@ jobs:
             -H "Content-Type: application/json" \
             -H "x-api-key: ${{ secrets.API_KEY }}" \
             -d "$payload" | jq .
+
+      - name: API Hardening (non-destructive)
+        run: bash scripts/api_hardening_test.sh
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          API_KEY: ${{ secrets.API_KEY }}
+          ALLOW_MUTATION_REMOTE: '0'
 
 
