@@ -13,6 +13,8 @@ services:
       timeout: 5s
       retries: 10
     restart: unless-stopped
+    networks:
+      - app
 
   server:
     build:
@@ -34,6 +36,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app
   frontend:
     build:
       context: ./frontend
@@ -51,6 +55,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - app
   nginx:
     image: nginx:1.27-alpine
     depends_on:
@@ -65,8 +71,13 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/certs:/etc/nginx/certs:ro
     restart: unless-stopped
+    networks:
+      - app
 
 volumes:
   db_data:
+
+networks:
+  app:
 
 
