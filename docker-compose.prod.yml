@@ -66,8 +66,8 @@ services:
       frontend:
         condition: service_healthy
     ports:
-      - "8443:443"
-      - "8080:80"
+      - "443:443"
+      - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/certs:/etc/nginx/certs:ro
