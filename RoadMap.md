@@ -43,8 +43,10 @@
 - [ ] **Webpage Development:**
     - [x] [cite_start]Create a single, basic webpage that fetches data from the `/query` endpoint[cite: 127].
     - [x] [cite_start]Render the fetched data in a simple, unstyled HTML `<table>`[cite: 127].
+    - [x] Add a basic chart on the homepage visualizing average FPS by codec.
     - [ ] [cite_start]**Deployment[cite: 128]:**
     - [x] [cite_start]Deploy the backend server and database to a cloud platform (e.g., DigitalOcean, AWS) using Docker[cite: 109].
+    - [x] Serve the Next.js frontend via Nginx on ports 80/443 on the server.
     - [ ] [cite_start]Deploy the frontend Next.js application to Vercel or Netlify[cite: 117].
 
 ## [cite_start]Phase 2: Public Beta Launch [cite: 129]
@@ -59,6 +61,7 @@
 - [x] [cite_start]Implement UI controls (dropdowns, text inputs) for filtering data by CPU, GPU, and codec [cite: 65-68].
 - [x] [cite_start]Implement UI controls for sorting the displayed results by VMAF score, FPS, and file size [cite: 70-73].
 - [ ] [cite_start]Integrate a charting library like Recharts [cite: 116] [cite_start]to display visual comparisons of performance[cite: 134].
+    - [ ] Replace basic SVG chart with Recharts components and add interactivity.
 - [ ] [cite_start]Design and build a "Download" page with clear links to the client software for all supported operating systems[cite: 137].
 - [ ] [cite_start]Design and build a "Contribution Guide" and FAQ page [cite: 80-82, 137].
 

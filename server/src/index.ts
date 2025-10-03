@@ -78,6 +78,16 @@ app.use(rateLimit({
   skip: (req) => req.path.startsWith('/health'),
 }));
 
+// Stricter limiter for public submissions
+const submitWindowMs = Number(process.env.SUBMIT_RATE_WINDOW_MS || 60_000);
+const submitMax = Number(process.env.SUBMIT_RATE_MAX || 30);
+app.use('/submit', rateLimit({
+  windowMs: submitWindowMs,
+  max: submitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+}));
+
 // Health endpoints
 app.get('/health/live', (_req, res) => {
   res.json({ status: 'ok' });

@@ -4,14 +4,7 @@ import { prisma } from './db.js';
 
 const router = Router();
 
-// Optional API key guard: enabled when process.env.API_KEY is set
-function requireApiKey(req: any, res: any, next: any) {
-  const expected = process.env.API_KEY;
-  if (!expected) return next();
-  const provided = req.headers['x-api-key'] as string | undefined;
-  if (provided && provided === expected) return next();
-  return res.status(401).json({ error: 'Unauthorized' });
-}
+// Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
 const benchmarkSchema = z.object({
   cpuModel: z.string().min(1),
@@ -24,15 +17,34 @@ const benchmarkSchema = z.object({
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
   fileSizeBytes: z.coerce.number().int().nonnegative(),
   notes: z.string().optional().nullable(),
+  // Submission metadata (optional for MVP)
+  ffmpegVersion: z.string().optional().nullable(),
+  encoderName: z.string().optional().nullable(),
+  clientVersion: z.string().optional().nullable(),
+  inputHash: z.string().length(64).optional().nullable(), // sha256 hex
+  runMs: z.coerce.number().int().nonnegative().optional().nullable(),
 });
 
-router.post('/submit', requireApiKey, async (req, res) => {
+// Simple canonical hash list for MVP (publish in README)
+const CANONICAL_INPUT_HASHES = new Set<string>([
+  // sha256 of sample.mp4 (to be documented)
+]);
+
+router.post('/submit', async (req, res) => {
   const parse = benchmarkSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });
   }
   const data = parse.data;
   try {
+    // Heuristics: ensure plausible values
+    const isCodecOk = typeof data.codec === 'string' && data.codec.length <= 64;
+    const isPresetOk = typeof data.preset === 'string' && data.preset.length <= 64;
+    const isFpsOk = data.fps >= 0 && data.fps <= 5000; // broad cap
+    const isSizeOk = data.fileSizeBytes >= 0 && data.fileSizeBytes <= 1000 * 1024 * 1024; // <= 1GB
+    const inputHashOk = !data.inputHash || CANONICAL_INPUT_HASHES.has(data.inputHash);
+    const status: 'pending' | 'accepted' = (isCodecOk && isPresetOk && isFpsOk && isSizeOk && inputHashOk) ? 'accepted' : 'pending';
+
     const created = await prisma.benchmark.create({ data: {
       cpuModel: data.cpuModel,
       gpuModel: data.gpuModel ?? null,
@@ -44,6 +56,12 @@ router.post('/submit', requireApiKey, async (req, res) => {
       vmaf: data.vmaf ?? null,
       fileSizeBytes: data.fileSizeBytes,
       notes: data.notes ?? null,
+      status,
+      ffmpegVersion: (data as any).ffmpegVersion ?? null,
+      encoderName: (data as any).encoderName ?? null,
+      clientVersion: (data as any).clientVersion ?? null,
+      inputHash: (data as any).inputHash ?? null,
+      runMs: (data as any).runMs ?? null,
     }});
     res.status(201).json(created);
   } catch (err) {

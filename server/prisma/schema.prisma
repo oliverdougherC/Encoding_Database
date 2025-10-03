@@ -33,4 +33,12 @@ model Benchmark {
   fileSizeBytes  Int
 
   notes          String?
+
+  // Submission metadata
+  status         String   @default("pending") // pending | accepted | rejected
+  ffmpegVersion  String?
+  encoderName    String?
+  clientVersion  String?
+  inputHash      String?
+  runMs          Int?
 }
