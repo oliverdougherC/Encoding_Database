@@ -56,8 +56,8 @@
 - [ ] [cite_start]Configure `PyInstaller` to build executables for macOS and Linux[cite: 105].
 
 ### [cite_start]Task 5: Full Frontend Interface [cite: 133]
-- [ ] [cite_start]Implement UI controls (dropdowns, text inputs) for filtering data by CPU, GPU, and codec [cite: 65-68].
-- [ ] [cite_start]Implement UI controls for sorting the displayed results by VMAF score, FPS, and file size [cite: 70-73].
+- [x] [cite_start]Implement UI controls (dropdowns, text inputs) for filtering data by CPU, GPU, and codec [cite: 65-68].
+- [x] [cite_start]Implement UI controls for sorting the displayed results by VMAF score, FPS, and file size [cite: 70-73].
 - [ ] [cite_start]Integrate a charting library like Recharts [cite: 116] [cite_start]to display visual comparisons of performance[cite: 134].
 - [ ] [cite_start]Design and build a "Download" page with clear links to the client software for all supported operating systems[cite: 137].
 - [ ] [cite_start]Design and build a "Contribution Guide" and FAQ page [cite: 80-82, 137].

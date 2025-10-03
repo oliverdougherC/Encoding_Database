@@ -1,0 +1,51 @@
+name: API Smoke Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup curl and jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Check required secrets
+        run: |
+          : "${{ secrets.API_BASE_URL }}" || (echo "Missing secret API_BASE_URL" && exit 1)
+          : "${{ secrets.API_KEY }}" || (echo "Missing secret API_KEY" && exit 1)
+
+      - name: Health check
+        run: |
+          set -euo pipefail
+          curl -fsSL "${{ secrets.API_BASE_URL }}/health/ready" | jq .
+
+      - name: Query should return JSON array
+        run: |
+          set -euo pipefail
+          curl -fsSL "${{ secrets.API_BASE_URL }}/query" | jq -e 'type == "array"' >/dev/null
+
+      - name: Submit sample (optional)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          payload=$(jq -nc '{
+            cpuModel: "CI Runner",
+            gpuModel: null,
+            ramGB: 4,
+            os: "ubuntu",
+            codec: "h264",
+            preset: "medium",
+            fps: 1.23,
+            vmaf: 90,
+            fileSizeBytes: 12345,
+            notes: "smoke"
+          }')
+          curl -fsSL -X POST "${{ secrets.API_BASE_URL }}/submit" \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: ${{ secrets.API_KEY }}" \
+            -d "$payload" | jq .
+
+

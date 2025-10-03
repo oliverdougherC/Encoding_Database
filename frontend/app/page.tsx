@@ -1,4 +1,5 @@
 import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
+import FpsByCodecChart from "./components/FpsByCodecChart";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,10 @@ export default async function Home() {
           Failed to load data: {error}
         </div>
       ) : (
-        <BenchmarksTable initialData={data} />
+        <>
+          <FpsByCodecChart data={data} />
+          <BenchmarksTable initialData={data} />
+        </>
       )}
     </div>
   );
