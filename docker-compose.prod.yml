@@ -34,10 +34,29 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      NODE_ENV: production
+      # Public base URL for API calls from the Next.js app (server and client)
+      NEXT_PUBLIC_API_BASE_URL: https://encodingdb.platinumlabs.dev
+    depends_on:
+      server:
+        condition: service_started
+    ports:
+      - "3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   nginx:
     image: nginx:1.27-alpine
     depends_on:
       server:
+        condition: service_started
+      frontend:
         condition: service_started
     ports:
       - "8443:443"
