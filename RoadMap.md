@@ -6,16 +6,16 @@
 [cite_start]**Goal: Establish the core data pipeline[cite: 120].**
 
 ### Task 1: Backend & Infrastructure Setup
-- [ ] Initialize a new Git repository for the project.
+- [x] Initialize a new Git repository for the project.
 - [x] Create a monorepo structure with directories for `client`, `server`, and `frontend`.
-- [ ] [cite_start]**Server Setup (Node.js/Express.js)[cite: 108]:**
+- [x] [cite_start]**Server Setup (Node.js/Express.js)[cite: 108]:**
     - [x] Initialize a new Node.js project with TypeScript.
     - [x] Install Express.js and required middleware.
-    - [ ] Set up Docker and a `docker-compose.yml` file for the backend server and database.
-    - [ ] [cite_start]**Database Setup (PostgreSQL)[cite: 111]:**
-        - [ ] Add a PostgreSQL service to `docker-compose.yml`.
+    - [x] Set up Docker and a `docker-compose.yml` file for the backend server and database.
+    - [x] [cite_start]**Database Setup (PostgreSQL)[cite: 111]:**
+        - [x] Add a PostgreSQL service to `docker-compose.yml`.
     - [x] [cite_start]Use a database migration tool (e.g., Prisma, TypeORM) to define and apply the `benchmarks` table schema [cite: 44-56, 126].
-    - [ ] [cite_start]**API Endpoint (`/submit`)[cite: 124]:**
+- [x] [cite_start]**API Endpoint (`/submit`)[cite: 124]:**
     - [x] [cite_start]Create a `POST /submit` route in Express.js[cite: 38].
     - [x] [cite_start]Implement data validation logic to ensure incoming JSON matches the required format[cite: 40].
     - [x] Write the database logic to insert validated benchmark data into the PostgreSQL `benchmarks` table.
@@ -36,15 +36,15 @@
     - [ ] [cite_start]Configure `PyInstaller` to package the entire Python script, including the bundled `ffmpeg.exe`, into a single standalone executable for Windows[cite: 102].
 
 ### Task 3: Basic Frontend & Deployment
-- [ ] [cite_start]**Frontend Setup (Next.js)[cite: 114]:**
+- [x] [cite_start]**Frontend Setup (Next.js)[cite: 114]:**
     - [x] Initialize a new Next.js project with TypeScript in the `frontend` directory.
-- [ ] **API Endpoint (`/query`):**
+- [x] **API Endpoint (`/query`):**
     - [x] [cite_start]Create a `GET /query` route in the Express.js backend that fetches all records from the `benchmarks` table[cite: 39].
 - [ ] **Webpage Development:**
     - [x] [cite_start]Create a single, basic webpage that fetches data from the `/query` endpoint[cite: 127].
     - [x] [cite_start]Render the fetched data in a simple, unstyled HTML `<table>`[cite: 127].
-- [ ] [cite_start]**Deployment[cite: 128]:**
-    - [ ] [cite_start]Deploy the backend server and database to a cloud platform (e.g., DigitalOcean, AWS) using Docker[cite: 109].
+    - [ ] [cite_start]**Deployment[cite: 128]:**
+    - [x] [cite_start]Deploy the backend server and database to a cloud platform (e.g., DigitalOcean, AWS) using Docker[cite: 109].
     - [ ] [cite_start]Deploy the frontend Next.js application to Vercel or Netlify[cite: 117].
 
 ## [cite_start]Phase 2: Public Beta Launch [cite: 129]
