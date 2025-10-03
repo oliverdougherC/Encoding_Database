@@ -3,8 +3,8 @@ import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
 export const dynamic = "force-dynamic";
 
 async function fetchBenchmarks(): Promise<Benchmark[]> {
-  // Default to talking directly to the backend service on the Docker network
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://server:3001";
+  // Always use the internal backend URL for SSR
+  const base = process.env.INTERNAL_API_BASE_URL || "http://server:3001";
   const res = await fetch(`${base}/query`, { next: { revalidate: 30 } });
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   return res.json();
