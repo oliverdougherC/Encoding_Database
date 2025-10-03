@@ -1,5 +1,7 @@
 import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
 
+export const dynamic = "force-dynamic";
+
 async function fetchBenchmarks(): Promise<Benchmark[]> {
   // Default to talking directly to the backend service on the Docker network
   const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://server:3001";
