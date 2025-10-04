@@ -37,22 +37,22 @@ router.post('/submit', async (req, res) => {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });
   }
   const data = parse.data;
-  try {
-    // Compute deduplication hash based on significant fields
-    const significant = {
-      cpuModel: data.cpuModel,
-      gpuModel: data.gpuModel ?? null,
-      ramGB: data.ramGB,
-      os: data.os,
-      codec: data.codec,
-      preset: data.preset,
-      fps: data.fps,
-      vmaf: data.vmaf ?? null,
-      fileSizeBytes: data.fileSizeBytes,
-      inputHash: (data as any).inputHash ?? null,
-    } as const;
-    const payloadHash = crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
+  // Compute deduplication hash based on significant fields (outside try so it's visible in catch)
+  const significant = {
+    cpuModel: data.cpuModel,
+    gpuModel: data.gpuModel ?? null,
+    ramGB: data.ramGB,
+    os: data.os,
+    codec: data.codec,
+    preset: data.preset,
+    fps: data.fps,
+    vmaf: data.vmaf ?? null,
+    fileSizeBytes: data.fileSizeBytes,
+    inputHash: (data as any).inputHash ?? null,
+  } as const;
+  const payloadHash = crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
 
+  try {
     // Fast path: if already inserted, return existing (idempotency)
     const existing = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch(() => null);
     if (existing) {
@@ -92,7 +92,7 @@ router.post('/submit', async (req, res) => {
     if ((err as any)?.code === 'P2002') {
       // Unique constraint violation: return the existing row idempotently
       try {
-        const existing = await prisma.benchmark.findUnique({ where: { payloadHash: (err as any).meta?.target ? payloadHash : payloadHash } });
+        const existing = await prisma.benchmark.findUnique({ where: { payloadHash } });
         if (existing) return res.status(200).json(existing);
       } catch {}
     }
