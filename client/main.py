@@ -334,24 +334,47 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
 
 
 def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
-    # Requires ffmpeg with libvmaf; try to run and parse VMAF score
-    with tempfile.TemporaryDirectory() as td:
-        # Use built-in model path resolution (ffmpeg ships default list)
+    # Requires ffmpeg with libvmaf; try several model specifications for portability
+    filter_candidates: List[str] = []
+    # Preferred: select bundled model by version (works on newer ffmpeg/libvmaf)
+    filter_candidates.append("libvmaf=model=version=vmaf_v0.6.1:log_fmt=json:log_path=-")
+    # Variant without version selection (some builds resolve default model by name)
+    filter_candidates.append("libvmaf=log_fmt=json:log_path=-")
+    # Common model file locations (Homebrew, system)
+    common_paths = [
+        "/opt/homebrew/opt/libvmaf/share/model/vmaf_v0.6.1.json",
+        "/usr/local/opt/libvmaf/share/model/vmaf_v0.6.1.json",
+        "/usr/local/share/model/vmaf_v0.6.1.json",
+        "/usr/share/model/vmaf_v0.6.1.json",
+    ]
+    for p in common_paths:
+        if os.path.exists(p):
+            filter_candidates.append(f"libvmaf=model_path={p}:log_fmt=json:log_path=-")
+
+    for filt in filter_candidates:
         cmd = [
             "ffmpeg", "-y", "-hide_banner", "-loglevel", "info",
             "-i", input_path,
             "-i", encoded_path,
-            "-lavfi", "libvmaf=log_fmt=json:log_path=-",
+            "-lavfi", filt,
             "-f", "null", "-",
         ]
         try:
             proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
             out = proc.stdout
+            # Try multiple JSON/text formats used by libvmaf
             m = re.search(r'"VMAF_score"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
+            if not m:
+                m = re.search(r'"aggregate"[\s\S]*?"mean"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
+            if not m:
+                m = re.search(r'"vmaf"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
+            if not m:
+                m = re.search(r'VMAF\s+score\s*:\s*([0-9]+(?:\.[0-9]+)?)', out, re.IGNORECASE)
             if m:
                 return float(m.group(1))
         except Exception:
-            return None
+            # Try next filter spec
+            continue
     return None
 
 
@@ -384,8 +407,10 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
         # Only attempt VMAF pipeline if initial run looked successful
         vmaf: Optional[float] = None
         if result.get("_encode_rc", 1) == 0 and float(result.get("fps", 0.0)) > 0 and int(result.get("fileSizeBytes", 0)) > 0:
+            if enable_vmaf:
+                print("Calculating VMAF...")
             subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            vmaf = compute_vmaf(input_path, encoded_path) if enable_vmaf and has_libvmaf() else None
+            vmaf = compute_vmaf(input_path, encoded_path) if enable_vmaf else None
     payload = {
         "cpuModel": hardware.cpuModel,
         "gpuModel": hardware.gpuModel,
@@ -469,6 +494,13 @@ def main(argv: List[str]) -> int:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
         return 2
     print(f"ffmpeg detected: {ffmpeg_version or 'unknown'}")
+    # Require libvmaf presence unless explicitly disabled
+    if not args.disable_vmaf and not has_libvmaf():
+        print(
+            "Your ffmpeg build does not include libvmaf. Install ffmpeg with libvmaf or run with --disable-vmaf.",
+            file=sys.stderr,
+        )
+        return 5
 
     input_path = args.input
     if not os.path.exists(input_path):
