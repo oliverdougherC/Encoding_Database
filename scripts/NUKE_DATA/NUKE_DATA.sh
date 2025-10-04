@@ -1,0 +1,1 @@
+docker compose exec db psql -U app -d benchmarks -c 'TRUNCATE TABLE "Benchmark" RESTART IDENTITY CASCADE;'
