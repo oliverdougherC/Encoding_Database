@@ -49,7 +49,7 @@ app.use(morgan((tokens: any, req, res) => {
 }));
 
 // CORS configuration
-const corsOriginEnv = process.env.CORS_ORIGIN || '*';
+const corsOriginEnv = process.env.CORS_ORIGIN || 'http://localhost:3000';
 const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
 const corsOptions = corsOriginEnv === '*'
   ? { origin: true }

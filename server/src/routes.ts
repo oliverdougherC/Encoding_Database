@@ -79,15 +79,6 @@ router.get('/query', async (_req, res) => {
   }
 });
 
-router.get('/query', async (_req, res) => {
-  try {
-    const rows = await prisma.benchmark.findMany({ orderBy: { createdAt: 'desc' } });
-    res.json(rows);
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch benchmarks' });
-  }
-});
-
 export default router;
 
 

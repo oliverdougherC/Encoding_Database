@@ -259,24 +259,7 @@ def main(argv: List[str]) -> int:
         payload["encoderName"] = args.codec
         payload["clientVersion"] = client_version
         payload["inputHash"] = input_hash
-        # Prefer elapsed from first encode
-        run_ms = None
-        try:
-            run_ms = int(payload.get("runMs") or 0)  # if previously set
-        except Exception:
-            run_ms = None
-        # We have elapsed from run_ffmpeg_test result
-        try:
-            run_ms = int(run_ms or 0) or int(payload.get("_elapsedMs", 0))
-        except Exception:
-            pass
-        if "_elapsedMs" in payload:
-            del payload["_elapsedMs"]
-        # Fix: we didn't include elapsed in payload; add from result
-        try:
-            payload["runMs"] = int(payload.get("runMs") or 0) or int(result.get("elapsedMs") or 0)
-        except Exception:
-            pass
+        # runMs is already populated by run_single_benchmark based on encode timing
         all_payloads.append(payload)
         if args.no_submit:
             print(f"Dry-run: not submitting preset={preset}")

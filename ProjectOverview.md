@@ -60,3 +60,15 @@ This user is a content creator or developer who needs to encode a video and want
     * **Sort by File Size (ascending)** to find the most space-efficient settings.
 4.  **Visualize Performance:** Alongside the table, interactive charts visualize the trade-offs. For example, a bar chart might show how FPS drops as the user moves from the `fast` to the `slow` preset, while another line chart shows the corresponding increase in VMAF score.
 5.  **Make an Informed Decision:** Within minutes, the user has a clear, data-backed answer. They now know the exact `ffmpeg` preset that will give them the ideal balance of quality, speed, and file size for their specific hardware and can proceed with their own video projects confidently.
+
+---
+
+## Ingestion and Security Model (No API Keys)
+
+We intentionally moved away from an API-key-based submission model. To maximize contributions and lower friction, the ingest endpoint is public and does not require authentication. Instead, we rely on strong server-side safeguards:
+
+- **Strict validation and sanity checks**: Types, ranges, and plausible bounds for FPS, file size, and names.
+- **Rate limiting**: A dedicated, tighter limiter on `/submit` in addition to global limits.
+- **Canonical inputs (optional enforcement)**: Submissions may include an `inputHash` (SHA256 of the canonical test file) for deterministic acceptance.
+- **Moderation pipeline**: New rows are stored with a submission `status` (e.g., `pending` vs. `accepted`). Only accepted rows appear in public queries; duplicates are allowed and aggregated.
+- **Future extensions**: Lightweight one-time submit tokens and optional user accounts (OAuth) for attribution can be layered on without changing the core ingest flow.

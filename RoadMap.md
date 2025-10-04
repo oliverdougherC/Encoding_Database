@@ -19,6 +19,11 @@
     - [x] [cite_start]Create a `POST /submit` route in Express.js[cite: 38].
     - [x] [cite_start]Implement data validation logic to ensure incoming JSON matches the required format[cite: 40].
     - [x] Write the database logic to insert validated benchmark data into the PostgreSQL `benchmarks` table.
+    - [x] Remove API key requirement for public ingest; rely on validation and rate limiting.
+    - [x] Add strict rate limit for `/submit` separate from global limits.
+    - [x] Extend schema with submission metadata (`ffmpegVersion`, `encoderName`, `clientVersion`, `inputHash`, `runMs`) and `status`.
+    - [x] Auto-accept heuristics (plausible fps/size/names); otherwise store as `pending`.
+    - [x] Filter `/query` to return only `status = accepted` records.
 
 ### [cite_start]Task 2: Benchmarking Client (Windows MVP) [cite: 122]
 - [ ] **Project Initialization:**
@@ -30,8 +35,9 @@
     - [x] [cite_start]Write functions to parse `ffmpeg`'s stderr output to capture encoding speed (FPS) [cite: 27] [cite_start]and file size[cite: 29].
     - [x] [cite_start]Write a function to run the `libvmaf` filter and parse its output to get the final VMAF score[cite: 28].
 - [ ] **Data Submission:**
-    - [ ] [cite_start]Consolidate all collected hardware info and benchmark results into a single JSON object[cite: 32].
+    - [x] [cite_start]Consolidate all collected hardware info and benchmark results into a single JSON object[cite: 32].
     - [x] [cite_start]Use the `requests` library to `POST` the JSON object to the backend's `/submit` endpoint[cite: 33, 106].
+    - [x] Include submission metadata (client version, ffmpeg version, encoder name, input file SHA256, run time).
 - [ ] **Packaging:**
     - [ ] [cite_start]Configure `PyInstaller` to package the entire Python script, including the bundled `ffmpeg.exe`, into a single standalone executable for Windows[cite: 102].
 
