@@ -37,8 +37,10 @@ except Exception:
 
 # Fixed backend endpoint for submissions
 BACKEND_BASE_URL = "https://encodingdb.platinumlabs.dev"
+ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
 ENV_API_KEY = os.environ.get("API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
+ENV_CRF = os.environ.get("CRF", "")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
 ENV_DISABLE_VMAF = os.environ.get("DISABLE_VMAF", "0") in ("1", "true", "TRUE")
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
@@ -258,13 +260,24 @@ def map_preset_for_encoder(encoder: str, preset_name: str) -> List[str]:
     return []
 
 
-def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, preset_name: str) -> List[str]:
+def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, preset_name: str, crf: Optional[int] = None) -> List[str]:
     cmd: List[str] = [
         "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-nostdin",
         "-i", input_path,
         "-c:v", encoder,
     ]
     cmd += map_preset_for_encoder(encoder, preset_name)
+    # Apply CRF when supported by encoder
+    if crf is not None:
+        e = encoder.strip().lower()
+        # Software encoders
+        if e in ("libx264", "libx265", "libsvtav1", "libaom-av1", "libvpx-vp9"):
+            cmd += ["-crf", str(crf)]
+        # NVENC supports -cq for const quality; map crf approximately if provided
+        elif e.endswith("_nvenc"):
+            # NVENC ranges 0..51; use CRF directly if in range
+            cmd += ["-cq", str(max(0, min(51, crf)))]
+        # QSV/AMF/VideoToolbox have different quality controls; skip unless mapped explicitly
     if encoder.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi")):
         cmd += ["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p"]
     e = encoder.strip().lower()
@@ -288,10 +301,10 @@ def parse_ffmpeg_fps(output: str) -> Optional[float]:
     return None
 
 
-def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264") -> Dict[str, Any]:
+def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "out.mp4")
-        cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset)
+        cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset, crf=crf)
         start = time.time()
         proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         end = time.time()
@@ -342,8 +355,8 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
     return None
 
 
-def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, codec: str = "libx264", enable_vmaf: bool = True) -> Dict[str, Any]:
-    result = run_ffmpeg_test(input_path, preset=preset, codec=codec)
+def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, codec: str = "libx264", enable_vmaf: bool = True, crf: Optional[int] = None) -> Dict[str, Any]:
+    result = run_ffmpeg_test(input_path, preset=preset, codec=codec, crf=crf)
     # Fallback: if failed with a hardware encoder, retry with software encoder for the same family
     if (result.get("_encode_rc", 1) != 0 or float(result.get("fps", 0.0)) <= 0 or int(result.get("fileSizeBytes", 0)) <= 0):
         family = None
@@ -362,12 +375,12 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
             sw = pick_software_encoder_for_family(family)
             if sw and sw != codec:
                 print(f"Retrying with software encoder {sw} for preset={preset}...")
-                result = run_ffmpeg_test(input_path, preset=preset, codec=sw)
+                result = run_ffmpeg_test(input_path, preset=preset, codec=sw, crf=crf)
                 codec = sw
     # For VMAF, we need the encoded output; re-run to keep artifact
     with tempfile.TemporaryDirectory() as td:
         encoded_path = os.path.join(td, "out.mp4")
-        cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=encoded_path, encoder=codec, preset_name=preset)
+        cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=encoded_path, encoder=codec, preset_name=preset, crf=crf)
         # Only attempt VMAF pipeline if initial run looked successful
         vmaf: Optional[float] = None
         if result.get("_encode_rc", 1) == 0 and float(result.get("fps", 0.0)) > 0 and int(result.get("fileSizeBytes", 0)) > 0:
@@ -380,6 +393,7 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
         "os": hardware.os,
         "codec": codec,
         "preset": preset,
+        "crf": crf,
         "fps": float(result["fps"]),
         "fileSizeBytes": int(result["fileSizeBytes"]),
         "runMs": int(result.get("elapsedMs") or 0),
@@ -434,10 +448,12 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Encoding Benchmark Client")
     p.add_argument("input", help="Path to input test video (e.g., sample.mp4)")
+    p.add_argument("--base-url", default=ENV_BACKEND_BASE_URL, help="Backend base URL (default: env BACKEND_BASE_URL or production)")
     p.add_argument("--api-key", default=ENV_API_KEY, help="API key for submission (default: env API_KEY)")
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
     p.add_argument("--presets", default=ENV_PRESETS, help="Comma-separated list of presets (default: fast,medium,slow)")
     p.add_argument("--no-submit", action="store_true", help="Run tests but do not submit results")
+    p.add_argument("--crf", type=int, default=int(ENV_CRF) if ENV_CRF.isdigit() else None, help="Constant Rate Factor (encoder-dependent). Optional.")
     p.add_argument("--disable-vmaf", action="store_true", default=ENV_DISABLE_VMAF, help="Skip VMAF computation")
     p.add_argument("--retries", type=int, default=3, help="Submission retry attempts (default: 3)")
     p.add_argument("--queue-dir", default=ENV_QUEUE_DIR, help="Directory for offline retry queue")
@@ -502,9 +518,11 @@ def main(argv: List[str]) -> int:
 
     all_payloads: List[Dict[str, Any]] = []
     os.makedirs(args.queue_dir, exist_ok=True)
+    base_url = args.base_url
+    user_crf: Optional[int] = args.crf
     for preset in presets:
         print(f"Running preset: {preset}...")
-        payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, enable_vmaf=(not args.disable_vmaf))
+        payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, enable_vmaf=(not args.disable_vmaf), crf=user_crf)
         # Attach submission metadata
         payload["ffmpegVersion"] = ffmpeg_version
         payload["encoderName"] = payload.get("codec", resolved_encoder)
@@ -521,7 +539,7 @@ def main(argv: List[str]) -> int:
                 print(f"Skipped submission for preset={preset} due to encode failure (fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})")
                 all_payloads.append({**payload, "localError": True})
                 continue
-            submit(BACKEND_BASE_URL, payload, api_key=args.api_key, retries=max(1, args.retries))
+            submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
             print(f"Submitted: {preset}")
         except Exception as e:
             print(f"Failed to submit {preset}: {e}", file=sys.stderr)
@@ -542,7 +560,7 @@ def main(argv: List[str]) -> int:
             try:
                 with open(fpath, 'r', encoding='utf-8') as fh:
                     payload = json.load(fh)
-                submit(BACKEND_BASE_URL, payload, api_key=args.api_key, retries=max(1, args.retries))
+                submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
                 os.remove(fpath)
                 print(f"Retried and submitted: {fn}")
             except Exception:

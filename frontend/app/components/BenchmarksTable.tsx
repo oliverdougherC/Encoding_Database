@@ -10,14 +10,19 @@ export type Benchmark = {
   ramGB: number;
   os: string;
   codec: string;
-  // New: support CRF and size to compute relative size
-  // CRF may not be present yet; show "-" when absent
+  // CRF is optional depending on encoder; when absent show "-"
   crf?: number | null;
   preset: string;
   fps: number;
   vmaf: number | null;
   fileSizeBytes: number;
   notes: string | null;
+  ffmpegVersion?: string | null;
+  encoderName?: string | null;
+  clientVersion?: string | null;
+  inputHash?: string | null;
+  runMs?: number | null;
+  status?: string | null;
 };
 
 type SortKey = keyof Pick<Benchmark, "cpuModel" | "gpuModel" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes">;
@@ -209,7 +214,7 @@ function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () =
           <LabelValue label="Time" value={new Date(row.createdAt).toLocaleString()} />
           <LabelValue label="RAM (GB)" value={String(row.ramGB)} />
           <LabelValue label="OS" value={row.os} />
-          <LabelValue label="FFmpeg Version" value={row.notes?.includes("ffmpeg version") ? row.notes! : "See server records"} />
+          <LabelValue label="FFmpeg Version" value={row.ffmpegVersion ?? "-"} />
           <LabelValue label="FPS" value={row.fps.toFixed(2)} />
           <LabelValue label="VMAF score" value={row.vmaf == null ? "-" : row.vmaf.toFixed(1)} />
           <LabelValue label="Relative File Size" value={relSize.toFixed(2)} />

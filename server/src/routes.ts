@@ -14,6 +14,7 @@ const benchmarkSchema = z.object({
   os: z.string().min(3),
   codec: z.string().min(1),
   preset: z.string().min(1),
+  crf: z.coerce.number().int().min(0).max(63).optional().nullable(),
   fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
   fileSizeBytes: z.coerce.number().int().nonnegative().max(1_000 * 1024 * 1024),
@@ -45,6 +46,7 @@ router.post('/submit', async (req, res) => {
     os: data.os,
     codec: data.codec,
     preset: data.preset,
+    crf: (data as any).crf ?? null,
     fps: data.fps,
     vmaf: data.vmaf ?? null,
     fileSizeBytes: data.fileSizeBytes,
@@ -75,6 +77,7 @@ router.post('/submit', async (req, res) => {
       os: data.os,
       codec: data.codec,
       preset: data.preset,
+      crf: (data as any).crf ?? null,
       fps: data.fps,
       vmaf: data.vmaf ?? null,
       fileSizeBytes: data.fileSizeBytes,
@@ -100,9 +103,19 @@ router.post('/submit', async (req, res) => {
   }
 });
 
-router.get('/query', async (_req, res) => {
+router.get('/query', async (req, res) => {
   try {
-    const rows = await prisma.benchmark.findMany({ where: { status: 'accepted' }, orderBy: { createdAt: 'desc' } });
+    const rawLimit = Number((req.query as any).limit);
+    const rawSkip = Number((req.query as any).skip);
+    const take = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : undefined;
+    const skip = Number.isFinite(rawSkip) && rawSkip > 0 ? rawSkip : undefined;
+
+    const rows = await prisma.benchmark.findMany({
+      where: { status: 'accepted' },
+      orderBy: { createdAt: 'desc' },
+      ...(typeof take === 'number' ? { take } : {}),
+      ...(typeof skip === 'number' ? { skip } : {}),
+    });
     res.json(rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch benchmarks' });

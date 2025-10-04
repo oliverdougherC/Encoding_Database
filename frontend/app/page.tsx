@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 async function fetchBenchmarks(): Promise<Benchmark[]> {
   // Always use the internal backend URL for SSR
   const base = process.env.INTERNAL_API_BASE_URL || "http://server:3001";
-  const res = await fetch(`${base}/query`, { next: { revalidate: 30 } });
+  const res = await fetch(`${base}/query`);
   if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
   return res.json();
 }
@@ -33,6 +33,7 @@ export default async function Home() {
       ) : (
         <>
           <BenchmarksTable initialData={data} />
+          <FpsByCodecChart data={data} />
         </>
       )}
     </div>

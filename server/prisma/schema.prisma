@@ -26,6 +26,7 @@ model Benchmark {
   // Test parameters
   codec          String
   preset         String
+  crf            Int?
 
   // Results
   fps            Float
