@@ -37,7 +37,11 @@ router.post('/submit', async (req, res) => {
   if (!parse.success) {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });
   }
-  const data = parse.data;
+  const data = parse.data as any;
+  // Enforce default CRF=24 when missing/null to ensure consistent records
+  if (data.crf == null || !Number.isFinite(Number(data.crf))) {
+    data.crf = 24;
+  }
   // Compute deduplication hash based on significant fields (outside try so it's visible in catch)
   const significant = {
     cpuModel: data.cpuModel,
@@ -46,7 +50,7 @@ router.post('/submit', async (req, res) => {
     os: data.os,
     codec: data.codec,
     preset: data.preset,
-    crf: (data as any).crf ?? null,
+    crf: Number(data.crf),
     fps: data.fps,
     vmaf: data.vmaf ?? null,
     fileSizeBytes: data.fileSizeBytes,
@@ -77,7 +81,7 @@ router.post('/submit', async (req, res) => {
       os: data.os,
       codec: data.codec,
       preset: data.preset,
-      crf: (data as any).crf ?? null,
+      crf: Number(data.crf),
       fps: data.fps,
       vmaf: data.vmaf ?? null,
       fileSizeBytes: data.fileSizeBytes,

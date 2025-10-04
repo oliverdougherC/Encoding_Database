@@ -40,7 +40,7 @@ BACKEND_BASE_URL = "https://encodingdb.platinumlabs.dev"
 ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
 ENV_API_KEY = os.environ.get("API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
-ENV_CRF = os.environ.get("CRF", "")
+ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
 ENV_DISABLE_VMAF = os.environ.get("DISABLE_VMAF", "0") in ("1", "true", "TRUE")
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
@@ -453,7 +453,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
     p.add_argument("--presets", default=ENV_PRESETS, help="Comma-separated list of presets (default: fast,medium,slow)")
     p.add_argument("--no-submit", action="store_true", help="Run tests but do not submit results")
-    p.add_argument("--crf", type=int, default=int(ENV_CRF) if ENV_CRF.isdigit() else None, help="Constant Rate Factor (encoder-dependent). Optional.")
+    p.add_argument("--crf", type=int, default=int(ENV_CRF) if ENV_CRF.isdigit() else 24, help="Constant Rate Factor (encoder-dependent). Defaults to 24.")
     p.add_argument("--disable-vmaf", action="store_true", default=ENV_DISABLE_VMAF, help="Skip VMAF computation")
     p.add_argument("--retries", type=int, default=3, help="Submission retry attempts (default: 3)")
     p.add_argument("--queue-dir", default=ENV_QUEUE_DIR, help="Directory for offline retry queue")
