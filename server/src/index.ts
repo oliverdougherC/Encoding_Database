@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import routes from './routes.js';
 import { prisma } from './db.js';
+import crypto from 'node:crypto';
 
 const app = express();
 
@@ -63,9 +64,82 @@ const corsOptions = corsOriginEnv === '*'
     };
 app.use(cors(corsOptions));
 
-// Body parser with limit
+// Body parser with limit and raw body capture (for HMAC verification)
 const bodyLimit = process.env.BODY_LIMIT || '1mb';
-app.use(express.json({ limit: bodyLimit }));
+app.use(express.json({
+  limit: bodyLimit,
+  verify: (req, _res, buf) => {
+    (req as any).rawBody = Buffer.from(buf);
+  },
+}));
+
+// Optional HMAC verification for ingest endpoint
+const ingestSecret = process.env.INGEST_HMAC_SECRET || '';
+const maxSkewSeconds = Number(process.env.INGEST_MAX_SKEW_SECONDS || 300);
+const seenSignatures = new Map<string, number>();
+let warnedNoSecret = false;
+
+function isReplay(sig: string, nowMs: number): boolean {
+  const exp = seenSignatures.get(sig);
+  if (exp && exp > nowMs) return true;
+  return false;
+}
+
+function rememberSignature(sig: string, nowMs: number): void {
+  const ttl = maxSkewSeconds * 1000;
+  seenSignatures.set(sig, nowMs + ttl);
+  // Best-effort cleanup to avoid unbounded growth
+  if (seenSignatures.size > 5000) {
+    const cutoff = nowMs;
+    for (const [k, v] of seenSignatures.entries()) {
+      if (v <= cutoff) seenSignatures.delete(k);
+    }
+  }
+}
+
+app.use('/submit', (req, res, next) => {
+  if (!ingestSecret) {
+    if (!warnedNoSecret) {
+      console.warn('INGEST_HMAC_SECRET not set; accepting unsigned submissions');
+      warnedNoSecret = true;
+    }
+    return next();
+  }
+  const tsHeader = String(req.headers['x-timestamp'] || '');
+  const sigHeader = String(req.headers['x-signature'] || '');
+  const raw: Buffer | undefined = (req as any).rawBody;
+  if (!tsHeader || !sigHeader || !raw) {
+    return res.status(401).json({ error: 'missing_signature' });
+  }
+  const now = Date.now();
+  const ts = Number(tsHeader);
+  if (!Number.isFinite(ts)) {
+    return res.status(401).json({ error: 'invalid_timestamp' });
+  }
+  const skew = Math.abs(now - ts * 1000);
+  if (skew > maxSkewSeconds * 1000) {
+    return res.status(401).json({ error: 'timestamp_out_of_range' });
+  }
+  if (isReplay(sigHeader, now)) {
+    return res.status(409).json({ error: 'replay_detected' });
+  }
+  try {
+    const expected = crypto
+      .createHmac('sha256', ingestSecret)
+      .update(`${tsHeader}.`)
+      .update(raw)
+      .digest('hex');
+    const a = Buffer.from(sigHeader, 'hex');
+    const b = Buffer.from(expected, 'hex');
+    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+      return res.status(401).json({ error: 'invalid_signature' });
+    }
+    rememberSignature(sigHeader, now);
+    return next();
+  } catch {
+    return res.status(401).json({ error: 'signature_verification_failed' });
+  }
+});
 
 // Basic rate limiting (skip health endpoints)
 const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);

@@ -22,9 +22,9 @@ export default async function Home() {
 
   return (
     <div style={{ padding: 24, maxWidth: 1200, margin: "0 auto" }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 16 }}>Encoding Benchmarks</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>Encoding Benchmarks</h1>
       <p style={{ marginBottom: 16, color: "#555" }}>
-        Source: <code>{process.env.NEXT_PUBLIC_API_BASE_URL || "http://server:3001"}</code>
+        Source Code: <a href="https://github.com/oliverdougherC/Encoding_Database" target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>github.com/oliverdougherC/Encoding_Database</a>
       </p>
       {error ? (
         <div style={{ background: "#fee2e2", color: "#991b1b", padding: 12, borderRadius: 8 }}>
@@ -32,7 +32,6 @@ export default async function Home() {
         </div>
       ) : (
         <>
-          <FpsByCodecChart data={data} />
           <BenchmarksTable initialData={data} />
         </>
       )}

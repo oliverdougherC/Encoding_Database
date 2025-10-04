@@ -41,4 +41,14 @@ model Benchmark {
   clientVersion  String?
   inputHash      String?
   runMs          Int?
+
+  // Idempotency and deduplication
+  payloadHash    String?  @unique
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([codec])
+  @@index([preset])
+  @@index([inputHash])
+  @@index([codec, preset])
 }

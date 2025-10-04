@@ -10,6 +10,9 @@ export type Benchmark = {
   ramGB: number;
   os: string;
   codec: string;
+  // New: support CRF and size to compute relative size
+  // CRF may not be present yet; show "-" when absent
+  crf?: number | null;
   preset: string;
   fps: number;
   vmaf: number | null;
@@ -17,15 +20,21 @@ export type Benchmark = {
   notes: string | null;
 };
 
-type SortKey = keyof Pick<Benchmark, "createdAt" | "cpuModel" | "gpuModel" | "ramGB" | "os" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes">;
+type SortKey = keyof Pick<Benchmark, "cpuModel" | "gpuModel" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes">;
 
 export default function BenchmarksTable({ initialData }: { initialData: Benchmark[] }) {
   const [cpuFilter, setCpuFilter] = useState("");
   const [gpuFilter, setGpuFilter] = useState("");
   const [codecFilter, setCodecFilter] = useState("");
   const [presetFilter, setPresetFilter] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortKey, setSortKey] = useState<SortKey>("fps");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  // Weights for PLOVE score
+  const [wQuality, setWQuality] = useState<number>(1);
+  const [wSize, setWSize] = useState<number>(1);
+  const [wSpeed, setWSpeed] = useState<number>(1);
+  const [showDetailId, setShowDetailId] = useState<string | null>(null);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
   const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
@@ -42,16 +51,34 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
   }, [initialData, cpuFilter, gpuFilter, codecFilter, presetFilter]);
 
+  // Compute relative size baseline (median size across filtered rows)
+  const sizeBaseline = useMemo(() => {
+    const sizes = filtered.map(r => r.fileSizeBytes).filter(s => s > 0).sort((a,b)=>a-b);
+    if (sizes.length === 0) return 1;
+    const mid = Math.floor(sizes.length / 2);
+    return sizes.length % 2 === 0 ? Math.max(1, Math.floor((sizes[mid-1] + sizes[mid]) / 2)) : Math.max(1, sizes[mid]);
+  }, [filtered]);
+
+  const withScores = useMemo(() => {
+    return filtered.map(row => {
+      const vmaf = typeof row.vmaf === "number" ? Math.max(0, Math.min(100, row.vmaf)) : 0;
+      const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / sizeBaseline : 1;
+      const fps = Math.max(0.0001, row.fps || 0);
+      // Normalize components to avoid zeroing; use multiplicative form
+      const qualityTerm = Math.pow(Math.max(1e-6, vmaf), wQuality);
+      const sizeTerm = Math.pow(Math.max(1e-6, 1 / relSize), wSize);
+      const speedTerm = Math.pow(Math.max(1e-6, fps), wSpeed);
+      const plove = qualityTerm * sizeTerm * speedTerm;
+      return { ...row, _plove: plove, _relSize: relSize } as Benchmark & { _plove: number; _relSize: number };
+    });
+  }, [filtered, sizeBaseline, wQuality, wSize, wSpeed]);
+
   const sorted = useMemo(() => {
-    const data = [...filtered];
+    const data = [...withScores];
     data.sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
-      const av = a[sortKey] as any;
-      const bv = b[sortKey] as any;
-      // Handle nulls and dates
-      if (sortKey === "createdAt") {
-        return (new Date(av).getTime() - new Date(bv).getTime()) * mul;
-      }
+      const av = (a as any)[sortKey];
+      const bv = (b as any)[sortKey];
       if (av == null && bv != null) return 1 * mul;
       if (av != null && bv == null) return -1 * mul;
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * mul;
@@ -60,7 +87,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       return as.localeCompare(bs) * mul;
     });
     return data;
-  }, [filtered, sortKey, sortDir]);
+  }, [withScores, sortKey, sortDir]);
 
   const setSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => (d === "asc" ? "desc" : "asc"));
@@ -92,40 +119,57 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         </select>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12, alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 600, marginBottom: 6 }}>Scoring Weights</div>
+          <div style={{ fontSize: 12, color: "#555" }}>
+            PLOVE Score balances Quality, Size, and Speed for your goals.
+          </div>
+        </div>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span>Quality Priority</span>
+          <input type="number" min={0} max={10} step={0.1} value={wQuality} onChange={e => setWQuality(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
+        </label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span>Size Priority</span>
+          <input type="number" min={0} max={10} step={0.1} value={wSize} onChange={e => setWSize(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
+        </label>
+        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span>Speed Priority</span>
+          <input type="number" min={0} max={10} step={0.1} value={wSpeed} onChange={e => setWSpeed(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
+        </label>
+      </div>
+
       <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
           <thead style={{ background: "#fafafa" }}>
             <tr>
-              <Th onClick={() => setSort("createdAt")} label="Time" active={sortKey === "createdAt"} dir={sortDir} />
               <Th onClick={() => setSort("cpuModel")} label="CPU" active={sortKey === "cpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("gpuModel")} label="GPU" active={sortKey === "gpuModel"} dir={sortDir} />
-              <Th onClick={() => setSort("ramGB")} label="RAM (GB)" active={sortKey === "ramGB"} dir={sortDir} />
-              <Th onClick={() => setSort("os")} label="OS" active={sortKey === "os"} dir={sortDir} />
               <Th onClick={() => setSort("codec")} label="Codec" active={sortKey === "codec"} dir={sortDir} />
+              <th style={{ padding: 8 }}>CRF</th>
               <Th onClick={() => setSort("preset")} label="Preset" active={sortKey === "preset"} dir={sortDir} />
-              <Th onClick={() => setSort("fps")} label="FPS" active={sortKey === "fps"} dir={sortDir} align="right" />
-              <Th onClick={() => setSort("vmaf")} label="VMAF" active={sortKey === "vmaf"} dir={sortDir} align="right" />
-              <Th onClick={() => setSort("fileSizeBytes")} label="Size (MB)" active={sortKey === "fileSizeBytes"} dir={sortDir} align="right" />
+              <th style={{ padding: 8, textAlign: "right" }}>PLOVE Score</th>
+              <th style={{ padding: 8 }}>Details</th>
             </tr>
           </thead>
           <tbody>
             {sorted.map(row => (
               <tr key={row.id} style={{ borderTop: "1px solid #eee" }}>
-                <td style={{ padding: 8 }}>{new Date(row.createdAt).toLocaleString()}</td>
                 <td style={{ padding: 8 }}>{row.cpuModel}</td>
                 <td style={{ padding: 8 }}>{row.gpuModel ?? "-"}</td>
-                <td style={{ padding: 8 }}>{row.ramGB}</td>
-                <td style={{ padding: 8 }}>{row.os}</td>
                 <td style={{ padding: 8 }}>{row.codec}</td>
+                <td style={{ padding: 8 }}>{row.crf == null ? "-" : row.crf}</td>
                 <td style={{ padding: 8 }}>{row.preset}</td>
-                <td style={{ padding: 8, textAlign: "right" }}>{row.fps.toFixed(2)}</td>
-                <td style={{ padding: 8, textAlign: "right" }}>{row.vmaf == null ? "-" : row.vmaf.toFixed(1)}</td>
-                <td style={{ padding: 8, textAlign: "right" }}>{(row.fileSizeBytes / (1024 * 1024)).toFixed(2)}</td>
+                <td style={{ padding: 8, textAlign: "right" }}>{(row as any)._plove ? (row as any)._plove.toFixed(2) : "-"}</td>
+                <td style={{ padding: 8 }}>
+                  <button onClick={() => setShowDetailId(row.id)} style={{ padding: "6px 10px", border: "1px solid #ddd", borderRadius: 8, background: "#f9fafb" }}>Details</button>
+                </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={10} style={{ padding: 16, textAlign: "center", color: "#666" }}>
+                <td colSpan={7} style={{ padding: 16, textAlign: "center", color: "#666" }}>
                   No results for current filters.
                 </td>
               </tr>
@@ -133,6 +177,10 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           </tbody>
         </table>
       </div>
+
+      {showDetailId && (
+        <DetailsModal row={sorted.find(r => r.id === showDetailId)!} onClose={() => setShowDetailId(null)} relSize={Number((sorted.find(r => r.id === showDetailId) as any)?._relSize || 1)} />
+      )}
     </div>
   );
 }
@@ -146,6 +194,37 @@ function Th({ label, onClick, active, dir, align }: { label: string; onClick: ()
     >
       {label}{active ? (dir === "asc" ? " ▲" : " ▼") : ""}
     </th>
+  );
+}
+
+function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () => void; relSize: number }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ background: "#fff", borderRadius: 8, maxWidth: 520, width: "100%", border: "1px solid #eee" }}>
+        <div style={{ padding: 12, borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontWeight: 600 }}>Encode Details</div>
+          <button onClick={onClose} style={{ border: "1px solid #ddd", borderRadius: 6, padding: "4px 8px", background: "#fafafa" }}>Close</button>
+        </div>
+        <div style={{ padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <LabelValue label="Time" value={new Date(row.createdAt).toLocaleString()} />
+          <LabelValue label="RAM (GB)" value={String(row.ramGB)} />
+          <LabelValue label="OS" value={row.os} />
+          <LabelValue label="FFmpeg Version" value={row.notes?.includes("ffmpeg version") ? row.notes! : "See server records"} />
+          <LabelValue label="FPS" value={row.fps.toFixed(2)} />
+          <LabelValue label="VMAF score" value={row.vmaf == null ? "-" : row.vmaf.toFixed(1)} />
+          <LabelValue label="Relative File Size" value={relSize.toFixed(2)} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LabelValue({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <div style={{ fontSize: 12, color: "#666" }}>{label}</div>
+      <div style={{ fontWeight: 500 }}>{value}</div>
+    </div>
   );
 }
 

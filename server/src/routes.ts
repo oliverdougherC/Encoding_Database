@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from './db.js';
+import crypto from 'node:crypto';
 
 const router = Router();
 
@@ -13,16 +14,16 @@ const benchmarkSchema = z.object({
   os: z.string().min(3),
   codec: z.string().min(1),
   preset: z.string().min(1),
-  fps: z.coerce.number().nonnegative(),
+  fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
-  fileSizeBytes: z.coerce.number().int().nonnegative(),
+  fileSizeBytes: z.coerce.number().int().nonnegative().max(1_000 * 1024 * 1024),
   notes: z.string().optional().nullable(),
   // Submission metadata (optional for MVP)
-  ffmpegVersion: z.string().optional().nullable(),
-  encoderName: z.string().optional().nullable(),
-  clientVersion: z.string().optional().nullable(),
-  inputHash: z.string().length(64).optional().nullable(), // sha256 hex
-  runMs: z.coerce.number().int().nonnegative().optional().nullable(),
+  ffmpegVersion: z.string().max(200).optional().nullable(),
+  encoderName: z.string().max(100).optional().nullable(),
+  clientVersion: z.string().max(100).optional().nullable(),
+  inputHash: z.string().length(64).regex(/^[0-9a-f]+$/).optional().nullable(), // sha256 hex
+  runMs: z.coerce.number().int().nonnegative().max(24 * 60 * 60 * 1000).optional().nullable(),
 });
 
 // Simple canonical hash list for MVP (publish in README)
@@ -37,6 +38,27 @@ router.post('/submit', async (req, res) => {
   }
   const data = parse.data;
   try {
+    // Compute deduplication hash based on significant fields
+    const significant = {
+      cpuModel: data.cpuModel,
+      gpuModel: data.gpuModel ?? null,
+      ramGB: data.ramGB,
+      os: data.os,
+      codec: data.codec,
+      preset: data.preset,
+      fps: data.fps,
+      vmaf: data.vmaf ?? null,
+      fileSizeBytes: data.fileSizeBytes,
+      inputHash: (data as any).inputHash ?? null,
+    } as const;
+    const payloadHash = crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
+
+    // Fast path: if already inserted, return existing (idempotency)
+    const existing = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch(() => null);
+    if (existing) {
+      return res.status(200).json(existing);
+    }
+
     // Heuristics: ensure plausible values
     const isCodecOk = typeof data.codec === 'string' && data.codec.length <= 64;
     const isPresetOk = typeof data.preset === 'string' && data.preset.length <= 64;
@@ -63,9 +85,17 @@ router.post('/submit', async (req, res) => {
       clientVersion: (data as any).clientVersion ?? null,
       inputHash: (data as any).inputHash ?? null,
       runMs: (data as any).runMs ?? null,
+      payloadHash,
     }});
     res.status(201).json(created);
   } catch (err) {
+    if ((err as any)?.code === 'P2002') {
+      // Unique constraint violation: return the existing row idempotently
+      try {
+        const existing = await prisma.benchmark.findUnique({ where: { payloadHash: (err as any).meta?.target ? payloadHash : payloadHash } });
+        if (existing) return res.status(200).json(existing);
+      } catch {}
+    }
     res.status(500).json({ error: 'Failed to insert benchmark' });
   }
 });
