@@ -8,6 +8,9 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    env:
+      API_BASE_URL: ${{ secrets.API_BASE_URL }}
+      API_KEY: ${{ secrets.API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,18 +20,22 @@ jobs:
 
       - name: Check required secrets
         run: |
-          : "${{ secrets.API_BASE_URL }}" || (echo "Missing secret API_BASE_URL" && exit 1)
-          : "${{ secrets.API_KEY }}" || (echo "Missing secret API_KEY" && exit 1)
+          set -euo pipefail
+          if [ -z "${API_BASE_URL:-}" ]; then
+            echo "Missing secret API_BASE_URL" >&2
+            exit 1
+          fi
+          echo "API_BASE_URL is set"
 
       - name: Health check
         run: |
           set -euo pipefail
-          curl -fsSL "${{ secrets.API_BASE_URL }}/health/ready" | jq .
+          curl -fsSL "$API_BASE_URL/health/ready" | jq .
 
       - name: Query should return JSON array
         run: |
           set -euo pipefail
-          curl -fsSL "${{ secrets.API_BASE_URL }}/query" | jq -e 'type == "array"' >/dev/null
+          curl -fsSL "$API_BASE_URL/query" | jq -e 'type == "array"' >/dev/null
 
       - name: Submit sample (optional)
         if: ${{ github.event_name == 'workflow_dispatch' }}
@@ -46,16 +53,14 @@ jobs:
             fileSizeBytes: 12345,
             notes: "smoke"
           }')
-          curl -fsSL -X POST "${{ secrets.API_BASE_URL }}/submit" \
+          curl -fsSL -X POST "$API_BASE_URL/submit" \
             -H "Content-Type: application/json" \
-            -H "x-api-key: ${{ secrets.API_KEY }}" \
+            -H "x-api-key: $API_KEY" \
             -d "$payload" | jq .
 
       - name: API Hardening (non-destructive)
         run: bash scripts/api_hardening_test.sh
         env:
-          API_BASE_URL: ${{ secrets.API_BASE_URL }}
-          API_KEY: ${{ secrets.API_KEY }}
           ALLOW_MUTATION_REMOTE: '0'
 
 
