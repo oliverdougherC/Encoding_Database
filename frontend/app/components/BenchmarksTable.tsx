@@ -25,14 +25,14 @@ export type Benchmark = {
   status?: string | null;
 };
 
-type SortKey = keyof Pick<Benchmark, "cpuModel" | "gpuModel" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes">;
+type SortKey = "cpuModel" | "gpuModel" | "codec" | "crf" | "preset" | "_plove";
 
 export default function BenchmarksTable({ initialData }: { initialData: Benchmark[] }) {
   const [cpuFilter, setCpuFilter] = useState("");
   const [gpuFilter, setGpuFilter] = useState("");
   const [codecFilter, setCodecFilter] = useState("");
   const [presetFilter, setPresetFilter] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("fps");
+  const [sortKey, setSortKey] = useState<SortKey>("_plove");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // Weights for PLOVE score
@@ -146,16 +146,25 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       </div>
 
       <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
+          <colgroup>
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "20%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "8%" }} />
+            <col style={{ width: "12%" }} />
+            <col style={{ width: "15%" }} />
+            <col style={{ width: "10%" }} />
+          </colgroup>
           <thead style={{ background: "#fafafa" }}>
             <tr>
               <Th onClick={() => setSort("cpuModel")} label="CPU" active={sortKey === "cpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("gpuModel")} label="GPU" active={sortKey === "gpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("codec")} label="Codec" active={sortKey === "codec"} dir={sortDir} />
-              <th style={{ padding: 8 }}>CRF</th>
+              <Th onClick={() => setSort("crf")} label="CRF" active={sortKey === "crf"} dir={sortDir} align="right" />
               <Th onClick={() => setSort("preset")} label="Preset" active={sortKey === "preset"} dir={sortDir} />
-              <th style={{ padding: 8, textAlign: "right" }}>PLOVE Score</th>
-              <th style={{ padding: 8 }}>Details</th>
+              <Th onClick={() => setSort("_plove")} label="PLOVE Score" active={sortKey === "_plove"} dir={sortDir} align="right" />
+              <th style={{ padding: 8, textAlign: "center" }}>Details</th>
             </tr>
           </thead>
           <tbody>
@@ -164,11 +173,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
                 <td style={{ padding: 8 }}>{row.cpuModel}</td>
                 <td style={{ padding: 8 }}>{row.gpuModel ?? "-"}</td>
                 <td style={{ padding: 8 }}>{row.codec}</td>
-                <td style={{ padding: 8 }}>{row.crf == null ? "-" : row.crf}</td>
+                <td style={{ padding: 8, textAlign: "right" }}>{row.crf == null ? "-" : row.crf}</td>
                 <td style={{ padding: 8 }}>{row.preset}</td>
                 <td style={{ padding: 8, textAlign: "right" }}>{(row as any)._plove ? (row as any)._plove.toFixed(2) : "-"}</td>
-                <td style={{ padding: 8 }}>
-                  <button onClick={() => setShowDetailId(row.id)} style={{ padding: "6px 10px", border: "1px solid #ddd", borderRadius: 8, background: "#f9fafb" }}>Details</button>
+                <td style={{ padding: 8, textAlign: "center" }}>
+                  <DetailsButton onClick={() => setShowDetailId(row.id)} />
                 </td>
               </tr>
             ))}
@@ -230,6 +239,29 @@ function LabelValue({ label, value }: { label: string; value: string }) {
       <div style={{ fontSize: 12, color: "#666" }}>{label}</div>
       <div style={{ fontWeight: 500 }}>{value}</div>
     </div>
+  );
+}
+
+function DetailsButton({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      style={{
+        padding: "6px 12px",
+        border: "1px solid #ddd",
+        borderRadius: 10,
+        background: hover ? "#eef2ff" : "#f9fafb",
+        transition: "all 150ms ease",
+        transform: hover ? "translateY(-1px)" : "none",
+        boxShadow: hover ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+      }}
+      aria-label="View details"
+    >
+      Details
+    </button>
   );
 }
 
