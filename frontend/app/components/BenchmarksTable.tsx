@@ -35,10 +35,10 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   const [sortKey, setSortKey] = useState<SortKey>("_plove");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  // Weights for PLOVE score
-  const [wQuality, setWQuality] = useState<number>(1);
-  const [wSize, setWSize] = useState<number>(1);
-  const [wSpeed, setWSpeed] = useState<number>(1);
+  // Weights for PLOVE score (sum must equal 1.0)
+  const [wQuality, setWQuality] = useState<number>(1 / 3);
+  const [wSize, setWSize] = useState<number>(1 / 3);
+  const [wSpeed, setWSpeed] = useState<number>(1 / 3);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
@@ -64,21 +64,43 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     return sizes.length % 2 === 0 ? Math.max(1, Math.floor((sizes[mid-1] + sizes[mid]) / 2)) : Math.max(1, sizes[mid]);
   }, [filtered]);
 
+  // Dataset min/max for normalization
+  const ranges = useMemo(() => {
+    const vmafVals = filtered.map(r => (typeof r.vmaf === "number" ? r.vmaf : 0));
+    const sizeVals = filtered.map(r => r.fileSizeBytes);
+    const fpsVals = filtered.map(r => Math.max(0, r.fps || 0));
+    const vmafMin = vmafVals.length ? Math.min(...vmafVals) : 0;
+    const vmafMax = vmafVals.length ? Math.max(...vmafVals) : 0;
+    const sizeMin = sizeVals.length ? Math.min(...sizeVals) : 0;
+    const sizeMax = sizeVals.length ? Math.max(...sizeVals) : 0;
+    const fpsMin = fpsVals.length ? Math.min(...fpsVals) : 0;
+    const fpsMax = fpsVals.length ? Math.max(...fpsVals) : 0;
+    return { vmafMin, vmafMax, sizeMin, sizeMax, fpsMin, fpsMax };
+  }, [filtered]);
+
+  function normalizeUp(value: number, min: number, max: number): number {
+    if (!(max > min)) return 100;
+    return 100 * ((value - min) / (max - min));
+  }
+
+  function normalizeDown(value: number, min: number, max: number): number {
+    if (!(max > min)) return 100;
+    return 100 * ((max - value) / (max - min));
+  }
+
   const withScores = useMemo(() => {
     return filtered.map(row => {
-      const vmaf = typeof row.vmaf === "number" ? Math.max(0, Math.min(100, row.vmaf)) : 0;
-      const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / sizeBaseline : 1;
-      const fps = Math.max(0.0001, row.fps || 0);
-      // Normalize components to avoid zeroing; use multiplicative form
-      const qualityTerm = Math.pow(Math.max(1e-6, vmaf), wQuality);
-      const sizeTerm = Math.pow(Math.max(1e-6, 1 / relSize), wSize);
-      const speedTerm = Math.pow(Math.max(1e-6, fps), wSpeed);
-      const plove = qualityTerm * sizeTerm * speedTerm;
+      const vmafValue = typeof row.vmaf === "number" ? Math.max(0, Math.min(100, row.vmaf)) : 0;
+      const fpsValue = Math.max(0, row.fps || 0);
+      const vmafNorm = normalizeUp(vmafValue, ranges.vmafMin, ranges.vmafMax);
+      const sizeNorm = normalizeDown(row.fileSizeBytes, ranges.sizeMin, ranges.sizeMax);
+      const fpsNorm = normalizeUp(fpsValue, ranges.fpsMin, ranges.fpsMax);
+      const plove = wQuality * vmafNorm + wSize * sizeNorm + wSpeed * fpsNorm;
       const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
       const codecLabel = formatCodecLabel(encoder);
       return { ...row, _plove: plove, _relSize: relSize, _codecLabel: codecLabel } as Benchmark & { _plove: number; _relSize: number; _codecLabel: string };
     });
-  }, [filtered, sizeBaseline, wQuality, wSize, wSpeed]);
+  }, [filtered, ranges, wQuality, wSize, wSpeed, sizeBaseline]);
 
   const sorted = useMemo(() => {
     const data = [...withScores];
@@ -100,6 +122,32 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     if (key === sortKey) setSortDir(d => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
   };
+
+  function setWeights(changed: "quality" | "size" | "speed", next: number) {
+    const clamp = (x: number) => Math.max(0, Math.min(1, x));
+    if (changed === "quality") {
+      const q = clamp(next);
+      const remain = 1 - q;
+      const totalOther = wSize + wSpeed || 1;
+      setWQuality(q);
+      setWSize(clamp(remain * (wSize / totalOther)));
+      setWSpeed(clamp(remain * (wSpeed / totalOther)));
+    } else if (changed === "size") {
+      const s = clamp(next);
+      const remain = 1 - s;
+      const totalOther = wQuality + wSpeed || 1;
+      setWSize(s);
+      setWQuality(clamp(remain * (wQuality / totalOther)));
+      setWSpeed(clamp(remain * (wSpeed / totalOther)));
+    } else {
+      const sp = clamp(next);
+      const remain = 1 - sp;
+      const totalOther = wQuality + wSize || 1;
+      setWSpeed(sp);
+      setWQuality(clamp(remain * (wQuality / totalOther)));
+      setWSize(clamp(remain * (wSize / totalOther)));
+    }
+  }
 
   return (
     <div>
@@ -129,22 +177,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12, alignItems: "center" }}>
         <div>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>Scoring Weights</div>
-          <div style={{ fontSize: 12, color: "#555" }}>
-            PLOVE Score balances Quality, Size, and Speed for your goals.
-          </div>
+          <div style={{ fontSize: 12, color: "#555" }}>Sum is constrained to 1.00</div>
         </div>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span>Quality Priority</span>
-          <input type="number" min={0} max={10} step={0.1} value={wQuality} onChange={e => setWQuality(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span>Size Priority</span>
-          <input type="number" min={0} max={10} step={0.1} value={wSize} onChange={e => setWSize(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
-        </label>
-        <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <span>Speed Priority</span>
-          <input type="number" min={0} max={10} step={0.1} value={wSpeed} onChange={e => setWSpeed(Number(e.target.value))} style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }} />
-        </label>
+        <WeightControl label="Quality (VMAF)" value={wQuality} onChange={(nv) => setWeights("quality", nv)} />
+        <WeightControl label="Size" value={wSize} onChange={(nv) => setWeights("size", nv)} />
+        <WeightControl label="Speed (FPS)" value={wSpeed} onChange={(nv) => setWeights("speed", nv)} />
       </div>
 
       <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
@@ -286,6 +323,23 @@ function formatCodecLabel(encoderLower: string): string {
   if (encoderLower.includes("vp9") || encoderLower.includes("libvpx")) return `VP9${suf}`.trim();
   // Fallback to original when unknown
   return encoderLower;
+}
+
+function WeightControl({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <span>{label}</span>
+      <input
+        type="number"
+        min={0}
+        max={1}
+        step={0.05}
+        value={Number(value.toFixed(2))}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }}
+      />
+    </label>
+  );
 }
 
 
