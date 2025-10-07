@@ -96,6 +96,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       const sizeNorm = normalizeDown(row.fileSizeBytes, ranges.sizeMin, ranges.sizeMax);
       const fpsNorm = normalizeUp(fpsValue, ranges.fpsMin, ranges.fpsMax);
       const plove = wQuality * vmafNorm + wSize * sizeNorm + wSpeed * fpsNorm;
+      const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / sizeBaseline : 1;
       const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
       const codecLabel = formatCodecLabel(encoder);
       return { ...row, _plove: plove, _relSize: relSize, _codecLabel: codecLabel } as Benchmark & { _plove: number; _relSize: number; _codecLabel: string };
