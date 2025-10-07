@@ -74,7 +74,9 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       const sizeTerm = Math.pow(Math.max(1e-6, 1 / relSize), wSize);
       const speedTerm = Math.pow(Math.max(1e-6, fps), wSpeed);
       const plove = qualityTerm * sizeTerm * speedTerm;
-      return { ...row, _plove: plove, _relSize: relSize } as Benchmark & { _plove: number; _relSize: number };
+      const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
+      const codecLabel = formatCodecLabel(encoder);
+      return { ...row, _plove: plove, _relSize: relSize, _codecLabel: codecLabel } as Benchmark & { _plove: number; _relSize: number; _codecLabel: string };
     });
   }, [filtered, sizeBaseline, wQuality, wSize, wSpeed]);
 
@@ -82,8 +84,8 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     const data = [...withScores];
     data.sort((a, b) => {
       const mul = sortDir === "asc" ? 1 : -1;
-      const av = (a as any)[sortKey];
-      const bv = (b as any)[sortKey];
+      const av = sortKey === "codec" ? (a as any)._codecLabel : (a as any)[sortKey];
+      const bv = sortKey === "codec" ? (b as any)._codecLabel : (b as any)[sortKey];
       if (av == null && bv != null) return 1 * mul;
       if (av != null && bv == null) return -1 * mul;
       if (typeof av === "number" && typeof bv === "number") return (av - bv) * mul;
@@ -172,7 +174,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
               <tr key={row.id} style={{ borderTop: "1px solid #eee" }}>
                 <td style={{ padding: 8 }}>{row.cpuModel}</td>
                 <td style={{ padding: 8 }}>{row.gpuModel ?? "-"}</td>
-                <td style={{ padding: 8 }}>{row.codec}</td>
+                <td style={{ padding: 8 }}>{(row as any)._codecLabel ?? row.codec}</td>
                 <td style={{ padding: 8, textAlign: "right" }}>{row.crf == null ? "-" : row.crf}</td>
                 <td style={{ padding: 8 }}>{row.preset}</td>
                 <td style={{ padding: 8, textAlign: "right" }}>{(row as any)._plove ? (row as any)._plove.toFixed(2) : "-"}</td>
@@ -223,6 +225,7 @@ function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () =
           <LabelValue label="Time" value={new Date(row.createdAt).toLocaleString()} />
           <LabelValue label="RAM (GB)" value={String(row.ramGB)} />
           <LabelValue label="OS" value={row.os} />
+          <LabelValue label="Encoder" value={(row.encoderName ?? row.codec) || "-"} />
           <LabelValue label="FFmpeg Version" value={row.ffmpegVersion ?? "-"} />
           <LabelValue label="FPS" value={row.fps.toFixed(2)} />
           <LabelValue label="VMAF score" value={row.vmaf == null ? "-" : row.vmaf.toFixed(1)} />
@@ -263,6 +266,26 @@ function DetailsButton({ onClick }: { onClick: () => void }) {
       Details
     </button>
   );
+}
+
+function formatCodecLabel(encoderLower: string): string {
+  // Hardware engines
+  const suffix = (name: string) => {
+    if (name.endsWith("_videotoolbox")) return " VideoToolbox";
+    if (name.endsWith("_nvenc")) return " NVENC";
+    if (name.endsWith("_qsv")) return " QSV";
+    if (name.endsWith("_amf")) return " AMF";
+    if (name.endsWith("_vaapi")) return " VAAPI";
+    return "";
+  };
+  const suf = suffix(encoderLower);
+  // Map to families
+  if (encoderLower.includes("av1")) return `AV1${suf}`.trim();
+  if (encoderLower.includes("hevc") || encoderLower.includes("h265") || encoderLower.includes("x265")) return `HEVC (H.265)${suf}`.trim();
+  if (encoderLower.includes("h264") || encoderLower.includes("x264") || encoderLower.includes("avc")) return `H.264${suf}`.trim();
+  if (encoderLower.includes("vp9") || encoderLower.includes("libvpx")) return `VP9${suf}`.trim();
+  // Fallback to original when unknown
+  return encoderLower;
 }
 
 
