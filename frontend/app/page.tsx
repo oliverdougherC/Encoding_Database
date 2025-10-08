@@ -1,5 +1,4 @@
 import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
-import FpsByCodecChart from "./components/FpsByCodecChart";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +32,12 @@ export default async function Home() {
       ) : (
         <>
           <BenchmarksTable initialData={data} />
-          <FpsByCodecChart data={data} />
+          <div className="card" style={{ marginTop: 16, padding: 12 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div className="subtle" style={{ fontSize: 14 }}>Looking for visualizations?</div>
+              <a href="/graphs" className="btn" style={{ padding: "6px 10px" }}>Open Graphs</a>
+            </div>
+          </div>
         </>
       )}
     </div>
