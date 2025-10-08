@@ -701,7 +701,7 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                     prefix = '0' * max(0, difficulty)
                     # Simple bounded search; server uses sha256(token.nonce)
                     nonce = 0
-                    max_iters = 200000
+                    max_iters = 500000
                     while nonce < max_iters:
                         test = hashlib.sha256(f"{token}.{nonce}".encode('utf-8')).hexdigest()
                         if test.startswith(prefix):
@@ -709,6 +709,7 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                             break
                         nonce += 1
                 # else: no PoW required
+        # If 404/other, continue; server may be in signed mode
     except Exception:
         # If token endpoint missing or fails, continue; server may require HMAC instead
         pass
