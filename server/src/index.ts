@@ -210,20 +210,26 @@ app.use('/submit', (req, res, next) => {
     return res.status(ok.code).json({ error: ok.error });
   }
   if (ingestMode === 'public') {
-    const ok = validateToken();
-    if (ok === true) return next();
-    // For easier rollout, accept unsigned when token missing but not in production
-    if (process.env.NODE_ENV !== 'production') {
-      return next();
+    // Best-effort tokens: if provided, validate; otherwise accept unsigned to prioritize UX
+    const hasToken = Boolean(req.headers['x-ingest-token']);
+    if (hasToken) {
+      const ok = validateToken();
+      if (ok === true) return next();
+      return res.status(ok.code).json({ error: ok.error });
     }
-    return res.status(ok.code).json({ error: ok.error });
+    return next();
   }
   // hybrid
   const okH = ingestSecret ? validateHmac() : { code: 401, error: 'no_hmac' };
   if (okH === true) return next();
-  const okT = validateToken();
-  if (okT === true) return next();
-  return res.status(401).json({ error: 'auth_required' });
+  const hasToken = Boolean(req.headers['x-ingest-token']);
+  if (hasToken) {
+    const okT = validateToken();
+    if (okT === true) return next();
+    return res.status(okT.code).json({ error: okT.error });
+  }
+  // Fall back to unsigned acceptance for maximum compatibility
+  return next();
 });
 
 // Basic rate limiting (skip health endpoints)

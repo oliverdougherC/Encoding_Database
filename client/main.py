@@ -685,8 +685,14 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
     headers: Dict[str, str] = {"Content-Type": "application/json"}
     # Fetch submit token (and optional PoW) if server runs in public/hybrid mode
     try:
-        token_url = f"{base_url.rstrip('/')}/submit-token"
+        base = base_url.rstrip('/')
+        # Try primary endpoint
+        token_url = f"{base}/submit-token"
         tokenResp = requests.get(token_url, timeout=10, verify=REQUESTS_VERIFY)
+        if tokenResp.status_code != 200:
+            # Fallback to /submit/token (more likely to be routed alongside /submit)
+            alt_url = f"{base}/submit/token"
+            tokenResp = requests.get(alt_url, timeout=10, verify=REQUESTS_VERIFY)
         if tokenResp.status_code == 200:
             tokenData = tokenResp.json() or {}
             token = str(tokenData.get('token') or '')
