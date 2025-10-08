@@ -1,1 +1,10 @@
 /.venv
+client/.venv
+client/build
+client/dist
+client/bin/mac/*
+client/bin/linux/*
+client/bin/win/*
+
+client/bin/
+client/dist/

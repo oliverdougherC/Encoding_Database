@@ -46,6 +46,107 @@ ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
 ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", os.path.join(tempfile.gettempdir(), "encodingdb-queue"))
 PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
 
+# --- Cross-platform binary resolution helpers (PyInstaller-friendly) ---
+
+def _app_base_dir() -> str:
+    try:
+        base = getattr(sys, "_MEIPASS", None)  # type: ignore[attr-defined]
+        if base and isinstance(base, str):
+            return base
+    except Exception:
+        pass
+    return os.path.dirname(os.path.abspath(__file__))
+
+def _resource_path(*names: str) -> str:
+    return os.path.join(_app_base_dir(), *names)
+
+def _platform_key() -> str:
+    sysname = platform.system().lower()
+    if sysname.startswith("darwin") or sysname.startswith("mac"):
+        return "mac"
+    if sysname.startswith("windows"):
+        return "win"
+    return "linux"
+
+def _which(exe_name: str) -> Optional[str]:
+    try:
+        import shutil
+        p = shutil.which(exe_name)
+        return p
+    except Exception:
+        return None
+
+def _candidate_ffmpeg_paths() -> List[str]:
+    plat = _platform_key()
+    names = ["ffmpeg"] if plat != "win" else ["ffmpeg.exe", "ffmpeg"]
+    candidates: List[str] = []
+    env_ffmpeg = os.environ.get("FFMPEG_EXE")
+    if env_ffmpeg:
+        candidates.append(env_ffmpeg)
+    for n in names:
+        w = _which(n)
+        if w:
+            candidates.append(w)
+    if plat == "mac":
+        candidates += ["/opt/homebrew/bin/ffmpeg", "/usr/local/bin/ffmpeg"]
+    elif plat == "linux":
+        candidates += ["/usr/bin/ffmpeg", "/usr/local/bin/ffmpeg"]
+    else:
+        candidates += [r"C:\\ffmpeg\\bin\\ffmpeg.exe"]
+    for n in names:
+        candidates.append(_resource_path("bin", plat, n))
+    return candidates
+
+def _candidate_ffprobe_paths() -> List[str]:
+    plat = _platform_key()
+    names = ["ffprobe"] if plat != "win" else ["ffprobe.exe", "ffprobe"]
+    candidates: List[str] = []
+    env_ffprobe = os.environ.get("FFPROBE_EXE")
+    if env_ffprobe:
+        candidates.append(env_ffprobe)
+    for n in names:
+        w = _which(n)
+        if w:
+            candidates.append(w)
+    if plat == "mac":
+        candidates += ["/opt/homebrew/bin/ffprobe", "/usr/local/bin/ffprobe"]
+    elif plat == "linux":
+        candidates += ["/usr/bin/ffprobe", "/usr/local/bin/ffprobe"]
+    else:
+        candidates += [r"C:\\ffmpeg\\bin\\ffprobe.exe"]
+    for n in names:
+        candidates.append(_resource_path("bin", plat, n))
+    return candidates
+
+_FFMPEG_EXE: Optional[str] = None
+_FFPROBE_EXE: Optional[str] = None
+
+def ffmpeg_exe() -> str:
+    global _FFMPEG_EXE
+    if _FFMPEG_EXE and os.path.exists(_FFMPEG_EXE):
+        return _FFMPEG_EXE
+    for p in _candidate_ffmpeg_paths():
+        try:
+            if p and os.path.exists(p):
+                _FFMPEG_EXE = p
+                return _FFMPEG_EXE
+        except Exception:
+            continue
+    return "ffmpeg"
+
+def ffprobe_exe() -> str:
+    global _FFPROBE_EXE
+    if _FFPROBE_EXE and os.path.exists(_FFPROBE_EXE):
+        return _FFPROBE_EXE
+    for p in _candidate_ffprobe_paths():
+        try:
+            if p and os.path.exists(p):
+                _FFPROBE_EXE = p
+                return _FFPROBE_EXE
+        except Exception:
+            continue
+    return "ffprobe"
+
 @dataclass
 class HardwareInfo:
     cpuModel: str
@@ -108,10 +209,10 @@ def exec_ok(cmd: List[str]) -> bool:
 
 
 def ensure_ffmpeg_and_ffprobe() -> Tuple[bool, Optional[str]]:
-    if not exec_ok(["ffmpeg", "-version"]) or not exec_ok(["ffprobe", "-version"]):
+    if not exec_ok([ffmpeg_exe(), "-version"]) or not exec_ok([ffprobe_exe(), "-version"]):
         return False, None
     try:
-        out = subprocess.run(["ffmpeg", "-version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.run([ffmpeg_exe(), "-version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         version_line = (out.stdout or "").splitlines()[0] if out.stdout else ""
     except Exception:
         version_line = ""
@@ -120,7 +221,7 @@ def ensure_ffmpeg_and_ffprobe() -> Tuple[bool, Optional[str]]:
 
 def has_encoder(encoder: str) -> bool:
     try:
-        out = subprocess.run(["ffmpeg", "-hide_banner", "-encoders"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.run([ffmpeg_exe(), "-hide_banner", "-encoders"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         return encoder in (out.stdout or "")
     except Exception:
         return False
@@ -128,7 +229,7 @@ def has_encoder(encoder: str) -> bool:
 
 def has_libvmaf() -> bool:
     try:
-        out = subprocess.run(["ffmpeg", "-hide_banner", "-filters"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.run([ffmpeg_exe(), "-hide_banner", "-filters"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         return "libvmaf" in (out.stdout or "")
     except Exception:
         return False
@@ -430,7 +531,13 @@ def load_presets_config(path: str) -> Dict[str, Any]:
 
 
 def get_default_sample_path() -> Optional[str]:
-    # Try project root sample.mp4 relative to this file
+    # Prefer packaged resource (PyInstaller); fallback to repo layout
+    try:
+        rp = _resource_path("sample.mp4")
+        if rp and os.path.exists(rp):
+            return rp
+    except Exception:
+        pass
     try:
         client_dir = os.path.dirname(os.path.abspath(__file__))
         root_dir = os.path.abspath(os.path.join(client_dir, ".."))
@@ -500,7 +607,7 @@ def map_preset_for_encoder(encoder: str, preset_name: str) -> List[str]:
 
 def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, preset_name: str, crf: Optional[int] = None) -> List[str]:
     cmd: List[str] = [
-        "ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-nostdin",
+        ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error", "-nostdin",
         "-i", input_path,
         "-c:v", encoder,
     ]
@@ -550,7 +657,7 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
         # Count frames with ffprobe for accurate FPS
         try:
             probe = subprocess.run([
-                "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+                ffprobe_exe(), "-v", "error", "-count_frames", "-select_streams", "v:0",
                 "-show_entries", "stream=nb_read_frames",
                 "-of", "default=nokey=1:noprint_wrappers=1", out_path
             ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
@@ -591,7 +698,7 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
 
     for filt in filter_candidates:
         cmd = [
-            "ffmpeg", "-y", "-hide_banner", "-loglevel", "info",
+            ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
             "-i", input_path,
             "-i", encoded_path,
             "-lavfi", filt,

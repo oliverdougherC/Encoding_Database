@@ -26,7 +26,7 @@
     - [x] Filter `/query` to return only `status = accepted` records.
 
 ### [cite_start]Task 2: Benchmarking Client (Windows MVP) [cite: 122]
-- [ ] **Project Initialization:**
+- [x] **Project Initialization:**
     - [x] [cite_start]Initialize a new Python project in the `client` directory[cite: 101].
 - [ ] **Core Functionality:**
     - [x] [cite_start]Write a script for hardware detection on Windows using `py-cpuinfo` and `wmi` libraries to capture CPU, GPU, RAM, and OS version [cite: 17-20, 106].
@@ -59,7 +59,7 @@
 [cite_start]**Goal: Create a usable public platform and expand data collection[cite: 130].**
 
 ### [cite_start]Task 4: Client Platform Expansion [cite: 132]
-- [ ] Adapt the Python hardware detection scripts to work on macOS (parsing `sysctl` output).
+- [x] Adapt the Python hardware detection scripts to work on macOS (parsing `sysctl` output).
 - [ ] Adapt the hardware detection scripts to work on Linux (parsing files in `/proc`).
 - [ ] [cite_start]Configure `PyInstaller` to build executables for macOS and Linux[cite: 105].
 
