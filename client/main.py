@@ -265,6 +265,122 @@ def enumerate_supported_presets_for_encoder(encoder: str) -> List[str]:
     # Default
     return ["medium"]
 
+
+def _family_display_name(family: str) -> str:
+    fam = family.lower()
+    if fam == "h264":
+        return "H.264"
+    if fam == "hevc":
+        return "HEVC (H.265)"
+    if fam == "av1":
+        return "AV1"
+    if fam == "vp9":
+        return "VP9"
+    return family.upper()
+
+
+def _infer_family_for_encoder(encoder: str) -> Optional[str]:
+    e = encoder.lower()
+    # Check software lists
+    for family, sw_list in SOFTWARE_ENCODERS_ORDER.items():
+        if encoder in sw_list:
+            return family
+    # Check hardware lists
+    for family, hw_list in HARDWARE_ENCODERS.items():
+        for enc, _label in hw_list:
+            if enc == encoder:
+                return family
+    # Fallback by substring
+    for family in ["h264", "hevc", "av1", "vp9"]:
+        if family in e:
+            return family
+    return None
+
+
+def _hardware_engine_label(encoder: str) -> Optional[str]:
+    for _family, hw_list in HARDWARE_ENCODERS.items():
+        for enc, label in hw_list:
+            if enc == encoder:
+                return label
+    return None
+
+
+def get_encoder_friendly_label(encoder: str) -> str:
+    e = encoder.strip()
+    family = _infer_family_for_encoder(e) or ""
+    fam_label = _family_display_name(family) if family else e
+    # Software specific names
+    sw_map = {
+        "libx264": f"{_family_display_name('h264')} (x264)",
+        "libopenh264": f"{_family_display_name('h264')} (OpenH264)",
+        "libx265": f"{_family_display_name('hevc')} (x265)",
+        "libsvtav1": f"{_family_display_name('av1')} (SVT-AV1)",
+        "libaom-av1": f"{_family_display_name('av1')} (AOM)",
+        "libvpx-vp9": f"{_family_display_name('vp9')} (libvpx)",
+    }
+    if e in sw_map:
+        return sw_map[e]
+    # Hardware engines
+    engine = _hardware_engine_label(e)
+    if engine:
+        return f"{fam_label} ({engine})"
+    # Fallback to raw encoder
+    return e
+
+
+def sort_presets_by_speed_desc(encoder: str, presets: List[str]) -> List[str]:
+    """Return presets ordered from fastest to slowest for given encoder."""
+    e = encoder.strip().lower()
+    # x264/x265 explicit order fastest->slowest
+    if e in ("libx264", "libx265"):
+        ordering = [
+            "ultrafast", "superfast", "veryfast", "faster", "fast",
+            "medium", "slow", "slower", "veryslow", "placebo",
+        ]
+        order_index = {name: i for i, name in enumerate(ordering)}
+        return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
+    # SVT-AV1 numeric 0..13, higher is faster
+    if e == "libsvtav1":
+        def speed_key(n: str) -> int:
+            try:
+                return -int(n)  # higher faster -> more negative sorts first
+            except Exception:
+                return 0
+        return sorted(presets, key=speed_key)
+    # libaom-av1 cpu-used 0..8, higher faster
+    if e == "libaom-av1":
+        def speed_key(n: str) -> int:
+            try:
+                return -int(n)
+            except Exception:
+                return 0
+        return sorted(presets, key=speed_key)
+    # libvpx-vp9 cpu-used 0..8, higher faster
+    if e == "libvpx-vp9":
+        def speed_key(n: str) -> int:
+            try:
+                return -int(n)
+            except Exception:
+                return 0
+        return sorted(presets, key=speed_key)
+    # NVENC p1..p7, p7 fastest
+    if e.endswith("_nvenc"):
+        ordering = ["p7", "p6", "p5", "p4", "p3", "p2", "p1"]
+        order_index = {name: i for i, name in enumerate(ordering)}
+        return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
+    # QSV: faster, fast, medium, slow
+    if e.endswith("_qsv"):
+        ordering = ["faster", "fast", "medium", "slow"]
+        order_index = {name: i for i, name in enumerate(ordering)}
+        return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
+    # AMF: fast, medium, slow
+    if e.endswith("_amf"):
+        ordering = ["fast", "medium", "slow"]
+        order_index = {name: i for i, name in enumerate(ordering)}
+        return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
+    # VideoToolbox/VAAPI/V4L2/OMX: no preset or default only
+    return presets
+
 def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
     suffix = " [y/N]: " if default_no else " [Y/n]: "
     ans = input(prompt + suffix).strip().lower()
@@ -567,8 +683,35 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
     import requests  # lazy import
     url = f"{base_url.rstrip('/')}/submit"
     headers: Dict[str, str] = {"Content-Type": "application/json"}
-    if api_key:
-        headers["x-api-key"] = api_key
+    # Fetch submit token (and optional PoW) if server runs in public/hybrid mode
+    try:
+        tokenResp = requests.get(f"{base_url.rstrip('/')}/submit-token", timeout=10, verify=REQUESTS_VERIFY)
+        if tokenResp.status_code == 200:
+            tokenData = tokenResp.json() or {}
+            token = str(tokenData.get('token') or '')
+            powInfo = tokenData.get('pow') or {}
+            if token:
+                headers['x-ingest-token'] = token
+                # Optional PoW: find a small nonce
+                try:
+                    difficulty = int(powInfo.get('difficulty') or 0)
+                except Exception:
+                    difficulty = 0
+                if difficulty > 0:
+                    prefix = '0' * max(0, difficulty)
+                    # Simple bounded search; server uses sha256(token.nonce)
+                    nonce = 0
+                    max_iters = 200000
+                    while nonce < max_iters:
+                        test = hashlib.sha256(f"{token}.{nonce}".encode('utf-8')).hexdigest()
+                        if test.startswith(prefix):
+                            headers['x-ingest-nonce'] = str(nonce)
+                            break
+                        nonce += 1
+                # else: no PoW required
+    except Exception:
+        # If token endpoint missing or fails, continue; server may require HMAC instead
+        pass
     # HMAC signing if secret available
     ts = int(time.time())
     body = json.dumps(payload, separators=(",", ":"))
@@ -593,7 +736,6 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Encoding Benchmark Client")
-    p.add_argument("input", nargs="?", help="Path to input test video (e.g., sample.mp4)")
     p.add_argument("--base-url", default=ENV_BACKEND_BASE_URL, help="Backend base URL (default: env BACKEND_BASE_URL or production)")
     p.add_argument("--api-key", default=ENV_API_KEY, help="API key for submission (default: env API_KEY)")
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
@@ -620,9 +762,9 @@ def run_with_args(args: argparse.Namespace) -> int:
         )
         return 5
 
-    input_path = args.input
-    if not input_path or not os.path.exists(input_path):
-        print(f"Input not found: {input_path}", file=sys.stderr)
+    input_path = get_default_sample_path()
+    if not input_path:
+        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
         return 3
 
     # Resolve codec/encoder: if a specific encoder is provided and available, use it directly without prompting.
@@ -743,47 +885,92 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return 0
 
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
-    small_combos = [c for c in presets_cfg.get("smallBenchmark", {}).get("combos", []) if isinstance(c, dict) and c.get("preset")]
-    full_combos = [c for c in presets_cfg.get("fullBenchmark", {}).get("combos", []) if isinstance(c, dict) and c.get("preset")]
 
     # Determine presets to run based on choice
     if choice == 0:
-        # Single benchmark: ask user which combo
-        union = (small_combos or []) + (full_combos or [])
-        if not union:
-            union = [
-                {"preset": "fast", "crf": 28},
-                {"preset": "medium", "crf": 24},
-                {"preset": "slow", "crf": 24},
-            ]
-        labels = [f"{c.get('preset')} (crf={c.get('crf')})" for c in union]
-        idx = prompt_choice("Select a preset/CRF combo to run once", labels, default_index=min(1, len(labels)-1))
-        combos_list = [union[idx]]
-    elif choice == 1:
-        combos_list = small_combos or [
-            {"preset": "fast", "crf": 28},
-            {"preset": "medium", "crf": 24},
-        ]
-    else:
-        combos_list = full_combos or [
-            {"preset": "fast", "crf": 24},
-            {"preset": "medium", "crf": 24},
-            {"preset": "slow", "crf": 24},
-        ]
+        # Single benchmark: list all encoders (software/hardware separated) -> CRF -> preset
+        all_encs = list_all_available_encoders()
+        if not all_encs:
+            print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+            return 4
 
-    # Input path prompt with default to sample.mp4 if available
-    default_input = base_args.input or get_default_sample_path() or ""
-    input_path = prompt_text("Enter path to input video", default_input)
-    if not input_path:
-        print("No input provided.", file=sys.stderr)
-        return 3
+        sw_set = set([enc for _family, lst in SOFTWARE_ENCODERS_ORDER.items() for enc in lst])
+        hw_set = set([enc for _family, lst in HARDWARE_ENCODERS.items() for enc, _ in lst])
+        sw_encs = [e for e in all_encs if e in sw_set]
+        hw_encs = [e for e in all_encs if e in hw_set]
 
+        print("Select an encoder:")
+        idx_map: List[str] = []
+        counter = 1
+        if sw_encs:
+            print("------Software------")
+            for e in sw_encs:
+                print(f"  {counter}) {get_encoder_friendly_label(e)}")
+                idx_map.append(e)
+                counter += 1
+        if hw_encs:
+            print("------Hardware------")
+            for e in hw_encs:
+                print(f"  {counter}) {get_encoder_friendly_label(e)}")
+                idx_map.append(e)
+                counter += 1
+
+        default_idx = 0
+        try:
+            if "libx264" in idx_map:
+                default_idx = idx_map.index("libx264")
+        except Exception:
+            default_idx = 0
+        raw = input(f"Choose encoder (1-{len(idx_map)}) [default {default_idx+1}]: ").strip()
+        try:
+            enc_idx = (int(raw) - 1) if raw else default_idx
+        except Exception:
+            enc_idx = default_idx
+        enc_idx = min(max(0, enc_idx), len(idx_map)-1)
+        chosen_encoder = idx_map[enc_idx]
+
+        # CRF prompt
+        try:
+            default_crf = base_args.crf if isinstance(base_args.crf, int) else 24
+        except Exception:
+            default_crf = 24
+        crf_input = prompt_text("Enter CRF", str(default_crf))
+        try:
+            chosen_crf = int(crf_input)
+        except Exception:
+            chosen_crf = default_crf
+
+        # Preset prompt based on encoder
+        encoder_presets = enumerate_supported_presets_for_encoder(chosen_encoder)
+        if not encoder_presets:
+            encoder_presets = ["medium"]
+        mid_index = max(0, (len(encoder_presets) - 1) // 2)
+        preset_idx = prompt_choice("Select a preset", encoder_presets, default_index=mid_index)
+        chosen_preset = encoder_presets[preset_idx]
+
+        # Execute single run
+        effective_args = argparse.Namespace(
+            base_url=base_args.base_url,
+            api_key=base_args.api_key,
+            codec=chosen_encoder,
+            presets=chosen_preset,
+            no_submit=base_args.no_submit,
+            crf=chosen_crf,
+            retries=base_args.retries,
+            queue_dir=base_args.queue_dir,
+            menu=False,
+        )
+        return run_with_args(effective_args)
     # Build an args Namespace reusing defaults from base_args
     # Now enumerate all encoders and run each CRF across all encoders and all their supported presets
     encoders = list_all_available_encoders()
     if not encoders:
         print("No available encoders found in this ffmpeg build.", file=sys.stderr)
         return 4
+    # Ensure test video exists
+    if not get_default_sample_path():
+        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
+        return 3
     crf_values: List[int] = []
     if choice == 0:
         # Single: ask for CRF
@@ -805,9 +992,18 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
     for crf_val in crf_values:
         for enc in encoders:
             presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
+            # For Small (standard) benchmark, drop bottom 20% (rounded) slowest presets
+            if choice == 1 and len(presets_for_encoder) > 0:
+                ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
+                drop_count = int(round(len(ordered) * 0.2))
+                if drop_count >= len(ordered):
+                    drop_count = len(ordered) - 1  # always keep at least one
+                if drop_count > 0:
+                    presets_for_encoder = ordered[:-drop_count]
+                else:
+                    presets_for_encoder = ordered
             for preset_label in presets_for_encoder:
                 effective_args = argparse.Namespace(
-                    input=input_path,
                     base_url=base_args.base_url,
                     api_key=base_args.api_key,
                     codec=enc,
@@ -827,10 +1023,8 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
 def main(argv: List[str]) -> int:
     parser = build_arg_parser()
     args = parser.parse_args(argv[1:])
-    # Interactive menu if requested or no input provided
-    if args.menu or not args.input:
-        return interactive_menu_flow(parser, args)
-    return run_with_args(args)
+    # Always show interactive menu for benchmarks
+    return interactive_menu_flow(parser, args)
 
 
 if __name__ == "__main__":

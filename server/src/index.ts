@@ -112,52 +112,104 @@ function rememberSignature(sig: string, nowMs: number): void {
   }
 }
 
+// In-memory submit token store
+type TokenMeta = { ip: string; expMs: number; used: boolean };
+const tokenStore = new Map<string, TokenMeta>();
+const submitTokenTtlSeconds = Number(process.env.SUBMIT_TOKEN_TTL_SECONDS || 60);
+const ingestMode = (process.env.INGEST_MODE || 'public').toLowerCase(); // public | signed | hybrid
+const powEnabled = String(process.env.POW_ENABLED || '0') === '1';
+const powDifficulty = Math.max(0, Number(process.env.POW_DIFFICULTY || 0)); // leading zero hex chars approx
+
+// Token endpoint - short-lived, one-time token bound to IP
+app.get('/submit-token', (req, res) => {
+  const token = crypto.randomBytes(16).toString('hex');
+  const expMs = Date.now() + submitTokenTtlSeconds * 1000;
+  tokenStore.set(token, { ip: (req.ip || ''), expMs, used: false });
+  res.json({ token, exp: Math.floor(expMs / 1000), pow: powEnabled ? { difficulty: powDifficulty } : { difficulty: 0 } });
+});
+
 app.use('/submit', (req, res, next) => {
-  if (!ingestSecret) {
-    // In production, require HMAC for all submissions
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(503).json({ error: 'ingest_not_configured' });
+  // Helper: validate HMAC if secret provided
+  const validateHmac = (): true | { code: number; error: string } => {
+    if (!ingestSecret) return { code: 401, error: 'missing_secret' };
+    const tsHeader = String(req.headers['x-timestamp'] || '');
+    const sigHeader = String(req.headers['x-signature'] || '');
+    const raw: Buffer | undefined = (req as any).rawBody;
+    if (!tsHeader || !sigHeader || !raw) {
+      return { code: 401, error: 'missing_signature' };
     }
-    if (!warnedNoSecret) {
-      console.warn('INGEST_HMAC_SECRET not set; accepting unsigned submissions (non-production only)');
-      warnedNoSecret = true;
+    const now = Date.now();
+    const ts = Number(tsHeader);
+    if (!Number.isFinite(ts)) {
+      return { code: 401, error: 'invalid_timestamp' };
     }
-    return next();
-  }
-  const tsHeader = String(req.headers['x-timestamp'] || '');
-  const sigHeader = String(req.headers['x-signature'] || '');
-  const raw: Buffer | undefined = (req as any).rawBody;
-  if (!tsHeader || !sigHeader || !raw) {
-    return res.status(401).json({ error: 'missing_signature' });
-  }
-  const now = Date.now();
-  const ts = Number(tsHeader);
-  if (!Number.isFinite(ts)) {
-    return res.status(401).json({ error: 'invalid_timestamp' });
-  }
-  const skew = Math.abs(now - ts * 1000);
-  if (skew > maxSkewSeconds * 1000) {
-    return res.status(401).json({ error: 'timestamp_out_of_range' });
-  }
-  if (isReplay(sigHeader, now)) {
-    return res.status(409).json({ error: 'replay_detected' });
-  }
-  try {
-    const expected = crypto
-      .createHmac('sha256', ingestSecret)
-      .update(`${tsHeader}.`)
-      .update(raw)
-      .digest('hex');
-    const a = Buffer.from(sigHeader, 'hex');
-    const b = Buffer.from(expected, 'hex');
-    if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-      return res.status(401).json({ error: 'invalid_signature' });
+    const skew = Math.abs(now - ts * 1000);
+    if (skew > maxSkewSeconds * 1000) {
+      return { code: 401, error: 'timestamp_out_of_range' };
     }
-    rememberSignature(sigHeader, now);
-    return next();
-  } catch {
-    return res.status(401).json({ error: 'signature_verification_failed' });
+    if (isReplay(sigHeader, now)) {
+      return { code: 409, error: 'replay_detected' };
+    }
+    try {
+      const expected = crypto
+        .createHmac('sha256', ingestSecret)
+        .update(`${tsHeader}.`)
+        .update((req as any).rawBody)
+        .digest('hex');
+      const a = Buffer.from(sigHeader, 'hex');
+      const b = Buffer.from(expected, 'hex');
+      if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+        return { code: 401, error: 'invalid_signature' };
+      }
+      rememberSignature(sigHeader, now);
+      return true;
+    } catch {
+      return { code: 401, error: 'signature_verification_failed' };
+    }
+  };
+
+  // Helper: validate token (+ optional PoW)
+  const validateToken = (): true | { code: number; error: string } => {
+    const token = String(req.headers['x-ingest-token'] || '');
+    if (!token) return { code: 401, error: 'missing_token' };
+    const meta = tokenStore.get(token);
+    if (!meta) return { code: 401, error: 'invalid_token' };
+    const now = Date.now();
+    if (meta.used) return { code: 409, error: 'token_used' };
+    if (meta.expMs < now) return { code: 401, error: 'token_expired' };
+    if (meta.ip && req.ip && meta.ip !== req.ip) {
+      return { code: 401, error: 'ip_mismatch' };
+    }
+    if (powEnabled && powDifficulty > 0) {
+      const nonce = String(req.headers['x-ingest-nonce'] || '');
+      if (!nonce) return { code: 401, error: 'missing_nonce' };
+      const h = crypto.createHash('sha256').update(`${token}.${nonce}`).digest('hex');
+      const requiredPrefix = '0'.repeat(Math.max(0, Math.floor(powDifficulty)));
+      if (!h.startsWith(requiredPrefix)) return { code: 401, error: 'invalid_pow' };
+    }
+    // mark used (one-time)
+    meta.used = true;
+    tokenStore.set(token, meta);
+    return true;
+  };
+
+  // Decide based on ingest mode
+  if (ingestMode === 'signed') {
+    const ok = validateHmac();
+    if (ok === true) return next();
+    return res.status(ok.code).json({ error: ok.error });
   }
+  if (ingestMode === 'public') {
+    const ok = validateToken();
+    if (ok === true) return next();
+    return res.status(ok.code).json({ error: ok.error });
+  }
+  // hybrid
+  const okH = ingestSecret ? validateHmac() : { code: 401, error: 'no_hmac' };
+  if (okH === true) return next();
+  const okT = validateToken();
+  if (okT === true) return next();
+  return res.status(401).json({ error: 'auth_required' });
 });
 
 // Basic rate limiting (skip health endpoints)
