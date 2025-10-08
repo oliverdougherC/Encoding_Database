@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 export type Benchmark = {
   id: string;
@@ -40,6 +40,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   const [wSize, setWSize] = useState<number>(1 / 3);
   const [wSpeed, setWSpeed] = useState<number>(1 / 3);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
+  const [showFfmpegId, setShowFfmpegId] = useState<string | null>(null);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
   const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
@@ -157,19 +158,19 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           placeholder="Filter CPU model"
           value={cpuFilter}
           onChange={e => setCpuFilter(e.target.value)}
-          style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}
+          className="input"
         />
         <input
           placeholder="Filter GPU model"
           value={gpuFilter}
           onChange={e => setGpuFilter(e.target.value)}
-          style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}
+          className="input"
         />
-        <select value={codecFilter} onChange={e => setCodecFilter(e.target.value)} style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}>
+        <select value={codecFilter} onChange={e => setCodecFilter(e.target.value)} className="input">
           <option value="">All codecs</option>
           {codecs.map(c => (<option key={c} value={c}>{c}</option>))}
         </select>
-        <select value={presetFilter} onChange={e => setPresetFilter(e.target.value)} style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}>
+        <select value={presetFilter} onChange={e => setPresetFilter(e.target.value)} className="input">
           <option value="">All presets</option>
           {presets.map(p => (<option key={p} value={p}>{p}</option>))}
         </select>
@@ -178,52 +179,57 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12, alignItems: "center" }}>
         <div>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>Scoring Weights</div>
-          <div style={{ fontSize: 12, color: "#555" }}>Sum is constrained to 1.00</div>
+          <div className="subtle" style={{ fontSize: 12 }}>Sum is constrained to 1.00</div>
         </div>
         <WeightControl label="Quality (VMAF)" value={wQuality} onChange={(nv) => setWeights("quality", nv)} />
         <WeightControl label="Size" value={wSize} onChange={(nv) => setWeights("size", nv)} />
         <WeightControl label="Speed (FPS)" value={wSpeed} onChange={(nv) => setWeights("speed", nv)} />
       </div>
 
-      <div style={{ overflowX: "auto", border: "1px solid #eee", borderRadius: 8 }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 14, tableLayout: "fixed" }}>
+      <div className="card" style={{ overflowX: "auto" }}>
+        <table className="table">
           <colgroup>
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "20%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "8%" }} />
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "15%" }} />
-            <col style={{ width: "10%" }} />
+            <col style={{ width: "10%" }} /> {/* Details */}
+            <col style={{ width: "18%" }} /> {/* CPU */}
+            <col style={{ width: "18%" }} /> {/* GPU */}
+            <col style={{ width: "14%" }} /> {/* Codec */}
+            <col style={{ width: "8%" }} />  {/* CRF */}
+            <col style={{ width: "12%" }} /> {/* Preset */}
+            <col style={{ width: "12%" }} /> {/* PLOVE */}
+            <col style={{ width: "8%" }} />  {/* FFmpeg */}
           </colgroup>
-          <thead style={{ background: "#fafafa" }}>
+          <thead className="thead">
             <tr>
+              <th className="th" style={{ textAlign: "center" }}>Details</th>
               <Th onClick={() => setSort("cpuModel")} label="CPU" active={sortKey === "cpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("gpuModel")} label="GPU" active={sortKey === "gpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("codec")} label="Codec" active={sortKey === "codec"} dir={sortDir} />
               <Th onClick={() => setSort("crf")} label="CRF" active={sortKey === "crf"} dir={sortDir} align="right" />
               <Th onClick={() => setSort("preset")} label="Preset" active={sortKey === "preset"} dir={sortDir} />
               <Th onClick={() => setSort("_plove")} label="PLOVE Score" active={sortKey === "_plove"} dir={sortDir} align="right" />
-              <th style={{ padding: 8, textAlign: "center" }}>Details</th>
+              <th className="th" style={{ textAlign: "center" }}>FFmpeg</th>
             </tr>
           </thead>
           <tbody>
             {sorted.map(row => (
-              <tr key={row.id} style={{ borderTop: "1px solid #eee" }}>
-                <td style={{ padding: 8 }}>{row.cpuModel}</td>
-                <td style={{ padding: 8 }}>{row.gpuModel ?? "-"}</td>
-                <td style={{ padding: 8 }}>{(row as any)._codecLabel ?? row.codec}</td>
-                <td style={{ padding: 8, textAlign: "right" }}>{row.crf == null ? "-" : row.crf}</td>
-                <td style={{ padding: 8 }}>{row.preset}</td>
-                <td style={{ padding: 8, textAlign: "right" }}>{(row as any)._plove ? (row as any)._plove.toFixed(2) : "-"}</td>
-                <td style={{ padding: 8, textAlign: "center" }}>
+              <tr key={row.id}>
+                <td className="td" style={{ textAlign: "center" }}>
                   <DetailsButton onClick={() => setShowDetailId(row.id)} />
+                </td>
+                <td className="td">{row.cpuModel}</td>
+                <td className="td">{row.gpuModel ?? "-"}</td>
+                <td className="td">{(row as any)._codecLabel ?? row.codec}</td>
+                <td className="td" style={{ textAlign: "right" }}>{row.crf == null ? "-" : row.crf}</td>
+                <td className="td">{row.preset}</td>
+                <td className="td" style={{ textAlign: "right" }}>{(row as any)._plove ? (row as any)._plove.toFixed(2) : "-"}</td>
+                <td className="td" style={{ textAlign: "center" }}>
+                  <FfmpegButton onClick={() => setShowFfmpegId(row.id)} />
                 </td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 16, textAlign: "center", color: "#666" }}>
+                <td colSpan={8} className="td" style={{ textAlign: "center" }}>
                   No results for current filters.
                 </td>
               </tr>
@@ -235,6 +241,10 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       {showDetailId && (
         <DetailsModal row={sorted.find(r => r.id === showDetailId)!} onClose={() => setShowDetailId(null)} relSize={Number((sorted.find(r => r.id === showDetailId) as any)?._relSize || 1)} />
       )}
+
+      {showFfmpegId && (
+        <FfmpegModal row={sorted.find(r => r.id === showFfmpegId)!} onClose={() => setShowFfmpegId(null)} />
+      )}
     </div>
   );
 }
@@ -243,7 +253,8 @@ function Th({ label, onClick, active, dir, align }: { label: string; onClick: ()
   return (
     <th
       onClick={onClick}
-      style={{ cursor: "pointer", textAlign: align || "left", padding: 8, userSelect: "none" }}
+      className="th"
+      style={{ cursor: "pointer", textAlign: align || "left", userSelect: "none" }}
       title="Click to sort"
     >
       {label}{active ? (dir === "asc" ? " ▲" : " ▼") : ""}
@@ -253,13 +264,13 @@ function Th({ label, onClick, active, dir, align }: { label: string; onClick: ()
 
 function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () => void; relSize: number }) {
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-      <div style={{ background: "#fff", borderRadius: 8, maxWidth: 520, width: "100%", border: "1px solid #eee" }}>
-        <div style={{ padding: 12, borderBottom: "1px solid #eee", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div className="modal-backdrop">
+      <div className="modal">
+        <div className="modal-header">
           <div style={{ fontWeight: 600 }}>Encode Details</div>
-          <button onClick={onClose} style={{ border: "1px solid #ddd", borderRadius: 6, padding: "4px 8px", background: "#fafafa" }}>Close</button>
+          <button onClick={onClose} className="btn" style={{ padding: "6px 10px" }}>Close</button>
         </div>
-        <div style={{ padding: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <div className="modal-body" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <LabelValue label="Time" value={new Date(row.createdAt).toLocaleString()} />
           <LabelValue label="RAM (GB)" value={String(row.ramGB)} />
           <LabelValue label="OS" value={row.os} />
@@ -277,7 +288,7 @@ function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () =
 function LabelValue({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ fontSize: 12, color: "#666" }}>{label}</div>
+      <div className="subtle" style={{ fontSize: 12 }}>{label}</div>
       <div style={{ fontWeight: 500 }}>{value}</div>
     </div>
   );
@@ -290,19 +301,97 @@ function DetailsButton({ onClick }: { onClick: () => void }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       onClick={onClick}
-      style={{
-        padding: "6px 12px",
-        border: "1px solid #ddd",
-        borderRadius: 10,
-        background: hover ? "#eef2ff" : "#f9fafb",
-        transition: "all 150ms ease",
-        transform: hover ? "translateY(-1px)" : "none",
-        boxShadow: hover ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
-      }}
+      className="btn"
+      style={{ padding: "6px 12px", background: hover ? "color-mix(in srgb, var(--accent) 12%, var(--surface-2))" : undefined }}
       aria-label="View details"
     >
       Details
     </button>
+  );
+}
+
+function FfmpegButton({ onClick }: { onClick: () => void }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      onClick={onClick}
+      className="btn"
+      style={{ padding: "6px 12px", background: hover ? "color-mix(in srgb, var(--accent) 12%, var(--surface-2))" : undefined }}
+      aria-label="View ffmpeg command"
+    >
+      FFmpeg
+    </button>
+  );
+}
+
+function FfmpegModal({ row, onClose }: { row: Benchmark; onClose: () => void }) {
+  const [inputPath, setInputPath] = useState<string>("input.mp4");
+  const [outputPath, setOutputPath] = useState<string>("output.mp4");
+  const [copied, setCopied] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const t = setTimeout(() => setCopied(false), 1200);
+    return () => clearTimeout(t);
+  }, [copied]);
+
+  const command = useMemo(() => {
+    const encoder = (row.encoderName ?? row.codec ?? "").trim();
+    const parts: string[] = [
+      "ffmpeg",
+      "-i",
+      inputPath || "input.mp4",
+    ];
+    if (encoder) {
+      parts.push("-c:v", encoder);
+    }
+    if (row.crf != null) {
+      parts.push("-crf", String(row.crf));
+    }
+    if (row.preset) {
+      parts.push("-preset", row.preset);
+    }
+    parts.push("-c:a", "copy");
+    parts.push(outputPath || "output.mp4");
+    return parts.join(" ");
+  }, [row, inputPath, outputPath]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+    } catch {}
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal">
+        <div className="modal-header">
+          <div style={{ fontWeight: 600 }}>FFmpeg Command</div>
+          <button onClick={onClose} className="btn" style={{ padding: "6px 10px" }}>Close</button>
+        </div>
+        <div className="modal-body" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            <div>
+              <div className="subtle" style={{ fontSize: 12, marginBottom: 6 }}>Input video</div>
+              <input className="input" placeholder="input.mp4" value={inputPath} onChange={e => setInputPath(e.target.value)} />
+            </div>
+            <div>
+              <div className="subtle" style={{ fontSize: 12, marginBottom: 6 }}>Output video</div>
+              <input className="input" placeholder="output.mp4" value={outputPath} onChange={e => setOutputPath(e.target.value)} />
+            </div>
+          </div>
+          <div style={{ position: "relative" }}>
+            <pre className="kbd" aria-label="FFmpeg command"><code>{command}</code></pre>
+            <button className={`copy-btn${copied ? " success" : ""}`} onClick={copy} aria-label="Copy command">
+              {copied ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -337,7 +426,8 @@ function WeightControl({ label, value, onChange }: { label: string; value: numbe
         step={0.05}
         value={Number(value.toFixed(2))}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ width: 80, padding: 6, border: "1px solid #ddd", borderRadius: 6 }}
+        className="input"
+        style={{ width: 80 }}
       />
     </label>
   );

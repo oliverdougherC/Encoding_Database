@@ -16,6 +16,7 @@ datasource db {
 model Benchmark {
   id             String   @id @default(cuid())
   createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   // Hardware info
   cpuModel       String
@@ -35,6 +36,10 @@ model Benchmark {
 
   notes          String?
 
+  // Aggregation
+  samples        Int      @default(0)
+  vmafSamples    Int      @default(0)
+
   // Submission metadata
   status         String   @default("pending") // pending | accepted | rejected
   ffmpegVersion  String?
@@ -52,4 +57,6 @@ model Benchmark {
   @@index([preset])
   @@index([inputHash])
   @@index([codec, preset])
+  // Ensure a single row per hardware/preset/params combination
+  @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf])
 }

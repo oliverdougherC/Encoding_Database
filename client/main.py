@@ -42,9 +42,9 @@ ENV_API_KEY = os.environ.get("API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
 ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
-ENV_DISABLE_VMAF = os.environ.get("DISABLE_VMAF", "0") in ("1", "true", "TRUE")
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
 ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", os.path.join(tempfile.gettempdir(), "encodingdb-queue"))
+PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
 
 @dataclass
 class HardwareInfo:
@@ -155,6 +155,8 @@ HARDWARE_ENCODERS: Dict[str, List[Tuple[str, str]]] = {
         ("h264_amf", "AMD AMF"),
         ("h264_videotoolbox", "VideoToolbox"),
         ("h264_vaapi", "VAAPI"),
+        ("h264_v4l2m2m", "V4L2 M2M"),
+        ("h264_omx", "OMX"),
     ],
     "hevc": [
         ("hevc_nvenc", "NVENC"),
@@ -162,6 +164,7 @@ HARDWARE_ENCODERS: Dict[str, List[Tuple[str, str]]] = {
         ("hevc_amf", "AMD AMF"),
         ("hevc_videotoolbox", "VideoToolbox"),
         ("hevc_vaapi", "VAAPI"),
+        ("hevc_v4l2m2m", "V4L2 M2M"),
     ],
     "av1": [
         ("av1_nvenc", "NVENC"),
@@ -169,15 +172,17 @@ HARDWARE_ENCODERS: Dict[str, List[Tuple[str, str]]] = {
         ("av1_amf", "AMD AMF"),
         ("av1_videotoolbox", "VideoToolbox"),
         ("av1_vaapi", "VAAPI"),
+        ("av1_v4l2m2m", "V4L2 M2M"),
     ],
     "vp9": [
         ("vp9_qsv", "Intel QSV"),
         ("vp9_vaapi", "VAAPI"),
+        ("vp9_v4l2m2m", "V4L2 M2M"),
     ],
 }
 
 SOFTWARE_ENCODERS_ORDER: Dict[str, List[str]] = {
-    "h264": ["libx264"],
+    "h264": ["libx264", "libopenh264"],
     "hevc": ["libx265"],
     "av1": ["libsvtav1", "libaom-av1"],
     "vp9": ["libvpx-vp9"],
@@ -201,6 +206,65 @@ def discover_hardware_encoders_for_family(family: str) -> List[Tuple[str, str]]:
             available.append((enc, label))
     return available
 
+
+def list_all_available_encoders() -> List[str]:
+    """Return all available encoders (software + hardware) across supported families."""
+    encoders: List[str] = []
+    # Software encoders
+    for fam, sw_list in SOFTWARE_ENCODERS_ORDER.items():
+        for enc in sw_list:
+            if has_encoder(enc):
+                encoders.append(enc)
+    # Hardware encoders
+    for fam, hw_list in HARDWARE_ENCODERS.items():
+        for enc, _label in hw_list:
+            if has_encoder(enc):
+                encoders.append(enc)
+    # De-duplicate while preserving order
+    seen: Dict[str, bool] = {}
+    uniq: List[str] = []
+    for enc in encoders:
+        if enc not in seen:
+            seen[enc] = True
+            uniq.append(enc)
+    return uniq
+
+
+def enumerate_supported_presets_for_encoder(encoder: str) -> List[str]:
+    e = encoder.strip().lower()
+    # x264/x265 full set
+    if e in ("libx264", "libx265"):
+        return [
+            "ultrafast", "superfast", "veryfast", "faster", "fast",
+            "medium", "slow", "slower", "veryslow", "placebo",
+        ]
+    # libsvtav1 numeric 0..13 (as strings to feed mapping)
+    if e == "libsvtav1":
+        return [str(n) for n in range(0, 14)]
+    # libaom-av1 cpu-used 0..8
+    if e == "libaom-av1":
+        return [str(n) for n in range(0, 9)]
+    # libvpx-vp9 cpu-used 0..8 (broader range supported)
+    if e == "libvpx-vp9":
+        return [str(n) for n in range(0, 9)]
+    # NVENC p1..p7; map via friendly labels for display but pass through mapping
+    if e.endswith("_nvenc"):
+        return ["p1", "p2", "p3", "p4", "p5", "p6", "p7"]
+    # QSV: include 'faster' where supported
+    if e.endswith("_qsv"):
+        return ["faster", "fast", "medium", "slow"]
+    # AMF: speed/balanced/quality
+    if e.endswith("_amf"):
+        return ["fast", "medium", "slow"]
+    # VideoToolbox: no presets exposed generally
+    if e.endswith("_videotoolbox"):
+        return ["default"]
+    # VAAPI: typically no preset
+    if e.endswith("_vaapi"):
+        return ["default"]
+    # Default
+    return ["medium"]
+
 def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
     suffix = " [y/N]: " if default_no else " [Y/n]: "
     ans = input(prompt + suffix).strip().lower()
@@ -223,40 +287,98 @@ def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> in
     return default_index
 
 
+def prompt_text(prompt: str, default_value: str = "") -> str:
+    raw = input(f"{prompt} [{default_value}]: ").strip()
+    return raw or default_value
+
+
+def load_presets_config(path: str) -> Dict[str, Any]:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+            if not isinstance(data, dict):
+                raise ValueError("Invalid presets.json format")
+            return data
+    except Exception:
+        # Defaults if presets.json is missing or invalid
+        return {
+            "smallBenchmark": {
+                "crfValues": [28, 24],
+                "approxMinutes": 5
+            },
+            "fullBenchmark": {
+                "crfValues": [24],
+                "approxMinutes": 20
+            }
+        }
+
+
+def get_default_sample_path() -> Optional[str]:
+    # Try project root sample.mp4 relative to this file
+    try:
+        client_dir = os.path.dirname(os.path.abspath(__file__))
+        root_dir = os.path.abspath(os.path.join(client_dir, ".."))
+        candidate = os.path.join(root_dir, "sample.mp4")
+        return candidate if os.path.exists(candidate) else None
+    except Exception:
+        return None
+
+
 # --- FFmpeg command builder with encoder-aware presets ---
 
 def map_preset_for_encoder(encoder: str, preset_name: str) -> List[str]:
     name = preset_name.strip().lower() if preset_name else "medium"
     e = encoder.strip().lower()
-    # x264/x265: direct presets
+    # x264/x265: full preset set
     if e in ("libx264", "libx265"):
-        direct = {"fast": "fast", "medium": "medium", "slow": "slow"}
-        return ["-preset", direct.get(name, "medium")]
-    # SVT-AV1 expects numeric preset 0..13 (higher=faster). Choose 10/8/6
+        # valid: ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+        valid = {
+            "ultrafast": "ultrafast",
+            "superfast": "superfast",
+            "veryfast": "veryfast",
+            "faster": "faster",
+            "fast": "fast",
+            "medium": "medium",
+            "slow": "slow",
+            "slower": "slower",
+            "veryslow": "veryslow",
+            "placebo": "placebo",
+        }
+        return ["-preset", valid.get(name, "medium")]
+    # SVT-AV1 expects numeric preset 0..13 (higher=faster). Support exact numeric
     if e == "libsvtav1":
-        svt = {"fast": "10", "medium": "8", "slow": "6"}
+        if name.isdigit():
+            return ["-preset", name]
+        # fallback mapping for friendly names
+        svt = {"ultrafast": "13", "veryfast": "11", "fast": "10", "medium": "8", "slow": "6", "veryslow": "4"}
         return ["-preset", svt.get(name, "8")]
-    # libaom-av1 uses -cpu-used 0..8 (higher=faster). Choose 8/6/4
+    # libaom-av1 uses -cpu-used 0..8 (higher=faster). Support exact numeric
     if e == "libaom-av1":
-        aom = {"fast": 8, "medium": 6, "slow": 4}
+        if name.isdigit():
+            return ["-cpu-used", name, "-row-mt", "1"]
+        aom = {"ultrafast": 8, "veryfast": 7, "fast": 6, "medium": 4, "slow": 3, "veryslow": 2}
         return ["-cpu-used", str(aom.get(name, 6)), "-row-mt", "1"]
-    # libvpx-vp9: use deadline good + cpu-used
+    # libvpx-vp9: use deadline=good + cpu-used (0..5 practical)
     if e == "libvpx-vp9":
-        vp9 = {"fast": 5, "medium": 2, "slow": 0}
+        if name.isdigit():
+            return ["-deadline", "good", "-cpu-used", name]
+        vp9 = {"ultrafast": 5, "veryfast": 4, "fast": 3, "medium": 2, "slow": 1, "veryslow": 0}
         return ["-deadline", "good", "-cpu-used", str(vp9.get(name, 2))]
-    # NVENC: support p1..p7 (p7 fastest)
+    # NVENC: support p1..p7 (p7 fastest). Accept pN directly or map friendly
     if e.endswith("_nvenc"):
-        nv = {"fast": "p7", "medium": "p4", "slow": "p2"}
+        if re.fullmatch(r"p[1-7]", name):
+            return ["-preset", name]
+        nv = {"ultrafast": "p7", "veryfast": "p6", "fast": "p5", "medium": "p4", "slow": "p3", "veryslow": "p2"}
         return ["-preset", nv.get(name, "p4")]
-    # QSV: use ffmpeg presets fast/medium/slow mapping
+    # QSV: use ffmpeg presets mapping
     if e.endswith("_qsv"):
-        qsv = {"fast": "faster", "medium": "medium", "slow": "slow"}
+        qsv = {"faster": "faster", "fast": "fast", "medium": "medium", "slow": "slow"}
         return ["-preset", qsv.get(name, "medium")]
     # AMF: use quality modes
     if e.endswith("_amf"):
         amf = {"fast": "speed", "medium": "balanced", "slow": "quality"}
         return ["-quality", amf.get(name, "balanced")]
-    # VideoToolbox or others: no preset options
+    # VideoToolbox or others: no preset options; accept 'default' as no-op
     return []
 
 
@@ -378,7 +500,7 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
     return None
 
 
-def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, codec: str = "libx264", enable_vmaf: bool = True, crf: Optional[int] = None) -> Dict[str, Any]:
+def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
     result = run_ffmpeg_test(input_path, preset=preset, codec=codec, crf=crf)
     # Fallback: if failed with a hardware encoder, retry with software encoder for the same family
     if (result.get("_encode_rc", 1) != 0 or float(result.get("fps", 0.0)) <= 0 or int(result.get("fileSizeBytes", 0)) <= 0):
@@ -407,10 +529,9 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
         # Only attempt VMAF pipeline if initial run looked successful
         vmaf: Optional[float] = None
         if result.get("_encode_rc", 1) == 0 and float(result.get("fps", 0.0)) > 0 and int(result.get("fileSizeBytes", 0)) > 0:
-            if enable_vmaf:
-                print("Calculating VMAF...")
+            print("Calculating VMAF...")
             subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            vmaf = compute_vmaf(input_path, encoded_path) if enable_vmaf else None
+            vmaf = compute_vmaf(input_path, encoded_path)
     payload = {
         "cpuModel": hardware.cpuModel,
         "gpuModel": hardware.gpuModel,
@@ -472,69 +593,69 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Encoding Benchmark Client")
-    p.add_argument("input", help="Path to input test video (e.g., sample.mp4)")
+    p.add_argument("input", nargs="?", help="Path to input test video (e.g., sample.mp4)")
     p.add_argument("--base-url", default=ENV_BACKEND_BASE_URL, help="Backend base URL (default: env BACKEND_BASE_URL or production)")
     p.add_argument("--api-key", default=ENV_API_KEY, help="API key for submission (default: env API_KEY)")
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
     p.add_argument("--presets", default=ENV_PRESETS, help="Comma-separated list of presets (default: fast,medium,slow)")
     p.add_argument("--no-submit", action="store_true", help="Run tests but do not submit results")
     p.add_argument("--crf", type=int, default=int(ENV_CRF) if ENV_CRF.isdigit() else 24, help="Constant Rate Factor (encoder-dependent). Defaults to 24.")
-    p.add_argument("--disable-vmaf", action="store_true", default=ENV_DISABLE_VMAF, help="Skip VMAF computation")
     p.add_argument("--retries", type=int, default=3, help="Submission retry attempts (default: 3)")
     p.add_argument("--queue-dir", default=ENV_QUEUE_DIR, help="Directory for offline retry queue")
+    p.add_argument("--menu", action="store_true", help="Force interactive menu even if arguments are provided")
     return p
 
 
-def main(argv: List[str]) -> int:
-    parser = build_arg_parser()
-    args = parser.parse_args(argv[1:])
-
+def run_with_args(args: argparse.Namespace) -> int:
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
         return 2
     print(f"ffmpeg detected: {ffmpeg_version or 'unknown'}")
-    # Require libvmaf presence unless explicitly disabled
-    if not args.disable_vmaf and not has_libvmaf():
+    # Require libvmaf presence always
+    if not has_libvmaf():
         print(
-            "Your ffmpeg build does not include libvmaf. Install ffmpeg with libvmaf or run with --disable-vmaf.",
+            "Your ffmpeg build does not include libvmaf. Install ffmpeg with libvmaf.",
             file=sys.stderr,
         )
         return 5
 
     input_path = args.input
-    if not os.path.exists(input_path):
+    if not input_path or not os.path.exists(input_path):
         print(f"Input not found: {input_path}", file=sys.stderr)
         return 3
 
-    # Resolve codec/encoder interactively if needed
+    # Resolve codec/encoder: if a specific encoder is provided and available, use it directly without prompting.
     resolved_encoder: Optional[str] = None
     user_codec = (args.codec or "").strip()
-    family = normalize_codec_family(user_codec) if user_codec else None
-    if not family:
-        # Prompt for family
-        families = ["h264", "hevc (h265)", "av1", "vp9"]
-        choice = prompt_choice("Select a codec", families, default_index=0)
-        family = ["h264", "hevc", "av1", "vp9"][choice]
+    if user_codec and has_encoder(user_codec):
+        resolved_encoder = user_codec
+    else:
+        family = normalize_codec_family(user_codec) if user_codec else None
+        if not family:
+            # Prompt for family
+            families = ["h264", "hevc (h265)", "av1", "vp9"]
+            choice = prompt_choice("Select a codec", families, default_index=0)
+            family = ["h264", "hevc", "av1", "vp9"][choice]
 
-    hw_options = discover_hardware_encoders_for_family(family)
-    if len(hw_options) == 1:
-        enc, label = hw_options[0]
-        if prompt_yes_no(f"Use Hardware Acceleration ({label})?"):
-            resolved_encoder = enc
-    elif len(hw_options) > 1:
-        labels = [label for _, label in hw_options]
-        idx = prompt_choice("Use Hardware Acceleration? Choose engine", labels + ["No (software)"] , default_index=len(labels))
-        if idx < len(labels):
-            resolved_encoder = hw_options[idx][0]
+        hw_options = discover_hardware_encoders_for_family(family)
+        if len(hw_options) == 1:
+            enc, label = hw_options[0]
+            if prompt_yes_no(f"Use Hardware Acceleration ({label})?"):
+                resolved_encoder = enc
+        elif len(hw_options) > 1:
+            labels = [label for _, label in hw_options]
+            idx = prompt_choice("Use Hardware Acceleration? Choose engine", labels + ["No (software)"] , default_index=len(labels))
+            if idx < len(labels):
+                resolved_encoder = hw_options[idx][0]
 
-    if not resolved_encoder:
-        # fallback to software
-        sw = pick_software_encoder_for_family(family)
-        if not sw:
-            print("No media engine detected for the selected codec, using Software Encoding")
-            # keep sw None to trigger error below
-        resolved_encoder = sw
+        if not resolved_encoder:
+            # fallback to software
+            sw = pick_software_encoder_for_family(family)
+            if not sw:
+                print("No media engine detected for the selected codec, using Software Encoding")
+                # keep sw None to trigger error below
+            resolved_encoder = sw
 
     if not resolved_encoder or not has_encoder(resolved_encoder):
         print("Requested codec/encoder not available in this ffmpeg build.", file=sys.stderr)
@@ -543,18 +664,22 @@ def main(argv: List[str]) -> int:
     hardware = detect_hardware()
     input_hash = sha256_of_file(input_path)
     client_version = "client/0.1.0"
+    # Build (preset, crf) combos. CLI --presets still supported as a fallback (using single CRF).
+    combos: List[Tuple[str, Optional[int]]] = []
     try:
-        presets = [s.strip() for s in args.presets.split(",") if s.strip()]
+        preset_list = [s.strip() for s in args.presets.split(",") if s.strip()]
     except Exception:
-        presets = ["fast", "medium", "slow"]
+        preset_list = ["fast", "medium", "slow"]
 
     all_payloads: List[Dict[str, Any]] = []
     os.makedirs(args.queue_dir, exist_ok=True)
     base_url = args.base_url
     user_crf: Optional[int] = args.crf
-    for preset in presets:
-        print(f"Running preset: {preset}...")
-        payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, enable_vmaf=(not args.disable_vmaf), crf=user_crf)
+    if preset_list:
+        combos = [(p, user_crf) for p in preset_list]
+    for preset, crf_val in combos:
+        print(f"Running preset: {preset} (crf={crf_val})...")
+        payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, crf=crf_val)
         # Attach submission metadata
         payload["ffmpegVersion"] = ffmpeg_version
         payload["encoderName"] = payload.get("codec", resolved_encoder)
@@ -602,6 +727,110 @@ def main(argv: List[str]) -> int:
         pass
     print(json.dumps(all_payloads, indent=2))
     return 0
+
+
+def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
+    # Print menu
+    print("Select an option:")
+    menu = [
+        "Run Single Benchmark",
+        "Run Small Benchmark [~5 minutes]",
+        "Run Full Benchmark [~20 minutes]",
+        "Exit",
+    ]
+    choice = prompt_choice("Menu", menu, default_index=0)
+    if choice == 3:
+        return 0
+
+    presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
+    small_combos = [c for c in presets_cfg.get("smallBenchmark", {}).get("combos", []) if isinstance(c, dict) and c.get("preset")]
+    full_combos = [c for c in presets_cfg.get("fullBenchmark", {}).get("combos", []) if isinstance(c, dict) and c.get("preset")]
+
+    # Determine presets to run based on choice
+    if choice == 0:
+        # Single benchmark: ask user which combo
+        union = (small_combos or []) + (full_combos or [])
+        if not union:
+            union = [
+                {"preset": "fast", "crf": 28},
+                {"preset": "medium", "crf": 24},
+                {"preset": "slow", "crf": 24},
+            ]
+        labels = [f"{c.get('preset')} (crf={c.get('crf')})" for c in union]
+        idx = prompt_choice("Select a preset/CRF combo to run once", labels, default_index=min(1, len(labels)-1))
+        combos_list = [union[idx]]
+    elif choice == 1:
+        combos_list = small_combos or [
+            {"preset": "fast", "crf": 28},
+            {"preset": "medium", "crf": 24},
+        ]
+    else:
+        combos_list = full_combos or [
+            {"preset": "fast", "crf": 24},
+            {"preset": "medium", "crf": 24},
+            {"preset": "slow", "crf": 24},
+        ]
+
+    # Input path prompt with default to sample.mp4 if available
+    default_input = base_args.input or get_default_sample_path() or ""
+    input_path = prompt_text("Enter path to input video", default_input)
+    if not input_path:
+        print("No input provided.", file=sys.stderr)
+        return 3
+
+    # Build an args Namespace reusing defaults from base_args
+    # Now enumerate all encoders and run each CRF across all encoders and all their supported presets
+    encoders = list_all_available_encoders()
+    if not encoders:
+        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+        return 4
+    crf_values: List[int] = []
+    if choice == 0:
+        # Single: ask for CRF
+        try:
+            default_crf = base_args.crf if isinstance(base_args.crf, int) else 24
+        except Exception:
+            default_crf = 24
+        crf_input = prompt_text("Enter CRF", str(default_crf))
+        try:
+            crf_values = [int(crf_input)]
+        except Exception:
+            crf_values = [default_crf]
+    else:
+        # Small/Full from config
+        crf_values = [int(v) for v in (presets_cfg.get("smallBenchmark", {}).get("crfValues", []) if choice == 1 else presets_cfg.get("fullBenchmark", {}).get("crfValues", [])) if isinstance(v, int)]
+        if not crf_values:
+            crf_values = [24]
+
+    for crf_val in crf_values:
+        for enc in encoders:
+            presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
+            for preset_label in presets_for_encoder:
+                effective_args = argparse.Namespace(
+                    input=input_path,
+                    base_url=base_args.base_url,
+                    api_key=base_args.api_key,
+                    codec=enc,
+                    presets=preset_label,
+                    no_submit=base_args.no_submit,
+                    crf=crf_val,
+                    retries=base_args.retries,
+                    queue_dir=base_args.queue_dir,
+                    menu=False,
+                )
+                rc = run_with_args(effective_args)
+                if rc not in (0,):
+                    pass
+    return 0
+
+
+def main(argv: List[str]) -> int:
+    parser = build_arg_parser()
+    args = parser.parse_args(argv[1:])
+    # Interactive menu if requested or no input provided
+    if args.menu or not args.input:
+        return interactive_menu_flow(parser, args)
+    return run_with_args(args)
 
 
 if __name__ == "__main__":

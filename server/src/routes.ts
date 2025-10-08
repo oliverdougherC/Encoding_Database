@@ -59,10 +59,10 @@ router.post('/submit', async (req, res) => {
   const payloadHash = crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
 
   try {
-    // Fast path: if already inserted, return existing (idempotency)
-    const existing = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch(() => null);
-    if (existing) {
-      return res.status(200).json(existing);
+    // Fast path: if the exact same payload was already counted, return existing (idempotency)
+    const existingByHash = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch(() => null);
+    if (existingByHash) {
+      return res.status(200).json(existingByHash);
     }
 
     // Heuristics: ensure plausible values
@@ -74,7 +74,8 @@ router.post('/submit', async (req, res) => {
     const inputHashOk = !!data.inputHash && CANONICAL_INPUT_HASHES.has(data.inputHash);
     const status: 'pending' | 'accepted' = (inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk)) ? 'accepted' : 'pending';
 
-    const created = await prisma.benchmark.create({ data: {
+    // Composite key for aggregation (single row per hardware/codec/preset/crf)
+    const key = {
       cpuModel: data.cpuModel,
       gpuModel: data.gpuModel ?? null,
       ramGB: data.ramGB,
@@ -82,19 +83,64 @@ router.post('/submit', async (req, res) => {
       codec: data.codec,
       preset: data.preset,
       crf: Number(data.crf),
-      fps: data.fps,
-      vmaf: data.vmaf ?? null,
-      fileSizeBytes: data.fileSizeBytes,
-      notes: data.notes ?? null,
-      status,
-      ffmpegVersion: (data as any).ffmpegVersion ?? null,
-      encoderName: (data as any).encoderName ?? null,
-      clientVersion: (data as any).clientVersion ?? null,
-      inputHash: (data as any).inputHash ?? null,
-      runMs: (data as any).runMs ?? null,
-      payloadHash,
-    }});
-    res.status(201).json(created);
+    } as const;
+
+    let createdNew = false;
+    const row = await prisma.$transaction(async (tx) => {
+      const existing = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key } });
+      if (!existing) {
+        createdNew = true;
+        return tx.benchmark.create({ data: {
+          ...key,
+          fps: data.fps,
+          vmaf: data.vmaf ?? null,
+          fileSizeBytes: data.fileSizeBytes,
+          notes: data.notes ?? null,
+          status,
+          ffmpegVersion: (data as any).ffmpegVersion ?? null,
+          encoderName: (data as any).encoderName ?? null,
+          clientVersion: (data as any).clientVersion ?? null,
+          inputHash: (data as any).inputHash ?? null,
+          runMs: (data as any).runMs ?? null,
+          payloadHash,
+          samples: 1,
+          vmafSamples: data.vmaf == null ? 0 : 1,
+        }});
+      }
+
+      const prevSamples = Number(existing?.samples ?? 0);
+      const nextSamples = prevSamples + 1;
+      const prevFps = Number(existing?.fps ?? 0);
+      const prevFileSize = Number(existing?.fileSizeBytes ?? 0);
+      const nextFps = (prevFps * prevSamples + Number(data.fps)) / nextSamples;
+      const nextFileSize = Math.round((prevFileSize * prevSamples + Number(data.fileSizeBytes)) / nextSamples);
+
+      const prevVmafSamples = Number(existing?.vmafSamples ?? 0);
+      let nextVmafSamples = prevVmafSamples;
+      let nextVmaf: number | null = existing?.vmaf ?? null;
+      if (data.vmaf != null) {
+        const prevVmafTotal = (Number(existing?.vmaf ?? 0) * prevVmafSamples);
+        nextVmafSamples = prevVmafSamples + 1;
+        nextVmaf = (prevVmafTotal + Number(data.vmaf)) / nextVmafSamples;
+      }
+
+      const nextStatus = (existing?.status === 'accepted' || status === 'accepted') ? 'accepted' : (existing?.status ?? status);
+
+      return tx.benchmark.update({
+        where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key },
+        data: {
+          fps: nextFps,
+          fileSizeBytes: nextFileSize,
+          vmaf: nextVmaf,
+          samples: nextSamples,
+          vmafSamples: nextVmafSamples,
+          status: nextStatus,
+          // keep notes/metadata as-is to represent the first submission; could be revisited
+        },
+      });
+    });
+
+    res.status(createdNew ? 201 : 200).json(row);
   } catch (err) {
     if ((err as any)?.code === 'P2002') {
       // Unique constraint violation: return the existing row idempotently
@@ -116,7 +162,7 @@ router.get('/query', async (req, res) => {
 
     const rows = await prisma.benchmark.findMany({
       where: { status: 'accepted' },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       ...(typeof take === 'number' ? { take } : {}),
       ...(typeof skip === 'number' ? { skip } : {}),
     });

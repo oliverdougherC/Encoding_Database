@@ -1,12 +1,24 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --muted: #6b7280; /* gray-500 */
+  --border: #e5e7eb; /* gray-200 */
+  --surface: #ffffff;
+  --surface-2: #f9fafb; /* gray-50 */
+  --accent: #2563eb; /* blue-600 */
+  --accent-contrast: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --muted: #9ca3af; /* gray-400 */
+    --border: #27272a; /* zinc-800 */
+    --surface: #0f0f10;
+    --surface-2: #111113;
+    --accent: #3b82f6; /* blue-500 */
+    --accent-contrast: #0a0a0a;
   }
 }
 
@@ -39,4 +51,119 @@ a {
   html {
     color-scheme: dark;
   }
+}
+
+/* Utility classes used inline to avoid hard-coded colors */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.subtle {
+  color: var(--muted);
+}
+
+.btn {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--foreground);
+  transition: all 150ms ease;
+}
+
+.btn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.link {
+  color: var(--accent);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  table-layout: fixed;
+}
+
+.thead {
+  background: var(--surface-2);
+}
+
+.th, .td {
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.modal {
+  background: var(--surface);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 640px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-body {
+  padding: 16px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+.kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 40px 12px 12px;
+  position: relative;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.copy-btn {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: var(--surface);
+}
+
+.copy-btn.success {
+  background: #0f766e; /* teal-700 */
+  color: #ecfeff; /* teal-50 */
+  border-color: #115e59;
 }
