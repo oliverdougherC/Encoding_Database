@@ -40,7 +40,8 @@ untrack_env_files
 # Collect existing values from .env or backup
 POSTGRES_PASSWORD="$(get_val .env POSTGRES_PASSWORD || get_val .env.bak POSTGRES_PASSWORD || true)"
 INGEST_HMAC_SECRET="$(get_val .env INGEST_HMAC_SECRET || get_val .env.bak INGEST_HMAC_SECRET || true)"
-CORS_ORIGIN="$(get_val .env CORS_ORIGIN || get_val .env.bak CORS_ORIGIN || echo "https://encodingdb.platinumlabs.dev")"
+DEFAULT_DOMAIN="encodingdb.platinumlabs.dev"
+CORS_ORIGIN="$(get_val .env CORS_ORIGIN || get_val .env.bak CORS_ORIGIN || echo "https://${DEFAULT_DOMAIN}")"
 POSTGRES_USER="$(get_val .env POSTGRES_USER || echo "app")"
 POSTGRES_DB="$(get_val .env POSTGRES_DB || echo "benchmarks")"
 PORT_VAL="$(get_val .env PORT || echo "3001")"
