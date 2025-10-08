@@ -273,9 +273,11 @@ app.get('/health', (_req, res) => {
 
 // Health-based token endpoint (covered by nginx health.* routing)
 app.get('/health/token', (req, res) => {
+  // Issue and store a real token (same logic as /submit-token)
   const token = crypto.randomBytes(16).toString('hex');
-  const exp = Math.floor((Date.now() + 60_000) / 1000);
-  res.json({ token, exp, pow: { difficulty: 0 } });
+  const expMs = Date.now() + submitTokenTtlSeconds * 1000;
+  tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, used: false });
+  res.json({ token, exp: Math.floor(expMs / 1000), pow: powEnabled ? { difficulty: powDifficulty } : { difficulty: 0 } });
 });
 
 // Routes
