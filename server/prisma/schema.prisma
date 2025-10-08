@@ -60,3 +60,47 @@ model Benchmark {
   // Ensure a single row per hardware/preset/params combination
   @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf])
 }
+
+model Submission {
+  id             String   @id @default(cuid())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Hardware info
+  cpuModel       String
+  gpuModel       String?
+  ramGB          Int
+  os             String
+
+  // Test parameters
+  codec          String
+  preset         String
+  crf            Int?
+
+  // Results
+  fps            Float
+  vmaf           Float?
+  fileSizeBytes  Int
+  notes          String?
+
+  // Submission metadata
+  ffmpegVersion  String?
+  encoderName    String?
+  clientVersion  String?
+  inputHash      String?
+  runMs          Int?
+
+  // Quality evaluation
+  status         String   @default("pending") // pending | accepted | rejected | suspect
+  qualityScore   Float?
+
+  // Idempotency and deduplication
+  payloadHash    String?  @unique
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([codec])
+  @@index([preset])
+  @@index([codec, preset])
+  @@index([cpuModel, gpuModel, ramGB, os, codec, preset, crf])
+}

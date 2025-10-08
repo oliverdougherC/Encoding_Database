@@ -52,8 +52,23 @@ app.use(morgan((tokens: any, req, res) => {
 // CORS configuration
 const corsOriginEnv = process.env.CORS_ORIGIN || 'http://localhost:3000';
 const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
-const corsOptions = corsOriginEnv === '*'
-  ? { origin: true }
+const isProd = process.env.NODE_ENV === 'production';
+const isWildcard = corsOriginEnv === '*';
+if (isProd && isWildcard) {
+  console.error('CORS_ORIGIN is "*" in production. Please set explicit origins.');
+}
+const corsOptions = isWildcard
+  ? (isProd
+      ? {
+          origin: (origin: string | undefined, callback: (err: Error | null, allowed?: boolean) => void) => {
+            // In production, reject wildcard; only allow explicit list (which will be empty → deny)
+            if (!origin) return callback(null, false);
+            if (allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error('Not allowed by CORS'));
+          },
+          credentials: true,
+        }
+      : { origin: true })
   : {
       origin: (origin: string | undefined, callback: (err: Error | null, allowed?: boolean) => void) => {
         if (!origin) return callback(null, true);
@@ -99,8 +114,12 @@ function rememberSignature(sig: string, nowMs: number): void {
 
 app.use('/submit', (req, res, next) => {
   if (!ingestSecret) {
+    // In production, require HMAC for all submissions
+    if (process.env.NODE_ENV === 'production') {
+      return res.status(503).json({ error: 'ingest_not_configured' });
+    }
     if (!warnedNoSecret) {
-      console.warn('INGEST_HMAC_SECRET not set; accepting unsigned submissions');
+      console.warn('INGEST_HMAC_SECRET not set; accepting unsigned submissions (non-production only)');
       warnedNoSecret = true;
     }
     return next();

@@ -1,0 +1,40 @@
+name: Dependency Audits
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  audit-node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Frontend npm ci
+        working-directory: frontend
+        run: npm ci
+      - name: Frontend npm audit
+        working-directory: frontend
+        run: npm audit --audit-level=high
+      - name: Server npm ci
+        working-directory: server
+        run: npm ci
+      - name: Server npm audit
+        working-directory: server
+        run: npm audit --audit-level=high
+
+  audit-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Audit client requirements
+        run: pip-audit -r client/requirements.txt

@@ -8,24 +8,24 @@ const router = Router();
 // Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
 const benchmarkSchema = z.object({
-  cpuModel: z.string().min(3),
-  gpuModel: z.string().optional().nullable(),
+  cpuModel: z.string().min(3).max(200),
+  gpuModel: z.string().max(200).optional().nullable(),
   ramGB: z.coerce.number().int().nonnegative(),
-  os: z.string().min(3),
-  codec: z.string().min(1),
-  preset: z.string().min(1),
+  os: z.string().min(3).max(100),
+  codec: z.string().min(1).max(64),
+  preset: z.string().min(1).max(64),
   crf: z.coerce.number().int().min(0).max(63).optional().nullable(),
   fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
   fileSizeBytes: z.coerce.number().int().nonnegative().max(1_000 * 1024 * 1024),
-  notes: z.string().optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
   // Submission metadata (optional for MVP)
   ffmpegVersion: z.string().max(200).optional().nullable(),
   encoderName: z.string().max(100).optional().nullable(),
   clientVersion: z.string().max(100).optional().nullable(),
   inputHash: z.string().length(64).regex(/^[0-9a-f]+$/).optional().nullable(), // sha256 hex
   runMs: z.coerce.number().int().nonnegative().max(24 * 60 * 60 * 1000).optional().nullable(),
-});
+}).strict();
 
 // Simple canonical hash list for MVP (publish in README)
 const CANONICAL_INPUT_HASHES = new Set<string>([
@@ -72,9 +72,7 @@ router.post('/submit', async (req, res) => {
     const isSizeOk = data.fileSizeBytes >= 10 * 1024 && data.fileSizeBytes <= 1000 * 1024 * 1024; // >=10KB and <=1GB
     const namesOk = data.cpuModel.trim().length >= 3 && data.os.trim().length >= 3;
     const inputHashOk = !!data.inputHash && CANONICAL_INPUT_HASHES.has(data.inputHash);
-    const status: 'pending' | 'accepted' = (inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk)) ? 'accepted' : 'pending';
-
-    // Composite key for aggregation (single row per hardware/codec/preset/crf)
+    // Quality scoring using robust statistics across recent accepted submissions for same key
     const key = {
       cpuModel: data.cpuModel,
       gpuModel: data.gpuModel ?? null,
@@ -85,7 +83,81 @@ router.post('/submit', async (req, res) => {
       crf: Number(data.crf),
     } as const;
 
+    // Fetch recent samples for robust baseline
+    const recentSubs = await prisma.submission.findMany({
+      where: {
+        status: 'accepted',
+        cpuModel: key.cpuModel,
+        gpuModel: key.gpuModel,
+        ramGB: key.ramGB,
+        os: key.os,
+        codec: key.codec,
+        preset: key.preset,
+        crf: key.crf,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    function median(values: number[]): number { const v = [...values].sort((a,b)=>a-b); const m = Math.floor(v.length/2); return v.length%2===0 ? (v[m-1]+v[m])/2 : v[m]; }
+    function mad(values: number[], med: number): number { const dev = values.map(x=>Math.abs(x-med)); return median(dev); }
+    function robustZ(x: number, med: number, madVal: number): number { const denom = madVal > 0 ? 1.4826 * madVal : 1; return (x - med) / denom; }
+
+    // Build arrays for metrics to check
+    const fpsArr = recentSubs.map(r => Number(r.fps)).filter(n => Number.isFinite(n) && n > 0);
+    const sizeArr = recentSubs.map(r => Number(r.fileSizeBytes)).filter(n => Number.isFinite(n) && n > 0);
+    const vmafArr = recentSubs.map(r => Number(r.vmaf ?? 0)).filter(n => Number.isFinite(n) && n >= 0);
+
+    const fpsMed = fpsArr.length ? median(fpsArr) : Number(data.fps);
+    const fpsMad = fpsArr.length ? mad(fpsArr, fpsMed) : 0;
+    const sizeMed = sizeArr.length ? median(sizeArr) : Number(data.fileSizeBytes);
+    const sizeMad = sizeArr.length ? mad(sizeArr, sizeMed) : 0;
+    const vmafMed = vmafArr.length ? median(vmafArr) : Number(data.vmaf ?? 0);
+    const vmafMad = vmafArr.length ? mad(vmafArr, vmafMed) : 0;
+
+    const fpsZ = robustZ(Number(data.fps), fpsMed, fpsMad);
+    const sizeZ = robustZ(Number(data.fileSizeBytes), sizeMed, sizeMad);
+    const vmafZ = data.vmaf == null ? 0 : robustZ(Number(data.vmaf), vmafMed, vmafMad);
+
+    // Penalize extreme deviations; also check impossible combos
+    const impossible = !(isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
+    const extreme = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ)) > 6; // conservative threshold
+    const suspect = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ)) > 3;  // softer threshold
+    const baselineOk = inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
+    const status: 'pending' | 'accepted' | 'rejected' | 'suspect' = impossible ? 'rejected' : (extreme ? 'rejected' : (suspect ? 'suspect' : (baselineOk ? 'accepted' : 'pending')));
+    const qualityScore = (() => {
+      // Score 0..100 combining normalized robust Z deviations
+      const clamp = (x: number) => Math.max(0, Math.min(100, x));
+      const scoreFps = 100 * Math.exp(-0.5 * (fpsZ / 2.5) * (fpsZ / 2.5));
+      const scoreSize = 100 * Math.exp(-0.5 * (sizeZ / 2.5) * (sizeZ / 2.5));
+      const scoreVmaf = 100 * Math.exp(-0.5 * (vmafZ / 2.5) * (vmafZ / 2.5));
+      const weighted = 0.4 * scoreFps + 0.3 * scoreSize + 0.3 * scoreVmaf;
+      return clamp(weighted);
+    })();
+
+    // Composite key for aggregation (single row per hardware/codec/preset/crf)
     let createdNew = false;
+    // Store raw submission record for auditability
+    await prisma.submission.create({ data: {
+      cpuModel: data.cpuModel,
+      gpuModel: data.gpuModel ?? null,
+      ramGB: data.ramGB,
+      os: data.os,
+      codec: data.codec,
+      preset: data.preset,
+      crf: Number(data.crf),
+      fps: Number(data.fps),
+      vmaf: data.vmaf == null ? null : Number(data.vmaf),
+      fileSizeBytes: Number(data.fileSizeBytes),
+      notes: data.notes ?? null,
+      ffmpegVersion: (data as any).ffmpegVersion ?? null,
+      encoderName: (data as any).encoderName ?? null,
+      clientVersion: (data as any).clientVersion ?? null,
+      inputHash: (data as any).inputHash ?? null,
+      runMs: (data as any).runMs ?? null,
+      payloadHash,
+      status,
+      qualityScore,
+    }});
     const row = await prisma.$transaction(async (tx) => {
       const existing = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key } });
       if (!existing) {
@@ -129,12 +201,13 @@ router.post('/submit', async (req, res) => {
       return tx.benchmark.update({
         where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key },
         data: {
-          fps: nextFps,
-          fileSizeBytes: nextFileSize,
-          vmaf: nextVmaf,
-          samples: nextSamples,
-          vmafSamples: nextVmafSamples,
-          status: nextStatus,
+          // Only aggregate accepted samples
+          fps: status === 'accepted' ? nextFps : prevFps,
+          fileSizeBytes: status === 'accepted' ? nextFileSize : prevFileSize,
+          vmaf: status === 'accepted' ? nextVmaf : existing?.vmaf ?? null,
+          samples: status === 'accepted' ? nextSamples : prevSamples,
+          vmafSamples: status === 'accepted' ? nextVmafSamples : prevVmafSamples,
+          status: status === 'accepted' ? 'accepted' : nextStatus,
           // keep notes/metadata as-is to represent the first submission; could be revisited
         },
       });
@@ -151,6 +224,15 @@ router.post('/submit', async (req, res) => {
     }
     res.status(500).json({ error: 'Failed to insert benchmark' });
   }
+});
+
+// Method guard for /submit (reject non-POST)
+router.all('/submit', (req, res, next) => {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+  return next();
 });
 
 router.get('/query', async (req, res) => {
@@ -171,6 +253,15 @@ router.get('/query', async (req, res) => {
     console.error('[GET /query] error:', err);
     res.status(500).json({ error: 'Failed to fetch benchmarks' });
   }
+});
+
+// Method guard for /query (reject non-GET)
+router.all('/query', (req, res, next) => {
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    res.setHeader('Allow', 'GET, HEAD');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+  return next();
 });
 
 export default router;
