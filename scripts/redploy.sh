@@ -2,12 +2,75 @@
 set -euo pipefail
 
 cd ~/Encoding_Database
-git pull --rebase --autostash
 
-# Rebuild images for changed services
+# --- Helpers ---
+have_cmd() { command -v "$1" >/dev/null 2>&1; }
+get_val() {
+  # get_val FILE VAR_NAME
+  # Grep last clean assignment of VAR=... ignoring merge markers
+  local file="$1" var="$2"
+  if [ -f "$file" ]; then
+    grep -E "^${var}=" "$file" | grep -v '<<<<<<<\|=======\|>>>>>>>' | tail -n1 | sed -E "s/^${var}=//"
+  fi
+}
+
+# --- Ensure env files are ignored and not tracked ---
+ensure_gitignore() {
+  local gi=".gitignore"
+  touch "$gi"
+  if ! grep -q '^\.env$' "$gi"; then echo ".env" >> "$gi"; fi
+  if ! grep -q '^server/\.env$' "$gi"; then echo "server/.env" >> "$gi"; fi
+  if ! grep -q '^*.bak$' "$gi"; then echo "*.bak" >> "$gi"; fi
+  git add "$gi" >/dev/null 2>&1 || true
+  git commit -m "chore: ignore env files on deploy host" >/dev/null 2>&1 || true
+}
+
+untrack_env_files() {
+  git rm --cached .env server/.env >/dev/null 2>&1 || true
+}
+
+# --- Abort any in-progress merge/rebase cleanly ---
+git merge --abort >/dev/null 2>&1 || true
+git rebase --abort >/dev/null 2>&1 || true
+
+# --- Prepare/repair .env before pulling ---
+ensure_gitignore
+untrack_env_files
+
+# Collect existing values from .env or backup
+POSTGRES_PASSWORD="$(get_val .env POSTGRES_PASSWORD || get_val .env.bak POSTGRES_PASSWORD || true)"
+INGEST_HMAC_SECRET="$(get_val .env INGEST_HMAC_SECRET || get_val .env.bak INGEST_HMAC_SECRET || true)"
+CORS_ORIGIN="$(get_val .env CORS_ORIGIN || get_val .env.bak CORS_ORIGIN || echo "https://encodingdb.platinumlabs.dev")"
+POSTGRES_USER="$(get_val .env POSTGRES_USER || echo "app")"
+POSTGRES_DB="$(get_val .env POSTGRES_DB || echo "benchmarks")"
+PORT_VAL="$(get_val .env PORT || echo "3001")"
+NEXT_PUBLIC_API_BASE_URL="$(get_val .env NEXT_PUBLIC_API_BASE_URL || echo "https://encodingdb.platinumlabs.dev")"
+
+# If .env contains merge markers, back it up and regenerate
+if grep -q '<<<<<<<\|=======\|>>>>>>>' .env 2>/dev/null; then
+  cp .env .env.autofix.bak || true
+fi
+
+# Regenerate .env with preserved values when available
+./scripts/setup_env.sh \
+  --domain "${CORS_ORIGIN#https://}" \
+  --cors-origins "${CORS_ORIGIN}" \
+  --postgres-user "${POSTGRES_USER}" \
+  ${POSTGRES_PASSWORD:+--postgres-password "$POSTGRES_PASSWORD"} \
+  --postgres-db "${POSTGRES_DB}" \
+  ${INGEST_HMAC_SECRET:+--ingest-secret "$INGEST_HMAC_SECRET"} \
+  --port "${PORT_VAL}" \
+  --public-api-base "${NEXT_PUBLIC_API_BASE_URL}"
+
+# Make sure env files are not tracked
+untrack_env_files
+
+# --- Pull latest code safely ---
+git fetch --all --prune
+git reset --hard origin/main
+
+# --- Build & deploy ---
 docker compose -f docker-compose.prod.yml build server frontend
-
-# Recreate containers for server and frontend
 docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate server frontend
 
 # Apply Prisma migrations (idempotent; server also runs this on startup)
