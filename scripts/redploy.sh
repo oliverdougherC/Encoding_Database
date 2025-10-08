@@ -90,14 +90,16 @@ docker compose -f docker-compose.prod.yml exec server npx prisma migrate deploy 
 
 # Wait for backend readiness via nginx proxy
 echo "Waiting for backend readiness at http://localhost/health/ready ..."
+READY=0
 for i in {1..30}; do
   code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/health/ready || true)
-  if [ "$code" = "200" ]; then
-    echo "Backend ready."
-    break
-  fi
+  if [ "$code" = "200" ]; then READY=1; break; fi
   sleep 2
 done
+if [ "$READY" -ne 1 ]; then
+  echo "Edge not ready, checking directly inside server container..."
+  docker compose -f docker-compose.prod.yml exec -T server sh -lc "wget -qO- http://localhost:3001/health/ready >/dev/null && echo 'Server responded OK'" || echo "Server not ready yet"
+fi
 
 # Optionally check frontend
 echo "Checking frontend at http://localhost ..."

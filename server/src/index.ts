@@ -49,8 +49,8 @@ app.use(morgan((tokens: any, req, res) => {
   return JSON.stringify(record);
 }));
 
-// CORS configuration
-const corsOriginEnv = process.env.CORS_ORIGIN || 'http://localhost:3000';
+// CORS configuration (defaults assume hosting behind Nginx Proxy Manager at encodingdb.platinumlabs.dev)
+const corsOriginEnv = process.env.CORS_ORIGIN || 'https://encodingdb.platinumlabs.dev';
 const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
 const isProd = process.env.NODE_ENV === 'production';
 const isWildcard = corsOriginEnv === '*';

@@ -93,9 +93,13 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Sanitize/derive DOMAIN and public URLs
+DOMAIN="$(echo "${DOMAIN}" | sed -E 's#^https?://##; s#/+$##')"
+if [[ -z "$DOMAIN" ]]; then DOMAIN="encodingdb.platinumlabs.dev"; fi
+
 # Fill defaults
-if [[ -z "$CORS_ORIGINS" ]]; then CORS_ORIGINS="https://$DOMAIN"; fi
-if [[ -z "$NEXT_PUBLIC_API_BASE_URL" ]]; then NEXT_PUBLIC_API_BASE_URL="https://$DOMAIN"; fi
+if [[ -z "$CORS_ORIGINS" || "$CORS_ORIGINS" = "https://" || "$CORS_ORIGINS" = "http://" ]]; then CORS_ORIGINS="https://$DOMAIN"; fi
+if [[ -z "$NEXT_PUBLIC_API_BASE_URL" || "$NEXT_PUBLIC_API_BASE_URL" = "https://" || "$NEXT_PUBLIC_API_BASE_URL" = "http://" ]]; then NEXT_PUBLIC_API_BASE_URL="https://$DOMAIN"; fi
 if [[ -z "$POSTGRES_PASSWORD" ]]; then POSTGRES_PASSWORD="$(rand_hex 24)"; fi
 if [[ -z "$INGEST_HMAC_SECRET" ]]; then INGEST_HMAC_SECRET="$(rand_hex 32)"; fi
 
