@@ -5,7 +5,7 @@ export default function PlovePage() {
     <div style={{ padding: 24, maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 }}>
       <h1 style={{ fontSize: 24, fontWeight: 600 }}>PLOVE Score</h1>
       <p className="subtle" style={{ fontSize: 14 }}>
-        PLOVE is a single, tunable score that balances visual quality, output size, and encode speed to make row-to-row comparisons easy.
+        PLOVE (Platinum Labs Objective Video Evaluation) is a single, tunable score that balances visual quality, output size, and encode speed to make row-to-row comparisons easy.
       </p>
 
       <section className="card" style={{ padding: 16 }}>
