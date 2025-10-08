@@ -271,6 +271,13 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Health-based token endpoint (covered by nginx health.* routing)
+app.get('/health/token', (req, res) => {
+  const token = crypto.randomBytes(16).toString('hex');
+  const exp = Math.floor((Date.now() + 60_000) / 1000);
+  res.json({ token, exp, pow: { difficulty: 0 } });
+});
+
 // Routes
 app.use(routes);
 
