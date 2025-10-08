@@ -99,13 +99,17 @@ router.post('/submit', async (req, res) => {
       take: 200,
     });
     function median(values: number[]): number {
-      const v = [...values].sort((a,b)=>a-b);
+      const v = [...values].sort((a, b) => a - b);
       const n = v.length;
       if (n === 0) return 0;
       const m = Math.floor(n / 2);
-      if (n % 2 === 1) return v[m];
-      // n >= 2 here, so m-1 and m are valid indices
-      return (v[m - 1] + v[m]) / 2;
+      if (n % 2 === 1) {
+        return v[m] ?? 0;
+      }
+      // For even n, both indices exist (n >= 2). Use nullish coalescing to satisfy TS strict index checks.
+      const a = v[m - 1] ?? 0;
+      const b = v[m] ?? 0;
+      return (a + b) / 2;
     }
     function mad(values: number[], med: number): number { const dev = values.map(x=>Math.abs(x-med)); return median(dev); }
     function robustZ(x: number, med: number, madVal: number): number { const denom = madVal > 0 ? 1.4826 * madVal : 1; return (x - med) / denom; }
