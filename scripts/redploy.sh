@@ -67,8 +67,19 @@ fi
 untrack_env_files
 
 # --- Pull latest code safely ---
+# Allow overrides via env: REMOTE=origin BRANCH=main ./scripts/redploy.sh
+REMOTE_REF="${REMOTE:-origin}"
+BRANCH_REF="${BRANCH:-main}"
+OLD_HEAD=$(git rev-parse --short HEAD 2>/dev/null || echo "none")
 git fetch --all --prune
-git reset --hard origin/main
+git fetch "$REMOTE_REF" "$BRANCH_REF" || true
+REMOTE_URL=$(git remote get-url "$REMOTE_REF" 2>/dev/null || echo "unknown")
+git reset --hard "$REMOTE_REF/$BRANCH_REF"
+NEW_HEAD=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+echo "Source: $REMOTE_REF/$BRANCH_REF ($REMOTE_URL)"
+echo "Updated: $OLD_HEAD -> $NEW_HEAD"
+echo "Recent commits on $REMOTE_REF/$BRANCH_REF:"
+git log --oneline -n 3 "$REMOTE_REF/$BRANCH_REF" || true
 
 # --- Build & deploy ---
 docker compose -f docker-compose.prod.yml build server frontend
