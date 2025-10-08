@@ -127,12 +127,15 @@ function normalizeIp(ip: string | undefined): string {
 }
 
 // Token endpoint - short-lived, one-time token bound to IP
-app.get('/submit-token', (req, res) => {
+function issueSubmitToken(req: express.Request, res: express.Response) {
   const token = crypto.randomBytes(16).toString('hex');
   const expMs = Date.now() + submitTokenTtlSeconds * 1000;
   tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, used: false });
   res.json({ token, exp: Math.floor(expMs / 1000), pow: powEnabled ? { difficulty: powDifficulty } : { difficulty: 0 } });
-});
+}
+app.get('/submit-token', (req, res) => issueSubmitToken(req, res));
+// Alternate path under /submit/ to ease proxy rules that already forward /submit/*
+app.get('/submit/token', (req, res) => issueSubmitToken(req, res));
 
 app.use('/submit', (req, res, next) => {
   // Helper: validate HMAC if secret provided
