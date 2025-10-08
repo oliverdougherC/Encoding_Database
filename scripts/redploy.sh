@@ -37,35 +37,6 @@ git rebase --abort >/dev/null 2>&1 || true
 ensure_gitignore
 untrack_env_files
 
-# Collect existing values from .env or backup
-POSTGRES_PASSWORD="$(get_val .env POSTGRES_PASSWORD || get_val .env.bak POSTGRES_PASSWORD || true)"
-INGEST_HMAC_SECRET="$(get_val .env INGEST_HMAC_SECRET || get_val .env.bak INGEST_HMAC_SECRET || true)"
-DEFAULT_DOMAIN="encodingdb.platinumlabs.dev"
-CORS_ORIGIN="$(get_val .env CORS_ORIGIN || get_val .env.bak CORS_ORIGIN || echo "https://${DEFAULT_DOMAIN}")"
-POSTGRES_USER="$(get_val .env POSTGRES_USER || echo "app")"
-POSTGRES_DB="$(get_val .env POSTGRES_DB || echo "benchmarks")"
-PORT_VAL="$(get_val .env PORT || echo "3001")"
-NEXT_PUBLIC_API_BASE_URL="$(get_val .env NEXT_PUBLIC_API_BASE_URL || echo "https://encodingdb.platinumlabs.dev")"
-
-# If .env contains merge markers, back it up and regenerate
-if grep -q '<<<<<<<\|=======\|>>>>>>>' .env 2>/dev/null; then
-  cp .env .env.autofix.bak || true
-fi
-
-# Regenerate .env with preserved values when available
-./scripts/setup_env.sh \
-  --domain "${CORS_ORIGIN#https://}" \
-  --cors-origins "${CORS_ORIGIN}" \
-  --postgres-user "${POSTGRES_USER}" \
-  ${POSTGRES_PASSWORD:+--postgres-password "$POSTGRES_PASSWORD"} \
-  --postgres-db "${POSTGRES_DB}" \
-  ${INGEST_HMAC_SECRET:+--ingest-secret "$INGEST_HMAC_SECRET"} \
-  --port "${PORT_VAL}" \
-  --public-api-base "${NEXT_PUBLIC_API_BASE_URL}"
-
-# Make sure env files are not tracked
-untrack_env_files
-
 # --- Pull latest code safely ---
 # Allow overrides via env: REMOTE=origin BRANCH=main ./scripts/redploy.sh
 REMOTE_REF="${REMOTE:-origin}"
@@ -80,6 +51,40 @@ echo "Source: $REMOTE_REF/$BRANCH_REF ($REMOTE_URL)"
 echo "Updated: $OLD_HEAD -> $NEW_HEAD"
 echo "Recent commits on $REMOTE_REF/$BRANCH_REF:"
 git log --oneline -n 3 "$REMOTE_REF/$BRANCH_REF" || true
+
+# --- Regenerate .env with preserved values (AFTER pulling latest scripts) ---
+DEFAULT_DOMAIN="encodingdb.platinumlabs.dev"
+POSTGRES_PASSWORD="$(get_val .env POSTGRES_PASSWORD || get_val .env.bak POSTGRES_PASSWORD || true)"
+INGEST_HMAC_SECRET="$(get_val .env INGEST_HMAC_SECRET || get_val .env.bak INGEST_HMAC_SECRET || true)"
+CORS_ORIGIN="$(get_val .env CORS_ORIGIN || get_val .env.bak CORS_ORIGIN || echo "https://${DEFAULT_DOMAIN}")"
+POSTGRES_USER="$(get_val .env POSTGRES_USER || echo "app")"
+POSTGRES_DB="$(get_val .env POSTGRES_DB || echo "benchmarks")"
+PORT_VAL="$(get_val .env PORT || echo "3001")"
+NEXT_PUBLIC_API_BASE_URL="$(get_val .env NEXT_PUBLIC_API_BASE_URL || echo "https://${DEFAULT_DOMAIN}")"
+
+# If .env contains merge markers, back it up before regenerating
+if grep -q '<<<<<<<\|=======\|>>>>>>>' .env 2>/dev/null; then
+  cp .env .env.autofix.bak || true
+fi
+
+# Derive domain from CORS_ORIGIN when available; fall back to default domain
+DOMAIN_CAND="${CORS_ORIGIN#https://}"
+DOMAIN_CAND="${DOMAIN_CAND#http://}"
+DOMAIN_CAND="${DOMAIN_CAND%%/*}"
+if [ -z "$DOMAIN_CAND" ] || [ "$DOMAIN_CAND" = "" ]; then DOMAIN_CAND="$DEFAULT_DOMAIN"; fi
+
+./scripts/setup_env.sh \
+  --domain "$DOMAIN_CAND" \
+  --cors-origins "$CORS_ORIGIN" \
+  --postgres-user "${POSTGRES_USER:-app}" \
+  ${POSTGRES_PASSWORD:+--postgres-password "$POSTGRES_PASSWORD"} \
+  --postgres-db "${POSTGRES_DB:-benchmarks}" \
+  ${INGEST_HMAC_SECRET:+--ingest-secret "$INGEST_HMAC_SECRET"} \
+  --port "${PORT_VAL:-3001}" \
+  --public-api-base "${NEXT_PUBLIC_API_BASE_URL:-https://${DEFAULT_DOMAIN}}"
+
+# Make sure env files are not tracked
+untrack_env_files
 
 # --- Build & deploy ---
 docker compose -f docker-compose.prod.yml build server frontend
