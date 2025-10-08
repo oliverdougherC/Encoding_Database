@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 
 type Group = {
@@ -10,6 +10,7 @@ type Group = {
 };
 
 export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
+  const [hover, setHover] = useState<{ x: number; y: number; text: string } | null>(null);
   const groups = useMemo<Group[]>(() => {
     const map = new Map<string, { sum: number; count: number; preset: string; codec: string }>();
     for (const r of data) {
@@ -65,9 +66,8 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
             const h = margin.top + chartHeight - y;
             const color = colors[ci % colors.length];
             return (
-              <g key={`${p}|${c}`}>
+              <g key={`${p}|${c}`} onMouseMove={() => setHover({ x: x + barWidth / 2 + 8, y, text: `${p} • ${c}: ${v.toFixed(2)} MB` })} onMouseLeave={() => setHover(null)}>
                 <rect x={x} y={y} width={barWidth} height={h} fill={color} rx={3} />
-                <title>{`${p} • ${c}: ${v.toFixed(2)} MB`}</title>
               </g>
             );
           });
@@ -95,6 +95,11 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
           );
         })}
       </svg>
+      {hover && (
+        <div className="tooltip" style={{ left: hover.x, top: hover.y }}>
+          {hover.text}
+        </div>
+      )}
 
       {/* Legend */}
       <div className="subtle" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>

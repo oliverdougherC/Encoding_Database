@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 
 type Point = {
@@ -29,6 +29,9 @@ function codecKey(codec: string): keyof typeof COLORS {
 
 export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
   const [codecFilter, setCodecFilter] = useState<string>("");
+  const [hover, setHover] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [view, setView] = useState<{ xMax: number; yMax: number }>({ xMax: 1, yMax: 1 });
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   const points = useMemo<Point[]>(() => {
     return data
@@ -47,11 +50,45 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
-  const maxX = Math.max(1, ...points.map((p) => p.x));
-  const maxY = Math.max(1, ...points.map((p) => p.y));
+  const maxXRaw = Math.max(1, ...points.map((p) => p.x));
+  const maxYRaw = Math.max(1, ...points.map((p) => p.y));
+  const maxX = Math.max(1, view.xMax, maxXRaw);
+  const maxY = Math.max(1, view.yMax, maxYRaw);
 
   const xFor = (v: number) => margin.left + (v / maxX) * chartWidth;
   const yFor = (v: number) => margin.top + chartHeight - (v / maxY) * chartHeight;
+
+  useEffect(() => {
+    setView({ xMax: maxXRaw, yMax: maxYRaw });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [maxXRaw, maxYRaw]);
+
+  function onMouseMove(e: React.MouseEvent<SVGSVGElement>) {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    // find nearest point within radius
+    let best: { d2: number; p: Point } | null = null;
+    for (const p of points) {
+      const dx = xFor(p.x) - mx;
+      const dy = yFor(p.y) - my;
+      const d2 = dx * dx + dy * dy;
+      if (!best || d2 < best.d2) best = { d2, p };
+    }
+    if (best && best.d2 < 12 * 12) {
+      setHover({ x: xFor(best.p.x), y: yFor(best.p.y) - 8, text: `${best.p.label} — ${best.p.y.toFixed(1)} FPS, ${best.p.x.toFixed(2)} MB` });
+    } else {
+      setHover(null);
+    }
+  }
+
+  function onWheel(e: React.WheelEvent<SVGSVGElement>) {
+    e.preventDefault();
+    const zoom = e.deltaY > 0 ? 1.1 : 0.9;
+    setView(v => ({ xMax: Math.max(1, v.xMax * zoom), yMax: Math.max(1, v.yMax * zoom) }));
+  }
 
   return (
     <div className="card" style={{ padding: 12 }}>
@@ -65,7 +102,7 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
           style={{ maxWidth: 280 }}
         />
       </div>
-      <svg width={width} height={height} role="img" aria-label="FPS vs File Size">
+      <svg ref={svgRef} width={width} height={height} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)} onWheel={onWheel}>
         {/* Grid */}
         {Array.from({ length: 5 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 4;
@@ -106,13 +143,11 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
           );
         })}
       </svg>
-      <div className="subtle" style={{ fontSize: 12, marginTop: 6 }}>Hover your cursor to see native browser tooltips on points.</div>
-      {/* Hit area labels to avoid overlapping text – rely on native tooltips: */}
-      <div style={{ display: "none" }}>
-        {points.map((p, idx) => (
-          <span key={idx} title={`${p.label} — ${p.y.toFixed(1)} FPS, ${p.x.toFixed(2)} MB`} />
-        ))}
-      </div>
+      {hover && (
+        <div className="tooltip" style={{ left: hover.x + 8, top: hover.y }}>
+          {hover.text}
+        </div>
+      )}
     </div>
   );
 }
