@@ -685,7 +685,8 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
     headers: Dict[str, str] = {"Content-Type": "application/json"}
     # Fetch submit token (and optional PoW) if server runs in public/hybrid mode
     try:
-        tokenResp = requests.get(f"{base_url.rstrip('/')}/submit-token", timeout=10, verify=REQUESTS_VERIFY)
+        token_url = f"{base_url.rstrip('/')}/submit-token"
+        tokenResp = requests.get(token_url, timeout=10, verify=REQUESTS_VERIFY)
         if tokenResp.status_code == 200:
             tokenData = tokenResp.json() or {}
             token = str(tokenData.get('token') or '')
@@ -709,10 +710,18 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                             break
                         nonce += 1
                 # else: no PoW required
+        else:
+            # Debug aid: show why token wasn't returned
+            try:
+                print(f"token fetch failed: {tokenResp.status_code} {tokenResp.text}", file=sys.stderr)
+            except Exception:
+                pass
         # If 404/other, continue; server may be in signed mode
-    except Exception:
-        # If token endpoint missing or fails, continue; server may require HMAC instead
-        pass
+    except Exception as te:
+        try:
+            print(f"token fetch error: {te}", file=sys.stderr)
+        except Exception:
+            pass
     # HMAC signing if secret available
     ts = int(time.time())
     body = json.dumps(payload, separators=(",", ":"))
@@ -730,7 +739,21 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             r.raise_for_status()
             return
         except Exception as e:
+            # On final attempt, surface server response body and token diagnostics
             if attempt == retries:
+                try:
+                    import requests as _req  # type: ignore
+                    if isinstance(e, _req.HTTPError) and getattr(e, 'response', None) is not None:
+                        resp = e.response
+                        try:
+                            err_text = resp.text
+                        except Exception:
+                            err_text = ""
+                        sent_token = 'x-ingest-token' in headers
+                        sent_nonce = 'x-ingest-nonce' in headers
+                        print(f"submit error body ({resp.status_code}): {err_text}\n(sent_token={sent_token}, sent_nonce={sent_nonce})", file=sys.stderr)
+                except Exception:
+                    pass
                 raise
             time.sleep(backoff_seconds * attempt)
 
