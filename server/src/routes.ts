@@ -162,7 +162,7 @@ router.get('/query', async (req, res) => {
 
     const rows = await prisma.benchmark.findMany({
       where: { status: 'accepted' },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { createdAt: 'desc' },
       ...(typeof take === 'number' ? { take } : {}),
       ...(typeof skip === 'number' ? { skip } : {}),
     });
