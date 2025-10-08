@@ -25,12 +25,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <header style={{ borderBottom: "1px solid #eee", padding: "12px 24px" }}>
+        <header style={{ borderBottom: "1px solid var(--border)", padding: "12px 24px" }}>
           <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
             <div style={{ fontWeight: 600 }}>Encoding DB</div>
             <div style={{ display: "flex", gap: 12 }}>
-              <a href="/" style={{ textDecoration: "none", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 8 }}>Home</a>
-              <a href="/graphs" style={{ textDecoration: "none", padding: "6px 10px", border: "1px solid #ddd", borderRadius: 8 }}>Graphs</a>
+              <a href="/" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Home</a>
+              <a href="/graphs" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Graphs</a>
+              <a href="/plove" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>PLOVE</a>
             </div>
           </nav>
         </header>
