@@ -168,6 +168,7 @@ router.get('/query', async (req, res) => {
     });
     res.json(rows);
   } catch (err) {
+    console.error('[GET /query] error:', err);
     res.status(500).json({ error: 'Failed to fetch benchmarks' });
   }
 });

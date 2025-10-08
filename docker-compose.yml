@@ -20,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/benchmarks?schema=public
       PORT: 3001
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
     depends_on:
       db:
         condition: service_healthy
