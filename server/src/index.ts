@@ -274,6 +274,14 @@ app.get('/health', (_req, res) => {
 // Routes
 app.use(routes);
 
+// Explicit lightweight token endpoints here too (in case external routing bypasses routes.ts)
+app.get('/submit-token', (req, res) => {
+  res.json({ token: 'direct', exp: Math.floor((Date.now() + 60000) / 1000), pow: { difficulty: 0 } });
+});
+app.get('/submit/token', (req, res) => {
+  res.json({ token: 'direct', exp: Math.floor((Date.now() + 60000) / 1000), pow: { difficulty: 0 } });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });

@@ -83,21 +83,24 @@ router.post('/submit', async (req, res) => {
       crf: Number(data.crf),
     } as const;
 
-    // Fetch recent samples for robust baseline
-    const recentSubs = await prisma.submission.findMany({
-      where: {
-        status: 'accepted',
-        cpuModel: key.cpuModel,
-        gpuModel: key.gpuModel,
-        ramGB: key.ramGB,
-        os: key.os,
-        codec: key.codec,
-        preset: key.preset,
-        crf: key.crf,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 200,
-    });
+    // Fetch recent samples for robust baseline (best-effort; tolerate missing table)
+    let recentSubs: Array<{ fps: number; fileSizeBytes: number; vmaf: number | null }> = [];
+    try {
+      recentSubs = await prisma.submission.findMany({
+        where: {
+          status: 'accepted',
+          cpuModel: key.cpuModel,
+          gpuModel: key.gpuModel,
+          ramGB: key.ramGB,
+          os: key.os,
+          codec: key.codec,
+          preset: key.preset,
+          crf: key.crf,
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }) as any;
+    } catch {}
     function median(values: number[]): number {
       const v = [...values].sort((a, b) => a - b);
       const n = v.length;
@@ -149,27 +152,29 @@ router.post('/submit', async (req, res) => {
     // Composite key for aggregation (single row per hardware/codec/preset/crf)
     let createdNew = false;
     // Store raw submission record for auditability
-    await prisma.submission.create({ data: {
-      cpuModel: data.cpuModel,
-      gpuModel: data.gpuModel ?? null,
-      ramGB: data.ramGB,
-      os: data.os,
-      codec: data.codec,
-      preset: data.preset,
-      crf: Number(data.crf),
-      fps: Number(data.fps),
-      vmaf: data.vmaf == null ? null : Number(data.vmaf),
-      fileSizeBytes: Number(data.fileSizeBytes),
-      notes: data.notes ?? null,
-      ffmpegVersion: (data as any).ffmpegVersion ?? null,
-      encoderName: (data as any).encoderName ?? null,
-      clientVersion: (data as any).clientVersion ?? null,
-      inputHash: (data as any).inputHash ?? null,
-      runMs: (data as any).runMs ?? null,
-      payloadHash,
-      status,
-      qualityScore,
-    }});
+    try {
+      await prisma.submission.create({ data: {
+        cpuModel: data.cpuModel,
+        gpuModel: data.gpuModel ?? null,
+        ramGB: data.ramGB,
+        os: data.os,
+        codec: data.codec,
+        preset: data.preset,
+        crf: Number(data.crf),
+        fps: Number(data.fps),
+        vmaf: data.vmaf == null ? null : Number(data.vmaf),
+        fileSizeBytes: Number(data.fileSizeBytes),
+        notes: data.notes ?? null,
+        ffmpegVersion: (data as any).ffmpegVersion ?? null,
+        encoderName: (data as any).encoderName ?? null,
+        clientVersion: (data as any).clientVersion ?? null,
+        inputHash: (data as any).inputHash ?? null,
+        runMs: (data as any).runMs ?? null,
+        payloadHash,
+        status,
+        qualityScore,
+      }} as any);
+    } catch {}
     const row = await prisma.$transaction(async (tx) => {
       const existing = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key } });
       if (!existing) {
