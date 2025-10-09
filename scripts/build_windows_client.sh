@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build a Windows standalone client with PyInstaller (invoke from WSL or Git Bash with access to Windows toolchain)
-# Requires: Python for Windows, PyInstaller, and ffmpeg/ffprobe in client/bin/win
+# Build a Windows standalone client with PyInstaller.
+# Run this from Windows PowerShell/CMD or from Git Bash/WSL that can invoke Windows Python (py launcher).
+# Requires: Windows Python ("py" launcher) with PyInstaller installed, and ffmpeg/ffprobe in client/bin/win.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 CLIENT_DIR="$ROOT_DIR/client"
@@ -27,17 +28,38 @@ cp -f "$CLIENT_DIR/presets.json" "$BUILD_DIR/" || true
 
 echo "[Windows] Running PyInstaller..."
 cd "$CLIENT_DIR"
-pyinstaller \
+
+# Pick Windows Python launcher if available to ensure a native .exe is produced
+if command -v py >/dev/null 2>&1; then
+  PY_CMD="py -3"
+elif command -v py.exe >/dev/null 2>&1; then
+  PY_CMD="py.exe -3"
+elif command -v python.exe >/dev/null 2>&1; then
+  PY_CMD="python.exe"
+else
+  # Fallback (may build for non-Windows if not using Windows Python!)
+  PY_CMD="python"
+fi
+
+"$PY_CMD" -m PyInstaller \
+  --clean \
   --onefile \
   --name encodingdb-client-windows \
-  --add-data "$BUILD_DIR/bin/win;bin/win" \
-  --add-data "$BUILD_DIR/sample.mp4;." \
-  --add-data "$BUILD_DIR/presets.json;." \
+  --add-data "bin/win/ffmpeg.exe;bin/win" \
+  --add-data "bin/win/ffprobe.exe;bin/win" \
+  --add-data "../sample.mp4;." \
+  --add-data "presets.json;." \
   main.py
 
 echo "[Windows] Moving artifact to $BUILD_DIR..."
-mv -f "$CLIENT_DIR/dist/encodingdb-client-windows.exe" "$BUILD_DIR/encodingdb-client-windows.exe" 2>/dev/null || true
-mv -f "$CLIENT_DIR/dist/encodingdb-client-windows"* "$BUILD_DIR/" 2>/dev/null || true
+if [[ -f "$CLIENT_DIR/dist/encodingdb-client-windows.exe" ]]; then
+  mv -f "$CLIENT_DIR/dist/encodingdb-client-windows.exe" "$BUILD_DIR/encodingdb-client-windows.exe"
+elif [[ -d "$CLIENT_DIR/dist/encodingdb-client-windows" ]]; then
+  mv -f "$CLIENT_DIR/dist/encodingdb-client-windows" "$BUILD_DIR/"
+else
+  echo "ERROR: PyInstaller did not produce encodingdb-client-windows.exe. Ensure Windows Python (py -3) is used and PyInstaller is installed." >&2
+  exit 2
+fi
 
 echo "[Windows] Build complete: $BUILD_DIR"
 
