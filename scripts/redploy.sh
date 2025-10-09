@@ -86,6 +86,21 @@ if [ -z "$DOMAIN_CAND" ] || [ "$DOMAIN_CAND" = "" ]; then DOMAIN_CAND="$DEFAULT_
 # Make sure env files are not tracked
 untrack_env_files
 
+# --- Ensure DB user password matches .env (handles existing volumes) ---
+echo "Ensuring database is up..."
+docker compose -f docker-compose.prod.yml up -d db
+# Wait for Postgres to accept connections
+DB_READY=0
+for i in {1..30}; do
+  docker compose -f docker-compose.prod.yml exec -T db pg_isready -U "${POSTGRES_USER:-app}" -d "${POSTGRES_DB:-benchmarks}" >/dev/null 2>&1 && DB_READY=1 && break || true
+  sleep 2
+done
+if [ "$DB_READY" -ne 1 ]; then
+  echo "Postgres not ready after timeout; continuing anyway..."
+fi
+# Align user password inside DB to match .env (safe if already aligned)
+docker compose -f docker-compose.prod.yml exec -T db sh -lc "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \"ALTER USER \\\"${POSTGRES_USER:-app}\\\" WITH PASSWORD '${POSTGRES_PASSWORD}';\"" >/dev/null 2>&1 || true
+
 # --- Build & deploy ---
 docker compose -f docker-compose.prod.yml build server frontend
 docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate server frontend
