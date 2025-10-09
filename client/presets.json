@@ -1,6 +1,6 @@
 {
   "smallBenchmark": {
-    "crfValues": [20],
+    "crfValues": [24],
     "approxMinutes": 20
   },
   "fullBenchmark": {

@@ -47,6 +47,10 @@ ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
 ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", os.path.join(tempfile.gettempdir(), "encodingdb-queue"))
 PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
 
+# Integrity reference for bundled sample.mp4 (do not change without updating both values)
+SAMPLE_VIDEO_SHA256 = "53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8"
+SAMPLE_VIDEO_SIZE_BYTES = 66045059
+
 # --- Cross-platform binary resolution helpers (PyInstaller-friendly) ---
 
 def _app_base_dir() -> str:
@@ -907,6 +911,23 @@ def sha256_of_file(path: str) -> str:
     return hasher.hexdigest()
 
 
+def verify_sample_video(path: str) -> Tuple[bool, str]:
+    """Return (ok, message). Verifies that sample.mp4 matches expected size and hash.
+    """
+    try:
+        if not os.path.exists(path):
+            return False, "sample.mp4 not found"
+        size = os.path.getsize(path)
+        if int(size) != int(SAMPLE_VIDEO_SIZE_BYTES):
+            return False, f"sample.mp4 size mismatch (expected {SAMPLE_VIDEO_SIZE_BYTES}, got {size})"
+        digest = sha256_of_file(path)
+        if digest.lower() != SAMPLE_VIDEO_SHA256.lower():
+            return False, "sample.mp4 checksum mismatch"
+        return True, "ok"
+    except Exception as e:
+        return False, f"verification error: {e}"
+
+
 def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0) -> None:
     import requests  # lazy import
     url = f"{base_url.rstrip('/')}/submit"
@@ -1047,6 +1068,14 @@ def run_with_args(args: argparse.Namespace) -> int:
     if not input_path:
         print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
         return 3
+    ok_sample, msg = verify_sample_video(input_path)
+    if not ok_sample:
+        print(
+            f"Test video integrity check failed: {msg}.\n"
+            "Please use the original, unmodified sample.mp4 included with the client.",
+            file=sys.stderr,
+        )
+        return 6
 
     # Resolve codec/encoder: if a specific encoder is provided and available, use it directly without prompting.
     resolved_encoder: Optional[str] = None
@@ -1199,8 +1228,25 @@ def run_with_args(args: argparse.Namespace) -> int:
 
 
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
-    # Print menu
+    # Verify test video integrity FIRST (before any other output)
     ensure_min_terminal_size()
+    GREEN = "\033[32;1m"
+    RESET = "\033[0m"
+    sample_path = get_default_sample_path()
+    if not sample_path:
+        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
+        return 3
+    ok_sample, msg = verify_sample_video(sample_path)
+    if not ok_sample:
+        print(
+            f"Test video integrity check failed: {msg}.\n"
+            "Please use the original, unmodified sample.mp4 included with the client.",
+            file=sys.stderr,
+        )
+        return 6
+    print(f"Test Video Checksum {GREEN}Verified{RESET}")
+    print("")
+    # Print menu
     print("Select an option:")
     menu = [
         "Run Single Benchmark",
