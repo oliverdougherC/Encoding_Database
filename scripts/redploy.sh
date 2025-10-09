@@ -102,7 +102,7 @@ fi
 docker compose -f docker-compose.prod.yml exec -T db sh -lc "psql -U postgres -d postgres -v ON_ERROR_STOP=1 -c \"ALTER USER \\\"${POSTGRES_USER:-app}\\\" WITH PASSWORD '${POSTGRES_PASSWORD}';\"" >/dev/null 2>&1 || true
 
 # --- Build & deploy ---
-docker compose -f docker-compose.prod.yml build server frontend
+docker compose -f docker-compose.prod.yml build --no-cache server frontend
 docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate server frontend
 
 # Apply Prisma migrations (idempotent; server also runs this on startup)
