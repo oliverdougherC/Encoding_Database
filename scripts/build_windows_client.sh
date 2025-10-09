@@ -16,6 +16,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
 CLIENT_DIR="$ROOT_DIR/client"
 BUILD_DIR="$CLIENT_DIR/dist/windows"
 BIN_SRC_DIR="$CLIENT_DIR/bin/win"
+VENV_SCRIPTS_DIR="$ROOT_DIR/.myenv/Scripts"
 
 # Optional: set VERBOSE=1 to enable shell tracing; set PAUSE_ON_EXIT=1 to pause at end
 if [[ "${VERBOSE:-0}" == "1" ]]; then
@@ -47,29 +48,37 @@ cp -f "$CLIENT_DIR/presets.json" "$BUILD_DIR/" || true
 echo "[Windows] Running PyInstaller..."
 cd "$CLIENT_DIR"
 
-# Pick Windows Python launcher if available to ensure a native .exe is produced
-PY_CMD=( )
-if command -v py >/dev/null 2>&1; then
-  PY_CMD=(py -3)
-elif command -v py.exe >/dev/null 2>&1; then
-  PY_CMD=(py.exe -3)
-elif command -v python.exe >/dev/null 2>&1; then
-  PY_CMD=(python.exe)
+# Prefer local Windows venv tools if present
+if [[ -x "$VENV_SCRIPTS_DIR/pyinstaller.exe" ]]; then
+  echo "[Windows] Using local venv PyInstaller: $VENV_SCRIPTS_DIR/pyinstaller.exe"
+  PYI_CMD=("$VENV_SCRIPTS_DIR/pyinstaller.exe")
+elif [[ -x "$VENV_SCRIPTS_DIR/python.exe" ]]; then
+  echo "[Windows] Using local venv Python: $VENV_SCRIPTS_DIR/python.exe"
+  PYI_CMD=("$VENV_SCRIPTS_DIR/python.exe" -m PyInstaller)
 else
-  # Fallback (may build for non-Windows if not using Windows Python!)
-  PY_CMD=(python)
+  # Pick Windows Python launcher if available to ensure a native .exe is produced
+  PY_CMD=( )
+  if command -v py >/dev/null 2>&1; then
+    PY_CMD=(py -3)
+  elif command -v py.exe >/dev/null 2>&1; then
+    PY_CMD=(py.exe -3)
+  elif command -v python.exe >/dev/null 2>&1; then
+    PY_CMD=(python.exe)
+  else
+    # Fallback (may build for non-Windows if not using Windows Python!)
+    PY_CMD=(python)
+  fi
+  echo "[Windows] Using Python: ${PY_CMD[*]}"
+  # Verify PyInstaller is available in this interpreter
+  if ! "${PY_CMD[@]}" -m PyInstaller --version >/dev/null 2>&1; then
+    echo "ERROR: PyInstaller is not installed for this Python interpreter (${PY_CMD[*]})." >&2
+    echo "       Install with: ${PY_CMD[*]} -m pip install pyinstaller" >&2
+    exit 3
+  fi
+  PYI_CMD=("${PY_CMD[@]}" -m PyInstaller)
 fi
 
-echo "[Windows] Using Python: ${PY_CMD[*]}"
-
-# Verify PyInstaller is available in this interpreter
-if ! "${PY_CMD[@]}" -m PyInstaller --version >/dev/null 2>&1; then
-  echo "ERROR: PyInstaller is not installed for this Python interpreter (${PY_CMD[*]})." >&2
-  echo "       Install with: ${PY_CMD[*]} -m pip install pyinstaller" >&2
-  exit 3
-fi
-
-"${PY_CMD[@]}" -m PyInstaller \
+"${PYI_CMD[@]}" \
   --clean \
   --onefile \
   --name encodingdb-client-windows \
