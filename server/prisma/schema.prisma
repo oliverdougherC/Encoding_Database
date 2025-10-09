@@ -97,49 +97,10 @@ model Submission {
   // Idempotency and deduplication
   payloadHash    String?  @unique
 
-  // API key linkage (beta: invite-only)
-  apiKeyId       String?
-  apiKey         ApiKey?  @relation(fields: [apiKeyId], references: [id])
-
   @@index([createdAt])
   @@index([status])
   @@index([codec])
   @@index([preset])
   @@index([codec, preset])
   @@index([cpuModel, gpuModel, ramGB, os, codec, preset, crf])
-  @@index([apiKeyId])
-}
-
-model User {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  email     String?  @unique
-  role      String   @default("user") // user | admin
-
-  apiKeys   ApiKey[]
-}
-
-model ApiKey {
-  id             String    @id @default(cuid())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  // Optional owner (invite-only beta can omit user)
-  userId         String?
-  user           User?     @relation(fields: [userId], references: [id])
-
-  name           String
-  hash           String    @unique // sha256(apiKey plaintext) hex
-  status         String    @default("active") // active | revoked | banned
-  quotaPerMinute Int       @default(30)
-  quotaPerDay    Int       @default(1000)
-  usedCount      Int       @default(0)
-  lastUsedAt     DateTime?
-
-  submissions    Submission[]
-
-  @@index([userId])
-  @@index([status])
 }

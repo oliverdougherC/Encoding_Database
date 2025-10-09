@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from './db.js';
-import { ingestReadOnly } from './diskWatchdog.js';
 import crypto from 'node:crypto';
 
 const router = Router();
@@ -34,9 +33,6 @@ const CANONICAL_INPUT_HASHES = new Set<string>([
 ]);
 
 router.post('/submit', async (req, res) => {
-  if (ingestReadOnly) {
-    return res.status(503).json({ error: 'low_disk' });
-  }
   const parse = benchmarkSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });
@@ -177,7 +173,6 @@ router.post('/submit', async (req, res) => {
         payloadHash,
         status,
         qualityScore,
-        apiKeyId: (req as any).apiKey?.id ?? null,
       }} as any);
     } catch {}
     const row = await prisma.$transaction(async (tx) => {
