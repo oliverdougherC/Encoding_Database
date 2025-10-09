@@ -47,6 +47,13 @@ RATE_LIMIT_MAX="300"
 SUBMIT_RATE_WINDOW_MS="60000"
 SUBMIT_RATE_MAX="30"
 NEXT_PUBLIC_API_BASE_URL=""
+# Beta auth & quotas
+API_KEY_HEADER="X-API-Key"
+SUBMIT_PER_KEY_PER_MINUTE="30"
+SUBMIT_PER_KEY_PER_DAY="1000"
+DISK_MIN_FREE_GB="25"
+DISK_PATH="/"
+ADMIN_TOKEN=""
 
 print_help() {
   cat <<'EOF'
@@ -66,6 +73,12 @@ Options:
   --submit-window-ms MS           /submit rate limit window (default: 60000)
   --submit-max N                  /submit rate limit max (default: 30)
   --public-api-base URL           NEXT_PUBLIC_API_BASE_URL (default: https://<domain>)
+  --api-key-header NAME           Header name for API key (default: X-API-Key)
+  --per-key-per-minute N          Per-key minute quota (default: 30)
+  --per-key-per-day N             Per-key day quota (default: 1000)
+  --disk-min-free-gb N            Reject submissions below this free GB (default: 25)
+  --disk-path PATH                Filesystem mount to monitor (default: /)
+  --admin-token TOKEN             Admin token for /admin API (default: random)
   -h, --help                      Show this help
 
 This script writes .env at repo root and mirrors it to server/.env.
@@ -88,6 +101,12 @@ while [[ $# -gt 0 ]]; do
     --submit-window-ms) SUBMIT_RATE_WINDOW_MS="$2"; shift 2 ;;
     --submit-max) SUBMIT_RATE_MAX="$2"; shift 2 ;;
     --public-api-base) NEXT_PUBLIC_API_BASE_URL="$2"; shift 2 ;;
+    --api-key-header) API_KEY_HEADER="$2"; shift 2 ;;
+    --per-key-per-minute) SUBMIT_PER_KEY_PER_MINUTE="$2"; shift 2 ;;
+    --per-key-per-day) SUBMIT_PER_KEY_PER_DAY="$2"; shift 2 ;;
+    --disk-min-free-gb) DISK_MIN_FREE_GB="$2"; shift 2 ;;
+    --disk-path) DISK_PATH="$2"; shift 2 ;;
+    --admin-token) ADMIN_TOKEN="$2"; shift 2 ;;
     -h|--help) print_help; exit 0 ;;
     *) echo "Unknown arg: $1" >&2; print_help; exit 2 ;;
   esac
@@ -102,6 +121,7 @@ if [[ -z "$CORS_ORIGINS" || "$CORS_ORIGINS" = "https://" || "$CORS_ORIGINS" = "h
 if [[ -z "$NEXT_PUBLIC_API_BASE_URL" || "$NEXT_PUBLIC_API_BASE_URL" = "https://" || "$NEXT_PUBLIC_API_BASE_URL" = "http://" ]]; then NEXT_PUBLIC_API_BASE_URL="https://$DOMAIN"; fi
 if [[ -z "$POSTGRES_PASSWORD" ]]; then POSTGRES_PASSWORD="$(rand_hex 24)"; fi
 if [[ -z "$INGEST_HMAC_SECRET" ]]; then INGEST_HMAC_SECRET="$(rand_hex 32)"; fi
+if [[ -z "$ADMIN_TOKEN" ]]; then ADMIN_TOKEN="$(rand_hex 24)"; fi
 
 DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
@@ -126,6 +146,18 @@ RATE_LIMIT_MAX=${RATE_LIMIT_MAX}
 SUBMIT_RATE_WINDOW_MS=${SUBMIT_RATE_WINDOW_MS}
 SUBMIT_RATE_MAX=${SUBMIT_RATE_MAX}
 INGEST_HMAC_SECRET=${INGEST_HMAC_SECRET}
+
+# API key auth (beta)
+API_KEY_HEADER=${API_KEY_HEADER}
+SUBMIT_PER_KEY_PER_MINUTE=${SUBMIT_PER_KEY_PER_MINUTE}
+SUBMIT_PER_KEY_PER_DAY=${SUBMIT_PER_KEY_PER_DAY}
+
+# Disk watchdog
+DISK_MIN_FREE_GB=${DISK_MIN_FREE_GB}
+DISK_PATH=${DISK_PATH}
+
+# Admin API
+ADMIN_TOKEN=${ADMIN_TOKEN}
 
 # Frontend (public)
 NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}

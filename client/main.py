@@ -38,7 +38,7 @@ except Exception:
 # Fixed backend endpoint for submissions
 BACKEND_BASE_URL = "https://encodingdb.platinumlabs.dev"
 ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
-ENV_API_KEY = os.environ.get("API_KEY", "")
+ENV_API_KEY = os.environ.get("ENCDB_API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
 ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
@@ -786,10 +786,34 @@ def sha256_of_file(path: str) -> str:
     return hasher.hexdigest()
 
 
+def validate_api_key(base_url: str, api_key: str, timeout: float = 10.0) -> Tuple[bool, str]:
+    import requests
+    url = f"{base_url.rstrip('/')}/health"
+    try:
+        r = requests.get(url, headers={"X-API-Key": api_key}, timeout=timeout, verify=REQUESTS_VERIFY)
+        # Auth is enforced on /submit only; probe an auth-gated POST with empty payload
+        r2 = requests.post(f"{base_url.rstrip('/')}/submit", data="{}", headers={"Content-Type": "application/json", "X-API-Key": api_key}, timeout=timeout, verify=REQUESTS_VERIFY)
+        if r2.status_code in (200, 201, 400):
+            return True, "ok"
+        if r2.status_code == 401:
+            return False, "missing_api_key"
+        if r2.status_code == 403:
+            return False, "invalid_or_revoked"
+        if r2.status_code == 429:
+            return False, "rate_limited"
+        if r2.status_code == 503 and 'low_disk' in (r2.text or ''):
+            return False, "server_low_disk"
+        return False, f"unexpected_{r2.status_code}"
+    except Exception as e:
+        return False, f"network_error: {e}"
+
+
 def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0) -> None:
     import requests  # lazy import
     url = f"{base_url.rstrip('/')}/submit"
     headers: Dict[str, str] = {"Content-Type": "application/json"}
+    if api_key:
+        headers["X-API-Key"] = api_key.strip()
     # Fetch submit token (and optional PoW) if server runs in public/hybrid mode
     try:
         base = base_url.rstrip('/')
@@ -847,7 +871,7 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             print(f"token fetch error: {te}", file=sys.stderr)
         except Exception:
             pass
-    # HMAC signing if secret available
+    # HMAC signing if secret available (legacy)
     ts = int(time.time())
     body = json.dumps(payload, separators=(",", ":"))
     secret = ENV_INGEST_HMAC_SECRET
@@ -864,6 +888,19 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             r.raise_for_status()
             return
         except Exception as e:
+            # Friendly hints for common auth/disk errors
+            try:
+                import requests as _req  # type: ignore
+                if isinstance(e, _req.HTTPError) and getattr(e, 'response', None) is not None:
+                    resp = e.response
+                    if resp.status_code in (401, 403):
+                        print("Submission rejected: invalid or missing API key. Set --api-key or ENCDB_API_KEY.", file=sys.stderr)
+                    elif resp.status_code == 429:
+                        print("Rate limited. Waiting before retry...", file=sys.stderr)
+                    elif resp.status_code == 503 and 'low_disk' in (resp.text or ''):
+                        print("Server temporarily read-only due to low disk space. Try again later.", file=sys.stderr)
+            except Exception:
+                pass
             # On final attempt, surface server response body and token diagnostics
             if attempt == retries:
                 try:
@@ -886,7 +923,7 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Encoding Benchmark Client")
     p.add_argument("--base-url", default=ENV_BACKEND_BASE_URL, help="Backend base URL (default: env BACKEND_BASE_URL or production)")
-    p.add_argument("--api-key", default=ENV_API_KEY, help="API key for submission (default: env API_KEY)")
+    p.add_argument("--api-key", default=ENV_API_KEY, help="API key for submission (default: env ENCDB_API_KEY)")
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
     p.add_argument("--presets", default=ENV_PRESETS, help="Comma-separated list of presets (default: fast,medium,slow)")
     p.add_argument("--no-submit", action="store_true", help="Run tests but do not submit results")
@@ -898,6 +935,29 @@ def build_arg_parser() -> argparse.ArgumentParser:
 
 
 def run_with_args(args: argparse.Namespace) -> int:
+    # Ensure API key present and valid before any work
+    api_key = (args.api_key or os.environ.get("ENCDB_API_KEY", "")).strip()
+    if not api_key:
+        # Prompt for API key interactively
+        try:
+            api_key = prompt_text("Enter your API key", "").strip()
+        except Exception:
+            api_key = ""
+    if not api_key:
+        print("An API key is required to submit results. Set --api-key or ENCDB_API_KEY.", file=sys.stderr)
+        return 6
+    ok, reason = validate_api_key(args.base_url, api_key)
+    if not ok:
+        msg = {
+            "missing_api_key": "Missing API key (401).",
+            "invalid_or_revoked": "Invalid or revoked API key (403).",
+            "rate_limited": "API key rate limited (429). Try again later.",
+            "server_low_disk": "Server temporarily read-only due to low disk. Try later.",
+        }.get(reason, f"API key validation failed: {reason}")
+        print(msg, file=sys.stderr)
+        return 6
+    # Persist validated key to environment for subsequent calls
+    os.environ["ENCDB_API_KEY"] = api_key
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
@@ -987,7 +1047,7 @@ def run_with_args(args: argparse.Namespace) -> int:
                 print(f"Skipped submission for preset={preset} due to encode failure (fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})")
                 all_payloads.append({**payload, "localError": True})
                 continue
-            submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
+            submit(base_url, payload, api_key=api_key, retries=max(1, args.retries))
             print(f"Submitted: {preset}")
         except Exception as e:
             print(f"Failed to submit {preset}: {e}", file=sys.stderr)
@@ -1008,7 +1068,7 @@ def run_with_args(args: argparse.Namespace) -> int:
             try:
                 with open(fpath, 'r', encoding='utf-8') as fh:
                     payload = json.load(fh)
-                submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
+                submit(base_url, payload, api_key=api_key, retries=max(1, args.retries))
                 os.remove(fpath)
                 print(f"Retried and submitted: {fn}")
             except Exception:

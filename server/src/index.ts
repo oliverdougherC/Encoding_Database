@@ -7,6 +7,9 @@ import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import routes from './routes.js';
+import { requireApiKey } from './auth.js';
+import adminRouter from './admin.js';
+import { startWatchdog, getState as getDiskState } from './diskWatchdog.js';
 import { prisma } from './db.js';
 import crypto from 'node:crypto';
 
@@ -268,7 +271,7 @@ app.get('/health/ready', async (_req, res) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', disk: getDiskState() });
 });
 
 // Health-based token endpoint (covered by nginx health.* routing)
@@ -281,7 +284,13 @@ app.get('/health/token', (req, res) => {
 });
 
 // Routes
+// Enforce API keys for submissions during beta
+app.use('/submit', requireApiKey);
+
 app.use(routes);
+
+// Admin endpoints (protect at edge via Cloudflare/Nginx plus ADMIN_TOKEN header)
+app.use('/admin', adminRouter);
 
 // Explicit lightweight token endpoints here too (in case external routing bypasses routes.ts)
 app.get('/submit-token', (req, res) => {
@@ -318,6 +327,9 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
  
 
 const port = process.env.PORT || 3001;
+// Start disk watchdog to gate ingestion on low disk
+startWatchdog();
+
 const server = app.listen(port, () => {
   console.log(`server listening on ${port}`);
 });
