@@ -13,20 +13,24 @@ function parseDfKB(out: string): { freeBytes: number } | null {
   if (lines.length < 2) return null;
   // Skip header, find a line whose last column matches diskPath
   for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(/\s+/);
+    const raw = lines[i] ?? '';
+    const parts = raw.split(/\s+/);
     if (parts.length < 6) continue;
-    const mount = parts[parts.length - 1];
+    const mount = String(parts[parts.length - 1] ?? '');
     if (mount === diskPath) {
-      const availableKb = Number(parts[parts.length - 3]);
+      const availStr = String(parts[parts.length - 3] ?? '');
+      const availableKb = Number(availStr);
       if (Number.isFinite(availableKb)) {
         return { freeBytes: availableKb * 1024 };
       }
     }
   }
   // Fallback: try the second line if no exact match
-  const parts = lines[1].split(/\s+/);
+  const raw2 = lines[1] ?? '';
+  const parts = raw2.split(/\s+/);
   if (parts.length >= 6) {
-    const availableKb = Number(parts[parts.length - 3]);
+    const availStr = String(parts[parts.length - 3] ?? '');
+    const availableKb = Number(availStr);
     if (Number.isFinite(availableKb)) {
       return { freeBytes: availableKb * 1024 };
     }
