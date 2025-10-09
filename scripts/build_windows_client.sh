@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -e
+set -u
+# Enable pipefail if supported (older shells may not support it)
+set -o pipefail 2>/dev/null || true
 
 # Build a Windows standalone client with PyInstaller.
 # Run this from Windows PowerShell/CMD or from Git Bash/WSL that can invoke Windows Python (py launcher).
