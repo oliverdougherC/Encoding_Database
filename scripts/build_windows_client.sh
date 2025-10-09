@@ -10,9 +10,20 @@ CLIENT_DIR="$ROOT_DIR/client"
 BUILD_DIR="$CLIENT_DIR/dist/windows"
 BIN_SRC_DIR="$CLIENT_DIR/bin/win"
 
+# Optional: set VERBOSE=1 to enable shell tracing; set PAUSE_ON_EXIT=1 to pause at end
+if [[ "${VERBOSE:-0}" == "1" ]]; then
+  set -x
+fi
+
 echo "[Windows] Preparing build directories..."
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/bin/win"
+
+# Capture full build output to a log file for debugging even if the window closes
+LOG_FILE="$BUILD_DIR/build.log"
+: > "$LOG_FILE" || true
+# tee may not be available in all shells, but is present in Git Bash/MSYS2; ignore failure
+exec > >(tee -a "$LOG_FILE") 2>&1 || true
 
 echo "[Windows] Verifying ffmpeg/ffprobe binaries..."
 if [[ ! -f "$BIN_SRC_DIR/ffmpeg.exe" ]] || [[ ! -f "$BIN_SRC_DIR/ffprobe.exe" ]]; then
@@ -72,4 +83,10 @@ else
 fi
 
 echo "[Windows] Build complete: $BUILD_DIR"
+echo "[Windows] Build log saved to: $LOG_FILE"
+
+# Optional pause for double-click runs (set PAUSE_ON_EXIT=1)
+if [[ "${PAUSE_ON_EXIT:-0}" == "1" ]]; then
+  read -r -p "Press Enter to close..." _
+fi
 
