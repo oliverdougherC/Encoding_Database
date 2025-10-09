@@ -30,18 +30,28 @@ echo "[Windows] Running PyInstaller..."
 cd "$CLIENT_DIR"
 
 # Pick Windows Python launcher if available to ensure a native .exe is produced
+PY_CMD=( )
 if command -v py >/dev/null 2>&1; then
-  PY_CMD="py -3"
+  PY_CMD=(py -3)
 elif command -v py.exe >/dev/null 2>&1; then
-  PY_CMD="py.exe -3"
+  PY_CMD=(py.exe -3)
 elif command -v python.exe >/dev/null 2>&1; then
-  PY_CMD="python.exe"
+  PY_CMD=(python.exe)
 else
   # Fallback (may build for non-Windows if not using Windows Python!)
-  PY_CMD="python"
+  PY_CMD=(python)
 fi
 
-"$PY_CMD" -m PyInstaller \
+echo "[Windows] Using Python: ${PY_CMD[*]}"
+
+# Verify PyInstaller is available in this interpreter
+if ! "${PY_CMD[@]}" -m PyInstaller --version >/dev/null 2>&1; then
+  echo "ERROR: PyInstaller is not installed for this Python interpreter (${PY_CMD[*]})." >&2
+  echo "       Install with: ${PY_CMD[*]} -m pip install pyinstaller" >&2
+  exit 3
+fi
+
+"${PY_CMD[@]}" -m PyInstaller \
   --clean \
   --onefile \
   --name encodingdb-client-windows \
