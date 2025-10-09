@@ -1,0 +1,3 @@
+# Normalize line endings: use LF for shell scripts so Git Bash/MSYS2 works
+*.sh text eol=lf
+

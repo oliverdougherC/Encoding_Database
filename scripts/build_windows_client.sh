@@ -4,6 +4,10 @@ set -u
 # Enable pipefail if supported (older shells may not support it)
 set -o pipefail 2>/dev/null || true
 
+# MSYS2/Git Bash: ignore CR characters if the file has CRLF endings
+export SHELLOPTS
+set -o igncr 2>/dev/null || true
+
 # Build a Windows standalone client with PyInstaller.
 # Run this from Windows PowerShell/CMD or from Git Bash/WSL that can invoke Windows Python (py launcher).
 # Requires: Windows Python ("py" launcher) with PyInstaller installed, and ffmpeg/ffprobe in client/bin/win.
