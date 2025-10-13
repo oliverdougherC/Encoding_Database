@@ -11,6 +11,7 @@ import tempfile
 import time
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, List, Tuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import warnings
 # Suppress urllib3 OpenSSL compatibility warning proactively (before any urllib3 import)
@@ -131,6 +132,17 @@ _FFMPEG_DETECTED_PRINTED: bool = False
 _BATCH_ACTIVE: bool = False
 _BATCH_START_TS: float = 0.0
 _BATCH_COMPLETED_COUNT: int = 0
+
+# Baseline cache for client-side outlier checks (populated lazily per session)
+_BASELINE_ROWS_CACHE: Optional[List[Dict[str, Any]]] = None
+
+
+def _env_flag(name: str, default: bool = False) -> bool:
+    try:
+        v = os.environ.get(name, "")
+        return str(v).strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        return default
 
 def ffmpeg_exe() -> str:
     global _FFMPEG_EXE
@@ -848,6 +860,384 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
     return None
 
 
+# --- Client-only heuristics and helpers for batched pipeline ---
+
+def resolve_batch_size(requested: Optional[int]) -> int:
+    try:
+        if isinstance(requested, int) and requested > 0:
+            return max(1, requested)
+    except Exception:
+        pass
+    try:
+        n = os.cpu_count() or 4
+    except Exception:
+        n = 4
+    return max(1, int(n))
+
+
+def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> float:
+    samples: List[float] = []
+    elapsed: float = 0.0
+    try:
+        while elapsed < seconds:
+            samples.append(psutil.cpu_percent(interval=interval))
+            elapsed += interval
+        return float(sum(samples) / max(1, len(samples)))
+    except Exception:
+        return 0.0
+
+
+def detect_virtualization(hardware: HardwareInfo) -> Tuple[bool, str]:
+    hints: List[str] = []
+    # CPU hypervisor flag
+    try:
+        info = cpuinfo.get_cpu_info() or {}
+        flags = set(info.get('flags') or [])
+        if 'hypervisor' in flags:
+            hints.append('cpu_hypervisor_flag')
+    except Exception:
+        pass
+    # Linux DMI strings (best-effort)
+    try:
+        dmi_paths = ['/sys/class/dmi/id/product_name', '/sys/class/dmi/id/sys_vendor']
+        for p in dmi_paths:
+            if os.path.exists(p):
+                try:
+                    txt = open(p, 'r', encoding='utf-8', errors='ignore').read().lower()
+                    if any(x in txt for x in ['kvm', 'qemu', 'vmware', 'virtualbox', 'hyper-v', 'parallels']):
+                        hints.append(f'dmi:{os.path.basename(p)}')
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    # GPU model indicators
+    try:
+        if hardware.gpuModel and any(x in str(hardware.gpuModel).lower() for x in ['microsoft basic render', 'svga', 'vbox', 'virtio', 'llvmpipe']):
+            hints.append('gpu_virtual_like')
+    except Exception:
+        pass
+    reason = ','.join(hints)[:200] if hints else ''
+    return (len(hints) > 0, reason)
+
+
+def _encoder_family_for(encoder: str) -> Optional[str]:
+    e = (encoder or '').lower()
+    if 'h264' in e:
+        return 'h264'
+    if 'hevc' in e or 'h265' in e:
+        return 'hevc'
+    if 'av1' in e:
+        return 'av1'
+    if 'vp9' in e:
+        return 'vp9'
+    return None
+
+
+def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optional[int], out_dir: str, artifact_name: str) -> Dict[str, Any]:
+    os.makedirs(out_dir, exist_ok=True)
+    artifact_path = os.path.join(out_dir, artifact_name)
+    cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=encoder, preset_name=preset, crf=crf)
+    start = time.time()
+    proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    end = time.time()
+    elapsed = max(0.0001, end - start)
+    # If failed with HW encoder, retry with software for same family
+    if (proc.returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
+        family = _encoder_family_for(encoder)
+        if family:
+            sw = pick_software_encoder_for_family(family)
+            if sw and sw != encoder and has_encoder(sw):
+                try:
+                    cmd_sw = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=sw, preset_name=preset, crf=crf)
+                    start = time.time()
+                    proc = subprocess.run(cmd_sw, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    end = time.time()
+                    elapsed = max(0.0001, end - start)
+                    encoder = sw
+                except Exception:
+                    pass
+    # Probe frames
+    try:
+        probe = subprocess.run([
+            ffprobe_exe(), '-v', 'error', '-count_frames', '-select_streams', 'v:0',
+            '-show_entries', 'stream=nb_read_frames',
+            '-of', 'default=nokey=1:noprint_wrappers=1', artifact_path
+        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+        nb_frames_str = (probe.stdout or '').strip()
+        total_frames = int(nb_frames_str) if nb_frames_str.isdigit() else 0
+    except Exception:
+        total_frames = 0
+    fps_val = (total_frames / elapsed) if total_frames > 0 else 0.0
+    size_val = os.path.getsize(artifact_path) if os.path.exists(artifact_path) else 0
+    err_msg: Optional[str] = None
+    if proc.returncode != 0 or size_val <= 0 or fps_val <= 0.0:
+        stderr_lines = (proc.stderr or '').splitlines()
+        err_msg = '; '.join([ln.strip() for ln in stderr_lines[-5:]]) if stderr_lines else 'ffmpeg failed'
+    return {
+        'artifactPath': artifact_path,
+        'encoderUsed': encoder,
+        'elapsedMs': int(round(elapsed * 1000)),
+        'fps': float(fps_val),
+        'fileSizeBytes': int(size_val),
+        'error': err_msg,
+    }
+
+
+def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -> Dict[str, Optional[float]]:
+    results: Dict[str, Optional[float]] = {}
+    if not artifacts:
+        return results
+    total = len(artifacts)
+    done = 0
+    print(f"Starting parallel VMAF for {total} item(s) with {max(1, workers)} worker(s)...")
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
+        futs = {ex.submit(compute_vmaf, input_path, ap): ap for ap in artifacts}
+        for fut in as_completed(futs):
+            ap = futs[fut]
+            try:
+                results[ap] = fut.result()
+            except Exception:
+                results[ap] = None
+            done += 1
+            try:
+                pct = (done / total) * 100.0
+            except Exception:
+                pct = 100.0
+            print(f"VMAF progress: {done}/{total} ({pct:.0f}%)")
+    print("VMAF batch complete.")
+    return results
+
+
+def _median(values: List[float]) -> float:
+    v = sorted([float(x) for x in values])
+    n = len(v)
+    if n == 0:
+        return 0.0
+    m = n // 2
+    if n % 2 == 1:
+        return v[m]
+    return (v[m - 1] + v[m]) / 2.0
+
+
+def _mad(values: List[float], med: float) -> float:
+    dev = [abs(float(x) - med) for x in values]
+    return _median(dev)
+
+
+def _robust_z(x: float, med: float, mad_val: float) -> float:
+    denom = (1.4826 * mad_val) if mad_val > 0 else 1.0
+    return (float(x) - med) / denom
+
+
+def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
+    global _BASELINE_ROWS_CACHE
+    if _BASELINE_ROWS_CACHE is not None:
+        return _BASELINE_ROWS_CACHE
+    try:
+        import requests  # lazy import
+        url = f"{base_url.rstrip('/')}/query?limit=500"
+        r = requests.get(url, timeout=15, verify=REQUESTS_VERIFY)
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, list):
+                _BASELINE_ROWS_CACHE = data
+                return data
+    except Exception:
+        pass
+    _BASELINE_ROWS_CACHE = []
+    return _BASELINE_ROWS_CACHE
+
+
+def baseline_is_suspect(current: Dict[str, Any], rows: List[Dict[str, Any]]) -> Tuple[bool, str]:
+    try:
+        key = (
+            current.get('cpuModel'),
+            current.get('gpuModel'),
+            int(current.get('ramGB') or 0),
+            current.get('os'),
+            current.get('codec'),
+            current.get('preset'),
+            int(current.get('crf') if current.get('crf') is not None else 24),
+        )
+        same = [r for r in rows if (
+            r.get('cpuModel') == key[0] and
+            (r.get('gpuModel') or None) == key[1] and
+            int(r.get('ramGB') or 0) == key[2] and
+            r.get('os') == key[3] and
+            r.get('codec') == key[4] and
+            r.get('preset') == key[5] and
+            int(r.get('crf') or 24) == key[6]
+        )]
+        if not same:
+            return (False, '')
+        fps_arr = [float(r.get('fps') or 0) for r in same if float(r.get('fps') or 0) > 0]
+        size_arr = [float(r.get('fileSizeBytes') or 0) for r in same if float(r.get('fileSizeBytes') or 0) > 0]
+        vmaf_arr = [float(r.get('vmaf') or 0) for r in same if r.get('vmaf') is not None]
+        fps_med = _median(fps_arr) if fps_arr else float(current.get('fps') or 0)
+        size_med = _median(size_arr) if size_arr else float(current.get('fileSizeBytes') or 0)
+        vmaf_med = _median(vmaf_arr) if vmaf_arr else float(current.get('vmaf') or 0)
+        fps_mad = _mad(fps_arr, fps_med) if fps_arr else 0.0
+        size_mad = _mad(size_arr, size_med) if size_arr else 0.0
+        vmaf_mad = _mad(vmaf_arr, vmaf_med) if vmaf_arr else 0.0
+        fps_z = _robust_z(float(current.get('fps') or 0), fps_med, fps_mad)
+        size_z = _robust_z(float(current.get('fileSizeBytes') or 0), size_med, size_mad)
+        vmaf_val = current.get('vmaf')
+        vmaf_z = _robust_z(float(vmaf_val), vmaf_med, vmaf_mad) if vmaf_val is not None else 0.0
+        max_abs = max(abs(fps_z), abs(size_z), abs(vmaf_z))
+        if max_abs > 3.0:
+            return (True, f'baseline_outlier|z={max_abs:.2f}')
+        return (False, '')
+    except Exception:
+        return (False, '')
+
+
+def should_skip_submission(*, hardware: HardwareInfo, payload: Dict[str, Any], background_cpu_pct: float, baseline_rows: List[Dict[str, Any]], background_threshold: float = 20.0) -> Tuple[bool, str]:
+    # VM detection
+    is_vm, vm_reason = detect_virtualization(hardware)
+    if is_vm:
+        return True, f'vm_detected:{vm_reason}'
+    # Background load
+    try:
+        if background_cpu_pct > background_threshold:
+            return True, f'high_background_load:{background_cpu_pct:.1f}%'
+    except Exception:
+        pass
+    # Baseline outlier check
+    suspect, reason = baseline_is_suspect(payload, baseline_rows)
+    if suspect:
+        return True, reason
+    return False, ''
+
+
+def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse.Namespace, tasks: List[Dict[str, Any]]) -> int:
+    # Ensure ffmpeg tools and sample file
+    ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
+    if not ok:
+        print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
+        return 2
+    if not has_libvmaf():
+        print("Your ffmpeg build does not include libvmaf. Install ffmpeg with libvmaf.", file=sys.stderr)
+        return 5
+    input_path = get_default_sample_path()
+    if not input_path:
+        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
+        return 3
+    ok_sample, msg = verify_sample_video(input_path)
+    if not ok_sample:
+        print(
+            f"Test video integrity check failed: {msg}.\n"
+            "Please use the original, unmodified sample.mp4 included with the client.",
+            file=sys.stderr,
+        )
+        return 6
+    input_hash = sha256_of_file(input_path)
+    client_version = "client/0.1.0"
+    # Resolve workers
+    workers = resolve_batch_size(getattr(args, 'batch_size', 0))
+    if not getattr(args, 'no_submit', False):
+        # Warm baseline cache once
+        _ = fetch_baseline_rows(base_url)
+
+    # Process tasks in chunks of `workers`
+    completed_count_local = 0
+    total_tasks = len(tasks)
+    processed_total = 0
+    for i in range(0, len(tasks), max(1, workers)):
+        chunk = tasks[i:i + max(1, workers)]
+        with tempfile.TemporaryDirectory() as batch_dir:
+            artifacts_info: List[Dict[str, Any]] = []
+            print(f"Encoding batch {i//max(1,workers)+1}: {len(chunk)} task(s) → {batch_dir}")
+            for idx, t in enumerate(chunk, start=1):
+                enc = t['encoder']
+                preset = t['preset']
+                crf = t.get('crf')
+                bg_load = measure_background_cpu_load(3.0, 0.5)
+                name = f"{enc.replace('/', '_')}-{preset}-{str(crf) if crf is not None else 'none'}-{idx}.mp4"
+                global_index = processed_total + idx
+                try:
+                    overall_pct = ((global_index - 1) / max(1, total_tasks)) * 100.0
+                except Exception:
+                    overall_pct = 0.0
+                print(f"  - Encoding {idx}/{len(chunk)} in batch | Overall {global_index-1}/{total_tasks} ({overall_pct:.0f}%) → {enc} {preset} crf={crf}")
+                info = encode_to_artifact(input_path=input_path, encoder=enc, preset=preset, crf=crf, out_dir=batch_dir, artifact_name=name)
+                info['backgroundCpuPct'] = float(bg_load)
+                info['task'] = t
+                artifacts_info.append(info)
+            # VMAF in parallel
+            apaths = [x['artifactPath'] for x in artifacts_info]
+            vmaf_map = compute_vmaf_parallel(input_path, apaths, workers)
+            # Build and submit payloads
+            baseline_rows = fetch_baseline_rows(base_url)
+            for info in artifacts_info:
+                t = info['task']
+                payload: Dict[str, Any] = {
+                    'cpuModel': hardware.cpuModel,
+                    'gpuModel': hardware.gpuModel,
+                    'ramGB': hardware.ramGB,
+                    'os': hardware.os,
+                    'codec': info.get('encoderUsed') or t['encoder'],
+                    'preset': t['preset'],
+                    'crf': t.get('crf'),
+                    'fps': float(info.get('fps') or 0.0),
+                    'fileSizeBytes': int(info.get('fileSizeBytes') or 0),
+                    'runMs': int(info.get('elapsedMs') or 0),
+                    'ffmpegVersion': ffmpeg_version,
+                    'encoderName': info.get('encoderUsed') or t['encoder'],
+                    'clientVersion': client_version,
+                    'inputHash': input_hash,
+                }
+                vmaf_score = vmaf_map.get(info['artifactPath'])
+                if vmaf_score is not None:
+                    payload['vmaf'] = float(vmaf_score)
+                # Attach any local error snippet
+                if info.get('error'):
+                    payload['notes'] = str(info['error'])[:500]
+                # Gating heuristics
+                skip, reason = should_skip_submission(hardware=hardware, payload=payload, background_cpu_pct=float(info.get('backgroundCpuPct') or 0.0), baseline_rows=baseline_rows)
+                if skip:
+                    print(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
+                    # Persist skip to queue for visibility if not no-submit
+                    if not args.no_submit:
+                        try:
+                            os.makedirs(args.queue_dir, exist_ok=True)
+                            fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-skipped-{payload['preset']}.json")
+                            with open(fname, 'w', encoding='utf-8') as fh:
+                                json.dump({**payload, 'localError': True, 'notes': (payload.get('notes') or '')[:400] + (f"; {reason}" if reason else '')}, fh, separators=(',', ':'))
+                            print(f"Queued skipped payload for review: {fname}")
+                        except Exception as qe:
+                            print(f"Failed to queue skipped payload: {qe}", file=sys.stderr)
+                    continue
+                # Submit
+                if args.no_submit:
+                    print(f"Dry-run: not submitting {payload['codec']} {payload['preset']}")
+                else:
+                    try:
+                        submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries), use_token=_env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)))
+                        print("Submitted Results")
+                    except Exception as e:
+                        print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
+                        try:
+                            os.makedirs(args.queue_dir, exist_ok=True)
+                            fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{payload['preset']}.json")
+                            with open(fname, 'w', encoding='utf-8') as fh:
+                                json.dump(payload, fh, separators=(',', ':'))
+                            print(f"Queued for retry: {fname}")
+                        except Exception as qe:
+                            print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
+                    completed_count_local += 1
+                    if _BATCH_ACTIVE:
+                        global _BATCH_COMPLETED_COUNT
+                        _BATCH_COMPLETED_COUNT += 1
+                processed_total += 1
+                try:
+                    overall_pct = (processed_total / max(1, total_tasks)) * 100.0
+                except Exception:
+                    overall_pct = 100.0
+                print(f"Progress: {processed_total}/{total_tasks} ({overall_pct:.0f}%) complete\n")
+    return 0
+
+
 def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
     result = run_ffmpeg_test(input_path, preset=preset, codec=codec, crf=crf)
     # Fallback: if failed with a hardware encoder, retry with software encoder for the same family
@@ -928,67 +1318,61 @@ def verify_sample_video(path: str) -> Tuple[bool, str]:
         return False, f"verification error: {e}"
 
 
-def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0) -> None:
+def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0, use_token: Optional[bool] = None) -> None:
     import requests  # lazy import
     url = f"{base_url.rstrip('/')}/submit"
     headers: Dict[str, str] = {"Content-Type": "application/json"}
     # Fetch submit token (and optional PoW) if server runs in public/hybrid mode
-    try:
-        base = base_url.rstrip('/')
-        # Prefer health-based token which we know routes to the API
-        endpoints = [
-            f"{base}/health/token",
-            f"{base}/submit-token",
-            f"{base}/submit/token",
-        ]
-        tokenResp = None
-        for ep in endpoints:
-            try:
-                r = requests.get(ep, timeout=10, verify=REQUESTS_VERIFY)
-                if r.status_code == 200:
-                    tokenResp = r
-                    break
-            except Exception:
-                continue
-        if tokenResp is None:
-            # Nothing worked; leave unsigned (middleware may allow)
-            tokenResp = requests.Response()
-            tokenResp.status_code = 0
-        if tokenResp.status_code == 200:
-            tokenData = tokenResp.json() or {}
-            token = str(tokenData.get('token') or '')
-            powInfo = tokenData.get('pow') or {}
-            if token:
-                headers['x-ingest-token'] = token
-                # Optional PoW: find a small nonce
+    if use_token is None:
+        use_token = _env_flag('INGEST_USE_TOKENS', False)
+    if use_token:
+        try:
+            base = base_url.rstrip('/')
+            # Prefer health-based token which we know routes to the API
+            endpoints = [
+                f"{base}/health/token",
+                f"{base}/submit-token",
+                f"{base}/submit/token",
+            ]
+            tokenResp = None
+            for ep in endpoints:
                 try:
-                    difficulty = int(powInfo.get('difficulty') or 0)
+                    r = requests.get(ep, timeout=10, verify=REQUESTS_VERIFY)
+                    if r.status_code == 200:
+                        tokenResp = r
+                        break
                 except Exception:
-                    difficulty = 0
-                if difficulty > 0:
-                    prefix = '0' * max(0, difficulty)
-                    # Simple bounded search; server uses sha256(token.nonce)
-                    nonce = 0
-                    max_iters = 500000
-                    while nonce < max_iters:
-                        test = hashlib.sha256(f"{token}.{nonce}".encode('utf-8')).hexdigest()
-                        if test.startswith(prefix):
-                            headers['x-ingest-nonce'] = str(nonce)
-                            break
-                        nonce += 1
-                # else: no PoW required
-        else:
-            # Debug aid: show why token wasn't returned
+                    continue
+            if tokenResp and tokenResp.status_code == 200:
+                tokenData = tokenResp.json() or {}
+                token = str(tokenData.get('token') or '')
+                powInfo = tokenData.get('pow') or {}
+                # Accept only real issued tokens (32 hex chars); ignore placeholders like 'direct'
+                if token and re.fullmatch(r"[0-9a-f]{32}", token):
+                    headers['x-ingest-token'] = token
+                    # Optional PoW: find a small nonce
+                    try:
+                        difficulty = int(powInfo.get('difficulty') or 0)
+                    except Exception:
+                        difficulty = 0
+                    if difficulty > 0:
+                        prefix = '0' * max(0, difficulty)
+                        # Simple bounded search; server uses sha256(token.nonce)
+                        nonce = 0
+                        max_iters = 500000
+                        while nonce < max_iters:
+                            test = hashlib.sha256(f"{token}.{nonce}".encode('utf-8')).hexdigest()
+                            if test.startswith(prefix):
+                                headers['x-ingest-nonce'] = str(nonce)
+                                break
+                            nonce += 1
+                    # else: no PoW required
+            # If token fetch fails or invalid, continue unsigned
+        except Exception as te:
             try:
-                print(f"token fetch failed: {tokenResp.status_code} {tokenResp.text}", file=sys.stderr)
+                print(f"token fetch error: {te}", file=sys.stderr)
             except Exception:
                 pass
-        # If 404/other, continue; server may be in signed mode
-    except Exception as te:
-        try:
-            print(f"token fetch error: {te}", file=sys.stderr)
-        except Exception:
-            pass
     # HMAC signing if secret available
     ts = int(time.time())
     body = json.dumps(payload, separators=(",", ":"))
@@ -1000,7 +1384,13 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
         headers["x-timestamp"] = str(ts)
     for attempt in range(1, retries + 1):
         try:
-            r = requests.post(url, data=body, timeout=30, headers=headers, verify=REQUESTS_VERIFY)
+            # Avoid infinite redirect loops; follow at most once manually
+            r = requests.post(url, data=body, timeout=30, headers=headers, verify=REQUESTS_VERIFY, allow_redirects=False)
+            if 300 <= r.status_code < 400:
+                loc = r.headers.get('Location') or r.headers.get('location')
+                if loc:
+                    # Re-issue once to the redirect target
+                    r = requests.post(loc, data=body, timeout=30, headers=headers, verify=REQUESTS_VERIFY, allow_redirects=False)
             if r.status_code >= 500:
                 raise RuntimeError(f"server_error {r.status_code}")
             r.raise_for_status()
@@ -1036,6 +1426,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--retries", type=int, default=3, help="Submission retry attempts (default: 3)")
     p.add_argument("--queue-dir", default=ENV_QUEUE_DIR, help="Directory for offline retry queue")
     p.add_argument("--menu", action="store_true", help="Force interactive menu even if arguments are provided")
+    p.add_argument("--batch-size", type=int, default=0, help="Batch size for parallel VMAF (0=auto: cpu_count or 4)")
+    p.add_argument("--use-token", action="store_true", help="Use short-lived submit token (opt-in; or set INGEST_USE_TOKENS=1)")
     return p
 
 
@@ -1229,7 +1621,6 @@ def run_with_args(args: argparse.Namespace) -> int:
 
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
     # Verify test video integrity FIRST (before any other output)
-    ensure_min_terminal_size()
     GREEN = "\033[32;1m"
     RESET = "\033[0m"
     sample_path = get_default_sample_path()
@@ -1246,19 +1637,27 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return 6
     print(f"Test Video Checksum {GREEN}Verified{RESET}")
     print("")
+    # Load presets for dynamic approx durations
+    presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
+    s_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
+    m_minutes = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxMinutes", 20))
+    f_hours = presets_cfg.get("fullBenchmark", {}).get("approxHours")
+    try:
+        f_hours = int(f_hours) if isinstance(f_hours, int) else float(f_hours)
+    except Exception:
+        f_hours = 3
     # Print menu
     print("Select an option:")
     menu = [
         "Run Single Benchmark",
-        "Run Small Benchmark [~5 minutes]",
-        "Run Full Benchmark [~3 hours]",
+        f"Run Small Benchmark [~{s_minutes} minutes]",
+        f"Run Medium Benchmark [~{m_minutes} minutes]",
+        f"Run Full Benchmark [~{f_hours} hours]",
         "Exit",
     ]
     choice = prompt_choice("Menu", menu, default_index=0)
-    if choice == 3:
+    if choice == 4:
         return 0
-
-    presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
 
     # Determine presets to run based on choice
     if choice == 0:
@@ -1337,7 +1736,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return run_with_args(effective_args)
     # Build an args Namespace reusing defaults from base_args
     # For Small or Full benchmark, require explicit readiness confirmation
-    if choice in (1, 2):
+    if choice in (1, 2, 3):
         ok = confirm_benchmark_readiness()
         if not ok:
             print("Aborted by user. Please close other programs and try again.")
@@ -1370,45 +1769,83 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         except Exception:
             crf_values = [default_crf]
     else:
-        # Small/Full from config
-        crf_values = [int(v) for v in (presets_cfg.get("smallBenchmark", {}).get("crfValues", []) if choice == 1 else presets_cfg.get("fullBenchmark", {}).get("crfValues", [])) if isinstance(v, int)]
-        if not crf_values:
-            crf_values = [24]
+        # Map: choice 1=Small(new), 2=Medium(previous smallBenchmark), 3=Full(fullBenchmark)
+        if choice == 1:
+            # Small: use a single CRF (prefer 24) and restrict presets in construction later
+            small_defaults = presets_cfg.get("smallBenchmark", {}).get("crfValues", [])
+            crf_values = [int(small_defaults[0])] if small_defaults else [24]
+        elif choice == 2:
+            crf_values = [int(v) for v in presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("crfValues", []) if isinstance(v, int)]
+            if not crf_values:
+                crf_values = [24]
+        else:
+            crf_values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
+            if not crf_values:
+                crf_values = [24]
 
+    # Build batched tasks list
+    tasks: List[Dict[str, Any]] = []
     for crf_val in crf_values:
         for enc in encoders:
             presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
-            # For Small (standard) benchmark, drop bottom 20% (rounded) slowest presets
-            if choice == 1 and len(presets_for_encoder) > 0:
-                ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
-                drop_count = int(round(len(ordered) * 0.2))
-                if drop_count >= len(ordered):
-                    drop_count = len(ordered) - 1  # always keep at least one
-                if drop_count > 0:
-                    presets_for_encoder = ordered[:-drop_count]
+            ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
+            if choice == 1:
+                # Small: pick middle preset + two faster ones (if available)
+                if not ordered:
+                    continue
+                mid_index = max(0, (len(ordered) - 1) // 2)
+                picks: List[str] = []
+                # two faster -> indices just before mid in speed-desc ordering
+                faster1 = mid_index - 1
+                faster2 = mid_index - 2
+                if faster2 >= 0:
+                    picks.append(ordered[faster2])
+                if faster1 >= 0:
+                    picks.append(ordered[faster1])
+                picks.append(ordered[mid_index])
+                # Deduplicate preserve order
+                seen: Dict[str, bool] = {}
+                final = [p for p in picks if not seen.setdefault(p, False)]
+                for preset_label in final:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
+            elif choice == 2:
+                # Medium: previous "Small" behavior – drop slowest 20%
+                if len(ordered) > 0:
+                    drop_count = int(round(len(ordered) * 0.2))
+                    if drop_count >= len(ordered):
+                        drop_count = len(ordered) - 1
+                    keep = ordered[:-drop_count] if drop_count > 0 else ordered
                 else:
-                    presets_for_encoder = ordered
-            for preset_label in presets_for_encoder:
-                effective_args = argparse.Namespace(
-                    base_url=base_args.base_url,
-                    api_key=base_args.api_key,
-                    codec=enc,
-                    presets=preset_label,
-                    no_submit=base_args.no_submit,
-                    crf=crf_val,
-                    retries=base_args.retries,
-                    queue_dir=base_args.queue_dir,
-                    menu=False,
-                )
-                rc = run_with_args(effective_args)
-                if rc not in (0,):
-                    pass
+                    keep = ordered
+                for preset_label in keep:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
+            else:
+                # Full: all presets
+                for preset_label in ordered:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
+
+    # Run batched pipeline
+    rc = run_benchmark_batch(
+        hardware=detect_hardware(),
+        base_url=base_args.base_url,
+        args=argparse.Namespace(
+            base_url=base_args.base_url,
+            api_key=base_args.api_key,
+            no_submit=base_args.no_submit,
+            crf=None,  # not used by batch function
+            retries=base_args.retries,
+            queue_dir=base_args.queue_dir,
+            menu=False,
+            batch_size=getattr(base_args, 'batch_size', 0),
+        ),
+        tasks=tasks,
+    )
     # Deactivate batch mode and print a single end screen
     elapsed_sec = max(0.0, time.time() - _BATCH_START_TS)
     _clear_screen()
     print_end_screen(_BATCH_COMPLETED_COUNT, elapsed_sec)
     _BATCH_ACTIVE = False
-    return 0
+    return rc
 
 
 def main(argv: List[str]) -> int:
