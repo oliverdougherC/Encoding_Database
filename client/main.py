@@ -506,6 +506,12 @@ def sort_presets_by_speed_desc(encoder: str, presets: List[str]) -> List[str]:
     return presets
 
 def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
+    # Best-effort: ensure TTY is in a sane state (fixes ^M echo on macOS terminals)
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            subprocess.run(["stty", "sane"], check=False)
+    except Exception:
+        pass
     suffix = " [y/N]: " if default_no else " [Y/n]: "
     ans = input(prompt + suffix).strip().lower()
     if not ans:
@@ -513,6 +519,12 @@ def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
     return ans in ("y", "yes")
 
 def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> int:
+    # Best-effort: ensure TTY is in a sane state (fixes ^M echo on macOS terminals)
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            subprocess.run(["stty", "sane"], check=False)
+    except Exception:
+        pass
     for i, opt in enumerate(options, start=1):
         print(f"  {i}) {opt}")
     raw = input(f"{prompt} (1-{len(options)}) [default {default_index+1}]: ").strip()
@@ -528,6 +540,12 @@ def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> in
 
 
 def prompt_text(prompt: str, default_value: str = "") -> str:
+    # Best-effort: ensure TTY is in a sane state (fixes ^M echo on macOS terminals)
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            subprocess.run(["stty", "sane"], check=False)
+    except Exception:
+        pass
     raw = input(f"{prompt} [{default_value}]: ").strip()
     return raw or default_value
 
@@ -595,6 +613,12 @@ def confirm_benchmark_readiness() -> bool:
     print(center_line("Type \"yes\" to proceed"))
     print(bottom)
 
+    # Best-effort: ensure TTY is sane for input
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            subprocess.run(["stty", "sane"], check=False)
+    except Exception:
+        pass
     ans = input("Type \"yes\" to proceed: ").strip().lower()
     return ans == "yes"
 
@@ -1621,6 +1645,12 @@ def run_with_args(args: argparse.Namespace) -> int:
 
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
     # Verify test video integrity FIRST (before any other output)
+    # Best-effort: reset TTY to sane mode at start of interactive session
+    try:
+        if sys.stdin and sys.stdin.isatty():
+            subprocess.run(["stty", "sane"], check=False)
+    except Exception:
+        pass
     GREEN = "\033[32;1m"
     RESET = "\033[0m"
     sample_path = get_default_sample_path()
