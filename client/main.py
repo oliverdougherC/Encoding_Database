@@ -411,8 +411,8 @@ def discover_hardware_encoders_for_family(family: str) -> List[Tuple[str, str]]:
     candidates = HARDWARE_ENCODERS.get(family, [])
     available: List[Tuple[str, str]] = []
     for enc, label in candidates:
-        # Only consider hardware encoder usable if ffmpeg can actually run a trivial encode
-        if is_hardware_encoder_usable(enc):
+        # Use ffmpeg-compiled presence to list, actual usability is handled by runtime fallback
+        if has_encoder(enc):
             available.append((enc, label))
     return available
 
@@ -428,7 +428,7 @@ def list_all_available_encoders() -> List[str]:
     # Hardware encoders (only those that appear usable on this machine)
     for fam, hw_list in HARDWARE_ENCODERS.items():
         for enc, _label in hw_list:
-            if is_hardware_encoder_usable(enc):
+            if has_encoder(enc):
                 encoders.append(enc)
     # De-duplicate while preserving order
     seen: Dict[str, bool] = {}
