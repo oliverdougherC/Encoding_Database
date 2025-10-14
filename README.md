@@ -30,7 +30,7 @@ Quick start – Using the prebuilt client (Windows/macOS)
 2) Close other heavy apps to improve measurement quality.
 3) Run the client:
    - Windows: double-click `encodingdb-client-windows.exe` (the terminal will pause at the end so you can read results)
-   - macOS: run the packaged app or `./encodingdb-client-macos` from Terminal (Gatekeeper may require you to allow execution)
+   - macOS: run the unix executable or `./encodingdb-client-macos` from Terminal (Gatekeeper may require you to allow execution)
 4) Follow the prompts to select a codec/encoder, CRF, and preset (or run a pre-defined small/medium/full benchmark from the menu).
 5) If submissions are enabled, results will be uploaded automatically. Otherwise, they will be queued locally for retry.
 
