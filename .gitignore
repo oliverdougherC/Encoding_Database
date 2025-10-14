@@ -4,7 +4,13 @@
 client/.venv
 client/build/
 client/dist/
-client/bin/*
+# FFmpeg binaries (too large for GitHub)
+client/bin/mac/ffmpeg
+client/bin/mac/ffprobe
+client/bin/win/ffmpeg.exe
+client/bin/win/ffprobe.exe
+client/bin/linux/ffmpeg
+client/bin/linux/ffprobe
 
 # OS
 .DS_Store
