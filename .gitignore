@@ -4,6 +4,7 @@
 client/.venv
 client/build/
 client/dist/
+client/bin/*
 
 # OS
 .DS_Store
