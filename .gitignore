@@ -1,8 +1,74 @@
 /.venv
+.venv/
+.myenv/
 client/.venv
-client/build
-client/dist
+client/build/
+client/dist/
 client/bin/mac/*
 client/bin/linux/*
 client/bin/win/*
-client/dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+.vercel/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store/
+.turbo/
+
+# Env
+.env
+server/.env
+frontend/.env
+client/.env
+
+# Build artifacts
+dist/
+server/dist/
+frontend/.firebase/
+frontend/.cache/
+
+# Prisma
+server/prisma/dev.db*
+server/prisma/*.db-journal
+server/prisma/migrations/*/steps.json
+
+# Python / client
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+client/*.spec
+
+# PyInstaller
+*.spec
+build/
+dist/
+
+# Logs
+*.log
+logs/
+client/dist/windows/build.log
+
+# Coverage / tests
+coverage/
+.coverage*
+
+# Docker
+*.pid
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# Nginx certs (place externally)
+nginx/certs/
