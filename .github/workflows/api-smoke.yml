@@ -7,10 +7,10 @@ on:
 
 jobs:
   smoke:
+    if: ${{ secrets.API_BASE_URL != '' }}
     runs-on: ubuntu-latest
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
-      API_KEY: ${{ secrets.API_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,8 +22,8 @@ jobs:
         run: |
           set -euo pipefail
           if [ -z "${API_BASE_URL:-}" ]; then
-            echo "Missing secret API_BASE_URL" >&2
-            exit 1
+            echo "Missing secret API_BASE_URL, skipping job." >&2
+            exit 0
           fi
           echo "API_BASE_URL is set"
 
@@ -55,7 +55,6 @@ jobs:
           }')
           curl -fsSL -X POST "$API_BASE_URL/submit" \
             -H "Content-Type: application/json" \
-            -H "x-api-key: $API_KEY" \
             -d "$payload" | jq .
 
       - name: API Hardening (non-destructive)

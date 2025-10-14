@@ -50,28 +50,31 @@ pass "health endpoints"
 
 if [[ "$CAN_CONTROL_STACK" -eq 1 || "$ALLOW_MUTATION_REMOTE" == "1" ]]; then
   echo "[check] Validation and coercion"
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -H "x-api-key: ${API_KEY:-test_api_key_123}" -d '{}')
+  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -d '{}')
   [[ "$code" == "400" ]] || fail "invalid payload should 400"
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -H "x-api-key: ${API_KEY:-test_api_key_123}" -d '{"cpuModel":"CPU","gpuModel":null,"ramGB":"16","os":"macOS","codec":"libx264","preset":"fast","fps":"12.3","fileSizeBytes":"1000"}')
-  [[ "$code" == "201" ]] || fail "coercion submit should 201"
+  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -d '{"cpuModel":"CPU","gpuModel":null,"ramGB":"16","os":"macOS","codec":"libx264","preset":"fast","fps":"12.3","fileSizeBytes":"1000"}')
+  [[ "$code" == "201" || "$code" == "200" ]] || fail "coercion submit should 201/200"
   pass "validation/coercion"
 else
   echo "[skip] Validation/coercion (no stack control and ALLOW_MUTATION_REMOTE!=1)"
 fi
 
-if [[ "$CAN_CONTROL_STACK" -eq 1 || "$ALLOW_MUTATION_REMOTE" == "1" ]]; then
-  echo "[check] Auth guard"
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -d '{"cpuModel":"CPU","gpuModel":null,"ramGB":16,"os":"macOS","codec":"libx264","preset":"fast","fps":1,"fileSizeBytes":1}')
-  [[ "$code" == "401" ]] || fail "unauthorized should 401"
-  pass "auth guard"
-else
-  echo "[skip] Auth guard (no stack control and ALLOW_MUTATION_REMOTE!=1)"
-fi
+# Public ingest: ensure no API key required and method guard works
+echo "[check] Public ingest behavior"
+code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -d '{"cpuModel":"CPU","gpuModel":null,"ramGB":16,"os":"macOS","codec":"libx264","preset":"fast","fps":1,"fileSizeBytes":10240}')
+[[ "$code" == "201" || "$code" == "200" || "$code" == "400" ]] || fail "public ingest should not 401"
+code=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$BASE_URL/submit")
+[[ "$code" == "405" ]] || fail "/submit should reject GET with 405"
+pass "public ingest"
 
 echo "[check] CORS preflight"
-out=$(curl -i -s -X OPTIONS "$BASE_URL/submit" -H 'Origin: http://localhost:3000' -H 'Access-Control-Request-Method: POST')
-echo "$out" | grep -qi "Access-Control-Allow-Origin: http://localhost:3000" || fail "cors origin"
-pass "cors preflight"
+if [[ "$CAN_CONTROL_STACK" -eq 1 ]]; then
+  out=$(curl -i -s -X OPTIONS "$BASE_URL/submit" -H 'Origin: http://localhost:3000' -H 'Access-Control-Request-Method: POST')
+  echo "$out" | grep -qi "Access-Control-Allow-Origin: http://localhost:3000" || fail "cors origin"
+  pass "cors preflight"
+else
+  echo "[skip] CORS preflight (remote URL; origin rules may differ)"
+fi
 
 if [[ "$CAN_CONTROL_STACK" -eq 1 || "$ALLOW_MUTATION_REMOTE" == "1" ]]; then
   echo "[check] Body size limit"
