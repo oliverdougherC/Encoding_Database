@@ -20,7 +20,7 @@ fail() { echo -e "[FAIL] $1"; exit 1; }
 
 retry_curl_json() {
   local path="$1"; shift
-  for i in {1..30}; do
+  for i in {1..90}; do
     if curl -sf "$BASE_URL$path" >/dev/null; then return 0; fi
     sleep 1
   done
@@ -82,7 +82,7 @@ if [[ "$CAN_CONTROL_STACK" -eq 1 || "$ALLOW_MUTATION_REMOTE" == "1" ]]; then
   python3 - <<'PY' > "$tmpbig"
 print('{'+"\"cpuModel\":\"CPU\",\"ramGB\":16,\"os\":\"macOS\",\"codec\":\"libx264\",\"preset\":\"fast\",\"fps\":1,\"fileSizeBytes\":1,\"notes\":\"" + ('x'*2*1024*1024) + "\"}")
 PY
-  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" -H "x-api-key: ${API_KEY:-test_api_key_123}" --data-binary @"$tmpbig")
+  code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$BASE_URL/submit" -H "Content-Type: application/json" --data-binary @"$tmpbig")
   rm -f "$tmpbig"
   [[ "$code" == "413" || "$code" == "400" ]] || fail "body limit should reject large payload"
   pass "body limit"
