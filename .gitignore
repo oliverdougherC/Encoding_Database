@@ -11,6 +11,11 @@ client/bin/win/*
 # OS
 .DS_Store
 Thumbs.db
+-
+client/-
+client/encodingdb-client-macos.spec
+client/encodingdb-client-linux.spec
+client/encodingdb-client-windows.spec
 
 # Node / frontend
 node_modules/

@@ -9,7 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List, Tuple
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -183,6 +183,7 @@ class HardwareInfo:
     gpuModel: Optional[str]
     ramGB: int
     os: str
+    gpuVendors: List[str] = field(default_factory=list)
 
 
 def detect_hardware() -> HardwareInfo:
@@ -208,6 +209,7 @@ def detect_hardware() -> HardwareInfo:
             return None
 
     gpu_model: Optional[str] = None
+    vendors: List[str] = []
     # On Apple Silicon, use CPU model as GPU model for consistency (VideoToolbox)
     try:
         if platform.system() == "Darwin" and ("Apple" in cpu_model):
@@ -215,11 +217,30 @@ def detect_hardware() -> HardwareInfo:
             if normalized:
                 cpu_model = normalized
             gpu_model = cpu_model
+            vendors.append('apple')
         elif GPUtil is not None:
             try:
                 gpus = GPUtil.getGPUs()
                 if gpus:
-                    gpu_model = gpus[0].name
+                    # Collect all GPU names and infer vendors
+                    names = []
+                    for g in gpus:
+                        try:
+                            n = str(getattr(g, 'name', '') or '')
+                            if n:
+                                names.append(n)
+                        except Exception:
+                            pass
+                    if names:
+                        gpu_model = gpu_model or names[0]
+                        for n in names:
+                            ln = n.lower()
+                            if any(x in ln for x in ['nvidia', 'geforce', 'tesla', 'quadro']):
+                                vendors.append('nvidia')
+                            if any(x in ln for x in ['intel', 'iris', 'uhd', 'xe']):
+                                vendors.append('intel')
+                            if any(x in ln for x in ['amd', 'radeon', 'rx ', 'vega']):
+                                vendors.append('amd')
             except Exception:
                 gpu_model = None
         # Windows fallback: query WMI for GPU model when NVML is not available
@@ -237,23 +258,65 @@ def detect_hardware() -> HardwareInfo:
                         names = _json.loads(names_raw)
                         if isinstance(names, list) and names:
                             gpu_model = str(names[0])
+                            for n in names:
+                                ln = str(n).lower()
+                                if any(x in ln for x in ['nvidia', 'geforce', 'tesla', 'quadro']):
+                                    vendors.append('nvidia')
+                                if any(x in ln for x in ['intel', 'iris', 'uhd', 'xe']):
+                                    vendors.append('intel')
+                                if any(x in ln for x in ['amd', 'radeon', 'rx ', 'vega']):
+                                    vendors.append('amd')
                         elif isinstance(names, str) and names:
                             gpu_model = names
+                            ln = names.lower()
+                            if any(x in ln for x in ['nvidia', 'geforce', 'tesla', 'quadro']):
+                                vendors.append('nvidia')
+                            if any(x in ln for x in ['intel', 'iris', 'uhd', 'xe']):
+                                vendors.append('intel')
+                            if any(x in ln for x in ['amd', 'radeon', 'rx ', 'vega']):
+                                vendors.append('amd')
                     except Exception:
                         # Fallback: take the first non-empty line
                         for line in names_raw.splitlines():
                             t = line.strip()
                             if t:
                                 gpu_model = t
+                                lt = t.lower()
+                                if any(x in lt for x in ['nvidia', 'geforce', 'tesla', 'quadro']):
+                                    vendors.append('nvidia')
+                                if any(x in lt for x in ['intel', 'iris', 'uhd', 'xe']):
+                                    vendors.append('intel')
+                                if any(x in lt for x in ['amd', 'radeon', 'rx ', 'vega']):
+                                    vendors.append('amd')
                                 break
             except Exception:
                 gpu_model = gpu_model or None
+        # Linux vendor hints via lspci (best-effort)
+        if platform.system() == 'Linux':
+            try:
+                proc = subprocess.run(['sh', '-lc', "lspci -nn | grep -i 'vga\|3d'"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=3)
+                txt = (proc.stdout or '').lower()
+                if 'nvidia' in txt or 'geforce' in txt:
+                    vendors.append('nvidia')
+                if 'intel' in txt:
+                    vendors.append('intel')
+                if 'amd' in txt or 'radeon' in txt:
+                    vendors.append('amd')
+            except Exception:
+                pass
     except Exception:
         gpu_model = None
 
     ram_gb = int(round(psutil.virtual_memory().total / (1024 ** 3)))
     os_name = f"{platform.system()} {platform.release()}"
-    return HardwareInfo(cpu_model, gpu_model, ram_gb, os_name)
+    # Deduplicate vendors
+    vset: Dict[str, bool] = {}
+    vlist: List[str] = []
+    for v in vendors:
+        if v and not vset.get(v):
+            vset[v] = True
+            vlist.append(v)
+    return HardwareInfo(cpu_model, gpu_model, ram_gb, os_name, vlist)
 
 
 def exec_ok(cmd: List[str]) -> bool:
@@ -410,9 +473,42 @@ def pick_software_encoder_for_family(family: str) -> Optional[str]:
 def discover_hardware_encoders_for_family(family: str) -> List[Tuple[str, str]]:
     candidates = HARDWARE_ENCODERS.get(family, [])
     available: List[Tuple[str, str]] = []
+    hw = detect_hardware()
+    def _platform_supports(enc_name: str) -> bool:
+        try:
+            e = enc_name.strip().lower()
+            sysname = platform.system().lower()
+            gpu = (hw.gpuModel or "").lower()
+            cpu = (hw.cpuModel or "").lower()
+            if sysname.startswith('darwin') or sysname.startswith('mac'):
+                return e.endswith('_videotoolbox')
+            if sysname.startswith('windows'):
+                if e.endswith('_nvenc'):
+                    return ('nvidia' in hw.gpuVendors)
+                if e.endswith('_qsv'):
+                    return ('intel' in hw.gpuVendors) or ('intel' in cpu)
+                if e.endswith('_amf'):
+                    return ('amd' in hw.gpuVendors)
+                if e.endswith(('_vaapi', '_v4l2m2m', '_omx')):
+                    return False
+                return True
+            # linux and others
+            if e.endswith('_videotoolbox'):
+                return False
+            if e.endswith('_amf'):
+                return False
+            if e.endswith('_nvenc'):
+                return ('nvidia' in hw.gpuVendors)
+            if e.endswith('_qsv'):
+                return ('intel' in hw.gpuVendors) or ('intel' in cpu)
+            # VAAPI/V4L2/OMX are plausible on linux depending on hardware; allow listing if compiled
+            return True
+        except Exception:
+            return True
+    
     for enc, label in candidates:
         # Use ffmpeg-compiled presence to list, actual usability is handled by runtime fallback
-        if has_encoder(enc):
+        if has_encoder(enc) and _platform_supports(enc):
             available.append((enc, label))
     return available
 
@@ -420,6 +516,36 @@ def discover_hardware_encoders_for_family(family: str) -> List[Tuple[str, str]]:
 def list_all_available_encoders() -> List[str]:
     """Return all available encoders (software + hardware) across supported families."""
     encoders: List[str] = []
+    hw = detect_hardware()
+    def _platform_supports(enc_name: str) -> bool:
+        try:
+            e = enc_name.strip().lower()
+            sysname = platform.system().lower()
+            gpu = (hw.gpuModel or "").lower()
+            cpu = (hw.cpuModel or "").lower()
+            if sysname.startswith('darwin') or sysname.startswith('mac'):
+                return e.endswith('_videotoolbox')
+            if sysname.startswith('windows'):
+                if e.endswith('_nvenc'):
+                    return ('nvidia' in hw.gpuVendors)
+                if e.endswith('_qsv'):
+                    return ('intel' in hw.gpuVendors) or ('intel' in cpu)
+                if e.endswith('_amf'):
+                    return ('amd' in hw.gpuVendors)
+                if e.endswith(('_vaapi', '_v4l2m2m', '_omx')):
+                    return False
+                return True
+            if e.endswith('_videotoolbox'):
+                return False
+            if e.endswith('_amf'):
+                return False
+            if e.endswith('_nvenc'):
+                return ('nvidia' in hw.gpuVendors)
+            if e.endswith('_qsv'):
+                return ('intel' in hw.gpuVendors) or ('intel' in cpu)
+            return True
+        except Exception:
+            return True
     # Software encoders
     for fam, sw_list in SOFTWARE_ENCODERS_ORDER.items():
         for enc in sw_list:
@@ -428,7 +554,7 @@ def list_all_available_encoders() -> List[str]:
     # Hardware encoders (only those that appear usable on this machine)
     for fam, hw_list in HARDWARE_ENCODERS.items():
         for enc, _label in hw_list:
-            if has_encoder(enc):
+            if has_encoder(enc) and _platform_supports(enc):
                 encoders.append(enc)
     # De-duplicate while preserving order
     seen: Dict[str, bool] = {}
