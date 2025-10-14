@@ -128,6 +128,13 @@ _FFMPEG_EXE: Optional[str] = None
 _FFPROBE_EXE: Optional[str] = None
 # Print concise FFmpeg detected banner only once per session
 _FFMPEG_DETECTED_PRINTED: bool = False
+# Cache for probing hardware encoder usability so we do not repeatedly run ffmpeg
+_ENCODER_USABLE_CACHE: Dict[str, bool] = {}
+_ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
+    'cpuModel', 'gpuModel', 'ramGB', 'os',
+    'codec', 'preset', 'crf', 'fps', 'vmaf', 'fileSizeBytes', 'notes',
+    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs'
+)
 # Batch aggregation for Small/Full multi-run flows
 _BATCH_ACTIVE: bool = False
 _BATCH_START_TS: float = 0.0
@@ -215,6 +222,32 @@ def detect_hardware() -> HardwareInfo:
                     gpu_model = gpus[0].name
             except Exception:
                 gpu_model = None
+        # Windows fallback: query WMI for GPU model when NVML is not available
+        if not gpu_model and platform.system() == "Windows":
+            try:
+                # Prefer PowerShell CIM which is available on modern Windows
+                probe = subprocess.run([
+                    "powershell", "-NoProfile", "-Command",
+                    "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | ConvertTo-Json -Compress"
+                ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=5)
+                names_raw = (probe.stdout or "").strip()
+                if names_raw:
+                    try:
+                        import json as _json
+                        names = _json.loads(names_raw)
+                        if isinstance(names, list) and names:
+                            gpu_model = str(names[0])
+                        elif isinstance(names, str) and names:
+                            gpu_model = names
+                    except Exception:
+                        # Fallback: take the first non-empty line
+                        for line in names_raw.splitlines():
+                            t = line.strip()
+                            if t:
+                                gpu_model = t
+                                break
+            except Exception:
+                gpu_model = gpu_model or None
     except Exception:
         gpu_model = None
 
@@ -247,6 +280,58 @@ def has_encoder(encoder: str) -> bool:
         out = subprocess.run([ffmpeg_exe(), "-hide_banner", "-encoders"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         return encoder in (out.stdout or "")
     except Exception:
+        return False
+
+
+def sanitize_payload_for_server(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Return a copy of payload containing only fields accepted by the server schema.
+
+    Drops any diagnostic fields like 'localError' that would cause 400s
+    under the server's strict zod schema.
+    """
+    try:
+        clean: Dict[str, Any] = {}
+        for k in _ALLOWED_PAYLOAD_KEYS:
+            if k in payload:
+                clean[k] = payload[k]
+        return clean
+    except Exception:
+        # Best-effort: if something goes wrong, return original
+        return dict(payload)
+
+
+def is_hardware_encoder_usable(encoder: str) -> bool:
+    """Return True if the given hardware encoder appears to be usable on this machine.
+
+    This is stronger than `has_encoder`, which only checks if ffmpeg was compiled
+    with the encoder. Here we try a 1-frame encode using a synthetic source.
+    Results are cached per-process.
+    """
+    enc = encoder.strip().lower()
+    if enc in _ENCODER_USABLE_CACHE:
+        return _ENCODER_USABLE_CACHE[enc]
+    # If it's not a known hardware encoder suffix, defer to has_encoder()
+    if not enc.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi", "_v4l2m2m", "_omx")):
+        ok = has_encoder(encoder)
+        _ENCODER_USABLE_CACHE[enc] = ok
+        return ok
+    # Quick 1-frame test encode into a temp file
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            out_path = os.path.join(td, "probe.mp4")
+            cmd = [
+                ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error",
+                "-f", "lavfi", "-i", "testsrc=size=16x16:rate=1",
+                "-frames:v", "1", "-pix_fmt", "yuv420p",
+                "-c:v", encoder,
+                "-an", out_path,
+            ]
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+            ok = (proc.returncode == 0) and os.path.exists(out_path) and os.path.getsize(out_path) > 0
+            _ENCODER_USABLE_CACHE[enc] = bool(ok)
+            return bool(ok)
+    except Exception:
+        _ENCODER_USABLE_CACHE[enc] = False
         return False
 
 
@@ -326,7 +411,8 @@ def discover_hardware_encoders_for_family(family: str) -> List[Tuple[str, str]]:
     candidates = HARDWARE_ENCODERS.get(family, [])
     available: List[Tuple[str, str]] = []
     for enc, label in candidates:
-        if has_encoder(enc):
+        # Only consider hardware encoder usable if ffmpeg can actually run a trivial encode
+        if is_hardware_encoder_usable(enc):
             available.append((enc, label))
     return available
 
@@ -339,10 +425,10 @@ def list_all_available_encoders() -> List[str]:
         for enc in sw_list:
             if has_encoder(enc):
                 encoders.append(enc)
-    # Hardware encoders
+    # Hardware encoders (only those that appear usable on this machine)
     for fam, hw_list in HARDWARE_ENCODERS.items():
         for enc, _label in hw_list:
-            if has_encoder(enc):
+            if is_hardware_encoder_usable(enc):
                 encoders.append(enc)
     # De-duplicate while preserving order
     seen: Dict[str, bool] = {}
@@ -886,17 +972,29 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
 
 # --- Client-only heuristics and helpers for batched pipeline ---
 
+def get_physical_core_count() -> int:
+    """Return the number of physical CPU cores (not threads) if available."""
+    try:
+        n = psutil.cpu_count(logical=False)
+        if isinstance(n, int) and n and n > 0:
+            return n
+    except Exception:
+        pass
+    try:
+        n_logical = os.cpu_count() or 0
+        # Best-effort fallback: assume SMT factor 2 for common desktop CPUs
+        return max(1, int(n_logical // 2) if n_logical and n_logical > 1 else int(n_logical or 1))
+    except Exception:
+        return 4
+
+
 def resolve_batch_size(requested: Optional[int]) -> int:
     try:
         if isinstance(requested, int) and requested > 0:
             return max(1, requested)
     except Exception:
         pass
-    try:
-        n = os.cpu_count() or 4
-    except Exception:
-        n = 4
-    return max(1, int(n))
+    return max(1, int(get_physical_core_count()))
 
 
 def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> float:
@@ -1196,7 +1294,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                 t = info['task']
                 payload: Dict[str, Any] = {
                     'cpuModel': hardware.cpuModel,
-                    'gpuModel': hardware.gpuModel,
+                    'gpuModel': hardware.gpuModel or "",
                     'ramGB': hardware.ramGB,
                     'os': hardware.os,
                     'codec': info.get('encoderUsed') or t['encoder'],
@@ -1225,8 +1323,15 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                         try:
                             os.makedirs(args.queue_dir, exist_ok=True)
                             fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-skipped-{payload['preset']}.json")
+                            # Never include non-schema keys like 'localError' in the saved payload
+                            payload_to_save = dict(payload)
+                            if reason:
+                                try:
+                                    payload_to_save['notes'] = ((payload_to_save.get('notes') or '') + f"; {reason}")[:500]
+                                except Exception:
+                                    pass
                             with open(fname, 'w', encoding='utf-8') as fh:
-                                json.dump({**payload, 'localError': True, 'notes': (payload.get('notes') or '')[:400] + (f"; {reason}" if reason else '')}, fh, separators=(',', ':'))
+                                json.dump(sanitize_payload_for_server(payload_to_save), fh, separators=(',', ':'))
                             print(f"Queued skipped payload for review: {fname}")
                         except Exception as qe:
                             print(f"Failed to queue skipped payload: {qe}", file=sys.stderr)
@@ -1236,7 +1341,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                     print(f"Dry-run: not submitting {payload['codec']} {payload['preset']}")
                 else:
                     try:
-                        submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries), use_token=_env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)))
+                        submit(base_url, sanitize_payload_for_server(payload), api_key=args.api_key, retries=max(1, args.retries), use_token=_env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)))
                         print("Submitted Results")
                     except Exception as e:
                         print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
@@ -1244,7 +1349,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             os.makedirs(args.queue_dir, exist_ok=True)
                             fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{payload['preset']}.json")
                             with open(fname, 'w', encoding='utf-8') as fh:
-                                json.dump(payload, fh, separators=(',', ':'))
+                                json.dump(sanitize_payload_for_server(payload), fh, separators=(',', ':'))
                             print(f"Queued for retry: {fname}")
                         except Exception as qe:
                             print(f"Failed to queue payload: {qe}", file=sys.stderr)
@@ -1296,7 +1401,7 @@ def run_single_benchmark(hardware: HardwareInfo, input_path: str, preset: str, c
             vmaf = compute_vmaf(input_path, encoded_path)
     payload = {
         "cpuModel": hardware.cpuModel,
-        "gpuModel": hardware.gpuModel,
+        "gpuModel": hardware.gpuModel or "",
         "ramGB": hardware.ramGB,
         "os": hardware.os,
         "codec": codec,
@@ -1415,6 +1520,15 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                 if loc:
                     # Re-issue once to the redirect target
                     r = requests.post(loc, data=body, timeout=30, headers=headers, verify=REQUESTS_VERIFY, allow_redirects=False)
+            # Handle rate limiting gracefully
+            if r.status_code == 429:
+                try:
+                    ra = r.headers.get('Retry-After')
+                    delay = float(ra) if ra and str(ra).replace('.', '', 1).isdigit() else (backoff_seconds * attempt * 2)
+                except Exception:
+                    delay = backoff_seconds * attempt * 2
+                time.sleep(max(0.5, delay))
+                continue
             if r.status_code >= 500:
                 raise RuntimeError(f"server_error {r.status_code}")
             r.raise_for_status()
@@ -1452,6 +1566,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--menu", action="store_true", help="Force interactive menu even if arguments are provided")
     p.add_argument("--batch-size", type=int, default=0, help="Batch size for parallel VMAF (0=auto: cpu_count or 4)")
     p.add_argument("--use-token", action="store_true", help="Use short-lived submit token (opt-in; or set INGEST_USE_TOKENS=1)")
+    p.add_argument("--pause-on-exit", action="store_true", help="On Windows, wait for Enter key after completion to keep the window open")
     return p
 
 
@@ -1626,7 +1741,8 @@ def run_with_args(args: argparse.Namespace) -> int:
             try:
                 with open(fpath, 'r', encoding='utf-8') as fh:
                     payload = json.load(fh)
-                submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
+                clean_payload = sanitize_payload_for_server(payload if isinstance(payload, dict) else {})
+                submit(base_url, clean_payload, api_key=args.api_key, retries=max(1, args.retries))
                 os.remove(fpath)
                 print(f"Retried and submitted: {fn}")
             except Exception:
@@ -1639,6 +1755,12 @@ def run_with_args(args: argparse.Namespace) -> int:
         _clear_screen()
         elapsed_sec = max(0.0, time.time() - benchmark_start_ts)
         print_end_screen(completed_count, elapsed_sec)
+        # Optional pause on Windows: keep the console open for end screen visibility
+        try:
+            if os.name == 'nt' and (bool(getattr(args, 'pause_on_exit', False)) or bool(getattr(sys, 'frozen', False))):
+                input("Press Enter to exit...")
+        except Exception:
+            pass
     # Suppress verbose JSON output for cleaner UI
     return 0
 
@@ -1879,6 +2001,11 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
 
 
 def main(argv: List[str]) -> int:
+    # Handle PyInstaller multiprocessing arguments on Windows
+    if len(argv) > 1 and argv[1].startswith('--multiprocessing-fork'):
+        # This is a multiprocessing child process, exit immediately
+        return 0
+    
     parser = build_arg_parser()
     args = parser.parse_args(argv[1:])
     # Always show interactive menu for benchmarks
