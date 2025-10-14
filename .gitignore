@@ -11,6 +11,11 @@ client/bin/win/*
 # OS
 .DS_Store
 Thumbs.db
+client/.DS_Store
+scripts/.DS_Store
+server/.DS_Store
+frontend/.DS_Store
+.github/.DS_Store
 -
 client/-
 client/encodingdb-client-macos.spec
