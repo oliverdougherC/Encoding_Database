@@ -4,9 +4,6 @@
 client/.venv
 client/build/
 client/dist/
-client/bin/mac/*
-client/bin/linux/*
-client/bin/win/*
 
 # OS
 .DS_Store
