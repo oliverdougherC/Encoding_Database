@@ -37,6 +37,9 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   const [presetFilter, setPresetFilter] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("_plove");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  // Encoder type filters
+  const [softwareOnly, setSoftwareOnly] = useState<boolean>(false);
+  const [hardwareOnly, setHardwareOnly] = useState<boolean>(false);
 
   // Weights for PLOVE score (sum must equal 1.0)
   const [wQuality, setWQuality] = useState<number>(1 / 3);
@@ -61,9 +64,14 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       if (gpu && !(row.gpuModel ?? "").toLowerCase().includes(gpu)) return false;
       if (codecFilter && row.codec !== codecFilter) return false;
       if (presetFilter && row.preset !== presetFilter) return false;
+      // Encoder class filter
+      const encLower = (row.encoderName ?? row.codec ?? "").toLowerCase();
+      const isHw = isHardwareEncoder(encLower);
+      if (softwareOnly && !hardwareOnly) return !isHw;
+      if (hardwareOnly && !softwareOnly) return isHw;
       return true;
     });
-  }, [initialData, cpuFilter, gpuFilter, codecFilter, presetFilter]);
+  }, [initialData, cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
 
   // Compute relative size baseline (median size across filtered rows)
   const sizeBaseline = useMemo(() => {
@@ -195,7 +203,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 8 }}>
         <input
           placeholder="Filter CPU model"
           value={cpuFilter}
@@ -224,6 +232,17 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           <option value="">All presets</option>
           {(codecFilter ? presetsForCodec(initialData, codecFilter) : presets).map(p => (<option key={p} value={p}>{p}</option>))}
         </select>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, alignItems: "center" }}>
+        <label className="btn" style={{ padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: 8, borderColor: softwareOnly ? "var(--accent)" : undefined }}>
+          <input type="checkbox" checked={softwareOnly} onChange={e => { const v = e.target.checked; setSoftwareOnly(v); if (v) setHardwareOnly(false); }} />
+          Software Encoders Only
+        </label>
+        <label className="btn" style={{ padding: "6px 10px", display: "inline-flex", alignItems: "center", gap: 8, borderColor: hardwareOnly ? "var(--accent)" : undefined }}>
+          <input type="checkbox" checked={hardwareOnly} onChange={e => { const v = e.target.checked; setHardwareOnly(v); if (v) setSoftwareOnly(false); }} />
+          Hardware Encoders Only
+        </label>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 8, alignItems: "center" }}>
@@ -479,9 +498,21 @@ function formatCodecLabel(encoderLower: string): string {
   return encoderLower;
 }
 
+function isHardwareEncoder(encoderLower: string): boolean {
+  return /(_videotoolbox|_nvenc|_qsv|_amf|_vaapi)$/.test(encoderLower);
+}
+
 function renderHardwareLink(model: string, kind: "cpu" | "gpu") {
   const trimmed = (model || "").trim();
   if (!trimmed) return "-";
+  const appleWiki = wikipediaAppleUrl(trimmed);
+  if (appleWiki) {
+    return (
+      <a href={appleWiki} target="_blank" rel="noreferrer" className="link" title="Open Wikipedia in new tab">
+        {trimmed}
+      </a>
+    );
+  }
   const encoded = encodeURIComponent(trimmed);
   // Use resolver endpoint that redirects to the exact model page if known, else to search
   const href = `/api/hwlink?kind=${kind}&q=${encoded}`;
@@ -502,6 +533,17 @@ function isAppleSilicon(cpu: string | null | undefined): boolean {
   if (!cpu) return false;
   const s = cpu.toLowerCase();
   return s.includes("apple m1") || s.includes("apple m2") || s.includes("apple m3") || s.includes("apple m4") || s.includes("m1 ") || s.includes("m2 ") || s.includes("m3 ") || s.includes("m4 ");
+}
+
+function wikipediaAppleUrl(model: string): string | null {
+  const m = model.toLowerCase();
+  // Match Apple silicon generations M1..M5 and their variants (Pro/Max/Ultra)
+  if (!m.includes("apple") && !m.startsWith("m")) return null;
+  const match = m.match(/\bm([1-5])\b/);
+  if (!match) return null;
+  const gen = match[1];
+  // Link all M{n} variants to the base generation page
+  return `https://en.wikipedia.org/wiki/Apple_M${gen}`;
 }
 
 function WeightControl({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {

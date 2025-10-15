@@ -27,10 +27,11 @@ export async function GET(req: NextRequest) {
     const linkRegex = kind === "cpu"
       ? /<a[^>]+href="(\/cpu-specs\/[^"#?]+)"[^>]*>([^<]+)<\/a>/gi
       : /<a[^>]+href="(\/gpu-specs\/[^"#?]+)"[^>]*>([^<]+)<\/a>/gi;
-    const candidates: Array<{ href: string; name: string; score: number }> = [];
+    const candidates: Array<{ href: string; name: string; score: number; index: number }> = [];
     const norm = (s: string) => s.toLowerCase().replace(/[®™]/g, "").replace(/[^a-z0-9+\.\- ]+/g, " ").replace(/\s+/g, " ").trim();
     const target = norm(decoded);
     let m: RegExpExecArray | null;
+    let idx = 0;
     while ((m = linkRegex.exec(html))) {
       const href = m[1];
       const name = (m[2] || "").trim();
@@ -42,9 +43,10 @@ export async function GET(req: NextRequest) {
       else if (target.startsWith(n)) score = 70;
       else if (n.includes(target)) score = 60;
       else continue;
-      candidates.push({ href, name, score });
+      candidates.push({ href, name, score, index: idx++ });
     }
-    candidates.sort((a, b) => b.score - a.score);
+    candidates.sort((a, b) => (b.score - a.score) || (a.index - b.index));
+    // For GPUs, prefer the first result even if names are similar (e.g., 5090 vs 5090D)
     if (candidates[0]) {
       return NextResponse.redirect(base + candidates[0].href);
     }
