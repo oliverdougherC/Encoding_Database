@@ -19,18 +19,34 @@ export default function PlovePage() {
           <li><b>Speed</b>: uses FPS, normalized upward. Faster encodes → higher score.</li>
         </ul>
         <div className="kbd" style={{ paddingRight: 12 }}>
-{`// Normalization within current results
-vmafNorm = normalizeUp(vmaf, vmafMin, vmafMax)
-sizeNorm = normalizeDown(fileSizeBytes, sizeMin, sizeMax)
-fpsNorm  = normalizeUp(fps, fpsMin, fpsMax)
+{`// PLOVE 4.0 component scores
+// Quality (VMAF) with diminishing returns above 90 and harsh penalty below 90
+function qualityScore(vmaf) {
+  if (vmaf == null) return 100
+  if (vmaf >= 90) return 50 + 50 * Math.sqrt((vmaf - 90) / 10)
+  return 50 * Math.pow(vmaf / 90, 4)
+}
 
-// Weights from the UI controls (sum to 1.0)
-plove = wQuality * vmafNorm
-      + wSize    * sizeNorm
-      + wSpeed   * fpsNorm`}
+// Relative size (fileSize / medianFileSize) — lower is better
+function sizeScore(relSize, rsMin, rsMax) {
+  if (!(rsMax > rsMin)) return 100
+  return 100 * (rsMax - relSize) / (rsMax - rsMin)
+}
+
+// Speed uses logarithmic normalization
+function speedScore(fps, fpsMin, fpsMax) {
+  if (!(fpsMin > 0 && fpsMax > 0)) return 0
+  if (fpsMax === fpsMin) return 100
+  const lf = Math.log(Math.max(fps, fpsMin))
+  return 100 * (lf - Math.log(fpsMin)) / (Math.log(fpsMax) - Math.log(fpsMin))
+}
+
+// Hard cutoff for inefficient encodes
+if (relSize >= 1.0) plove = 0
+else plove = clamp(wQ*qualityScore(vmaf) + wS*sizeScore(relSize, rsMin, rsMax) + wV*speedScore(fps, fpsMin, fpsMax), 0, 100)`}
         </div>
         <p className="subtle" style={{ fontSize: 12, marginTop: 8 }}>
-          When a range collapses (e.g., all rows have identical values), that component defaults to 100 to avoid skewing results.
+          When a range collapses (e.g., all rows have identical values), that component defaults to 100 to avoid skewing results. PLOVE also applies strong penalties to oversized outputs (relative size &gt; 1.0) and to VMAF below 90.
         </p>
       </section>
 

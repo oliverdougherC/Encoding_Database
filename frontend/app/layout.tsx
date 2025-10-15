@@ -27,11 +27,12 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <header style={{ borderBottom: "1px solid var(--border)", padding: "12px 24px" }}>
           <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
-            <div style={{ fontWeight: 600 }}>Encoding DB</div>
+            <a href="/" className="link" style={{ fontWeight: 600, textDecoration: "none" }}>Encoding DB</a>
             <div style={{ display: "flex", gap: 12 }}>
               <a href="/" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Home</a>
-              <a href="/graphs" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Graphs</a>
+              
               <a href="/plove" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>PLOVE</a>
+              <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Download Client</a>
             </div>
           </nav>
         </header>

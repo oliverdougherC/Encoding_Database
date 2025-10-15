@@ -48,7 +48,11 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
   return (
     <div className="card" style={{ padding: 12 }}>
       <div style={{ fontWeight: 600, marginBottom: 8 }}>Average File Size by Preset and Codec</div>
-      <svg width={width} height={height} role="img" aria-label="Grouped size by preset and codec">
+      <svg width={width} height={height} role="img" aria-label="Grouped size by preset and codec" onMouseMove={(e) => {
+        const rect = (e.target as SVGElement).closest('svg')?.getBoundingClientRect();
+        if (!rect) return;
+        setHover(h => h ? { ...h, x: e.clientX - rect.left + 12, y: e.clientY - rect.top - 16 } : null);
+      }} onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 4 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 3;
@@ -66,7 +70,7 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
             const h = margin.top + chartHeight - y;
             const color = colors[ci % colors.length];
             return (
-              <g key={`${p}|${c}`} onMouseMove={() => setHover({ x: x + barWidth / 2 + 8, y, text: `${p} • ${c}: ${v.toFixed(2)} MB` })} onMouseLeave={() => setHover(null)}>
+              <g key={`${p}|${c}`} onMouseMove={() => setHover({ x: x + barWidth / 2 + 8, y, text: `${p} • ${c}: ${v.toFixed(2)} MB` })}>
                 <rect x={x} y={y} width={barWidth} height={h} fill={color} rx={3} />
               </g>
             );

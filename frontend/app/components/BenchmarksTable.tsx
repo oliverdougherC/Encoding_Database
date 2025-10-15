@@ -23,6 +23,9 @@ export type Benchmark = {
   inputHash?: string | null;
   runMs?: number | null;
   status?: string | null;
+  // Aggregation counts (available from server)
+  samples?: number;
+  vmafSamples?: number;
 };
 
 type SortKey = "cpuModel" | "gpuModel" | "codec" | "crf" | "preset" | "_plove";
@@ -39,6 +42,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   const [wQuality, setWQuality] = useState<number>(1 / 3);
   const [wSize, setWSize] = useState<number>(1 / 3);
   const [wSpeed, setWSpeed] = useState<number>(1 / 3);
+  // UI sliders that users can adjust freely; applied via Apply button
+  const [uiQuality, setUiQuality] = useState<number>(1 / 3);
+  const [uiSize, setUiSize] = useState<number>(1 / 3);
+  const [uiSpeed, setUiSpeed] = useState<number>(1 / 3);
+  const resetWeights = () => { setWQuality(1/3); setWSize(1/3); setWSpeed(1/3); setUiQuality(1/3); setUiSize(1/3); setUiSpeed(1/3); };
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
   const [showFfmpegId, setShowFfmpegId] = useState<string | null>(null);
 
@@ -67,17 +75,17 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
   // Dataset min/max for normalization
   const ranges = useMemo(() => {
-    const vmafVals = filtered.map(r => (typeof r.vmaf === "number" ? r.vmaf : 0));
-    const sizeVals = filtered.map(r => r.fileSizeBytes);
+    const vmafVals = filtered.filter(r => typeof r.vmaf === "number").map(r => Number(r.vmaf));
     const fpsVals = filtered.map(r => Math.max(0, r.fps || 0));
+    const relSizes = filtered.map(r => (r.fileSizeBytes > 0 ? r.fileSizeBytes / sizeBaseline : 1));
     const vmafMin = vmafVals.length ? Math.min(...vmafVals) : 0;
     const vmafMax = vmafVals.length ? Math.max(...vmafVals) : 0;
-    const sizeMin = sizeVals.length ? Math.min(...sizeVals) : 0;
-    const sizeMax = sizeVals.length ? Math.max(...sizeVals) : 0;
     const fpsMin = fpsVals.length ? Math.min(...fpsVals) : 0;
     const fpsMax = fpsVals.length ? Math.max(...fpsVals) : 0;
-    return { vmafMin, vmafMax, sizeMin, sizeMax, fpsMin, fpsMax };
-  }, [filtered]);
+    const rsMin = relSizes.length ? Math.min(...relSizes) : 0;
+    const rsMax = relSizes.length ? Math.max(...relSizes) : 0;
+    return { vmafMin, vmafMax, fpsMin, fpsMax, rsMin, rsMax };
+  }, [filtered, sizeBaseline]);
 
   function normalizeUp(value: number, min: number, max: number): number {
     if (!(max > min)) return 100;
@@ -90,14 +98,40 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   }
 
   const withScores = useMemo(() => {
+    function qualityScore(vmaf: number | null | undefined): number {
+      if (typeof vmaf !== "number") return 100; // treat missing VMAF as neutral-best for scoring
+      const v = Math.max(0, Math.min(100, vmaf));
+      if (v >= 90) {
+        return 50 + 50 * Math.sqrt((v - 90) / 10);
+      }
+      return 50 * Math.pow(v / 90, 4);
+    }
+    function sizeScore(rel: number): number {
+      if (!(ranges.rsMax > ranges.rsMin)) return 100;
+      return 100 * (ranges.rsMax - rel) / (ranges.rsMax - ranges.rsMin);
+    }
+    function speedScore(fps: number): number {
+      const f = Math.max(0, fps || 0);
+      if (!(ranges.fpsMax > 0 && ranges.fpsMin > 0)) return 0;
+      if (ranges.fpsMax === ranges.fpsMin) return 100;
+      const logF = Math.log(f > 0 ? f : ranges.fpsMin);
+      const logMin = Math.log(ranges.fpsMin);
+      const logMax = Math.log(ranges.fpsMax);
+      return 100 * (logF - logMin) / (logMax - logMin);
+    }
+
     return filtered.map(row => {
-      const vmafValue = typeof row.vmaf === "number" ? Math.max(0, Math.min(100, row.vmaf)) : 0;
-      const fpsValue = Math.max(0, row.fps || 0);
-      const vmafNorm = normalizeUp(vmafValue, ranges.vmafMin, ranges.vmafMax);
-      const sizeNorm = normalizeDown(row.fileSizeBytes, ranges.sizeMin, ranges.sizeMax);
-      const fpsNorm = normalizeUp(fpsValue, ranges.fpsMin, ranges.fpsMax);
-      const plove = wQuality * vmafNorm + wSize * sizeNorm + wSpeed * fpsNorm;
       const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / sizeBaseline : 1;
+      if (relSize >= 1) {
+        const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
+        const codecLabel = formatCodecLabel(encoder);
+        return { ...row, _plove: 0, _relSize: relSize, _codecLabel: codecLabel } as Benchmark & { _plove: number; _relSize: number; _codecLabel: string };
+      }
+      const q = qualityScore(row.vmaf as any);
+      const s = sizeScore(relSize);
+      const sp = speedScore(row.fps);
+      const prelim = wQuality * q + wSize * s + wSpeed * sp;
+      const plove = Math.max(0, Math.min(100, prelim));
       const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
       const codecLabel = formatCodecLabel(encoder);
       return { ...row, _plove: plove, _relSize: relSize, _codecLabel: codecLabel } as Benchmark & { _plove: number; _relSize: number; _codecLabel: string };
@@ -151,6 +185,14 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     }
   }
 
+  function applyWeightsFromUI() {
+    const sum = uiQuality + uiSize + uiSpeed;
+    const safe = sum > 0 ? sum : 1;
+    setWQuality(uiQuality / safe);
+    setWSize(uiSize / safe);
+    setWSpeed(uiSpeed / safe);
+  }
+
   return (
     <div>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 16 }}>
@@ -166,38 +208,57 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           onChange={e => setGpuFilter(e.target.value)}
           className="input"
         />
-        <select value={codecFilter} onChange={e => setCodecFilter(e.target.value)} className="input">
+        <select value={codecFilter} onChange={e => { setCodecFilter(e.target.value); setPresetFilter(""); }} className="input">
           <option value="">All codecs</option>
           {codecs.map(c => (<option key={c} value={c}>{c}</option>))}
         </select>
-        <select value={presetFilter} onChange={e => setPresetFilter(e.target.value)} className="input">
+        <select
+          value={presetFilter}
+          onChange={e => setPresetFilter(e.target.value)}
+          className="input"
+          disabled={!codecFilter}
+          aria-disabled={!codecFilter}
+          title={!codecFilter ? "Select a codec first" : undefined}
+          style={{ opacity: codecFilter ? 1 : 0.5, cursor: codecFilter ? undefined : "not-allowed" }}
+        >
           <option value="">All presets</option>
-          {presets.map(p => (<option key={p} value={p}>{p}</option>))}
+          {(codecFilter ? presetsForCodec(initialData, codecFilter) : presets).map(p => (<option key={p} value={p}>{p}</option>))}
         </select>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 12, alignItems: "center" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 8, alignItems: "center" }}>
         <div>
           <div style={{ fontWeight: 600, marginBottom: 6 }}>Scoring Weights</div>
           <div className="subtle" style={{ fontSize: 12 }}>Sum is constrained to 1.00</div>
         </div>
-        <WeightControl label="Quality (VMAF)" value={wQuality} onChange={(nv) => setWeights("quality", nv)} />
-        <WeightControl label="Size" value={wSize} onChange={(nv) => setWeights("size", nv)} />
-        <WeightControl label="Speed (FPS)" value={wSpeed} onChange={(nv) => setWeights("speed", nv)} />
+        <WeightSlider label="Quality (VMAF)" value={uiQuality} onChange={setUiQuality} />
+        <WeightSlider label="Size" value={uiSize} onChange={setUiSize} />
+        <WeightSlider label="Speed (FPS)" value={uiSpeed} onChange={setUiSpeed} />
+      </div>
+
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <div className="subtle" style={{ fontSize: 12, marginRight: 8 }}>Applied: Q {wQuality.toFixed(2)} • S {wSize.toFixed(2)} • V {wSpeed.toFixed(2)}</div>
+        <button className="btn" onClick={resetWeights} style={{ padding: "6px 10px" }}>Reset</button>
+        <button className="btn" onClick={applyWeightsFromUI} style={{ padding: "6px 10px", background: "#10b981", color: "white", borderColor: "#059669" }}>Apply</button>
       </div>
 
       <div className="card" style={{ overflowX: "auto" }}>
         <table className="table">
-          <colgroup>
-            <col style={{ width: "10%" }} /> {/* Details */}
-            <col style={{ width: "18%" }} /> {/* CPU */}
-            <col style={{ width: "18%" }} /> {/* GPU */}
-            <col style={{ width: "14%" }} /> {/* Codec */}
-            <col style={{ width: "8%" }} />  {/* CRF */}
-            <col style={{ width: "12%" }} /> {/* Preset */}
-            <col style={{ width: "12%" }} /> {/* PLOVE */}
-            <col style={{ width: "8%" }} />  {/* FFmpeg */}
-          </colgroup>
+          {(() => {
+            // Render <col> elements without whitespace to avoid invalid text nodes inside <colgroup>
+            const cols = [
+              <col key="details" style={{ width: "10%" }} />, // Details
+              <col key="cpu" style={{ width: "18%" }} />,     // CPU
+              <col key="gpu" style={{ width: "18%" }} />,     // GPU
+              <col key="codec" style={{ width: "14%" }} />,   // Codec
+              <col key="crf" style={{ width: "8%" }} />,      // CRF
+              <col key="preset" style={{ width: "12%" }} />,  // Preset
+              <col key="plove" style={{ width: "12%" }} />,   // PLOVE
+              <col key="ffmpeg" style={{ width: "8%" }} />,   // FFmpeg
+              <col key="samples" style={{ width: "8%" }} />,  // Samples
+            ];
+            return <colgroup>{cols}</colgroup>;
+          })()}
           <thead className="thead">
             <tr>
               <th className="th" style={{ textAlign: "center" }}>Details</th>
@@ -208,6 +269,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
               <Th onClick={() => setSort("preset")} label="Preset" active={sortKey === "preset"} dir={sortDir} />
               <Th onClick={() => setSort("_plove")} label="PLOVE Score" active={sortKey === "_plove"} dir={sortDir} align="right" />
               <th className="th" style={{ textAlign: "center" }}>FFmpeg</th>
+              <th className="th" style={{ textAlign: "center" }} title="Number of accepted submissions aggregated into this profile">Subs</th>
             </tr>
           </thead>
           <tbody>
@@ -216,8 +278,8 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
                 <td className="td" style={{ textAlign: "center" }}>
                   <DetailsButton onClick={() => setShowDetailId(row.id)} />
                 </td>
-                <td className="td">{row.cpuModel}</td>
-                <td className="td">{row.gpuModel ?? "-"}</td>
+                <td className="td">{renderHardwareLink(row.cpuModel, "cpu")}</td>
+                <td className="td">{renderGpuCell(row)}</td>
                 <td className="td">{(row as any)._codecLabel ?? row.codec}</td>
                 <td className="td" style={{ textAlign: "right" }}>{row.crf == null ? "-" : row.crf}</td>
                 <td className="td">{row.preset}</td>
@@ -225,11 +287,12 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
                 <td className="td" style={{ textAlign: "center" }}>
                   <FfmpegButton onClick={() => setShowFfmpegId(row.id)} />
                 </td>
+                <td className="td" style={{ textAlign: "center" }}>{typeof (row as any).samples === "number" ? (row as any).samples : "-"}</td>
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={8} className="td" style={{ textAlign: "center" }}>
+                <td colSpan={9} className="td" style={{ textAlign: "center" }}>
                   No results for current filters.
                 </td>
               </tr>
@@ -279,6 +342,7 @@ function DetailsModal({ row, onClose, relSize }: { row: Benchmark; onClose: () =
           <LabelValue label="FPS" value={row.fps.toFixed(2)} />
           <LabelValue label="VMAF score" value={row.vmaf == null ? "-" : row.vmaf.toFixed(1)} />
           <LabelValue label="Relative File Size" value={relSize.toFixed(2)} />
+          <LabelValue label="Submissions (accepted)" value={typeof (row as any).samples === "number" ? String((row as any).samples) : "-"} />
         </div>
       </div>
     </div>
@@ -415,6 +479,31 @@ function formatCodecLabel(encoderLower: string): string {
   return encoderLower;
 }
 
+function renderHardwareLink(model: string, kind: "cpu" | "gpu") {
+  const trimmed = (model || "").trim();
+  if (!trimmed) return "-";
+  const encoded = encodeURIComponent(trimmed);
+  // Use resolver endpoint that redirects to the exact model page if known, else to search
+  const href = `/api/hwlink?kind=${kind}&q=${encoded}`;
+  return (
+    <a href={href} target="_blank" rel="noreferrer" className="link" title="Open TechPowerUp search in new tab">
+      {trimmed}
+    </a>
+  );
+}
+
+function renderGpuCell(row: Benchmark) {
+  // Apple Silicon: show CPU model as GPU when gpuModel is missing but CPU indicates Apple SoC
+  const gpu = row.gpuModel ?? (isAppleSilicon(row.cpuModel) ? row.cpuModel : null);
+  return gpu ? renderHardwareLink(gpu, "gpu") : "-";
+}
+
+function isAppleSilicon(cpu: string | null | undefined): boolean {
+  if (!cpu) return false;
+  const s = cpu.toLowerCase();
+  return s.includes("apple m1") || s.includes("apple m2") || s.includes("apple m3") || s.includes("apple m4") || s.includes("m1 ") || s.includes("m2 ") || s.includes("m3 ") || s.includes("m4 ");
+}
+
 function WeightControl({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
     <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -431,6 +520,31 @@ function WeightControl({ label, value, onChange }: { label: string; value: numbe
       />
     </label>
   );
+}
+
+function WeightSlider({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        <span>{label}</span>
+        <span className="subtle" style={{ fontSize: 12 }}>{value.toFixed(2)}</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.01}
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+      />
+    </label>
+  );
+}
+
+function presetsForCodec(data: Benchmark[], codec: string): string[] {
+  const set = new Set<string>();
+  for (const r of data) if (r.codec === codec) set.add(r.preset);
+  return Array.from(set).sort();
 }
 
 

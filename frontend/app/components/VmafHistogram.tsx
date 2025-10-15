@@ -4,11 +4,14 @@ import type { Benchmark } from "./BenchmarksTable";
 
 import { useRef, useState } from "react";
 
-export default function VmafHistogram({ data, bins = 10 }: { data: Benchmark[]; bins?: number }) {
+export default function VmafHistogram({ data, bins = 12 }: { data: Benchmark[]; bins?: number }) {
   const [hover, setHover] = useState<{ x: number; y: number; text: string } | null>(null);
-  const [range, setRange] = useState<{ min: number; max: number }>({ min: 0, max: 100 });
+  const valuesAll = data.map((d) => typeof d.vmaf === "number" ? Math.max(0, Math.min(100, d.vmaf)) : null).filter((v): v is number => v != null);
+  const autoMin = valuesAll.length ? Math.max(0, Math.min(...valuesAll, 80)) : 0;
+  const autoMax = valuesAll.length ? Math.min(100, Math.max(...valuesAll, 95)) : 100;
+  const [range, setRange] = useState<{ min: number; max: number }>({ min: autoMin, max: autoMax });
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const values = data.map((d) => typeof d.vmaf === "number" ? Math.max(0, Math.min(100, d.vmaf)) : null).filter((v): v is number => v != null);
+  const values = valuesAll;
   if (values.length === 0) return null;
 
   const min = range.min;
@@ -32,20 +35,16 @@ export default function VmafHistogram({ data, bins = 10 }: { data: Benchmark[]; 
   const xFor = (i: number) => margin.left + i * (barWidth + barGap);
   const yFor = (c: number) => margin.top + chartHeight - (c / maxCount) * chartHeight;
 
-  function onWheel(e: React.WheelEvent<SVGSVGElement>) {
-    e.preventDefault();
-    const zoom = e.deltaY > 0 ? 1.1 : 0.9;
-    const mid = (range.min + range.max) / 2;
-    const half = ((range.max - range.min) / 2) * zoom;
-    const nextMin = Math.max(0, mid - half);
-    const nextMax = Math.min(100, mid + half);
-    if (nextMax - nextMin >= 5) setRange({ min: nextMin, max: nextMax });
-  }
+  function onWheel() {}
 
   return (
     <div className="card" style={{ padding: 12 }}>
       <div style={{ fontWeight: 600, marginBottom: 8 }}>VMAF Distribution</div>
-      <svg ref={svgRef} width={width} height={height} role="img" aria-label="VMAF Histogram" onWheel={onWheel} onMouseLeave={() => setHover(null)}>
+      <svg ref={svgRef} width={width} height={height} role="img" aria-label="VMAF Histogram" onWheel={onWheel} onMouseLeave={() => setHover(null)} onMouseMove={(e) => {
+        const rect = svgRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        setHover(h => h ? { ...h, x: e.clientX - rect.left + 12, y: e.clientY - rect.top - 16 } : null);
+      }}>
         {/* Grid */}
         {Array.from({ length: 4 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 3;
@@ -59,7 +58,7 @@ export default function VmafHistogram({ data, bins = 10 }: { data: Benchmark[]; 
           const labelFrom = Math.round(min + i * step);
           const labelTo = Math.round(min + (i + 1) * step);
           return (
-            <g key={i} onMouseMove={(e) => setHover({ x: x + barWidth / 2 + 8, y, text: `${labelFrom}–${labelTo}: ${c}` })}>
+            <g key={i} onMouseMove={() => setHover({ x: x + barWidth / 2 + 8, y, text: `${labelFrom}–${labelTo}: ${c}` })}>
               <rect x={x} y={y} width={barWidth} height={h} fill="#2563eb" rx={3} />
             </g>
           );
@@ -78,6 +77,17 @@ export default function VmafHistogram({ data, bins = 10 }: { data: Benchmark[]; 
         })}
         <text x={margin.left} y={margin.top - 8} fontSize={12} fill="var(--foreground)">VMAF</text>
       </svg>
+      {/* Range sliders under chart */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span className="subtle" style={{ fontSize: 12 }}>Min VMAF</span>
+          <input type="range" min={0} max={range.max - 5} step={1} value={range.min} onChange={e => setRange(r => ({ ...r, min: Math.min(Number(e.target.value), r.max - 5) }))} />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span className="subtle" style={{ fontSize: 12 }}>Max VMAF</span>
+          <input type="range" min={range.min + 5} max={100} step={1} value={range.max} onChange={e => setRange(r => ({ ...r, max: Math.max(Number(e.target.value), r.min + 5) }))} />
+        </label>
+      </div>
       {hover && (
         <div className="tooltip" style={{ left: hover.x, top: hover.y }}>
           {hover.text}

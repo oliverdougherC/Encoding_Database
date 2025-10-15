@@ -59,7 +59,7 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
   const yFor = (v: number) => margin.top + chartHeight - (v / maxY) * chartHeight;
 
   useEffect(() => {
-    setView({ xMax: maxXRaw, yMax: maxYRaw });
+    setView(v => ({ xMax: Math.max(v.xMax, maxXRaw), yMax: Math.max(v.yMax, maxYRaw) }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxXRaw, maxYRaw]);
 
@@ -77,22 +77,18 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
       const d2 = dx * dx + dy * dy;
       if (!best || d2 < best.d2) best = { d2, p };
     }
-    if (best && best.d2 < 12 * 12) {
-      setHover({ x: xFor(best.p.x), y: yFor(best.p.y) - 8, text: `${best.p.label} — ${best.p.y.toFixed(1)} FPS, ${best.p.x.toFixed(2)} MB` });
+    if (best && best.d2 < 14 * 14) {
+      setHover({ x: mx, y: my - 16, text: `${best.p.label} — ${best.p.y.toFixed(1)} FPS, ${best.p.x.toFixed(2)} MB` });
     } else {
       setHover(null);
     }
   }
 
-  function onWheel(e: React.WheelEvent<SVGSVGElement>) {
-    e.preventDefault();
-    const zoom = e.deltaY > 0 ? 1.1 : 0.9;
-    setView(v => ({ xMax: Math.max(1, v.xMax * zoom), yMax: Math.max(1, v.yMax * zoom) }));
-  }
+  // Removed mouse wheel zoom; replaced with sliders below
 
   return (
     <div className="card" style={{ padding: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12 }}>
         <div style={{ fontWeight: 600 }}>FPS vs File Size</div>
         <input
           className="input"
@@ -102,7 +98,7 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
           style={{ maxWidth: 280 }}
         />
       </div>
-      <svg ref={svgRef} width={width} height={height} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)} onWheel={onWheel}>
+      <svg ref={svgRef} width={width} height={height} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 5 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 4;
@@ -114,9 +110,14 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
         })}
 
         {/* Points */}
-        {points.map((p, idx) => (
-          <circle key={idx} cx={xFor(p.x)} cy={yFor(p.y)} r={4} fill={p.color} />
-        ))}
+        {points.map((p, idx) => {
+          const cx = xFor(p.x);
+          const cy = yFor(p.y);
+          const isHovered = hover && Math.hypot((hover.x - cx), (hover.y - cy)) < 16;
+          return (
+            <circle key={idx} cx={cx} cy={cy} r={isHovered ? 6 : 4} fill={p.color} />
+          );
+        })}
 
         {/* X axis */}
         <line x1={margin.left} x2={width - margin.right} y1={height - margin.bottom} y2={height - margin.bottom} stroke="var(--border)" />
@@ -144,10 +145,22 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
         })}
       </svg>
       {hover && (
-        <div className="tooltip" style={{ left: hover.x + 8, top: hover.y }}>
+        <div className="tooltip" style={{ left: hover.x + 8, top: hover.y + 8 }}>
           {hover.text}
         </div>
       )}
+
+      {/* Axis range controls aligned with axes */}
+      <div style={{ position: "relative", height: 48, marginTop: 8 }}>
+        <div style={{ position: "absolute", left: 0, right: 0 }}>
+          <input type="range" min={Math.max(1, Math.ceil(maxXRaw/4))} max={Math.max(1, Math.ceil(maxXRaw))} step={1} value={Math.ceil(maxX)} onChange={(e)=> setView(v=>({ ...v, xMax: Number(e.target.value) }))} style={{ width: "100%" }} />
+          <div className="subtle" style={{ fontSize: 12, textAlign: "center" }}>Max File Size (MB)</div>
+        </div>
+        <div style={{ position: "absolute", right: 0, top: -height + 24, height: height, display: "flex", alignItems: "center" }}>
+          <input type="range" min={Math.max(1, Math.ceil(maxYRaw/4))} max={Math.max(1, Math.ceil(maxYRaw))} step={1} value={Math.ceil(maxY)} onChange={(e)=> setView(v=>({ ...v, yMax: Number(e.target.value) }))} style={{ writingMode: "bt-lr", WebkitAppearance: "slider-vertical", height: height, transform: "rotate(180deg)" } as any} />
+          <div className="subtle" style={{ fontSize: 12, transform: "rotate(90deg)", marginLeft: 8 }}>Max FPS</div>
+        </div>
+      </div>
     </div>
   );
 }
