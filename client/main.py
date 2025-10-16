@@ -52,7 +52,7 @@ PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
 SAMPLE_VIDEO_SHA256 = "53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8"
 SAMPLE_VIDEO_SIZE_BYTES = 66045059
 
-# --- Cross-platform binary resolution helpers (PyInstaller-friendly) ---
+# --- Cross-platform binary resolution helpers ---
 
 def _app_base_dir() -> str:
     try:
@@ -126,7 +126,7 @@ def _candidate_ffprobe_paths() -> List[str]:
 
 _FFMPEG_EXE: Optional[str] = None
 _FFPROBE_EXE: Optional[str] = None
-# Print concise FFmpeg detected banner only once per session
+# Print FFmpeg detected banner only once per session
 _FFMPEG_DETECTED_PRINTED: bool = False
 # Cache for probing hardware encoder usability so we do not repeatedly run ffmpeg
 _ENCODER_USABLE_CACHE: Dict[str, bool] = {}
@@ -731,7 +731,7 @@ def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
     return ans in ("y", "yes")
 
 def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> int:
-    # Best-effort: ensure TTY is in a sane state (fixes ^M echo on macOS terminals)
+    # Best-effort: ensure TTY is in a sane state (fixes weird ^M echo on macOS terminals. Seriously, I dont know why that was happening.)
     try:
         if sys.stdin and sys.stdin.isatty():
             subprocess.run(["stty", "sane"], check=False)
@@ -752,7 +752,7 @@ def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> in
 
 
 def prompt_text(prompt: str, default_value: str = "") -> str:
-    # Best-effort: ensure TTY is in a sane state (fixes ^M echo on macOS terminals)
+    # Best-effort: ensure TTY is in a sane state
     try:
         if sys.stdin and sys.stdin.isatty():
             subprocess.run(["stty", "sane"], check=False)
@@ -894,11 +894,11 @@ def load_presets_config(path: str) -> Dict[str, Any]:
         return {
             "smallBenchmark": {
                 "crfValues": [28, 24],
-                "approxMinutes": 5
+                "approxMinutes": 60
             },
             "fullBenchmark": {
                 "crfValues": [24],
-                "approxMinutes": 20
+                "approxMinutes": 120
             }
         }
 
@@ -1095,6 +1095,7 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
             continue
     return None
 
+# Is anyone even reading these comments?
 
 # --- Client-only heuristics and helpers for batched pipeline ---
 
@@ -1230,6 +1231,7 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
         'error': err_msg,
     }
 
+# I think Ok Computer is a top 3 album OAT, no question.
 
 def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -> Dict[str, Optional[float]]:
     results: Dict[str, Optional[float]] = {}
@@ -1918,7 +1920,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
     # Load presets for dynamic approx durations
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     s_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
-    m_minutes = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxMinutes", 20))
+    m_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
     f_hours = presets_cfg.get("fullBenchmark", {}).get("approxHours")
     try:
         f_hours = int(f_hours) if isinstance(f_hours, int) else float(f_hours)
@@ -1929,8 +1931,8 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
     menu = [
         "Run Single Benchmark",
         f"Run Small Benchmark [~{s_minutes} minutes]",
-        f"Run Medium Benchmark [~{m_minutes} minutes]",
-        f"Run Full Benchmark [~{f_hours} hours]",
+        f"Run Medium Benchmark [~{m_hours} hours] (Recommended)",
+        f"Run Full Benchmark [~{f_hours} hours] (Not recommended for most machines, intended for servers)",
         "Exit",
     ]
     choice = prompt_choice("Menu", menu, default_index=0)
@@ -2122,6 +2124,12 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
     elapsed_sec = max(0.0, time.time() - _BATCH_START_TS)
     _clear_screen()
     print_end_screen(_BATCH_COMPLETED_COUNT, elapsed_sec)
+    # Optional pause on Windows: keep the console open for end screen visibility
+    try:
+        if os.name == 'nt' and (bool(getattr(base_args, 'pause_on_exit', False)) or bool(getattr(sys, 'frozen', False))):
+            input("Press Enter to exit...")
+    except Exception:
+        pass
     _BATCH_ACTIVE = False
     return rc
 
@@ -2140,3 +2148,5 @@ def main(argv: List[str]) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv))
+
+# Hot Take: Dawn FM is also top 3.
