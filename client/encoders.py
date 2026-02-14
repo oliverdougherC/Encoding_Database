@@ -112,10 +112,22 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
                 "-f", "lavfi", "-i", "testsrc=size=16x16:rate=1",
                 "-frames:v", "1", "-pix_fmt", "yuv420p",
                 "-c:v", encoder,
-                "-an", out_path,
             ]
+            if enc.endswith("_videotoolbox"):
+                cmd += ["-allow_sw", "1"]
+            cmd += ["-an", out_path]
             proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
             ok = (proc.returncode == 0) and os.path.exists(out_path) and os.path.getsize(out_path) > 0
+            # #region agent log
+            try:
+                import json as _json
+                _log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
+                os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+                with open(_log_path, 'a') as _f:
+                    _f.write(_json.dumps({"location":"encoders.py:is_hardware_encoder_usable","message":"Usability probe result","data":{"encoder":encoder,"ok":ok,"returncode":proc.returncode,"stderr":(proc.stderr or "")[:500],"cmd":" ".join(cmd)},"timestamp":int(time.time()*1000),"hypothesisId":"C,E"}) + '\n')
+            except Exception:
+                pass
+            # #endregion
             with config._GLOBAL_STATE_LOCK:
                 config._ENCODER_USABLE_CACHE[enc] = bool(ok)
             return bool(ok)

@@ -23,15 +23,26 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
         "-c:v", encoder,
     ]
     cmd += map_preset_for_encoder(encoder, preset_name)
+    # #region agent log
+    _dbg_crf_applied = False
+    # #endregion
     if crf is not None:
         e = encoder.strip().lower()
         if e in ("libx264", "libx265", "libsvtav1", "libaom-av1", "libvpx-vp9"):
             cmd += ["-crf", str(crf)]
+            # #region agent log
+            _dbg_crf_applied = True
+            # #endregion
         elif e.endswith("_nvenc"):
             cmd += ["-cq", str(max(0, min(51, crf)))]
+            # #region agent log
+            _dbg_crf_applied = True
+            # #endregion
     if encoder.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi")):
         cmd += ["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p"]
     e = encoder.strip().lower()
+    if e.endswith("_videotoolbox"):
+        cmd += ["-allow_sw", "1"]
     if e == "h264_videotoolbox":
         cmd += ["-b:v", "5000k", "-profile:v", "high", "-g", "120"]
     elif e == "hevc_videotoolbox":
@@ -39,6 +50,16 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
     elif e == "av1_videotoolbox":
         cmd += ["-b:v", "5000k"]
     cmd += ["-an", output_path]
+    # #region agent log
+    try:
+        import json as _json
+        _log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
+        os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+        with open(_log_path, 'a') as _f:
+            _f.write(_json.dumps({"location":"ffmpeg.py:build_ffmpeg_encode_cmd","message":"Built ffmpeg command","data":{"encoder":encoder,"preset_name":preset_name,"crf":crf,"crf_applied":_dbg_crf_applied,"full_cmd":" ".join(cmd)},"timestamp":int(time.time()*1000),"hypothesisId":"A,B,D"}) + '\n')
+    except Exception:
+        pass
+    # #endregion
     return cmd
 
 
@@ -68,6 +89,16 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
             brief = "; ".join([ln.strip() for ln in stderr_lines[-5:]]) if stderr_lines else "ffmpeg failed"
             print(f"ffmpeg error (preset={preset}, codec={codec}): {brief}", file=sys.stderr)
             result["_error"] = brief
+        # #region agent log
+        try:
+            import json as _json
+            _log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
+            os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+            with open(_log_path, 'a') as _f:
+                _f.write(_json.dumps({"location":"ffmpeg.py:run_ffmpeg_test","message":"ffmpeg test result","data":{"codec":codec,"preset":preset,"crf":crf,"returncode":proc.returncode,"stderr":(proc.stderr or "")[:2000],"fps":fps,"size":size,"total_frames":total_frames,"full_cmd":" ".join(cmd)},"timestamp":int(time.time()*1000),"hypothesisId":"A,B,C,D,E"}) + '\n')
+        except Exception:
+            pass
+        # #endregion
         return result
 
 
@@ -203,8 +234,29 @@ def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -
 
 
 def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
+    # #region agent log
+    try:
+        import json as _json
+        _log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
+        os.makedirs(os.path.dirname(_log_path), exist_ok=True)
+        _probe_cmd = [config.ffprobe_exe(), "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height,pix_fmt,codec_name,r_frame_rate,nb_frames,duration", "-of", "json", input_path]
+        _probe_proc = subprocess.run(_probe_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+        with open(_log_path, 'a') as _f:
+            _f.write(_json.dumps({"location":"ffmpeg.py:run_single_benchmark:entry","message":"Input video properties","data":{"input_path":input_path,"codec":codec,"preset":preset,"crf":crf,"probe_stdout":(_probe_proc.stdout or "")[:1000]},"timestamp":int(time.time()*1000),"hypothesisId":"E"}) + '\n')
+    except Exception:
+        pass
+    # #endregion
     result = run_ffmpeg_test(input_path, preset=preset, codec=codec, crf=crf)
     if (result.get("_encode_rc", 1) != 0 or float(result.get("fps", 0.0)) <= 0 or int(result.get("fileSizeBytes", 0)) <= 0):
+        # #region agent log
+        try:
+            import json as _json
+            _log_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.cursor', 'debug.log')
+            with open(_log_path, 'a') as _f:
+                _f.write(_json.dumps({"location":"ffmpeg.py:run_single_benchmark:fallback","message":"HW encoder failed, entering fallback","data":{"codec":codec,"encode_rc":result.get("_encode_rc"),"fps":result.get("fps"),"size":result.get("fileSizeBytes"),"error":result.get("_error","")},"timestamp":int(time.time()*1000),"hypothesisId":"A,B,C,D,E"}) + '\n')
+        except Exception:
+            pass
+        # #endregion
         family = None
         if codec.endswith("_videotoolbox"):
             family = "h264" if "h264" in codec else ("hevc" if "hevc" in codec else ("av1" if "av1" in codec else None))
