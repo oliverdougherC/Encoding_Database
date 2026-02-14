@@ -118,17 +118,19 @@ try {
     exit 3
 }
 
-# Run PyInstaller
+# Run PyInstaller from project root so package imports resolve
 Write-Host "[Windows] Building executable..." -ForegroundColor Green
+Set-Location $RootDir
 $PyInstallerArgs = @(
     "--clean",
     "--onefile",
     "--name", "encodingdb-client-windows",
-    "--add-data", "bin/win/ffmpeg.exe;bin/win",
-    "--add-data", "bin/win/ffprobe.exe;bin/win",
-    "--add-data", "../sample.mp4;.",
-    "--add-data", "presets.json;.",
-    "main.py"
+    "--paths", ".",
+    "--add-data", "client\bin\win\ffmpeg.exe;bin\win",
+    "--add-data", "client\bin\win\ffprobe.exe;bin\win",
+    "--add-data", "sample.mp4;.",
+    "--add-data", "client\presets.json;.",
+    "client\_pyinstaller_entry.py"
 )
 
 try {
@@ -144,8 +146,8 @@ try {
 }
 
 Write-Host "[Windows] Moving artifact to $BuildDir..." -ForegroundColor Green
-$ExePath = Join-Path $ClientDir "dist\encodingdb-client-windows.exe"
-$DirPath = Join-Path $ClientDir "dist\encodingdb-client-windows"
+$ExePath = Join-Path $RootDir "dist\encodingdb-client-windows.exe"
+$DirPath = Join-Path $RootDir "dist\encodingdb-client-windows"
 
 if (Test-Path $ExePath) {
     Move-Item -Path $ExePath -Destination $BuildDir -Force

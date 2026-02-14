@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
+import styles from "./GroupedSizeByPreset.module.css";
 
 type Group = {
   preset: string;
@@ -46,13 +47,9 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
   const yFor = (v: number) => margin.top + chartHeight - (v / maxValue) * chartHeight;
 
   return (
-    <div className="card" style={{ padding: 12 }}>
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>Average File Size by Preset and Codec</div>
-      <svg width={width} height={height} role="img" aria-label="Grouped size by preset and codec" onMouseMove={(e) => {
-        const rect = (e.target as SVGElement).closest('svg')?.getBoundingClientRect();
-        if (!rect) return;
-        setHover(h => h ? { ...h, x: e.clientX - rect.left + 12, y: e.clientY - rect.top - 16 } : null);
-      }} onMouseLeave={() => setHover(null)}>
+    <div className={`card ${styles.chartCard}`}>
+      <div className={styles.chartTitle}>Average File Size by Preset and Codec</div>
+      <svg width={width} height={height} role="img" aria-label="Grouped size by preset and codec" onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 4 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 3;
@@ -70,8 +67,12 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
             const h = margin.top + chartHeight - y;
             const color = colors[ci % colors.length];
             return (
-              <g key={`${p}|${c}`} onMouseMove={() => setHover({ x: x + barWidth / 2 + 8, y, text: `${p} • ${c}: ${v.toFixed(2)} MB` })}>
-                <rect x={x} y={y} width={barWidth} height={h} fill={color} rx={3} />
+              <g
+                key={`${p}|${c}`}
+                onMouseEnter={() => setHover({ x: x + barWidth / 2 + 8, y: y - 8, text: `${p} • ${c}: ${v.toFixed(2)} MB` })}
+                onMouseLeave={() => setHover(null)}
+              >
+                <rect x={x} y={y} width={barWidth} height={h} fill={color} rx={3} style={{ cursor: "pointer" }} />
               </g>
             );
           });
@@ -106,10 +107,10 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
       )}
 
       {/* Legend */}
-      <div className="subtle" style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 8 }}>
+      <div className={`subtle ${styles.legend}`}>
         {codecs.map((c, i) => (
-          <div key={c} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <span style={{ width: 12, height: 12, background: colors[i % colors.length], borderRadius: 3, display: "inline-block" }} />
+          <div key={c} className={styles.legendItem}>
+            <span className={styles.legendSwatch} style={{ background: colors[i % colors.length] }} />
             <span>{c}</span>
           </div>
         ))}
@@ -117,5 +118,3 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
     </div>
   );
 }
-
-

@@ -27,18 +27,19 @@ cp -f "$ROOT_DIR/sample.mp4" "$BUILD_DIR/" || true
 cp -f "$CLIENT_DIR/presets.json" "$BUILD_DIR/" || true
 
 echo "[Linux] Running PyInstaller..."
-cd "$CLIENT_DIR"
+cd "$ROOT_DIR"
 pyinstaller \
   --onefile \
   --name encodingdb-client-linux \
+  --paths . \
   --add-data "$BUILD_DIR/bin/linux:bin/linux" \
   --add-data "$BUILD_DIR/sample.mp4:." \
   --add-data "$BUILD_DIR/presets.json:." \
-  main.py
+  client/_pyinstaller_entry.py
 
 echo "[Linux] Moving artifact to $BUILD_DIR..."
-mv -f "$CLIENT_DIR/dist/encodingdb-client-linux" "$BUILD_DIR/encodingdb-client-linux" 2>/dev/null || true
-mv -f "$CLIENT_DIR/dist/encodingdb-client-linux"* "$BUILD_DIR/" 2>/dev/null || true
+mv -f "$ROOT_DIR/dist/encodingdb-client-linux" "$BUILD_DIR/encodingdb-client-linux" 2>/dev/null || true
+mv -f "$ROOT_DIR/dist/encodingdb-client-linux"* "$BUILD_DIR/" 2>/dev/null || true
 
 echo "[Linux] Build complete: $BUILD_DIR"
 

@@ -1,0 +1,27 @@
+.headerBar {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.brandLink {
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.navLinks {
+  display: flex;
+  gap: 12px;
+}
+
+.navBtn {
+  text-decoration: none;
+  padding: 6px 10px;
+}

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
+import styles from "./layout.module.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,14 +27,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
-        <header style={{ borderBottom: "1px solid var(--border)", padding: "12px 24px" }}>
-          <nav style={{ display: "flex", alignItems: "center", justifyContent: "space-between", maxWidth: 1200, margin: "0 auto" }}>
-            <a href="/" className="link" style={{ fontWeight: 600, textDecoration: "none" }}>Encoding DB</a>
-            <div style={{ display: "flex", gap: 12 }}>
-              <a href="/" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Home</a>
-              
-              <a href="/plove" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>PLOVE</a>
-              <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className="btn" style={{ textDecoration: "none", padding: "6px 10px" }}>Download Client</a>
+        <header className={styles.headerBar}>
+          <nav className={styles.nav}>
+            <Link href="/" className={`link ${styles.brandLink}`}>Encoding DB</Link>
+            <div className={styles.navLinks}>
+              <Link href="/" className={`btn ${styles.navBtn}`}>Home</Link>
+              <Link href="/plove" className={`btn ${styles.navBtn}`}>PLOVE</Link>
+              <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className={`btn ${styles.navBtn}`}>Download Client</a>
             </div>
           </nav>
         </header>

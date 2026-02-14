@@ -86,3 +86,4 @@ coverage/
 
 # Nginx certs (place externally)
 nginx/certs/
+IMPROVEMENTS.md

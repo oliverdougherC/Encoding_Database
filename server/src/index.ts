@@ -7,7 +7,7 @@ import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
 import routes from './routes.js';
-import { prisma } from './db.js';
+import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 
 const app = express();
@@ -119,6 +119,26 @@ const submitTokenTtlSeconds = Number(process.env.SUBMIT_TOKEN_TTL_SECONDS || 60)
 const ingestMode = (process.env.INGEST_MODE || 'public').toLowerCase(); // public | signed | hybrid
 const powEnabled = String(process.env.POW_ENABLED || '0') === '1';
 const powDifficulty = Math.max(0, Number(process.env.POW_DIFFICULTY || 0)); // leading zero hex chars approx
+
+// Periodic cleanup for in-memory stores to prevent memory leaks
+const CLEANUP_INTERVAL_MS = 60_000; // 1 minute
+setInterval(() => {
+  const now = Date.now();
+
+  // Clean up expired signatures
+  for (const [sig, expMs] of seenSignatures.entries()) {
+    if (expMs <= now) {
+      seenSignatures.delete(sig);
+    }
+  }
+
+  // Clean up expired/used tokens
+  for (const [token, meta] of tokenStore.entries()) {
+    if (meta.expMs < now || meta.used) {
+      tokenStore.delete(token);
+    }
+  }
+}, CLEANUP_INTERVAL_MS).unref(); // unref so it doesn't prevent graceful shutdown
 
 function normalizeIp(ip: string | undefined): string {
   if (!ip) return '';
@@ -283,14 +303,6 @@ app.get('/health/token', (req, res) => {
 // Routes
 app.use(routes);
 
-// Explicit lightweight token endpoints here too (in case external routing bypasses routes.ts)
-app.get('/submit-token', (req, res) => {
-  res.json({ token: 'direct', exp: Math.floor((Date.now() + 60000) / 1000), pow: { difficulty: 0 } });
-});
-app.get('/submit/token', (req, res) => {
-  res.json({ token: 'direct', exp: Math.floor((Date.now() + 60000) / 1000), pow: { difficulty: 0 } });
-});
-
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not Found' });
@@ -318,20 +330,41 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
  
 
 const port = process.env.PORT || 3001;
-const server = app.listen(port, () => {
-  console.log(`server listening on ${port}`);
-});
+let server: ReturnType<typeof app.listen>;
+
+// Start server with explicit database connection
+async function startServer() {
+  try {
+    // Connect to database before accepting requests
+    await connectDatabase();
+
+    server = app.listen(port, () => {
+      console.log(`server listening on ${port}`);
+    });
+
+    // Tune server timeouts
+    server.headersTimeout = 65_000; // allow a bit over common proxy timeouts
+    server.requestTimeout = 60_000;
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+}
 
 // Graceful shutdown
 async function shutdown(signal: string) {
   console.log(`\n${signal} received. Shutting down...`);
-  server.close(async () => {
-    try {
-      await prisma.$disconnect();
-    } finally {
-      process.exit(0);
-    }
-  });
+  if (server) {
+    server.close(async () => {
+      try {
+        await disconnectDatabase();
+      } finally {
+        process.exit(0);
+      }
+    });
+  } else {
+    process.exit(0);
+  }
   // Force exit if not closed in time
   setTimeout(() => {
     console.error(JSON.stringify({ time: new Date().toISOString(), level: 'error', message: 'Forced shutdown' }));
@@ -352,6 +385,5 @@ process.on('uncaughtException', (error) => {
   shutdown('uncaughtException');
 });
 
-// Tune server timeouts
-server.headersTimeout = 65_000; // allow a bit over common proxy timeouts
-server.requestTimeout = 60_000;
+// Start the server
+startServer();

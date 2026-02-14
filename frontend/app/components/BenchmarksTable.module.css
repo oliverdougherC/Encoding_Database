@@ -1,0 +1,173 @@
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.encoderFilters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.encoderFilterLabel {
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.encoderFilterActive {
+  border-color: var(--accent);
+}
+
+.weightsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.weightsLabel {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.weightsActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.appliedWeights {
+  font-size: 12px;
+  margin-right: 8px;
+}
+
+.actionBtn {
+  padding: 6px 10px;
+}
+
+.applyBtn {
+  padding: 6px 10px;
+  background: var(--apply-bg);
+  color: white;
+  border-color: var(--apply-border);
+}
+
+.cardOverflow {
+  overflow-x: auto;
+}
+
+.textCenter {
+  text-align: center;
+}
+
+.textRight {
+  text-align: right;
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.sortIndicator {
+  margin-left: 4px;
+}
+
+.modalTitle {
+  font-weight: 600;
+}
+
+.modalCloseBtn {
+  padding: 6px 10px;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.labelValueGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.labelText {
+  font-size: 12px;
+}
+
+.valueText {
+  font-weight: 500;
+}
+
+.pathWarning {
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.ffmpegBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pathInputGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.inputLabel {
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.kbdWrapper {
+  position: relative;
+}
+
+.noResults {
+  text-align: center;
+}
+
+.presetDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.weightSlider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.weightSliderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weightSliderValue {
+  font-size: 12px;
+}
+
+.hoverBtn {
+  padding: 6px 12px;
+}
+
+.hoverBtn:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}

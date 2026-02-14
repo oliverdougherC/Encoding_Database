@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useRef, useEffect } from "react";
 import type { Benchmark } from "./BenchmarksTable";
+import styles from "./ScatterFpsSize.module.css";
 
 type Point = {
   x: number; // file size (MB)
@@ -60,7 +61,6 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
 
   useEffect(() => {
     setView(v => ({ xMax: Math.max(v.xMax, maxXRaw), yMax: Math.max(v.yMax, maxYRaw) }));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maxXRaw, maxYRaw]);
 
   function onMouseMove(e: React.MouseEvent<SVGSVGElement>) {
@@ -69,7 +69,6 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
     const rect = svg.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
-    // find nearest point within radius
     let best: { d2: number; p: Point } | null = null;
     for (const p of points) {
       const dx = xFor(p.x) - mx;
@@ -84,18 +83,15 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
     }
   }
 
-  // Removed mouse wheel zoom; replaced with sliders below
-
   return (
-    <div className="card" style={{ padding: 12 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 12 }}>
-        <div style={{ fontWeight: 600 }}>FPS vs File Size</div>
+    <div className={`card ${styles.chartCard}`}>
+      <div className={styles.headerRow}>
+        <div className={styles.chartTitle}>FPS vs File Size</div>
         <input
-          className="input"
+          className={`input ${styles.codecInput}`}
           placeholder="Filter by codec (e.g. av1, h264)"
           value={codecFilter}
           onChange={(e) => setCodecFilter(e.target.value)}
-          style={{ maxWidth: 280 }}
         />
       </div>
       <svg ref={svgRef} width={width} height={height} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)}>
@@ -151,18 +147,16 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
       )}
 
       {/* Axis range controls aligned with axes */}
-      <div style={{ position: "relative", height: 48, marginTop: 8 }}>
-        <div style={{ position: "absolute", left: 0, right: 0 }}>
+      <div className={styles.rangeControls}>
+        <div className={styles.xRangeWrapper}>
           <input type="range" min={Math.max(1, Math.ceil(maxXRaw/4))} max={Math.max(1, Math.ceil(maxXRaw))} step={1} value={Math.ceil(maxX)} onChange={(e)=> setView(v=>({ ...v, xMax: Number(e.target.value) }))} style={{ width: "100%" }} />
-          <div className="subtle" style={{ fontSize: 12, textAlign: "center" }}>Max File Size (MB)</div>
+          <div className={`subtle ${styles.xRangeLabel}`}>Max File Size (MB)</div>
         </div>
         <div style={{ position: "absolute", right: 0, top: -height + 24, height: height, display: "flex", alignItems: "center" }}>
-          <input type="range" min={Math.max(1, Math.ceil(maxYRaw/4))} max={Math.max(1, Math.ceil(maxYRaw))} step={1} value={Math.ceil(maxY)} onChange={(e)=> setView(v=>({ ...v, yMax: Number(e.target.value) }))} style={{ writingMode: "bt-lr", WebkitAppearance: "slider-vertical", height: height, transform: "rotate(180deg)" } as any} />
-          <div className="subtle" style={{ fontSize: 12, transform: "rotate(90deg)", marginLeft: 8 }}>Max FPS</div>
+          <input type="range" min={Math.max(1, Math.ceil(maxYRaw/4))} max={Math.max(1, Math.ceil(maxYRaw))} step={1} value={Math.ceil(maxY)} onChange={(e)=> setView(v=>({ ...v, yMax: Number(e.target.value) }))} style={{ writingMode: "vertical-lr", WebkitAppearance: "slider-vertical", height: height, transform: "rotate(180deg)" } as React.CSSProperties} />
+          <div className={`subtle ${styles.yRangeLabel}`}>Max FPS</div>
         </div>
       </div>
     </div>
   );
 }
-
-

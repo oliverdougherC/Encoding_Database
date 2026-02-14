@@ -1,0 +1,42 @@
+.chartCard {
+  padding: 12px;
+}
+
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 12px;
+}
+
+.chartTitle {
+  font-weight: 600;
+}
+
+.codecInput {
+  max-width: 280px;
+}
+
+.rangeControls {
+  position: relative;
+  height: 48px;
+  margin-top: 8px;
+}
+
+.xRangeWrapper {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+
+.xRangeLabel {
+  font-size: 12px;
+  text-align: center;
+}
+
+.yRangeLabel {
+  font-size: 12px;
+  transform: rotate(90deg);
+  margin-left: 8px;
+}

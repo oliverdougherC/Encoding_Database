@@ -27,17 +27,40 @@ const benchmarkSchema = z.object({
   runMs: z.coerce.number().int().nonnegative().max(24 * 60 * 60 * 1000).optional().nullable(),
 }).strict();
 
+// Type inferred from Zod schema for proper type safety
+type BenchmarkSubmission = z.infer<typeof benchmarkSchema>;
+
+// Helper to log errors in structured JSON format
+function logError(context: string, error: unknown): void {
+  console.error(JSON.stringify({
+    time: new Date().toISOString(),
+    level: 'error',
+    context,
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  }));
+}
+
 // Simple canonical hash list for MVP (publish in README)
 const CANONICAL_INPUT_HASHES = new Set<string>([
   // sha256 of sample.mp4 (to be documented)
 ]);
+
+// Method guard for /submit (reject non-POST) - must be registered before the POST handler
+router.all('/submit', (req, res, next) => {
+  if (req.method === 'POST') {
+    return next();
+  }
+  res.setHeader('Allow', 'POST');
+  return res.status(405).json({ error: 'Method Not Allowed' });
+});
 
 router.post('/submit', async (req, res) => {
   const parse = benchmarkSchema.safeParse(req.body);
   if (!parse.success) {
     return res.status(400).json({ error: 'Invalid payload', details: parse.error.flatten() });
   }
-  const data = parse.data as any;
+  const data: BenchmarkSubmission = parse.data;
   // Enforce default CRF=24 when missing/null to ensure consistent records
   if (data.crf == null || !Number.isFinite(Number(data.crf))) {
     data.crf = 24;
@@ -54,13 +77,16 @@ router.post('/submit', async (req, res) => {
     fps: data.fps,
     vmaf: data.vmaf ?? null,
     fileSizeBytes: data.fileSizeBytes,
-    inputHash: (data as any).inputHash ?? null,
+    inputHash: data.inputHash ?? null,
   } as const;
   const payloadHash = crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
 
   try {
     // Fast path: if the exact same payload was already counted, return existing (idempotency)
-    const existingByHash = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch(() => null);
+    const existingByHash = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch((err) => {
+      logError('findUnique by payloadHash', err);
+      return null;
+    });
     if (existingByHash) {
       return res.status(200).json(existingByHash);
     }
@@ -72,25 +98,28 @@ router.post('/submit', async (req, res) => {
     const isSizeOk = data.fileSizeBytes >= 10 * 1024 && data.fileSizeBytes <= 1000 * 1024 * 1024; // >=10KB and <=1GB
     const namesOk = data.cpuModel.trim().length >= 3 && data.os.trim().length >= 3;
     const inputHashOk = !!data.inputHash && CANONICAL_INPUT_HASHES.has(data.inputHash);
-    // Quality scoring using robust statistics across recent accepted submissions for same key
+    // Quality scoring using robust statistics across recent accepted submissions for same key.
+    // Use empty string for "no GPU" so compound unique (cpuModel, gpuModel, ...) has one row per hardware;
+    // in PostgreSQL, NULL in a unique column allows multiple rows, so we normalize to '' for Benchmark.
+    const gpuModelValue = (data.gpuModel && data.gpuModel.trim()) ? data.gpuModel.trim() : '';
     const key = {
       cpuModel: data.cpuModel,
-      gpuModel: data.gpuModel ?? null,
+      gpuModel: gpuModelValue,
       ramGB: data.ramGB,
       os: data.os,
       codec: data.codec,
       preset: data.preset,
-      crf: Number(data.crf),
-    } as const;
+      crf: Number(data.crf ?? 24),
+    };
 
     // Fetch recent samples for robust baseline (best-effort; tolerate missing table)
-    let recentSubs: Array<{ fps: number; fileSizeBytes: number; vmaf: number | null }> = [];
+    let recentSubs: Array<{ fps: number; fileSizeBytes: bigint | number; vmaf: number | null }> = [];
     try {
       recentSubs = await prisma.submission.findMany({
         where: {
           status: 'accepted',
           cpuModel: key.cpuModel,
-          gpuModel: key.gpuModel,
+          gpuModel: gpuModelValue || null, // Use null for empty string in queries
           ramGB: key.ramGB,
           os: key.os,
           codec: key.codec,
@@ -99,8 +128,11 @@ router.post('/submit', async (req, res) => {
         },
         orderBy: { createdAt: 'desc' },
         take: 200,
-      }) as any;
-    } catch {}
+        select: { fps: true, fileSizeBytes: true, vmaf: true },
+      });
+    } catch (err) {
+      logError('fetchRecentSubmissions', err);
+    }
     function median(values: number[]): number {
       const v = [...values].sort((a, b) => a - b);
       const n = v.length;
@@ -153,109 +185,144 @@ router.post('/submit', async (req, res) => {
     let createdNew = false;
     // Store raw submission record for auditability
     try {
-      await prisma.submission.create({ data: {
-        cpuModel: data.cpuModel,
-        gpuModel: data.gpuModel ?? null,
-        ramGB: data.ramGB,
-        os: data.os,
-        codec: data.codec,
-        preset: data.preset,
-        crf: Number(data.crf),
-        fps: Number(data.fps),
-        vmaf: data.vmaf == null ? null : Number(data.vmaf),
-        fileSizeBytes: Number(data.fileSizeBytes),
-        notes: data.notes ?? null,
-        ffmpegVersion: (data as any).ffmpegVersion ?? null,
-        encoderName: (data as any).encoderName ?? null,
-        clientVersion: (data as any).clientVersion ?? null,
-        inputHash: (data as any).inputHash ?? null,
-        runMs: (data as any).runMs ?? null,
-        payloadHash,
-        status,
-        qualityScore,
-      }} as any);
-    } catch {}
+      await prisma.submission.create({
+        data: {
+          cpuModel: data.cpuModel,
+          gpuModel: data.gpuModel || null, // Store null for empty/missing gpuModel
+          ramGB: data.ramGB,
+          os: data.os,
+          codec: data.codec,
+          preset: data.preset,
+          crf: Number(data.crf ?? 24),
+          fps: Number(data.fps),
+          vmaf: data.vmaf == null ? null : Number(data.vmaf),
+          fileSizeBytes: Number(data.fileSizeBytes),
+          notes: data.notes || null,
+          ffmpegVersion: data.ffmpegVersion || null,
+          encoderName: data.encoderName || null,
+          clientVersion: data.clientVersion || null,
+          inputHash: data.inputHash || null,
+          runMs: data.runMs != null ? Number(data.runMs) : null,
+          payloadHash,
+          status,
+          qualityScore,
+        },
+      });
+    } catch (err) {
+      // Log audit failures but don't block the benchmark aggregation
+      logError('createSubmissionAudit', err);
+    }
     const row = await prisma.$transaction(async (tx) => {
+      // Transaction inherits global defaults (maxWait 5s, timeout 15s)
       const existing = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key } });
       if (!existing) {
         createdNew = true;
-        return tx.benchmark.create({ data: {
-          ...key,
-          fps: data.fps,
-          vmaf: data.vmaf ?? null,
-          fileSizeBytes: data.fileSizeBytes,
-          notes: data.notes ?? null,
-          status,
-          ffmpegVersion: (data as any).ffmpegVersion ?? null,
-          encoderName: (data as any).encoderName ?? null,
-          clientVersion: (data as any).clientVersion ?? null,
-          inputHash: (data as any).inputHash ?? null,
-          runMs: (data as any).runMs ?? null,
-          payloadHash,
-          samples: 1,
-          vmafSamples: data.vmaf == null ? 0 : 1,
-        }});
+        // For new benchmarks, only count as sample if accepted
+        const initialSamples = status === 'accepted' ? 1 : 0;
+        const initialVmafSamples = (status === 'accepted' && data.vmaf != null) ? 1 : 0;
+        return tx.benchmark.create({
+          data: {
+            cpuModel: key.cpuModel,
+            gpuModel: gpuModelValue, // Use '' for no GPU so compound unique matches findUnique(key)
+            ramGB: key.ramGB,
+            os: key.os,
+            codec: key.codec,
+            preset: key.preset,
+            crf: key.crf,
+            fps: data.fps,
+            vmaf: data.vmaf ?? null,
+            fileSizeBytes: data.fileSizeBytes,
+            notes: data.notes || null,
+            status,
+            ffmpegVersion: data.ffmpegVersion || null,
+            encoderName: data.encoderName || null,
+            clientVersion: data.clientVersion || null,
+            inputHash: data.inputHash || null,
+            runMs: data.runMs != null ? Number(data.runMs) : null,
+            payloadHash,
+            samples: initialSamples,
+            vmafSamples: initialVmafSamples,
+          },
+        });
       }
 
-      const prevSamples = Number(existing?.samples ?? 0);
+      // Only update aggregates for accepted submissions
+      if (status !== 'accepted') {
+        // Non-accepted submissions don't change aggregates, just update status if needed
+        const nextStatus = existing.status === 'accepted' ? 'accepted' : (existing.status ?? status);
+        return tx.benchmark.update({
+          where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key },
+          data: { status: nextStatus },
+        });
+      }
+
+      // Accepted submission: update running averages
+      const prevSamples = existing.samples ?? 0;
       const nextSamples = prevSamples + 1;
-      const prevFps = Number(existing?.fps ?? 0);
-      const prevFileSize = Number(existing?.fileSizeBytes ?? 0);
+      const prevFps = existing.fps ?? 0;
+      const prevFileSize = existing.fileSizeBytes ?? 0;
       const nextFps = (prevFps * prevSamples + Number(data.fps)) / nextSamples;
       const nextFileSize = Math.round((prevFileSize * prevSamples + Number(data.fileSizeBytes)) / nextSamples);
 
-      const prevVmafSamples = Number(existing?.vmafSamples ?? 0);
+      const prevVmafSamples = existing.vmafSamples ?? 0;
       let nextVmafSamples = prevVmafSamples;
-      let nextVmaf: number | null = existing?.vmaf ?? null;
+      let nextVmaf: number | null = existing.vmaf ?? null;
       if (data.vmaf != null) {
-        const prevVmafTotal = (Number(existing?.vmaf ?? 0) * prevVmafSamples);
+        const prevVmafTotal = (existing.vmaf ?? 0) * prevVmafSamples;
         nextVmafSamples = prevVmafSamples + 1;
         nextVmaf = (prevVmafTotal + Number(data.vmaf)) / nextVmafSamples;
       }
 
-      const nextStatus = (existing?.status === 'accepted' || status === 'accepted') ? 'accepted' : (existing?.status ?? status);
-
       return tx.benchmark.update({
         where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf: key },
         data: {
-          // Only aggregate accepted samples
-          fps: status === 'accepted' ? nextFps : prevFps,
-          fileSizeBytes: status === 'accepted' ? nextFileSize : prevFileSize,
-          vmaf: status === 'accepted' ? nextVmaf : existing?.vmaf ?? null,
-          samples: status === 'accepted' ? nextSamples : prevSamples,
-          vmafSamples: status === 'accepted' ? nextVmafSamples : prevVmafSamples,
-          status: status === 'accepted' ? 'accepted' : nextStatus,
-          // keep notes/metadata as-is to represent the first submission; could be revisited
+          fps: nextFps,
+          fileSizeBytes: nextFileSize,
+          vmaf: nextVmaf,
+          samples: nextSamples,
+          vmafSamples: nextVmafSamples,
+          status: 'accepted',
         },
       });
     });
 
     res.status(createdNew ? 201 : 200).json(row);
   } catch (err) {
-    if ((err as any)?.code === 'P2002') {
+    const errCode = (err as { code?: string })?.code;
+    if (errCode === 'P2002') {
       // Unique constraint violation: return the existing row idempotently
       try {
         const existing = await prisma.benchmark.findUnique({ where: { payloadHash } });
         if (existing) return res.status(200).json(existing);
-      } catch {}
+      } catch (findErr) {
+        logError('findExistingAfterP2002', findErr);
+      }
     }
+    if (errCode === 'P2024' || errCode === 'P2028') {
+      // P2024: connection pool timeout (maxWait exceeded)
+      // P2028: transaction execution timeout (timeout exceeded)
+      logError('POST /submit timeout', err);
+      return res.status(503).json({ error: 'Database operation timed out. Please retry.' });
+    }
+    logError('POST /submit', err);
     res.status(500).json({ error: 'Failed to insert benchmark' });
   }
 });
 
-// Method guard for /submit (reject non-POST)
-router.all('/submit', (req, res, next) => {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).json({ error: 'Method Not Allowed' });
+// Method guard for /query (reject non-GET/HEAD) - must be registered before the GET handler
+router.all('/query', (req, res, next) => {
+  if (req.method === 'GET' || req.method === 'HEAD') {
+    return next();
   }
-  return next();
+  res.setHeader('Allow', 'GET, HEAD');
+  return res.status(405).json({ error: 'Method Not Allowed' });
 });
 
 router.get('/query', async (req, res) => {
   try {
-    const rawLimit = Number((req.query as any).limit);
-    const rawSkip = Number((req.query as any).skip);
+    const query = req.query as { limit?: string; skip?: string };
+    const rawLimit = Number(query.limit);
+    const rawSkip = Number(query.skip);
     const take = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : undefined;
     const skip = Number.isFinite(rawSkip) && rawSkip > 0 ? rawSkip : undefined;
 
@@ -267,18 +334,9 @@ router.get('/query', async (req, res) => {
     });
     res.json(rows);
   } catch (err) {
-    console.error('[GET /query] error:', err);
+    logError('GET /query', err);
     res.status(500).json({ error: 'Failed to fetch benchmarks' });
   }
-});
-
-// Method guard for /query (reject non-GET)
-router.all('/query', (req, res, next) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.setHeader('Allow', 'GET, HEAD');
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
-  return next();
 });
 
 export default router;
