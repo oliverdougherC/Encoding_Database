@@ -30,6 +30,9 @@ jobs:
       - name: Install
         working-directory: server
         run: npm ci
+      - name: Generate Prisma Client
+        working-directory: server
+        run: npm run prisma:generate
       - name: Typecheck
         working-directory: server
         run: npx tsc --noEmit
