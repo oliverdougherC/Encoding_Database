@@ -43,15 +43,20 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
     return m;
   }, [groups]);
 
-  const width = 720;
-  const height = 320;
-  const margin = { top: 24, right: 16, bottom: 64, left: 56 };
-  const chartWidth = width - margin.left - margin.right;
+  const height = 340;
+  const margin = { top: 24, right: 16, bottom: 84, left: 56 };
   const chartHeight = height - margin.top - margin.bottom;
-  const groupGap = 18;
-  const barGap = 6;
-  const barWidth = Math.max(4, (chartWidth - groupGap * (presets.length - 1)) / presets.length / Math.max(1, codecs.length) - barGap);
-  const xStartForGroup = (i: number) => margin.left + i * ((barWidth + barGap) * codecs.length + groupGap);
+  const groupGap = 24;
+  const barGap = 4;
+  const minBarWidth = 24;
+  const barsPerGroup = Math.max(1, codecs.length);
+  const neededGroupWidth = barsPerGroup * minBarWidth + (barsPerGroup - 1) * barGap;
+  const neededChartWidth = presets.length * neededGroupWidth + (presets.length - 1) * groupGap;
+  const chartWidth = Math.max(648, neededChartWidth);
+  const width = chartWidth + margin.left + margin.right;
+  const groupWidth = (chartWidth - (presets.length - 1) * groupGap) / Math.max(1, presets.length);
+  const barWidth = (groupWidth - (barsPerGroup - 1) * barGap) / barsPerGroup;
+  const xStartForGroup = (i: number) => margin.left + i * (groupWidth + groupGap);
 
   let maxValue = 1;
   for (const g of groups) if (g.avgMB > maxValue) maxValue = g.avgMB;
@@ -70,7 +75,8 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
   return (
     <div className={`card ${styles.chartCard}`} style={{ position: "relative" }}>
       <div className={styles.chartTitle}>Average File Size by Preset and Codec</div>
-      <svg ref={svgRef} width="100%" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Grouped size by preset and codec" onMouseLeave={() => setHover(null)}>
+      <div style={{ overflowX: "auto" }}>
+      <svg ref={svgRef} width="100%" style={{ minWidth: width }} viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Grouped size by preset and codec" onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 4 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 3;
@@ -105,9 +111,10 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
 
         {/* X axis labels */}
         {presets.map((p, pi) => {
-          const x = xStartForGroup(pi) + ((barWidth + barGap) * codecs.length - barGap) / 2;
+          const cx = xStartForGroup(pi) + groupWidth / 2;
+          const cy = height - margin.bottom + 16;
           return (
-            <text key={p} x={x} y={height - margin.bottom + 40} textAnchor="middle" fontSize={12} fill="var(--foreground)">
+            <text key={p} x={cx} y={cy} textAnchor="end" fontSize={12} fill="var(--foreground)" transform={`rotate(-40, ${cx}, ${cy})`}>
               {p}
             </text>
           );
@@ -125,6 +132,7 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
           );
         })}
       </svg>
+      </div>
       {hover && (
         <div className="tooltip" style={{ left: hover.x, top: hover.y }}>
           {hover.text}

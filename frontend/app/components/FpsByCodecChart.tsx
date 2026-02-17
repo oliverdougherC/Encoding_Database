@@ -30,15 +30,17 @@ export default function FpsByCodecChart({ data, title = "Average FPS by Codec" }
   const bars = computeAverageFpsByCodec(data);
   if (bars.length === 0) return null;
 
-  const width = 640;
-  const height = 260;
-  const margin = { top: 32, right: 16, bottom: 60, left: 48 };
-  const chartWidth = width - margin.left - margin.right;
+  const height = 280;
+  const margin = { top: 32, right: 16, bottom: 80, left: 48 };
   const chartHeight = height - margin.top - margin.bottom;
   let maxValue = 1;
   for (const b of bars) if (b.value > maxValue) maxValue = b.value;
   const barGap = 8;
-  const barWidth = Math.max(4, (chartWidth - barGap * (bars.length - 1)) / bars.length);
+  const minBarWidth = 40;
+  const neededWidth = bars.length * (minBarWidth + barGap) - barGap;
+  const chartWidth = Math.max(576, neededWidth);
+  const width = chartWidth + margin.left + margin.right;
+  const barWidth = (chartWidth - barGap * (bars.length - 1)) / bars.length;
 
   const xForIndex = (i: number) => margin.left + i * (barWidth + barGap);
   const yForValue = (v: number) => margin.top + chartHeight - (v / maxValue) * chartHeight;
@@ -46,7 +48,8 @@ export default function FpsByCodecChart({ data, title = "Average FPS by Codec" }
   return (
     <div className="card" style={{ padding: 12 }}>
       <div style={{ fontWeight: 600, marginBottom: 8 }}>{title}</div>
-      <svg width="100%" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
+      <div style={{ overflowX: "auto" }}>
+      <svg width="100%" style={{ minWidth: width }} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={title}>
         {/* Y axis grid lines */}
         {Array.from({ length: 5 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 4;
@@ -64,18 +67,23 @@ export default function FpsByCodecChart({ data, title = "Average FPS by Codec" }
         })}
 
         {/* X axis labels */}
-        {bars.map((b, i) => (
-          <text
-            key={b.label}
-            x={xForIndex(i) + barWidth / 2}
-            y={height - margin.bottom + 36}
-            textAnchor="middle"
-            fontSize={12}
-            fill="var(--foreground)"
-          >
-            {b.label}
-          </text>
-        ))}
+        {bars.map((b, i) => {
+          const cx = xForIndex(i) + barWidth / 2;
+          const cy = height - margin.bottom + 16;
+          return (
+            <text
+              key={b.label}
+              x={cx}
+              y={cy}
+              textAnchor="end"
+              fontSize={12}
+              fill="var(--foreground)"
+              transform={`rotate(-40, ${cx}, ${cy})`}
+            >
+              {b.label}
+            </text>
+          );
+        })}
 
         {/* Y axis ticks */}
         {Array.from({ length: 5 }).map((_, i) => {
@@ -93,6 +101,7 @@ export default function FpsByCodecChart({ data, title = "Average FPS by Codec" }
           FPS
         </text>
       </svg>
+      </div>
     </div>
   );
 }
