@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
 import ErrorBoundary from "./components/ErrorBoundary";
+import StatsCards from "./components/StatsCards";
 import { headers } from "next/headers";
 import styles from "./page.module.css";
 
@@ -23,13 +25,13 @@ async function fetchBenchmarks(): Promise<Benchmark[]> {
   const origin = `${proto}://${host}`;
   const primaryUrl = internal ? `${internal}/query` : `${origin}/api/query`;
   try {
-    const res = await fetch(primaryUrl);
+    const res = await fetch(primaryUrl, { signal: AbortSignal.timeout(10000) });
     if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
     return res.json();
   } catch (err) {
     if (internal) {
       // Fallback to mock when server is unavailable
-      const res = await fetch(`${origin}/api/query`);
+      const res = await fetch(`${origin}/api/query`, { signal: AbortSignal.timeout(10000) });
       if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
       return res.json();
     }
@@ -65,8 +67,11 @@ export default async function Home() {
         </div>
       ) : (
         <>
+          <StatsCards data={data} />
           <ErrorBoundary>
-            <BenchmarksTable initialData={data} />
+            <Suspense fallback={<div style={{ padding: 16, color: "var(--muted)" }}>Loading filters...</div>}>
+              <BenchmarksTable initialData={data} />
+            </Suspense>
           </ErrorBoundary>
           <div className={`card ${styles.aboutCard}`}>
             <div className={styles.aboutTitle}>About the test video (sample.mp4)</div>

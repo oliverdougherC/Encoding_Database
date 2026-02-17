@@ -21,6 +21,7 @@
 
 .encoderFilterActive {
   border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface));
 }
 
 .weightsGrid {
@@ -56,7 +57,7 @@
 .applyBtn {
   padding: 6px 10px;
   background: var(--apply-bg);
-  color: white;
+  color: var(--accent-contrast);
   border-color: var(--apply-border);
 }
 

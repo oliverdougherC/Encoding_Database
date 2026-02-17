@@ -1,0 +1,55 @@
+.container {
+  padding: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.heading {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.intro {
+  font-size: 14px;
+}
+
+.section {
+  padding: 16px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.sectionDesc {
+  margin-bottom: 12px;
+}
+
+.list {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.listNoMargin {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.codeBlock {
+  padding-right: 12px;
+}
+
+.footnote {
+  font-size: 12px;
+  margin-top: 8px;
+}

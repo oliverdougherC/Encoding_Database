@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import styles from "./GroupedSizeByPreset.module.css";
 
@@ -10,8 +10,12 @@ type Group = {
   avgMB: number;
 };
 
+const CHART_COLORS = ["#6C8FD5", "#173B34", "#9693CC", "#d4a843", "#CDDBCD", "#8aabea"];
+
 export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
   const [hover, setHover] = useState<{ x: number; y: number; text: string } | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const groups = useMemo<Group[]>(() => {
     const map = new Map<string, { sum: number; count: number; preset: string; codec: string }>();
     for (const r of data) {
@@ -31,7 +35,13 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
 
   const presets = Array.from(new Set(groups.map((g) => g.preset)));
   const codecs = Array.from(new Set(groups.map((g) => g.codec)));
-  const colors = ["#2563eb", "#10b981", "#a855f7", "#f59e0b", "#ef4444", "#22c55e"];
+
+  // O(1) lookup map instead of O(n) .find() per bar
+  const groupMap = useMemo(() => {
+    const m = new Map<string, Group>();
+    for (const g of groups) m.set(`${g.preset}|${g.codec}`, g);
+    return m;
+  }, [groups]);
 
   const width = 720;
   const height = 320;
@@ -43,13 +53,24 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
   const barWidth = Math.max(4, (chartWidth - groupGap * (presets.length - 1)) / presets.length / Math.max(1, codecs.length) - barGap);
   const xStartForGroup = (i: number) => margin.left + i * ((barWidth + barGap) * codecs.length + groupGap);
 
-  const maxValue = Math.max(1, ...groups.map((g) => g.avgMB));
+  let maxValue = 1;
+  for (const g of groups) if (g.avgMB > maxValue) maxValue = g.avgMB;
   const yFor = (v: number) => margin.top + chartHeight - (v / maxValue) * chartHeight;
 
+  // Convert SVG coordinates to DOM pixel coordinates for tooltip positioning
+  function svgToDom(svgX: number, svgY: number): { x: number; y: number } {
+    const rect = svgRef.current?.getBoundingClientRect();
+    if (!rect) return { x: svgX, y: svgY };
+    return {
+      x: (svgX / width) * rect.width,
+      y: (svgY / height) * rect.height,
+    };
+  }
+
   return (
-    <div className={`card ${styles.chartCard}`}>
+    <div className={`card ${styles.chartCard}`} style={{ position: "relative" }}>
       <div className={styles.chartTitle}>Average File Size by Preset and Codec</div>
-      <svg width={width} height={height} role="img" aria-label="Grouped size by preset and codec" onMouseLeave={() => setHover(null)}>
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Grouped size by preset and codec" onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 4 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 3;
@@ -60,16 +81,20 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
         {presets.map((p, pi) => {
           const x0 = xStartForGroup(pi);
           return codecs.map((c, ci) => {
-            const g = groups.find((g) => g.preset === p && g.codec === c);
-            const v = g ? g.avgMB : 0;
+            const g = groupMap.get(`${p}|${c}`);
+            if (!g) return null; // Skip missing combinations
+            const v = g.avgMB;
             const x = x0 + ci * (barWidth + barGap);
             const y = yFor(v);
             const h = margin.top + chartHeight - y;
-            const color = colors[ci % colors.length];
+            const color = CHART_COLORS[ci % CHART_COLORS.length];
             return (
               <g
                 key={`${p}|${c}`}
-                onMouseEnter={() => setHover({ x: x + barWidth / 2 + 8, y: y - 8, text: `${p} • ${c}: ${v.toFixed(2)} MB` })}
+                onMouseEnter={() => {
+                  const dom = svgToDom(x + barWidth / 2 + 8, y - 8);
+                  setHover({ x: dom.x, y: dom.y, text: `${p} \u2022 ${c}: ${v.toFixed(2)} MB` });
+                }}
                 onMouseLeave={() => setHover(null)}
               >
                 <rect x={x} y={y} width={barWidth} height={h} fill={color} rx={3} style={{ cursor: "pointer" }} />
@@ -110,7 +135,7 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
       <div className={`subtle ${styles.legend}`}>
         {codecs.map((c, i) => (
           <div key={c} className={styles.legendItem}>
-            <span className={styles.legendSwatch} style={{ background: colors[i % colors.length] }} />
+            <span className={styles.legendSwatch} style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
             <span>{c}</span>
           </div>
         ))}
