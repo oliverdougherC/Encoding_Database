@@ -1,5 +1,6 @@
 .headerBar {
-  border-bottom: 1px solid var(--border);
+  background: #173B34;
+  border-bottom: 1px solid #0f2a24;
   padding: 12px 24px;
 }
 
@@ -14,14 +15,30 @@
 .brandLink {
   font-weight: 600;
   text-decoration: none;
+  color: #6C8FD5;
+  font-size: 16px;
 }
 
 .navLinks {
   display: flex;
   gap: 12px;
+  align-items: center;
 }
 
 .navBtn {
   text-decoration: none;
   padding: 6px 10px;
+  color: #CDDBCD;
+  background: transparent;
+  border: 1px solid #1e3a33;
+  border-radius: 10px;
+  transition: all 150ms ease;
+  font-size: inherit;
+}
+
+.navBtn:hover {
+  background: #1e3a33;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
 }

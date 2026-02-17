@@ -19,24 +19,14 @@
 }
 
 .rangeControls {
-  position: relative;
-  height: 48px;
   margin-top: 8px;
 }
 
 .xRangeWrapper {
-  position: absolute;
-  left: 0;
-  right: 0;
+  width: 100%;
 }
 
 .xRangeLabel {
   font-size: 12px;
   text-align: center;
-}
-
-.yRangeLabel {
-  font-size: 12px;
-  transform: rotate(90deg);
-  margin-left: 8px;
 }

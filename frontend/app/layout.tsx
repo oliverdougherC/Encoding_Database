@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
 import styles from "./layout.module.css";
+import ThemeToggle from "./components/ThemeToggle";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,15 +26,24 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light"){document.documentElement.setAttribute("data-theme",t)}else if(window.matchMedia("(prefers-color-scheme:dark)").matches){document.documentElement.setAttribute("data-theme","dark")}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <header className={styles.headerBar}>
           <nav className={styles.nav}>
             <Link href="/" className={`link ${styles.brandLink}`}>Encoding DB</Link>
             <div className={styles.navLinks}>
-              <Link href="/" className={`btn ${styles.navBtn}`}>Home</Link>
-              <Link href="/plove" className={`btn ${styles.navBtn}`}>PLOVE</Link>
-              <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className={`btn ${styles.navBtn}`}>Download Client</a>
+              <Link href="/" className={styles.navBtn}>Home</Link>
+              <Link href="/plove" className={styles.navBtn}>PLOVE</Link>
+              <Link href="/analytics" className={styles.navBtn}>Analytics</Link>
+              <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className={styles.navBtn}>Download Client</a>
+              <ThemeToggle />
             </div>
           </nav>
         </header>

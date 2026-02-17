@@ -1,7 +1,10 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import styles from "./BenchmarksTable.module.css";
+import ComparePanel, { CompareStickyBar } from "./ComparePanel";
+import { formatCodecLabel } from "./codecLabel";
 
 export type Benchmark = {
   id: string;
@@ -40,15 +43,51 @@ type EnrichedBenchmark = Benchmark & {
 type SortKey = "cpuModel" | "gpuModel" | "codec" | "crf" | "preset" | "_plove";
 
 export default function BenchmarksTable({ initialData }: { initialData: Benchmark[] }) {
-  const [cpuFilter, setCpuFilter] = useState("");
-  const [gpuFilter, setGpuFilter] = useState("");
-  const [codecFilter, setCodecFilter] = useState("");
-  const [presetFilter, setPresetFilter] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("_plove");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const routerRef = useRef(router);
+  useEffect(() => { routerRef.current = router; }, [router]);
+  const isInitRef = useRef(false);
+
+  const [cpuFilter, setCpuFilter] = useState(() => searchParams.get("cpu") || "");
+  const [gpuFilter, setGpuFilter] = useState(() => searchParams.get("gpu") || "");
+  const [codecFilter, setCodecFilter] = useState(() => searchParams.get("codec") || "");
+  const [presetFilter, setPresetFilter] = useState(() => searchParams.get("preset") || "");
+  const [sortKey, setSortKey] = useState<SortKey>(() => {
+    const s = searchParams.get("sort");
+    if (s && ["cpuModel", "gpuModel", "codec", "crf", "preset", "_plove"].includes(s)) return s as SortKey;
+    return "_plove";
+  });
+  const [sortDir, setSortDir] = useState<"asc" | "desc">(() => {
+    const d = searchParams.get("dir");
+    return d === "asc" ? "asc" : "desc";
+  });
   // Encoder type filters
-  const [softwareOnly, setSoftwareOnly] = useState<boolean>(false);
-  const [hardwareOnly, setHardwareOnly] = useState<boolean>(false);
+  const [softwareOnly, setSoftwareOnly] = useState<boolean>(() => searchParams.get("sw") === "1");
+  const [hardwareOnly, setHardwareOnly] = useState<boolean>(() => searchParams.get("hw") === "1");
+
+  // Sync filter state to URL search params (debounced to avoid excessive updates)
+  const urlDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!isInitRef.current) { isInitRef.current = true; return; }
+    if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current);
+    urlDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams();
+      if (cpuFilter) params.set("cpu", cpuFilter);
+      if (gpuFilter) params.set("gpu", gpuFilter);
+      if (codecFilter) params.set("codec", codecFilter);
+      if (presetFilter) params.set("preset", presetFilter);
+      if (sortKey !== "_plove") params.set("sort", sortKey);
+      if (sortDir !== "desc") params.set("dir", sortDir);
+      if (softwareOnly) params.set("sw", "1");
+      if (hardwareOnly) params.set("hw", "1");
+      const qs = params.toString();
+      const base = typeof window !== "undefined" ? window.location.pathname : "/";
+      routerRef.current.replace(qs ? `${base}?${qs}` : base, { scroll: false });
+    }, 300);
+    return () => { if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, sortKey, sortDir, softwareOnly, hardwareOnly]);
 
   // Weights for PLOVE score (sum must equal 1.0)
   const [wQuality, setWQuality] = useState<number>(1 / 3);
@@ -70,9 +109,22 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   }, []);
   const [showDetailId, setShowDetailId] = useState<string | null>(null);
   const [showFfmpegId, setShowFfmpegId] = useState<string | null>(null);
+  // Compare mode
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showCompare, setShowCompare] = useState(false);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); } else if (next.size < 6) { next.add(id); }
+      return next;
+    });
+  }, []);
+  const clearSelection = useCallback(() => { setSelectedIds(new Set()); setShowCompare(false); }, []);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
   const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
+  const filteredPresets = useMemo(() => codecFilter ? presetsForCodec(initialData, codecFilter) : presets, [initialData, codecFilter, presets]);
 
   // Pre-compute hardware encoder classification once per row to avoid repeated regex tests
   const dataWithHwClass = useMemo(() => {
@@ -89,7 +141,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       if (cpu && !row.cpuModel.toLowerCase().includes(cpu)) return false;
       if (gpu && !(row.gpuModel ?? "").toLowerCase().includes(gpu)) return false;
       if (codecFilter && row.codec !== codecFilter) return false;
-      if (presetFilter && row.preset !== presetFilter) return false;
+      if (codecFilter && presetFilter && row.preset !== presetFilter) return false;
       if (softwareOnly && !hardwareOnly) return !row._isHardware;
       if (hardwareOnly && !softwareOnly) return row._isHardware;
       return true;
@@ -109,12 +161,10 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     const vmafVals = filtered.filter(r => typeof r.vmaf === "number").map(r => Number(r.vmaf));
     const fpsVals = filtered.map(r => Math.max(0, r.fps || 0));
     const relSizes = filtered.map(r => (r.fileSizeBytes > 0 ? r.fileSizeBytes / sizeBaseline : 1));
-    const vmafMin = vmafVals.length ? Math.min(...vmafVals) : 0;
-    const vmafMax = vmafVals.length ? Math.max(...vmafVals) : 0;
-    const fpsMin = fpsVals.length ? Math.min(...fpsVals) : 0;
-    const fpsMax = fpsVals.length ? Math.max(...fpsVals) : 0;
-    const rsMin = relSizes.length ? Math.min(...relSizes) : 0;
-    const rsMax = relSizes.length ? Math.max(...relSizes) : 0;
+    let vmafMin = 0, vmafMax = 0, fpsMin = 0, fpsMax = 0, rsMin = 0, rsMax = 0;
+    if (vmafVals.length) { vmafMin = vmafVals[0]; vmafMax = vmafVals[0]; for (const v of vmafVals) { if (v < vmafMin) vmafMin = v; if (v > vmafMax) vmafMax = v; } }
+    if (fpsVals.length) { fpsMin = fpsVals[0]; fpsMax = fpsVals[0]; for (const v of fpsVals) { if (v < fpsMin) fpsMin = v; if (v > fpsMax) fpsMax = v; } }
+    if (relSizes.length) { rsMin = relSizes[0]; rsMax = relSizes[0]; for (const v of relSizes) { if (v < rsMin) rsMin = v; if (v > rsMax) rsMax = v; } }
     return { vmafMin, vmafMax, fpsMin, fpsMax, rsMin, rsMax };
   }, [filtered, sizeBaseline]);
 
@@ -181,6 +231,8 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     return data;
   }, [withScores, sortKey, sortDir]);
 
+  const compareRows = useMemo(() => sorted.filter(r => selectedIds.has(r.id)), [sorted, selectedIds]);
+
   const setSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
@@ -223,7 +275,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           title={!codecFilter ? "Select a codec first" : undefined}
         >
           <option value="">All presets</option>
-          {(codecFilter ? presetsForCodec(initialData, codecFilter) : presets).map(p => (<option key={p} value={p}>{p}</option>))}
+          {filteredPresets.map(p => (<option key={p} value={p}>{p}</option>))}
         </select>
       </div>
 
@@ -258,20 +310,22 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         <table className="table">
           {(() => {
             const cols = [
-              <col key="details" style={{ width: "10%" }} />,
-              <col key="cpu" style={{ width: "18%" }} />,
-              <col key="gpu" style={{ width: "18%" }} />,
-              <col key="codec" style={{ width: "14%" }} />,
-              <col key="crf" style={{ width: "8%" }} />,
-              <col key="preset" style={{ width: "12%" }} />,
+              <col key="select" style={{ width: "4%" }} />,
+              <col key="details" style={{ width: "9%" }} />,
+              <col key="cpu" style={{ width: "17%" }} />,
+              <col key="gpu" style={{ width: "17%" }} />,
+              <col key="codec" style={{ width: "13%" }} />,
+              <col key="crf" style={{ width: "7%" }} />,
+              <col key="preset" style={{ width: "11%" }} />,
               <col key="plove" style={{ width: "12%" }} />,
-              <col key="ffmpeg" style={{ width: "8%" }} />,
-              <col key="samples" style={{ width: "8%" }} />,
+              <col key="ffmpeg" style={{ width: "7%" }} />,
+              <col key="samples" style={{ width: "7%" }} />,
             ];
             return <colgroup>{cols}</colgroup>;
           })()}
           <thead className="thead">
             <tr>
+              <th className={`th ${styles.textCenter}`} style={{ padding: "8px 4px" }}></th>
               <th className={`th ${styles.textCenter}`}>Details</th>
               <Th onClick={() => setSort("cpuModel")} label="CPU" active={sortKey === "cpuModel"} dir={sortDir} />
               <Th onClick={() => setSort("gpuModel")} label="GPU" active={sortKey === "gpuModel"} dir={sortDir} />
@@ -285,7 +339,17 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           </thead>
           <tbody>
             {sorted.map(row => (
-              <tr key={row.id}>
+              <tr key={row.id} style={selectedIds.has(row.id) ? { background: "color-mix(in srgb, var(--highlight) 20%, var(--surface))" } : undefined}>
+                <td className={`td ${styles.textCenter}`} style={{ padding: "8px 4px" }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(row.id)}
+                    onChange={() => toggleSelect(row.id)}
+                    disabled={!selectedIds.has(row.id) && selectedIds.size >= 6}
+                    aria-label="Select for comparison"
+                    style={{ accentColor: "var(--accent)" }}
+                  />
+                </td>
                 <td className={`td ${styles.textCenter}`}>
                   <button onClick={() => setShowDetailId(row.id)} className={`btn ${styles.hoverBtn}`} aria-label="View details">
                     Details
@@ -307,7 +371,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={9} className={`td ${styles.noResults}`}>
+                <td colSpan={10} className={`td ${styles.noResults}`}>
                   No results for current filters.
                 </td>
               </tr>
@@ -329,12 +393,25 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
           <FfmpegModal row={ffmpegRow} onClose={() => setShowFfmpegId(null)} />
         ) : null;
       })()}
+
+      <CompareStickyBar
+        count={selectedIds.size}
+        onCompare={() => setShowCompare(true)}
+        onClear={clearSelection}
+      />
+
+      {showCompare && selectedIds.size >= 2 && (
+        <ComparePanel
+          rows={compareRows}
+          onClose={() => setShowCompare(false)}
+          onClear={clearSelection}
+        />
+      )}
     </div>
   );
 }
 
 function Th({ label, onClick, active, dir, align }: { label: string; onClick: () => void; active: boolean; dir: "asc" | "desc"; align?: "left" | "right" }) {
-  const sortLabel = active ? (dir === "asc" ? "sorted ascending" : "sorted descending") : "sortable";
   return (
     <th
       onClick={onClick}
@@ -346,8 +423,8 @@ function Th({ label, onClick, active, dir, align }: { label: string; onClick: ()
     >
       {label}
       {active && (
-        <span aria-label={sortLabel} className={styles.sortIndicator}>
-          {dir === "asc" ? "▲" : "▼"}
+        <span aria-hidden="true" className={styles.sortIndicator}>
+          {dir === "asc" ? "\u25B2" : "\u25BC"}
         </span>
       )}
     </th>
@@ -484,22 +561,6 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
   );
 }
 
-function formatCodecLabel(encoderLower: string): string {
-  const suffix = (name: string) => {
-    if (name.endsWith("_videotoolbox")) return " VideoToolbox";
-    if (name.endsWith("_nvenc")) return " NVENC";
-    if (name.endsWith("_qsv")) return " QSV";
-    if (name.endsWith("_amf")) return " AMF";
-    if (name.endsWith("_vaapi")) return " VAAPI";
-    return "";
-  };
-  const suf = suffix(encoderLower);
-  if (encoderLower.includes("av1")) return `AV1${suf}`.trim();
-  if (encoderLower.includes("hevc") || encoderLower.includes("h265") || encoderLower.includes("x265")) return `HEVC (H.265)${suf}`.trim();
-  if (encoderLower.includes("h264") || encoderLower.includes("x264") || encoderLower.includes("avc")) return `H.264${suf}`.trim();
-  if (encoderLower.includes("vp9") || encoderLower.includes("libvpx")) return `VP9${suf}`.trim();
-  return encoderLower;
-}
 
 function isHardwareEncoder(encoderLower: string): boolean {
   return /(_videotoolbox|_nvenc|_qsv|_amf|_vaapi)$/.test(encoderLower);
@@ -559,6 +620,7 @@ function WeightSlider({ label, value, onChange }: { label: string; value: number
         step={0.01}
         value={value}
         onChange={e => onChange(Number(e.target.value))}
+        style={{ accentColor: "var(--accent)" }}
       />
     </label>
   );

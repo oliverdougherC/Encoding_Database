@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
+import { useMemo, useState, useRef, useEffect, useCallback } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import styles from "./ScatterFpsSize.module.css";
 
@@ -12,11 +12,11 @@ type Point = {
 };
 
 const COLORS: Record<string, string> = {
-  av1: "#10b981", // emerald-500
-  h264: "#3b82f6", // blue-500
-  hevc: "#a855f7", // purple-500
-  vp9: "#f59e0b", // amber-500
-  other: "#ef4444", // red-500
+  av1: "#173B34",   // Evergreen
+  h264: "#6C8FD5",  // Cornflower Blue
+  hevc: "#9693CC",  // Lavender Grey
+  vp9: "#d4a843",   // Darker gold (accessible contrast)
+  other: "#CDDBCD", // Ash Grey
 };
 
 function codecKey(codec: string): keyof typeof COLORS {
@@ -30,7 +30,7 @@ function codecKey(codec: string): keyof typeof COLORS {
 
 export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
   const [codecFilter, setCodecFilter] = useState<string>("");
-  const [hover, setHover] = useState<{ x: number; y: number; text: string } | null>(null);
+  const [hover, setHover] = useState<{ domX: number; domY: number; text: string; svgX: number; svgY: number } | null>(null);
   const [view, setView] = useState<{ xMax: number; yMax: number }>({ xMax: 1, yMax: 1 });
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -40,7 +40,7 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
       .map((d) => ({
         x: Math.max(0.001, d.fileSizeBytes / (1024 * 1024)),
         y: Math.max(0, d.fps),
-        label: `${d.codec} • ${d.preset}${d.crf != null ? ` • CRF ${d.crf}` : ""}`,
+        label: `${d.codec} \u2022 ${d.preset}${d.crf != null ? ` \u2022 CRF ${d.crf}` : ""}`,
         color: COLORS[codecKey(d.codec)],
       }));
   }, [data, codecFilter]);
@@ -51,40 +51,61 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
   const chartWidth = width - margin.left - margin.right;
   const chartHeight = height - margin.top - margin.bottom;
 
-  const maxXRaw = Math.max(1, ...points.map((p) => p.x));
-  const maxYRaw = Math.max(1, ...points.map((p) => p.y));
-  const maxX = Math.max(1, view.xMax, maxXRaw);
-  const maxY = Math.max(1, view.yMax, maxYRaw);
+  let maxXRaw = 1, maxYRaw = 1;
+  for (const p of points) { if (p.x > maxXRaw) maxXRaw = p.x; if (p.y > maxYRaw) maxYRaw = p.y; }
+  const maxX = Math.max(1, view.xMax);
+  const maxY = Math.max(1, view.yMax);
 
   const xFor = (v: number) => margin.left + (v / maxX) * chartWidth;
   const yFor = (v: number) => margin.top + chartHeight - (v / maxY) * chartHeight;
 
+  // Initialize view to fit data; update when data changes
   useEffect(() => {
-    setView(v => ({ xMax: Math.max(v.xMax, maxXRaw), yMax: Math.max(v.yMax, maxYRaw) }));
+    setView({ xMax: Math.ceil(maxXRaw), yMax: Math.ceil(maxYRaw) });
   }, [maxXRaw, maxYRaw]);
 
-  function onMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const rect = svg.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    let best: { d2: number; p: Point } | null = null;
-    for (const p of points) {
-      const dx = xFor(p.x) - mx;
-      const dy = yFor(p.y) - my;
-      const d2 = dx * dx + dy * dy;
-      if (!best || d2 < best.d2) best = { d2, p };
-    }
-    if (best && best.d2 < 14 * 14) {
-      setHover({ x: mx, y: my - 16, text: `${best.p.label} — ${best.p.y.toFixed(1)} FPS, ${best.p.x.toFixed(2)} MB` });
-    } else {
-      setHover(null);
-    }
-  }
+  // Throttle mouse move to one update per animation frame
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); }, []);
+
+  const onMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>) => {
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const svg = svgRef.current;
+      if (!svg) return;
+      const rect = svg.getBoundingClientRect();
+      const scaleX = width / rect.width;
+      const scaleY = height / rect.height;
+      const svgMx = (clientX - rect.left) * scaleX;
+      const svgMy = (clientY - rect.top) * scaleY;
+
+      let best: { d2: number; p: Point } | null = null;
+      for (const p of points) {
+        const dx = xFor(p.x) - svgMx;
+        const dy = yFor(p.y) - svgMy;
+        const d2 = dx * dx + dy * dy;
+        if (!best || d2 < best.d2) best = { d2, p };
+      }
+      if (best && best.d2 < 16 * 16) {
+        setHover({
+          domX: clientX - rect.left,
+          domY: clientY - rect.top,
+          svgX: xFor(best.p.x),
+          svgY: yFor(best.p.y),
+          text: `${best.p.label} \u2014 ${best.p.y.toFixed(1)} FPS, ${best.p.x.toFixed(2)} MB`,
+        });
+      } else {
+        setHover(null);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points, maxX, maxY]);
 
   return (
-    <div className={`card ${styles.chartCard}`}>
+    <div className={`card ${styles.chartCard}`} style={{ position: "relative" }}>
       <div className={styles.headerRow}>
         <div className={styles.chartTitle}>FPS vs File Size</div>
         <input
@@ -94,7 +115,7 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
           onChange={(e) => setCodecFilter(e.target.value)}
         />
       </div>
-      <svg ref={svgRef} width={width} height={height} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)}>
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="FPS vs File Size" onMouseMove={onMouseMove} onMouseLeave={() => setHover(null)}>
         {/* Grid */}
         {Array.from({ length: 5 }).map((_, i) => {
           const y = margin.top + (i * chartHeight) / 4;
@@ -109,9 +130,9 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
         {points.map((p, idx) => {
           const cx = xFor(p.x);
           const cy = yFor(p.y);
-          const isHovered = hover && Math.hypot((hover.x - cx), (hover.y - cy)) < 16;
+          const isHovered = hover && Math.hypot(hover.svgX - cx, hover.svgY - cy) < 16;
           return (
-            <circle key={idx} cx={cx} cy={cy} r={isHovered ? 6 : 4} fill={p.color} />
+            <circle key={idx} cx={cx} cy={cy} r={isHovered ? 6 : 4} fill={p.color} stroke="var(--foreground)" strokeWidth={1} />
           );
         })}
 
@@ -141,20 +162,16 @@ export default function ScatterFpsSize({ data }: { data: Benchmark[] }) {
         })}
       </svg>
       {hover && (
-        <div className="tooltip" style={{ left: hover.x + 8, top: hover.y + 8 }}>
+        <div className="tooltip" style={{ left: hover.domX + 8, top: hover.domY + 8 }}>
           {hover.text}
         </div>
       )}
 
-      {/* Axis range controls aligned with axes */}
+      {/* Axis range controls */}
       <div className={styles.rangeControls}>
         <div className={styles.xRangeWrapper}>
-          <input type="range" min={Math.max(1, Math.ceil(maxXRaw/4))} max={Math.max(1, Math.ceil(maxXRaw))} step={1} value={Math.ceil(maxX)} onChange={(e)=> setView(v=>({ ...v, xMax: Number(e.target.value) }))} style={{ width: "100%" }} />
+          <input type="range" min={Math.max(1, Math.ceil(maxXRaw/4))} max={Math.max(2, Math.ceil(maxXRaw * 1.5))} step={1} value={Math.ceil(maxX)} onChange={(e)=> setView(v=>({ ...v, xMax: Number(e.target.value) }))} style={{ width: "100%", accentColor: "var(--accent)" }} />
           <div className={`subtle ${styles.xRangeLabel}`}>Max File Size (MB)</div>
-        </div>
-        <div style={{ position: "absolute", right: 0, top: -height + 24, height: height, display: "flex", alignItems: "center" }}>
-          <input type="range" min={Math.max(1, Math.ceil(maxYRaw/4))} max={Math.max(1, Math.ceil(maxYRaw))} step={1} value={Math.ceil(maxY)} onChange={(e)=> setView(v=>({ ...v, yMax: Number(e.target.value) }))} style={{ writingMode: "vertical-lr", WebkitAppearance: "slider-vertical", height: height, transform: "rotate(180deg)" } as React.CSSProperties} />
-          <div className={`subtle ${styles.yRangeLabel}`}>Max FPS</div>
         </div>
       </div>
     </div>
