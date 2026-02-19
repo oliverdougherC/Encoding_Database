@@ -33,7 +33,6 @@ This release documents work completed since `v1.0.2` and reflects a major platfo
 ### Frontend (Next.js analytics platform)
 
 - Overhauled large-dataset handling with virtualized benchmark tables, server-side filtering, and pagination.
-- Added lazy-loaded charts and canvas-based scatter rendering for significantly better chart performance.
 - Expanded analysis views with SSIM/PSNR histograms, SSIM vs VMAF scatter, and rate-distortion visualization.
 - Added/expanded comparison tooling, leaderboards, and encoder dashboard workflows.
 - Added hardware intelligence views: efficiency metrics, GPU utilization, power comparison, CPU heatmaps, and recommendations.
