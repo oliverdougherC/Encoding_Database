@@ -1,5 +1,5 @@
 -- CreateTable
-CREATE TABLE "Benchmark" (
+CREATE TABLE IF NOT EXISTS "Benchmark" (
     "id" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "cpuModel" TEXT NOT NULL,

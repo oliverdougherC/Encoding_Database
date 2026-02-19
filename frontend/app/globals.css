@@ -75,10 +75,14 @@ body {
 
 body {
   color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  background:
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 20%, transparent) 0, transparent 38%),
+    radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--accent-secondary) 16%, transparent) 0, transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--background) 93%, #ffffff) 0%, var(--background) 100%);
+  font-family: "Trebuchet MS", "Lucida Sans Unicode", "Lucida Grande", "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  line-height: 1.4;
 }
 
 * {
@@ -105,8 +109,12 @@ a {
 /* Utility classes used inline to avoid hard-coded colors */
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--accent) 25%);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--highlight) 48%, transparent),
+    0 10px 24px color-mix(in srgb, #000000 12%, transparent);
+  backdrop-filter: blur(1px);
 }
 
 .subtle {
@@ -114,16 +122,25 @@ a {
 }
 
 .btn {
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 72%, var(--accent-secondary) 28%);
   border-radius: 10px;
-  background: var(--surface-2);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-2) 86%, var(--highlight) 14%),
+    var(--surface-2)
+  );
   color: var(--foreground);
-  transition: all 150ms ease;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
 }
 
 .btn:hover {
-  background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
-  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 12%, var(--surface-2)),
+    color-mix(in srgb, var(--accent) 6%, var(--surface-2))
+  );
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  box-shadow: 0 6px 14px color-mix(in srgb, #000 18%, transparent);
   transform: translateY(-1px);
 }
 
@@ -184,14 +201,22 @@ a {
 .input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--accent-secondary) 30%);
   border-radius: 8px;
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--highlight) 12%);
   color: var(--foreground);
+  font-family: "Consolas", "Menlo", "Monaco", "Courier New", monospace;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: color-mix(in srgb, var(--accent) 64%, var(--border));
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
 .kbd {
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-family: "Consolas", "Menlo", "Monaco", "Courier New", monospace;
   font-size: 13px;
   line-height: 1.5;
   background: var(--surface-2);

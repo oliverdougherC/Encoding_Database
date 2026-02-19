@@ -54,6 +54,7 @@ frontend/.cache/
 server/prisma/dev.db*
 server/prisma/*.db-journal
 server/prisma/migrations/*/steps.json
+server/src/generated/prisma/
 
 # Python / client
 __pycache__/
@@ -87,3 +88,7 @@ coverage/
 # Nginx certs (place externally)
 nginx/certs/
 IMPROVEMENTS.md
+OPTIMIZATIONS.md
+BUG_FIXES.md
+NEW_FEATURES.md
+roadmap.md

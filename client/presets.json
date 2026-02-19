@@ -1,15 +1,25 @@
 {
+  "contentClasses": ["mixed"],
+  "resolutions": ["1080p"],
   "smallBenchmark": {
     "crfValues": [24],
+    "contentClasses": ["mixed"],
+    "resolutions": ["1080p"],
+    "passes": [1],
     "approxMinutes": 15
   },
   "mediumBenchmark": {
     "crfValues": [22, 24, 26],
+    "contentClasses": ["mixed"],
+    "resolutions": ["720p", "1080p"],
+    "passes": [1],
     "approxHours": 3
   },
   "fullBenchmark": {
     "crfValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+    "contentClasses": ["mixed", "action", "animation"],
+    "resolutions": ["480p", "720p", "1080p", "1440p"],
+    "passes": [1, 2],
     "approxHours": 240
   }
 }
-

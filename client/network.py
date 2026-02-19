@@ -122,7 +122,11 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
     with config._GLOBAL_STATE_LOCK:
         if config._BASELINE_ROWS_CACHE is not None:
-            return config._BASELINE_ROWS_CACHE
+            elapsed = time.time() - config._BASELINE_ROWS_CACHE_TS
+            if elapsed < config._BASELINE_ROWS_CACHE_TTL:
+                return config._BASELINE_ROWS_CACHE
+            # TTL expired — clear cache and re-fetch
+            config._BASELINE_ROWS_CACHE = None
 
     try:
         import requests  # lazy import
@@ -133,10 +137,12 @@ def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
             if isinstance(data, list):
                 with config._GLOBAL_STATE_LOCK:
                     config._BASELINE_ROWS_CACHE = data
+                    config._BASELINE_ROWS_CACHE_TS = time.time()
                 return data
     except Exception:
         pass
 
     with config._GLOBAL_STATE_LOCK:
         config._BASELINE_ROWS_CACHE = []
+        config._BASELINE_ROWS_CACHE_TS = time.time()
     return []

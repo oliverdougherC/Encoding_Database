@@ -1,12 +1,13 @@
 .filterGrid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .encoderFilters {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
   align-items: center;
@@ -26,7 +27,7 @@
 
 .weightsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin-bottom: 8px;
   align-items: center;
@@ -90,9 +91,193 @@
   padding: 6px 10px;
 }
 
+.detailsModal {
+  width: min(960px, calc(100vw - 28px));
+  max-width: min(960px, calc(100vw - 28px)) !important;
+  max-height: min(88vh, 920px);
+  display: flex;
+  flex-direction: column;
+}
+
+.detailsBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.detailsOverviewGrid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.95fr) minmax(360px, 1.35fr);
+  gap: 12px;
+  align-items: stretch;
+}
+
+.aggregateCard {
+  border: 1px solid color-mix(in srgb, var(--border) 64%, var(--accent) 36%);
+  border-radius: 10px;
+  background: linear-gradient(
+    152deg,
+    color-mix(in srgb, var(--surface-2) 74%, var(--highlight) 26%),
+    color-mix(in srgb, var(--surface) 84%, var(--surface-2) 16%)
+  );
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aggregateHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.aggregateTitle {
+  font-weight: 600;
+}
+
+.aggregateSubtitle {
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 4px;
+}
+
+.aggregateBadge {
+  white-space: nowrap;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aggregateBadgeMany {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
+
+.aggregateBadgeSingle {
+  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface));
+}
+
+.samplePills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.samplePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--accent-secondary) 30%);
+  border-radius: 999px;
+  padding: 3px 10px;
+  background: color-mix(in srgb, var(--surface) 68%, var(--surface-2) 32%);
+}
+
+.samplePillValue {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  margin-bottom: 6px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.keyCard {
+  border: 1px solid color-mix(in srgb, var(--border) 70%, var(--accent) 30%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 74%, var(--surface) 26%);
+  padding: 12px;
+}
+
+.keyStatsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.keyStat {
+  border: 1px solid color-mix(in srgb, var(--border) 84%, var(--accent) 16%);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-2) 16%);
+  padding: 8px 10px;
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.keyStatLabel {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--muted) 80%, var(--foreground) 20%);
+  margin-bottom: 4px;
+}
+
+.keyStatValue {
+  font-size: 24px;
+  line-height: 1.05;
+  font-weight: 700;
+}
+
+.configCard {
+  border: 1px solid color-mix(in srgb, var(--border) 72%, var(--accent-secondary) 28%);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 82%, var(--surface-2) 18%);
+  padding: 12px;
+}
+
+.configGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 14px;
+}
+
+.configRow {
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
+  padding-bottom: 6px;
+}
+
+.configLabel {
+  font-size: 11px;
+  margin-bottom: 2px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.configValue {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.additionalToggleRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.additionalToggleBtn {
+  padding: 7px 10px;
+}
+
+.additionalPanel {
+  border: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
+  border-radius: 10px;
+  padding: 12px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-2) 12%);
+}
+
 .detailsGrid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -100,6 +285,10 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
+  border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-2) 84%, var(--surface) 16%);
+  padding: 8px 10px;
 }
 
 .labelText {
@@ -165,10 +354,95 @@
   font-size: 12px;
 }
 
+.weightWarning {
+  color: var(--warning-fg, #ca8a04);
+  font-size: 12px;
+}
+
 .hoverBtn {
   padding: 6px 12px;
 }
 
 .hoverBtn:hover {
   background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+}
+
+.virtualScrollContainer {
+  height: 640px;
+  overflow-y: auto;
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-2) 8%);
+}
+
+.virtualHeader {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: color-mix(in srgb, var(--surface) 90%, var(--highlight) 10%);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 78%, var(--accent) 22%);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.virtualHeader > div {
+  padding: 8px 6px;
+}
+
+.virtualRow {
+  align-items: center;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  font-size: 13px;
+}
+
+.virtualRow > div {
+  padding: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.virtualRow:hover {
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.paginationBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .detailsModal {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px) !important;
+  }
+
+  .detailsOverviewGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .keyStatsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .keyStatValue {
+    font-size: 20px;
+  }
+
+  .configGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .aggregateHeader {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

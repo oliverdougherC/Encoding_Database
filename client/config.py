@@ -45,8 +45,17 @@ SAMPLE_VIDEO_SIZE_BYTES = 66045059
 
 _ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
     'cpuModel', 'gpuModel', 'ramGB', 'os',
-    'codec', 'preset', 'crf', 'fps', 'vmaf', 'fileSizeBytes', 'notes',
-    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs'
+    'codec', 'preset', 'crf', 'contentClass', 'resolution', 'passes',
+    'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'notes',
+    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs',
+    'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+    'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
+    # Extended telemetry (Sprint 7)
+    'gpuTempMaxC', 'cpuFreqAvgMHz', 'cpuTempMaxC',
+    'ffmpegCpuUtilAvg', 'ffmpegCpuUtilMax',
+    'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
+    'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
+    'powerSource', 'sampleCount', 'monitorDurationMs',
 )
 
 # Batch aggregation for Small/Full multi-run flows
@@ -56,6 +65,8 @@ _BATCH_COMPLETED_COUNT: int = 0
 
 # Baseline cache for client-side outlier checks (populated lazily per session)
 _BASELINE_ROWS_CACHE: Optional[List[Dict[str, Any]]] = None
+_BASELINE_ROWS_CACHE_TS: float = 0.0
+_BASELINE_ROWS_CACHE_TTL: float = 1800.0  # 30 minutes
 
 # --- Cross-platform binary resolution helpers ---
 

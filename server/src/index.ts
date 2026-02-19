@@ -50,9 +50,9 @@ app.use(morgan((tokens: any, req, res) => {
 }));
 
 // CORS configuration (defaults assume hosting behind Nginx Proxy Manager at encodingdb.platinumlabs.dev)
-const corsOriginEnv = process.env.CORS_ORIGIN || 'https://encodingdb.platinumlabs.dev';
-const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
 const isProd = process.env.NODE_ENV === 'production';
+const corsOriginEnv = process.env.CORS_ORIGIN || (isProd ? 'https://encodingdb.platinumlabs.dev' : '*');
+const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
 const isWildcard = corsOriginEnv === '*';
 if (isProd && isWildcard) {
   console.error('CORS_ORIGIN is "*" in production. Please set explicit origins.');
@@ -62,7 +62,7 @@ const corsOptions = isWildcard
       ? {
           origin: (origin: string | undefined, callback: (err: Error | null, allowed?: boolean) => void) => {
             // In production, reject wildcard; only allow explicit list (which will be empty → deny)
-            if (!origin) return callback(null, false);
+            if (!origin) return callback(null, true);
             if (allowedOrigins.includes(origin)) return callback(null, true);
             return callback(new Error('Not allowed by CORS'));
           },
@@ -92,7 +92,6 @@ app.use(express.json({
 const ingestSecret = process.env.INGEST_HMAC_SECRET || '';
 const maxSkewSeconds = Number(process.env.INGEST_MAX_SKEW_SECONDS || 300);
 const seenSignatures = new Map<string, number>();
-let warnedNoSecret = false;
 
 function isReplay(sig: string, nowMs: number): boolean {
   const exp = seenSignatures.get(sig);
@@ -147,7 +146,11 @@ function normalizeIp(ip: string | undefined): string {
 }
 
 // Token endpoint - short-lived, one-time token bound to IP
+const TOKEN_STORE_MAX_SIZE = 10_000;
 function issueSubmitToken(req: express.Request, res: express.Response) {
+  if (tokenStore.size >= TOKEN_STORE_MAX_SIZE) {
+    return res.status(503).json({ error: 'Token store capacity exceeded. Try again later.' });
+  }
   const token = crypto.randomBytes(16).toString('hex');
   const expMs = Date.now() + submitTokenTtlSeconds * 1000;
   tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, used: false });
@@ -252,6 +255,13 @@ app.use('/submit', (req, res, next) => {
   return next();
 });
 
+// Rate limiter key: combine IP + User-Agent to reduce NAT collisions (B-S04)
+function rateLimitKeyGenerator(req: express.Request): string {
+  const ip = normalizeIp(req.ip) || 'unknown';
+  const ua = (req.headers['user-agent'] || '').slice(0, 64);
+  return `${ip}:${ua}`;
+}
+
 // Basic rate limiting (skip health endpoints)
 const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
 const maxReqs = Number(process.env.RATE_LIMIT_MAX || 300);
@@ -261,6 +271,7 @@ app.use(rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skip: (req) => req.path.startsWith('/health'),
+  keyGenerator: rateLimitKeyGenerator,
 }));
 
 // Stricter limiter for public submissions
@@ -271,6 +282,7 @@ app.use('/submit', rateLimit({
   max: submitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKeyGenerator,
 }));
 
 // Health endpoints
@@ -282,7 +294,7 @@ app.get('/health/ready', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: 'ok' });
-  } catch (err) {
+  } catch {
     res.status(503).json({ status: 'degraded', error: 'db_unreachable' });
   }
 });
@@ -293,11 +305,8 @@ app.get('/health', (_req, res) => {
 
 // Health-based token endpoint (covered by nginx health.* routing)
 app.get('/health/token', (req, res) => {
-  // Issue and store a real token (same logic as /submit-token)
-  const token = crypto.randomBytes(16).toString('hex');
-  const expMs = Date.now() + submitTokenTtlSeconds * 1000;
-  tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, used: false });
-  res.json({ token, exp: Math.floor(expMs / 1000), pow: powEnabled ? { difficulty: powDifficulty } : { difficulty: 0 } });
+  // Reuse common issuance path so capacity checks and response shape stay consistent.
+  return issueSubmitToken(req, res);
 });
 
 // Routes
@@ -326,8 +335,6 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
   }));
   res.status(500).json({ error: 'Internal Server Error' });
 });
-
- 
 
 const port = process.env.PORT || 3001;
 let server: ReturnType<typeof app.listen>;
@@ -374,6 +381,7 @@ async function shutdown(signal: string) {
 
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGHUP', () => shutdown('SIGHUP'));
 
 // Crash guards
 process.on('unhandledRejection', (reason) => {
