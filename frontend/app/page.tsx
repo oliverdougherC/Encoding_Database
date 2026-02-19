@@ -2,42 +2,10 @@ import { Suspense } from "react";
 import BenchmarksTable, { Benchmark } from "./components/BenchmarksTable";
 import ErrorBoundary from "./components/ErrorBoundary";
 import StatsCards from "./components/StatsCards";
-import { headers } from "next/headers";
+import { fetchBenchmarks } from "./lib/fetchBenchmarks";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
-
-async function fetchBenchmarks(): Promise<Benchmark[]> {
-  // Prefer INTERNAL_API_BASE_URL when set; otherwise fall back to local mock API route
-  const internal = process.env.INTERNAL_API_BASE_URL;
-
-  // Safely get headers with fallback defaults
-  let host = "localhost:3000";
-  let proto = "http";
-  try {
-    const h = await headers();
-    host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-    proto = h.get("x-forwarded-proto") || "http";
-  } catch {
-    // Headers unavailable, use defaults
-  }
-
-  const origin = `${proto}://${host}`;
-  const primaryUrl = internal ? `${internal}/query` : `${origin}/api/query`;
-  try {
-    const res = await fetch(primaryUrl, { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-    return res.json();
-  } catch (err) {
-    if (internal) {
-      // Fallback to mock when server is unavailable
-      const res = await fetch(`${origin}/api/query`, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-      return res.json();
-    }
-    throw err;
-  }
-}
+export const revalidate = 60;
 
 export default async function Home() {
   let data: Benchmark[] = [];

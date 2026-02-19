@@ -1,9 +1,41 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-// Simple mock API for frontend-only development.
-// If INTERNAL_API_BASE_URL is set, the frontend pages bypass this and hit the server directly.
+export async function GET(request: NextRequest) {
+  const internal = process.env.INTERNAL_API_BASE_URL;
+  const isProd = process.env.NODE_ENV === "production";
 
-export async function GET() {
+  // If we have a real backend, proxy the request with all query params
+  if (internal) {
+    try {
+      const qs = request.nextUrl.search;
+      const url = `${internal}/query${qs}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        return NextResponse.json({ error: "Backend error" }, { status: res.status });
+      }
+      const data = await res.json();
+      const response = NextResponse.json(data);
+      // Forward X-Total-Count header if present
+      const totalCount = res.headers.get("X-Total-Count");
+      if (totalCount) {
+        response.headers.set("X-Total-Count", totalCount);
+        response.headers.set("Access-Control-Expose-Headers", "X-Total-Count");
+      }
+      return response;
+    } catch (error) {
+      console.error("Query proxy failed:", error);
+      return NextResponse.json({ error: "Upstream query failed" }, { status: 502 });
+    }
+  }
+
+  if (isProd) {
+    return NextResponse.json(
+      { error: "INTERNAL_API_BASE_URL is not configured" },
+      { status: 503 },
+    );
+  }
+
+  // Mock API for frontend-only development
   const sample = [
     {
       id: "mock-1",
@@ -52,7 +84,7 @@ export async function GET() {
       vmafSamples: 2,
     },
   ];
-  return NextResponse.json(sample);
+  const response = NextResponse.json(sample);
+  response.headers.set("X-Total-Count", String(sample.length));
+  return response;
 }
-
-

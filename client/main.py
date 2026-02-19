@@ -31,11 +31,13 @@ from .encoders import (
     normalize_codec_family, pick_software_encoder_for_family,
     discover_hardware_encoders_for_family, list_all_available_encoders,
     enumerate_supported_presets_for_encoder, sort_presets_by_speed_desc,
-    get_encoder_friendly_label,
+    get_encoder_friendly_label, is_hardware_encoder_name, is_hardware_encoder_usable,
     SOFTWARE_ENCODERS_ORDER, HARDWARE_ENCODERS,
 )
 from .ffmpeg import (
     run_ffmpeg_test, encode_to_artifact, compute_vmaf_parallel,
+    compute_metrics_parallel,
+    EXTENDED_TELEMETRY_KEYS,
     run_single_benchmark, sha256_of_file, verify_sample_video,
     load_presets_config, get_default_sample_path,
 )
@@ -44,8 +46,31 @@ from .stats import should_skip_submission
 from .ui import (
     prompt_yes_no, prompt_choice, prompt_text,
     _clear_screen, confirm_benchmark_readiness,
-    print_end_screen,
+    print_end_screen, print_benchmark_result,
+    BenchmarkProgress, BatchRunDashboard,
+    print_info, print_success, print_warning, print_batch_summary,
 )
+
+
+def _resolve_input_for_task(
+    default_input: str,
+    default_input_hash: str,
+) -> Tuple[str, str]:
+    """Return (effective_input_path, input_hash) for a task."""
+    return default_input, default_input_hash
+
+
+def _infer_encoder_family(encoder: str) -> Optional[str]:
+    e = (encoder or "").strip().lower()
+    if "h264" in e:
+        return "h264"
+    if "hevc" in e or "h265" in e:
+        return "hevc"
+    if "av1" in e:
+        return "av1"
+    if "vp9" in e:
+        return "vp9"
+    return None
 
 
 def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse.Namespace, tasks: List[Dict[str, Any]]) -> int:
@@ -68,106 +93,264 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
             file=sys.stderr,
         )
         return 6
-    input_hash = sha256_of_file(input_path)
+    default_input_hash = sha256_of_file(input_path)
     client_version = "client/0.1.0"
     workers = resolve_batch_size(getattr(args, 'batch_size', 0))
+    chunk_size = max(1, workers)
+    total_tasks = len(tasks)
+    total_batches = (total_tasks + chunk_size - 1) // chunk_size if total_tasks > 0 else 0
+    run_started_at = time.time()
+    baseline_rows: List[Dict[str, Any]] = []
     if not getattr(args, 'no_submit', False):
-        _ = fetch_baseline_rows(base_url)
+        baseline_rows = fetch_baseline_rows(base_url)
 
     completed_count_local = 0
-    total_tasks = len(tasks)
     processed_total = 0
-    for i in range(0, len(tasks), max(1, workers)):
-        chunk = tasks[i:i + max(1, workers)]
-        with tempfile.TemporaryDirectory() as batch_dir:
-            artifacts_info: List[Dict[str, Any]] = []
-            print(f"Encoding batch {i//max(1,workers)+1}: {len(chunk)} task(s) → {batch_dir}")
-            for idx, t in enumerate(chunk, start=1):
-                enc = t['encoder']
-                preset = t['preset']
-                crf = t.get('crf')
-                bg_load = measure_background_cpu_load(3.0, 0.5)
-                name = f"{enc.replace('/', '_')}-{preset}-{str(crf) if crf is not None else 'none'}-{idx}.mp4"
-                global_index = processed_total + idx
-                try:
-                    overall_pct = ((global_index - 1) / max(1, total_tasks)) * 100.0
-                except Exception:
-                    overall_pct = 0.0
-                print(f"  - Encoding {idx}/{len(chunk)} in batch | Overall {global_index-1}/{total_tasks} ({overall_pct:.0f}%) → {enc} {preset} crf={crf}")
-                info = encode_to_artifact(input_path=input_path, encoder=enc, preset=preset, crf=crf, out_dir=batch_dir, artifact_name=name)
-                info['backgroundCpuPct'] = float(bg_load)
-                info['task'] = t
-                artifacts_info.append(info)
-            apaths = [x['artifactPath'] for x in artifacts_info]
-            vmaf_map = compute_vmaf_parallel(input_path, apaths, workers)
-            baseline_rows = fetch_baseline_rows(base_url)
-            for info in artifacts_info:
-                t = info['task']
-                payload: Dict[str, Any] = {
-                    'cpuModel': hardware.cpuModel,
-                    'gpuModel': hardware.gpuModel or "",
-                    'ramGB': hardware.ramGB,
-                    'os': hardware.os,
-                    'codec': info.get('encoderUsed') or t['encoder'],
-                    'preset': t['preset'],
-                    'crf': t.get('crf'),
-                    'fps': float(info.get('fps') or 0.0),
-                    'fileSizeBytes': int(info.get('fileSizeBytes') or 0),
-                    'runMs': int(info.get('elapsedMs') or 0),
-                    'ffmpegVersion': ffmpeg_version,
-                    'encoderName': info.get('encoderUsed') or t['encoder'],
-                    'clientVersion': client_version,
-                    'inputHash': input_hash,
-                }
-                vmaf_score = vmaf_map.get(info['artifactPath'])
-                if vmaf_score is not None:
-                    payload['vmaf'] = float(vmaf_score)
-                if info.get('error'):
-                    payload['notes'] = str(info['error'])[:500]
-                skip, reason = should_skip_submission(hardware=hardware, payload=payload, background_cpu_pct=float(info.get('backgroundCpuPct') or 0.0), baseline_rows=baseline_rows)
-                if skip:
-                    print(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
-                    if not args.no_submit:
-                        try:
-                            fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-skipped-{payload['preset']}.json")
-                            payload_to_save = dict(payload)
-                            if reason:
+    pre_batch_bg_load = measure_background_cpu_load(3.0, 0.5)
+    submitted_count = 0
+    skipped_count = 0
+    queued_count = 0
+    failed_count = 0
+
+    def _batch_status(stage: str, index: int, codec: str = "", preset: str = "") -> str:
+        label = f"{codec} {preset}".strip()
+        stats = f"ok={submitted_count} skip={skipped_count} queue={queued_count} fail={failed_count}"
+        total = max(1, total_tasks)
+        if label:
+            return f"{stage} {index}/{total}: {label} | {stats}"
+        return f"{stage} {index}/{total} | {stats}"
+
+    try:
+        with BatchRunDashboard(total_tasks=total_tasks, total_batches=total_batches, hardware=hardware) as progress:
+            for i in range(0, len(tasks), chunk_size):
+                chunk = tasks[i:i + chunk_size]
+                batch_no = (i // chunk_size) + 1
+                with tempfile.TemporaryDirectory() as batch_dir:
+                    artifacts_info: List[Dict[str, Any]] = []
+                    print_info(f"Batch {batch_no}/{total_batches}: {len(chunk)} task(s)")
+                    progress.start_batch(batch_no=batch_no, batch_size=len(chunk))
+                    progress.set_description(_batch_status(f"Batch {batch_no}/{total_batches} preparing", processed_total + 1))
+
+                    for idx, t in enumerate(chunk, start=1):
+                        enc = t['encoder']
+                        preset = t['preset']
+                        crf = t.get('crf')
+                        bg_load = pre_batch_bg_load
+                        name = f"{enc.replace('/', '_')}-{preset}-{str(crf) if crf is not None else 'none'}-{idx}.mp4"
+                        global_index = processed_total + idx
+                        progress.set_description(_batch_status("Encoding", global_index, enc, preset) + f" [{enc}, {preset}, crf={crf}]")
+                        progress.set_current_test(
+                            stage="Encoding",
+                            encoder=enc,
+                            preset=preset,
+                            crf=crf,
+                            passes=1,
+                            isHardware=is_hardware_encoder_name(enc),
+                        )
+                        effective_input, input_hash = _resolve_input_for_task(input_path, default_input_hash)
+
+                        info = encode_to_artifact(
+                            input_path=effective_input,
+                            encoder=enc,
+                            preset=preset,
+                            crf=crf,
+                            out_dir=batch_dir,
+                            artifact_name=name,
+                        )
+
+                        info['backgroundCpuPct'] = float(bg_load)
+                        info['task'] = t
+                        info['_input_hash'] = input_hash
+                        info['_effective_input'] = effective_input
+                        final_encoder = str(info.get('encoderUsed') or enc)
+                        progress.set_current_test(
+                            stage="Encoded",
+                            encoder=final_encoder,
+                            preset=preset,
+                            crf=crf,
+                            passes=1,
+                            isHardware=is_hardware_encoder_name(final_encoder),
+                        )
+                        progress.update_machine_metrics(info)
+                        artifacts_info.append(info)
+                        progress.advance_phase(
+                            description=_batch_status("Encoded", processed_total + idx, final_encoder, preset),
+                        )
+
+                    for metric_idx, info in enumerate(artifacts_info, start=1):
+                        effective_input = info.get('_effective_input', input_path)
+                        ap = info['artifactPath']
+                        metric_index = processed_total + metric_idx
+                        progress.set_current_test(
+                            stage="Metrics",
+                            encoder=str(info.get('encoderUsed') or info['task']['encoder']),
+                            preset=str(info['task']['preset']),
+                            crf=info['task'].get('crf'),
+                            passes=1,
+                            isHardware=is_hardware_encoder_name(str(info.get('encoderUsed') or info['task']['encoder'])),
+                        )
+                        if info.get('error') is None and float(info.get('fps', 0.0)) > 0:
+                            progress.set_description(
+                                _batch_status(
+                                    "Metrics", metric_index,
+                                    str(info.get('encoderUsed') or info['task']['encoder']),
+                                    str(info['task']['preset']),
+                                )
+                            )
+                            metrics = compute_metrics_parallel(effective_input, [ap], workers, quiet=True)
+                            info['_metrics'] = metrics.get(ap, {})
+                        else:
+                            info['_metrics'] = {}
+                        progress.advance_phase(
+                            description=_batch_status(
+                                "Metrics done",
+                                metric_index,
+                                str(info.get('encoderUsed') or info['task']['encoder']),
+                                str(info['task']['preset']),
+                            ),
+                        )
+
+                    for info in artifacts_info:
+                        t = info['task']
+                        input_hash = info.get('_input_hash', default_input_hash)
+                        payload: Dict[str, Any] = {
+                            'cpuModel': hardware.cpuModel,
+                            'gpuModel': hardware.gpuModel or "",
+                            'ramGB': hardware.ramGB,
+                            'os': hardware.os,
+                            'codec': info.get('encoderUsed') or t['encoder'],
+                            'preset': t['preset'],
+                            'crf': t.get('crf'),
+                            'passes': 1,
+                            'fps': float(info.get('fps') or 0.0),
+                            'fileSizeBytes': int(info.get('fileSizeBytes') or 0),
+                            'runMs': int(info.get('elapsedMs') or 0),
+                            'ffmpegVersion': ffmpeg_version,
+                            'encoderName': info.get('encoderUsed') or t['encoder'],
+                            'clientVersion': client_version,
+                            'inputHash': input_hash,
+                        }
+                        artifact_metrics = info.get('_metrics', {})
+                        vmaf_score = artifact_metrics.get('vmaf')
+                        if vmaf_score is not None:
+                            payload['vmaf'] = float(vmaf_score)
+                        ssim_score = artifact_metrics.get('ssim')
+                        if ssim_score is not None:
+                            payload['ssim'] = float(ssim_score)
+                        psnr_score = artifact_metrics.get('psnr')
+                        if psnr_score is not None:
+                            payload['psnr'] = float(psnr_score)
+
+                        for hw_key in ('gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+                                       'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle'):
+                            if info.get(hw_key) is not None:
+                                payload[hw_key] = info[hw_key]
+                        for hw_key in EXTENDED_TELEMETRY_KEYS:
+                            if info.get(hw_key) is not None:
+                                payload[hw_key] = info[hw_key]
+
+                        note_parts: List[str] = []
+                        if info.get('error'):
+                            note_parts.append(str(info['error']).strip())
+                        if info.get('telemetryNote'):
+                            note_parts.append(str(info['telemetryNote']).strip())
+                        if note_parts:
+                            payload['notes'] = "; ".join(note_parts)[:3500]
+
+                        skip, reason = should_skip_submission(
+                            hardware=hardware,
+                            payload=payload,
+                            background_cpu_pct=float(info.get('backgroundCpuPct') or 0.0),
+                            baseline_rows=baseline_rows,
+                        )
+                        next_index = processed_total + 1
+                        progress.set_description(_batch_status("Submitting", next_index, str(payload['codec']), str(payload['preset'])))
+                        progress.set_current_test(
+                            stage="Submitting",
+                            encoder=str(payload['codec']),
+                            preset=str(payload['preset']),
+                            crf=payload.get('crf'),
+                            passes=payload.get('passes', 1),
+                            isHardware=is_hardware_encoder_name(str(payload['codec'])),
+                        )
+                        if skip:
+                            print_warning(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
+                            skipped_count += 1
+                            if not args.no_submit:
                                 try:
-                                    payload_to_save['notes'] = ((payload_to_save.get('notes') or '') + f"; {reason}")[:500]
-                                except Exception:
-                                    pass
-                            with open(fname, 'w', encoding='utf-8') as fh:
-                                json.dump(sanitize_payload_for_server(payload_to_save), fh, separators=(',', ':'))
-                            print(f"Queued skipped payload for review: {fname}")
-                        except Exception as qe:
-                            print(f"Failed to queue skipped payload: {qe}", file=sys.stderr)
-                    continue
-                if args.no_submit:
-                    print(f"Dry-run: not submitting {payload['codec']} {payload['preset']}")
-                else:
-                    try:
-                        submit(base_url, sanitize_payload_for_server(payload), api_key=args.api_key, retries=max(1, args.retries), use_token=config._env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)))
-                        print("Submitted Results")
-                    except Exception as e:
-                        print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
-                        try:
-                            fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{payload['preset']}.json")
-                            with open(fname, 'w', encoding='utf-8') as fh:
-                                json.dump(sanitize_payload_for_server(payload), fh, separators=(',', ':'))
-                            print(f"Queued for retry: {fname}")
-                        except Exception as qe:
-                            print(f"Failed to queue payload: {qe}", file=sys.stderr)
-                if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
-                    completed_count_local += 1
-                    if config._BATCH_ACTIVE:
-                        with config._GLOBAL_STATE_LOCK:
-                            config._BATCH_COMPLETED_COUNT += 1
-                processed_total += 1
-                try:
-                    overall_pct = (processed_total / max(1, total_tasks)) * 100.0
-                except Exception:
-                    overall_pct = 100.0
-                print(f"Progress: {processed_total}/{total_tasks} ({overall_pct:.0f}%) complete\n")
+                                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-skipped-{payload['preset']}.json")
+                                    payload_to_save = dict(payload)
+                                    if reason:
+                                        try:
+                                            payload_to_save['notes'] = ((payload_to_save.get('notes') or '') + f"; {reason}")[:3500]
+                                        except Exception:
+                                            pass
+                                    with open(fname, 'w', encoding='utf-8') as fh:
+                                        json.dump(sanitize_payload_for_server(payload_to_save), fh, separators=(',', ':'))
+                                    queued_count += 1
+                                except Exception as qe:
+                                    print(f"Failed to queue skipped payload: {qe}", file=sys.stderr)
+                                    failed_count += 1
+                            progress.update_counters(
+                                submitted=submitted_count, skipped=skipped_count,
+                                queued=queued_count, failed=failed_count,
+                            )
+                        elif args.no_submit:
+                            progress.set_description(_batch_status("Dry-run", next_index, str(payload['codec']), str(payload['preset'])))
+                            progress.update_counters(
+                                submitted=submitted_count, skipped=skipped_count,
+                                queued=queued_count, failed=failed_count,
+                            )
+                        else:
+                            try:
+                                submit(
+                                    base_url,
+                                    sanitize_payload_for_server(payload),
+                                    api_key=args.api_key,
+                                    retries=max(1, args.retries),
+                                    use_token=config._env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)),
+                                )
+                                submitted_count += 1
+                            except Exception as e:
+                                print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
+                                try:
+                                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{payload['preset']}.json")
+                                    with open(fname, 'w', encoding='utf-8') as fh:
+                                        json.dump(sanitize_payload_for_server(payload), fh, separators=(',', ':'))
+                                    queued_count += 1
+                                except Exception as qe:
+                                    print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                                    failed_count += 1
+                            progress.update_counters(
+                                submitted=submitted_count, skipped=skipped_count,
+                                queued=queued_count, failed=failed_count,
+                            )
+
+                        if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
+                            completed_count_local += 1
+                            if config._BATCH_ACTIVE:
+                                with config._GLOBAL_STATE_LOCK:
+                                    config._BATCH_COMPLETED_COUNT += 1
+
+                        processed_total += 1
+                        progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
+    except KeyboardInterrupt:
+        print_warning("Batch run interrupted by user.")
+        return 130
+
+    elapsed_seconds = max(0.0, time.time() - run_started_at)
+    throughput_per_hour = (completed_count_local / elapsed_seconds * 3600.0) if elapsed_seconds > 0 else 0.0
+    print_batch_summary({
+        "totalTasks": total_tasks,
+        "totalBatches": total_batches,
+        "completed": completed_count_local,
+        "submitted": submitted_count,
+        "skipped": skipped_count,
+        "queued": queued_count,
+        "failed": failed_count,
+        "elapsedSeconds": elapsed_seconds,
+        "throughputPerHour": throughput_per_hour,
+    })
     return 0
 
 
@@ -207,9 +390,11 @@ def run_with_args(args: argparse.Namespace) -> int:
         return 6
 
     resolved_encoder: Optional[str] = None
+    explicit_encoder_selection = False
     user_codec = (args.codec or "").strip()
     if user_codec and has_encoder(user_codec):
         resolved_encoder = user_codec
+        explicit_encoder_selection = True
     else:
         family = normalize_codec_family(user_codec) if user_codec else None
         if not family:
@@ -237,6 +422,28 @@ def run_with_args(args: argparse.Namespace) -> int:
     if not resolved_encoder or not has_encoder(resolved_encoder):
         print("Requested codec/encoder not available in this ffmpeg build.", file=sys.stderr)
         return 4
+    if is_hardware_encoder_name(resolved_encoder) and not is_hardware_encoder_usable(resolved_encoder):
+        if explicit_encoder_selection:
+            print(
+                f"Selected hardware encoder '{resolved_encoder}' may not be usable on this machine. "
+                "Attempting it anyway; software fallback will be used if needed."
+            )
+        else:
+            fam = _infer_encoder_family(resolved_encoder)
+            sw = pick_software_encoder_for_family(fam) if fam else None
+            if sw and has_encoder(sw):
+                print(
+                    f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine. "
+                    f"Using software encoder '{sw}' instead."
+                )
+                resolved_encoder = sw
+            else:
+                print(
+                    f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine, "
+                    "and no software fallback was found.",
+                    file=sys.stderr,
+                )
+                return 4
 
     hardware = detect_hardware()
     input_hash = sha256_of_file(input_path)
@@ -247,7 +454,6 @@ def run_with_args(args: argparse.Namespace) -> int:
     except Exception:
         preset_list = ["fast", "medium", "slow"]
 
-    all_payloads: List[Dict[str, Any]] = []
     base_url = args.base_url
     user_crf: Optional[int] = args.crf
     if preset_list:
@@ -258,67 +464,56 @@ def run_with_args(args: argparse.Namespace) -> int:
     except Exception:
         original_size_bytes = 0
     completed_count = 0
-    for preset, crf_val in combos:
-        print(f"Running Test: {resolved_encoder}, crf={crf_val}, {preset}...")
-        payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, crf=crf_val)
-        payload["ffmpegVersion"] = ffmpeg_version
-        payload["encoderName"] = payload.get("codec", resolved_encoder)
-        payload["clientVersion"] = client_version
-        payload["inputHash"] = input_hash
-        all_payloads.append(payload)
-        fps_val = payload.get("fps")
-        vmaf_val = payload.get("vmaf")
-        size_val = payload.get("fileSizeBytes")
-        try:
-            rel_size = (float(size_val) / float(original_size_bytes) * 100.0) if original_size_bytes > 0 else None
-        except Exception:
-            rel_size = None
-        print("\n|---------------------------")
-        try:
-            print(f"| FPS: {float(fps_val):.2f}")
-        except Exception:
-            print("| FPS: N/A")
-        print("|---------------------------")
-        if vmaf_val is not None:
+    with BenchmarkProgress(len(combos), title="Single Benchmark Progress") as progress:
+        for preset, crf_val in combos:
+            progress.set_description(f"Running {resolved_encoder} {preset} crf={crf_val}")
+            print_info(f"Running Test: {resolved_encoder}, crf={crf_val}, {preset}...")
+            payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, crf=crf_val)
+            payload["ffmpegVersion"] = ffmpeg_version
+            payload["encoderName"] = payload.get("codec", resolved_encoder)
+            payload["clientVersion"] = client_version
+            payload["inputHash"] = input_hash
+            payload["passes"] = 1
+
+            size_val = payload.get("fileSizeBytes")
             try:
-                print(f"| VMAF: {float(vmaf_val):.2f}")
+                rel_size = (float(size_val) / float(original_size_bytes) * 100.0) if original_size_bytes > 0 else None
             except Exception:
-                print("| VMAF: N/A")
-        else:
-            print("| VMAF: N/A")
-        print("|---------------------------")
-        if rel_size is not None:
-            try:
-                print(f"| Relative File Size: {rel_size:.1f}%")
-            except Exception:
-                print("| Relative File Size: N/A")
-        else:
-            print("| Relative File Size: N/A")
-        print("|---------------------------\n")
-        if float(payload.get("fps", 0.0)) > 0.0 and int(payload.get("fileSizeBytes", 0)) > 0:
-            completed_count += 1
-            if config._BATCH_ACTIVE:
-                with config._GLOBAL_STATE_LOCK:
-                    config._BATCH_COMPLETED_COUNT += 1
-        if args.no_submit:
-            print(f"Dry-run: not submitting preset={preset}")
-            continue
-        try:
-            if payload.get("fps", 0.0) <= 0 or payload.get("fileSizeBytes", 0) <= 0:
-                print(f"Skipped submission for preset={preset} due to encode failure (fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})")
-                all_payloads.append({**payload, "localError": True})
+                rel_size = None
+            print_benchmark_result(payload, rel_size)
+
+            if float(payload.get("fps", 0.0)) > 0.0 and int(payload.get("fileSizeBytes", 0)) > 0:
+                completed_count += 1
+                if config._BATCH_ACTIVE:
+                    with config._GLOBAL_STATE_LOCK:
+                        config._BATCH_COMPLETED_COUNT += 1
+
+            if args.no_submit:
+                print_info(f"Dry-run: not submitting preset={preset}")
+                progress.advance(description=f"{preset} (dry-run)")
                 continue
-            submit(base_url, payload, api_key=args.api_key, retries=max(1, args.retries))
-            print("Submitted Results")
-        except Exception as e:
-            print(f"Failed to submit {preset}: {e}", file=sys.stderr)
             try:
-                fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{preset}.json")
-                with open(fname, "w", encoding="utf-8") as fh:
-                    json.dump(payload, fh, separators=(",", ":"))
-                print(f"Queued for retry: {fname}")
-            except Exception as qe:
-                print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                if payload.get("fps", 0.0) <= 0 or payload.get("fileSizeBytes", 0) <= 0:
+                    print_warning(
+                        f"Skipped submission for preset={preset} due to encode failure "
+                        f"(fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})"
+                    )
+                    progress.advance(description=f"{preset} (failed)")
+                    continue
+                clean_payload = sanitize_payload_for_server(payload)
+                submit(base_url, clean_payload, api_key=args.api_key, retries=max(1, args.retries))
+                print_success("Submitted Results")
+                progress.advance(description=f"{preset} (submitted)")
+            except Exception as e:
+                print(f"Failed to submit {preset}: {e}", file=sys.stderr)
+                try:
+                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{preset}.json")
+                    with open(fname, "w", encoding="utf-8") as fh:
+                        json.dump(sanitize_payload_for_server(payload), fh, separators=(",", ":"))
+                    print_info(f"Queued for retry: {fname}")
+                except Exception as qe:
+                    print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                progress.advance(description=f"{preset} (queued)")
 
     try:
         files = sorted([f for f in os.listdir(args.queue_dir) if f.endswith('.json')])
@@ -350,12 +545,11 @@ def run_with_args(args: argparse.Namespace) -> int:
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
     try:
         import subprocess
-        if sys.stdin and sys.stdin.isatty():
+        import shutil
+        if os.name != 'nt' and sys.stdin and sys.stdin.isatty() and shutil.which("stty"):
             subprocess.run(["stty", "sane"], check=False)
     except Exception:
         pass
-    GREEN = "\033[32;1m"
-    RESET = "\033[0m"
     sample_path = get_default_sample_path()
     if not sample_path:
         print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
@@ -368,8 +562,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             file=sys.stderr,
         )
         return 6
-    print(f"Test Video Checksum {GREEN}Verified{RESET}")
-    print("")
+    print_success("Test Video Checksum Verified")
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     s_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
     m_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
@@ -378,7 +571,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         f_hours = int(f_hours) if isinstance(f_hours, int) else float(f_hours)
     except Exception:
         f_hours = 3
-    print("Select an option:")
+    print_info("Select an option:")
     menu = [
         "Run Single Benchmark",
         f"Run Small Benchmark [~{s_minutes} minutes]",
@@ -401,21 +594,17 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         sw_encs = [e for e in all_encs if e in sw_set]
         hw_encs = [e for e in all_encs if e in hw_set]
 
-        print("Select an encoder:")
+        print_info("Select an encoder:")
         idx_map: List[str] = []
-        counter = 1
+        option_labels: List[str] = []
         if sw_encs:
-            print("------Software------")
             for e in sw_encs:
-                print(f"  {counter}) {get_encoder_friendly_label(e)}")
                 idx_map.append(e)
-                counter += 1
+                option_labels.append(f"Software | {get_encoder_friendly_label(e)}")
         if hw_encs:
-            print("------Hardware------")
             for e in hw_encs:
-                print(f"  {counter}) {get_encoder_friendly_label(e)}")
                 idx_map.append(e)
-                counter += 1
+                option_labels.append(f"Hardware | {get_encoder_friendly_label(e)}")
 
         default_idx = 0
         try:
@@ -423,12 +612,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
                 default_idx = idx_map.index("libx264")
         except Exception:
             default_idx = 0
-        raw = input(f"Choose encoder (1-{len(idx_map)}) [default {default_idx+1}]: ").strip()
-        try:
-            enc_idx = (int(raw) - 1) if raw else default_idx
-        except Exception:
-            enc_idx = default_idx
-        enc_idx = min(max(0, enc_idx), len(idx_map)-1)
+        enc_idx = prompt_choice("Choose encoder", option_labels, default_index=default_idx)
         chosen_encoder = idx_map[enc_idx]
 
         try:
@@ -501,7 +685,6 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             crf_values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
             if not crf_values:
                 crf_values = [24]
-
     tasks: List[Dict[str, Any]] = []
     for crf_val in crf_values:
         for enc in encoders:

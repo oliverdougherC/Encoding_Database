@@ -4,6 +4,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import math
 from dataclasses import dataclass, field
 from typing import Optional, Dict, Any, List, Tuple
 
@@ -45,8 +46,17 @@ SAMPLE_VIDEO_SIZE_BYTES = 66045059
 
 _ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
     'cpuModel', 'gpuModel', 'ramGB', 'os',
-    'codec', 'preset', 'crf', 'fps', 'vmaf', 'fileSizeBytes', 'notes',
-    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs'
+    'codec', 'preset', 'crf', 'passes',
+    'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'notes',
+    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs',
+    'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+    'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
+    # Extended telemetry (Sprint 7)
+    'gpuTempMaxC', 'cpuFreqAvgMHz', 'cpuTempMaxC',
+    'ffmpegCpuUtilAvg', 'ffmpegCpuUtilMax',
+    'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
+    'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
+    'powerSource', 'sampleCount', 'monitorDurationMs',
 )
 
 # Batch aggregation for Small/Full multi-run flows
@@ -56,8 +66,10 @@ _BATCH_COMPLETED_COUNT: int = 0
 
 # Baseline cache for client-side outlier checks (populated lazily per session)
 _BASELINE_ROWS_CACHE: Optional[List[Dict[str, Any]]] = None
+_BASELINE_ROWS_CACHE_TS: float = 0.0
+_BASELINE_ROWS_CACHE_TTL: float = 1800.0  # 30 minutes
 
-# --- Cross-platform binary resolution helpers ---
+# --- Cross-platform binary lookup helpers ---
 
 _FFMPEG_EXE: Optional[str] = None
 _FFPROBE_EXE: Optional[str] = None
@@ -189,6 +201,53 @@ def ffprobe_exe() -> str:
     return "ffprobe"
 
 
+CPU_FREQ_MIN_MHZ = 100.0
+CPU_FREQ_MAX_MHZ = 10_000.0
+
+
+def normalize_cpu_freq_mhz(raw_value: Any, *, reference_mhz: Optional[float] = None) -> Optional[float]:
+    """Normalize raw CPU frequency readings to MHz.
+
+    Some platforms/drivers report frequency in GHz, KHz, or Hz. This function
+    maps those variants to MHz and drops implausible values.
+    """
+    try:
+        raw = float(raw_value)
+    except Exception:
+        return None
+    if not math.isfinite(raw) or raw <= 0:
+        return None
+
+    candidates = (
+        raw,               # already MHz
+        raw * 1000.0,      # GHz -> MHz
+        raw / 1000.0,      # KHz -> MHz
+        raw / 1_000_000.0, # Hz -> MHz
+    )
+    plausible = []
+    for c in candidates:
+        if math.isfinite(c) and CPU_FREQ_MIN_MHZ <= c <= CPU_FREQ_MAX_MHZ:
+            plausible.append(c)
+
+    if not plausible:
+        return None
+
+    # Keep the original value when it's already plausible in MHz.
+    if CPU_FREQ_MIN_MHZ <= raw <= CPU_FREQ_MAX_MHZ:
+        return raw
+
+    if reference_mhz is not None:
+        try:
+            ref = float(reference_mhz)
+            if math.isfinite(ref) and CPU_FREQ_MIN_MHZ <= ref <= CPU_FREQ_MAX_MHZ:
+                return min(plausible, key=lambda c: abs(c - ref))
+        except Exception:
+            pass
+
+    # Fallback toward common desktop/laptop operating frequencies.
+    return min(plausible, key=lambda c: abs(c - 3000.0))
+
+
 def sanitize_payload_for_server(payload: Dict[str, Any]) -> Dict[str, Any]:
     """Return a copy of payload containing only fields accepted by the server schema."""
     try:
@@ -196,6 +255,14 @@ def sanitize_payload_for_server(payload: Dict[str, Any]) -> Dict[str, Any]:
         for k in _ALLOWED_PAYLOAD_KEYS:
             if k in payload:
                 clean[k] = payload[k]
+        # Deployment policy: CRF-only single-pass benchmarking.
+        clean['passes'] = 1
+        if 'cpuFreqAvgMHz' in clean:
+            normalized = normalize_cpu_freq_mhz(clean.get('cpuFreqAvgMHz'))
+            if normalized is None:
+                clean.pop('cpuFreqAvgMHz', None)
+            else:
+                clean['cpuFreqAvgMHz'] = round(normalized, 2)
         return clean
     except Exception:
         return dict(payload)

@@ -1,18 +1,21 @@
 .container {
-  padding: 24px;
-  max-width: 1200px;
+  padding: 28px 24px 40px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
 .heading {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  font-size: clamp(1.5rem, 2.4vw, 2.15rem);
+  font-weight: 700;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .sourceLink {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   color: var(--muted);
+  font-size: 0.95rem;
 }
 
 .sourceLinkAnchor {
@@ -20,17 +23,20 @@
 }
 
 .clientCard {
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 18px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+  border-width: 2px;
 }
 
 .clientCardTitle {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .clientCardDesc {
@@ -38,7 +44,8 @@
 }
 
 .releasesBtn {
-  padding: 8px 12px;
+  padding: 10px 13px;
+  font-weight: 600;
 }
 
 .errorBox {
@@ -49,15 +56,29 @@
 }
 
 .aboutCard {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 18px;
+  padding: 18px;
 }
 
 .aboutTitle {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 6px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .aboutDesc {
-  font-size: 13px;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 12px 28px;
+  }
+
+  .clientCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }

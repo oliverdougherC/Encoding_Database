@@ -1,109 +1,104 @@
-
 #!/usr/bin/env bash
-set -e
-set -u
-# Enable pipefail if supported (older shells may not support it)
-set -o pipefail 2>/dev/null || true
+set -euo pipefail
 
-# MSYS2/Git Bash: ignore CR characters if the file has CRLF endings
-export SHELLOPTS
-set -o igncr 2>/dev/null || true
-
-# Build a Windows standalone client with PyInstaller.
-# Run this from Windows PowerShell/CMD or from Git Bash/WSL that can invoke Windows Python (py launcher).
-# Requires: Windows Python ("py" launcher) with PyInstaller installed, and ffmpeg/ffprobe in client/bin/win.
-
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"/.. && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 CLIENT_DIR="$ROOT_DIR/client"
-BUILD_DIR="$CLIENT_DIR/dist/windows"
-BIN_SRC_DIR="$CLIENT_DIR/bin/win"
-VENV_SCRIPTS_DIR="$ROOT_DIR/.myenv/Scripts"
+BIN_DIR="$CLIENT_DIR/bin/win"
+APP_NAME="encodingdb-client-windows"
+ENTRYPOINT="$CLIENT_DIR/_pyinstaller_entry.py"
+BUILD_ROOT="$ROOT_DIR/.build/clients/windows"
+LEGACY_DIST_DIR="$CLIENT_DIR/dist/windows"
+PYI_DIST_DIR="$BUILD_ROOT/dist"
+PYI_WORK_DIR="$BUILD_ROOT/work"
+PYI_SPEC_DIR="$BUILD_ROOT/spec"
+OUTPUT_PATH="$ROOT_DIR/$APP_NAME.exe"
 
 # Optional: set VERBOSE=1 to enable shell tracing; set PAUSE_ON_EXIT=1 to pause at end
 if [[ "${VERBOSE:-0}" == "1" ]]; then
   set -x
 fi
 
-echo "[Windows] Preparing build directories..."
-rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR/bin/win"
+log() {
+  echo "[Windows] $*"
+}
 
-# Capture full build output to a log file for debugging even if the window closes
-LOG_FILE="$BUILD_DIR/build.log"
-: > "$LOG_FILE" || true
-# tee may not be available in all shells, but is present in Git Bash/MSYS2; ignore failure
-exec > >(tee -a "$LOG_FILE") 2>&1 || true
-
-echo "[Windows] Verifying ffmpeg/ffprobe binaries..."
-if [[ ! -f "$BIN_SRC_DIR/ffmpeg.exe" ]] || [[ ! -f "$BIN_SRC_DIR/ffprobe.exe" ]]; then
-  echo "ERROR: Expected ffmpeg.exe and ffprobe.exe at $BIN_SRC_DIR" >&2
+die() {
+  echo "[Windows] ERROR: $*" >&2
   exit 1
+}
+
+if [[ ! -f "$BIN_DIR/ffmpeg.exe" ]] || [[ ! -f "$BIN_DIR/ffprobe.exe" ]]; then
+  die "Expected ffmpeg.exe and ffprobe.exe at $BIN_DIR"
+fi
+if [[ ! -f "$ROOT_DIR/sample.mp4" ]]; then
+  die "Missing $ROOT_DIR/sample.mp4"
+fi
+if [[ ! -f "$CLIENT_DIR/presets.json" ]]; then
+  die "Missing $CLIENT_DIR/presets.json"
+fi
+if [[ ! -f "$ENTRYPOINT" ]]; then
+  die "Missing entrypoint: $ENTRYPOINT"
 fi
 
-echo "[Windows] Copying resources..."
-cp -f "$BIN_SRC_DIR/ffmpeg.exe" "$BUILD_DIR/bin/win/"
-cp -f "$BIN_SRC_DIR/ffprobe.exe" "$BUILD_DIR/bin/win/"
-cp -f "$ROOT_DIR/sample.mp4" "$BUILD_DIR/" || true
-cp -f "$CLIENT_DIR/presets.json" "$BUILD_DIR/" || true
+log "Preparing build directories..."
+rm -rf "$BUILD_ROOT"
+rm -rf "$LEGACY_DIST_DIR"
+rm -f "$OUTPUT_PATH"
+rm -f "$ROOT_DIR/dist/$APP_NAME.exe"
+rm -rf "$ROOT_DIR/build/$APP_NAME"
+mkdir -p "$PYI_DIST_DIR" "$PYI_WORK_DIR" "$PYI_SPEC_DIR"
 
-echo "[Windows] Running PyInstaller..."
-cd "$CLIENT_DIR"
+# Capture build output for troubleshooting double-click or CI runs.
+LOG_FILE="$BUILD_ROOT/build.log"
+: > "$LOG_FILE"
+exec > >(tee -a "$LOG_FILE") 2>&1
 
-# Prefer local Windows venv tools if present
-if [[ -x "$VENV_SCRIPTS_DIR/pyinstaller.exe" ]]; then
-  echo "[Windows] Using local venv PyInstaller: $VENV_SCRIPTS_DIR/pyinstaller.exe"
-  PYI_CMD=("$VENV_SCRIPTS_DIR/pyinstaller.exe")
-elif [[ -x "$VENV_SCRIPTS_DIR/python.exe" ]]; then
-  echo "[Windows] Using local venv Python: $VENV_SCRIPTS_DIR/python.exe"
-  PYI_CMD=("$VENV_SCRIPTS_DIR/python.exe" -m PyInstaller)
+PY_CMD=()
+if command -v py >/dev/null 2>&1; then
+  PY_CMD=(py -3)
+elif command -v py.exe >/dev/null 2>&1; then
+  PY_CMD=(py.exe -3)
+elif command -v python.exe >/dev/null 2>&1; then
+  PY_CMD=(python.exe)
+elif [[ "$OSTYPE" == msys* || "$OSTYPE" == cygwin* ]] && command -v python >/dev/null 2>&1; then
+  PY_CMD=(python)
 else
-  # Pick Windows Python launcher if available to ensure a native .exe is produced
-  PY_CMD=( )
-  if command -v py >/dev/null 2>&1; then
-    PY_CMD=(py -3)
-  elif command -v py.exe >/dev/null 2>&1; then
-    PY_CMD=(py.exe -3)
-  elif command -v python.exe >/dev/null 2>&1; then
-    PY_CMD=(python.exe)
-  else
-    # Fallback (may build for non-Windows if not using Windows Python!)
-    PY_CMD=(python)
-  fi
-  echo "[Windows] Using Python: ${PY_CMD[*]}"
-  # Verify PyInstaller is available in this interpreter
-  if ! "${PY_CMD[@]}" -m PyInstaller --version >/dev/null 2>&1; then
-    echo "ERROR: PyInstaller is not installed for this Python interpreter (${PY_CMD[*]})." >&2
-    echo "       Install with: ${PY_CMD[*]} -m pip install pyinstaller" >&2
-    exit 3
-  fi
-  PYI_CMD=("${PY_CMD[@]}" -m PyInstaller)
+  die "No Windows Python interpreter found. Use py/py.exe/python.exe from Windows."
 fi
 
-"${PYI_CMD[@]}" \
+log "Using Python command: ${PY_CMD[*]}"
+if ! "${PY_CMD[@]}" -m PyInstaller --version >/dev/null 2>&1; then
+  die "PyInstaller is not installed for this interpreter. Install with: ${PY_CMD[*]} -m pip install pyinstaller"
+fi
+
+log "Running PyInstaller..."
+cd "$ROOT_DIR"
+"${PY_CMD[@]}" -m PyInstaller \
   --clean \
   --onefile \
-  --name encodingdb-client-windows \
-  --add-data "bin/win/ffmpeg.exe;bin/win" \
-  --add-data "bin/win/ffprobe.exe;bin/win" \
-  --add-data "../sample.mp4;." \
-  --add-data "presets.json;." \
-  main.py
+  --name "$APP_NAME" \
+  --distpath "$PYI_DIST_DIR" \
+  --workpath "$PYI_WORK_DIR" \
+  --specpath "$PYI_SPEC_DIR" \
+  --paths "$ROOT_DIR" \
+  --add-data "client/bin/win/ffmpeg.exe;bin/win" \
+  --add-data "client/bin/win/ffprobe.exe;bin/win" \
+  --add-data "sample.mp4;." \
+  --add-data "client/presets.json;." \
+  "$ENTRYPOINT"
 
-echo "[Windows] Moving artifact to $BUILD_DIR..."
-if [[ -f "$CLIENT_DIR/dist/encodingdb-client-windows.exe" ]]; then
-  mv -f "$CLIENT_DIR/dist/encodingdb-client-windows.exe" "$BUILD_DIR/encodingdb-client-windows.exe"
-elif [[ -d "$CLIENT_DIR/dist/encodingdb-client-windows" ]]; then
-  mv -f "$CLIENT_DIR/dist/encodingdb-client-windows" "$BUILD_DIR/"
-else
-  echo "ERROR: PyInstaller did not produce encodingdb-client-windows.exe. Ensure Windows Python (py -3) is used and PyInstaller is installed." >&2
-  exit 2
+if [[ ! -f "$PYI_DIST_DIR/$APP_NAME.exe" ]]; then
+  die "Build output not found at $PYI_DIST_DIR/$APP_NAME.exe"
 fi
 
-echo "[Windows] Build complete: $BUILD_DIR"
-echo "[Windows] Build log saved to: $LOG_FILE"
+log "Placing executable in repository root..."
+mv -f "$PYI_DIST_DIR/$APP_NAME.exe" "$OUTPUT_PATH"
+log "Build complete: $OUTPUT_PATH"
+log "Build log saved to: $LOG_FILE"
+log "Hidden build artifacts: $BUILD_ROOT"
 
 # Optional pause for double-click runs (set PAUSE_ON_EXIT=1)
 if [[ "${PAUSE_ON_EXIT:-0}" == "1" ]]; then
   read -r -p "Press Enter to close..." _
 fi
-

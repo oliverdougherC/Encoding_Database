@@ -1,0 +1,2 @@
+-- Sprint 5 (follow-up): placeholder migration.
+-- This migration intentionally contains no changes.

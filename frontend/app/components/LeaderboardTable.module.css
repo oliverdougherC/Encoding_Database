@@ -1,0 +1,81 @@
+.leaderboardCard {
+  padding: 16px;
+}
+
+.title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+
+.header {
+  display: grid;
+  grid-template-columns: 32px 1fr 80px;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 4px;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 32px 1fr 80px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+}
+
+.rankCol {
+  font-weight: 600;
+  text-align: center;
+  font-size: 13px;
+}
+
+.rank1 {
+  color: #d4a843;
+}
+
+.rank2 {
+  color: #a0a0a0;
+}
+
+.rank3 {
+  color: #b87333;
+}
+
+.nameCol {
+  position: relative;
+  overflow: hidden;
+}
+
+.barBg {
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bar {
+  height: 100%;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.nameText {
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.valueCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}

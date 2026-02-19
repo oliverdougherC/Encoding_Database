@@ -14,6 +14,41 @@ from .encoders import (
     map_preset_for_encoder, pick_software_encoder_for_family,
     has_encoder,
 )
+from .hardware_monitor import HardwareMonitor
+
+EXTENDED_TELEMETRY_KEYS: tuple = (
+    'gpuTempMaxC', 'cpuFreqAvgMHz', 'cpuTempMaxC',
+    'ffmpegCpuUtilAvg', 'ffmpegCpuUtilMax',
+    'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
+    'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
+    'powerSource', 'sampleCount', 'monitorDurationMs',
+)
+
+
+def _videotoolbox_target_bitrate(encoder: str, crf: Optional[int]) -> str:
+    """Translate CRF-like intent into a stable VideoToolbox bitrate target."""
+    e = (encoder or "").strip().lower()
+    if crf is None:
+        if e == "hevc_videotoolbox":
+            return "3500k"
+        if e == "av1_videotoolbox":
+            return "3000k"
+        return "5000k"
+    c = max(10, min(40, int(crf)))
+    if e == "hevc_videotoolbox":
+        base = 3500
+    elif e == "av1_videotoolbox":
+        base = 3000
+    else:
+        base = 5000
+    # Every +2 CRF lowers bitrate by ~20%; every -2 raises by ~25%.
+    delta = (24 - c) / 2.0
+    if delta >= 0:
+        kbps = int(round(base * (1.25 ** delta)))
+    else:
+        kbps = int(round(base * (0.8 ** (-delta))))
+    kbps = max(1200, min(22000, kbps))
+    return f"{kbps}k"
 
 
 def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, preset_name: str, crf: Optional[int] = None) -> List[str]:
@@ -29,39 +64,59 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
             cmd += ["-crf", str(crf)]
         elif e.endswith("_nvenc"):
             cmd += ["-cq", str(max(0, min(51, crf)))]
+        elif e.endswith("_qsv"):
+            cmd += ["-global_quality", str(crf)]
+        elif e.endswith("_amf"):
+            cmd += ["-qp", str(crf)]
+        elif e.endswith("_vaapi"):
+            cmd += ["-qp", str(crf)]
+        elif e.endswith("_videotoolbox"):
+            # VideoToolbox reliability is significantly better with explicit bitrate.
+            cmd += ["-b:v", _videotoolbox_target_bitrate(e, crf)]
     if encoder.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi")):
         cmd += ["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p"]
     e = encoder.strip().lower()
     if e.endswith("_videotoolbox"):
         cmd += ["-allow_sw", "1"]
     if e == "h264_videotoolbox":
-        cmd += ["-b:v", "5000k", "-profile:v", "high", "-g", "120"]
+        if crf is None:
+            cmd += ["-b:v", _videotoolbox_target_bitrate(e, None)]
+        cmd += ["-profile:v", "high", "-g", "120"]
     elif e == "hevc_videotoolbox":
-        cmd += ["-b:v", "5000k", "-tag:v", "hvc1"]
+        if crf is None:
+            cmd += ["-b:v", _videotoolbox_target_bitrate(e, None)]
+        cmd += ["-tag:v", "hvc1"]
     elif e == "av1_videotoolbox":
-        cmd += ["-b:v", "5000k"]
+        if crf is None:
+            cmd += ["-b:v", _videotoolbox_target_bitrate(e, None)]
     cmd += ["-an", output_path]
     return cmd
+
+
+def _parse_frame_count_from_stderr(stderr: str) -> int:
+    """Extract the last frame= value from FFmpeg's stderr progress output."""
+    matches = re.findall(r'frame=\s*(\d+)', stderr or '')
+    if matches:
+        try:
+            return int(matches[-1])
+        except (ValueError, IndexError):
+            pass
+    return 0
 
 
 def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "out.mp4")
         cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset, crf=crf)
+        # Use -loglevel info to get frame= progress lines in stderr
+        if "-loglevel" in cmd:
+            idx = cmd.index("-loglevel")
+            cmd[idx + 1] = "info"
         start = time.time()
         proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         end = time.time()
         elapsed = max(0.0001, end - start)
-        try:
-            probe = subprocess.run([
-                config.ffprobe_exe(), "-v", "error", "-count_frames", "-select_streams", "v:0",
-                "-show_entries", "stream=nb_read_frames",
-                "-of", "default=nokey=1:noprint_wrappers=1", out_path
-            ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-            nb_frames_str = (probe.stdout or "").strip()
-            total_frames = int(nb_frames_str) if nb_frames_str.isdigit() else 0
-        except Exception:
-            total_frames = 0
+        total_frames = _parse_frame_count_from_stderr(proc.stderr)
         fps = (total_frames / elapsed) if total_frames > 0 else 0.0
         size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
         result: Dict[str, Any] = {"fps": fps, "fileSizeBytes": size, "_encode_rc": proc.returncode, "elapsedMs": int(round(elapsed * 1000))}
@@ -112,6 +167,47 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
     return None
 
 
+def compute_ssim(input_path: str, encoded_path: str) -> Optional[float]:
+    cmd = [
+        config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
+        "-i", input_path,
+        "-i", encoded_path,
+        "-lavfi", "ssim",
+        "-f", "null", "-",
+    ]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        out = proc.stdout
+        m = re.search(r'All:\s*([0-9]+(?:\.[0-9]+)?)', out)
+        if m:
+            return float(m.group(1))
+    except Exception:
+        pass
+    return None
+
+
+def compute_psnr(input_path: str, encoded_path: str) -> Optional[float]:
+    cmd = [
+        config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
+        "-i", input_path,
+        "-i", encoded_path,
+        "-lavfi", "psnr",
+        "-f", "null", "-",
+    ]
+    try:
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        out = proc.stdout
+        m = re.search(r'average:\s*([0-9]+(?:\.[0-9]+)?|inf)', out)
+        if m:
+            val = m.group(1)
+            if val == 'inf':
+                return 100.0
+            return min(float(val), 100.0)
+    except Exception:
+        pass
+    return None
+
+
 def _encoder_family_for(encoder: str) -> Optional[str]:
     e = (encoder or '').lower()
     if 'h264' in e:
@@ -125,16 +221,45 @@ def _encoder_family_for(encoder: str) -> Optional[str]:
     return None
 
 
+def _build_telemetry_note(telemetry: Dict[str, Any], max_len: int = 3200) -> Optional[str]:
+    if not telemetry:
+        return None
+    try:
+        blob = json.dumps(telemetry, separators=(",", ":"), sort_keys=True)
+    except Exception:
+        return None
+    if len(blob) > max_len:
+        blob = blob[:max_len]
+    return f"telemetry={blob}"
+
+
+def _run_monitored(cmd: List[str]) -> tuple:
+    """Run an FFmpeg command with hardware monitoring via Popen.
+
+    Returns (stdout, stderr, returncode, elapsed, hw_metrics).
+    """
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    monitor = HardwareMonitor(ffmpeg_pid=proc.pid, interval=0.5)
+    monitor.start()
+    start = time.time()
+    stdout, stderr = proc.communicate()
+    end = time.time()
+    hw_metrics = monitor.stop()
+    elapsed = max(0.0001, end - start)
+    return stdout, stderr, proc.returncode, elapsed, hw_metrics
+
+
 def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optional[int], out_dir: str, artifact_name: str) -> Dict[str, Any]:
     os.makedirs(out_dir, exist_ok=True)
     artifact_path = os.path.join(out_dir, artifact_name)
     cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=encoder, preset_name=preset, crf=crf)
-    start = time.time()
-    proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    end = time.time()
-    elapsed = max(0.0001, end - start)
+    # Use -loglevel info to get frame= progress lines in stderr
+    if "-loglevel" in cmd:
+        idx = cmd.index("-loglevel")
+        cmd[idx + 1] = "info"
+    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(cmd)
     original_encoder = encoder
-    if (proc.returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
+    if (returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
         family = _encoder_family_for(encoder)
         if family:
             sw = pick_software_encoder_for_family(family)
@@ -142,34 +267,25 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
                 try:
                     print(f"  Hardware encoder '{encoder}' failed, falling back to software encoder '{sw}'...")
                     cmd_sw = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=sw, preset_name=preset, crf=crf)
-                    start = time.time()
-                    proc = subprocess.run(cmd_sw, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-                    end = time.time()
-                    elapsed = max(0.0001, end - start)
+                    if "-loglevel" in cmd_sw:
+                        idx = cmd_sw.index("-loglevel")
+                        cmd_sw[idx + 1] = "info"
+                    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(cmd_sw)
                     encoder = sw
-                    if proc.returncode == 0 and os.path.exists(artifact_path) and os.path.getsize(artifact_path) > 0:
+                    if returncode == 0 and os.path.exists(artifact_path) and os.path.getsize(artifact_path) > 0:
                         print(f"  Software encoder '{sw}' succeeded.")
                     else:
                         print(f"  Software encoder '{sw}' also failed.", file=sys.stderr)
                 except Exception as e:
                     print(f"  Fallback to software encoder failed: {e}", file=sys.stderr)
-    try:
-        probe = subprocess.run([
-            config.ffprobe_exe(), '-v', 'error', '-count_frames', '-select_streams', 'v:0',
-            '-show_entries', 'stream=nb_read_frames',
-            '-of', 'default=nokey=1:noprint_wrappers=1', artifact_path
-        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
-        nb_frames_str = (probe.stdout or '').strip()
-        total_frames = int(nb_frames_str) if nb_frames_str.isdigit() else 0
-    except Exception:
-        total_frames = 0
+    total_frames = _parse_frame_count_from_stderr(stderr)
     fps_val = (total_frames / elapsed) if total_frames > 0 else 0.0
     size_val = os.path.getsize(artifact_path) if os.path.exists(artifact_path) else 0
     err_msg: Optional[str] = None
-    if proc.returncode != 0 or size_val <= 0 or fps_val <= 0.0:
-        stderr_lines = (proc.stderr or '').splitlines()
+    if returncode != 0 or size_val <= 0 or fps_val <= 0.0:
+        stderr_lines = (stderr or '').splitlines()
         err_msg = '; '.join([ln.strip() for ln in stderr_lines[-5:]]) if stderr_lines else 'ffmpeg failed'
-    return {
+    result: Dict[str, Any] = {
         'artifactPath': artifact_path,
         'encoderUsed': encoder,
         'elapsedMs': int(round(elapsed * 1000)),
@@ -177,6 +293,65 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
         'fileSizeBytes': int(size_val),
         'error': err_msg,
     }
+    if hw_metrics.gpu_util_avg is not None:
+        result['gpuUtilAvg'] = round(hw_metrics.gpu_util_avg, 2)
+    if hw_metrics.gpu_power_avg_w is not None:
+        result['gpuPowerAvgW'] = round(hw_metrics.gpu_power_avg_w, 2)
+    if hw_metrics.gpu_mem_peak_mb is not None:
+        result['gpuMemPeakMB'] = round(hw_metrics.gpu_mem_peak_mb, 2)
+    if hw_metrics.cpu_util_avg is not None:
+        result['cpuUtilAvg'] = round(hw_metrics.cpu_util_avg, 2)
+    if hw_metrics.cpu_util_max is not None:
+        result['cpuUtilMax'] = round(hw_metrics.cpu_util_max, 2)
+    if hw_metrics.peak_memory_mb is not None:
+        result['peakMemoryMB'] = round(hw_metrics.peak_memory_mb, 2)
+    if hw_metrics.thermal_throttle is not None:
+        result['thermalThrottle'] = hw_metrics.thermal_throttle
+
+    # Extended telemetry fields (queryable columns on newer servers)
+    if hw_metrics.gpu_temp_max_c is not None:
+        result['gpuTempMaxC'] = round(hw_metrics.gpu_temp_max_c, 2)
+    if hw_metrics.cpu_freq_avg_mhz is not None:
+        result['cpuFreqAvgMHz'] = round(hw_metrics.cpu_freq_avg_mhz, 2)
+    if hw_metrics.cpu_temp_max_c is not None:
+        result['cpuTempMaxC'] = round(hw_metrics.cpu_temp_max_c, 2)
+    if hw_metrics.ffmpeg_cpu_util_avg is not None:
+        result['ffmpegCpuUtilAvg'] = round(hw_metrics.ffmpeg_cpu_util_avg, 2)
+    if hw_metrics.ffmpeg_cpu_util_max is not None:
+        result['ffmpegCpuUtilMax'] = round(hw_metrics.ffmpeg_cpu_util_max, 2)
+    if hw_metrics.ffmpeg_read_mb is not None:
+        result['ffmpegReadMB'] = round(hw_metrics.ffmpeg_read_mb, 2)
+    if hw_metrics.ffmpeg_write_mb is not None:
+        result['ffmpegWriteMB'] = round(hw_metrics.ffmpeg_write_mb, 2)
+    if hw_metrics.ffmpeg_cpu_time_s is not None:
+        result['ffmpegCpuTimeS'] = round(hw_metrics.ffmpeg_cpu_time_s, 3)
+    if hw_metrics.battery_percent_start is not None:
+        result['batteryPercentStart'] = round(hw_metrics.battery_percent_start, 2)
+    if hw_metrics.battery_percent_end is not None:
+        result['batteryPercentEnd'] = round(hw_metrics.battery_percent_end, 2)
+    if hw_metrics.battery_percent_drop is not None:
+        result['batteryPercentDrop'] = round(hw_metrics.battery_percent_drop, 2)
+    if hw_metrics.power_source is not None:
+        result['powerSource'] = hw_metrics.power_source
+    if hw_metrics.sample_count is not None:
+        result['sampleCount'] = int(hw_metrics.sample_count)
+    if hw_metrics.monitor_duration_ms is not None:
+        result['monitorDurationMs'] = int(hw_metrics.monitor_duration_ms)
+
+    telemetry: Dict[str, Any] = {}
+    for key in ('gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+                'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle'):
+        if key in result:
+            telemetry[key] = result[key]
+    for key in EXTENDED_TELEMETRY_KEYS:
+        if key in result:
+            telemetry[key] = result[key]
+    note = _build_telemetry_note(telemetry)
+    if telemetry:
+        result['telemetry'] = telemetry
+    if note:
+        result['telemetryNote'] = note
+    return result
 
 
 def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -> Dict[str, Optional[float]]:
@@ -204,55 +379,109 @@ def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -
     return results
 
 
+def compute_metrics_parallel(input_path: str, artifacts: List[str], workers: int, quiet: bool = False) -> Dict[str, Dict[str, Optional[float]]]:
+    """Compute VMAF, SSIM, and PSNR for each artifact in parallel.
+
+    Returns {artifact_path: {'vmaf': X, 'ssim': Y, 'psnr': Z}}.
+    """
+    results: Dict[str, Dict[str, Optional[float]]] = {ap: {'vmaf': None, 'ssim': None, 'psnr': None} for ap in artifacts}
+    if not artifacts:
+        return results
+    metric_fns: List[tuple] = []
+    for ap in artifacts:
+        metric_fns.append((ap, 'vmaf', compute_vmaf))
+        metric_fns.append((ap, 'ssim', compute_ssim))
+        metric_fns.append((ap, 'psnr', compute_psnr))
+    total = len(metric_fns)
+    done = 0
+    if not quiet:
+        print(f"Calculating quality metrics (VMAF, SSIM, PSNR) for {len(artifacts)} artifact(s) with {max(1, workers)} worker(s)...")
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
+        futs = {ex.submit(fn, input_path, ap): (ap, metric_name) for ap, metric_name, fn in metric_fns}
+        for fut in as_completed(futs):
+            ap, metric_name = futs[fut]
+            try:
+                results[ap][metric_name] = fut.result()
+            except Exception:
+                results[ap][metric_name] = None
+            done += 1
+            try:
+                pct = (done / total) * 100.0
+            except Exception:
+                pct = 100.0
+            if not quiet:
+                print(f"Metrics progress: {done}/{total} ({pct:.0f}%)")
+    if not quiet:
+        print("Quality metrics batch complete.")
+    return results
+
+
 def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
-    result = run_ffmpeg_test(input_path, preset=preset, codec=codec, crf=crf)
-    if (result.get("_encode_rc", 1) != 0 or float(result.get("fps", 0.0)) <= 0 or int(result.get("fileSizeBytes", 0)) <= 0):
-        family = None
-        if codec.endswith("_videotoolbox"):
-            family = "h264" if "h264" in codec else ("hevc" if "hevc" in codec else ("av1" if "av1" in codec else None))
-        elif codec.endswith(('_nvenc', '_qsv', '_amf', '_vaapi')):
-            if 'h264' in codec:
-                family = 'h264'
-            elif 'hevc' in codec:
-                family = 'hevc'
-            elif 'av1' in codec:
-                family = 'av1'
-            elif 'vp9' in codec:
-                family = 'vp9'
-        if family:
-            sw = pick_software_encoder_for_family(family)
-            if sw and sw != codec:
-                print(f"Retrying with software encoder {sw} for preset={preset}...")
-                result = run_ffmpeg_test(input_path, preset=preset, codec=sw, crf=crf)
-                codec = sw
+    # Single encode via encode_to_artifact (which handles HW→SW fallback),
+    # then compute VMAF on the same artifact. No double-encode. (B-C01)
     with tempfile.TemporaryDirectory() as td:
-        encoded_path = os.path.join(td, "out.mp4")
-        cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=encoded_path, encoder=codec, preset_name=preset, crf=crf)
+        info = encode_to_artifact(
+            input_path=input_path,
+            encoder=codec,
+            preset=preset,
+            crf=crf,
+            out_dir=td,
+            artifact_name="out.mp4",
+        )
+        actual_encoder = info.get('encoderUsed', codec)
         vmaf: Optional[float] = None
-        if result.get("_encode_rc", 1) == 0 and float(result.get("fps", 0.0)) > 0 and int(result.get("fileSizeBytes", 0)) > 0:
-            print("Calculating VMAF...")
-            subprocess.run(cmd, check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            vmaf = compute_vmaf(input_path, encoded_path)
+        ssim: Optional[float] = None
+        psnr: Optional[float] = None
+        artifact_path = info.get('artifactPath', os.path.join(td, "out.mp4"))
+        if info.get('error') is None and float(info.get('fps', 0.0)) > 0 and int(info.get('fileSizeBytes', 0)) > 0:
+            print("Calculating quality metrics (VMAF, SSIM, PSNR)...")
+            vmaf = compute_vmaf(input_path, artifact_path)
+            ssim = compute_ssim(input_path, artifact_path)
+            psnr = compute_psnr(input_path, artifact_path)
+
     payload = {
         "cpuModel": hardware.cpuModel,
         "gpuModel": hardware.gpuModel or "",
         "ramGB": hardware.ramGB,
         "os": hardware.os,
-        "codec": codec,
+        "codec": actual_encoder,
         "preset": preset,
         "crf": crf,
-        "fps": float(result["fps"]),
-        "fileSizeBytes": int(result["fileSizeBytes"]),
-        "runMs": int(result.get("elapsedMs") or 0),
+        "fps": float(info.get('fps', 0.0)),
+        "fileSizeBytes": int(info.get('fileSizeBytes', 0)),
+        "runMs": int(info.get('elapsedMs') or 0),
     }
     if vmaf is not None:
         payload["vmaf"] = float(vmaf)
-    if result.get("_error"):
-        payload["notes"] = str(result["_error"])[:500]
+    if ssim is not None:
+        payload["ssim"] = float(ssim)
+    if psnr is not None:
+        payload["psnr"] = float(psnr)
+    # Hardware metrics from the monitor
+    for hw_key in ('gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+                   'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle'):
+        if info.get(hw_key) is not None:
+            payload[hw_key] = info[hw_key]
+    for hw_key in EXTENDED_TELEMETRY_KEYS:
+        if info.get(hw_key) is not None:
+            payload[hw_key] = info[hw_key]
+    note_parts: List[str] = []
+    if info.get('error'):
+        note_parts.append(str(info['error']).strip())
+    if info.get('telemetryNote'):
+        note_parts.append(str(info['telemetryNote']).strip())
+    if note_parts:
+        payload["notes"] = "; ".join(note_parts)[:3500]
     return payload
 
 
+_SHA256_CACHE: Dict[str, str] = {}
+
+
 def sha256_of_file(path: str) -> str:
+    resolved = os.path.realpath(path)
+    if resolved in _SHA256_CACHE:
+        return _SHA256_CACHE[resolved]
     hasher = hashlib.sha256()
     with open(path, 'rb') as f:
         while True:
@@ -260,7 +489,9 @@ def sha256_of_file(path: str) -> str:
             if not chunk:
                 break
             hasher.update(chunk)
-    return hasher.hexdigest()
+    digest = hasher.hexdigest()
+    _SHA256_CACHE[resolved] = digest
+    return digest
 
 
 def verify_sample_video(path: str) -> tuple:

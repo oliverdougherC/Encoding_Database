@@ -39,7 +39,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="card" style={{ padding: 24, textAlign: "center" }}>
-          <h2 style={{ marginBottom: 12, color: "var(--error, #ef4444)" }}>
+          <h2 style={{ marginBottom: 12, color: "var(--error-fg, #ef4444)" }}>
             Something went wrong
           </h2>
           <p className="subtle" style={{ marginBottom: 16 }}>

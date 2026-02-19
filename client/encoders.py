@@ -62,6 +62,17 @@ SOFTWARE_ENCODERS_ORDER: Dict[str, List[str]] = {
     "vp9": ["libvpx-vp9"],
 }
 
+HARDWARE_ENCODER_SUFFIXES: Tuple[str, ...] = (
+    "_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi", "_v4l2m2m", "_omx",
+)
+
+
+def is_hardware_encoder_name(encoder: str) -> bool:
+    try:
+        return encoder.strip().lower().endswith(HARDWARE_ENCODER_SUFFIXES)
+    except Exception:
+        return False
+
 
 def exec_ok(cmd: List[str]) -> bool:
     try:
@@ -82,12 +93,33 @@ def ensure_ffmpeg_and_ffprobe() -> Tuple[bool, Optional[str]]:
     return True, version_line
 
 
-def has_encoder(encoder: str) -> bool:
+_ENCODER_LIST_CACHE: Optional[set] = None
+
+
+def _get_encoder_set() -> set:
+    """Fetch and cache the full encoder list from a single ffmpeg -encoders call."""
+    global _ENCODER_LIST_CACHE
+    if _ENCODER_LIST_CACHE is not None:
+        return _ENCODER_LIST_CACHE
     try:
-        out = subprocess.run([config.ffmpeg_exe(), "-hide_banner", "-encoders"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        return encoder in (out.stdout or "")
+        out = subprocess.run(
+            [config.ffmpeg_exe(), "-hide_banner", "-encoders"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        )
+        names: set = set()
+        for line in (out.stdout or "").splitlines():
+            # Encoder lines start with a flags field (e.g. " V..... libx264")
+            parts = line.strip().split()
+            if len(parts) >= 2:
+                names.add(parts[1])
+        _ENCODER_LIST_CACHE = names
+        return names
     except Exception:
-        return False
+        return set()
+
+
+def has_encoder(encoder: str) -> bool:
+    return encoder in _get_encoder_set()
 
 
 def is_hardware_encoder_usable(encoder: str) -> bool:
@@ -98,7 +130,7 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
         if enc in config._ENCODER_USABLE_CACHE:
             return config._ENCODER_USABLE_CACHE[enc]
 
-    if not enc.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi", "_v4l2m2m", "_omx")):
+    if not is_hardware_encoder_name(enc):
         ok = has_encoder(encoder)
         with config._GLOBAL_STATE_LOCK:
             config._ENCODER_USABLE_CACHE[enc] = ok
@@ -109,12 +141,19 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
             out_path = os.path.join(td, "probe.mp4")
             cmd = [
                 config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error",
-                "-f", "lavfi", "-i", "testsrc=size=16x16:rate=1",
-                "-frames:v", "1", "-pix_fmt", "yuv420p",
+                # Use a realistic tiny sample so we don't reject encoders due to
+                # unusual minimum-size constraints.
+                "-f", "lavfi", "-i", "testsrc=size=128x128:rate=30",
+                "-frames:v", "8", "-pix_fmt", "yuv420p",
                 "-c:v", encoder,
             ]
             if enc.endswith("_videotoolbox"):
-                cmd += ["-allow_sw", "1"]
+                # Mirror production VT options to reduce false positives in probe.
+                cmd += ["-b:v", "3000k"]
+                if enc == "h264_videotoolbox":
+                    cmd += ["-profile:v", "high", "-g", "120"]
+                elif enc == "hevc_videotoolbox":
+                    cmd += ["-tag:v", "hvc1"]
             cmd += ["-an", out_path]
             proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
             ok = (proc.returncode == 0) and os.path.exists(out_path) and os.path.getsize(out_path) > 0
@@ -293,6 +332,14 @@ def get_encoder_friendly_label(encoder: str) -> str:
     return e
 
 
+def _numeric_speed_key(n: str) -> int:
+    """Sort key for numeric presets (higher number = faster)."""
+    try:
+        return -int(n)
+    except Exception:
+        return 0
+
+
 def sort_presets_by_speed_desc(encoder: str, presets: List[str]) -> List[str]:
     """Return presets ordered from fastest to slowest for given encoder."""
     e = encoder.strip().lower()
@@ -303,27 +350,8 @@ def sort_presets_by_speed_desc(encoder: str, presets: List[str]) -> List[str]:
         ]
         order_index = {name: i for i, name in enumerate(ordering)}
         return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
-    if e == "libsvtav1":
-        def speed_key(n: str) -> int:
-            try:
-                return -int(n)
-            except Exception:
-                return 0
-        return sorted(presets, key=speed_key)
-    if e == "libaom-av1":
-        def speed_key(n: str) -> int:
-            try:
-                return -int(n)
-            except Exception:
-                return 0
-        return sorted(presets, key=speed_key)
-    if e == "libvpx-vp9":
-        def speed_key(n: str) -> int:
-            try:
-                return -int(n)
-            except Exception:
-                return 0
-        return sorted(presets, key=speed_key)
+    if e in ("libsvtav1", "libaom-av1", "libvpx-vp9"):
+        return sorted(presets, key=_numeric_speed_key)
     if e.endswith("_nvenc"):
         ordering = ["p7", "p6", "p5", "p4", "p3", "p2", "p1"]
         order_index = {name: i for i, name in enumerate(ordering)}

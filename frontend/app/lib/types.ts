@@ -1,0 +1,37 @@
+/** Shared Benchmark type for server and client. */
+export type Benchmark = {
+  id: string;
+  createdAt: string;
+  cpuModel: string;
+  gpuModel: string | null;
+  ramGB: number;
+  os: string;
+  codec: string;
+  crf?: number | null;
+  preset: string;
+  fps: number;
+  vmaf: number | null;
+  ssim: number | null;
+  psnr: number | null;
+  fileSizeBytes: number;
+  notes: string | null;
+  ffmpegVersion?: string | null;
+  encoderName?: string | null;
+  clientVersion?: string | null;
+  inputHash?: string | null;
+  runMs?: number | null;
+  status?: string | null;
+  samples?: number;
+  vmafSamples?: number;
+  ssimSamples?: number;
+  psnrSamples?: number;
+  gpuUtilAvg?: number | null;
+  gpuPowerAvgW?: number | null;
+  gpuMemPeakMB?: number | null;
+  cpuUtilAvg?: number | null;
+  cpuUtilMax?: number | null;
+  peakMemoryMB?: number | null;
+  thermalThrottle?: boolean | null;
+  fpsPerWatt?: number | null;
+  qualityPerWatt?: number | null;
+};

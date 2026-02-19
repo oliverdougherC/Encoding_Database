@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "npm run build && node --test test/**/*.test.js",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js"
@@ -33,7 +33,6 @@
     "@types/morgan": "^1.9.9",
     "@types/uuid": "^9.0.7",
     "prisma": "^6.16.3",
-    "ts-node-dev": "^2.0.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3"
   }

@@ -93,7 +93,7 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ./nginx/certs:/etc/nginx/certs:ro
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/health" , "||", "exit", "0"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/health >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
