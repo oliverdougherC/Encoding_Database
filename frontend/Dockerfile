@@ -13,6 +13,7 @@ COPY . .
 
 # Build Next.js app (production)
 ENV NODE_ENV=production
+RUN mkdir -p public
 RUN npm run build
 
 # Prune dev dependencies
@@ -36,5 +37,4 @@ COPY --from=builder /app/next.config.mjs ./next.config.mjs
 
 # Explicitly bind to 0.0.0.0 so Nginx in the same Docker network can reach it
 CMD ["node", "node_modules/next/dist/bin/next", "start", "-H", "0.0.0.0", "-p", "3000"]
-
 
