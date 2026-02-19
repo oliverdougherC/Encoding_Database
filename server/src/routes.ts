@@ -23,7 +23,7 @@ const benchmarkSchema = z.object({
   crf: z.coerce.number().int().min(0).max(63).optional().nullable(),
   contentClass: z.enum(VALID_CONTENT_CLASSES).optional().nullable(),
   resolution: z.enum(VALID_RESOLUTIONS).optional().nullable(),
-  passes: z.coerce.number().int().min(1).max(2).optional().nullable(),
+  passes: z.coerce.number().int().min(1).max(1).optional().nullable(),
   fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
   ssim: z.coerce.number().min(0).max(1).optional().nullable(),
@@ -60,17 +60,44 @@ const benchmarkSchema = z.object({
   monitorDurationMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).optional().nullable(),
 }).strict();
 
+const CPU_FREQ_MIN_MHZ = 100;
+const CPU_FREQ_MAX_MHZ = 10_000;
+
+export function normalizeCpuFreqMHz(value: unknown): number | null {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw <= 0) return null;
+
+  const candidates = [
+    raw,               // already MHz
+    raw * 1000,        // GHz -> MHz
+    raw / 1000,        // KHz -> MHz
+    raw / 1_000_000,   // Hz -> MHz
+  ];
+  const plausible = candidates.filter((n, i, arr) => {
+    if (!Number.isFinite(n)) return false;
+    if (n < CPU_FREQ_MIN_MHZ || n > CPU_FREQ_MAX_MHZ) return false;
+    return arr.findIndex((x) => x === n) === i;
+  });
+  if (plausible.length === 0) return null;
+
+  if (raw >= CPU_FREQ_MIN_MHZ && raw <= CPU_FREQ_MAX_MHZ) {
+    return raw;
+  }
+  if (raw > 0 && raw <= 15) {
+    return raw * 1000;
+  }
+  return plausible.reduce((best, current) => (
+    Math.abs(current - 3000) < Math.abs(best - 3000) ? current : best
+  ));
+}
+
 // Type inferred from Zod schema for proper type safety
 type BenchmarkSubmission = z.infer<typeof benchmarkSchema>;
 
-type SubmissionDimensions = {
-  contentClass: typeof VALID_CONTENT_CLASSES[number];
-  resolution: typeof VALID_RESOLUTIONS[number];
-  passes: number;
-};
-
-export function buildSubmissionPayloadHash(data: BenchmarkSubmission, dims: SubmissionDimensions): string {
+export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
   const normalizedGpuModel = (data.gpuModel && data.gpuModel.trim()) ? data.gpuModel.trim() : '';
+  const contentClassValue = data.contentClass ?? 'mixed';
+  const resolutionValue = data.resolution ?? '1080p';
   const significant = {
     cpuModel: data.cpuModel,
     gpuModel: normalizedGpuModel,
@@ -79,9 +106,9 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission, dims: Subm
     codec: data.codec,
     preset: data.preset,
     crf: Number(data.crf ?? 24),
-    contentClass: dims.contentClass,
-    resolution: dims.resolution,
-    passes: dims.passes === 2 ? 2 : 1,
+    contentClass: contentClassValue,
+    resolution: resolutionValue,
+    passes: 1,
     fps: Number(data.fps),
     vmaf: data.vmaf ?? null,
     ssim: data.ssim ?? null,
@@ -222,15 +249,15 @@ router.post('/submit', async (req, res) => {
   if (data.crf == null || !Number.isFinite(Number(data.crf))) {
     data.crf = 24;
   }
+  if (data.passes == null) {
+    data.passes = 1;
+  }
   _applyTelemetryFallback(data);
+  data.cpuFreqAvgMHz = normalizeCpuFreqMHz(data.cpuFreqAvgMHz);
   const contentClassValue = data.contentClass ?? 'mixed';
   const resolutionValue = data.resolution ?? '1080p';
-  const passesValue = data.passes ?? 1;
-  const payloadHash = buildSubmissionPayloadHash(data, {
-    contentClass: contentClassValue,
-    resolution: resolutionValue,
-    passes: passesValue,
-  });
+  const passesValue: 1 = 1;
+  const payloadHash = buildSubmissionPayloadHash(data);
 
   try {
     // Fast path: if the exact same payload was already counted, return existing (idempotency)
@@ -411,7 +438,10 @@ router.post('/submit', async (req, res) => {
         },
       });
 
-      const existing = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf_contentClass_resolution_passes: key } });
+      const existing = await tx.benchmark.findFirst({
+        where: key,
+        orderBy: { createdAt: 'desc' },
+      });
       if (!existing) {
         createdNew = true;
         // For new benchmarks, only count as sample if accepted
@@ -541,7 +571,7 @@ router.post('/submit', async (req, res) => {
       if (status !== 'accepted') {
         const nextStatus = existing.status === 'accepted' ? 'accepted' : (existing.status ?? status);
         return tx.benchmark.update({
-          where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf_contentClass_resolution_passes: key },
+          where: { id: existing.id },
           data: { status: nextStatus },
         });
       }
@@ -739,20 +769,11 @@ router.post('/submit', async (req, res) => {
             END,
             "status" = 'accepted',
             "updatedAt" = NOW()
-        WHERE "cpuModel" = ${key.cpuModel}
-          AND "gpuModel" = ${key.gpuModel}
-          AND "ramGB" = ${key.ramGB}
-          AND "os" = ${key.os}
-          AND "codec" = ${key.codec}
-          AND "preset" = ${key.preset}
-          AND "crf" = ${key.crf}
-          AND "contentClass" = ${key.contentClass}
-          AND "resolution" = ${key.resolution}
-          AND "passes" = ${key.passes}
+        WHERE "id" = ${existing.id}
       `;
 
       // Return the updated row
-      const updated = await tx.benchmark.findUnique({ where: { cpuModel_gpuModel_ramGB_os_codec_preset_crf_contentClass_resolution_passes: key } });
+      const updated = await tx.benchmark.findUnique({ where: { id: existing.id } });
       if (!updated) throw new Error('Row disappeared after atomic update');
       return updated;
     });
@@ -867,21 +888,21 @@ router.get('/query', async (req, res) => {
     const skip = Number.isFinite(rawSkip) && rawSkip > 0 ? rawSkip : undefined;
 
     const where: Record<string, unknown> = { status: 'accepted' };
-    if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
-      where.contentClass = query.contentClass;
-    }
-    if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
-      where.resolution = query.resolution;
-    }
     if (query.passes) {
       const p = Number(query.passes);
-      if (p === 1 || p === 2) where.passes = p;
+      if (p === 1) where.passes = 1;
     }
     // Sprint 4: additional filters
     if (query.codec) where.codec = query.codec;
     if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
     if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
     if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
+    if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
+      where.contentClass = query.contentClass;
+    }
+    if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
+      where.resolution = query.resolution;
+    }
     if (query.powerSource === 'ac' || query.powerSource === 'battery') {
       where.powerSource = query.powerSource;
     }
@@ -976,7 +997,7 @@ router.get('/query', async (req, res) => {
 
 // Test video catalog (Sprint 5)
 export const TEST_VIDEO_CATALOG = [
-  { name: 'sample.mp4', contentClass: 'mixed', resolution: '1080p', duration: 20.0, sha256: '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8', sizeBytes: 66045059 },
+  { name: 'sample.mp4', duration: 20.0, sha256: '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8', sizeBytes: 66045059 },
 ];
 
 router.get('/test-videos', (_req, res) => {

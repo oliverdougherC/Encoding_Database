@@ -12,8 +12,21 @@ import crypto from 'node:crypto';
 
 const app = express();
 
-// Trust proxy when behind nginx/reverse proxy
-app.set('trust proxy', 1);
+const isProd = process.env.NODE_ENV === 'production';
+
+function parseTrustProxySetting(value: string | undefined): boolean | number | string {
+  const raw = String(value || '').trim();
+  if (!raw) return isProd ? 1 : false;
+  const lower = raw.toLowerCase();
+  if (lower === 'true') return true;
+  if (lower === 'false') return false;
+  const asNumber = Number(raw);
+  if (Number.isInteger(asNumber) && asNumber >= 0) return asNumber;
+  return raw;
+}
+
+// Trust reverse-proxy headers only when explicitly configured or in production.
+app.set('trust proxy', parseTrustProxySetting(process.env.TRUST_PROXY));
 // Hide implementation header
 app.disable('x-powered-by');
 
@@ -50,7 +63,6 @@ app.use(morgan((tokens: any, req, res) => {
 }));
 
 // CORS configuration (defaults assume hosting behind Nginx Proxy Manager at encodingdb.platinumlabs.dev)
-const isProd = process.env.NODE_ENV === 'production';
 const corsOriginEnv = process.env.CORS_ORIGIN || (isProd ? 'https://encodingdb.platinumlabs.dev' : '*');
 const allowedOrigins = corsOriginEnv.split(',').map(v => v.trim()).filter(Boolean);
 const isWildcard = corsOriginEnv === '*';

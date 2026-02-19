@@ -28,8 +28,6 @@ model Benchmark {
   codec          String
   preset         String
   crf            Int      @default(24)
-
-  // Multi-content and resolution (Sprint 5)
   contentClass   String   @default("mixed")
   resolution     String   @default("1080p")
   passes         Int      @default(1)
@@ -123,14 +121,14 @@ model Benchmark {
   @@index([status])
   @@index([codec])
   @@index([preset])
+  @@index([contentClass])
+  @@index([resolution])
+  @@index([contentClass, resolution])
   @@index([inputHash])
   @@index([codec, preset])
   @@index([status, createdAt])
   @@index([cpuModel])
   @@index([gpuModel])
-  @@index([contentClass])
-  @@index([resolution])
-  @@index([contentClass, resolution])
   @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])
 }
 
@@ -149,8 +147,6 @@ model Submission {
   codec          String
   preset         String
   crf            Int      @default(24)
-
-  // Multi-content and resolution (Sprint 5)
   contentClass   String   @default("mixed")
   resolution     String   @default("1080p")
   passes         Int      @default(1)
@@ -205,9 +201,10 @@ model Submission {
   @@index([status])
   @@index([codec])
   @@index([preset])
-  @@index([codec, preset])
   @@index([contentClass])
   @@index([resolution])
+  @@index([contentClass, resolution])
+  @@index([codec, preset])
   @@index([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])
 }
 
@@ -223,5 +220,6 @@ model TestVideo {
   createdAt    DateTime @default(now())
 
   @@index([contentClass])
+  @@index([resolution])
   @@index([contentClass, resolution])
 }

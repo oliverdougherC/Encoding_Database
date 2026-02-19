@@ -6,10 +6,13 @@ process memory (psutil), and thermal throttling detection.
 
 import threading
 import time
+import platform
+import subprocess
 from dataclasses import dataclass
 from typing import Optional, List, Tuple
 
 import psutil
+from .config import normalize_cpu_freq_mhz
 
 # Optional NVIDIA GPU monitoring
 try:
@@ -117,6 +120,7 @@ class HardwareMonitor:
         self._ffmpeg_io_end: Optional[Tuple[float, float]] = None
         self._ffmpeg_cpu_time_start: Optional[float] = None
         self._ffmpeg_cpu_time_end: Optional[float] = None
+        self._cpu_freq_reference_mhz: Optional[float] = self._detect_cpu_freq_reference_mhz()
 
     def start(self) -> None:
         self._stop_event.clear()
@@ -254,7 +258,12 @@ class HardwareMonitor:
             try:
                 f = psutil.cpu_freq()
                 if f and f.current and f.current > 0:
-                    freq = float(f.current)
+                    freq = normalize_cpu_freq_mhz(
+                        f.current,
+                        reference_mhz=self._cpu_freq_reference_mhz,
+                    )
+                    if freq is not None and self._cpu_freq_reference_mhz is None:
+                        self._cpu_freq_reference_mhz = freq
             except Exception:
                 pass
             temp: Optional[float] = None
@@ -476,3 +485,42 @@ class HardwareMonitor:
             return (pct, source)
         except Exception:
             return (None, None)
+
+    def _detect_cpu_freq_reference_mhz(self) -> Optional[float]:
+        refs: List[float] = []
+        try:
+            f = psutil.cpu_freq()
+            if f and f.max and f.max > 0:
+                n = normalize_cpu_freq_mhz(f.max)
+                if n is not None:
+                    refs.append(n)
+        except Exception:
+            pass
+        try:
+            f = psutil.cpu_freq()
+            if f and f.current and f.current > 0:
+                n = normalize_cpu_freq_mhz(f.current)
+                if n is not None:
+                    refs.append(n)
+        except Exception:
+            pass
+        if platform.system() == "Darwin":
+            try:
+                proc = subprocess.run(
+                    ["sysctl", "-n", "hw.cpufrequency_max"],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    text=True,
+                    timeout=1,
+                )
+                hz = float((proc.stdout or "").strip() or "0")
+                if hz > 0:
+                    mhz = hz / 1_000_000.0
+                    n = normalize_cpu_freq_mhz(mhz)
+                    if n is not None:
+                        refs.append(n)
+            except Exception:
+                pass
+        if not refs:
+            return None
+        return sum(refs) / len(refs)

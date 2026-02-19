@@ -36,16 +36,6 @@ type EnrichedBenchmark = PerRowMetrics & {
   _plScore: number;
 };
 
-const CONTENT_CLASS_LABELS: Record<string, string> = {
-  mixed: "Mixed (Original)",
-  talkingHead: "Talking Head",
-  action: "Action / Sports",
-  animation: "Animation / Cartoon",
-  screen: "Screen Recording",
-  nature: "Nature / Documentary",
-  gaming: "Gaming",
-};
-
 type SortKey = "cpuModel" | "gpuModel" | "codec" | "crf" | "preset" | "_plScore";
 
 export default function BenchmarksTable({ initialData }: { initialData: Benchmark[] }) {
@@ -66,10 +56,6 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     const d = searchParams.get("dir");
     return d === "asc" ? "asc" : "desc";
   });
-  // Multi-content filters (Sprint 5)
-  const [contentClassFilter, setContentClassFilter] = useState(() => searchParams.get("cc") || "");
-  const [resolutionFilter, setResolutionFilter] = useState(() => searchParams.get("res") || "");
-  const [passesFilter, setPassesFilter] = useState(() => searchParams.get("passes") || "");
   // Encoder type filters
   const [softwareOnly, setSoftwareOnly] = useState<boolean>(() => searchParams.get("sw") === "1");
   const [hardwareOnly, setHardwareOnly] = useState<boolean>(() => searchParams.get("hw") === "1");
@@ -88,9 +74,6 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       if (presetFilter) params.set("preset", presetFilter);
       if (sortKey !== "_plScore") params.set("sort", sortKey);
       if (sortDir !== "desc") params.set("dir", sortDir);
-      if (contentClassFilter) params.set("cc", contentClassFilter);
-      if (resolutionFilter) params.set("res", resolutionFilter);
-      if (passesFilter) params.set("passes", passesFilter);
       if (softwareOnly) params.set("sw", "1");
       if (hardwareOnly) params.set("hw", "1");
       const qs = params.toString();
@@ -98,7 +81,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       window.history.replaceState(null, "", qs ? `${base}?${qs}` : base);
     }, 300);
     return () => { if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current); };
-  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, sortKey, sortDir, contentClassFilter, resolutionFilter, passesFilter, softwareOnly, hardwareOnly]);
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, sortKey, sortDir, softwareOnly, hardwareOnly]);
 
   // Core PL Score v6 weights (sum normalized to 1.0)
   const [wQuality, setWQuality] = useState<number>(1 / 3);
@@ -137,16 +120,10 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   // Reset page when any filter changes
   useEffect(() => {
     setPage(0);
-  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, contentClassFilter, resolutionFilter, passesFilter, softwareOnly, hardwareOnly]);
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
   const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
-  const contentClasses = useMemo(() => Array.from(new Set(initialData.map(d => d.contentClass ?? "mixed"))).sort(), [initialData]);
-  const resolutions = useMemo(() => {
-    const order = ["480p", "720p", "1080p", "1440p", "4k"];
-    const set = new Set(initialData.map(d => d.resolution ?? "1080p"));
-    return order.filter(r => set.has(r));
-  }, [initialData]);
   const filteredPresets = useMemo(() => {
     if (!codecFilter) return presets;
     const lower = codecFilter.toLowerCase();
@@ -170,14 +147,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       if (gpu && !(row.gpuModel ?? "").toLowerCase().includes(gpu)) return false;
       if (codecFilter && !row.codec.toLowerCase().includes(codecFilter.toLowerCase())) return false;
       if (presetFilter && row.preset !== presetFilter) return false;
-      if (contentClassFilter && (row.contentClass ?? "mixed") !== contentClassFilter) return false;
-      if (resolutionFilter && (row.resolution ?? "1080p") !== resolutionFilter) return false;
-      if (passesFilter && String(row.passes ?? 1) !== passesFilter) return false;
       if (softwareOnly && !hardwareOnly) return !row._isHardware;
       if (hardwareOnly && !softwareOnly) return row._isHardware;
       return true;
     });
-  }, [dataWithHwClass, cpuFilter, gpuFilter, codecFilter, presetFilter, contentClassFilter, resolutionFilter, passesFilter, softwareOnly, hardwareOnly]);
+  }, [dataWithHwClass, cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
 
   const plContext = useMemo(() => createPlScoreContext(filtered), [filtered]);
 
@@ -343,19 +317,6 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       </div>
 
       <div className={styles.encoderFilters}>
-        <select value={contentClassFilter} onChange={e => setContentClassFilter(e.target.value)} className="input" aria-label="Filter by content class">
-          <option value="">All content</option>
-          {contentClasses.map(cc => (<option key={cc} value={cc}>{CONTENT_CLASS_LABELS[cc] ?? cc}</option>))}
-        </select>
-        <select value={resolutionFilter} onChange={e => setResolutionFilter(e.target.value)} className="input" aria-label="Filter by resolution">
-          <option value="">All resolutions</option>
-          {resolutions.map(r => (<option key={r} value={r}>{r}</option>))}
-        </select>
-        <select value={passesFilter} onChange={e => setPassesFilter(e.target.value)} className="input" aria-label="Filter by encoding passes">
-          <option value="">All passes</option>
-          <option value="1">1-pass (CRF)</option>
-          <option value="2">2-pass (CBR/VBR)</option>
-        </select>
         <label className={`btn ${styles.encoderFilterLabel}${softwareOnly ? ` ${styles.encoderFilterActive}` : ""}`}>
           <input type="checkbox" checked={softwareOnly} onChange={e => { const v = e.target.checked; setSoftwareOnly(v); if (v) setHardwareOnly(false); }} />
           Software Only
@@ -507,6 +468,7 @@ function DetailsModal({ row, onClose, relSize }: { row: EnrichedBenchmark; onClo
   const vmafSamples = typeof row.vmafSamples === "number" ? row.vmafSamples : row.vmaf != null ? acceptedSamples : 0;
   const ssimSamples = typeof row.ssimSamples === "number" ? row.ssimSamples : row.ssim != null ? acceptedSamples : 0;
   const psnrSamples = typeof row.psnrSamples === "number" ? row.psnrSamples : row.psnr != null ? acceptedSamples : 0;
+  const encodeModeLabel = "CRF (single-pass)";
 
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
@@ -523,7 +485,7 @@ function DetailsModal({ row, onClose, relSize }: { row: EnrichedBenchmark; onClo
                   <div className={styles.aggregateTitle}>{isAggregate ? "Aggregate settings row" : "Single-submission row"}</div>
                   <div className={`subtle ${styles.aggregateSubtitle}`}>
                     {isAggregate
-                      ? `Averages across ${acceptedSamples} accepted submissions with identical CPU/GPU, codec, preset, CRF, content class, resolution, and pass count.`
+                      ? `Averages across ${acceptedSamples} accepted submissions with identical CPU/GPU, codec, preset, and CRF.`
                       : "One accepted submission currently exists for this exact settings profile."}
                   </div>
                 </div>
@@ -558,8 +520,7 @@ function DetailsModal({ row, onClose, relSize }: { row: EnrichedBenchmark; onClo
               <ConfigRow label="GPU" value={row.gpuModel ?? "N/A"} />
               <ConfigRow label="Encoder" value={(row.encoderName ?? row.codec) || "-"} />
               <ConfigRow label="Preset / CRF" value={`${row.preset} / ${row.crf == null ? "-" : row.crf}`} />
-              <ConfigRow label="Content Class" value={CONTENT_CLASS_LABELS[row.contentClass ?? "mixed"] ?? (row.contentClass || "mixed")} />
-              <ConfigRow label="Resolution / Passes" value={`${row.resolution ?? "1080p"} / ${row.passes === 2 ? "2-pass" : "1-pass"}`} />
+              <ConfigRow label="Mode" value={encodeModeLabel} />
             </div>
           </div>
 

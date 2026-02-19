@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 # Local testing script: spin up DB, server, and frontend with verbose logging.
-# Similar to redploy.sh but for local development (no git pull, no prod compose).
 # Usage: ./scripts/local_test.sh [--no-frontend] [--no-client-check] [--keep]
 # Env: LOCAL_TEST_DATABASE defaults to benchmarks_test so migrations run against a
 #      clean DB (avoids "failed migration" state in your main benchmarks DB).
@@ -21,7 +20,9 @@ PG_USER="${POSTGRES_USER:-app}"
 PG_PASS="${POSTGRES_PASSWORD:-app}"
 # Default to a separate DB so we never touch a production/failed-migration state
 DB_NAME="${LOCAL_TEST_DATABASE:-benchmarks_test}"
-DATABASE_URL_LOCAL="postgresql://${PG_USER}:${PG_PASS}@127.0.0.1:5432/${DB_NAME}?schema=public"
+PG_PORT="${POSTGRES_PORT:-55432}"
+export POSTGRES_PORT="$PG_PORT"
+DATABASE_URL_LOCAL="postgresql://${PG_USER}:${PG_PASS}@127.0.0.1:${PG_PORT}/${DB_NAME}?schema=public"
 SEED_DUMMY_BENCHMARKS="${SEED_DUMMY_BENCHMARKS:-1}"
 SEED_DUMMY_BENCHMARKS_COUNT="${SEED_DUMMY_BENCHMARKS_COUNT:-480}"
 
@@ -42,6 +43,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Env: LOCAL_TEST_DATABASE  Database name (default: benchmarks_test). Use a separate"
       echo "     DB so migrations always run clean. Set to 'benchmarks' to use the main DB."
+      echo "     POSTGRES_PORT               Host port for Postgres (default: 55432)."
       echo "     SEED_DUMMY_BENCHMARKS       Seed synthetic benchmark rows after migration"
       echo "                                 (default: 1 for local test only)."
       echo "     SEED_DUMMY_BENCHMARKS_COUNT Number of synthetic rows to insert (default: 480)."
@@ -87,7 +89,7 @@ cd "$ROOT_DIR"
 log "Repo root: $ROOT_DIR"
 log "Logs: server=$SERVER_LOG frontend=$FRONTEND_LOG"
 
-for cmd in docker node npm; do
+for cmd in docker node npm curl; do
   command -v "$cmd" >/dev/null 2>&1 || die "Missing required command: $cmd"
 done
 
@@ -247,7 +249,7 @@ log "  Backend:  http://127.0.0.1:$SERVER_PORT  (logs: $SERVER_LOG)"
 if [[ $NO_FRONTEND -eq 0 ]]; then
   log "  Frontend: http://127.0.0.1:$FRONTEND_PORT (logs: $FRONTEND_LOG)"
 fi
-log "  DB:       postgresql://${PG_USER}:****@127.0.0.1:5432/${DB_NAME}"
+log "  DB:       postgresql://${PG_USER}:****@127.0.0.1:${PG_PORT}/${DB_NAME}"
 log "Press Ctrl+C to stop server and frontend."
 log "=========================================="
 wait $SERVER_PID 2>/dev/null || true

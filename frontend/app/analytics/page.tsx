@@ -7,9 +7,6 @@ import SsimHistogram from "../components/SsimHistogram";
 import PsnrHistogram from "../components/PsnrHistogram";
 import ScatterSsimVmaf from "../components/ScatterSsimVmaf";
 import RateDistortionChart from "../components/RateDistortionChart";
-import ResolutionComparisonChart from "../components/ResolutionComparisonChart";
-import ContentRadarChart from "../components/ContentRadarChart";
-import PassSpeedComparison from "../components/PassSpeedComparison";
 import LazyChart from "../components/LazyChart";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import styles from "./page.module.css";
@@ -47,10 +44,7 @@ export default async function AnalyticsPage() {
         <LazyChart><ScatterFpsSize data={data} /></LazyChart>
         <LazyChart><ScatterSsimVmaf data={data} /></LazyChart>
         <LazyChart><GroupedSizeByPreset data={data} /></LazyChart>
-        <LazyChart><PassSpeedComparison data={data} /></LazyChart>
         <LazyChart><RateDistortionChart data={data} /></LazyChart>
-        <LazyChart><ResolutionComparisonChart data={data} /></LazyChart>
-        <LazyChart><ContentRadarChart data={data} /></LazyChart>
       </div>
     </div>
   );

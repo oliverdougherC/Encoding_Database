@@ -31,12 +31,12 @@ Encoder performance claims are often hard to compare because workloads, settings
 - `server/`: Express API, Zod validation, Prisma models/migrations, ingest + query pipeline.
 - `frontend/`: Next.js 15 app with benchmark table, analytics, leaderboards, and hardware pages.
 - `nginx/`: reverse-proxy configuration for production.
-- `scripts/`: local testing, e2e checks, hardening checks, packaging, deployment helpers.
+- `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.sh`).
 - `sample.mp4`: canonical baseline clip used by the benchmark flow.
 
 ## Current platform capabilities
 
-- Benchmark dimensions: codec/encoder, preset, CRF, content class, resolution, pass count.
+- Benchmark dimensions: codec/encoder, preset, CRF, content class, resolution (single-pass CRF mode).
 - Core quality/performance: FPS, file size, VMAF, SSIM, PSNR.
 - Hardware telemetry: utilization, power, memory, temperatures, CPU frequency, process I/O and CPU time, battery state.
 - Data integrity controls: canonical input hash checks, idempotent payload hash, accepted/suspect/rejected submission status.
@@ -58,7 +58,7 @@ The client submits an explicit allowlist of fields. This prevents accidental inc
 | Category | Fields | Why this is collected |
 | --- | --- | --- |
 | System profile | `cpuModel`, `gpuModel`, `ramGB`, `os` | Normalizes comparisons across hardware and OS environments. |
-| Workload configuration | `codec`, `preset`, `crf`, `contentClass`, `resolution`, `passes`, `inputHash` | Ensures two rows are only compared when workload settings are equivalent. |
+| Workload configuration | `codec`, `preset`, `crf`, `contentClass`, `resolution`, `passes` (fixed to `1`), `inputHash` | Ensures benchmark rows are compared only when workload settings are equivalent. |
 | Core benchmark outcome | `fps`, `fileSizeBytes`, `vmaf`, `ssim`, `psnr`, `runMs` | Captures speed, size, and perceptual quality outcomes of each encode. |
 | Runtime telemetry (efficiency) | `gpuUtilAvg`, `gpuPowerAvgW`, `gpuMemPeakMB`, `cpuUtilAvg`, `cpuUtilMax`, `peakMemoryMB`, `thermalThrottle` | Enables efficiency and stability analysis beyond raw FPS. |
 | Extended telemetry | `gpuTempMaxC`, `cpuFreqAvgMHz`, `cpuTempMaxC`, `ffmpegCpuUtilAvg`, `ffmpegCpuUtilMax`, `ffmpegReadMB`, `ffmpegWriteMB`, `ffmpegCpuTimeS`, `batteryPercentStart`, `batteryPercentEnd`, `batteryPercentDrop`, `powerSource`, `sampleCount`, `monitorDurationMs` | Improves confidence scoring, thermal context, and power/runtime interpretation. |
@@ -102,8 +102,7 @@ python client/main.py \
   --crf 24 \
   --batch-size 0 \
   --content-class mixed \
-  --resolution 1080p \
-  --passes 1
+  --resolution 1080p
 ```
 
 Common flags:
@@ -128,6 +127,12 @@ Common flags:
 ```
 
 This script can stand up DB + API (+ frontend by default), apply migrations, seed test data, and run readiness checks.
+
+To launch the client in its default interactive mode:
+
+```bash
+./scripts/client_test.sh
+```
 
 ### Option B: manual setup
 
@@ -202,51 +207,42 @@ Additional controls:
 
 ## Build packaged clients
 
-Windows:
-
-```powershell
-scripts/build_windows_client.ps1
-```
-
 macOS:
 
 ```bash
 ./scripts/build_macos_client.sh
 ```
 
-Linux:
+Windows (Git Bash/MSYS/WSL with Windows Python available):
 
 ```bash
-./scripts/build_linux_client.sh
+./scripts/build_windows_client.sh
 ```
 
-All packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
+Both packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
 
 ## Testing and validation scripts
 
 - `server/test/routes.smoke.test.js`: server smoke tests.
-- `scripts/e2e.sh`: local end-to-end benchmark flow.
-- `scripts/api_hardening_test.sh`: API validation, limits, and resilience checks.
+- `scripts/local_test.sh`: local DB/API/frontend bring-up with readiness checks.
+- `scripts/client_test.sh`: launches the client in default interactive mode.
 
 ## Production deployment
 
-1. Generate env files:
+1. Configure env files from `env.example` and `server/env.example`.
+2. One-command deploy (pull `main`, build, migrate, and start all services):
 
 ```bash
-./scripts/setup_env.sh --domain your-domain.example
+./deploy.sh
 ```
 
-2. Build and run:
+3. Manual compose alternative:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-3. For scripted updates on a deployment host:
-
-```bash
-./scripts/redploy.sh
-```
+Security note: for hardened public deployment, set `INGEST_MODE=signed` and a strong `INGEST_HMAC_SECRET` in `.env`.
 
 Frontend-only deployment notes are in `frontend/DEPLOYMENT.md`.
 
@@ -254,6 +250,7 @@ Frontend-only deployment notes are in `frontend/DEPLOYMENT.md`.
 
 - Canonical clip integrity is enforced by SHA256 (`sample.mp4`).
 - Multi-content/resolution fields are supported in schema and UI; the canonical sample remains the default guaranteed clip path.
+- Encoding mode is intentionally fixed to CRF single-pass (`passes=1`) across client, ingest, and frontend.
 - Some telemetry fields are platform-dependent and may be unavailable on certain systems (for example, GPU power on non-NVIDIA hardware).
 
 ## Contributing
@@ -267,4 +264,3 @@ Issues and PRs are welcome. When contributing:
 ## License
 
 Apache 2.0
-

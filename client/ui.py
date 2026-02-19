@@ -721,15 +721,12 @@ class BatchRunDashboard:
         enc = str(self._task_info.get("encoder") or "-")
         preset = str(self._task_info.get("preset") or "-")
         crf = self._task_info.get("crf")
-        passes = self._task_info.get("passes")
-        cc = str(self._task_info.get("contentClass") or "mixed")
-        res = str(self._task_info.get("resolution") or "1080p")
 
         lines = [
             f"[muted]Stage:[/muted] [accent2]{stage}[/accent2]",
             f"[muted]Encoder:[/muted] [vanilla]{enc}[/vanilla]",
             f"[muted]Preset:[/muted] {preset}    [muted]CRF:[/muted] {crf if crf is not None else '-'}",
-            f"[muted]Content:[/muted] {cc}    [muted]Resolution:[/muted] {res}    [muted]Passes:[/muted] {passes if passes is not None else 1}",
+            f"[muted]Mode:[/muted] CRF (1-pass)",
             f"[muted]Queue:[/muted] ok={self._counters['submitted']} skip={self._counters['skipped']} queue={self._counters['queued']} fail={self._counters['failed']}",
             f"[muted]Now:[/muted] {self._description}",
         ]

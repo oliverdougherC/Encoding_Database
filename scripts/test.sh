@@ -1,0 +1,495 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -d "$SCRIPT_DIR/client" && -d "$SCRIPT_DIR/server" && -d "$SCRIPT_DIR/frontend" ]]; then
+  ROOT_DIR="$SCRIPT_DIR"
+else
+  ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
+COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.yml}"
+COMPOSE_PROJECT_NAME="${COMPOSE_PROJECT_NAME:-encodingdb_test}"
+export COMPOSE_PROJECT_NAME
+
+SERVER_PORT="${SERVER_PORT:-3001}"
+FRONTEND_PORT="${FRONTEND_PORT:-3100}"
+PG_USER="${POSTGRES_USER:-app}"
+PG_PASS="${POSTGRES_PASSWORD:-app}"
+DB_NAME="${LOCAL_TEST_DATABASE:-benchmarks_test}"
+PG_PORT="${POSTGRES_PORT:-55432}"
+export POSTGRES_PORT="$PG_PORT"
+DATABASE_URL_LOCAL="postgresql://${PG_USER}:${PG_PASS}@127.0.0.1:${PG_PORT}/${DB_NAME}?schema=public"
+KEEP_DB=0
+
+REPORT_BASE="${REPORT_BASE:-$ROOT_DIR/.test-reports}"
+RUN_ID="$(date +%Y%m%d-%H%M%S)"
+RUN_DIR="$REPORT_BASE/$RUN_ID"
+
+SERVER_PID=""
+FRONTEND_PID=""
+OVERALL=0 # 0=pass, 1=warn, 2=fail
+LAST_STATUS=""
+
+declare -a STEP_NAMES=()
+declare -a STEP_STATUS=()
+declare -a STEP_LOGS=()
+declare -a STEP_NOTES=()
+
+usage() {
+  cat <<EOF
+Usage: ./test.sh [--keep-db] [--help]
+
+Options:
+  --keep-db   Keep database container running after tests.
+  --help      Show this help text.
+
+Environment overrides:
+  SERVER_PORT, FRONTEND_PORT, LOCAL_TEST_DATABASE, POSTGRES_PORT, COMPOSE_FILE, REPORT_BASE
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --keep-db) KEEP_DB=1; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "[test] Unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+mkdir -p "$RUN_DIR"
+
+slugify() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr -cs 'a-z0-9' '-' | sed 's/^-*//; s/-*$//'
+}
+
+update_overall() {
+  local status="$1"
+  if [[ "$status" == "FAIL" || "$status" == "BLOCKED" ]]; then
+    OVERALL=2
+    return
+  fi
+  if [[ "$status" == "WARN" && "$OVERALL" -lt 2 ]]; then
+    OVERALL=1
+  fi
+}
+
+record_step() {
+  local name="$1"
+  local status="$2"
+  local log="$3"
+  local note="$4"
+  STEP_NAMES+=("$name")
+  STEP_STATUS+=("$status")
+  STEP_LOGS+=("$log")
+  STEP_NOTES+=("$note")
+  LAST_STATUS="$status"
+  update_overall "$status"
+}
+
+issue_scan() {
+  local input_log="$1"
+  local output_log="$2"
+  local raw_log="${output_log}.raw"
+  local scan_log="${output_log}.scan"
+  : > "$output_log"
+  : > "$raw_log"
+  : > "$scan_log"
+
+  # Scan only command output; exclude our injected command line header.
+  if command -v rg >/dev/null 2>&1; then
+    rg -n -v -e '^\[command\]' "$input_log" > "$scan_log" || true
+  else
+    grep -Env '^\[command\]' "$input_log" > "$scan_log" || true
+  fi
+
+  local pattern='(^|[^[:alnum:]_])(warn|warning|deprecated|error|failed|failure|fail|vulnerability|vulnerabilities)([^[:alnum:]_]|$)'
+  if command -v rg >/dev/null 2>&1; then
+    rg -n -i -e "$pattern" "$scan_log" > "$raw_log" || true
+  else
+    grep -Ein "$pattern" "$scan_log" > "$raw_log" || true
+  fi
+
+  local ignore='0 warnings?|no warnings?|0 errors?|no errors?|without warnings?|without errors?|found 0 vulnerabilities|fail[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failed[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failures?[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)'
+  if command -v rg >/dev/null 2>&1; then
+    rg -n -v -i -e "$ignore" "$raw_log" > "$output_log" || true
+  else
+    grep -Eiv "$ignore" "$raw_log" > "$output_log" || true
+  fi
+}
+
+mark_blocked() {
+  local name="$1"
+  local reason="$2"
+  local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
+  local slug
+  slug="$(slugify "$name")"
+  local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
+  {
+    echo "BLOCKED: $reason"
+  } > "$log"
+  record_step "$name" "BLOCKED" "$log" "$reason"
+  printf '[%02d] BLOCKED: %s (%s)\n' "$idx" "$name" "$reason"
+}
+
+run_step() {
+  local name="$1"
+  local command="$2"
+
+  local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
+  local slug
+  slug="$(slugify "$name")"
+  local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
+  local issues="${log}.issues"
+
+  printf '[%02d] RUN: %s\n' "$idx" "$name"
+  {
+    echo "[command] $command"
+    echo
+  } > "$log"
+
+  local rc=0
+  bash -lc "cd \"$ROOT_DIR\" && $command" >> "$log" 2>&1 || rc=$?
+  issue_scan "$log" "$issues"
+
+  local note=""
+  if [[ "$rc" -ne 0 ]]; then
+    note="exit=$rc"
+    if [[ -s "$issues" ]]; then
+      note="$note; issue=$(head -n 1 "$issues" | tr -d '\r' | cut -c1-180)"
+    fi
+    record_step "$name" "FAIL" "$log" "$note"
+    printf '[%02d] FAIL: %s (%s)\n' "$idx" "$name" "$note"
+    return "$rc"
+  fi
+
+  if [[ -s "$issues" ]]; then
+    note="warnings detected; first=$(head -n 1 "$issues" | tr -d '\r' | cut -c1-180)"
+    record_step "$name" "WARN" "$log" "$note"
+    printf '[%02d] WARN: %s (%s)\n' "$idx" "$name" "$note"
+    return 0
+  fi
+
+  record_step "$name" "PASS" "$log" "ok"
+  printf '[%02d] PASS: %s\n' "$idx" "$name"
+  return 0
+}
+
+start_server() {
+  local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
+  local name="Server start and readiness"
+  local slug
+  slug="$(slugify "$name")"
+  local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
+  local issues="${log}.issues"
+  local ready_url="http://127.0.0.1:${SERVER_PORT}/health/ready"
+
+  printf '[%02d] RUN: %s\n' "$idx" "$name"
+  : > "$log"
+  if command -v lsof >/dev/null 2>&1; then
+    local listeners
+    listeners="$(lsof -nP -iTCP:"${SERVER_PORT}" -sTCP:LISTEN | awk 'NR>1 {print $1 "/" $2}' | paste -sd, -)"
+    if [[ -n "$listeners" ]]; then
+      echo "Port ${SERVER_PORT} already in use by: ${listeners}" >> "$log"
+      record_step "$name" "FAIL" "$log" "port ${SERVER_PORT} already in use (${listeners})"
+      printf '[%02d] FAIL: %s (port %s in use)\n' "$idx" "$name" "$SERVER_PORT"
+      return 1
+    fi
+  fi
+  (
+    cd "$ROOT_DIR/server"
+    export PORT="$SERVER_PORT" DATABASE_URL="$DATABASE_URL_LOCAL" NODE_ENV=development
+    exec node dist/index.js
+  ) >> "$log" 2>&1 &
+  SERVER_PID=$!
+
+  local rc=0
+  for _ in $(seq 1 50); do
+    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+      rc=1
+      break
+    fi
+    code="$(curl -s -o /dev/null -w '%{http_code}' "$ready_url" 2>/dev/null || true)"
+    if [[ "$code" == "200" ]]; then
+      rc=0
+      break
+    fi
+    sleep 1
+  done
+
+  if [[ "$rc" -eq 0 ]] && ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    rc=1
+    echo "Server process exited after readiness probe." >> "$log"
+  fi
+
+  issue_scan "$log" "$issues"
+  if [[ "$rc" -ne 0 ]]; then
+    record_step "$name" "FAIL" "$log" "server did not become ready"
+    printf '[%02d] FAIL: %s\n' "$idx" "$name"
+    return 1
+  fi
+
+  if [[ -s "$issues" ]]; then
+    local note="warnings detected; first=$(head -n 1 "$issues" | tr -d '\r' | cut -c1-180)"
+    record_step "$name" "WARN" "$log" "$note"
+    printf '[%02d] WARN: %s (%s)\n' "$idx" "$name" "$note"
+    return 0
+  fi
+
+  record_step "$name" "PASS" "$log" "ok"
+  printf '[%02d] PASS: %s\n' "$idx" "$name"
+  return 0
+}
+
+start_frontend() {
+  local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
+  local name="Frontend start and readiness"
+  local slug
+  slug="$(slugify "$name")"
+  local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
+  local issues="${log}.issues"
+  local frontend_url="http://127.0.0.1:${FRONTEND_PORT}/"
+
+  printf '[%02d] RUN: %s\n' "$idx" "$name"
+  : > "$log"
+  if command -v lsof >/dev/null 2>&1; then
+    local listeners
+    listeners="$(lsof -nP -iTCP:"${FRONTEND_PORT}" -sTCP:LISTEN | awk 'NR>1 {print $1 "/" $2}' | paste -sd, -)"
+    if [[ -n "$listeners" ]]; then
+      echo "Port ${FRONTEND_PORT} already in use by: ${listeners}" >> "$log"
+      record_step "$name" "FAIL" "$log" "port ${FRONTEND_PORT} already in use (${listeners})"
+      printf '[%02d] FAIL: %s (port %s in use)\n' "$idx" "$name" "$FRONTEND_PORT"
+      return 1
+    fi
+  fi
+  (
+    cd "$ROOT_DIR/frontend"
+    export PORT="$FRONTEND_PORT"
+    export INTERNAL_API_BASE_URL="http://127.0.0.1:${SERVER_PORT}"
+    export NEXT_PUBLIC_API_BASE_URL="http://127.0.0.1:${SERVER_PORT}"
+    exec npm run start
+  ) >> "$log" 2>&1 &
+  FRONTEND_PID=$!
+
+  local rc=0
+  for _ in $(seq 1 50); do
+    if ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+      rc=1
+      break
+    fi
+    code="$(curl -s -o /dev/null -w '%{http_code}' "$frontend_url" 2>/dev/null || true)"
+    if [[ "$code" == "200" || "$code" == "304" ]]; then
+      rc=0
+      break
+    fi
+    sleep 1
+  done
+
+  if [[ "$rc" -eq 0 ]] && ! kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    rc=1
+    echo "Frontend process exited after readiness probe." >> "$log"
+  fi
+
+  issue_scan "$log" "$issues"
+  if [[ "$rc" -ne 0 ]]; then
+    record_step "$name" "FAIL" "$log" "frontend did not become ready"
+    printf '[%02d] FAIL: %s\n' "$idx" "$name"
+    return 1
+  fi
+
+  if [[ -s "$issues" ]]; then
+    local note="warnings detected; first=$(head -n 1 "$issues" | tr -d '\r' | cut -c1-180)"
+    record_step "$name" "WARN" "$log" "$note"
+    printf '[%02d] WARN: %s (%s)\n' "$idx" "$name" "$note"
+    return 0
+  fi
+
+  record_step "$name" "PASS" "$log" "ok"
+  printf '[%02d] PASS: %s\n' "$idx" "$name"
+  return 0
+}
+
+run_api_submit_accepts_sample() {
+  local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
+  local name="API: submit accepts sample payload"
+  local slug
+  slug="$(slugify "$name")"
+  local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
+
+  local base_url="http://127.0.0.1:${SERVER_PORT}/submit"
+  local modern_payload='{"cpuModel":"Test CPU Model","gpuModel":"","ramGB":16,"os":"macOS","codec":"libx264","preset":"medium","crf":24,"contentClass":"mixed","resolution":"1080p","passes":1,"fps":42.0,"vmaf":92.0,"ssim":0.97,"psnr":39.2,"fileSizeBytes":12345678,"notes":"local test submission","ffmpegVersion":"test","encoderName":"libx264","clientVersion":"test","inputHash":"53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8","runMs":10000}'
+  local legacy_payload='{"cpuModel":"Test CPU Model","gpuModel":"","ramGB":16,"os":"macOS","codec":"libx264","preset":"medium","crf":24,"fps":42.0,"vmaf":92.0,"ssim":0.97,"psnr":39.2,"fileSizeBytes":12345678,"notes":"local test submission","ffmpegVersion":"test","encoderName":"libx264","clientVersion":"test","inputHash":"53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8","runMs":10000}'
+
+  printf '[%02d] RUN: %s\n' "$idx" "$name"
+  : > "$log"
+  echo "[command] POST $base_url (modern payload first, legacy fallback on schema mismatch)" >> "$log"
+
+  local resp body code
+  resp="$(curl -sS -w $'\n__HTTP_CODE:%{http_code}' -X POST "$base_url" -H "Content-Type: application/json" -d "$modern_payload")"
+  body="${resp%__HTTP_CODE:*}"
+  code="${resp##*__HTTP_CODE:}"
+  {
+    echo "--- modern status: $code ---"
+    echo "$body"
+  } >> "$log"
+
+  if [[ "$code" == "200" || "$code" == "201" ]]; then
+    record_step "$name" "PASS" "$log" "ok"
+    printf '[%02d] PASS: %s\n' "$idx" "$name"
+    return 0
+  fi
+
+  if [[ "$code" == "400" && "$body" == *"Unrecognized keys"* ]]; then
+    resp="$(curl -sS -w $'\n__HTTP_CODE:%{http_code}' -X POST "$base_url" -H "Content-Type: application/json" -d "$legacy_payload")"
+    body="${resp%__HTTP_CODE:*}"
+    code="${resp##*__HTTP_CODE:}"
+    {
+      echo "--- legacy fallback status: $code ---"
+      echo "$body"
+    } >> "$log"
+    if [[ "$code" == "200" || "$code" == "201" ]]; then
+      record_step "$name" "WARN" "$log" "legacy schema fallback used (modern fields rejected)"
+      printf '[%02d] WARN: %s (legacy schema fallback used)\n' "$idx" "$name"
+      return 0
+    fi
+  fi
+
+  record_step "$name" "FAIL" "$log" "submit rejected (status=$code)"
+  printf '[%02d] FAIL: %s (status=%s)\n' "$idx" "$name" "$code"
+  return 1
+}
+
+cleanup() {
+  if [[ -n "$FRONTEND_PID" ]] && kill -0 "$FRONTEND_PID" 2>/dev/null; then
+    kill "$FRONTEND_PID" 2>/dev/null || true
+    wait "$FRONTEND_PID" 2>/dev/null || true
+  fi
+  if [[ -n "$SERVER_PID" ]] && kill -0 "$SERVER_PID" 2>/dev/null; then
+    kill "$SERVER_PID" 2>/dev/null || true
+    wait "$SERVER_PID" 2>/dev/null || true
+  fi
+  if [[ "$KEEP_DB" -ne 1 ]]; then
+    (cd "$ROOT_DIR" && docker compose -f "$COMPOSE_FILE" down >/dev/null 2>&1) || true
+  fi
+}
+trap cleanup EXIT
+
+echo "[test] Report directory: $RUN_DIR"
+echo "[test] Base URLs: server=http://127.0.0.1:${SERVER_PORT} frontend=http://127.0.0.1:${FRONTEND_PORT}"
+echo "[test] Database port: ${PG_PORT}"
+echo "[test] Docker project: ${COMPOSE_PROJECT_NAME}"
+
+PRECHECK_OK=1
+SERVER_SETUP_OK=1
+SERVER_RUNNING_OK=1
+FRONTEND_BUILD_OK=1
+
+run_step "Precheck: required commands" "command -v bash python3 node npm docker curl >/dev/null"
+if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+  PRECHECK_OK=0
+fi
+
+run_step "Precheck: key repository paths" "test -f \"$ROOT_DIR/scripts/client_test.sh\" && test -d \"$ROOT_DIR/client\" && test -d \"$ROOT_DIR/server\" && test -d \"$ROOT_DIR/frontend\""
+if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+  PRECHECK_OK=0
+fi
+
+if [[ "$PRECHECK_OK" -eq 1 ]]; then
+  run_step "Client: compile Python modules" "PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall client"
+  run_step "Client: import core modules" "python3 -c \"import client.config, client.network, client.ffmpeg, client.main\""
+  run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"
+
+  run_step "Docker: compose config validation" "docker compose -f \"$COMPOSE_FILE\" config -q"
+  run_step "Database: start container" "docker compose -f \"$COMPOSE_FILE\" up -d db"
+  run_step "Database: readiness wait" "for i in \$(seq 1 50); do docker compose -f \"$COMPOSE_FILE\" exec -T db pg_isready -U \"$PG_USER\" -d postgres >/dev/null 2>&1 && exit 0; sleep 2; done; echo 'Database not ready in time' >&2; exit 1"
+  run_step "Database: create test database if missing" "docker compose -f \"$COMPOSE_FILE\" exec -T db psql -U \"$PG_USER\" -d postgres -v ON_ERROR_STOP=1 -c \"CREATE DATABASE \\\"$DB_NAME\\\";\" 2>/dev/null || true"
+
+  run_step "Server: npm ci" "cd \"$ROOT_DIR/server\" && npm ci --no-fund"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    SERVER_SETUP_OK=0
+  fi
+  run_step "Server: prisma generate" "cd \"$ROOT_DIR/server\" && PRISMA_TELEMETRY_DISABLED=1 npx prisma generate"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    SERVER_SETUP_OK=0
+  fi
+  run_step "Server: build" "cd \"$ROOT_DIR/server\" && npm run build"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    SERVER_SETUP_OK=0
+  fi
+  run_step "Server: migrate deploy" "cd \"$ROOT_DIR/server\" && PRISMA_TELEMETRY_DISABLED=1 DATABASE_URL=\"$DATABASE_URL_LOCAL\" npx prisma migrate deploy"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    SERVER_SETUP_OK=0
+  fi
+  run_step "Server: node test suite" "cd \"$ROOT_DIR/server\" && DATABASE_URL=\"$DATABASE_URL_LOCAL\" npm test"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    SERVER_SETUP_OK=0
+  fi
+
+  if [[ "$SERVER_SETUP_OK" -eq 1 ]]; then
+    start_server || SERVER_RUNNING_OK=0
+    if [[ "$SERVER_RUNNING_OK" -eq 1 ]]; then
+      run_step "API: health live" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/live\" >/dev/null"
+      run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
+      run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+      run_api_submit_accepts_sample
+      run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
+
+      run_step "Frontend: npm ci" "cd \"$ROOT_DIR/frontend\" && npm ci --no-fund"
+      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+        FRONTEND_BUILD_OK=0
+      fi
+      run_step "Frontend: lint" "cd \"$ROOT_DIR/frontend\" && npm run lint"
+      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+        FRONTEND_BUILD_OK=0
+      fi
+      run_step "Frontend: build" "cd \"$ROOT_DIR/frontend\" && INTERNAL_API_BASE_URL=\"http://127.0.0.1:${SERVER_PORT}\" NEXT_PUBLIC_API_BASE_URL=\"http://127.0.0.1:${SERVER_PORT}\" npm run build"
+      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+        FRONTEND_BUILD_OK=0
+      fi
+
+      if [[ "$FRONTEND_BUILD_OK" -eq 1 ]]; then
+        start_frontend || true
+        run_step "Frontend: homepage response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+        run_step "Frontend: leaderboard response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/leaderboards\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+      else
+        mark_blocked "Frontend: start and route checks" "frontend build pipeline failed earlier"
+      fi
+    else
+      mark_blocked "API and frontend runtime checks" "server failed to start"
+    fi
+  else
+    mark_blocked "Server runtime checks" "server setup/build/test pipeline failed earlier"
+    mark_blocked "Frontend checks" "server pipeline failed, frontend integration skipped"
+  fi
+else
+  mark_blocked "All functional checks" "precheck failed"
+fi
+
+echo
+echo "==================== Test Summary ===================="
+pass_count=0
+warn_count=0
+fail_count=0
+for i in "${!STEP_NAMES[@]}"; do
+  status="${STEP_STATUS[$i]}"
+  case "$status" in
+    PASS) pass_count=$((pass_count + 1)) ;;
+    WARN) warn_count=$((warn_count + 1)) ;;
+    FAIL|BLOCKED) fail_count=$((fail_count + 1)) ;;
+  esac
+  printf '%02d. %-7s %-45s %s\n' "$((i + 1))" "$status" "${STEP_NAMES[$i]}" "${STEP_NOTES[$i]}"
+  printf '    log: %s\n' "${STEP_LOGS[$i]}"
+done
+echo "------------------------------------------------------"
+echo "PASS=$pass_count WARN=$warn_count FAIL=$fail_count"
+echo "Report directory: $RUN_DIR"
+
+if [[ "$OVERALL" -eq 2 ]]; then
+  echo "Overall result: FAIL"
+  exit 1
+fi
+if [[ "$OVERALL" -eq 1 ]]; then
+  echo "Overall result: WARN (treated as failure by policy)"
+  exit 2
+fi
+echo "Overall result: PASS"
+exit 0

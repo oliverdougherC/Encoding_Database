@@ -2,7 +2,7 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
 import express from 'express';
-import routes, { buildSubmissionPayloadHash, DEFAULT_QUERY_LIMIT, TEST_VIDEO_CATALOG } from '../dist/routes.js';
+import routes, { buildSubmissionPayloadHash, DEFAULT_QUERY_LIMIT, TEST_VIDEO_CATALOG, normalizeCpuFreqMHz } from '../dist/routes.js';
 import { prisma } from '../dist/db.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
@@ -123,6 +123,36 @@ test('POST /submit rejects invalid payloads with 400', async (t) => {
   }
 });
 
+test('POST /submit rejects non-single-pass payloads', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/submit`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        cpuModel: 'Intel Core i7-14700K',
+        ramGB: 32,
+        os: 'Windows 11',
+        codec: 'libx264',
+        preset: 'fast',
+        passes: 2,
+        fps: 120.5,
+        fileSizeBytes: 123_456_789,
+      }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.error, 'Invalid payload');
+    assert.ok(body.details?.fieldErrors?.passes, 'Expected passes field validation error');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test('buildSubmissionPayloadHash changes when telemetry changes', () => {
   const base = {
     cpuModel: 'Intel Core i7-14700K',
@@ -169,8 +199,32 @@ test('buildSubmissionPayloadHash changes when telemetry changes', () => {
     monitorDurationMs: 125000,
   };
   const variant = { ...base, cpuUtilMax: 99.1 };
-  const h1 = buildSubmissionPayloadHash(base, { contentClass: 'mixed', resolution: '1080p', passes: 1 });
-  const h2 = buildSubmissionPayloadHash(variant, { contentClass: 'mixed', resolution: '1080p', passes: 1 });
+  const h1 = buildSubmissionPayloadHash(base);
+  const h2 = buildSubmissionPayloadHash(variant);
+  assert.notEqual(h1, h2);
+});
+
+test('buildSubmissionPayloadHash changes when content dimensions change', () => {
+  const base = {
+    cpuModel: 'Intel Core i7-14700K',
+    gpuModel: 'NVIDIA RTX 4070',
+    ramGB: 32,
+    os: 'Windows 11',
+    codec: 'libx264',
+    preset: 'fast',
+    crf: 24,
+    contentClass: 'mixed',
+    resolution: '1080p',
+    passes: 1,
+    fps: 120.5,
+    vmaf: 95.3,
+    ssim: 0.98,
+    psnr: 41.2,
+    fileSizeBytes: 123_456_789,
+  };
+  const variant = { ...base, contentClass: 'action', resolution: '720p' };
+  const h1 = buildSubmissionPayloadHash(base);
+  const h2 = buildSubmissionPayloadHash(variant);
   assert.notEqual(h1, h2);
 });
 
@@ -186,4 +240,13 @@ test('TEST_VIDEO_CATALOG has no placeholders', () => {
     assert.ok(typeof row.sha256 === 'string' && !row.sha256.startsWith('placeholder_'));
     assert.ok(Number(row.sizeBytes) > 0);
   }
+});
+
+test('normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry', () => {
+  assert.equal(normalizeCpuFreqMHz(4), 4000);
+  assert.equal(normalizeCpuFreqMHz(4050), 4050);
+  assert.equal(normalizeCpuFreqMHz(4_050_000), 4050);
+  assert.equal(normalizeCpuFreqMHz(0), null);
+  assert.equal(normalizeCpuFreqMHz(-1), null);
+  assert.equal(normalizeCpuFreqMHz('not-a-number'), null);
 });

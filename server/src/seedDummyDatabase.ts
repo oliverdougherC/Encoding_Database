@@ -1,9 +1,6 @@
-import { PrismaClient, type Prisma } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
-
-const CONTENT_CLASSES = ['mixed', 'talkingHead', 'action', 'animation', 'screen', 'nature', 'gaming'] as const;
-const RESOLUTIONS = ['480p', '720p', '1080p', '1440p', '4k'] as const;
 
 const CPU_MODELS = [
   'AMD Ryzen 9 7950X',
@@ -72,7 +69,6 @@ const PRESETS = [
 ];
 
 const CRFS = [18, 22, 26, 30];
-const PASSES = [1, 2];
 
 const FPS_CODEC_FACTOR: Record<string, number> = {
   libx264: 1.0,
@@ -138,21 +134,8 @@ const FPS_PRESET_FACTOR: Record<string, number> = {
   hq: 0.88,
 };
 
-const RESOLUTION_SPEED_FACTOR: Record<string, number> = {
-  '480p': 2.0,
-  '720p': 1.45,
-  '1080p': 1.0,
-  '1440p': 0.63,
-  '4k': 0.31,
-};
-
-const BASE_SIZE_MB: Record<string, number> = {
-  '480p': 24,
-  '720p': 48,
-  '1080p': 92,
-  '1440p': 145,
-  '4k': 285,
-};
+const SINGLE_SAMPLE_SPEED_FACTOR = 1.0;
+const BASE_SAMPLE_SIZE_MB = 92;
 
 function jitter(seed: number): number {
   const x = Math.sin(seed * 12.9898) * 43758.5453123;
@@ -221,7 +204,7 @@ function gpuToPowerBase(gpuModel: string): number {
   return 130;
 }
 
-function buildRow(index: number): Prisma.BenchmarkCreateManyInput {
+function buildRow(index: number) {
   const seed = index + 1;
   const cpuModel = pickBySeed(CPU_MODELS, seed, 3);
   const gpuModel = pickBySeed(GPU_MODELS, seed, 5);
@@ -229,28 +212,23 @@ function buildRow(index: number): Prisma.BenchmarkCreateManyInput {
   const codec = CODECS[(index * 11 + 3) % CODECS.length]!;
   const preset = PRESETS[(index * 13 + 5) % PRESETS.length]!;
   const crf = CRFS[(index * 17 + 2) % CRFS.length]!;
-  const contentClass = CONTENT_CLASSES[index % CONTENT_CLASSES.length]!;
-  const resolution = RESOLUTIONS[Math.floor(index / CONTENT_CLASSES.length) % RESOLUTIONS.length]!;
-  const passes = PASSES[Math.floor(index / (CONTENT_CLASSES.length * RESOLUTIONS.length)) % PASSES.length]!;
+  const passes = 1;
 
   const gpuSpeed = gpuToSpeedFactor(gpuModel);
   const codecSpeed = FPS_CODEC_FACTOR[codec] ?? 1;
   const presetSpeed = FPS_PRESET_FACTOR[preset] ?? 1;
-  const resolutionSpeed = RESOLUTION_SPEED_FACTOR[resolution] ?? 1;
-  const passSpeed = passes === 2 ? 0.66 : 1.0;
   const crfSpeed = 1 + (crf - 24) * 0.018;
-  const baseFps = 36 * gpuSpeed * codecSpeed * presetSpeed * resolutionSpeed * passSpeed * crfSpeed;
+  const baseFps = 36 * gpuSpeed * codecSpeed * presetSpeed * SINGLE_SAMPLE_SPEED_FACTOR * crfSpeed;
   const fps = round2(clamp(baseFps * (0.9 + jitter(seed) * 0.2), 4, 420));
 
-  const qualityBase = 95 - (crf - 18) * 1.5 + (QUALITY_CODEC_BONUS[codec] ?? 0) + (passes === 2 ? 0.9 : 0) + (jitter(seed + 7) - 0.5) * 2.4;
+  const qualityBase = 95 - (crf - 18) * 1.5 + (QUALITY_CODEC_BONUS[codec] ?? 0) + (jitter(seed + 7) - 0.5) * 2.4;
   const vmaf = round2(clamp(qualityBase, 50, 99.5));
   const ssim = round4(clamp(0.81 + (vmaf - 60) * 0.0044 + (jitter(seed + 11) - 0.5) * 0.008, 0.72, 0.999));
   const psnr = round2(clamp(24 + (vmaf - 60) * 0.42 + (jitter(seed + 13) - 0.5) * 1.8, 20, 56));
 
-  const sizeBase = (BASE_SIZE_MB[resolution] ?? 100) * (SIZE_CODEC_FACTOR[codec] ?? 1);
+  const sizeBase = BASE_SAMPLE_SIZE_MB * (SIZE_CODEC_FACTOR[codec] ?? 1);
   const crfScale = 1 - (crf - 24) * 0.04;
-  const passScale = passes === 2 ? 0.92 : 1.0;
-  const sizeMb = sizeBase * crfScale * passScale * (0.9 + jitter(seed + 17) * 0.2);
+  const sizeMb = sizeBase * crfScale * (0.9 + jitter(seed + 17) * 0.2);
   const fileSizeBytes = Math.max(120_000, Math.round(sizeMb * 1024 * 1024));
 
   const samples = 3 + Math.floor(jitter(seed + 19) * 10);
@@ -270,8 +248,6 @@ function buildRow(index: number): Prisma.BenchmarkCreateManyInput {
     codec,
     preset,
     crf,
-    contentClass,
-    resolution,
     passes,
     fps,
     vmaf,
@@ -320,7 +296,7 @@ async function main(): Promise<void> {
   }
 
   const targetCount = Math.min(readCountEnv('SEED_DUMMY_BENCHMARKS_COUNT', 480), 5_000);
-  const rows: Prisma.BenchmarkCreateManyInput[] = [];
+  const rows: Array<ReturnType<typeof buildRow>> = [];
   for (let i = 0; i < targetCount; i += 1) {
     rows.push(buildRow(i));
   }

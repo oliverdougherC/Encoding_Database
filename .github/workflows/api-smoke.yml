@@ -57,9 +57,11 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$payload" | jq .
 
-      - name: API Hardening (non-destructive)
-        run: bash scripts/api_hardening_test.sh
-        env:
-          ALLOW_MUTATION_REMOTE: '0'
-
+      - name: Validation and method guard
+        run: |
+          set -euo pipefail
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/submit" -H "Content-Type: application/json" -d '{}')
+          test "$code" = "400"
+          code=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$API_BASE_URL/submit")
+          test "$code" = "405"
 

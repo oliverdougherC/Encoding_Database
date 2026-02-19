@@ -25,9 +25,6 @@ export type Benchmark = {
   vmafSamples?: number;
   ssimSamples?: number;
   psnrSamples?: number;
-  contentClass?: string | null;
-  resolution?: string | null;
-  passes?: number | null;
   gpuUtilAvg?: number | null;
   gpuPowerAvgW?: number | null;
   gpuMemPeakMB?: number | null;

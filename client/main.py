@@ -36,15 +36,10 @@ from .encoders import (
 )
 from .ffmpeg import (
     run_ffmpeg_test, encode_to_artifact, compute_vmaf_parallel,
-    compute_metrics_parallel, encode_to_artifact_twopass,
-    scale_video, RESOLUTION_DIMENSIONS, TWOPASS_BITRATE_TARGETS,
+    compute_metrics_parallel,
     EXTENDED_TELEMETRY_KEYS,
     run_single_benchmark, sha256_of_file, verify_sample_video,
     load_presets_config, get_default_sample_path,
-)
-from .test_videos import (
-    CONTENT_CLASSES, CONTENT_CLASS_LABELS, RESOLUTION_ORDER,
-    ensure_test_videos, get_video_path, available_content_classes,
 )
 from .network import submit, fetch_baseline_rows
 from .stats import should_skip_submission
@@ -58,31 +53,11 @@ from .ui import (
 
 
 def _resolve_input_for_task(
-    t: Dict[str, Any], default_input: str, batch_dir: str,
+    default_input: str,
+    default_input_hash: str,
 ) -> Tuple[str, str]:
-    """Return (effective_input_path, input_hash) for a task, scaling resolution if needed."""
-    content_class = t.get('contentClass', 'mixed')
-    resolution = t.get('resolution', '1080p')
-
-    video_path = get_video_path(str(content_class), str(resolution))
-    if not video_path:
-        video_path = get_video_path(str(content_class))
-    if not video_path:
-        video_path = default_input
-
-    target_dims = RESOLUTION_DIMENSIONS.get(str(resolution))
-    if target_dims and str(resolution) != '1080p' and video_path == default_input:
-        scaled_name = f"scaled_{resolution}.mp4"
-        scaled_path = os.path.join(batch_dir, scaled_name)
-        if not os.path.exists(scaled_path):
-            print(f"  Scaling source to {resolution}...")
-            ok = scale_video(video_path, str(resolution), scaled_path)
-            if ok:
-                video_path = scaled_path
-            else:
-                print(f"  Warning: scaling to {resolution} failed, using original", file=sys.stderr)
-
-    return video_path, sha256_of_file(video_path)
+    """Return (effective_input_path, input_hash) for a task."""
+    return default_input, default_input_hash
 
 
 def _infer_encoder_family(encoder: str) -> Optional[str]:
@@ -129,18 +104,6 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
     if not getattr(args, 'no_submit', False):
         baseline_rows = fetch_baseline_rows(base_url)
 
-    needed_cc = set()
-    needed_res = set()
-    for t in tasks:
-        cc = t.get('contentClass', 'mixed')
-        res = t.get('resolution', '1080p')
-        if cc != 'mixed':
-            needed_cc.add(cc)
-        if res != '1080p':
-            needed_res.add(res)
-    if needed_cc or needed_res:
-        ensure_test_videos(list(needed_cc) if needed_cc else None, list(needed_res) if needed_res else None)
-
     completed_count_local = 0
     processed_total = 0
     pre_batch_bg_load = measure_background_cpu_load(3.0, 0.5)
@@ -172,47 +135,28 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                         enc = t['encoder']
                         preset = t['preset']
                         crf = t.get('crf')
-                        passes = t.get('passes', 1)
-                        content_class = t.get('contentClass', 'mixed')
-                        resolution = t.get('resolution', '1080p')
                         bg_load = pre_batch_bg_load
                         name = f"{enc.replace('/', '_')}-{preset}-{str(crf) if crf is not None else 'none'}-{idx}.mp4"
                         global_index = processed_total + idx
-                        label_parts = [enc, preset, f"crf={crf}"]
-                        if content_class != 'mixed':
-                            label_parts.append(f"content={content_class}")
-                        if resolution != '1080p':
-                            label_parts.append(f"res={resolution}")
-                        if passes == 2:
-                            label_parts.append("2-pass")
-                        progress.set_description(_batch_status("Encoding", global_index, enc, preset) + f" [{', '.join(label_parts)}]")
+                        progress.set_description(_batch_status("Encoding", global_index, enc, preset) + f" [{enc}, {preset}, crf={crf}]")
                         progress.set_current_test(
                             stage="Encoding",
                             encoder=enc,
                             preset=preset,
                             crf=crf,
-                            passes=passes,
-                            contentClass=content_class,
-                            resolution=resolution,
+                            passes=1,
                             isHardware=is_hardware_encoder_name(enc),
                         )
-                        effective_input, input_hash = _resolve_input_for_task(t, input_path, batch_dir)
+                        effective_input, input_hash = _resolve_input_for_task(input_path, default_input_hash)
 
-                        if passes == 2:
-                            bitrate = TWOPASS_BITRATE_TARGETS.get(str(resolution), '6000k')
-                            info = encode_to_artifact_twopass(
-                                input_path=effective_input, encoder=enc, preset=preset,
-                                bitrate=bitrate, out_dir=batch_dir, artifact_name=name,
-                            )
-                        else:
-                            info = encode_to_artifact(
-                                input_path=effective_input,
-                                encoder=enc,
-                                preset=preset,
-                                crf=crf,
-                                out_dir=batch_dir,
-                                artifact_name=name,
-                            )
+                        info = encode_to_artifact(
+                            input_path=effective_input,
+                            encoder=enc,
+                            preset=preset,
+                            crf=crf,
+                            out_dir=batch_dir,
+                            artifact_name=name,
+                        )
 
                         info['backgroundCpuPct'] = float(bg_load)
                         info['task'] = t
@@ -224,9 +168,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             encoder=final_encoder,
                             preset=preset,
                             crf=crf,
-                            passes=passes,
-                            contentClass=content_class,
-                            resolution=resolution,
+                            passes=1,
                             isHardware=is_hardware_encoder_name(final_encoder),
                         )
                         progress.update_machine_metrics(info)
@@ -244,9 +186,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             encoder=str(info.get('encoderUsed') or info['task']['encoder']),
                             preset=str(info['task']['preset']),
                             crf=info['task'].get('crf'),
-                            passes=info['task'].get('passes', 1),
-                            contentClass=info['task'].get('contentClass', 'mixed'),
-                            resolution=info['task'].get('resolution', '1080p'),
+                            passes=1,
                             isHardware=is_hardware_encoder_name(str(info.get('encoderUsed') or info['task']['encoder'])),
                         )
                         if info.get('error') is None and float(info.get('fps', 0.0)) > 0:
@@ -281,9 +221,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             'codec': info.get('encoderUsed') or t['encoder'],
                             'preset': t['preset'],
                             'crf': t.get('crf'),
-                            'contentClass': t.get('contentClass', 'mixed'),
-                            'resolution': t.get('resolution', '1080p'),
-                            'passes': t.get('passes', 1),
+                            'passes': 1,
                             'fps': float(info.get('fps') or 0.0),
                             'fileSizeBytes': int(info.get('fileSizeBytes') or 0),
                             'runMs': int(info.get('elapsedMs') or 0),
@@ -333,8 +271,6 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             preset=str(payload['preset']),
                             crf=payload.get('crf'),
                             passes=payload.get('passes', 1),
-                            contentClass=payload.get('contentClass', 'mixed'),
-                            resolution=payload.get('resolution', '1080p'),
                             isHardware=is_hardware_encoder_name(str(payload['codec'])),
                         )
                         if skip:
@@ -537,9 +473,7 @@ def run_with_args(args: argparse.Namespace) -> int:
             payload["encoderName"] = payload.get("codec", resolved_encoder)
             payload["clientVersion"] = client_version
             payload["inputHash"] = input_hash
-            payload["contentClass"] = getattr(args, 'content_class', 'mixed') or 'mixed'
-            payload["resolution"] = getattr(args, 'resolution', '1080p') or '1080p'
-            payload["passes"] = getattr(args, 'passes', 1) or 1
+            payload["passes"] = 1
 
             size_val = payload.get("fileSizeBytes")
             try:
@@ -751,59 +685,40 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             crf_values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
             if not crf_values:
                 crf_values = [24]
-
-    bench_key = {1: "smallBenchmark", 2: "mediumBenchmark", 3: "fullBenchmark"}.get(choice, "smallBenchmark")
-    bench_cfg = presets_cfg.get(bench_key, {})
-    content_classes_list: List[str] = bench_cfg.get("contentClasses", ["mixed"])
-    resolutions_list: List[str] = bench_cfg.get("resolutions", ["1080p"])
-    passes_list: List[int] = [int(p) for p in bench_cfg.get("passes", [1])]
-    if not content_classes_list:
-        content_classes_list = ["mixed"]
-    if not resolutions_list:
-        resolutions_list = ["1080p"]
-    if not passes_list:
-        passes_list = [1]
-
     tasks: List[Dict[str, Any]] = []
-    for content_class in content_classes_list:
-        for resolution in resolutions_list:
-            for num_passes in passes_list:
-                for crf_val in crf_values:
-                    for enc in encoders:
-                        presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
-                        ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
-                        if choice == 1:
-                            if not ordered:
-                                continue
-                            mid_index = max(0, (len(ordered) - 1) // 2)
-                            picks: List[str] = []
-                            faster1 = mid_index - 1
-                            faster2 = mid_index - 2
-                            if faster2 >= 0:
-                                picks.append(ordered[faster2])
-                            if faster1 >= 0:
-                                picks.append(ordered[faster1])
-                            picks.append(ordered[mid_index])
-                            seen: Dict[str, bool] = {}
-                            final = [p for p in picks if not seen.setdefault(p, False)]
-                            for preset_label in final:
-                                tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val,
-                                              'contentClass': content_class, 'resolution': resolution, 'passes': num_passes})
-                        elif choice == 2:
-                            if len(ordered) > 0:
-                                drop_count = int(round(len(ordered) * 0.2))
-                                if drop_count >= len(ordered):
-                                    drop_count = len(ordered) - 1
-                                keep = ordered[:-drop_count] if drop_count > 0 else ordered
-                            else:
-                                keep = ordered
-                            for preset_label in keep:
-                                tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val,
-                                              'contentClass': content_class, 'resolution': resolution, 'passes': num_passes})
-                        else:
-                            for preset_label in ordered:
-                                tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val,
-                                              'contentClass': content_class, 'resolution': resolution, 'passes': num_passes})
+    for crf_val in crf_values:
+        for enc in encoders:
+            presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
+            ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
+            if choice == 1:
+                if not ordered:
+                    continue
+                mid_index = max(0, (len(ordered) - 1) // 2)
+                picks: List[str] = []
+                faster1 = mid_index - 1
+                faster2 = mid_index - 2
+                if faster2 >= 0:
+                    picks.append(ordered[faster2])
+                if faster1 >= 0:
+                    picks.append(ordered[faster1])
+                picks.append(ordered[mid_index])
+                seen: Dict[str, bool] = {}
+                final = [p for p in picks if not seen.setdefault(p, False)]
+                for preset_label in final:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
+            elif choice == 2:
+                if len(ordered) > 0:
+                    drop_count = int(round(len(ordered) * 0.2))
+                    if drop_count >= len(ordered):
+                        drop_count = len(ordered) - 1
+                    keep = ordered[:-drop_count] if drop_count > 0 else ordered
+                else:
+                    keep = ordered
+                for preset_label in keep:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
+            else:
+                for preset_label in ordered:
+                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
 
     rc = run_benchmark_batch(
         hardware=detect_hardware(),
@@ -846,9 +761,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--batch-size", type=int, default=0, help="Batch size for parallel VMAF (0=auto: cpu_count or 4)")
     p.add_argument("--use-token", action="store_true", help="Use short-lived submit token (opt-in; or set INGEST_USE_TOKENS=1)")
     p.add_argument("--pause-on-exit", action="store_true", help="On Windows, wait for Enter key after completion to keep the window open")
-    p.add_argument("--content-class", default="mixed", choices=CONTENT_CLASSES, help="Content class for the test video (default: mixed)")
-    p.add_argument("--resolution", default="1080p", choices=RESOLUTION_ORDER, help="Target resolution (default: 1080p)")
-    p.add_argument("--passes", type=int, default=1, choices=[1, 2], help="Number of encoding passes (default: 1)")
     return p
 
 
