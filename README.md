@@ -9,6 +9,52 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 
 With the changes brought by version *v1.1.0*, the project has moved well beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry.
 
+## Changelog (v1.1.0)
+
+This release documents work completed since `v1.0.2` and reflects a major platform overhaul.
+
+### Sprint completion snapshot
+
+- Sprint 1: Data Integrity (`13/13` complete)
+- Sprint 2: Core Optimizations (`17/17` complete)
+- Sprint 3: SSIM + PSNR (`15/15` complete)
+- Sprint 4: Frontend Overhaul (`12/13` complete)
+- Sprint 6: Hardware Intelligence (`9/9` complete)
+- Sprint 5: CRF single-pass policy enforcement shipped (`passes=1`), broader multi-content rollout still pending
+
+### Client (Python benchmark runner)
+
+- Reworked benchmark execution to avoid double-encoding and measure speed/size/quality from one artifact.
+- Added SSIM and PSNR computation (alongside VMAF), including parallelized quality analysis.
+- Fixed hardware encoder CRF handling (VideoToolbox, QSV, AMF, VAAPI) where CRF could previously be ignored.
+- Improved benchmark throughput with cached encoder discovery, FFmpeg progress parsing, and SHA256 caching.
+- Fixed progress accounting and baseline cache behavior (including TTL support).
+- Added hardware telemetry capture for GPU utilization/power, CPU utilization, memory peaks, and thermal throttling.
+
+### Server and data pipeline (Node/Express + Prisma)
+
+- Hardened ingest consistency with transactional aggregation, in-transaction audit inserts, and race-condition fixes.
+- Replaced fragile running averages with sum/count-based aggregates for safer recomputation and correction.
+- Expanded schema and validation for SSIM/PSNR and hardware telemetry metrics.
+- Added query-path optimizations: response caching, composite query indexing, and PostgreSQL-native stats helpers.
+- Improved ingest edge-case behavior (CORS for non-browser clients, proxy-aware rate-limit keying, bounded token store).
+
+### Frontend (Next.js analytics platform)
+
+- Overhauled large-dataset handling with virtualized benchmark tables, server-side filtering, and pagination.
+- Added lazy-loaded charts and canvas-based scatter rendering for significantly better chart performance.
+- Expanded analysis views with SSIM/PSNR histograms, SSIM vs VMAF scatter, and rate-distortion visualization.
+- Added/expanded comparison tooling, leaderboards, and encoder dashboard workflows.
+- Added hardware intelligence views: efficiency metrics, GPU utilization, power comparison, CPU heatmaps, and recommendations.
+- Fixed PL score behavior and control UX issues (median-size scoring bug, zero-weight guardrails, real-time normalization).
+
+### Database and integrity model
+
+- Tightened schema integrity with non-null `crf` defaults and normalized `gpuModel` handling.
+- Standardized canonical input hash enforcement for reproducible benchmark comparisons.
+- Extended benchmark rows with telemetry and quality sample-count fields for higher confidence analysis.
+- Enforced CRF single-pass policy (`passes=1`) across the pipeline for consistency.
+
 ## Why this project exists
 
 Encoder performance claims are often hard to compare because workloads, settings, and hardware conditions differ. Encoding Database standardizes those dimensions (as best we can) so results are more comparable and useful in real-world decision making:
