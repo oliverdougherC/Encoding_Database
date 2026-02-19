@@ -13,15 +13,6 @@ With the changes brought by version *v1.1.0*, the project has moved well beyond 
 
 This release documents work completed since `v1.0.2` and reflects a major platform overhaul.
 
-### Sprint completion snapshot
-
-- Sprint 1: Data Integrity (`13/13` complete)
-- Sprint 2: Core Optimizations (`17/17` complete)
-- Sprint 3: SSIM + PSNR (`15/15` complete)
-- Sprint 4: Frontend Overhaul (`12/13` complete)
-- Sprint 6: Hardware Intelligence (`9/9` complete)
-- Sprint 5: CRF single-pass policy enforcement shipped (`passes=1`), broader multi-content rollout still pending
-
 ### Client (Python benchmark runner)
 
 - Reworked benchmark execution to avoid double-encoding and measure speed/size/quality from one artifact.
