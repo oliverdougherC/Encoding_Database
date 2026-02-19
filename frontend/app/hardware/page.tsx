@@ -5,10 +5,11 @@ import EfficiencyChart from "../components/EfficiencyChart";
 import GpuUtilChart from "../components/GpuUtilChart";
 import PowerConsumptionChart from "../components/PowerConsumptionChart";
 import CpuUtilHeatmap from "../components/CpuUtilHeatmap";
+import LazyChart from "../components/LazyChart";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function HardwarePage() {
   let data: Benchmark[] = [];
@@ -51,13 +52,13 @@ export default async function HardwarePage() {
 
       <h2 className={styles.subheading}>Efficiency Metrics</h2>
       <div className={styles.grid}>
-        <ErrorBoundary><EfficiencyChart data={data} /></ErrorBoundary>
-        <ErrorBoundary><GpuUtilChart data={data} /></ErrorBoundary>
-        <ErrorBoundary><PowerConsumptionChart data={data} /></ErrorBoundary>
+        <LazyChart><ErrorBoundary><EfficiencyChart data={data} /></ErrorBoundary></LazyChart>
+        <LazyChart><ErrorBoundary><GpuUtilChart data={data} /></ErrorBoundary></LazyChart>
+        <LazyChart><ErrorBoundary><PowerConsumptionChart data={data} /></ErrorBoundary></LazyChart>
       </div>
 
       <div style={{ marginTop: 16 }}>
-        <ErrorBoundary><CpuUtilHeatmap data={data} /></ErrorBoundary>
+        <LazyChart><ErrorBoundary><CpuUtilHeatmap data={data} /></ErrorBoundary></LazyChart>
       </div>
     </div>
   );

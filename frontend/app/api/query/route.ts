@@ -6,21 +6,26 @@ export async function GET(request: NextRequest) {
 
   // If we have a real backend, proxy the request with all query params
   if (internal) {
-    const qs = request.nextUrl.search;
-    const url = `${internal}/query${qs}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) {
-      return NextResponse.json({ error: "Backend error" }, { status: res.status });
+    try {
+      const qs = request.nextUrl.search;
+      const url = `${internal}/query${qs}`;
+      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) {
+        return NextResponse.json({ error: "Backend error" }, { status: res.status });
+      }
+      const data = await res.json();
+      const response = NextResponse.json(data);
+      // Forward X-Total-Count header if present
+      const totalCount = res.headers.get("X-Total-Count");
+      if (totalCount) {
+        response.headers.set("X-Total-Count", totalCount);
+        response.headers.set("Access-Control-Expose-Headers", "X-Total-Count");
+      }
+      return response;
+    } catch (error) {
+      console.error("Query proxy failed:", error);
+      return NextResponse.json({ error: "Upstream query failed" }, { status: 502 });
     }
-    const data = await res.json();
-    const response = NextResponse.json(data);
-    // Forward X-Total-Count header if present
-    const totalCount = res.headers.get("X-Total-Count");
-    if (totalCount) {
-      response.headers.set("X-Total-Count", totalCount);
-      response.headers.set("Access-Control-Expose-Headers", "X-Total-Count");
-    }
-    return response;
   }
 
   if (isProd) {

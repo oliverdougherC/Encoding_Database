@@ -6,7 +6,6 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import styles from "./BenchmarksTable.module.css";
 import ComparePanel, { CompareStickyBar } from "./ComparePanel";
 import { formatCodecLabel } from "./codecLabel";
-import { fetchFilteredBenchmarks } from "../lib/fetchBenchmarksClient";
 import type { Benchmark } from "../lib/types";
 import { createPlScoreContext, scorePlBenchmarkV6 } from "../lib/plScore";
 
@@ -14,6 +13,10 @@ export type { Benchmark } from "../lib/types";
 
 const PAGE_SIZE = 50;
 const COL_WIDTHS = "4% 9% 17% 17% 13% 7% 11% 12% 7% 7%";
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
 
 // Intermediate type with per-row metrics (expensive computation, cached separately)
 type PerRowMetrics = Benchmark & {
@@ -129,49 +132,12 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
   }, []);
   const clearSelection = useCallback(() => { setSelectedIds(new Set()); setShowCompare(false); }, []);
-
-  // Server-side filtering state (F-02)
-  const [serverData, setServerData] = useState<Benchmark[] | null>(null);
-  const [serverTotal, setServerTotal] = useState(0);
   const [page, setPage] = useState(0);
-  const [fetching, setFetching] = useState(false);
 
-  // Debounced server-side fetch when filters change
-  const fetchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Reset page when any filter changes
   useEffect(() => {
-    if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current);
-    fetchDebounceRef.current = setTimeout(() => {
-      const params: Record<string, string> = {
-        limit: String(PAGE_SIZE),
-        skip: String(page * PAGE_SIZE),
-        total: "1",
-      };
-      if (cpuFilter.trim()) params.cpu = cpuFilter.trim();
-      if (gpuFilter.trim()) params.gpu = gpuFilter.trim();
-      if (codecFilter.trim()) params.codecSearch = codecFilter.trim();
-      setFetching(true);
-      fetchFilteredBenchmarks(params)
-        .then(({ data, total }) => { setServerData(data); setServerTotal(total); })
-        .catch(() => { setServerData(null); }) // fallback to client-side
-        .finally(() => setFetching(false));
-    }, 300);
-    return () => { if (fetchDebounceRef.current) clearTimeout(fetchDebounceRef.current); };
-  }, [cpuFilter, gpuFilter, codecFilter, page]);
-
-  // Reset page when filters change
-  const prevFiltersRef = useRef({ cpuFilter, gpuFilter, codecFilter });
-  useEffect(() => {
-    const prev = prevFiltersRef.current;
-    if (prev.cpuFilter !== cpuFilter || prev.gpuFilter !== gpuFilter || prev.codecFilter !== codecFilter) {
-      setPage(0);
-      prevFiltersRef.current = { cpuFilter, gpuFilter, codecFilter };
-    }
-  }, [cpuFilter, gpuFilter, codecFilter]);
-
-  // Use server data if available, otherwise fall back to initialData
-  const activeData = serverData ?? initialData;
-  const totalRows = serverData ? serverTotal : initialData.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+    setPage(0);
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, contentClassFilter, resolutionFilter, passesFilter, softwareOnly, hardwareOnly]);
 
   const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
   const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
@@ -190,11 +156,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
   // Pre-compute hardware encoder classification once per row to avoid repeated regex tests
   const dataWithHwClass = useMemo(() => {
-    return activeData.map(row => {
+    return initialData.map(row => {
       const encLower = (row.encoderName ?? row.codec ?? "").toLowerCase();
       return { ...row, _isHardware: isHardwareEncoder(encLower) };
     });
-  }, [activeData]);
+  }, [initialData]);
 
   const filtered = useMemo(() => {
     const cpu = cpuFilter.trim().toLowerCase();
@@ -238,15 +204,21 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
   // Stage 2: recompute final PL score when weights change
   const withScores = useMemo((): EnrichedBenchmark[] => {
+    const weightSum = Math.max(0.0001, wQuality + wSize + wSpeed);
+    const normalizedQuality = wQuality / weightSum;
+    const normalizedSize = wSize / weightSum;
+    const normalizedSpeed = wSpeed / weightSum;
     return perRowMetrics.map((row): EnrichedBenchmark => {
-      const scored = scorePlBenchmarkV6(row, plContext, {
-        quality: wQuality,
-        size: wSize,
-        speed: wSpeed,
-      });
-      return { ...row, _plScore: scored.total };
+      const core = clamp(
+        normalizedQuality * row._q + normalizedSize * row._s + normalizedSpeed * row._sp,
+        0,
+        100,
+      );
+      const confidenceAdj = (row._confidence - 0.7) * 6;
+      const total = clamp(core * 0.78 + row._eff * 0.14 + row._rel * 0.08 + confidenceAdj, 0, 100);
+      return { ...row, _plScore: total };
     });
-  }, [perRowMetrics, plContext, wQuality, wSize, wSpeed]);
+  }, [perRowMetrics, wQuality, wSize, wSpeed]);
 
   const sorted = useMemo((): EnrichedBenchmark[] => {
     const data = [...withScores];
@@ -268,6 +240,36 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
     return data;
   }, [withScores, sortKey, sortDir]);
+
+  // Keep selections in-sync with currently visible filtered dataset.
+  useEffect(() => {
+    const allowed = new Set(sorted.map(row => row.id));
+    setSelectedIds(prev => {
+      let changed = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (allowed.has(id)) {
+          next.add(id);
+        } else {
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [sorted]);
+
+  const totalRows = sorted.length;
+  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+  useEffect(() => {
+    if (page >= totalPages) {
+      setPage(Math.max(0, totalPages - 1));
+    }
+  }, [page, totalPages]);
+
+  const pagedRows = useMemo(() => {
+    const start = page * PAGE_SIZE;
+    return sorted.slice(start, start + PAGE_SIZE);
+  }, [sorted, page]);
 
   const compareRows = useMemo(() => sorted.filter(r => selectedIds.has(r.id)), [sorted, selectedIds]);
 
@@ -384,7 +386,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       </div>
 
       <VirtualTable
-        sorted={sorted}
+        rows={pagedRows}
         selectedIds={selectedIds}
         toggleSelect={toggleSelect}
         setShowDetailId={setShowDetailId}
@@ -392,12 +394,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         sortKey={sortKey}
         sortDir={sortDir}
         setSort={setSort}
-        fetching={fetching}
       />
 
       <div className={styles.paginationBar}>
         <span className="subtle">
-          Showing {sorted.length === 0 ? 0 : page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalRows)} of {totalRows}
+          Showing {totalRows === 0 ? 0 : page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalRows)} of {totalRows}
         </span>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
           <button className="btn" style={{ padding: "6px 10px" }} disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</button>
@@ -437,9 +438,9 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   );
 }
 
-function VirtualTable({ sorted, selectedIds, toggleSelect, setShowDetailId, setShowFfmpegId, sortKey, sortDir, setSort, fetching }: { sorted: EnrichedBenchmark[]; selectedIds: Set<string>; toggleSelect: (id: string) => void; setShowDetailId: (id: string | null) => void; setShowFfmpegId: (id: string | null) => void; sortKey: SortKey; sortDir: "asc" | "desc"; setSort: (key: SortKey) => void; fetching: boolean }) {
+function VirtualTable({ rows, selectedIds, toggleSelect, setShowDetailId, setShowFfmpegId, sortKey, sortDir, setSort }: { rows: EnrichedBenchmark[]; selectedIds: Set<string>; toggleSelect: (id: string) => void; setShowDetailId: (id: string | null) => void; setShowFfmpegId: (id: string | null) => void; sortKey: SortKey; sortDir: "asc" | "desc"; setSort: (key: SortKey) => void }) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const virtualizer = useVirtualizer({ count: sorted.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
+  const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
   return (
     <div className={`card ${styles.cardOverflow}`}>
       <div className={styles.virtualHeader} role="row" style={{ display: "grid", gridTemplateColumns: COL_WIDTHS }}>
@@ -456,9 +457,8 @@ function VirtualTable({ sorted, selectedIds, toggleSelect, setShowDetailId, setS
       </div>
       <div ref={parentRef} className={styles.virtualScrollContainer} role="table">
         <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
-          {fetching && sorted.length === 0 && <div style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>Loading...</div>}
           {virtualizer.getVirtualItems().map(vr => {
-            const row = sorted[vr.index];
+            const row = rows[vr.index];
             return (
               <div key={row.id} role="row" className={styles.virtualRow} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: vr.size, transform: `translateY(${vr.start}px)`, display: "grid", gridTemplateColumns: COL_WIDTHS, background: selectedIds.has(row.id) ? "color-mix(in srgb, var(--highlight) 20%, var(--surface))" : undefined }}>
                 <div role="cell" className={`td ${styles.textCenter}`} style={{ padding: "8px 4px" }}><input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} disabled={!selectedIds.has(row.id) && selectedIds.size >= 6} aria-label="Select for comparison" style={{ accentColor: "var(--accent)" }} /></div>
@@ -474,7 +474,7 @@ function VirtualTable({ sorted, selectedIds, toggleSelect, setShowDetailId, setS
               </div>
             );
           })}
-          {sorted.length === 0 && !fetching && <div style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>No results for current filters.</div>}
+          {rows.length === 0 && <div style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>No results for current filters.</div>}
         </div>
       </div>
     </div>
@@ -483,8 +483,16 @@ function VirtualTable({ sorted, selectedIds, toggleSelect, setShowDetailId, setS
 
 function ThDiv({ label, onClick, active, dir, align }: { label: string; onClick: () => void; active: boolean; dir: "asc" | "desc"; align?: "left" | "right" }) {
   return (
-    <div onClick={onClick} className={`th ${styles.sortable}`} role="columnheader" style={{ textAlign: align || "left", cursor: "pointer" }} title="Click to sort" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
-      {label}{active && <span aria-hidden="true" className={styles.sortIndicator}>{dir === "asc" ? "\u25B2" : "\u25BC"}</span>}
+    <div className={`th ${styles.sortable}`} role="columnheader" style={{ textAlign: align || "left" }} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+      <button
+        type="button"
+        onClick={onClick}
+        className={styles.sortButton}
+        title="Sort column"
+        aria-label={`Sort by ${label}`}
+      >
+        {label}{active && <span aria-hidden="true" className={styles.sortIndicator}>{dir === "asc" ? "\u25B2" : "\u25BC"}</span>}
+      </button>
     </div>
   );
 }
@@ -639,6 +647,15 @@ function hasShellMetachars(s: string): boolean {
   return /[;&|`$(){}[\]<>\\!"'*?#~]/.test(s);
 }
 
+function shellQuotePosix(value: string): string {
+  if (value.length === 0) return "''";
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}
+
+function isSafeCliToken(value: string): boolean {
+  return /^[a-z0-9_:+.-]+$/i.test(value);
+}
+
 function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => void }) {
   const [inputPath, setInputPath] = useState<string>("input.mp4");
   const [outputPath, setOutputPath] = useState<string>("output.mp4");
@@ -651,31 +668,35 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
   }, [copied]);
 
   // Check for potentially dangerous characters in paths
+  const encoderRaw = (row.encoderName ?? row.codec ?? "").trim();
+  const presetRaw = (row.preset ?? "").trim();
+  const safeEncoder = isSafeCliToken(encoderRaw) ? encoderRaw : "";
+  const safePreset = isSafeCliToken(presetRaw) ? presetRaw : "";
   const pathWarning = hasShellMetachars(inputPath) || hasShellMetachars(outputPath);
+  const profileWarning = (!safeEncoder && encoderRaw.length > 0) || (!safePreset && presetRaw.length > 0);
 
   const command = useMemo(() => {
-    const encoder = (row.encoderName ?? row.codec ?? "").trim();
     const safeInput = inputPath || "input.mp4";
     const safeOutput = outputPath || "output.mp4";
 
     const parts: string[] = [
       "ffmpeg",
       "-i",
-      safeInput,
+      shellQuotePosix(safeInput),
     ];
-    if (encoder) {
-      parts.push("-c:v", encoder);
+    if (safeEncoder) {
+      parts.push("-c:v", shellQuotePosix(safeEncoder));
     }
     if (row.crf != null) {
       parts.push("-crf", String(row.crf));
     }
-    if (row.preset) {
-      parts.push("-preset", row.preset);
+    if (safePreset) {
+      parts.push("-preset", shellQuotePosix(safePreset));
     }
     parts.push("-c:a", "copy");
-    parts.push(safeOutput);
+    parts.push(shellQuotePosix(safeOutput));
     return parts.join(" ");
-  }, [row, inputPath, outputPath]);
+  }, [row.crf, inputPath, outputPath, safeEncoder, safePreset]);
 
   const copy = async () => {
     try {
@@ -717,6 +738,11 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
           {pathWarning && (
             <div className={styles.pathWarning}>
               Warning: Path contains special characters. Review the command carefully before running.
+            </div>
+          )}
+          {profileWarning && (
+            <div className={styles.pathWarning}>
+              Warning: Encoder or preset contained unsafe characters and was omitted from the generated command.
             </div>
           )}
           <div className={styles.kbdWrapper}>

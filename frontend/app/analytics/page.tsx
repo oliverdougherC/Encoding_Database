@@ -1,41 +1,20 @@
-import { headers } from "next/headers";
 import type { Benchmark } from "../components/BenchmarksTable";
 import FpsByCodecChart from "../components/FpsByCodecChart";
 import VmafHistogram from "../components/VmafHistogram";
 import ScatterFpsSize from "../components/ScatterFpsSize";
 import GroupedSizeByPreset from "../components/GroupedSizeByPreset";
+import SsimHistogram from "../components/SsimHistogram";
+import PsnrHistogram from "../components/PsnrHistogram";
+import ScatterSsimVmaf from "../components/ScatterSsimVmaf";
+import RateDistortionChart from "../components/RateDistortionChart";
+import ResolutionComparisonChart from "../components/ResolutionComparisonChart";
+import ContentRadarChart from "../components/ContentRadarChart";
+import PassSpeedComparison from "../components/PassSpeedComparison";
+import LazyChart from "../components/LazyChart";
+import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
-
-async function fetchBenchmarks(): Promise<Benchmark[]> {
-  const internal = process.env.INTERNAL_API_BASE_URL;
-
-  let host = "localhost:3000";
-  let proto = "http";
-  try {
-    const h = await headers();
-    host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
-    proto = h.get("x-forwarded-proto") || "http";
-  } catch {
-    // Headers unavailable, use defaults
-  }
-
-  const origin = `${proto}://${host}`;
-  const primaryUrl = internal ? `${internal}/query` : `${origin}/api/query`;
-  try {
-    const res = await fetch(primaryUrl, { signal: AbortSignal.timeout(10000) });
-    if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-    return res.json();
-  } catch (err) {
-    if (internal) {
-      const res = await fetch(`${origin}/api/query`, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.status}`);
-      return res.json();
-    }
-    throw err;
-  }
-}
+export const revalidate = 60;
 
 export default async function AnalyticsPage() {
   let data: Benchmark[] = [];
@@ -61,10 +40,17 @@ export default async function AnalyticsPage() {
     <div className={styles.container}>
       <h1 className={styles.heading}>Analytics</h1>
       <div className={styles.grid}>
-        <FpsByCodecChart data={data} />
-        <VmafHistogram data={data} />
-        <ScatterFpsSize data={data} />
-        <GroupedSizeByPreset data={data} />
+        <LazyChart><FpsByCodecChart data={data} /></LazyChart>
+        <LazyChart><VmafHistogram data={data} /></LazyChart>
+        <LazyChart><SsimHistogram data={data} /></LazyChart>
+        <LazyChart><PsnrHistogram data={data} /></LazyChart>
+        <LazyChart><ScatterFpsSize data={data} /></LazyChart>
+        <LazyChart><ScatterSsimVmaf data={data} /></LazyChart>
+        <LazyChart><GroupedSizeByPreset data={data} /></LazyChart>
+        <LazyChart><PassSpeedComparison data={data} /></LazyChart>
+        <LazyChart><RateDistortionChart data={data} /></LazyChart>
+        <LazyChart><ResolutionComparisonChart data={data} /></LazyChart>
+        <LazyChart><ContentRadarChart data={data} /></LazyChart>
       </div>
     </div>
   );

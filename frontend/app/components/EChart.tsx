@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts/core";
+import type { EChartsCoreOption } from "echarts/core";
 import { BarChart, LineChart, ScatterChart, RadarChart, HeatmapChart } from "echarts/charts";
 import {
   GridComponent,
@@ -28,9 +29,7 @@ echarts.use([
   CanvasRenderer,
 ]);
 
-// Use a permissive type — ECharts validates the shape at runtime
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type EChartsOption = Record<string, any>;
+type EChartsOption = EChartsCoreOption;
 
 interface Props {
   option: EChartsOption;

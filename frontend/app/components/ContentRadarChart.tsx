@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 const CONTENT_CLASSES = ["mixed", "talkingHead", "action", "animation", "screen", "nature", "gaming"] as const;
@@ -68,11 +69,10 @@ export default function ContentRadarChart({ data, title = "Encoder Quality by Co
     return CONTENT_CLASSES.filter((cc) => seen.has(cc));
   }, [data]);
 
-  // Color is stable: keyed to index in options, not selectedData
-  const colorOf = (codec: string) => {
-    const idx = options.findIndex((d) => d.codec === codec);
-    return COLORS[(idx >= 0 ? idx : 0) % COLORS.length];
-  };
+  const colorByCodec = useMemo(
+    () => new Map(options.map((entry, i) => [entry.codec, COLORS[i % COLORS.length]])),
+    [options],
+  );
 
   const selectedData = options.filter((d) => selected.has(d.codec));
 
@@ -87,7 +87,7 @@ export default function ContentRadarChart({ data, title = "Encoder Quality by Co
         const lines = activeClasses
           .map((cc, i) => `${CONTENT_LABELS[cc] ?? cc}: <b>${(params.value[i] || 0).toFixed(1)}</b>`)
           .join("<br/>");
-        return `<b>${params.name}</b><br/>${lines}`;
+        return `<b>${escapeHtml(params.name)}</b><br/>${lines}`;
       },
     },
     radar: {
@@ -105,16 +105,15 @@ export default function ContentRadarChart({ data, title = "Encoder Quality by Co
         data: selectedData.map((cd) => ({
           name: cd.codec,
           value: activeClasses.map((cc) => cd.scores[cc] || 0),
-          lineStyle: { color: colorOf(cd.codec), width: 2 },
-          areaStyle: { color: colorOf(cd.codec), opacity: 0.12 },
-          itemStyle: { color: colorOf(cd.codec) },
+          lineStyle: { color: colorByCodec.get(cd.codec) ?? COLORS[0], width: 2 },
+          areaStyle: { color: colorByCodec.get(cd.codec) ?? COLORS[0], opacity: 0.12 },
+          itemStyle: { color: colorByCodec.get(cd.codec) ?? COLORS[0] },
           symbol: "circle",
           symbolSize: 4,
         })),
       },
     ],
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [selectedData, activeClasses, t]);
+  }), [selectedData, activeClasses, colorByCodec, t]);
 
   if (allCodecs.length === 0 || activeClasses.length < 3) return null;
 
@@ -134,7 +133,7 @@ export default function ContentRadarChart({ data, title = "Encoder Quality by Co
         {options.map((entry) => {
           const isOn = selected.has(entry.codec);
           const disabled = !isOn && selected.size >= MAX_SELECTED;
-          const color = colorOf(entry.codec);
+          const color = colorByCodec.get(entry.codec) ?? COLORS[0];
           return (
             <button
               key={entry.codec}

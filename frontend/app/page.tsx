@@ -5,7 +5,7 @@ import StatsCards from "./components/StatsCards";
 import { fetchBenchmarks } from "./lib/fetchBenchmarks";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function Home() {
   let data: Benchmark[] = [];

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 const HEATMAP_KEY_SEP = "\u241F";
@@ -50,7 +51,9 @@ export default function CpuUtilHeatmap({ data, title = "CPU Utilization by Encod
       textStyle: { color: t.fg, fontSize: 12 },
       formatter: (params: { value: [number, number, number, number] }) => {
         const [pi, ci, util, count] = params.value;
-        return `<b>${codecs[ci]} / ${presets[pi]}</b><br/>CPU: <b>${util.toFixed(1)}%</b><br/>${count} run${count === 1 ? "" : "s"}`;
+        const codec = escapeHtml(codecs[ci] ?? "-");
+        const preset = escapeHtml(presets[pi] ?? "-");
+        return `<b>${codec} / ${preset}</b><br/>CPU: <b>${util.toFixed(1)}%</b><br/>${count} run${count === 1 ? "" : "s"}`;
       },
     },
     grid: { left: 100, right: 100, top: 12, bottom: 40, containLabel: false },

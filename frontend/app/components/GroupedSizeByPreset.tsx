@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 const CHART_COLORS = ["#6C8FD5", "#52b788", "#9693CC", "#d4a843", "#e07a5f", "#8aabea"];
@@ -52,7 +53,7 @@ export default function GroupedSizeByPreset({ data }: { data: Benchmark[] }) {
       formatter: (params: { seriesName: string; value: number }[]) =>
         params
           .filter((p) => p.value > 0)
-          .map((p) => `${p.seriesName}: <b>${p.value.toFixed(2)} MB</b>`)
+          .map((p) => `${escapeHtml(p.seriesName)}: <b>${p.value.toFixed(2)} MB</b>`)
           .join("<br/>"),
     },
     legend: {

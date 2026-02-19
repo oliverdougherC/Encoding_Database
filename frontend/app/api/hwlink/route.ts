@@ -13,8 +13,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect("https://www.techpowerup.com/");
     }
 
-    const decoded = decodeURIComponent(q);
-    const encoded = encodeURIComponent(decoded);
+    const encoded = encodeURIComponent(q);
 
     const base = "https://www.techpowerup.com";
     const searchUrl = kind === "cpu"
@@ -25,6 +24,7 @@ export async function GET(req: NextRequest) {
       const res = await fetch(searchUrl, {
         headers: { "user-agent": "Mozilla/5.0" },
         cache: "no-store",
+        signal: AbortSignal.timeout(8000),
       });
 
       if (!res.ok) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
           .replace(/[^a-z0-9+.\- ]+/g, " ")
           .replace(/\s+/g, " ")
           .trim();
-      const target = norm(decoded);
+      const target = norm(q);
 
       let idx = 0;
       for (const m of matches) {

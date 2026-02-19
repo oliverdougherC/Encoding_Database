@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Benchmark } from "../components/BenchmarksTable";
 import { CODEC_COLORS, codecColorKey } from "../lib/chartColors";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "../components/EChart";
 import styles from "./page.module.css";
 
@@ -89,7 +90,7 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
         textStyle: { color: t.fg, fontSize: 12 },
         formatter: (params: { name: string; value: number[] }) => {
           const lines = AXES.map((ax, i) => `${ax}: <b>${(params.value[i] || 0).toFixed(1)}</b>`).join("<br/>");
-          return `<b>${params.name}</b><br/>${lines}`;
+          return `<b>${escapeHtml(params.name)}</b><br/>${lines}`;
         },
       },
       legend: {

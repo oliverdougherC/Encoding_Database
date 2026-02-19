@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { CODEC_COLORS, codecColorKey } from "../lib/chartColors";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 import styles from "./ScatterFpsSize.module.css";
 
@@ -45,7 +46,7 @@ export default function ScatterSsimVmaf({ data }: { data: Benchmark[] }) {
       borderColor: t.border,
       textStyle: { color: t.fg, fontSize: 12 },
       formatter: (params: { value: [number, number]; data: { label: string } }) =>
-        `<b>${params.data.label}</b><br/>SSIM: ${params.value[0].toFixed(4)}<br/>VMAF: ${params.value[1].toFixed(1)}`,
+        `<b>${escapeHtml(params.data.label)}</b><br/>SSIM: ${params.value[0].toFixed(4)}<br/>VMAF: ${params.value[1].toFixed(1)}`,
     },
     legend: {
       data: series.map((s) => s.name),

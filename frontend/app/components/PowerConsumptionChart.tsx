@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 const CHART_COLORS = ["#6C8FD5", "#52b788", "#9693CC", "#d4a843", "#e07a5f", "#8aabea"];
@@ -37,7 +38,7 @@ export default function PowerConsumptionChart({ data, title = "Average GPU Power
       borderColor: t.border,
       textStyle: { color: t.fg },
       formatter: (params: { name: string; value: number }[]) =>
-        `${params[0].name}<br/><b>${params[0].value.toFixed(1)} W</b>`,
+        `${escapeHtml(params[0].name)}<br/><b>${params[0].value.toFixed(1)} W</b>`,
     },
     grid: { left: 52, right: 12, top: 12, bottom: bars.length > 4 ? 72 : 48, containLabel: false },
     xAxis: {

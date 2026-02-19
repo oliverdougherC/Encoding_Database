@@ -2,7 +2,7 @@ import type { Benchmark } from "../components/BenchmarksTable";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import EncoderDashboardClient from "./EncoderDashboardClient";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function EncoderComparisonPage() {
   let data: Benchmark[] = [];

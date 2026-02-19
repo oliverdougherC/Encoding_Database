@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 const RESOLUTION_ORDER = ["480p", "720p", "1080p", "1440p", "4k"];
@@ -76,7 +77,7 @@ export default function ResolutionComparisonChart({ data, title = "FPS by Resolu
       formatter: (params: { seriesName: string; value: number }[]) =>
         params
           .filter((p) => p.value > 0)
-          .map((p) => `${p.seriesName}: <b>${p.value.toFixed(1)} FPS</b>`)
+          .map((p) => `${escapeHtml(p.seriesName)}: <b>${p.value.toFixed(1)} FPS</b>`)
           .join("<br/>"),
     },
     grid: { left: 52, right: 12, top: 8, bottom: 32, containLabel: false },

@@ -4,7 +4,7 @@ import LeaderboardTable from "../components/LeaderboardTable";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import styles from "./page.module.css";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 type GroupAgg = {
   key: string;

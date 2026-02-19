@@ -17,6 +17,12 @@ type Priority = "speed" | "quality" | "efficiency" | "balanced";
 
 const PROFILE_KEY_SEP = "\u241F"; // unit separator — safe for CPU/GPU model names
 
+type NormalizationMaxima = {
+  maxFps: number;
+  maxVmaf: number;
+  maxEff: number;
+};
+
 export default function HardwareRecommendation({ data }: { data: Benchmark[] }) {
   const [codec, setCodec] = useState("");
   const [priority, setPriority] = useState<Priority>("balanced");
@@ -48,24 +54,27 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
       results.push({ cpuModel, gpuModel, avgFps, avgVmaf, avgPower, fpsPerWatt, samples: p.fps.length });
     }
 
-    results.sort((a, b) => {
-      switch (priority) {
-        case "speed":
-          return b.avgFps - a.avgFps;
-        case "quality":
-          return (b.avgVmaf ?? 0) - (a.avgVmaf ?? 0);
-        case "efficiency":
-          return (b.fpsPerWatt ?? 0) - (a.fpsPerWatt ?? 0);
-        case "balanced":
-        default: {
-          const scoreA = normalizedScore(a, results);
-          const scoreB = normalizedScore(b, results);
-          return scoreB - scoreA;
-        }
-      }
-    });
+    if (priority === "speed") {
+      results.sort((a, b) => b.avgFps - a.avgFps);
+      return results.slice(0, 20);
+    }
 
-    return results.slice(0, 20);
+    if (priority === "quality") {
+      results.sort((a, b) => (b.avgVmaf ?? 0) - (a.avgVmaf ?? 0));
+      return results.slice(0, 20);
+    }
+
+    if (priority === "efficiency") {
+      results.sort((a, b) => (b.fpsPerWatt ?? 0) - (a.fpsPerWatt ?? 0));
+      return results.slice(0, 20);
+    }
+
+    const maxima = buildNormalizationMaxima(results);
+    return results
+      .map((hw) => ({ hw, score: normalizedScore(hw, maxima) }))
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 20)
+      .map((entry) => entry.hw);
   }, [data, codec, priority]);
 
   return (
@@ -131,15 +140,21 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
   );
 }
 
-function normalizedScore(hw: HardwareProfile, all: HardwareProfile[]): number {
-  let maxFps = 1, maxVmaf = 1, maxEff = 1;
-  for (const h of all) {
-    if (h.avgFps > maxFps) maxFps = h.avgFps;
-    if (h.avgVmaf != null && h.avgVmaf > maxVmaf) maxVmaf = h.avgVmaf;
-    if (h.fpsPerWatt != null && h.fpsPerWatt > maxEff) maxEff = h.fpsPerWatt;
+function buildNormalizationMaxima(all: HardwareProfile[]): NormalizationMaxima {
+  let maxFps = 1;
+  let maxVmaf = 1;
+  let maxEff = 1;
+  for (const hw of all) {
+    if (hw.avgFps > maxFps) maxFps = hw.avgFps;
+    if (hw.avgVmaf != null && hw.avgVmaf > maxVmaf) maxVmaf = hw.avgVmaf;
+    if (hw.fpsPerWatt != null && hw.fpsPerWatt > maxEff) maxEff = hw.fpsPerWatt;
   }
-  const speedScore = hw.avgFps / maxFps;
-  const qualityScore = hw.avgVmaf != null ? hw.avgVmaf / maxVmaf : 0.5;
-  const effScore = hw.fpsPerWatt != null ? hw.fpsPerWatt / maxEff : 0.3;
+  return { maxFps, maxVmaf, maxEff };
+}
+
+function normalizedScore(hw: HardwareProfile, maxima: NormalizationMaxima): number {
+  const speedScore = hw.avgFps / maxima.maxFps;
+  const qualityScore = hw.avgVmaf != null ? hw.avgVmaf / maxima.maxVmaf : 0.5;
+  const effScore = hw.fpsPerWatt != null ? hw.fpsPerWatt / maxima.maxEff : 0.3;
   return 0.4 * speedScore + 0.35 * qualityScore + 0.25 * effScore;
 }

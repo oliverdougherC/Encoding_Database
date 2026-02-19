@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { CODEC_COLORS, codecColorKey } from "../lib/chartColors";
 import { useChartTheme } from "../lib/useChartTheme";
+import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
 
 type QualityMetric = "vmaf" | "ssim" | "psnr";
@@ -63,7 +64,7 @@ export default function RateDistortionChart({ data }: { data: Benchmark[] }) {
       formatter: (params: { seriesName: string; value: [number, number] }[]) =>
         params
           .filter((p) => p.value[1] != null)
-          .map((p) => `${shortName(p.seriesName)}: <b>${metric === "ssim" ? p.value[1].toFixed(4) : p.value[1].toFixed(2)}</b>`)
+          .map((p) => `${escapeHtml(shortName(p.seriesName))}: <b>${metric === "ssim" ? p.value[1].toFixed(4) : p.value[1].toFixed(2)}</b>`)
           .join("<br/>") + `<br/><span style="color:${t.muted};font-size:10px">${params[0]?.value[0]?.toFixed(2)} MB</span>`,
     },
     grid: { left: 52, right: 12, top: 12, bottom: 32, containLabel: false },

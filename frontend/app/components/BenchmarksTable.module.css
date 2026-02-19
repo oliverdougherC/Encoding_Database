@@ -75,8 +75,24 @@
 }
 
 .sortable {
-  cursor: pointer;
   user-select: none;
+}
+
+.sortButton {
+  width: 100%;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sortButton:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .sortIndicator {
