@@ -1,0 +1,148 @@
+[CmdletBinding()]
+param()
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
+
+function Write-Log {
+    param([string]$Message)
+    Write-Host "[Windows] $Message"
+}
+
+function Fail {
+    param([string]$Message)
+    throw "[Windows] ERROR: $Message"
+}
+
+function Ensure-Exists {
+    param(
+        [string]$Path,
+        [string]$Description
+    )
+    if (-not (Test-Path -LiteralPath $Path)) {
+        Fail "Missing $Description at $Path"
+    }
+}
+
+function Resolve-PythonCommand {
+    $candidates = @(
+        @("py", "-3"),
+        @("py.exe", "-3"),
+        @("python.exe"),
+        @("python")
+    )
+
+    foreach ($candidate in $candidates) {
+        $exe = $candidate[0]
+        if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) {
+            continue
+        }
+        try {
+            $args = @()
+            if ($candidate.Count -gt 1) {
+                $args += $candidate[1..($candidate.Count - 1)]
+            }
+            $args += "--version"
+            & $exe @args *> $null
+            if ($LASTEXITCODE -eq 0) {
+                return $candidate
+            }
+        } catch {
+            continue
+        }
+    }
+
+    Fail "No Windows Python interpreter found. Expected py/py.exe/python.exe."
+}
+
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$rootDir = (Resolve-Path -LiteralPath (Join-Path $scriptDir "..")).Path
+$clientDir = Join-Path $rootDir "client"
+$binDir = Join-Path $clientDir "bin\win"
+$appName = "encodingdb-client-windows"
+$entrypoint = Join-Path $clientDir "_pyinstaller_entry.py"
+$buildRoot = Join-Path $rootDir ".build\clients\windows"
+$legacyDistDir = Join-Path $clientDir "dist\windows"
+$pyiDistDir = Join-Path $buildRoot "dist"
+$pyiWorkDir = Join-Path $buildRoot "work"
+$pyiSpecDir = Join-Path $buildRoot "spec"
+$outputPath = Join-Path $rootDir "$appName.exe"
+$logFile = Join-Path $buildRoot "build.log"
+
+Ensure-Exists -Path (Join-Path $binDir "ffmpeg.exe") -Description "ffmpeg.exe"
+Ensure-Exists -Path (Join-Path $binDir "ffprobe.exe") -Description "ffprobe.exe"
+Ensure-Exists -Path (Join-Path $rootDir "sample.mp4") -Description "sample.mp4"
+Ensure-Exists -Path (Join-Path $clientDir "presets.json") -Description "presets.json"
+Ensure-Exists -Path $entrypoint -Description "PyInstaller entrypoint"
+
+Write-Log "Preparing build directories..."
+if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
+if (Test-Path -LiteralPath $legacyDistDir) { Remove-Item -LiteralPath $legacyDistDir -Recurse -Force }
+if (Test-Path -LiteralPath $outputPath) { Remove-Item -LiteralPath $outputPath -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "dist\$appName.exe")) { Remove-Item -LiteralPath (Join-Path $rootDir "dist\$appName.exe") -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "build\$appName")) { Remove-Item -LiteralPath (Join-Path $rootDir "build\$appName") -Recurse -Force }
+
+New-Item -ItemType Directory -Path $pyiDistDir -Force | Out-Null
+New-Item -ItemType Directory -Path $pyiWorkDir -Force | Out-Null
+New-Item -ItemType Directory -Path $pyiSpecDir -Force | Out-Null
+
+$pythonCmd = Resolve-PythonCommand
+$pythonExe = $pythonCmd[0]
+$pythonPrefixArgs = @()
+if ($pythonCmd.Count -gt 1) {
+    $pythonPrefixArgs = $pythonCmd[1..($pythonCmd.Count - 1)]
+}
+
+Write-Log ("Using Python command: " + ($pythonCmd -join " "))
+
+$checkArgs = @($pythonPrefixArgs + @("-m", "PyInstaller", "--version"))
+& $pythonExe @checkArgs *> $null
+if ($LASTEXITCODE -ne 0) {
+    Fail "PyInstaller is not installed for this interpreter. Install with: $($pythonCmd -join ' ') -m pip install pyinstaller"
+}
+
+$pyinstallerArgs = @(
+    $pythonPrefixArgs +
+    @(
+        "-m", "PyInstaller",
+        "--clean",
+        "--onefile",
+        "--name", $appName,
+        "--distpath", $pyiDistDir,
+        "--workpath", $pyiWorkDir,
+        "--specpath", $pyiSpecDir,
+        "--paths", $rootDir,
+        "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
+        "--add-data", "client/bin/win/ffprobe.exe;bin/win",
+        "--add-data", "sample.mp4;.",
+        "--add-data", "client/presets.json;.",
+        $entrypoint
+    )
+)
+
+Write-Log "Running PyInstaller..."
+Push-Location -LiteralPath $rootDir
+try {
+    & $pythonExe @pyinstallerArgs *>&1 | Tee-Object -FilePath $logFile -Append
+    if ($LASTEXITCODE -ne 0) {
+        Fail "PyInstaller failed. See build log: $logFile"
+    }
+} finally {
+    Pop-Location
+}
+
+$builtExe = Join-Path $pyiDistDir "$appName.exe"
+if (-not (Test-Path -LiteralPath $builtExe)) {
+    Fail "Build output not found at $builtExe"
+}
+
+Write-Log "Placing executable in repository root..."
+Move-Item -LiteralPath $builtExe -Destination $outputPath -Force
+
+Write-Log "Build complete: $outputPath"
+Write-Log "Build log saved to: $logFile"
+Write-Log "Hidden build artifacts: $buildRoot"
+
+if ($env:PAUSE_ON_EXIT -eq "1") {
+    [void](Read-Host "Press Enter to close")
+}

@@ -67,7 +67,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 - `server/`: Express API, Zod validation, Prisma models/migrations, ingest + query pipeline.
 - `frontend/`: Next.js 15 app with benchmark table, analytics, leaderboards, and hardware pages.
 - `nginx/`: reverse-proxy configuration for production.
-- `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.sh`).
+- `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.ps1`).
 - `sample.mp4`: canonical baseline clip used by the benchmark flow.
 
 ## Current platform capabilities
@@ -249,10 +249,10 @@ macOS:
 ./scripts/build_macos_client.sh
 ```
 
-Windows (Git Bash/MSYS/WSL with Windows Python available):
+Windows (PowerShell):
 
-```bash
-./scripts/build_windows_client.sh
+```powershell
+.\scripts\build_windows_client.ps1
 ```
 
 Both packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
