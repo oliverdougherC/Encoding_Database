@@ -95,29 +95,26 @@ if ($pythonCmd.Count -gt 1) {
 
 Write-Log ("Using Python command: " + ($pythonCmd -join " "))
 
-$checkArgs = @($pythonPrefixArgs + @("-m", "PyInstaller", "--version"))
+$checkArgs = $pythonPrefixArgs + @("-m", "PyInstaller", "--version")
 & $pythonExe @checkArgs *> $null
 if ($LASTEXITCODE -ne 0) {
     Fail "PyInstaller is not installed for this interpreter. Install with: $($pythonCmd -join ' ') -m pip install pyinstaller"
 }
 
-$pyinstallerArgs = @(
-    $pythonPrefixArgs +
-    @(
-        "-m", "PyInstaller",
-        "--clean",
-        "--onefile",
-        "--name", $appName,
-        "--distpath", $pyiDistDir,
-        "--workpath", $pyiWorkDir,
-        "--specpath", $pyiSpecDir,
-        "--paths", $rootDir,
-        "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
-        "--add-data", "client/bin/win/ffprobe.exe;bin/win",
-        "--add-data", "sample.mp4;.",
-        "--add-data", "client/presets.json;.",
-        $entrypoint
-    )
+$pyinstallerArgs = $pythonPrefixArgs + @(
+    "-m", "PyInstaller",
+    "--clean",
+    "--onefile",
+    "--name", $appName,
+    "--distpath", $pyiDistDir,
+    "--workpath", $pyiWorkDir,
+    "--specpath", $pyiSpecDir,
+    "--paths", $rootDir,
+    "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
+    "--add-data", "client/bin/win/ffprobe.exe;bin/win",
+    "--add-data", "sample.mp4;.",
+    "--add-data", "client/presets.json;.",
+    $entrypoint
 )
 
 Write-Log "Running PyInstaller..."
