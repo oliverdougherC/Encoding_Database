@@ -59,28 +59,35 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path -LiteralPath (Join-Path $scriptDir "..")).Path
 $clientDir = Join-Path $rootDir "client"
 $binDir = Join-Path $clientDir "bin\win"
-$appName = "encodingdb-client-windows"
-$entrypoint = Join-Path $clientDir "_pyinstaller_entry.py"
+$guiAppName = "encodingdb-client-windows"
+$consoleAppName = "encodingdb-client-windows-console"
+$guiEntrypoint = Join-Path $clientDir "_pyinstaller_gui_entry.py"
+$consoleEntrypoint = Join-Path $clientDir "_pyinstaller_entry.py"
 $buildRoot = Join-Path $rootDir ".build\clients\windows"
 $legacyDistDir = Join-Path $clientDir "dist\windows"
 $pyiDistDir = Join-Path $buildRoot "dist"
 $pyiWorkDir = Join-Path $buildRoot "work"
 $pyiSpecDir = Join-Path $buildRoot "spec"
-$outputPath = Join-Path $rootDir "$appName.exe"
+$guiOutputPath = Join-Path $rootDir "$guiAppName.exe"
+$consoleOutputPath = Join-Path $rootDir "$consoleAppName.exe"
 $logFile = Join-Path $buildRoot "build.log"
 
 Ensure-Exists -Path (Join-Path $binDir "ffmpeg.exe") -Description "ffmpeg.exe"
 Ensure-Exists -Path (Join-Path $binDir "ffprobe.exe") -Description "ffprobe.exe"
 Ensure-Exists -Path (Join-Path $rootDir "sample.mp4") -Description "sample.mp4"
 Ensure-Exists -Path (Join-Path $clientDir "presets.json") -Description "presets.json"
-Ensure-Exists -Path $entrypoint -Description "PyInstaller entrypoint"
+Ensure-Exists -Path $guiEntrypoint -Description "GUI PyInstaller entrypoint"
+Ensure-Exists -Path $consoleEntrypoint -Description "Console PyInstaller entrypoint"
 
 Write-Log "Preparing build directories..."
 if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
 if (Test-Path -LiteralPath $legacyDistDir) { Remove-Item -LiteralPath $legacyDistDir -Recurse -Force }
-if (Test-Path -LiteralPath $outputPath) { Remove-Item -LiteralPath $outputPath -Force }
-if (Test-Path -LiteralPath (Join-Path $rootDir "dist\$appName.exe")) { Remove-Item -LiteralPath (Join-Path $rootDir "dist\$appName.exe") -Force }
-if (Test-Path -LiteralPath (Join-Path $rootDir "build\$appName")) { Remove-Item -LiteralPath (Join-Path $rootDir "build\$appName") -Recurse -Force }
+if (Test-Path -LiteralPath $guiOutputPath) { Remove-Item -LiteralPath $guiOutputPath -Force }
+if (Test-Path -LiteralPath $consoleOutputPath) { Remove-Item -LiteralPath $consoleOutputPath -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "dist\$guiAppName.exe")) { Remove-Item -LiteralPath (Join-Path $rootDir "dist\$guiAppName.exe") -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "dist\$consoleAppName.exe")) { Remove-Item -LiteralPath (Join-Path $rootDir "dist\$consoleAppName.exe") -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "build\$guiAppName")) { Remove-Item -LiteralPath (Join-Path $rootDir "build\$guiAppName") -Recurse -Force }
+if (Test-Path -LiteralPath (Join-Path $rootDir "build\$consoleAppName")) { Remove-Item -LiteralPath (Join-Path $rootDir "build\$consoleAppName") -Recurse -Force }
 
 New-Item -ItemType Directory -Path $pyiDistDir -Force | Out-Null
 New-Item -ItemType Directory -Path $pyiWorkDir -Force | Out-Null
@@ -101,42 +108,67 @@ if ($LASTEXITCODE -ne 0) {
     Fail "PyInstaller is not installed for this interpreter. Install with: $($pythonCmd -join ' ') -m pip install pyinstaller"
 }
 
-$pyinstallerArgs = $pythonPrefixArgs + @(
-    "-m", "PyInstaller",
-    "--clean",
-    "--onefile",
-    "--name", $appName,
-    "--distpath", $pyiDistDir,
-    "--workpath", $pyiWorkDir,
-    "--specpath", $pyiSpecDir,
-    "--paths", $rootDir,
-    "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
-    "--add-data", "client/bin/win/ffprobe.exe;bin/win",
-    "--add-data", "sample.mp4;.",
-    "--add-data", "client/presets.json;.",
-    $entrypoint
-)
+function Invoke-PyInstallerBuild {
+    param(
+        [string]$Name,
+        [string]$Entrypoint,
+        [switch]$Windowed
+    )
 
-Write-Log "Running PyInstaller..."
-Push-Location -LiteralPath $rootDir
-try {
-    & $pythonExe @pyinstallerArgs *>&1 | Tee-Object -FilePath $logFile -Append
-    if ($LASTEXITCODE -ne 0) {
-        Fail "PyInstaller failed. See build log: $logFile"
+    $workDirForBuild = Join-Path $pyiWorkDir $Name
+    $specDirForBuild = Join-Path $pyiSpecDir $Name
+    New-Item -ItemType Directory -Path $workDirForBuild -Force | Out-Null
+    New-Item -ItemType Directory -Path $specDirForBuild -Force | Out-Null
+
+    $buildArgs = $pythonPrefixArgs + @(
+        "-m", "PyInstaller",
+        "--clean",
+        "--onefile",
+        "--name", $Name,
+        "--distpath", $pyiDistDir,
+        "--workpath", $workDirForBuild,
+        "--specpath", $specDirForBuild,
+        "--paths", $rootDir,
+        "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
+        "--add-data", "client/bin/win/ffprobe.exe;bin/win",
+        "--add-data", "sample.mp4;.",
+        "--add-data", "client/presets.json;."
+    )
+    if ($Windowed) {
+        $buildArgs += "--windowed"
     }
-} finally {
-    Pop-Location
+    $buildArgs += $Entrypoint
+
+    Write-Log "Running PyInstaller for $Name..."
+    Push-Location -LiteralPath $rootDir
+    try {
+        & $pythonExe @buildArgs *>&1 | Tee-Object -FilePath $logFile -Append
+        if ($LASTEXITCODE -ne 0) {
+            Fail "PyInstaller failed for $Name. See build log: $logFile"
+        }
+    } finally {
+        Pop-Location
+    }
 }
 
-$builtExe = Join-Path $pyiDistDir "$appName.exe"
-if (-not (Test-Path -LiteralPath $builtExe)) {
-    Fail "Build output not found at $builtExe"
+Invoke-PyInstallerBuild -Name $guiAppName -Entrypoint $guiEntrypoint -Windowed
+Invoke-PyInstallerBuild -Name $consoleAppName -Entrypoint $consoleEntrypoint
+
+$builtGuiExe = Join-Path $pyiDistDir "$guiAppName.exe"
+if (-not (Test-Path -LiteralPath $builtGuiExe)) {
+    Fail "GUI build output not found at $builtGuiExe"
+}
+$builtConsoleExe = Join-Path $pyiDistDir "$consoleAppName.exe"
+if (-not (Test-Path -LiteralPath $builtConsoleExe)) {
+    Fail "Console build output not found at $builtConsoleExe"
 }
 
-Write-Log "Placing executable in repository root..."
-Move-Item -LiteralPath $builtExe -Destination $outputPath -Force
+Write-Log "Placing executables in repository root..."
+Move-Item -LiteralPath $builtGuiExe -Destination $guiOutputPath -Force
+Move-Item -LiteralPath $builtConsoleExe -Destination $consoleOutputPath -Force
 
-Write-Log "Build complete: $outputPath"
+Write-Log "Build complete: $guiOutputPath"
+Write-Log "Build complete: $consoleOutputPath"
 Write-Log "Build log saved to: $logFile"
 Write-Log "Hidden build artifacts: $buildRoot"
 
