@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import styles from "./ThemeToggle.module.css";
 
-export default function ThemeToggle() {
+export default function ThemeToggle({ className = "" }: { className?: string }) {
   const [theme, setTheme] = useState<"light" | "dark" | null>(null);
 
   useEffect(() => {
@@ -36,12 +37,12 @@ export default function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="btn"
-      style={{ padding: "6px 10px", fontSize: 16, lineHeight: 1, cursor: "pointer" }}
+      className={`btn btn-ghost ${styles.toggle} ${className}`.trim()}
       aria-label={theme ? `Switch to ${theme === "light" ? "dark" : "light"} mode` : "Toggle theme"}
       title={theme ? `Switch to ${theme === "light" ? "dark" : "light"} mode` : "Toggle theme"}
     >
-      {theme === "dark" ? "\u2600" : "\u263E"}
+      <span className={styles.icon} aria-hidden="true">{theme === "dark" ? "\u2600" : "\u263E"}</span>
+      <span className={styles.label}>{theme === "dark" ? "Light" : "Dark"}</span>
     </button>
   );
 }

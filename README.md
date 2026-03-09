@@ -67,7 +67,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 - `server/`: Express API, Zod validation, Prisma models/migrations, ingest + query pipeline.
 - `frontend/`: Next.js 15 app with benchmark table, analytics, leaderboards, and hardware pages.
 - `nginx/`: reverse-proxy configuration for production.
-- `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.sh`).
+- `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.ps1`).
 - `sample.mp4`: canonical baseline clip used by the benchmark flow.
 
 ## Current platform capabilities
@@ -121,9 +121,10 @@ The client submits an explicit allowlist of fields. This prevents accidental inc
    - [GitHub Releases](https://github.com/oliverdougherC/Encoding_Database/releases)
 2. Close heavy background apps for cleaner measurements.
 3. Run the binary:
-   - Windows: `encodingdb-client-windows.exe`
+   - Windows (GUI-first): `encodingdb-client-windows.exe`
+   - Windows (console fallback/debug): `encodingdb-client-windows-console.exe`
    - macOS: `./encodingdb-client-macos`
-4. Follow the menu prompts to run single, small, medium, or full benchmark modes.
+4. On Windows, choose benchmark options in the GUI and start the run. On console builds/macOS, follow interactive prompts.
 5. Results are submitted automatically unless `--no-submit` is enabled.
 
 ## Client CLI options
@@ -147,6 +148,8 @@ Common flags:
 - `--use-token`: use short-lived ingest token flow when server supports it.
 - `--queue-dir`: directory for offline retry queue.
 - `--pause-on-exit`: keep console open after run (useful on Windows).
+- `--gui`: force Windows GUI mode.
+- `--cli`: force terminal mode (overrides auto-GUI on Windows packaged builds).
 
 ## Local development
 
@@ -249,11 +252,16 @@ macOS:
 ./scripts/build_macos_client.sh
 ```
 
-Windows (Git Bash/MSYS/WSL with Windows Python available):
+Windows (PowerShell):
 
-```bash
-./scripts/build_windows_client.sh
+```powershell
+.\scripts\build_windows_client.ps1
 ```
+
+The Windows build now outputs two executables in the repository root:
+
+- `encodingdb-client-windows.exe` (GUI-first for testers)
+- `encodingdb-client-windows-console.exe` (console fallback/debug)
 
 Both packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
 

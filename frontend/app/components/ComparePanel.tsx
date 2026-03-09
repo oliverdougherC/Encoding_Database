@@ -66,8 +66,8 @@ export default function ComparePanel({
           <div id="compare-panel-title" className={styles.panelTitle}>
             Comparing {rows.length} Benchmarks
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" onClick={onClear} className={`btn ${styles.clearBtn}`}>Clear All</button>
+          <div className={styles.panelActions}>
+            <button type="button" onClick={onClear} className={`btn btn-ghost ${styles.clearBtn}`}>Clear All</button>
             <button type="button" onClick={onClose} className={`btn ${styles.clearBtn}`} aria-label="Close compare panel">Close</button>
           </div>
         </div>
@@ -86,7 +86,7 @@ export default function ComparePanel({
                 const bestIdx = findBestIndex(rows, metric);
                 return (
                   <tr key={metric.label}>
-                    <td style={{ fontWeight: 500 }}>{metric.label}</td>
+                    <td className={styles.metricCell}>{metric.label}</td>
                     {rows.map((r, i) => (
                       <td key={r.id} className={bestIdx === i ? styles.bestCell : undefined}>
                         {metric.getValue(r)}
@@ -115,10 +115,10 @@ export function CompareStickyBar({
   if (count < 2) return null;
   return (
     <div className={styles.stickyBar}>
-      <button type="button" className={styles.compareBtn} onClick={onCompare}>
+      <button type="button" className={`btn btn-primary ${styles.compareBtn}`} onClick={onCompare}>
         Compare ({count})
       </button>
-      <button type="button" className={`btn ${styles.clearBtn}`} onClick={onClear}>
+      <button type="button" className={`btn btn-ghost ${styles.clearBtn}`} onClick={onClear}>
         Clear Selection
       </button>
     </div>

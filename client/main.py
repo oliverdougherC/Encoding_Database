@@ -5,7 +5,7 @@ import re
 import sys
 import tempfile
 import time
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Callable
 
 # Allow running as `python3 client/main.py` (adds parent dir to sys.path so
 # relative imports resolve via the 'client' package).
@@ -73,7 +73,107 @@ def _infer_encoder_family(encoder: str) -> Optional[str]:
     return None
 
 
-def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse.Namespace, tasks: List[Dict[str, Any]]) -> int:
+def _emit_event(event_sink: Optional[Callable[[Dict[str, Any]], None]], event_type: str, **payload: Any) -> None:
+    if event_sink is None:
+        return
+    event = {"type": event_type, "ts": time.time()}
+    event.update(payload)
+    try:
+        event_sink(event)
+    except Exception:
+        pass
+
+
+def _is_cancelled(cancel_event: Optional[Any]) -> bool:
+    if cancel_event is None:
+        return False
+    try:
+        return bool(cancel_event.is_set())
+    except Exception:
+        return False
+
+
+def build_mode_estimates(presets_cfg: Dict[str, Any]) -> Dict[str, Any]:
+    small_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
+    medium_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
+    full_hours = presets_cfg.get("fullBenchmark", {}).get("approxHours")
+    try:
+        full_hours = int(full_hours) if isinstance(full_hours, int) else float(full_hours)
+    except Exception:
+        full_hours = 3
+    return {
+        "smallMinutes": small_minutes,
+        "mediumHours": medium_hours,
+        "fullHours": full_hours,
+    }
+
+
+def _resolve_crf_values_for_mode(mode: str, presets_cfg: Dict[str, Any], default_crf: int) -> List[int]:
+    m = (mode or "").strip().lower()
+    if m == "small":
+        small_defaults = presets_cfg.get("smallBenchmark", {}).get("crfValues", [])
+        return [int(small_defaults[0])] if small_defaults else [default_crf]
+    if m == "medium":
+        values = [int(v) for v in presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("crfValues", []) if isinstance(v, int)]
+        return values or [default_crf]
+    if m == "full":
+        values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
+        return values or [default_crf]
+    return [default_crf]
+
+
+def build_batch_tasks_for_mode(*, mode: str, presets_cfg: Dict[str, Any], encoders: List[str], default_crf: int = 24) -> List[Dict[str, Any]]:
+    mode_key = (mode or "").strip().lower()
+    if mode_key not in ("small", "medium", "full"):
+        raise ValueError(f"Unsupported batch mode: {mode}")
+    crf_values = _resolve_crf_values_for_mode(mode_key, presets_cfg, default_crf)
+    tasks: List[Dict[str, Any]] = []
+    for crf_val in crf_values:
+        for enc in encoders:
+            presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
+            ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
+            if mode_key == "small":
+                if not ordered:
+                    continue
+                mid_index = max(0, (len(ordered) - 1) // 2)
+                picks: List[str] = []
+                faster1 = mid_index - 1
+                faster2 = mid_index - 2
+                if faster2 >= 0:
+                    picks.append(ordered[faster2])
+                if faster1 >= 0:
+                    picks.append(ordered[faster1])
+                picks.append(ordered[mid_index])
+                seen: Dict[str, bool] = {}
+                final = [p for p in picks if not seen.setdefault(p, False)]
+                for preset_label in final:
+                    tasks.append({"encoder": enc, "preset": preset_label, "crf": crf_val})
+                continue
+            if mode_key == "medium":
+                if len(ordered) > 0:
+                    drop_count = int(round(len(ordered) * 0.2))
+                    if drop_count >= len(ordered):
+                        drop_count = len(ordered) - 1
+                    keep = ordered[:-drop_count] if drop_count > 0 else ordered
+                else:
+                    keep = ordered
+                for preset_label in keep:
+                    tasks.append({"encoder": enc, "preset": preset_label, "crf": crf_val})
+                continue
+            for preset_label in ordered:
+                tasks.append({"encoder": enc, "preset": preset_label, "crf": crf_val})
+    return tasks
+
+
+def run_benchmark_batch(
+    *,
+    hardware: HardwareInfo,
+    base_url: str,
+    args: argparse.Namespace,
+    tasks: List[Dict[str, Any]],
+    event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cancel_event: Optional[Any] = None,
+) -> int:
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
@@ -111,6 +211,21 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
     skipped_count = 0
     queued_count = 0
     failed_count = 0
+    _emit_event(
+        event_sink,
+        "run_start",
+        scope="batch",
+        totalTasks=total_tasks,
+        totalBatches=total_batches,
+        workers=workers,
+        noSubmit=bool(getattr(args, "no_submit", False)),
+        hardware={
+            "cpuModel": hardware.cpuModel,
+            "gpuModel": hardware.gpuModel,
+            "ramGB": hardware.ramGB,
+            "os": hardware.os,
+        },
+    )
 
     def _batch_status(stage: str, index: int, codec: str = "", preset: str = "") -> str:
         label = f"{codec} {preset}".strip()
@@ -123,6 +238,8 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
     try:
         with BatchRunDashboard(total_tasks=total_tasks, total_batches=total_batches, hardware=hardware) as progress:
             for i in range(0, len(tasks), chunk_size):
+                if _is_cancelled(cancel_event):
+                    raise KeyboardInterrupt
                 chunk = tasks[i:i + chunk_size]
                 batch_no = (i // chunk_size) + 1
                 with tempfile.TemporaryDirectory() as batch_dir:
@@ -130,8 +247,18 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                     print_info(f"Batch {batch_no}/{total_batches}: {len(chunk)} task(s)")
                     progress.start_batch(batch_no=batch_no, batch_size=len(chunk))
                     progress.set_description(_batch_status(f"Batch {batch_no}/{total_batches} preparing", processed_total + 1))
+                    _emit_event(
+                        event_sink,
+                        "batch_start",
+                        batchNo=batch_no,
+                        totalBatches=total_batches,
+                        batchSize=len(chunk),
+                        processedTotal=processed_total,
+                    )
 
                     for idx, t in enumerate(chunk, start=1):
+                        if _is_cancelled(cancel_event):
+                            raise KeyboardInterrupt
                         enc = t['encoder']
                         preset = t['preset']
                         crf = t.get('crf')
@@ -146,6 +273,16 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             crf=crf,
                             passes=1,
                             isHardware=is_hardware_encoder_name(enc),
+                        )
+                        _emit_event(
+                            event_sink,
+                            "encode_start",
+                            index=global_index,
+                            total=total_tasks,
+                            encoder=enc,
+                            preset=preset,
+                            crf=crf,
+                            batchNo=batch_no,
                         )
                         effective_input, input_hash = _resolve_input_for_task(input_path, default_input_hash)
 
@@ -173,11 +310,28 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                         )
                         progress.update_machine_metrics(info)
                         artifacts_info.append(info)
+                        _emit_event(
+                            event_sink,
+                            "encode_done",
+                            index=global_index,
+                            total=total_tasks,
+                            encoder=final_encoder,
+                            preset=preset,
+                            crf=crf,
+                            fps=float(info.get("fps") or 0.0),
+                            fileSizeBytes=int(info.get("fileSizeBytes") or 0),
+                            runMs=int(info.get("elapsedMs") or 0),
+                            error=info.get("error"),
+                            telemetry=info.get("telemetry"),
+                            batchNo=batch_no,
+                        )
                         progress.advance_phase(
                             description=_batch_status("Encoded", processed_total + idx, final_encoder, preset),
                         )
 
                     for metric_idx, info in enumerate(artifacts_info, start=1):
+                        if _is_cancelled(cancel_event):
+                            raise KeyboardInterrupt
                         effective_input = info.get('_effective_input', input_path)
                         ap = info['artifactPath']
                         metric_index = processed_total + metric_idx
@@ -197,10 +351,29 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                                     str(info['task']['preset']),
                                 )
                             )
+                            _emit_event(
+                                event_sink,
+                                "metrics_start",
+                                index=metric_index,
+                                total=total_tasks,
+                                encoder=str(info.get('encoderUsed') or info['task']['encoder']),
+                                preset=str(info['task']['preset']),
+                                crf=info['task'].get('crf'),
+                            )
                             metrics = compute_metrics_parallel(effective_input, [ap], workers, quiet=True)
                             info['_metrics'] = metrics.get(ap, {})
                         else:
                             info['_metrics'] = {}
+                        _emit_event(
+                            event_sink,
+                            "metrics_done",
+                            index=metric_index,
+                            total=total_tasks,
+                            encoder=str(info.get('encoderUsed') or info['task']['encoder']),
+                            preset=str(info['task']['preset']),
+                            crf=info['task'].get('crf'),
+                            metrics=info.get("_metrics", {}),
+                        )
                         progress.advance_phase(
                             description=_batch_status(
                                 "Metrics done",
@@ -211,6 +384,8 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                         )
 
                     for info in artifacts_info:
+                        if _is_cancelled(cancel_event):
+                            raise KeyboardInterrupt
                         t = info['task']
                         input_hash = info.get('_input_hash', default_input_hash)
                         payload: Dict[str, Any] = {
@@ -273,6 +448,16 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                             passes=payload.get('passes', 1),
                             isHardware=is_hardware_encoder_name(str(payload['codec'])),
                         )
+                        _emit_event(
+                            event_sink,
+                            "submit_start",
+                            index=next_index,
+                            total=total_tasks,
+                            codec=str(payload["codec"]),
+                            preset=str(payload["preset"]),
+                            crf=payload.get("crf"),
+                            dryRun=bool(args.no_submit),
+                        )
                         if skip:
                             print_warning(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
                             skipped_count += 1
@@ -295,12 +480,14 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                                 submitted=submitted_count, skipped=skipped_count,
                                 queued=queued_count, failed=failed_count,
                             )
+                            _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="skipped", reason=reason)
                         elif args.no_submit:
                             progress.set_description(_batch_status("Dry-run", next_index, str(payload['codec']), str(payload['preset'])))
                             progress.update_counters(
                                 submitted=submitted_count, skipped=skipped_count,
                                 queued=queued_count, failed=failed_count,
                             )
+                            _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="dry_run")
                         else:
                             try:
                                 submit(
@@ -311,6 +498,7 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                                     use_token=config._env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)),
                                 )
                                 submitted_count += 1
+                                _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="submitted")
                             except Exception as e:
                                 print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
                                 try:
@@ -318,13 +506,23 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
                                     with open(fname, 'w', encoding='utf-8') as fh:
                                         json.dump(sanitize_payload_for_server(payload), fh, separators=(',', ':'))
                                     queued_count += 1
+                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="queued", error=str(e))
                                 except Exception as qe:
                                     print(f"Failed to queue payload: {qe}", file=sys.stderr)
                                     failed_count += 1
+                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="failed", error=str(qe))
                             progress.update_counters(
                                 submitted=submitted_count, skipped=skipped_count,
                                 queued=queued_count, failed=failed_count,
                             )
+                        _emit_event(
+                            event_sink,
+                            "counters",
+                            submitted=submitted_count,
+                            skipped=skipped_count,
+                            queued=queued_count,
+                            failed=failed_count,
+                        )
 
                         if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
                             completed_count_local += 1
@@ -334,8 +532,10 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
 
                         processed_total += 1
                         progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
+                        _emit_event(event_sink, "task_complete", processed=processed_total, total=total_tasks)
     except KeyboardInterrupt:
         print_warning("Batch run interrupted by user.")
+        _emit_event(event_sink, "run_interrupted", scope="batch", processed=processed_total, total=total_tasks)
         return 130
 
     elapsed_seconds = max(0.0, time.time() - run_started_at)
@@ -351,13 +551,34 @@ def run_benchmark_batch(*, hardware: HardwareInfo, base_url: str, args: argparse
         "elapsedSeconds": elapsed_seconds,
         "throughputPerHour": throughput_per_hour,
     })
+    _emit_event(
+        event_sink,
+        "run_complete",
+        scope="batch",
+        totalTasks=total_tasks,
+        totalBatches=total_batches,
+        completed=completed_count_local,
+        submitted=submitted_count,
+        skipped=skipped_count,
+        queued=queued_count,
+        failed=failed_count,
+        elapsedSeconds=elapsed_seconds,
+        throughputPerHour=throughput_per_hour,
+    )
     return 0
 
 
-def run_with_args(args: argparse.Namespace) -> int:
+def run_with_args(
+    args: argparse.Namespace,
+    *,
+    event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cancel_event: Optional[Any] = None,
+    show_end_screen: bool = True,
+) -> int:
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="single", code=2, message="ffmpeg/ffprobe not found")
         return 2
     if not config._FFMPEG_DETECTED_PRINTED:
         ver = "unknown"
@@ -374,11 +595,13 @@ def run_with_args(args: argparse.Namespace) -> int:
             "Your ffmpeg build does not include libvmaf. Install ffmpeg with libvmaf.",
             file=sys.stderr,
         )
+        _emit_event(event_sink, "run_error", scope="single", code=5, message="libvmaf not available")
         return 5
 
     input_path = get_default_sample_path()
     if not input_path:
         print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="single", code=3, message="sample.mp4 not found")
         return 3
     ok_sample, msg = verify_sample_video(input_path)
     if not ok_sample:
@@ -387,6 +610,7 @@ def run_with_args(args: argparse.Namespace) -> int:
             "Please use the original, unmodified sample.mp4 included with the client.",
             file=sys.stderr,
         )
+        _emit_event(event_sink, "run_error", scope="single", code=6, message=f"sample verification failed: {msg}")
         return 6
 
     resolved_encoder: Optional[str] = None
@@ -421,6 +645,7 @@ def run_with_args(args: argparse.Namespace) -> int:
 
     if not resolved_encoder or not has_encoder(resolved_encoder):
         print("Requested codec/encoder not available in this ffmpeg build.", file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="single", code=4, message="requested encoder unavailable")
         return 4
     if is_hardware_encoder_name(resolved_encoder) and not is_hardware_encoder_usable(resolved_encoder):
         if explicit_encoder_selection:
@@ -443,6 +668,7 @@ def run_with_args(args: argparse.Namespace) -> int:
                     "and no software fallback was found.",
                     file=sys.stderr,
                 )
+                _emit_event(event_sink, "run_error", scope="single", code=4, message="hardware encoder unusable and no fallback")
                 return 4
 
     hardware = detect_hardware()
@@ -458,6 +684,21 @@ def run_with_args(args: argparse.Namespace) -> int:
     user_crf: Optional[int] = args.crf
     if preset_list:
         combos = [(p, user_crf) for p in preset_list]
+    _emit_event(
+        event_sink,
+        "run_start",
+        scope="single",
+        totalTasks=len(combos),
+        encoder=resolved_encoder,
+        presets=[p for p, _ in combos],
+        noSubmit=bool(args.no_submit),
+        hardware={
+            "cpuModel": hardware.cpuModel,
+            "gpuModel": hardware.gpuModel,
+            "ramGB": hardware.ramGB,
+            "os": hardware.os,
+        },
+    )
     benchmark_start_ts = time.time()
     try:
         original_size_bytes = os.path.getsize(input_path)
@@ -465,9 +706,22 @@ def run_with_args(args: argparse.Namespace) -> int:
         original_size_bytes = 0
     completed_count = 0
     with BenchmarkProgress(len(combos), title="Single Benchmark Progress") as progress:
-        for preset, crf_val in combos:
+        for task_index, (preset, crf_val) in enumerate(combos, start=1):
+            if _is_cancelled(cancel_event):
+                _emit_event(event_sink, "run_interrupted", scope="single", completed=completed_count, total=len(combos))
+                return 130
             progress.set_description(f"Running {resolved_encoder} {preset} crf={crf_val}")
             print_info(f"Running Test: {resolved_encoder}, crf={crf_val}, {preset}...")
+            _emit_event(
+                event_sink,
+                "encode_start",
+                scope="single",
+                index=task_index,
+                total=len(combos),
+                encoder=resolved_encoder,
+                preset=preset,
+                crf=crf_val,
+            )
             payload = run_single_benchmark(hardware, input_path, preset=preset, codec=resolved_encoder, crf=crf_val)
             payload["ffmpegVersion"] = ffmpeg_version
             payload["encoderName"] = payload.get("codec", resolved_encoder)
@@ -481,6 +735,24 @@ def run_with_args(args: argparse.Namespace) -> int:
             except Exception:
                 rel_size = None
             print_benchmark_result(payload, rel_size)
+            _emit_event(
+                event_sink,
+                "encode_done",
+                scope="single",
+                index=task_index,
+                total=len(combos),
+                encoder=payload.get("codec", resolved_encoder),
+                preset=preset,
+                crf=crf_val,
+                fps=float(payload.get("fps") or 0.0),
+                fileSizeBytes=int(payload.get("fileSizeBytes") or 0),
+                runMs=int(payload.get("runMs") or 0),
+                metrics={
+                    "vmaf": payload.get("vmaf"),
+                    "ssim": payload.get("ssim"),
+                    "psnr": payload.get("psnr"),
+                },
+            )
 
             if float(payload.get("fps", 0.0)) > 0.0 and int(payload.get("fileSizeBytes", 0)) > 0:
                 completed_count += 1
@@ -491,6 +763,8 @@ def run_with_args(args: argparse.Namespace) -> int:
             if args.no_submit:
                 print_info(f"Dry-run: not submitting preset={preset}")
                 progress.advance(description=f"{preset} (dry-run)")
+                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="dry_run", preset=preset)
+                _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
                 continue
             try:
                 if payload.get("fps", 0.0) <= 0 or payload.get("fileSizeBytes", 0) <= 0:
@@ -499,11 +773,14 @@ def run_with_args(args: argparse.Namespace) -> int:
                         f"(fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})"
                     )
                     progress.advance(description=f"{preset} (failed)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset)
+                    _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
                     continue
                 clean_payload = sanitize_payload_for_server(payload)
                 submit(base_url, clean_payload, api_key=args.api_key, retries=max(1, args.retries))
                 print_success("Submitted Results")
                 progress.advance(description=f"{preset} (submitted)")
+                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="submitted", preset=preset)
             except Exception as e:
                 print(f"Failed to submit {preset}: {e}", file=sys.stderr)
                 try:
@@ -511,9 +788,12 @@ def run_with_args(args: argparse.Namespace) -> int:
                     with open(fname, "w", encoding="utf-8") as fh:
                         json.dump(sanitize_payload_for_server(payload), fh, separators=(",", ":"))
                     print_info(f"Queued for retry: {fname}")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="queued", preset=preset, error=str(e))
                 except Exception as qe:
                     print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=str(qe))
                 progress.advance(description=f"{preset} (queued)")
+            _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
 
     try:
         files = sorted([f for f in os.listdir(args.queue_dir) if f.endswith('.json')])
@@ -530,7 +810,7 @@ def run_with_args(args: argparse.Namespace) -> int:
                 pass
     except Exception:
         pass
-    if not config._BATCH_ACTIVE:
+    if show_end_screen and not config._BATCH_ACTIVE:
         _clear_screen()
         elapsed_sec = max(0.0, time.time() - benchmark_start_ts)
         print_end_screen(completed_count, elapsed_sec)
@@ -539,7 +819,96 @@ def run_with_args(args: argparse.Namespace) -> int:
                 input("Press Enter to exit...")
         except Exception:
             pass
+    _emit_event(
+        event_sink,
+        "run_complete",
+        scope="single",
+        completed=completed_count,
+        total=len(combos),
+        elapsedSeconds=max(0.0, time.time() - benchmark_start_ts),
+    )
     return 0
+
+
+def build_single_effective_args(
+    *,
+    base_args: argparse.Namespace,
+    encoder: str,
+    preset: str,
+    crf: int,
+) -> argparse.Namespace:
+    return argparse.Namespace(
+        base_url=base_args.base_url,
+        api_key=base_args.api_key,
+        codec=encoder,
+        presets=preset,
+        no_submit=base_args.no_submit,
+        crf=crf,
+        retries=base_args.retries,
+        queue_dir=base_args.queue_dir,
+        menu=False,
+        batch_size=getattr(base_args, "batch_size", 0),
+        use_token=getattr(base_args, "use_token", False),
+        pause_on_exit=getattr(base_args, "pause_on_exit", False),
+    )
+
+
+def run_batch_mode(
+    *,
+    mode: str,
+    base_args: argparse.Namespace,
+    event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cancel_event: Optional[Any] = None,
+    show_end_screen: bool = True,
+) -> int:
+    presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
+    encoders = list_all_available_encoders()
+    if not encoders:
+        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+        return 4
+    if not get_default_sample_path():
+        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
+        return 3
+    tasks = build_batch_tasks_for_mode(
+        mode=mode,
+        presets_cfg=presets_cfg,
+        encoders=encoders,
+        default_crf=int(base_args.crf) if isinstance(base_args.crf, int) else 24,
+    )
+    config._BATCH_ACTIVE = True
+    config._BATCH_START_TS = time.time()
+    config._BATCH_COMPLETED_COUNT = 0
+    try:
+        rc = run_benchmark_batch(
+            hardware=detect_hardware(),
+            base_url=base_args.base_url,
+            args=argparse.Namespace(
+                base_url=base_args.base_url,
+                api_key=base_args.api_key,
+                no_submit=base_args.no_submit,
+                crf=None,
+                retries=base_args.retries,
+                queue_dir=base_args.queue_dir,
+                menu=False,
+                batch_size=getattr(base_args, "batch_size", 0),
+                use_token=getattr(base_args, "use_token", False),
+            ),
+            tasks=tasks,
+            event_sink=event_sink,
+            cancel_event=cancel_event,
+        )
+        elapsed_sec = max(0.0, time.time() - config._BATCH_START_TS)
+        if show_end_screen:
+            _clear_screen()
+            print_end_screen(config._BATCH_COMPLETED_COUNT, elapsed_sec)
+            try:
+                if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
+                    input("Press Enter to exit...")
+            except Exception:
+                pass
+        return rc
+    finally:
+        config._BATCH_ACTIVE = False
 
 
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
@@ -564,13 +933,10 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return 6
     print_success("Test Video Checksum Verified")
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
-    s_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
-    m_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
-    f_hours = presets_cfg.get("fullBenchmark", {}).get("approxHours")
-    try:
-        f_hours = int(f_hours) if isinstance(f_hours, int) else float(f_hours)
-    except Exception:
-        f_hours = 3
+    estimates = build_mode_estimates(presets_cfg)
+    s_minutes = estimates["smallMinutes"]
+    m_hours = estimates["mediumHours"]
+    f_hours = estimates["fullHours"]
     print_info("Select an option:")
     menu = [
         "Run Single Benchmark",
@@ -633,15 +999,12 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         chosen_preset = encoder_presets[preset_idx]
 
         effective_args = argparse.Namespace(
-            base_url=base_args.base_url,
-            api_key=base_args.api_key,
-            codec=chosen_encoder,
-            presets=chosen_preset,
-            no_submit=base_args.no_submit,
-            crf=chosen_crf,
-            retries=base_args.retries,
-            queue_dir=base_args.queue_dir,
-            menu=False,
+            **vars(build_single_effective_args(
+                base_args=base_args,
+                encoder=chosen_encoder,
+                preset=chosen_preset,
+                crf=chosen_crf,
+            ))
         )
         return run_with_args(effective_args)
 
@@ -652,99 +1015,11 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             return 0
         _clear_screen()
 
-    config._BATCH_ACTIVE = True
-    config._BATCH_START_TS = time.time()
-    config._BATCH_COMPLETED_COUNT = 0
-    encoders = list_all_available_encoders()
-    if not encoders:
-        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
-        return 4
-    if not get_default_sample_path():
-        print("Required test video not found (expected sample.mp4 in project root).", file=sys.stderr)
-        return 3
-    crf_values: List[int] = []
-    if choice == 0:
-        try:
-            default_crf = base_args.crf if isinstance(base_args.crf, int) else 24
-        except Exception:
-            default_crf = 24
-        crf_input = prompt_text("Enter CRF", str(default_crf))
-        try:
-            crf_values = [int(crf_input)]
-        except Exception:
-            crf_values = [default_crf]
-    else:
-        if choice == 1:
-            small_defaults = presets_cfg.get("smallBenchmark", {}).get("crfValues", [])
-            crf_values = [int(small_defaults[0])] if small_defaults else [24]
-        elif choice == 2:
-            crf_values = [int(v) for v in presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("crfValues", []) if isinstance(v, int)]
-            if not crf_values:
-                crf_values = [24]
-        else:
-            crf_values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
-            if not crf_values:
-                crf_values = [24]
-    tasks: List[Dict[str, Any]] = []
-    for crf_val in crf_values:
-        for enc in encoders:
-            presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
-            ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
-            if choice == 1:
-                if not ordered:
-                    continue
-                mid_index = max(0, (len(ordered) - 1) // 2)
-                picks: List[str] = []
-                faster1 = mid_index - 1
-                faster2 = mid_index - 2
-                if faster2 >= 0:
-                    picks.append(ordered[faster2])
-                if faster1 >= 0:
-                    picks.append(ordered[faster1])
-                picks.append(ordered[mid_index])
-                seen: Dict[str, bool] = {}
-                final = [p for p in picks if not seen.setdefault(p, False)]
-                for preset_label in final:
-                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
-            elif choice == 2:
-                if len(ordered) > 0:
-                    drop_count = int(round(len(ordered) * 0.2))
-                    if drop_count >= len(ordered):
-                        drop_count = len(ordered) - 1
-                    keep = ordered[:-drop_count] if drop_count > 0 else ordered
-                else:
-                    keep = ordered
-                for preset_label in keep:
-                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
-            else:
-                for preset_label in ordered:
-                    tasks.append({'encoder': enc, 'preset': preset_label, 'crf': crf_val})
-
-    rc = run_benchmark_batch(
-        hardware=detect_hardware(),
-        base_url=base_args.base_url,
-        args=argparse.Namespace(
-            base_url=base_args.base_url,
-            api_key=base_args.api_key,
-            no_submit=base_args.no_submit,
-            crf=None,
-            retries=base_args.retries,
-            queue_dir=base_args.queue_dir,
-            menu=False,
-            batch_size=getattr(base_args, 'batch_size', 0),
-        ),
-        tasks=tasks,
-    )
-    elapsed_sec = max(0.0, time.time() - config._BATCH_START_TS)
-    _clear_screen()
-    print_end_screen(config._BATCH_COMPLETED_COUNT, elapsed_sec)
-    try:
-        if os.name == 'nt' and (bool(getattr(base_args, 'pause_on_exit', False)) or bool(getattr(sys, 'frozen', False))):
-            input("Press Enter to exit...")
-    except Exception:
-        pass
-    config._BATCH_ACTIVE = False
-    return rc
+    mode_map = {1: "small", 2: "medium", 3: "full"}
+    mode = mode_map.get(choice)
+    if not mode:
+        return 1
+    return run_batch_mode(mode=mode, base_args=base_args)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -761,7 +1036,18 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--batch-size", type=int, default=0, help="Batch size for parallel VMAF (0=auto: cpu_count or 4)")
     p.add_argument("--use-token", action="store_true", help="Use short-lived submit token (opt-in; or set INGEST_USE_TOKENS=1)")
     p.add_argument("--pause-on-exit", action="store_true", help="On Windows, wait for Enter key after completion to keep the window open")
+    p.add_argument("--gui", action="store_true", help="Force Windows GUI mode")
+    p.add_argument("--cli", action="store_true", help="Force terminal mode")
     return p
+
+
+def run_windows_gui_flow(args: argparse.Namespace) -> int:
+    try:
+        from .windows_gui import launch_windows_gui
+    except Exception as e:
+        print(f"Unable to start Windows GUI: {e}", file=sys.stderr)
+        return 1
+    return launch_windows_gui(args)
 
 
 def main(argv: List[str]) -> int:
@@ -778,6 +1064,18 @@ def main(argv: List[str]) -> int:
         print(f"Invalid queue directory: {e}", file=sys.stderr)
         return 1
 
+    if args.gui and args.cli:
+        print("--gui and --cli cannot be used together.", file=sys.stderr)
+        return 1
+    if args.cli:
+        return interactive_menu_flow(parser, args)
+    if args.gui:
+        if os.name != "nt":
+            print("--gui is only supported on Windows.", file=sys.stderr)
+            return 1
+        return run_windows_gui_flow(args)
+    if os.name == "nt" and bool(getattr(sys, "frozen", False)):
+        return run_windows_gui_flow(args)
     return interactive_menu_flow(parser, args)
 
 

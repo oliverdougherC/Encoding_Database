@@ -1,6 +1,8 @@
 import type { Benchmark } from "../components/BenchmarksTable";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
 import EncoderDashboardClient from "./EncoderDashboardClient";
+import StatusBanner from "../components/ui/StatusBanner";
+import PageHeader from "../components/ui/PageHeader";
 
 export const revalidate = 60;
 
@@ -15,11 +17,9 @@ export default async function EncoderComparisonPage() {
 
   if (error) {
     return (
-      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px" }}>
-        <h1 style={{ marginBottom: 16 }}>Encoder Comparison</h1>
-        <div style={{ background: "var(--error-bg)", color: "var(--error-fg)", padding: 12, borderRadius: 8 }}>
-          Failed to load data: {error}
-        </div>
+      <div className="page">
+        <PageHeader title="Compare Workspace" subtitle="Select and benchmark encoder contenders side by side." />
+        <StatusBanner kind="error">Failed to load data: {error}</StatusBanner>
       </div>
     );
   }

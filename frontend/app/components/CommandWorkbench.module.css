@@ -1,0 +1,9 @@
+.workbenchBody {
+  min-width: 0;
+}
+
+.collapsed {
+  color: var(--muted);
+  font-size: 0.9rem;
+  padding: 8px 2px;
+}

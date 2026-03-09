@@ -1,21 +1,103 @@
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
-}
-
-.heading {
-  margin-bottom: 8px;
-}
-
-.grid {
+.workspace {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
-@media (max-width: 768px) {
-  .grid {
+.tabRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tabBtn {
+  padding: 7px 10px;
+  font-size: 0.82rem;
+}
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.8fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.rankTableWrap {
+  overflow-x: auto;
+}
+
+.rankTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.rankTable th,
+.rankTable td {
+  padding: 7px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  text-align: left;
+}
+
+.rankCell {
+  width: 28px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.nameCell {
+  position: relative;
+  overflow: hidden;
+}
+
+.barTrack {
+  position: absolute;
+  inset: 2px 0;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.barFill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.nameText {
+  position: relative;
+  z-index: 1;
+}
+
+.valueCell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.contextBlock p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+}
+
+.contextList {
+  display: grid;
+  gap: 8px;
+}
+
+.contextList dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.contextList dd {
+  font-weight: 700;
+}
+
+@media (max-width: 1024px) {
+  .mainGrid {
     grid-template-columns: 1fr;
   }
 }

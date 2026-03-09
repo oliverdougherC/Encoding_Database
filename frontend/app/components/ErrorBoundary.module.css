@@ -1,0 +1,14 @@
+.boundaryCard {
+  padding: 24px;
+  text-align: center;
+}
+
+.title {
+  margin-bottom: 10px;
+  color: var(--error-fg);
+  font-size: 1.05rem;
+}
+
+.message {
+  margin-bottom: 14px;
+}

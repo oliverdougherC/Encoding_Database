@@ -1,73 +1,112 @@
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 24px 16px;
+.workspace {
+  display: grid;
+  gap: 12px;
 }
 
-.heading {
-  margin-bottom: 8px;
+.grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: 12px;
+  align-items: start;
 }
 
-.codecGrid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 24px;
+.selectorPanel,
+.chartPanel,
+.matrixPanel {
+  min-height: 460px;
+}
+
+.selectionCount {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.codecList {
+  margin-top: 10px;
+  display: grid;
+  gap: 7px;
+  max-height: 350px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .codecBtn {
-  display: inline-flex;
+  width: 100%;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, var(--accent-secondary) 20%);
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+  color: var(--foreground);
+  border-radius: 10px;
+  padding: 7px 8px;
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 13px;
-  border-radius: 6px;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.codecBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .codecBtnActive {
-  font-weight: 600;
+  border-color: color-mix(in srgb, var(--accent) 56%, var(--border));
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
 }
 
-.codecDot {
-  display: inline-block;
+.codecTag {
   width: 10px;
   height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  border-radius: 2px;
 }
 
-.radarWrapper {
-  margin-bottom: 24px;
+.codecCount {
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
-.summaryTableWrapper {
+.matrixWrap {
   overflow-x: auto;
 }
 
-.summaryTable {
+.matrixTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13px;
+  font-size: 0.82rem;
 }
 
-.summaryTable th,
-.summaryTable td {
-  padding: 8px 12px;
+.matrixTable th,
+.matrixTable td {
+  padding: 7px 8px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
   text-align: left;
-  border-bottom: 1px solid var(--border);
 }
 
-.summaryTable th {
-  font-weight: 600;
-  background: var(--surface);
+.metricLabel {
+  font-weight: 700;
 }
 
-.summaryTable td:first-child {
-  font-weight: 500;
+.bestCell {
+  background: color-mix(in srgb, var(--success-bg) 20%, var(--surface));
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  }
+
+  .matrixPanel {
+    grid-column: 1 / -1;
+  }
+
+  .selectorPanel,
+  .chartPanel,
+  .matrixPanel {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

@@ -39,6 +39,7 @@ def _env_true(name: str) -> bool:
 
 
 _FORCE_TUI = _env_true("ENCODINGDB_FORCE_TUI") or _env_true("CLIENT_FORCE_TUI")
+_WINDOWS_RICH_TUI = _env_true("ENCODINGDB_WINDOWS_RICH_TUI") or _env_true("CLIENT_WINDOWS_RICH_TUI")
 _FORCE_TERMINAL: Optional[bool] = True if _FORCE_TUI else None
 
 try:
@@ -107,6 +108,11 @@ except Exception:
 
 def _rich_tty() -> bool:
     if not (_RICH_AVAILABLE and _console is not None):
+        return False
+    # Windows terminal support for rich/live varies a lot across shells and
+    # launch contexts (PowerShell, cmd.exe, packaged exe). Default to the
+    # stable plain CLI path unless explicitly opted in.
+    if os.name == "nt" and not (_FORCE_TUI or _WINDOWS_RICH_TUI):
         return False
     if _FORCE_TUI:
         return True

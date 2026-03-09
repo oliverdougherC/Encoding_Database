@@ -39,13 +39,20 @@ export function useChartTheme(): ChartTheme {
     setTheme(readTheme());
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     // Re-read after the CSS transition settles
-    const handler = () => setTimeout(() => setTheme(readTheme()), 50);
-    mq.addEventListener("change", handler);
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const handler = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => setTheme(readTheme()), 60);
+    };
+    if (mq.addEventListener) mq.addEventListener("change", handler);
+    else mq.addListener(handler);
     // Also watch data-theme attribute changes
     const mo = new MutationObserver(handler);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => {
-      mq.removeEventListener("change", handler);
+      if (timer) clearTimeout(timer);
+      if (mq.removeEventListener) mq.removeEventListener("change", handler);
+      else mq.removeListener(handler);
       mo.disconnect();
     };
   }, []);
