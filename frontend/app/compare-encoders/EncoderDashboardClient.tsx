@@ -6,9 +6,11 @@ import { CODEC_COLORS, codecColorKey } from "../lib/chartColors";
 import { useChartTheme } from "../lib/useChartTheme";
 import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "../components/EChart";
+import PageHeader from "../components/ui/PageHeader";
+import SectionCard from "../components/ui/SectionCard";
+import Button from "../components/ui/Button";
+import EmptyState from "../components/ui/EmptyState";
 import styles from "./page.module.css";
-
-const COLORS = ["#6C8FD5", "#52b788", "#9693CC", "#d4a843", "#e07a5f", "#8aabea"];
 
 const AXES = ["Speed", "Quality", "Compression", "SSIM", "PSNR"] as const;
 
@@ -50,11 +52,36 @@ function computeEncoderStats(data: Benchmark[]): Map<string, EncoderStats> {
   return result;
 }
 
+function bestIndex(values: Array<number | null>, higherIsBetter: boolean): number | null {
+  const usable = values.filter((v): v is number => typeof v === "number");
+  if (usable.length < 2) return null;
+  if (usable.every((v) => v === usable[0])) return null;
+
+  let best: number | null = null;
+  let bestVal: number | null = null;
+  values.forEach((v, i) => {
+    if (v == null) return;
+    if (bestVal == null || (higherIsBetter ? v > bestVal : v < bestVal)) {
+      bestVal = v;
+      best = i;
+    }
+  });
+  return best;
+}
+
 export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) {
   const t = useChartTheme();
   const allStats = useMemo(() => computeEncoderStats(data), [data]);
   const codecs = useMemo(() => Array.from(allStats.keys()).sort(), [allStats]);
+
+  const [codecQuery, setCodecQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
+
+  const visibleCodecs = useMemo(() => {
+    const q = codecQuery.trim().toLowerCase();
+    if (!q) return codecs;
+    return codecs.filter((c) => c.toLowerCase().includes(q));
+  }, [codecs, codecQuery]);
 
   const toggleCodec = (codec: string) => {
     setSelected((prev) => {
@@ -68,12 +95,17 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
 
   const radarOption = useMemo(() => {
     if (selectedStats.length < 2) return null;
-    let maxFps = 1, maxSize = 1;
-    const maxVmaf = 100, maxSsim = 1, maxPsnr = 50;
+    let maxFps = 1;
+    let maxSize = 1;
+    const maxVmaf = 100;
+    const maxSsim = 1;
+    const maxPsnr = 50;
+
     for (const s of selectedStats) {
       if (s.avgFps > maxFps) maxFps = s.avgFps;
       if (s.avgSizeMB > maxSize) maxSize = s.avgSizeMB;
     }
+
     const normalize = (s: EncoderStats): number[] => [
       Math.min(100, (s.avgFps / maxFps) * 100),
       Math.min(100, (s.avgVmaf / maxVmaf) * 100),
@@ -81,6 +113,7 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
       Math.min(100, (s.avgSsim / maxSsim) * 100),
       s.avgPsnr >= 20 ? Math.min(100, ((s.avgPsnr - 20) / (maxPsnr - 20)) * 100) : 0,
     ];
+
     return {
       backgroundColor: "transparent",
       tooltip: {
@@ -95,8 +128,8 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
       },
       legend: {
         data: selectedStats.map((s) => s.codec),
-        textStyle: { color: t.fg, fontSize: 12 },
-        top: 4,
+        textStyle: { color: t.fg, fontSize: 11 },
+        top: 0,
         type: "scroll" as const,
       },
       radar: {
@@ -104,19 +137,19 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
         splitLine: { lineStyle: { color: t.border } },
         axisLine: { lineStyle: { color: t.border } },
         splitArea: { show: false },
-        axisName: { color: t.fg, fontSize: 12 },
-        center: ["50%", "54%"],
-        radius: "60%",
+        axisName: { color: t.fg, fontSize: 11 },
+        center: ["50%", "56%"],
+        radius: "62%",
       },
       series: [
         {
           type: "radar",
-          data: selectedStats.map((s, i) => ({
+          data: selectedStats.map((s) => ({
             name: s.codec,
             value: normalize(s),
-            lineStyle: { color: COLORS[i % COLORS.length], width: 2 },
-            areaStyle: { color: COLORS[i % COLORS.length], opacity: 0.12 + i * 0.04 },
-            itemStyle: { color: COLORS[i % COLORS.length] },
+            lineStyle: { color: s.color, width: 2 },
+            areaStyle: { color: s.color, opacity: 0.15 },
+            itemStyle: { color: s.color },
             symbol: "circle",
             symbolSize: 5,
           })),
@@ -125,72 +158,95 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
     };
   }, [selectedStats, t]);
 
+  const metricRows = useMemo(() => {
+    const rows = [
+      { label: "Avg FPS", values: selectedStats.map((s) => s.avgFps), higherIsBetter: true, digits: 1 },
+      { label: "Avg VMAF", values: selectedStats.map((s) => s.avgVmaf), higherIsBetter: true, digits: 1 },
+      { label: "Avg SSIM", values: selectedStats.map((s) => s.avgSsim), higherIsBetter: true, digits: 4 },
+      { label: "Avg PSNR", values: selectedStats.map((s) => s.avgPsnr), higherIsBetter: true, digits: 2 },
+      { label: "Avg Size (MB)", values: selectedStats.map((s) => s.avgSizeMB), higherIsBetter: false, digits: 2 },
+      { label: "Samples", values: selectedStats.map((s) => s.count), higherIsBetter: true, digits: 0 },
+    ];
+
+    return rows.map((row) => ({ ...row, best: bestIndex(row.values, row.higherIsBetter) }));
+  }, [selectedStats]);
+
   return (
-    <div className={styles.container}>
-      <h1 className={styles.heading}>Encoder Comparison</h1>
-      <p className="subtle" style={{ marginBottom: 16 }}>Select up to 4 encoders to compare across performance axes.</p>
+    <div className={`page ${styles.workspace}`}>
+      <PageHeader
+        title="Compare Workspace"
+        subtitle="Select 2-4 encoders to compare performance profiles."
+        actions={
+          <Button variant="secondary" onClick={() => setSelected([])}>Clear</Button>
+        }
+      />
 
-      <div className={styles.codecGrid}>
-        {codecs.map((codec) => {
-          const isSelected = selected.includes(codec);
-          const stats = allStats.get(codec)!;
-          return (
-            <button
-              key={codec}
-              type="button"
-              className={`btn ${styles.codecBtn}${isSelected ? ` ${styles.codecBtnActive}` : ""}`}
-              onClick={() => toggleCodec(codec)}
-              disabled={!isSelected && selected.length >= 4}
-              style={isSelected ? { borderColor: stats.color, background: `color-mix(in srgb, ${stats.color} 12%, var(--surface))` } : undefined}
-            >
-              <span className={styles.codecDot} style={{ background: stats.color }} />
-              {codec}
-              <span className="subtle" style={{ fontSize: 11 }}>({stats.count})</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {radarOption && (
-        <>
-          <div className={styles.radarWrapper}>
-            <EChart option={radarOption} height={400} />
+      <div className={styles.grid}>
+        <SectionCard title="Encoder Selector" subtitle="Choose up to 4 encoders." className={styles.selectorPanel}>
+          <input
+            className="input"
+            placeholder="Filter encoders"
+            value={codecQuery}
+            onChange={(e) => setCodecQuery(e.target.value)}
+            aria-label="Filter encoders"
+          />
+          <div className={styles.selectionCount}>{selected.length} of 4 selected</div>
+          <div className={styles.codecList}>
+            {visibleCodecs.map((codec) => {
+              const isSelected = selected.includes(codec);
+              const stats = allStats.get(codec)!;
+              return (
+                <button
+                  key={codec}
+                  type="button"
+                  className={`${styles.codecBtn} ${isSelected ? styles.codecBtnActive : ""}`.trim()}
+                  onClick={() => toggleCodec(codec)}
+                  disabled={!isSelected && selected.length >= 4}
+                >
+                  <span className={styles.codecTag} style={{ background: stats.color }} />
+                  <span>{codec}</span>
+                  <span className={styles.codecCount}>{stats.count}</span>
+                </button>
+              );
+            })}
           </div>
+        </SectionCard>
 
-          <div className={styles.summaryTableWrapper}>
-            <table className={styles.summaryTable}>
-              <thead>
-                <tr>
-                  <th>Metric</th>
-                  {selectedStats.map((s) => (
-                    <th key={s.codec} style={{ color: s.color }}>{s.codec}</th>
+        <SectionCard title="Performance Profile" subtitle="Selection visualized across core axes." className={styles.chartPanel}>
+          {radarOption ? <EChart option={radarOption} height={380} /> : <EmptyState title="Select at least two encoders" description="The radar chart appears once two or more encoders are selected." />}
+        </SectionCard>
+
+        <SectionCard title="Decision Matrix" subtitle="Best-in-row values are highlighted." className={styles.matrixPanel}>
+          {selectedStats.length === 0 ? (
+            <EmptyState title="No encoders selected" description="Pick encoders from the selector to populate the matrix." />
+          ) : (
+            <div className={styles.matrixWrap}>
+              <table className={styles.matrixTable}>
+                <thead>
+                  <tr>
+                    <th>Metric</th>
+                    {selectedStats.map((s) => (
+                      <th key={s.codec}>{s.codec}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {metricRows.map((row) => (
+                    <tr key={row.label}>
+                      <td className={styles.metricLabel}>{row.label}</td>
+                      {row.values.map((v, i) => (
+                        <td key={`${row.label}-${selectedStats[i]?.codec}`} className={row.best === i ? styles.bestCell : ""}>
+                          {typeof v === "number" ? v.toFixed(row.digits) : "-"}
+                        </td>
+                      ))}
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Avg FPS</td>{selectedStats.map((s) => <td key={s.codec}>{s.avgFps.toFixed(1)}</td>)}</tr>
-                <tr><td>Avg VMAF</td>{selectedStats.map((s) => <td key={s.codec}>{s.avgVmaf.toFixed(1)}</td>)}</tr>
-                <tr><td>Avg SSIM</td>{selectedStats.map((s) => <td key={s.codec}>{s.avgSsim.toFixed(4)}</td>)}</tr>
-                <tr><td>Avg PSNR (dB)</td>{selectedStats.map((s) => <td key={s.codec}>{s.avgPsnr.toFixed(2)}</td>)}</tr>
-                <tr><td>Avg Size (MB)</td>{selectedStats.map((s) => <td key={s.codec}>{s.avgSizeMB.toFixed(2)}</td>)}</tr>
-                <tr><td>Samples</td>{selectedStats.map((s) => <td key={s.codec}>{s.count}</td>)}</tr>
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
-
-      {selected.length === 1 && (
-        <div className="subtle" style={{ textAlign: "center", padding: 32 }}>
-          Select at least 2 encoders to see the comparison.
-        </div>
-      )}
-
-      {selected.length === 0 && (
-        <div className="subtle" style={{ textAlign: "center", padding: 32 }}>
-          Select encoders above to begin comparing.
-        </div>
-      )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </SectionCard>
+      </div>
     </div>
   );
 }

@@ -1,11 +1,14 @@
 .leaderboardCard {
-  padding: 16px;
+  padding: 14px;
 }
 
 .title {
-  font-weight: 600;
-  font-size: 15px;
-  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: "Rajdhani", "Bahnschrift", sans-serif;
 }
 
 .header {
@@ -13,7 +16,7 @@
   grid-template-columns: 32px 1fr 80px;
   gap: 8px;
   font-size: 11px;
-  color: var(--muted);
+  color: color-mix(in srgb, var(--muted) 84%, var(--foreground) 16%);
   padding-bottom: 6px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 4px;
@@ -26,7 +29,7 @@
   align-items: center;
   padding: 6px 0;
   font-size: 13px;
-  border-bottom: 1px solid color-mix(in srgb, var(--border) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
 }
 
 .rankCol {
@@ -61,7 +64,7 @@
 
 .bar {
   height: 100%;
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 30%, transparent), color-mix(in srgb, var(--accent) 26%, transparent));
   border-radius: 3px;
   transition: width 0.3s ease;
 }

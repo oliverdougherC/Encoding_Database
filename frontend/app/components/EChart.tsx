@@ -56,8 +56,13 @@ export default function EChart({ option, height = "100%", style }: Props) {
   }, []);
 
   useEffect(() => {
-    chartRef.current?.setOption(option, { replaceMerge: ["series"] });
+    chartRef.current?.setOption(option, { notMerge: true, lazyUpdate: true });
   }, [option]);
+
+  useEffect(() => {
+    // Theme and CSS variable changes can affect canvas metrics.
+    chartRef.current?.resize();
+  }, [height, style]);
 
   return <div ref={divRef} style={{ width: "100%", height, ...style }} />;
 }

@@ -1,8 +1,8 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
+  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 @media (max-width: 768px) {
@@ -12,8 +12,9 @@
 }
 
 .card {
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-width: 2px;
+  border-color: color-mix(in srgb, var(--brand) 30%, var(--stroke-soft));
 }
 
 .label {
@@ -25,8 +26,8 @@
 }
 
 .value {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--accent);
-  font-family: "Consolas", "Menlo", "Monaco", "Courier New", monospace;
+  color: color-mix(in srgb, var(--brand) 68%, var(--accent) 32%);
+  font-family: "JetBrains Mono", "Consolas", "Menlo", monospace;
 }

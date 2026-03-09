@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { Benchmark } from "./BenchmarksTable";
+import styles from "./HardwareRecommendation.module.css";
 
 type HardwareProfile = {
   cpuModel: string;
@@ -79,17 +80,17 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+      <div className={styles.controlsRow}>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Codec</label>
-          <select className="input" value={codec} onChange={e => setCodec(e.target.value)} style={{ minWidth: 160 }}>
+          <label className={styles.label}>Codec</label>
+          <select className={`input ${styles.select}`} value={codec} onChange={e => setCodec(e.target.value)}>
             <option value="">All Codecs</option>
             {codecs.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
         <div>
-          <label style={{ display: "block", fontSize: 12, color: "var(--muted)", marginBottom: 4 }}>Priority</label>
-          <select className="input" value={priority} onChange={e => setPriority(e.target.value as Priority)} style={{ minWidth: 160 }}>
+          <label className={styles.label}>Priority</label>
+          <select className={`input ${styles.select}`} value={priority} onChange={e => setPriority(e.target.value as Priority)}>
             <option value="balanced">Balanced</option>
             <option value="speed">Speed (FPS)</option>
             <option value="quality">Quality (VMAF)</option>
@@ -99,37 +100,37 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
       </div>
 
       {recommendations.length === 0 ? (
-        <div style={{ color: "var(--muted)", padding: "24px 0", textAlign: "center" }}>
+        <div className={styles.emptyState}>
           No benchmark data available for the selected filters.
         </div>
       ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className="table" style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className={styles.tableWrap}>
+          <table className={`table ${styles.table}`}>
             <thead className="thead">
               <tr>
-                <th className="th" style={{ textAlign: "center", width: 40 }}>#</th>
+                <th className={`th ${styles.rankHead}`}>#</th>
                 <th className="th">CPU</th>
                 <th className="th">GPU</th>
-                <th className="th" style={{ textAlign: "right" }}>Avg FPS</th>
-                <th className="th" style={{ textAlign: "right" }}>Avg VMAF</th>
-                <th className="th" style={{ textAlign: "right" }}>Avg Power (W)</th>
-                <th className="th" style={{ textAlign: "right" }}>FPS/Watt</th>
-                <th className="th" style={{ textAlign: "right" }}>Samples</th>
+                <th className={`th ${styles.numHead}`}>Avg FPS</th>
+                <th className={`th ${styles.numHead}`}>Avg VMAF</th>
+                <th className={`th ${styles.numHead}`}>Avg Power (W)</th>
+                <th className={`th ${styles.numHead}`}>FPS/Watt</th>
+                <th className={`th ${styles.numHead}`}>Samples</th>
               </tr>
             </thead>
             <tbody>
               {recommendations.map((hw, i) => (
                 <tr key={`${hw.cpuModel}-${hw.gpuModel}-${i}`}>
-                  <td className="td" style={{ textAlign: "center", fontWeight: 600, color: i < 3 ? "var(--accent)" : "var(--foreground)" }}>
+                  <td className={`td ${styles.rankCell} ${i < 3 ? styles.topRank : ""}`.trim()}>
                     {i + 1}
                   </td>
                   <td className="td">{hw.cpuModel}</td>
                   <td className="td">{hw.gpuModel || "-"}</td>
-                  <td className="td" style={{ textAlign: "right" }}>{hw.avgFps.toFixed(2)}</td>
-                  <td className="td" style={{ textAlign: "right" }}>{hw.avgVmaf != null ? hw.avgVmaf.toFixed(1) : "-"}</td>
-                  <td className="td" style={{ textAlign: "right" }}>{hw.avgPower != null ? hw.avgPower.toFixed(1) : "-"}</td>
-                  <td className="td" style={{ textAlign: "right" }}>{hw.fpsPerWatt != null ? hw.fpsPerWatt.toFixed(2) : "-"}</td>
-                  <td className="td" style={{ textAlign: "right" }}>{hw.samples}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.avgFps.toFixed(2)}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.avgVmaf != null ? hw.avgVmaf.toFixed(1) : "-"}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.avgPower != null ? hw.avgPower.toFixed(1) : "-"}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.fpsPerWatt != null ? hw.fpsPerWatt.toFixed(2) : "-"}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.samples}</td>
                 </tr>
               ))}
             </tbody>

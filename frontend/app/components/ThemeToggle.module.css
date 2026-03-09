@@ -1,0 +1,18 @@
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.icon {
+  font-size: 15px;
+}
+
+.label {
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: "Rajdhani", "Bahnschrift", sans-serif;
+}

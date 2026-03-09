@@ -2,11 +2,11 @@ import type { Benchmark } from "../components/BenchmarksTable";
 import ErrorBoundary from "../components/ErrorBoundary";
 import HardwareRecommendation from "../components/HardwareRecommendation";
 import EfficiencyChart from "../components/EfficiencyChart";
-import GpuUtilChart from "../components/GpuUtilChart";
-import PowerConsumptionChart from "../components/PowerConsumptionChart";
-import CpuUtilHeatmap from "../components/CpuUtilHeatmap";
 import LazyChart from "../components/LazyChart";
 import { fetchBenchmarks } from "../lib/fetchBenchmarks";
+import PageHeader from "../components/ui/PageHeader";
+import SectionCard from "../components/ui/SectionCard";
+import StatusBanner from "../components/ui/StatusBanner";
 import styles from "./page.module.css";
 
 export const revalidate = 60;
@@ -22,44 +22,42 @@ export default async function HardwarePage() {
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <h1 className={styles.heading}>Hardware Intelligence</h1>
-        <div style={{ background: "var(--error-bg)", color: "var(--error-fg)", padding: 12, borderRadius: 8 }}>
-          Failed to load data: {error}
-        </div>
+      <div className="page">
+        <PageHeader title="Hardware Recommendations" subtitle="Recommendation-first hardware view for operational decisions." />
+        <StatusBanner kind="error">Failed to load data: {error}</StatusBanner>
       </div>
     );
   }
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.heading}>Hardware Intelligence</h1>
-      <p className="subtle" style={{ marginBottom: 24 }}>
-        Hardware recommendations and efficiency analysis based on real benchmark data.
-        Power and GPU metrics require submissions from systems with NVIDIA GPUs.
-      </p>
+    <div className={`page ${styles.layout}`}>
+      <PageHeader
+        title="Hardware Recommendations"
+        subtitle="Find the best hardware profile for your current encoder priorities, then validate with compact efficiency context."
+      />
 
-      <div className="card" style={{ padding: 16, marginBottom: 32 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Hardware Recommendation Engine</h2>
-        <p className="subtle" style={{ marginBottom: 16, fontSize: 14 }}>
-          Select a codec and priority to see which hardware performs best. Rankings are based on
-          aggregated benchmark data from all submissions.
-        </p>
+      <SectionCard
+        title="Recommendation Engine"
+        subtitle="Ranked hardware profiles from accepted benchmark aggregates."
+      >
         <ErrorBoundary>
           <HardwareRecommendation data={data} />
         </ErrorBoundary>
-      </div>
+      </SectionCard>
 
-      <h2 className={styles.subheading}>Efficiency Metrics</h2>
-      <div className={styles.grid}>
-        <LazyChart><ErrorBoundary><EfficiencyChart data={data} /></ErrorBoundary></LazyChart>
-        <LazyChart><ErrorBoundary><GpuUtilChart data={data} /></ErrorBoundary></LazyChart>
-        <LazyChart><ErrorBoundary><PowerConsumptionChart data={data} /></ErrorBoundary></LazyChart>
-      </div>
+      <SectionCard
+        title="Efficiency Snapshot"
+        subtitle="High-level FPS/Watt view across codecs."
+      >
+        <div className={styles.chartArea}>
+          <LazyChart>
+            <ErrorBoundary>
+              <EfficiencyChart data={data} title="Top Codec Efficiency (FPS/Watt)" />
+            </ErrorBoundary>
+          </LazyChart>
+        </div>
+      </SectionCard>
 
-      <div style={{ marginTop: 16 }}>
-        <LazyChart><ErrorBoundary><CpuUtilHeatmap data={data} /></ErrorBoundary></LazyChart>
-      </div>
     </div>
   );
 }

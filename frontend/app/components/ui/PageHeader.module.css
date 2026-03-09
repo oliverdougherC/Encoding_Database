@@ -1,0 +1,35 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+}
+
+.title {
+  font-size: clamp(1.35rem, 1.6vw, 1.85rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  max-width: 84ch;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    margin-bottom: 14px;
+  }
+}

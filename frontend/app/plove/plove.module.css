@@ -1,55 +1,63 @@
-.container {
-  padding: 24px;
-  max-width: 900px;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.layout {
+  display: grid;
+  gap: 12px;
+  max-width: 980px;
 }
 
-.heading {
-  font-size: 24px;
-  font-weight: 600;
+.paragraph {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  margin-bottom: 10px;
 }
 
-.intro {
-  font-size: 14px;
-}
-
-.section {
-  padding: 16px;
-}
-
-.sectionTitle {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-.sectionDesc {
-  margin-bottom: 12px;
+.codeBlock {
+  margin-top: 4px;
 }
 
 .list {
   padding-left: 18px;
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 6px;
-  margin-bottom: 12px;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
-.listNoMargin {
-  padding-left: 18px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.weightGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
-.codeBlock {
-  padding-right: 12px;
+.weightCard {
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--accent) 25%);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
 }
 
-.footnote {
-  font-size: 12px;
-  margin-top: 8px;
+.weightValue {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1.2;
+}
+
+.weightLabel {
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.weightDesc {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+@media (max-width: 600px) {
+  .weightGrid {
+    grid-template-columns: 1fr;
+  }
 }

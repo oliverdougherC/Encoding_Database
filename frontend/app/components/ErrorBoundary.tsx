@@ -1,6 +1,7 @@
 "use client";
 
 import React, { Component, ErrorInfo, ReactNode } from "react";
+import styles from "./ErrorBoundary.module.css";
 
 interface Props {
   children: ReactNode;
@@ -38,17 +39,17 @@ export default class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="card" style={{ padding: 24, textAlign: "center" }}>
-          <h2 style={{ marginBottom: 12, color: "var(--error-fg, #ef4444)" }}>
+        <div className={`card ${styles.boundaryCard}`}>
+          <h2 className={styles.title}>
             Something went wrong
           </h2>
-          <p className="subtle" style={{ marginBottom: 16 }}>
+          <p className={`subtle ${styles.message}`}>
             {this.state.error?.message || "An unexpected error occurred while rendering this component."}
           </p>
           <button
-            className="btn"
+            className="btn btn-primary"
             onClick={() => this.setState({ hasError: false, error: null })}
-            style={{ padding: "8px 16px" }}
+            type="button"
           >
             Try Again
           </button>

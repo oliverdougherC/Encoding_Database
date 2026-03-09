@@ -12,7 +12,7 @@ import { createPlScoreContext, scorePlBenchmarkV6 } from "../lib/plScore";
 export type { Benchmark } from "../lib/types";
 
 const PAGE_SIZE = 50;
-const COL_WIDTHS = "4% 9% 17% 17% 13% 7% 11% 12% 7% 7%";
+const COL_WIDTHS = "minmax(38px,0.45fr) minmax(72px,0.9fr) minmax(170px,2fr) minmax(170px,2fr) minmax(130px,1.5fr) minmax(58px,0.7fr) minmax(108px,1.15fr) minmax(96px,1.05fr) minmax(78px,0.85fr) minmax(56px,0.7fr)";
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -130,6 +130,26 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     const matching = initialData.filter(r => r.codec.toLowerCase().includes(lower));
     return Array.from(new Set(matching.map(r => r.preset))).sort();
   }, [initialData, codecFilter, presets]);
+
+  const activeFilterChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string; clear: () => void }> = [];
+    if (cpuFilter) chips.push({ key: "cpu", label: `CPU: ${cpuFilter}`, clear: () => setCpuFilter("") });
+    if (gpuFilter) chips.push({ key: "gpu", label: `GPU: ${gpuFilter}`, clear: () => setGpuFilter("") });
+    if (codecFilter) chips.push({ key: "codec", label: `Codec: ${codecFilter}`, clear: () => setCodecFilter("") });
+    if (presetFilter) chips.push({ key: "preset", label: `Preset: ${presetFilter}`, clear: () => setPresetFilter("") });
+    if (softwareOnly) chips.push({ key: "sw", label: "Software Only", clear: () => setSoftwareOnly(false) });
+    if (hardwareOnly) chips.push({ key: "hw", label: "Hardware Only", clear: () => setHardwareOnly(false) });
+    return chips;
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
+
+  const resetAllFilters = useCallback(() => {
+    setCpuFilter("");
+    setGpuFilter("");
+    setCodecFilter("");
+    setPresetFilter("");
+    setSoftwareOnly(false);
+    setHardwareOnly(false);
+  }, []);
 
   // Pre-compute hardware encoder classification once per row to avoid repeated regex tests
   const dataWithHwClass = useMemo(() => {
@@ -327,6 +347,22 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         </label>
       </div>
 
+      <div className={styles.commandRow}>
+        <div className={styles.chipsRow}>
+          {activeFilterChips.length === 0 ? (
+            <span className="subtle">No active filters</span>
+          ) : (
+            activeFilterChips.map((chip) => (
+              <button key={chip.key} type="button" className={styles.filterChip} onClick={chip.clear} aria-label={`Clear ${chip.label}`}>
+                {chip.label}
+                <span aria-hidden="true">×</span>
+              </button>
+            ))
+          )}
+        </div>
+        <button className={`btn ${styles.actionBtn}`} onClick={resetAllFilters}>Reset Filters</button>
+      </div>
+
       <div className={styles.weightsGrid}>
         <div>
           <div className={styles.weightsLabel}>PL Score v6 Core Weights</div>
@@ -346,25 +382,34 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         <button className={`btn ${styles.applyBtn}`} onClick={applyWeightsFromUI}>Apply</button>
       </div>
 
-      <VirtualTable
+      <div className={styles.desktopTable}>
+        <VirtualTable
+          rows={pagedRows}
+          selectedIds={selectedIds}
+          toggleSelect={toggleSelect}
+          setShowDetailId={setShowDetailId}
+          setShowFfmpegId={setShowFfmpegId}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          setSort={setSort}
+        />
+      </div>
+      <MobileCards
         rows={pagedRows}
         selectedIds={selectedIds}
         toggleSelect={toggleSelect}
         setShowDetailId={setShowDetailId}
         setShowFfmpegId={setShowFfmpegId}
-        sortKey={sortKey}
-        sortDir={sortDir}
-        setSort={setSort}
       />
 
       <div className={styles.paginationBar}>
         <span className="subtle">
           Showing {totalRows === 0 ? 0 : page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalRows)} of {totalRows}
         </span>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <button className="btn" style={{ padding: "6px 10px" }} disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</button>
+        <div className={styles.paginationActions}>
+          <button className={`btn ${styles.paginationBtn}`} disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</button>
           <span>Page {page + 1} of {totalPages}</span>
-          <button className="btn" style={{ padding: "6px 10px" }} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
+          <button className={`btn ${styles.paginationBtn}`} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
         </div>
       </div>
 
@@ -404,8 +449,8 @@ function VirtualTable({ rows, selectedIds, toggleSelect, setShowDetailId, setSho
   const virtualizer = useVirtualizer({ count: rows.length, getScrollElement: () => parentRef.current, estimateSize: () => 48, overscan: 10 });
   return (
     <div className={`card ${styles.cardOverflow}`}>
-      <div className={styles.virtualHeader} role="row" style={{ display: "grid", gridTemplateColumns: COL_WIDTHS }}>
-        <div className={`th ${styles.textCenter}`} role="columnheader" style={{ padding: "8px 4px" }}></div>
+      <div className={`${styles.virtualHeader} ${styles.virtualGrid}`} role="row" style={{ ["--col-layout" as any]: COL_WIDTHS }}>
+        <div className={`th ${styles.textCenter} ${styles.selectionHead}`} role="columnheader"></div>
         <div className={`th ${styles.textCenter}`} role="columnheader">Details</div>
         <ThDiv onClick={() => setSort("cpuModel")} label="CPU" active={sortKey === "cpuModel"} dir={sortDir} />
         <ThDiv onClick={() => setSort("gpuModel")} label="GPU" active={sortKey === "gpuModel"} dir={sortDir} />
@@ -417,34 +462,82 @@ function VirtualTable({ rows, selectedIds, toggleSelect, setShowDetailId, setSho
         <div className={`th ${styles.textCenter}`} role="columnheader" title="Accepted submissions">Subs</div>
       </div>
       <div ref={parentRef} className={styles.virtualScrollContainer} role="table">
-        <div style={{ height: virtualizer.getTotalSize(), width: "100%", position: "relative" }}>
+        <div className={styles.virtualCanvas} style={{ height: virtualizer.getTotalSize() }}>
           {virtualizer.getVirtualItems().map(vr => {
             const row = rows[vr.index];
             return (
-              <div key={row.id} role="row" className={styles.virtualRow} style={{ position: "absolute", top: 0, left: 0, width: "100%", height: vr.size, transform: `translateY(${vr.start}px)`, display: "grid", gridTemplateColumns: COL_WIDTHS, background: selectedIds.has(row.id) ? "color-mix(in srgb, var(--highlight) 20%, var(--surface))" : undefined }}>
-                <div role="cell" className={`td ${styles.textCenter}`} style={{ padding: "8px 4px" }}><input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} disabled={!selectedIds.has(row.id) && selectedIds.size >= 6} aria-label="Select for comparison" style={{ accentColor: "var(--accent)" }} /></div>
-                <div role="cell" className={`td ${styles.textCenter}`}><button onClick={() => setShowDetailId(row.id)} className={`btn ${styles.hoverBtn}`} aria-label="View details">Details</button></div>
-                <div role="cell" className="td" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{renderHardwareLink(row.cpuModel, "cpu")}</div>
-                <div role="cell" className="td" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{renderGpuCell(row)}</div>
-                <div role="cell" className="td">{row._codecLabel}</div>
-                <div role="cell" className={`td ${styles.textRight}`}>{row.crf == null ? "-" : row.crf}</div>
-                <div role="cell" className="td">{row.preset}</div>
-                <div role="cell" className={`td ${styles.textRight}`}>{row._plScore > 0 ? row._plScore.toFixed(2) : "-"}</div>
-                <div role="cell" className={`td ${styles.textCenter}`}><button onClick={() => setShowFfmpegId(row.id)} className={`btn ${styles.hoverBtn}`} aria-label="View ffmpeg command">FFmpeg</button></div>
-                <div role="cell" className={`td ${styles.textCenter}`}>{typeof row.samples === "number" ? row.samples : "-"}</div>
+              <div key={row.id} role="row" className={`${styles.virtualRow} ${styles.virtualGrid} ${selectedIds.has(row.id) ? styles.selectedRow : ""}`.trim()} style={{ ["--col-layout" as any]: COL_WIDTHS, height: vr.size, transform: `translateY(${vr.start}px)` }}>
+                <div role="cell" className={`${styles.textCenter} ${styles.selectionCell}`}><input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} disabled={!selectedIds.has(row.id) && selectedIds.size >= 6} aria-label="Select for comparison" className={styles.rowCheckbox} /></div>
+                <div role="cell" className={styles.textCenter}><button onClick={() => setShowDetailId(row.id)} className={styles.hoverBtn} aria-label="View details">Details</button></div>
+                <div role="cell" className={styles.ellipsisCell}>{renderHardwareLink(row.cpuModel, "cpu")}</div>
+                <div role="cell" className={styles.ellipsisCell}>{renderGpuCell(row)}</div>
+                <div role="cell">{row._codecLabel}</div>
+                <div role="cell" className={styles.textRight}>{row.crf == null ? "-" : row.crf}</div>
+                <div role="cell">{row.preset}</div>
+                <div role="cell" className={styles.textRight}>{row._plScore > 0 ? row._plScore.toFixed(2) : "-"}</div>
+                <div role="cell" className={styles.textCenter}><button onClick={() => setShowFfmpegId(row.id)} className={styles.hoverBtn} aria-label="View ffmpeg command">FFmpeg</button></div>
+                <div role="cell" className={styles.textCenter}>{typeof row.samples === "number" ? row.samples : "-"}</div>
               </div>
             );
           })}
-          {rows.length === 0 && <div style={{ padding: 16, textAlign: "center", color: "var(--muted)" }}>No results for current filters.</div>}
+          {rows.length === 0 && <div className={styles.noResults}>No results for current filters.</div>}
         </div>
       </div>
     </div>
   );
 }
 
+function MobileCards({
+  rows,
+  selectedIds,
+  toggleSelect,
+  setShowDetailId,
+  setShowFfmpegId,
+}: {
+  rows: EnrichedBenchmark[];
+  selectedIds: Set<string>;
+  toggleSelect: (id: string) => void;
+  setShowDetailId: (id: string | null) => void;
+  setShowFfmpegId: (id: string | null) => void;
+}) {
+  return (
+    <div className={styles.mobileCards}>
+      {rows.length === 0 ? (
+        <div className={styles.noResults}>No results for current filters.</div>
+      ) : (
+        rows.map((row) => (
+          <article key={row.id} className={styles.mobileCard}>
+            <header className={styles.mobileCardHeader}>
+              <label className={styles.mobileSelect}>
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(row.id)}
+                  onChange={() => toggleSelect(row.id)}
+                  disabled={!selectedIds.has(row.id) && selectedIds.size >= 6}
+                  aria-label="Select for comparison"
+                />
+                Compare
+              </label>
+              <span className={styles.mobileScore}>PL {row._plScore > 0 ? row._plScore.toFixed(2) : "-"}</span>
+            </header>
+            <div className={styles.mobilePair}><span className="subtle">CPU</span><span>{row.cpuModel}</span></div>
+            <div className={styles.mobilePair}><span className="subtle">GPU</span><span>{renderGpuCell(row)}</span></div>
+            <div className={styles.mobilePair}><span className="subtle">Codec</span><span>{row._codecLabel}</span></div>
+            <div className={styles.mobilePair}><span className="subtle">Preset/CRF</span><span>{row.preset} / {row.crf == null ? "-" : row.crf}</span></div>
+            <div className={styles.mobileActions}>
+              <button type="button" className={`btn ${styles.hoverBtn}`} onClick={() => setShowDetailId(row.id)}>Details</button>
+              <button type="button" className={`btn ${styles.hoverBtn}`} onClick={() => setShowFfmpegId(row.id)}>FFmpeg</button>
+            </div>
+          </article>
+        ))
+      )}
+    </div>
+  );
+}
+
 function ThDiv({ label, onClick, active, dir, align }: { label: string; onClick: () => void; active: boolean; dir: "asc" | "desc"; align?: "left" | "right" }) {
   return (
-    <div className={`th ${styles.sortable}`} role="columnheader" style={{ textAlign: align || "left" }} aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
+    <div className={`th ${styles.sortable} ${align === "right" ? styles.textRight : ""}`} role="columnheader" aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}>
       <button
         type="button"
         onClick={onClick}
@@ -776,7 +869,7 @@ function WeightSlider({ label, value, onChange }: { label: string; value: number
         step={0.01}
         value={value}
         onChange={e => onChange(Number(e.target.value))}
-        style={{ accentColor: "var(--accent)" }}
+        className={styles.weightRange}
       />
     </label>
   );

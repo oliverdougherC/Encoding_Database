@@ -1,0 +1,28 @@
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.action {
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  padding: 9px 12px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.84rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  background: var(--surface-2);
+  color: var(--foreground);
+}
+
+.primary {
+  background: var(--apply-bg);
+  border-color: var(--apply-border);
+  color: var(--accent-contrast);
+}
+
+.secondary {
+  background: color-mix(in srgb, var(--surface-2) 86%, var(--highlight) 14%);
+}

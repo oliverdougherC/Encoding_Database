@@ -1,0 +1,29 @@
+.banner {
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.info {
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--surface));
+  color: var(--foreground);
+}
+
+.error {
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border-color: color-mix(in srgb, var(--error-fg) 34%, var(--border));
+}
+
+.warning {
+  background: var(--warning-bg);
+  color: var(--warning-fg);
+  border-color: color-mix(in srgb, var(--warning-fg) 34%, var(--border));
+}
+
+.success {
+  background: var(--success-bg);
+  color: var(--success-fg);
+  border-color: color-mix(in srgb, var(--success-fg) 30%, var(--border));
+}

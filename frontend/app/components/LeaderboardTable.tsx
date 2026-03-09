@@ -22,7 +22,7 @@ export default function LeaderboardTable({
   const maxValue = entries.reduce((max, e) => Math.max(max, e.value), 0);
 
   return (
-    <div className={`card ${styles.leaderboardCard}`}>
+    <div className={`card card--interactive ${styles.leaderboardCard}`}>
       <div className={styles.title}>{title}</div>
       <div className={styles.header}>
         <span className={styles.rankCol}>#</span>

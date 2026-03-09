@@ -1,0 +1,58 @@
+.button {
+  border: 1px solid color-mix(in srgb, var(--border) 72%, var(--accent-secondary) 28%);
+  border-radius: 10px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-2) 86%, var(--highlight) 14%),
+    var(--surface-2)
+  );
+  color: var(--foreground);
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 12px;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--accent) 12%, var(--surface-2)),
+    color-mix(in srgb, var(--accent) 6%, var(--surface-2))
+  );
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--border));
+  box-shadow: 0 6px 14px color-mix(in srgb, #000 18%, transparent);
+  transform: translateY(-1px);
+}
+
+.button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.primary {
+  background: var(--apply-bg);
+  border-color: var(--apply-border);
+  color: var(--accent-contrast);
+}
+
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--apply-bg) 86%, var(--accent) 14%);
+}
+
+.secondary {}
+
+.ghost {
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+}
+
+.danger {
+  background: var(--error-bg);
+  color: var(--error-fg);
+  border-color: color-mix(in srgb, var(--error-fg) 44%, var(--border));
+}
+
+.icon {
+  padding: 6px 8px;
+  line-height: 1;
+}

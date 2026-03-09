@@ -1,0 +1,17 @@
+.empty {
+  border: 1px dashed color-mix(in srgb, var(--border) 68%, var(--accent) 32%);
+  border-radius: 10px;
+  padding: 18px 14px;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface-2) 80%, var(--surface));
+}
+
+.title {
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.description {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
