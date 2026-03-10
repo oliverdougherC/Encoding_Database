@@ -553,6 +553,22 @@ function ThDiv({ label, onClick, active, dir, align }: { label: string; onClick:
 
 function DetailsModal({ row, onClose, relSize }: { row: EnrichedBenchmark; onClose: () => void; relSize: number }) {
   const [showAdditional, setShowAdditional] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   const acceptedSamplesRaw = typeof row.samples === "number" ? row.samples : 1;
   const acceptedSamples = acceptedSamplesRaw > 0 ? acceptedSamplesRaw : 1;
@@ -564,8 +580,16 @@ function DetailsModal({ row, onClose, relSize }: { row: EnrichedBenchmark; onClo
   const encodeModeLabel = "CRF (single-pass)";
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
-      <div className={`modal ${styles.detailsModal}`}>
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="details-modal-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className={`modal ${styles.detailsModal}`} ref={dialogRef} tabIndex={-1}>
         <div className="modal-header">
           <div id="details-modal-title" className={styles.modalTitle}>Encode Details</div>
           <button onClick={onClose} className={`btn ${styles.modalCloseBtn}`} aria-label="Close details modal">Close</button>
@@ -714,6 +738,22 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
   const [inputPath, setInputPath] = useState<string>("input.mp4");
   const [outputPath, setOutputPath] = useState<string>("output.mp4");
   const [copied, setCopied] = useState<boolean>(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   useEffect(() => {
     if (!copied) return;
@@ -760,8 +800,16 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
   };
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="ffmpeg-modal-title">
-      <div className="modal">
+    <div
+      className="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ffmpeg-modal-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className="modal" ref={dialogRef} tabIndex={-1}>
         <div className="modal-header">
           <div id="ffmpeg-modal-title" className={styles.modalTitle}>FFmpeg Command</div>
           <button onClick={onClose} className={`btn ${styles.modalCloseBtn}`} aria-label="Close FFmpeg modal">Close</button>

@@ -7,6 +7,10 @@ import crypto from 'node:crypto';
 const router = Router();
 
 type BenchmarkRow = Awaited<ReturnType<typeof prisma.benchmark.findMany>>[number];
+type PrismaErrorLike = {
+  code?: string;
+  meta?: { target?: string[] | string };
+};
 
 // Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
@@ -143,6 +147,46 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
     monitorDurationMs: data.monitorDurationMs ?? null,
   } as const;
   return crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
+}
+
+function getUniqueConflictTargets(error: unknown): string[] {
+  const target = (error as PrismaErrorLike | null)?.meta?.target;
+  if (Array.isArray(target)) {
+    return target.filter((item): item is string => typeof item === 'string');
+  }
+  if (typeof target === 'string') return [target];
+  return [];
+}
+
+function isPayloadHashConflict(error: unknown): boolean {
+  const e = error as PrismaErrorLike | null;
+  if (e?.code !== 'P2002') return false;
+  return getUniqueConflictTargets(error).some((target) => target.toLowerCase().includes('payloadhash'));
+}
+
+function isRetryableSubmitConflict(error: unknown): boolean {
+  const e = error as PrismaErrorLike | null;
+  if (e?.code !== 'P2002') return false;
+  if (isPayloadHashConflict(error)) return false;
+  return true;
+}
+
+const MAX_SUBMIT_TRANSACTION_RETRIES = 1;
+
+export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+  let attemptsRemaining = MAX_SUBMIT_TRANSACTION_RETRIES;
+  // Retry a single time for non-payloadHash unique conflicts caused by concurrent create races.
+  for (;;) {
+    try {
+      return await operation();
+    } catch (error) {
+      if (attemptsRemaining > 0 && isRetryableSubmitConflict(error)) {
+        attemptsRemaining -= 1;
+        continue;
+      }
+      throw error;
+    }
+  }
 }
 
 const TELEMETRY_NOTE_REGEX = /telemetry=(\{[\s\S]*?\})(?:;|$)/;
@@ -385,8 +429,9 @@ router.post('/submit', async (req, res) => {
 
     // Composite key for aggregation (single row per hardware/codec/preset/crf)
     let createdNew = false;
-    // All writes (Submission audit + Benchmark upsert) happen inside a single transaction
-    const row = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    // All writes (Submission audit + Benchmark upsert) happen inside a single transaction.
+    // Retry once for benchmark-key unique conflicts caused by concurrent first-time creates.
+    const row = await runSubmitTransactionWithRetry(() => prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Store raw submission record for auditability (inside tx so it rolls back on failure)
       await tx.submission.create({
         data: {
@@ -776,7 +821,7 @@ router.post('/submit', async (req, res) => {
       const updated = await tx.benchmark.findUnique({ where: { id: existing.id } });
       if (!updated) throw new Error('Row disappeared after atomic update');
       return updated;
-    });
+    }));
 
     invalidateQueryCache();
     res.status(createdNew ? 201 : 200).json(row);
@@ -790,6 +835,8 @@ router.post('/submit', async (req, res) => {
       } catch (findErr) {
         logError('findExistingAfterP2002', findErr);
       }
+      logError('POST /submit unique conflict', err);
+      return res.status(503).json({ error: 'Conflicting submission detected. Please retry.' });
     }
     if (errCode === 'P2024' || errCode === 'P2028') {
       // P2024: connection pool timeout (maxWait exceeded)
@@ -817,6 +864,7 @@ const parsedDefaultQueryLimit = Number(process.env.QUERY_DEFAULT_LIMIT || 100);
 export const DEFAULT_QUERY_LIMIT = Number.isFinite(parsedDefaultQueryLimit) && parsedDefaultQueryLimit > 0
   ? Math.min(Math.trunc(parsedDefaultQueryLimit), 500)
   : 100;
+const MAX_QUERY_LIMIT = 500;
 let queryCacheData: unknown = null;
 let queryCacheKey: string = '';
 let queryCacheExpiry: number = 0;
@@ -842,6 +890,25 @@ function numberParam(query: Record<string, string | undefined>, key: string): nu
   if (raw == null || raw === '') return undefined;
   const n = Number(raw);
   return Number.isFinite(n) ? n : undefined;
+}
+
+function parsePositiveInt(raw: string | undefined): number | undefined {
+  if (raw == null) return undefined;
+  const trimmed = raw.trim();
+  if (!trimmed || !/^\d+$/.test(trimmed)) return undefined;
+  const parsed = Number(trimmed);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) return undefined;
+  return parsed;
+}
+
+export function parseTakeParam(raw: string | undefined): number {
+  const parsed = parsePositiveInt(raw);
+  if (parsed == null) return DEFAULT_QUERY_LIMIT;
+  return Math.min(parsed, MAX_QUERY_LIMIT);
+}
+
+export function parseSkipParam(raw: string | undefined): number | undefined {
+  return parsePositiveInt(raw);
 }
 
 function booleanParam(query: Record<string, string | undefined>, key: string): boolean | undefined {
@@ -882,10 +949,8 @@ function applyRangeFilter(
 router.get('/query', async (req, res) => {
   try {
     const query = req.query as Record<string, string | undefined>;
-    const rawLimit = Number(query.limit);
-    const rawSkip = Number(query.skip);
-    const take = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 500) : DEFAULT_QUERY_LIMIT;
-    const skip = Number.isFinite(rawSkip) && rawSkip > 0 ? rawSkip : undefined;
+    const take = parseTakeParam(query.limit);
+    const skip = parseSkipParam(query.skip);
 
     const where: Record<string, unknown> = { status: 'accepted' };
     if (query.passes) {

@@ -9,5 +9,15 @@ type Props = {
 };
 
 export default function StatusBanner({ kind = "info", children, className = "" }: Props) {
-  return <div className={`${styles.banner} ${styles[kind]} ${className}`.trim()}>{children}</div>;
+  const isAssertive = kind === "error" || kind === "warning";
+  return (
+    <div
+      className={`${styles.banner} ${styles[kind]} ${className}`.trim()}
+      role={isAssertive ? "alert" : "status"}
+      aria-live={isAssertive ? "assertive" : "polite"}
+      aria-atomic="true"
+    >
+      {children}
+    </div>
+  );
 }

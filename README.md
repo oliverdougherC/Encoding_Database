@@ -138,8 +138,7 @@ python client/main.py \
   --presets fast,medium \
   --crf 24 \
   --batch-size 0 \
-  --content-class mixed \
-  --resolution 1080p
+  --no-submit
 ```
 
 Common flags:
@@ -148,6 +147,7 @@ Common flags:
 - `--use-token`: use short-lived ingest token flow when server supports it.
 - `--queue-dir`: directory for offline retry queue.
 - `--pause-on-exit`: keep console open after run (useful on Windows).
+- `--menu`: force interactive menu mode even when single-run CLI flags are provided.
 - `--gui`: force Windows GUI mode.
 - `--cli`: force terminal mode (overrides auto-GUI on Windows packaged builds).
 
@@ -286,7 +286,7 @@ Both packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-Security note: for hardened public deployment, set `INGEST_MODE=signed` and a strong `INGEST_HMAC_SECRET` in `.env`.
+Security note: for hardened public deployment, set `INGEST_MODE=signed`, a strong `INGEST_HMAC_SECRET`, and an explicit `TRUST_PROXY` value in `.env` that matches your reverse-proxy topology.
 
 Frontend-only deployment notes are in `frontend/DEPLOYMENT.md`.
 

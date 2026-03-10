@@ -1,5 +1,60 @@
 import { NextRequest, NextResponse } from "next/server";
 
+const MOCK_SAMPLE = [
+  {
+    id: "mock-1",
+    createdAt: new Date().toISOString(),
+    cpuModel: "Intel Core i7-12700K",
+    gpuModel: "NVIDIA GeForce RTX 3060",
+    ramGB: 32,
+    os: "Windows 11",
+    codec: "h264_nvenc",
+    crf: 22,
+    preset: "p6",
+    fps: 120.5,
+    vmaf: 95.2,
+    fileSizeBytes: 85 * 1024 * 1024,
+    notes: null,
+    ffmpegVersion: "5.1",
+    encoderName: "h264_nvenc",
+    clientVersion: "1.0.0",
+    inputHash: null,
+    runMs: 10000,
+    status: "accepted",
+    samples: 3,
+    vmafSamples: 3,
+  },
+  {
+    id: "mock-2",
+    createdAt: new Date().toISOString(),
+    cpuModel: "Apple M2",
+    gpuModel: null,
+    ramGB: 16,
+    os: "macOS 15",
+    codec: "hevc_videotoolbox",
+    crf: 26,
+    preset: "p6",
+    fps: 80.2,
+    vmaf: 92.4,
+    fileSizeBytes: 70 * 1024 * 1024,
+    notes: null,
+    ffmpegVersion: "6.0",
+    encoderName: "hevc_videotoolbox",
+    clientVersion: "1.0.0",
+    inputHash: null,
+    runMs: 12000,
+    status: "accepted",
+    samples: 2,
+    vmafSamples: 2,
+  },
+];
+
+function createMockResponse() {
+  const response = NextResponse.json(MOCK_SAMPLE);
+  response.headers.set("X-Total-Count", String(MOCK_SAMPLE.length));
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const internal = process.env.INTERNAL_API_BASE_URL;
   const isProd = process.env.NODE_ENV === "production";
@@ -11,6 +66,10 @@ export async function GET(request: NextRequest) {
       const url = `${internal}/query${qs}`;
       const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
       if (!res.ok) {
+        if (!isProd) {
+          console.warn(`[api/query] Upstream returned ${res.status}; using mock data`);
+          return createMockResponse();
+        }
         return NextResponse.json({ error: "Backend error" }, { status: res.status });
       }
       const data = await res.json();
@@ -23,6 +82,11 @@ export async function GET(request: NextRequest) {
       }
       return response;
     } catch (error) {
+      if (!isProd) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.warn(`[api/query] Upstream unavailable (${msg}); using mock data`);
+        return createMockResponse();
+      }
       console.error("Query proxy failed:", error);
       return NextResponse.json({ error: "Upstream query failed" }, { status: 502 });
     }
@@ -36,55 +100,5 @@ export async function GET(request: NextRequest) {
   }
 
   // Mock API for frontend-only development
-  const sample = [
-    {
-      id: "mock-1",
-      createdAt: new Date().toISOString(),
-      cpuModel: "Intel Core i7-12700K",
-      gpuModel: "NVIDIA GeForce RTX 3060",
-      ramGB: 32,
-      os: "Windows 11",
-      codec: "h264_nvenc",
-      crf: 22,
-      preset: "p6",
-      fps: 120.5,
-      vmaf: 95.2,
-      fileSizeBytes: 85 * 1024 * 1024,
-      notes: null,
-      ffmpegVersion: "5.1",
-      encoderName: "h264_nvenc",
-      clientVersion: "1.0.0",
-      inputHash: null,
-      runMs: 10000,
-      status: "accepted",
-      samples: 3,
-      vmafSamples: 3,
-    },
-    {
-      id: "mock-2",
-      createdAt: new Date().toISOString(),
-      cpuModel: "Apple M2",
-      gpuModel: null,
-      ramGB: 16,
-      os: "macOS 15",
-      codec: "hevc_videotoolbox",
-      crf: 26,
-      preset: "p6",
-      fps: 80.2,
-      vmaf: 92.4,
-      fileSizeBytes: 70 * 1024 * 1024,
-      notes: null,
-      ffmpegVersion: "6.0",
-      encoderName: "hevc_videotoolbox",
-      clientVersion: "1.0.0",
-      inputHash: null,
-      runMs: 12000,
-      status: "accepted",
-      samples: 2,
-      vmafSamples: 2,
-    },
-  ];
-  const response = NextResponse.json(sample);
-  response.headers.set("X-Total-Count", String(sample.length));
-  return response;
+  return createMockResponse();
 }

@@ -10,13 +10,13 @@ import routes from './routes.js';
 import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 
-const app = express();
+export const app = express();
 
 const isProd = process.env.NODE_ENV === 'production';
 
 function parseTrustProxySetting(value: string | undefined): boolean | number | string {
   const raw = String(value || '').trim();
-  if (!raw) return isProd ? 1 : false;
+  if (!raw) return false;
   const lower = raw.toLowerCase();
   if (lower === 'true') return true;
   if (lower === 'false') return false;
@@ -25,8 +25,13 @@ function parseTrustProxySetting(value: string | undefined): boolean | number | s
   return raw;
 }
 
-// Trust reverse-proxy headers only when explicitly configured or in production.
-app.set('trust proxy', parseTrustProxySetting(process.env.TRUST_PROXY));
+const trustProxyRaw = process.env.TRUST_PROXY;
+const trustProxyConfigured = typeof trustProxyRaw === 'string' && trustProxyRaw.trim() !== '';
+if (isProd && !trustProxyConfigured) {
+  console.warn('TRUST_PROXY is unset in production; defaulting to false. Set TRUST_PROXY explicitly for proxied deployments.');
+}
+// Trust reverse-proxy headers only when explicitly configured.
+app.set('trust proxy', parseTrustProxySetting(trustProxyRaw));
 // Hide implementation header
 app.disable('x-powered-by');
 
@@ -173,6 +178,9 @@ app.get('/submit-token', (req, res) => issueSubmitToken(req, res));
 app.get('/submit/token', (req, res) => issueSubmitToken(req, res));
 
 app.use('/submit', (req, res, next) => {
+  if (req.method !== 'POST') {
+    return next();
+  }
   // Helper: validate HMAC if secret provided
   const validateHmac = (): true | { code: number; error: string } => {
     if (!ingestSecret) return { code: 401, error: 'missing_secret' };
@@ -391,19 +399,21 @@ async function shutdown(signal: string) {
   }, 10_000).unref();
 }
 
-process.on('SIGINT', () => shutdown('SIGINT'));
-process.on('SIGTERM', () => shutdown('SIGTERM'));
-process.on('SIGHUP', () => shutdown('SIGHUP'));
+if (process.env.SKIP_SERVER_START !== '1') {
+  process.on('SIGINT', () => shutdown('SIGINT'));
+  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on('SIGHUP', () => shutdown('SIGHUP'));
 
-// Crash guards
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled Rejection', reason);
-  shutdown('unhandledRejection');
-});
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception', error);
-  shutdown('uncaughtException');
-});
+  // Crash guards
+  process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled Rejection', reason);
+    shutdown('unhandledRejection');
+  });
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception', error);
+    shutdown('uncaughtException');
+  });
 
-// Start the server
-startServer();
+  // Start the server
+  startServer();
+}
