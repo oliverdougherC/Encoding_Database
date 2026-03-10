@@ -93,6 +93,25 @@ def _is_cancelled(cancel_event: Optional[Any]) -> bool:
         return False
 
 
+def _has_direct_single_run_intent(raw_args: List[str]) -> bool:
+    """Return True when CLI args explicitly request direct single-run execution."""
+    direct_flags = (
+        "--codec",
+        "--presets",
+        "--crf",
+        "--no-submit",
+        "--use-token",
+        "--retries",
+        "--queue-dir",
+        "--batch-size",
+    )
+    for token in raw_args:
+        for flag in direct_flags:
+            if token == flag or token.startswith(flag + "="):
+                return True
+    return False
+
+
 def build_mode_estimates(presets_cfg: Dict[str, Any]) -> Dict[str, Any]:
     small_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
     medium_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
@@ -1054,8 +1073,10 @@ def main(argv: List[str]) -> int:
     if len(argv) > 1 and argv[1].startswith('--multiprocessing-fork'):
         return 0
 
+    raw_args = list(argv[1:])
+    direct_single_run_intent = _has_direct_single_run_intent(raw_args)
     parser = build_arg_parser()
-    args = parser.parse_args(argv[1:])
+    args = parser.parse_args(raw_args)
 
     # Validate queue directory path early
     try:
@@ -1067,6 +1088,8 @@ def main(argv: List[str]) -> int:
     if args.gui and args.cli:
         print("--gui and --cli cannot be used together.", file=sys.stderr)
         return 1
+    if args.menu:
+        return interactive_menu_flow(parser, args)
     if args.cli:
         return interactive_menu_flow(parser, args)
     if args.gui:
@@ -1074,6 +1097,8 @@ def main(argv: List[str]) -> int:
             print("--gui is only supported on Windows.", file=sys.stderr)
             return 1
         return run_windows_gui_flow(args)
+    if direct_single_run_intent:
+        return run_with_args(args)
     if os.name == "nt" and bool(getattr(sys, "frozen", False)):
         return run_windows_gui_flow(args)
     return interactive_menu_flow(parser, args)

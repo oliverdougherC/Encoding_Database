@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import styles from "./ComparePanel.module.css";
 
@@ -59,9 +60,34 @@ export default function ComparePanel({
   onClose: () => void;
   onClear: () => void;
 }) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    panelRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className={styles.panelBackdrop} role="dialog" aria-modal="true" aria-labelledby="compare-panel-title">
-      <div className={styles.panel}>
+    <div
+      className={styles.panelBackdrop}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="compare-panel-title"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div className={styles.panel} ref={panelRef} tabIndex={-1}>
         <div className={styles.panelHeader}>
           <div id="compare-panel-title" className={styles.panelTitle}>
             Comparing {rows.length} Benchmarks

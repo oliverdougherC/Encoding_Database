@@ -160,9 +160,15 @@ def print_error(message: str) -> None:
 def prompt_yes_no(prompt: str, default_no: bool = True) -> bool:
     _stty_sane()
     if _rich_tty():
-        return bool(_Confirm.ask(f"[accent]{prompt}[/accent]", default=not default_no))
+        try:
+            return bool(_Confirm.ask(f"[accent]{prompt}[/accent]", default=not default_no))
+        except EOFError:
+            return not default_no
     suffix = " [y/N]: " if default_no else " [Y/n]: "
-    ans = input(prompt + suffix).strip().lower()
+    try:
+        ans = input(prompt + suffix).strip().lower()
+    except EOFError:
+        return not default_no
     if not ans:
         return not default_no
     return ans in ("y", "yes")
@@ -179,14 +185,20 @@ def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> in
         for i, opt in enumerate(options, start=1):
             table.add_row(f"{i}.", opt)
         _console.print(_Panel(table, title=f"[title] {prompt} [/title]", border_style="accent2"))
-        raw = _Prompt.ask(
-            f"[cornflower]{prompt}[/cornflower] [muted](1-{len(options)}, default {default_index + 1})[/muted]",
-            default=str(default_index + 1),
-        ).strip()
+        try:
+            raw = _Prompt.ask(
+                f"[cornflower]{prompt}[/cornflower] [muted](1-{len(options)}, default {default_index + 1})[/muted]",
+                default=str(default_index + 1),
+            ).strip()
+        except EOFError:
+            return max(0, min(default_index, len(options) - 1))
     else:
         for i, opt in enumerate(options, start=1):
             print(f"  {i}) {opt}")
-        raw = input(f"{prompt} (1-{len(options)}) [default {default_index+1}]: ").strip()
+        try:
+            raw = input(f"{prompt} (1-{len(options)}) [default {default_index+1}]: ").strip()
+        except EOFError:
+            return max(0, min(default_index, len(options) - 1))
     try:
         idx = int(raw)
         if 1 <= idx <= len(options):
@@ -199,12 +211,18 @@ def prompt_choice(prompt: str, options: List[str], default_index: int = 0) -> in
 def prompt_text(prompt: str, default_value: str = "") -> str:
     _stty_sane()
     if _rich_tty():
-        raw = _Prompt.ask(
-            f"[cornflower]{prompt}[/cornflower]",
-            default=default_value if default_value is not None else "",
-        ).strip()
+        try:
+            raw = _Prompt.ask(
+                f"[cornflower]{prompt}[/cornflower]",
+                default=default_value if default_value is not None else "",
+            ).strip()
+        except EOFError:
+            return default_value
         return raw or default_value
-    raw = input(f"{prompt} [{default_value}]: ").strip()
+    try:
+        raw = input(f"{prompt} [{default_value}]: ").strip()
+    except EOFError:
+        return default_value
     return raw or default_value
 
 
@@ -248,7 +266,10 @@ def confirm_benchmark_readiness() -> bool:
         print("Please close all heavy background applications for accurate results.")
         print('Type "yes" to proceed')
     _stty_sane()
-    ans = input('Type "yes" to proceed: ').strip().lower()
+    try:
+        ans = input('Type "yes" to proceed: ').strip().lower()
+    except EOFError:
+        return False
     return ans == "yes"
 
 

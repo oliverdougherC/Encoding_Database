@@ -5,6 +5,7 @@ import sys
 import time
 import threading
 from typing import Optional, Dict, Any, List, Set
+from urllib.parse import urljoin
 
 from . import config
 
@@ -156,7 +157,8 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             if 300 <= r.status_code < 400:
                 loc = r.headers.get('Location') or r.headers.get('location')
                 if loc:
-                    r = requests.post(loc, data=body, timeout=30, headers=headers, verify=config.REQUESTS_VERIFY, allow_redirects=False)
+                    redirect_url = urljoin(url, loc)
+                    r = requests.post(redirect_url, data=body, timeout=30, headers=headers, verify=config.REQUESTS_VERIFY, allow_redirects=False)
             if r.status_code == 400:
                 try:
                     err_text = r.text

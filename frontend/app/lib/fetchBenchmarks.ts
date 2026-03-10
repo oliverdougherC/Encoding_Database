@@ -62,14 +62,32 @@ async function fetchAllBenchmarksFromBase(baseUrl: string): Promise<Benchmark[]>
 export async function fetchBenchmarks(): Promise<Benchmark[]> {
   const internal = process.env.INTERNAL_API_BASE_URL;
   const fallbackBase = `${resolveAppOrigin()}/api/query`;
-  const primaryBase = internal ? `${internal}/query` : fallbackBase;
+  const candidates: string[] = [];
+  const seen = new Set<string>();
 
-  try {
-    return await fetchAllBenchmarksFromBase(primaryBase);
-  } catch (err) {
-    if (internal && fallbackBase) {
-      return fetchAllBenchmarksFromBase(fallbackBase);
-    }
-    throw err;
+  const addCandidate = (url: string | null | undefined) => {
+    if (!url) return;
+    const normalized = url.replace(/\/+$/, "");
+    if (seen.has(normalized)) return;
+    seen.add(normalized);
+    candidates.push(normalized);
+  };
+
+  if (internal) {
+    const normalizedInternal = internal.replace(/\/+$/, "");
+    addCandidate(normalizedInternal.endsWith("/query") ? normalizedInternal : `${normalizedInternal}/query`);
   }
+  addCandidate(fallbackBase);
+
+  const errors: string[] = [];
+  for (const candidate of candidates) {
+    try {
+      return await fetchAllBenchmarksFromBase(candidate);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${candidate}: ${msg}`);
+    }
+  }
+
+  throw new Error(`Failed to fetch benchmarks from all sources. ${errors.join(" | ")}`);
 }

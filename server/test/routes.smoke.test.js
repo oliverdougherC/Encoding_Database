@@ -2,7 +2,15 @@ import test, { after } from 'node:test';
 import assert from 'node:assert/strict';
 import net from 'node:net';
 import express from 'express';
-import routes, { buildSubmissionPayloadHash, DEFAULT_QUERY_LIMIT, TEST_VIDEO_CATALOG, normalizeCpuFreqMHz } from '../dist/routes.js';
+import routes, {
+  buildSubmissionPayloadHash,
+  DEFAULT_QUERY_LIMIT,
+  TEST_VIDEO_CATALOG,
+  normalizeCpuFreqMHz,
+  parseSkipParam,
+  parseTakeParam,
+  runSubmitTransactionWithRetry,
+} from '../dist/routes.js';
 import { prisma } from '../dist/db.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
@@ -249,4 +257,55 @@ test('normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry',
   assert.equal(normalizeCpuFreqMHz(0), null);
   assert.equal(normalizeCpuFreqMHz(-1), null);
   assert.equal(normalizeCpuFreqMHz('not-a-number'), null);
+});
+
+test('parseTakeParam normalizes invalid, float, and oversized values', () => {
+  assert.equal(parseTakeParam(undefined), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam(''), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam('abc'), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam('12.5'), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam('-2'), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam('0'), DEFAULT_QUERY_LIMIT);
+  assert.equal(parseTakeParam('42'), 42);
+  assert.equal(parseTakeParam('9999'), 500);
+});
+
+test('parseSkipParam accepts only positive integers', () => {
+  assert.equal(parseSkipParam(undefined), undefined);
+  assert.equal(parseSkipParam(''), undefined);
+  assert.equal(parseSkipParam('abc'), undefined);
+  assert.equal(parseSkipParam('3.14'), undefined);
+  assert.equal(parseSkipParam('-4'), undefined);
+  assert.equal(parseSkipParam('0'), undefined);
+  assert.equal(parseSkipParam('7'), 7);
+});
+
+test('runSubmitTransactionWithRetry retries once for non-payload unique conflicts', async () => {
+  let attempts = 0;
+  const result = await runSubmitTransactionWithRetry(async () => {
+    attempts += 1;
+    if (attempts === 1) {
+      const err = new Error('benchmark key unique conflict');
+      err.code = 'P2002';
+      err.meta = { target: ['cpuModel', 'gpuModel', 'ramGB'] };
+      throw err;
+    }
+    return 'ok';
+  });
+  assert.equal(result, 'ok');
+  assert.equal(attempts, 2);
+});
+
+test('runSubmitTransactionWithRetry does not retry payloadHash conflicts', async () => {
+  let attempts = 0;
+  await assert.rejects(async () => {
+    await runSubmitTransactionWithRetry(async () => {
+      attempts += 1;
+      const err = new Error('payload hash conflict');
+      err.code = 'P2002';
+      err.meta = { target: ['payloadHash'] };
+      throw err;
+    });
+  }, /payload hash conflict/);
+  assert.equal(attempts, 1);
 });
