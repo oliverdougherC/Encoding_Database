@@ -2,7 +2,7 @@ import type { Benchmark } from "./BenchmarksTable";
 import { formatCodecLabel } from "./codecLabel";
 import styles from "./StatsCards.module.css";
 
-export default function StatsCards({ data }: { data: Benchmark[] }) {
+export default function StatsCards({ data, totalCount }: { data: Benchmark[]; totalCount: number }) {
   const total = data.length;
   const uniqueCpus = new Set(data.map(d => d.cpuModel)).size;
   const uniqueGpus = new Set(data.map(d => d.gpuModel).filter(Boolean)).size;
@@ -24,11 +24,11 @@ export default function StatsCards({ data }: { data: Benchmark[] }) {
   const topCodec = topCodecRaw !== "-" ? formatCodecLabel(topCodecRaw.toLowerCase()) : "-";
 
   const stats = [
-    { label: "Total Benchmarks", value: String(total) },
-    { label: "Unique CPUs", value: String(uniqueCpus) },
-    { label: "Unique GPUs", value: String(uniqueGpus) },
-    { label: "Avg FPS", value: avgFps },
-    { label: "Top Codec", value: topCodec },
+    { label: "Total Benchmarks", value: String(totalCount) },
+    { label: "Page CPUs", value: String(uniqueCpus) },
+    { label: "Page GPUs", value: String(uniqueGpus) },
+    { label: "Page Avg FPS", value: avgFps },
+    { label: "Page Top Codec", value: total > 0 ? topCodec : "-" },
   ];
 
   return (

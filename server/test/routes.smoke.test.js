@@ -6,12 +6,25 @@ import routes, {
   buildSubmissionPayloadHash,
   DEFAULT_QUERY_LIMIT,
   TEST_VIDEO_CATALOG,
+  getQueryCacheSize,
   normalizeCpuFreqMHz,
+  parseTelemetryFromNotes,
+  parseTelemetryMetaFromNotes,
   parseSkipParam,
   parseTakeParam,
   runSubmitTransactionWithRetry,
 } from '../dist/routes.js';
 import { prisma } from '../dist/db.js';
+import {
+  aggregateEncoders,
+  aggregateHardware,
+  aggregateLeaderboards,
+  buildAnalyticsWhere,
+  deriveCodecFamily,
+  parseAnalyticsFilters,
+  resolveEncoderName,
+} from '../dist/analytics.js';
+import { BoundedTtlCache } from '../dist/cache.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
 
@@ -205,8 +218,14 @@ test('buildSubmissionPayloadHash changes when telemetry changes', () => {
     powerSource: 'ac',
     sampleCount: 320,
     monitorDurationMs: 125000,
+    cpuSampleCount: 310,
+    gpuSampleCount: 295,
+    ffmpegSampleCount: 320,
+    batterySampleCount: 2,
+    telemetrySources: 'cpu_psutil,gpu_nvml',
+    telemetryMissing: 'battery_unavailable',
   };
-  const variant = { ...base, cpuUtilMax: 99.1 };
+  const variant = { ...base, cpuSampleCount: 311 };
   const h1 = buildSubmissionPayloadHash(base);
   const h2 = buildSubmissionPayloadHash(variant);
   assert.notEqual(h1, h2);
@@ -259,6 +278,24 @@ test('normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry',
   assert.equal(normalizeCpuFreqMHz('not-a-number'), null);
 });
 
+test('parseTelemetryFromNotes reads new numeric coverage fields', () => {
+  const parsed = parseTelemetryFromNotes(
+    'telemetry={"cpuSampleCount":12,"gpuSampleCount":8,"ffmpegSampleCount":12,"batterySampleCount":2}; other=data',
+  );
+  assert.equal(parsed.cpuSampleCount, 12);
+  assert.equal(parsed.gpuSampleCount, 8);
+  assert.equal(parsed.ffmpegSampleCount, 12);
+  assert.equal(parsed.batterySampleCount, 2);
+});
+
+test('parseTelemetryMetaFromNotes reads raw diagnostic strings', () => {
+  const parsed = parseTelemetryMetaFromNotes(
+    'telemetry_meta={"telemetrySources":"cpu_psutil,gpu_nvml","telemetryMissing":"battery_unavailable"}',
+  );
+  assert.equal(parsed.telemetrySources, 'cpu_psutil,gpu_nvml');
+  assert.equal(parsed.telemetryMissing, 'battery_unavailable');
+});
+
 test('parseTakeParam normalizes invalid, float, and oversized values', () => {
   assert.equal(parseTakeParam(undefined), DEFAULT_QUERY_LIMIT);
   assert.equal(parseTakeParam(''), DEFAULT_QUERY_LIMIT);
@@ -308,4 +345,184 @@ test('runSubmitTransactionWithRetry does not retry payloadHash conflicts', async
     });
   }, /payload hash conflict/);
   assert.equal(attempts, 1);
+});
+
+function makeBenchmarkRow(overrides = {}) {
+  return {
+    id: 'bench-1',
+    createdAt: new Date('2026-01-01T00:00:00.000Z'),
+    updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+    cpuModel: 'Intel Core i7-14700K',
+    gpuModel: 'NVIDIA RTX 4070',
+    ramGB: 32,
+    os: 'Windows 11',
+    codec: 'h264_nvenc',
+    preset: 'p6',
+    crf: 24,
+    contentClass: 'mixed',
+    resolution: '1080p',
+    passes: 1,
+    fps: 120,
+    vmaf: 95,
+    ssim: 0.98,
+    psnr: 41,
+    fileSizeBytes: 80_000_000,
+    notes: null,
+    gpuUtilAvg: null,
+    gpuPowerAvgW: 200,
+    gpuMemPeakMB: null,
+    cpuUtilAvg: 78,
+    cpuUtilMax: 88,
+    peakMemoryMB: 1024,
+    thermalThrottle: false,
+    gpuTempMaxC: null,
+    cpuFreqAvgMHz: null,
+    cpuTempMaxC: null,
+    ffmpegCpuUtilAvg: null,
+    ffmpegCpuUtilMax: null,
+    ffmpegReadMB: null,
+    ffmpegWriteMB: null,
+    ffmpegCpuTimeS: null,
+    batteryPercentStart: null,
+    batteryPercentEnd: null,
+    batteryPercentDrop: null,
+    powerSource: null,
+    sampleCount: null,
+    monitorDurationMs: null,
+    cpuSampleCount: null,
+    gpuSampleCount: null,
+    ffmpegSampleCount: null,
+    batterySampleCount: null,
+    samples: 3,
+    vmafSamples: 3,
+    fpsSum: 360,
+    fileSizeSum: 240_000_000,
+    vmafSum: 285,
+    ssimSamples: 3,
+    ssimSum: 2.94,
+    psnrSamples: 3,
+    psnrSum: 123,
+    gpuUtilSamples: 0,
+    gpuUtilSum: 0,
+    gpuPowerSamples: 3,
+    gpuPowerSum: 600,
+    cpuUtilSamples: 3,
+    cpuUtilSum: 234,
+    peakMemoryMax: 1024,
+    cpuFreqSamples: 0,
+    cpuFreqSum: 0,
+    ffmpegCpuUtilSamples: 0,
+    ffmpegCpuUtilSum: 0,
+    ffmpegReadSamples: 0,
+    ffmpegReadSum: 0,
+    ffmpegWriteSamples: 0,
+    ffmpegWriteSum: 0,
+    ffmpegCpuTimeSamples: 0,
+    ffmpegCpuTimeSum: 0,
+    batteryStartSamples: 0,
+    batteryStartSum: 0,
+    batteryEndSamples: 0,
+    batteryEndSum: 0,
+    batteryDropSamples: 0,
+    batteryDropSum: 0,
+    sampleCountSamples: 0,
+    sampleCountSum: 0,
+    monitorDurationSamples: 0,
+    monitorDurationSum: 0,
+    cpuSampleCountSamples: 0,
+    cpuSampleCountSum: 0,
+    gpuSampleCountSamples: 0,
+    gpuSampleCountSum: 0,
+    ffmpegSampleCountSamples: 0,
+    ffmpegSampleCountSum: 0,
+    batterySampleCountSamples: 0,
+    batterySampleCountSum: 0,
+    status: 'accepted',
+    ffmpegVersion: null,
+    encoderName: 'h264_nvenc',
+    clientVersion: null,
+    inputHash: null,
+    runMs: null,
+    payloadHash: null,
+    ...overrides,
+  };
+}
+
+test('parseAnalyticsFilters defaults to the canonical comparison slice', () => {
+  const filters = parseAnalyticsFilters({});
+  assert.deepEqual(filters, {
+    contentClass: 'mixed',
+    resolution: '1080p',
+    crf: 24,
+    passes: 1,
+    minSamples: 3,
+  });
+  assert.deepEqual(buildAnalyticsWhere(filters), {
+    status: 'accepted',
+    contentClass: 'mixed',
+    resolution: '1080p',
+    crf: 24,
+    passes: 1,
+  });
+});
+
+test('aggregateLeaderboards keeps distinct workload slices separate and enforces minSamples', () => {
+  const rows = [
+    makeBenchmarkRow({ id: 'a', resolution: '1080p', samples: 3, fpsSum: 300, fileSizeSum: 210_000_000, vmafSum: 282, vmafSamples: 3 }),
+    makeBenchmarkRow({ id: 'b', resolution: '720p', samples: 4, fpsSum: 520, fileSizeSum: 260_000_000, vmafSum: 360, vmafSamples: 4 }),
+    makeBenchmarkRow({ id: 'c', codec: 'libx264', encoderName: null, preset: 'fast', samples: 2, fpsSum: 200, fileSizeSum: 160_000_000, vmafSum: 188, vmafSamples: 2 }),
+  ];
+
+  const result = aggregateLeaderboards(rows, 3);
+  assert.equal(result.length, 2);
+  assert.equal(result[0].resolution, '720p');
+  assert.equal(result[1].resolution, '1080p');
+  assert.ok(result.every((row) => row.sampleCount >= 3));
+});
+
+test('aggregateHardware computes stable weighted averages within a fixed slice', () => {
+  const rows = [
+    makeBenchmarkRow({ id: 'a', samples: 3, fpsSum: 360, gpuPowerSum: 540, gpuPowerSamples: 3 }),
+    makeBenchmarkRow({ id: 'b', samples: 5, fpsSum: 700, gpuPowerSum: 1_000, gpuPowerSamples: 5 }),
+  ];
+
+  const result = aggregateHardware(rows, 3);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].sampleCount, 8);
+  assert.equal(result[0].avgFps, 132.5);
+  assert.equal(result[0].avgPowerW, 192.5);
+  assert.ok(result[0].fpsPerWatt > 0);
+});
+
+test('aggregateEncoders keeps preset-specific profiles distinct', () => {
+  const rows = [
+    makeBenchmarkRow({ id: 'a', preset: 'p6' }),
+    makeBenchmarkRow({ id: 'b', preset: 'p7' }),
+  ];
+  const result = aggregateEncoders(rows, 3);
+  assert.equal(result.length, 2);
+  assert.deepEqual(result.map((row) => row.preset), ['p6', 'p7']);
+});
+
+test('codec family helpers resolve encoder names consistently', () => {
+  const row = makeBenchmarkRow({ codec: 'hevc_qsv', encoderName: null });
+  assert.equal(resolveEncoderName(row), 'hevc_qsv');
+  assert.equal(deriveCodecFamily('hevc_qsv'), 'hevc');
+  assert.equal(deriveCodecFamily('libaom-av1'), 'av1');
+  assert.equal(deriveCodecFamily('mystery_encoder'), 'other');
+});
+
+test('BoundedTtlCache supports multi-key hits and bounded eviction', () => {
+  const cache = new BoundedTtlCache({ ttlMs: 10_000, maxEntries: 2 });
+  cache.set('a', { value: 1 }, 1);
+  cache.set('b', { value: 2 }, 2);
+  assert.deepEqual(cache.get('a', 3), { value: 1 });
+  cache.set('c', { value: 3 }, 4);
+  assert.equal(cache.get('b', 5), undefined);
+  assert.deepEqual(cache.get('a', 5), { value: 1 });
+  assert.deepEqual(cache.get('c', 5), { value: 3 });
+});
+
+test('query cache helper reports bounded size', () => {
+  assert.ok(getQueryCacheSize() >= 0);
 });

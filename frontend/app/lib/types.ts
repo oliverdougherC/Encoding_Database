@@ -7,6 +7,7 @@ export type Benchmark = {
   ramGB: number;
   os: string;
   codec: string;
+  codecFamily?: "h264" | "hevc" | "av1" | "vp9" | "other";
   crf?: number | null;
   preset: string;
   fps: number;
@@ -32,6 +33,73 @@ export type Benchmark = {
   cpuUtilMax?: number | null;
   peakMemoryMB?: number | null;
   thermalThrottle?: boolean | null;
+  sampleCount?: number | null;
+  monitorDurationMs?: number | null;
+  cpuSampleCount?: number | null;
+  gpuSampleCount?: number | null;
+  ffmpegSampleCount?: number | null;
+  batterySampleCount?: number | null;
   fpsPerWatt?: number | null;
   qualityPerWatt?: number | null;
+};
+
+export type AnalyticsFilters = {
+  contentClass: string;
+  resolution: string;
+  crf: number;
+  minSamples: number;
+};
+
+export type LeaderboardAnalyticsRow = {
+  encoderName: string;
+  codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
+  preset: string;
+  crf: number;
+  contentClass: string;
+  resolution: string;
+  passes: number;
+  sampleCount: number;
+  avgFps: number;
+  avgVmaf: number | null;
+  avgSsim: number | null;
+  avgPsnr: number | null;
+  avgSizeBytes: number;
+  avgPowerW: number | null;
+  fpsPerWatt: number | null;
+  qualityPerWatt: number | null;
+  plScore: number;
+};
+
+export type HardwareAnalyticsRow = {
+  cpuModel: string;
+  gpuModel: string;
+  encoderName: string;
+  codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
+  preset: string;
+  crf: number;
+  contentClass: string;
+  resolution: string;
+  passes: number;
+  sampleCount: number;
+  avgFps: number;
+  avgVmaf: number | null;
+  avgPowerW: number | null;
+  fpsPerWatt: number | null;
+  score: number;
+};
+
+export type EncoderAnalyticsRow = {
+  encoderName: string;
+  codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
+  preset: string;
+  crf: number;
+  contentClass: string;
+  resolution: string;
+  passes: number;
+  sampleCount: number;
+  avgFps: number;
+  avgVmaf: number | null;
+  avgSsim: number | null;
+  avgPsnr: number | null;
+  avgSizeBytes: number;
 };

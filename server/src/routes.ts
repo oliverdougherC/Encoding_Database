@@ -3,6 +3,15 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from './db.js';
 import crypto from 'node:crypto';
+import { BoundedTtlCache } from './cache.js';
+import {
+  addDerivedBenchmarkFields,
+  aggregateEncoders,
+  aggregateHardware,
+  aggregateLeaderboards,
+  buildAnalyticsWhere,
+  parseAnalyticsFilters,
+} from './analytics.js';
 
 const router = Router();
 
@@ -62,6 +71,12 @@ const benchmarkSchema = z.object({
   powerSource: z.enum(['ac', 'battery']).optional().nullable(),
   sampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
   monitorDurationMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).optional().nullable(),
+  cpuSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  gpuSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  ffmpegSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  batterySampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  telemetrySources: z.string().max(400).optional().nullable(),
+  telemetryMissing: z.string().max(400).optional().nullable(),
 }).strict();
 
 const CPU_FREQ_MIN_MHZ = 100;
@@ -145,6 +160,12 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
     powerSource: data.powerSource ?? null,
     sampleCount: data.sampleCount ?? null,
     monitorDurationMs: data.monitorDurationMs ?? null,
+    cpuSampleCount: data.cpuSampleCount ?? null,
+    gpuSampleCount: data.gpuSampleCount ?? null,
+    ffmpegSampleCount: data.ffmpegSampleCount ?? null,
+    batterySampleCount: data.batterySampleCount ?? null,
+    telemetrySources: data.telemetrySources ?? null,
+    telemetryMissing: data.telemetryMissing ?? null,
   } as const;
   return crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
 }
@@ -190,8 +211,9 @@ export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<
 }
 
 const TELEMETRY_NOTE_REGEX = /telemetry=(\{[\s\S]*?\})(?:;|$)/;
+const TELEMETRY_META_NOTE_REGEX = /telemetry_meta=(\{[\s\S]*?\})(?:;|$)/;
 
-function _parseTelemetryFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
+export function parseTelemetryFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
   if (!notes) return {};
   const match = TELEMETRY_NOTE_REGEX.exec(notes);
   if (!match?.[1]) return {};
@@ -236,13 +258,37 @@ function _parseTelemetryFromNotes(notes: string | null | undefined): Partial<Ben
   if (ps === 'ac' || ps === 'battery') out.powerSource = ps;
   putNumber('sampleCount', true);
   putNumber('monitorDurationMs', true);
+  putNumber('cpuSampleCount', true);
+  putNumber('gpuSampleCount', true);
+  putNumber('ffmpegSampleCount', true);
+  putNumber('batterySampleCount', true);
 
   return out;
 }
 
+export function parseTelemetryMetaFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
+  if (!notes) return {};
+  const match = TELEMETRY_META_NOTE_REGEX.exec(notes);
+  if (!match?.[1]) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[1]);
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object') return {};
+  const raw = parsed as Record<string, unknown>;
+  const out: Partial<BenchmarkSubmission> = {};
+  const sources = typeof raw.telemetrySources === 'string' ? raw.telemetrySources.trim() : '';
+  if (sources) out.telemetrySources = sources.slice(0, 400);
+  const missing = typeof raw.telemetryMissing === 'string' ? raw.telemetryMissing.trim() : '';
+  if (missing) out.telemetryMissing = missing.slice(0, 400);
+  return out;
+}
+
 function _applyTelemetryFallback(data: BenchmarkSubmission): void {
-  const telemetry = _parseTelemetryFromNotes(data.notes);
-  if (!telemetry) return;
+  const telemetry = parseTelemetryFromNotes(data.notes);
+  const telemetryMeta = parseTelemetryMetaFromNotes(data.notes);
   const keys: Array<keyof BenchmarkSubmission> = [
     'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
     'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
@@ -251,11 +297,18 @@ function _applyTelemetryFallback(data: BenchmarkSubmission): void {
     'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
     'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
     'powerSource', 'sampleCount', 'monitorDurationMs',
+    'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
   ];
   for (const key of keys) {
     if (data[key] == null && telemetry[key] != null) {
       (data[key] as BenchmarkSubmission[typeof key]) = telemetry[key] as BenchmarkSubmission[typeof key];
     }
+  }
+  if (data.telemetrySources == null && telemetryMeta.telemetrySources != null) {
+    data.telemetrySources = telemetryMeta.telemetrySources;
+  }
+  if (data.telemetryMissing == null && telemetryMeta.telemetryMissing != null) {
+    data.telemetryMissing = telemetryMeta.telemetryMissing;
   }
 }
 
@@ -477,6 +530,12 @@ router.post('/submit', async (req, res) => {
           powerSource: data.powerSource ?? null,
           sampleCount: data.sampleCount != null ? Number(data.sampleCount) : null,
           monitorDurationMs: data.monitorDurationMs != null ? Number(data.monitorDurationMs) : null,
+          cpuSampleCount: data.cpuSampleCount != null ? Number(data.cpuSampleCount) : null,
+          gpuSampleCount: data.gpuSampleCount != null ? Number(data.gpuSampleCount) : null,
+          ffmpegSampleCount: data.ffmpegSampleCount != null ? Number(data.ffmpegSampleCount) : null,
+          batterySampleCount: data.batterySampleCount != null ? Number(data.batterySampleCount) : null,
+          telemetrySources: data.telemetrySources ?? null,
+          telemetryMissing: data.telemetryMissing ?? null,
           payloadHash,
           status,
           qualityScore,
@@ -526,6 +585,14 @@ router.post('/submit', async (req, res) => {
         const initialSampleCountSum = (status === 'accepted' && data.sampleCount != null) ? Number(data.sampleCount) : 0;
         const initialMonitorDurationSamples = (status === 'accepted' && data.monitorDurationMs != null) ? 1 : 0;
         const initialMonitorDurationSum = (status === 'accepted' && data.monitorDurationMs != null) ? Number(data.monitorDurationMs) : 0;
+        const initialCpuSampleCountSamples = (status === 'accepted' && data.cpuSampleCount != null) ? 1 : 0;
+        const initialCpuSampleCountSum = (status === 'accepted' && data.cpuSampleCount != null) ? Number(data.cpuSampleCount) : 0;
+        const initialGpuSampleCountSamples = (status === 'accepted' && data.gpuSampleCount != null) ? 1 : 0;
+        const initialGpuSampleCountSum = (status === 'accepted' && data.gpuSampleCount != null) ? Number(data.gpuSampleCount) : 0;
+        const initialFfmpegSampleCountSamples = (status === 'accepted' && data.ffmpegSampleCount != null) ? 1 : 0;
+        const initialFfmpegSampleCountSum = (status === 'accepted' && data.ffmpegSampleCount != null) ? Number(data.ffmpegSampleCount) : 0;
+        const initialBatterySampleCountSamples = (status === 'accepted' && data.batterySampleCount != null) ? 1 : 0;
+        const initialBatterySampleCountSum = (status === 'accepted' && data.batterySampleCount != null) ? Number(data.batterySampleCount) : 0;
         return tx.benchmark.create({
           data: {
             cpuModel: key.cpuModel,
@@ -565,6 +632,10 @@ router.post('/submit', async (req, res) => {
           powerSource: data.powerSource ?? null,
           sampleCount: data.sampleCount != null ? Number(data.sampleCount) : null,
           monitorDurationMs: data.monitorDurationMs != null ? Number(data.monitorDurationMs) : null,
+          cpuSampleCount: data.cpuSampleCount != null ? Number(data.cpuSampleCount) : null,
+          gpuSampleCount: data.gpuSampleCount != null ? Number(data.gpuSampleCount) : null,
+          ffmpegSampleCount: data.ffmpegSampleCount != null ? Number(data.ffmpegSampleCount) : null,
+          batterySampleCount: data.batterySampleCount != null ? Number(data.batterySampleCount) : null,
           status,
           ffmpegVersion: data.ffmpegVersion || null,
           encoderName: data.encoderName || null,
@@ -608,6 +679,14 @@ router.post('/submit', async (req, res) => {
             sampleCountSum: initialSampleCountSum,
             monitorDurationSamples: initialMonitorDurationSamples,
             monitorDurationSum: initialMonitorDurationSum,
+            cpuSampleCountSamples: initialCpuSampleCountSamples,
+            cpuSampleCountSum: initialCpuSampleCountSum,
+            gpuSampleCountSamples: initialGpuSampleCountSamples,
+            gpuSampleCountSum: initialGpuSampleCountSum,
+            ffmpegSampleCountSamples: initialFfmpegSampleCountSamples,
+            ffmpegSampleCountSum: initialFfmpegSampleCountSum,
+            batterySampleCountSamples: initialBatterySampleCountSamples,
+            batterySampleCountSum: initialBatterySampleCountSum,
           },
         });
       }
@@ -667,6 +746,14 @@ router.post('/submit', async (req, res) => {
       const sampleCountVal = hasSampleCount ? Number(data.sampleCount) : 0;
       const hasMonitorDuration = data.monitorDurationMs != null;
       const monitorDurationVal = hasMonitorDuration ? Number(data.monitorDurationMs) : 0;
+      const hasCpuSampleCount = data.cpuSampleCount != null;
+      const cpuSampleCountVal = hasCpuSampleCount ? Number(data.cpuSampleCount) : 0;
+      const hasGpuSampleCount = data.gpuSampleCount != null;
+      const gpuSampleCountVal = hasGpuSampleCount ? Number(data.gpuSampleCount) : 0;
+      const hasFfmpegSampleCount = data.ffmpegSampleCount != null;
+      const ffmpegSampleCountVal = hasFfmpegSampleCount ? Number(data.ffmpegSampleCount) : 0;
+      const hasBatterySampleCount = data.batterySampleCount != null;
+      const batterySampleCountVal = hasBatterySampleCount ? Number(data.batterySampleCount) : 0;
 
       await tx.$executeRaw`
         UPDATE "Benchmark"
@@ -705,6 +792,14 @@ router.post('/submit', async (req, res) => {
             "sampleCountSum" = "sampleCountSum" + ${sampleCountVal}::double precision,
             "monitorDurationSamples" = "monitorDurationSamples" + ${hasMonitorDuration ? 1 : 0},
             "monitorDurationSum" = "monitorDurationSum" + ${monitorDurationVal}::double precision,
+            "cpuSampleCountSamples" = "cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0},
+            "cpuSampleCountSum" = "cpuSampleCountSum" + ${cpuSampleCountVal}::double precision,
+            "gpuSampleCountSamples" = "gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0},
+            "gpuSampleCountSum" = "gpuSampleCountSum" + ${gpuSampleCountVal}::double precision,
+            "ffmpegSampleCountSamples" = "ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0},
+            "ffmpegSampleCountSum" = "ffmpegSampleCountSum" + ${ffmpegSampleCountVal}::double precision,
+            "batterySampleCountSamples" = "batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0},
+            "batterySampleCountSum" = "batterySampleCountSum" + ${batterySampleCountVal}::double precision,
             "peakMemoryMax" = CASE
               WHEN ${hasPeakMem} AND (${peakMemVal}::double precision > COALESCE("peakMemoryMax", 0))
               THEN ${peakMemVal}::double precision
@@ -812,6 +907,26 @@ router.post('/submit', async (req, res) => {
               THEN ("monitorDurationSum" + ${monitorDurationVal}::double precision) / ("monitorDurationSamples" + ${hasMonitorDuration ? 1 : 0})
               ELSE "monitorDurationMs"
             END,
+            "cpuSampleCount" = CASE
+              WHEN "cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0} > 0
+              THEN ("cpuSampleCountSum" + ${cpuSampleCountVal}::double precision) / ("cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0})
+              ELSE "cpuSampleCount"
+            END,
+            "gpuSampleCount" = CASE
+              WHEN "gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0} > 0
+              THEN ("gpuSampleCountSum" + ${gpuSampleCountVal}::double precision) / ("gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0})
+              ELSE "gpuSampleCount"
+            END,
+            "ffmpegSampleCount" = CASE
+              WHEN "ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0} > 0
+              THEN ("ffmpegSampleCountSum" + ${ffmpegSampleCountVal}::double precision) / ("ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0})
+              ELSE "ffmpegSampleCount"
+            END,
+            "batterySampleCount" = CASE
+              WHEN "batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0} > 0
+              THEN ("batterySampleCountSum" + ${batterySampleCountVal}::double precision) / ("batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0})
+              ELSE "batterySampleCount"
+            END,
             "status" = 'accepted',
             "updatedAt" = NOW()
         WHERE "id" = ${existing.id}
@@ -823,7 +938,7 @@ router.post('/submit', async (req, res) => {
       return updated;
     }));
 
-    invalidateQueryCache();
+    invalidateRouteCaches();
     res.status(createdNew ? 201 : 200).json(row);
   } catch (err) {
     const errCode = (err as { code?: string })?.code;
@@ -858,31 +973,36 @@ router.all('/query', (req, res, next) => {
   return res.status(405).json({ error: 'Method Not Allowed' });
 });
 
-// In-memory query cache with TTL (S-03)
+// In-memory query cache with TTL
 const QUERY_CACHE_TTL_MS = 30_000; // 30 seconds
+const QUERY_CACHE_MAX_ENTRIES = 128;
 const parsedDefaultQueryLimit = Number(process.env.QUERY_DEFAULT_LIMIT || 100);
 export const DEFAULT_QUERY_LIMIT = Number.isFinite(parsedDefaultQueryLimit) && parsedDefaultQueryLimit > 0
   ? Math.min(Math.trunc(parsedDefaultQueryLimit), 500)
   : 100;
 const MAX_QUERY_LIMIT = 500;
-let queryCacheData: unknown = null;
-let queryCacheKey: string = '';
-let queryCacheExpiry: number = 0;
-let queryCacheTotalCount: number | null = null;
+const queryCache = new BoundedTtlCache<{ rows: ReturnType<typeof addDerivedBenchmarkFields>[]; totalCount: number | null }>({
+  ttlMs: QUERY_CACHE_TTL_MS,
+  maxEntries: QUERY_CACHE_MAX_ENTRIES,
+});
+const analyticsCache = new BoundedTtlCache<unknown>({
+  ttlMs: QUERY_CACHE_TTL_MS,
+  maxEntries: QUERY_CACHE_MAX_ENTRIES,
+});
 
-function invalidateQueryCache(): void {
-  queryCacheData = null;
-  queryCacheKey = '';
-  queryCacheExpiry = 0;
-  queryCacheTotalCount = null;
+function invalidateRouteCaches(): void {
+  queryCache.clear();
+  analyticsCache.clear();
 }
 
 // Whitelist of allowed sort fields to prevent injection
 const SORT_WHITELIST = new Set([
   'createdAt', 'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'codec', 'cpuModel',
+  'gpuModel', 'preset', 'crf',
   'gpuUtilAvg', 'gpuPowerAvgW', 'cpuUtilAvg',
   'gpuTempMaxC', 'cpuTempMaxC', 'ffmpegCpuUtilAvg',
   'batteryPercentDrop', 'sampleCount', 'monitorDurationMs',
+  'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
 ]);
 
 function numberParam(query: Record<string, string | undefined>, key: string): number | undefined {
@@ -921,7 +1041,7 @@ function booleanParam(query: Record<string, string | undefined>, key: string): b
 }
 
 function applyRangeFilter(
-  where: Record<string, unknown>,
+  where: Prisma.BenchmarkWhereInput,
   query: Record<string, string | undefined>,
   field: string,
   opts?: { minKey?: string; maxKey?: string; integer?: boolean },
@@ -943,7 +1063,25 @@ function applyRangeFilter(
   const range: Record<string, number> = {};
   if (min != null) range.gte = min;
   if (max != null) range.lte = max;
-  where[field] = range;
+  (where as Record<string, unknown>)[field] = range;
+}
+
+export function getQueryCacheSize(): number {
+  return queryCache.size();
+}
+
+function buildEncoderTypeFilter(kind: 'hardware' | 'software'): Prisma.BenchmarkWhereInput {
+  const hardwareMatchers: Prisma.BenchmarkWhereInput[] = [
+    { codec: { endsWith: '_videotoolbox' } },
+    { codec: { endsWith: '_nvenc' } },
+    { codec: { endsWith: '_qsv' } },
+    { codec: { endsWith: '_amf' } },
+    { codec: { endsWith: '_vaapi' } },
+  ];
+  if (kind === 'hardware') {
+    return { OR: hardwareMatchers };
+  }
+  return { NOT: { OR: hardwareMatchers } };
 }
 
 router.get('/query', async (req, res) => {
@@ -952,7 +1090,7 @@ router.get('/query', async (req, res) => {
     const take = parseTakeParam(query.limit);
     const skip = parseSkipParam(query.skip);
 
-    const where: Record<string, unknown> = { status: 'accepted' };
+    const where: Prisma.BenchmarkWhereInput = { status: 'accepted' };
     if (query.passes) {
       const p = Number(query.passes);
       if (p === 1) where.passes = 1;
@@ -960,6 +1098,8 @@ router.get('/query', async (req, res) => {
     // Sprint 4: additional filters
     if (query.codec) where.codec = query.codec;
     if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
+    if (query.preset) where.preset = { contains: query.preset, mode: 'insensitive' };
+    if (query.crf && /^\d+$/.test(query.crf)) where.crf = Number(query.crf);
     if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
     if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
     if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
@@ -974,6 +1114,15 @@ router.get('/query', async (req, res) => {
     const throttle = booleanParam(query, 'thermalThrottle');
     if (throttle != null) {
       where.thermalThrottle = throttle;
+    }
+    if (query.encoderType === 'hardware' || query.encoderType === 'software') {
+      const encoderTypeFilter = buildEncoderTypeFilter(query.encoderType);
+      if (where.AND) {
+        const existing = Array.isArray(where.AND) ? where.AND : [where.AND];
+        where.AND = [...existing, encoderTypeFilter];
+      } else {
+        where.AND = [encoderTypeFilter];
+      }
     }
 
     // Numeric range filters (query by appending Min/Max suffixes)
@@ -1003,6 +1152,10 @@ router.get('/query', async (req, res) => {
     applyRangeFilter(where, query, 'batteryPercentDrop');
     applyRangeFilter(where, query, 'sampleCount');
     applyRangeFilter(where, query, 'monitorDurationMs');
+    applyRangeFilter(where, query, 'cpuSampleCount');
+    applyRangeFilter(where, query, 'gpuSampleCount');
+    applyRangeFilter(where, query, 'ffmpegSampleCount');
+    applyRangeFilter(where, query, 'batterySampleCount');
 
     // Build orderBy with whitelist validation
     let orderBy: Record<string, string> = { createdAt: 'desc' };
@@ -1014,12 +1167,12 @@ router.get('/query', async (req, res) => {
     // Cache key includes all filter params and whether total count was requested.
     const wantTotal = query.total === '1';
     const cacheKey = JSON.stringify({ take, skip, where, orderBy, wantTotal });
-    const now = Date.now();
-    if (queryCacheData && queryCacheKey === cacheKey && queryCacheExpiry > now) {
-      if (wantTotal && queryCacheTotalCount != null) {
-        res.setHeader('X-Total-Count', String(queryCacheTotalCount));
+    const cached = queryCache.get(cacheKey);
+    if (cached) {
+      if (wantTotal && cached.totalCount != null) {
+        res.setHeader('X-Total-Count', String(cached.totalCount));
       }
-      return res.json(queryCacheData);
+      return res.json(cached.rows);
     }
 
     // Run query and optional count in parallel
@@ -1033,21 +1186,8 @@ router.get('/query', async (req, res) => {
       wantTotal ? prisma.benchmark.count({ where }) : Promise.resolve(null),
     ]);
 
-    // Compute derived efficiency metrics (Sprint 6)
-    const rows = rawRows.map((row: BenchmarkRow) => {
-      const fpsPerWatt = (row.fps > 0 && row.gpuPowerAvgW != null && row.gpuPowerAvgW > 0)
-        ? Math.round((row.fps / row.gpuPowerAvgW) * 100) / 100
-        : null;
-      const qualityPerWatt = (row.vmaf != null && row.gpuPowerAvgW != null && row.gpuPowerAvgW > 0)
-        ? Math.round((row.vmaf / row.gpuPowerAvgW) * 100) / 100
-        : null;
-      return { ...row, fpsPerWatt, qualityPerWatt };
-    });
-
-    queryCacheData = rows;
-    queryCacheKey = cacheKey;
-    queryCacheExpiry = now + QUERY_CACHE_TTL_MS;
-    queryCacheTotalCount = totalCount;
+    const rows = rawRows.map((row: BenchmarkRow) => addDerivedBenchmarkFields(row));
+    queryCache.set(cacheKey, { rows, totalCount });
 
     if (totalCount != null) {
       res.setHeader('X-Total-Count', String(totalCount));
@@ -1057,6 +1197,60 @@ router.get('/query', async (req, res) => {
   } catch (err) {
     logError('GET /query', err);
     res.status(500).json({ error: 'Failed to fetch benchmarks' });
+  }
+});
+
+router.get('/analytics/leaderboards', async (req, res) => {
+  try {
+    const query = req.query as Record<string, string | undefined>;
+    const filters = parseAnalyticsFilters(query);
+    const cacheKey = JSON.stringify({ path: 'leaderboards', filters });
+    const cached = analyticsCache.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
+    const payload = aggregateLeaderboards(rows, filters.minSamples);
+    analyticsCache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    logError('GET /analytics/leaderboards', err);
+    res.status(500).json({ error: 'Failed to fetch leaderboards analytics' });
+  }
+});
+
+router.get('/analytics/hardware', async (req, res) => {
+  try {
+    const query = req.query as Record<string, string | undefined>;
+    const filters = parseAnalyticsFilters(query);
+    const cacheKey = JSON.stringify({ path: 'hardware', filters });
+    const cached = analyticsCache.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
+    const payload = aggregateHardware(rows, filters.minSamples);
+    analyticsCache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    logError('GET /analytics/hardware', err);
+    res.status(500).json({ error: 'Failed to fetch hardware analytics' });
+  }
+});
+
+router.get('/analytics/encoders', async (req, res) => {
+  try {
+    const query = req.query as Record<string, string | undefined>;
+    const filters = parseAnalyticsFilters(query);
+    const cacheKey = JSON.stringify({ path: 'encoders', filters });
+    const cached = analyticsCache.get(cacheKey);
+    if (cached) return res.json(cached);
+
+    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
+    const payload = aggregateEncoders(rows, filters.minSamples);
+    analyticsCache.set(cacheKey, payload);
+    res.json(payload);
+  } catch (err) {
+    logError('GET /analytics/encoders', err);
+    res.status(500).json({ error: 'Failed to fetch encoder analytics' });
   }
 });
 

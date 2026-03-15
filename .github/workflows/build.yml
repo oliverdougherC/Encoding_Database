@@ -16,8 +16,16 @@ jobs:
       - name: Install
         working-directory: frontend
         run: npm ci
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+      - name: Test
+        working-directory: frontend
+        run: npm test
       - name: Build
         working-directory: frontend
+        env:
+          ENABLE_QUERY_MOCK: "1"
         run: npm run build
 
   build-server:
@@ -30,10 +38,33 @@ jobs:
       - name: Install
         working-directory: server
         run: npm ci
-      - name: Typecheck
+      - name: Test
         working-directory: server
-        run: npx tsc --noEmit
-      - name: Build
-        working-directory: server
-        run: npm run build
+        run: npm test
 
+  build-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install client test dependencies
+        working-directory: client
+        run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
+      - name: Client tests
+        working-directory: client
+        run: python -m pytest -q
+
+  stack-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run end-to-end smoke harness
+        run: bash scripts/test.sh

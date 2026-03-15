@@ -694,6 +694,27 @@ class BatchRunDashboard:
         except Exception:
             return "N/A"
 
+    def _telemetry_codes(self, key: str) -> str:
+        raw = str(self._metrics.get(key) or "").strip()
+        if not raw:
+            return "none"
+        parts = [part.strip() for part in raw.split(",") if part.strip()]
+        if not parts:
+            return "none"
+        return ", ".join(parts[:4]) + ("..." if len(parts) > 4 else "")
+
+    def _sample_counts_line(self) -> str:
+        counts = {
+            "cpu": int(self._metrics.get("cpuSampleCount") or 0),
+            "gpu": int(self._metrics.get("gpuSampleCount") or 0),
+            "ffmpeg": int(self._metrics.get("ffmpegSampleCount") or 0),
+            "battery": int(self._metrics.get("batterySampleCount") or 0),
+        }
+        return (
+            f"[muted]Samples:[/muted] "
+            f"cpu={counts['cpu']} gpu={counts['gpu']} ffmpeg={counts['ffmpeg']} batt={counts['battery']}"
+        )
+
     def _machine_info_lines(self, compact: bool = False) -> List[str]:
         hw = self.hardware
         cpu_model = getattr(hw, "cpuModel", None) if hw is not None else None
@@ -711,7 +732,10 @@ class BatchRunDashboard:
             f"[muted]RAM:[/muted] {ram_gb if ram_gb is not None else 'N/A'} GB",
             f"[muted]Power Source:[/muted] {power_source}",
             f"[muted]Power Draw:[/muted] {self._fmt('gpuPowerAvgW', ' W', 1)}",
-            f"[muted]Battery Drop:[/muted] {self._fmt('batteryPercentDrop', '%', 2)}"
+            f"[muted]Battery Drop:[/muted] {self._fmt('batteryPercentDrop', '%', 2)}",
+            self._sample_counts_line(),
+            f"[muted]Telemetry Sources:[/muted] {self._telemetry_codes('telemetrySources')}",
+            f"[muted]Telemetry Missing:[/muted] {self._telemetry_codes('telemetryMissing')}",
         ]
 
         if compact:

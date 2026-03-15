@@ -342,7 +342,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     cpu = telemetry.get("cpuUtilAvg")
                     gpu = telemetry.get("gpuUtilAvg")
                     pwr = telemetry.get("gpuPowerAvgW")
-                    self.telemetry_var.set(f"cpu={cpu}% gpu={gpu}% power={pwr}W")
+                    cpu_samples = int(telemetry.get("cpuSampleCount") or 0)
+                    gpu_samples = int(telemetry.get("gpuSampleCount") or 0)
+                    missing = str(telemetry.get("telemetryMissing") or "none")
+                    self.telemetry_var.set(
+                        f"cpu={cpu}% gpu={gpu}% power={pwr}W samples(cpu={cpu_samples},gpu={gpu_samples}) missing={missing}"
+                    )
                 else:
                     fps = event.get("fps")
                     size = event.get("fileSizeBytes")

@@ -1,5 +1,6 @@
 import type { Benchmark } from "./lib/types";
-import { fetchBenchmarks } from "./lib/fetchBenchmarks";
+import { fetchWorkbenchPage } from "./lib/api";
+import { buildWorkbenchSearchString, parseWorkbenchSearchParams } from "./lib/queryState";
 import StatsCards from "./components/StatsCards";
 import ErrorBoundary from "./components/ErrorBoundary";
 import CommandWorkbench from "./components/CommandWorkbench";
@@ -24,11 +25,34 @@ function computeSystemSnapshot(data: Benchmark[]) {
   };
 }
 
-export default async function Home() {
+function toUrlSearchParams(raw: Record<string, string | string[] | undefined> | undefined): URLSearchParams {
+  const params = new URLSearchParams();
+  if (!raw) return params;
+  for (const [key, value] of Object.entries(raw)) {
+    if (Array.isArray(value)) {
+      if (value[0]) params.set(key, value[0]);
+      continue;
+    }
+    if (value) params.set(key, value);
+  }
+  return params;
+}
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   let data: Benchmark[] = [];
+  let totalCount = 0;
   let error: string | null = null;
+  const params = toUrlSearchParams(searchParams ? await searchParams : undefined);
+  const workbenchState = parseWorkbenchSearchParams(params);
+  const queryKey = buildWorkbenchSearchString(workbenchState);
   try {
-    data = await fetchBenchmarks();
+    const result = await fetchWorkbenchPage(workbenchState);
+    data = result.rows;
+    totalCount = result.totalCount;
   } catch (e: unknown) {
     error = e instanceof Error ? e.message : "Unknown error";
   }
@@ -61,10 +85,10 @@ export default async function Home() {
         <>
           <div className={styles.topGrid}>
             <SectionCard title="Key Metrics" subtitle="Current benchmark inventory and breadth.">
-              <StatsCards data={data} />
+              <StatsCards data={data} totalCount={totalCount} />
             </SectionCard>
 
-            <SectionCard title="System Snapshot" subtitle="Data confidence and coverage across accepted submissions.">
+            <SectionCard title="System Snapshot" subtitle="Current page coverage across the active benchmark slice.">
               <div className={styles.snapshotGrid}>
                 <SnapshotStat label="Quality coverage" value={`${snapshot.qualityCoverage}%`} />
                 <SnapshotStat label="Power coverage" value={`${snapshot.powerCoverage}%`} />
@@ -72,13 +96,13 @@ export default async function Home() {
                 <SnapshotStat label="Hardware-encoder share" value={`${snapshot.hardwareShare}%`} />
               </div>
               <div className={styles.snapshotNotes}>
-                <span className="subtle">Coverage improves as more benchmark submissions are accepted.</span>
+                <span className="subtle">Snapshot metrics reflect the currently loaded page, not the full dataset.</span>
               </div>
             </SectionCard>
           </div>
 
           <ErrorBoundary>
-            <CommandWorkbench data={data} />
+            <CommandWorkbench data={data} totalCount={totalCount} queryKey={queryKey} currentPage={workbenchState.page} />
           </ErrorBoundary>
 
           <SectionCard title="Test Clip" subtitle="Reference baseline used by submissions for consistency.">

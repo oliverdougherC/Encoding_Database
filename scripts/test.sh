@@ -263,9 +263,10 @@ start_frontend() {
   fi
   (
     cd "$ROOT_DIR/frontend"
+    unset ENABLE_QUERY_MOCK NEXT_PUBLIC_API_BASE_URL NEXT_PUBLIC_APP_URL
     export PORT="$FRONTEND_PORT"
+    export APP_URL="http://127.0.0.1:${FRONTEND_PORT}"
     export INTERNAL_API_BASE_URL="http://127.0.0.1:${SERVER_PORT}"
-    export NEXT_PUBLIC_API_BASE_URL="http://127.0.0.1:${SERVER_PORT}"
     exec npm run start
   ) >> "$log" 2>&1 &
   FRONTEND_PID=$!
@@ -379,9 +380,10 @@ echo "[test] Database port: ${PG_PORT}"
 echo "[test] Docker project: ${COMPOSE_PROJECT_NAME}"
 
 PRECHECK_OK=1
-SERVER_SETUP_OK=1
-SERVER_RUNNING_OK=1
+SERVER_BUILD_OK=1
 FRONTEND_BUILD_OK=1
+DOCKER_READY_OK=1
+SERVER_RUNNING_OK=1
 
 run_step "Precheck: required commands" "command -v bash python3 node npm docker curl >/dev/null"
 if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
@@ -394,71 +396,113 @@ if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
 fi
 
 if [[ "$PRECHECK_OK" -eq 1 ]]; then
+  run_step "Client: install test dependencies" "python3 -m pip install --disable-pip-version-check -r \"$ROOT_DIR/client/requirements-ci.txt\""
   run_step "Client: compile Python modules" "PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall client"
   run_step "Client: import core modules" "python3 -c \"import client.config, client.network, client.ffmpeg, client.main\""
   run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"
-
-  run_step "Docker: compose config validation" "docker compose -f \"$COMPOSE_FILE\" config -q"
-  run_step "Database: start container" "docker compose -f \"$COMPOSE_FILE\" up -d db"
-  run_step "Database: readiness wait" "for i in \$(seq 1 50); do docker compose -f \"$COMPOSE_FILE\" exec -T db pg_isready -U \"$PG_USER\" -d postgres >/dev/null 2>&1 && exit 0; sleep 2; done; echo 'Database not ready in time' >&2; exit 1"
-  run_step "Database: create test database if missing" "docker compose -f \"$COMPOSE_FILE\" exec -T db psql -U \"$PG_USER\" -d postgres -v ON_ERROR_STOP=1 -c \"CREATE DATABASE \\\"$DB_NAME\\\";\" 2>/dev/null || true"
+  run_step "Client: pytest suite" "cd \"$ROOT_DIR/client\" && python3 -m pytest -q"
 
   run_step "Server: npm ci" "cd \"$ROOT_DIR/server\" && npm ci --no-fund"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-    SERVER_SETUP_OK=0
+    SERVER_BUILD_OK=0
   fi
   run_step "Server: prisma generate" "cd \"$ROOT_DIR/server\" && PRISMA_TELEMETRY_DISABLED=1 npx prisma generate"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-    SERVER_SETUP_OK=0
+    SERVER_BUILD_OK=0
   fi
   run_step "Server: build" "cd \"$ROOT_DIR/server\" && npm run build"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-    SERVER_SETUP_OK=0
+    SERVER_BUILD_OK=0
   fi
-  run_step "Server: migrate deploy" "cd \"$ROOT_DIR/server\" && PRISMA_TELEMETRY_DISABLED=1 DATABASE_URL=\"$DATABASE_URL_LOCAL\" npx prisma migrate deploy"
+  run_step "Server: node test suite" "cd \"$ROOT_DIR/server\" && npm test"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-    SERVER_SETUP_OK=0
+    SERVER_BUILD_OK=0
   fi
-  run_step "Server: node test suite" "cd \"$ROOT_DIR/server\" && DATABASE_URL=\"$DATABASE_URL_LOCAL\" npm test"
+
+  run_step "Frontend: npm ci" "cd \"$ROOT_DIR/frontend\" && npm ci --no-fund"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-    SERVER_SETUP_OK=0
+    FRONTEND_BUILD_OK=0
+  fi
+  run_step "Frontend: lint" "cd \"$ROOT_DIR/frontend\" && npm run lint"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    FRONTEND_BUILD_OK=0
+  fi
+  run_step "Frontend: unit tests" "cd \"$ROOT_DIR/frontend\" && npm test"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    FRONTEND_BUILD_OK=0
+  fi
+  run_step "Frontend: build" "cd \"$ROOT_DIR/frontend\" && ENABLE_QUERY_MOCK=1 APP_URL=\"http://127.0.0.1:${FRONTEND_PORT}\" npm run build"
+  if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+    FRONTEND_BUILD_OK=0
   fi
 
-  if [[ "$SERVER_SETUP_OK" -eq 1 ]]; then
-    start_server || SERVER_RUNNING_OK=0
-    if [[ "$SERVER_RUNNING_OK" -eq 1 ]]; then
-      run_step "API: health live" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/live\" >/dev/null"
-      run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
-      run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
-      run_api_submit_accepts_sample
-      run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
+  if [[ "$SERVER_BUILD_OK" -eq 1 && "$FRONTEND_BUILD_OK" -eq 1 ]]; then
+    run_step "Docker: compose config validation" "docker compose -f \"$COMPOSE_FILE\" config -q"
+    if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+      DOCKER_READY_OK=0
+    fi
+    run_step "Docker: daemon reachable" "docker info >/dev/null"
+    if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+      DOCKER_READY_OK=0
+    fi
 
-      run_step "Frontend: npm ci" "cd \"$ROOT_DIR/frontend\" && npm ci --no-fund"
+    if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
+      run_step "Database: start container" "docker compose -f \"$COMPOSE_FILE\" up -d db"
       if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-        FRONTEND_BUILD_OK=0
+        DOCKER_READY_OK=0
       fi
-      run_step "Frontend: lint" "cd \"$ROOT_DIR/frontend\" && npm run lint"
-      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-        FRONTEND_BUILD_OK=0
-      fi
-      run_step "Frontend: build" "cd \"$ROOT_DIR/frontend\" && INTERNAL_API_BASE_URL=\"http://127.0.0.1:${SERVER_PORT}\" NEXT_PUBLIC_API_BASE_URL=\"http://127.0.0.1:${SERVER_PORT}\" npm run build"
-      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
-        FRONTEND_BUILD_OK=0
-      fi
-
-      if [[ "$FRONTEND_BUILD_OK" -eq 1 ]]; then
-        start_frontend || true
-        run_step "Frontend: homepage response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
-        run_step "Frontend: leaderboard response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/leaderboards\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+      if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
+        run_step "Database: readiness wait" "for i in \$(seq 1 50); do docker compose -f \"$COMPOSE_FILE\" exec -T db pg_isready -U \"$PG_USER\" -d postgres >/dev/null 2>&1 && exit 0; sleep 2; done; echo 'Database not ready in time' >&2; exit 1"
+        if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+          DOCKER_READY_OK=0
+        fi
       else
-        mark_blocked "Frontend: start and route checks" "frontend build pipeline failed earlier"
+        mark_blocked "Database: readiness wait" "database container failed to start"
+      fi
+
+      if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
+        run_step "Database: create test database if missing" "docker compose -f \"$COMPOSE_FILE\" exec -T db psql -U \"$PG_USER\" -d postgres -v ON_ERROR_STOP=1 -c \"CREATE DATABASE \\\"$DB_NAME\\\";\" 2>/dev/null || true"
+        run_step "Server: migrate deploy" "cd \"$ROOT_DIR/server\" && PRISMA_TELEMETRY_DISABLED=1 DATABASE_URL=\"$DATABASE_URL_LOCAL\" npx prisma migrate deploy"
+        if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+          SERVER_RUNNING_OK=0
+        fi
+      else
+        mark_blocked "Database: create test database if missing" "database did not become ready"
+        mark_blocked "Server: migrate deploy" "database did not become ready"
+        SERVER_RUNNING_OK=0
+      fi
+
+      if [[ "$SERVER_RUNNING_OK" -eq 1 ]]; then
+        start_server || SERVER_RUNNING_OK=0
+        if [[ "$SERVER_RUNNING_OK" -eq 1 ]]; then
+          run_step "API: health live" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/live\" >/dev/null"
+          run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
+          run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+          run_api_submit_accepts_sample
+          run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
+
+          start_frontend || true
+          run_step "Frontend: homepage response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+          run_step "Frontend: query proxy response" "curl -fsS \"http://127.0.0.1:${FRONTEND_PORT}/api/query?limit=2\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+          run_step "Frontend: leaderboard response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/leaderboards\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+          run_step "Frontend: hardware response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/hardware\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
+        else
+          mark_blocked "API and frontend runtime checks" "server failed to start"
+        fi
+      else
+        mark_blocked "API and frontend runtime checks" "database setup or migration failed"
       fi
     else
-      mark_blocked "API and frontend runtime checks" "server failed to start"
+      mark_blocked "Database and runtime smoke" "docker daemon is unavailable"
+      mark_blocked "Frontend runtime smoke" "docker-backed API smoke could not run"
     fi
   else
-    mark_blocked "Server runtime checks" "server setup/build/test pipeline failed earlier"
-    mark_blocked "Frontend checks" "server pipeline failed, frontend integration skipped"
+    if [[ "$SERVER_BUILD_OK" -ne 1 ]]; then
+      mark_blocked "Database and runtime smoke" "server build/test pipeline failed earlier"
+    fi
+    if [[ "$FRONTEND_BUILD_OK" -ne 1 ]]; then
+      mark_blocked "Frontend runtime smoke" "frontend build/test pipeline failed earlier"
+    fi
   fi
 else
   mark_blocked "All functional checks" "precheck failed"

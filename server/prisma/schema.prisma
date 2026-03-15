@@ -64,6 +64,10 @@ model Benchmark {
   powerSource        String?
   sampleCount        Float?
   monitorDurationMs  Float?
+  cpuSampleCount     Float?
+  gpuSampleCount     Float?
+  ffmpegSampleCount  Float?
+  batterySampleCount Float?
 
   // Aggregation
   samples        Int      @default(0)
@@ -105,6 +109,14 @@ model Benchmark {
   sampleCountSum         Float @default(0)
   monitorDurationSamples Int   @default(0)
   monitorDurationSum     Float @default(0)
+  cpuSampleCountSamples     Int   @default(0)
+  cpuSampleCountSum         Float @default(0)
+  gpuSampleCountSamples     Int   @default(0)
+  gpuSampleCountSum         Float @default(0)
+  ffmpegSampleCountSamples  Int   @default(0)
+  ffmpegSampleCountSum      Float @default(0)
+  batterySampleCountSamples Int   @default(0)
+  batterySampleCountSum     Float @default(0)
 
   // Submission metadata
   status         String   @default("pending") // pending | accepted | rejected
@@ -182,6 +194,12 @@ model Submission {
   powerSource        String?
   sampleCount        Int?
   monitorDurationMs  Int?
+  cpuSampleCount     Int?
+  gpuSampleCount     Int?
+  ffmpegSampleCount  Int?
+  batterySampleCount Int?
+  telemetrySources   String?
+  telemetryMissing   String?
 
   // Submission metadata
   ffmpegVersion  String?

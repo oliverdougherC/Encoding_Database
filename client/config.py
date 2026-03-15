@@ -57,6 +57,8 @@ _ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
     'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
     'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
     'powerSource', 'sampleCount', 'monitorDurationMs',
+    'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
+    'telemetrySources', 'telemetryMissing',
 )
 
 # Batch aggregation for Small/Full multi-run flows
