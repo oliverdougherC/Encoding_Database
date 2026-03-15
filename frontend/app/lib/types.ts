@@ -32,6 +32,12 @@ export type Benchmark = {
   cpuUtilMax?: number | null;
   peakMemoryMB?: number | null;
   thermalThrottle?: boolean | null;
+  sampleCount?: number | null;
+  monitorDurationMs?: number | null;
+  cpuSampleCount?: number | null;
+  gpuSampleCount?: number | null;
+  ffmpegSampleCount?: number | null;
+  batterySampleCount?: number | null;
   fpsPerWatt?: number | null;
   qualityPerWatt?: number | null;
 };

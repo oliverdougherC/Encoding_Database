@@ -38,10 +38,12 @@ from .ffmpeg import (
     run_ffmpeg_test, encode_to_artifact, compute_vmaf_parallel,
     compute_metrics_parallel,
     EXTENDED_TELEMETRY_KEYS,
+    RAW_TELEMETRY_KEYS,
     run_single_benchmark, sha256_of_file, verify_sample_video,
     load_presets_config, get_default_sample_path,
 )
-from .network import submit, fetch_baseline_rows
+from .network import fetch_baseline_rows
+from .spool import count_pending_entries, replay_spool, spool_payload, submit_spooled_path
 from .stats import should_skip_submission
 from .ui import (
     prompt_yes_no, prompt_choice, prompt_text,
@@ -91,6 +93,73 @@ def _is_cancelled(cancel_event: Optional[Any]) -> bool:
         return bool(cancel_event.is_set())
     except Exception:
         return False
+
+
+def _should_use_submit_token(args: argparse.Namespace) -> bool:
+    return config._env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False))
+
+
+def _emit_counters(
+    event_sink: Optional[Callable[[Dict[str, Any]], None]],
+    *,
+    submitted: int,
+    skipped: int,
+    queued: int,
+    failed: int,
+) -> None:
+    _emit_event(
+        event_sink,
+        "counters",
+        submitted=submitted,
+        skipped=skipped,
+        queued=queued,
+        failed=failed,
+    )
+
+
+def _replay_pending_uploads(
+    *,
+    queue_dir: str,
+    base_url: str,
+    api_key: str,
+    retries: int,
+    use_token: bool,
+) -> int:
+    stats = replay_spool(
+        queue_dir,
+        base_url=base_url,
+        api_key=api_key,
+        retries=max(1, retries),
+        use_token=use_token,
+    )
+    if stats.submitted:
+        print_info(f"Submitted {stats.submitted} queued payload(s).")
+    if stats.dead_lettered:
+        print_warning(f"Moved {stats.dead_lettered} payload(s) to dead-letter.")
+    if stats.corrupt:
+        print_warning(f"Moved {stats.corrupt} corrupt queue file(s) to dead-letter.")
+    return count_pending_entries(queue_dir)
+
+
+def _submit_payload_with_spool(
+    *,
+    queue_dir: str,
+    base_url: str,
+    payload: Dict[str, Any],
+    api_key: str,
+    retries: int,
+    use_token: bool,
+) -> Tuple[str, str, int]:
+    path, _entry = spool_payload(queue_dir, payload)
+    status, message = submit_spooled_path(
+        path,
+        queue_dir=queue_dir,
+        base_url=base_url,
+        api_key=api_key,
+        retries=max(1, retries),
+        use_token=use_token,
+    )
+    return status, message, count_pending_entries(queue_dir)
 
 
 def _has_direct_single_run_intent(raw_args: List[str]) -> bool:
@@ -219,7 +288,17 @@ def run_benchmark_batch(
     total_tasks = len(tasks)
     total_batches = (total_tasks + chunk_size - 1) // chunk_size if total_tasks > 0 else 0
     run_started_at = time.time()
+    use_token = _should_use_submit_token(args)
     baseline_rows: List[Dict[str, Any]] = []
+    queued_count = count_pending_entries(args.queue_dir)
+    if not getattr(args, 'no_submit', False):
+        queued_count = _replay_pending_uploads(
+            queue_dir=args.queue_dir,
+            base_url=base_url,
+            api_key=args.api_key,
+            retries=max(1, args.retries),
+            use_token=use_token,
+        )
     if not getattr(args, 'no_submit', False):
         baseline_rows = fetch_baseline_rows(base_url)
 
@@ -228,7 +307,6 @@ def run_benchmark_batch(
     pre_batch_bg_load = measure_background_cpu_load(3.0, 0.5)
     submitted_count = 0
     skipped_count = 0
-    queued_count = 0
     failed_count = 0
     _emit_event(
         event_sink,
@@ -245,6 +323,7 @@ def run_benchmark_batch(
             "os": hardware.os,
         },
     )
+    _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
 
     def _batch_status(stage: str, index: int, codec: str = "", preset: str = "") -> str:
         label = f"{codec} {preset}".strip()
@@ -312,6 +391,7 @@ def run_benchmark_batch(
                             crf=crf,
                             out_dir=batch_dir,
                             artifact_name=name,
+                            host_gpu_vendors=list(getattr(hardware, 'gpuVendors', []) or []),
                         )
 
                         info['backgroundCpuPct'] = float(bg_load)
@@ -341,7 +421,14 @@ def run_benchmark_batch(
                             fileSizeBytes=int(info.get("fileSizeBytes") or 0),
                             runMs=int(info.get("elapsedMs") or 0),
                             error=info.get("error"),
-                            telemetry=info.get("telemetry"),
+                            telemetry={
+                                key: info[key]
+                                for key in list(EXTENDED_TELEMETRY_KEYS) + list(RAW_TELEMETRY_KEYS) + [
+                                    'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+                                    'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
+                                ]
+                                if key in info
+                            },
                             batchNo=batch_no,
                         )
                         progress.advance_phase(
@@ -442,11 +529,15 @@ def run_benchmark_batch(
                         for hw_key in EXTENDED_TELEMETRY_KEYS:
                             if info.get(hw_key) is not None:
                                 payload[hw_key] = info[hw_key]
+                        for hw_key in RAW_TELEMETRY_KEYS:
+                            if info.get(hw_key) is not None:
+                                payload[hw_key] = info[hw_key]
 
                         note_parts: List[str] = []
-                        if info.get('error'):
-                            note_parts.append(str(info['error']).strip())
-                        if info.get('telemetryNote'):
+                        telemetry_notes = info.get('telemetryNotes')
+                        if isinstance(telemetry_notes, list):
+                            note_parts.extend([str(part).strip() for part in telemetry_notes if str(part).strip()])
+                        elif info.get('telemetryNote'):
                             note_parts.append(str(info['telemetryNote']).strip())
                         if note_parts:
                             payload['notes'] = "; ".join(note_parts)[:3500]
@@ -480,21 +571,6 @@ def run_benchmark_batch(
                         if skip:
                             print_warning(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
                             skipped_count += 1
-                            if not args.no_submit:
-                                try:
-                                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-skipped-{payload['preset']}.json")
-                                    payload_to_save = dict(payload)
-                                    if reason:
-                                        try:
-                                            payload_to_save['notes'] = ((payload_to_save.get('notes') or '') + f"; {reason}")[:3500]
-                                        except Exception:
-                                            pass
-                                    with open(fname, 'w', encoding='utf-8') as fh:
-                                        json.dump(sanitize_payload_for_server(payload_to_save), fh, separators=(',', ':'))
-                                    queued_count += 1
-                                except Exception as qe:
-                                    print(f"Failed to queue skipped payload: {qe}", file=sys.stderr)
-                                    failed_count += 1
                             progress.update_counters(
                                 submitted=submitted_count, skipped=skipped_count,
                                 queued=queued_count, failed=failed_count,
@@ -508,35 +584,46 @@ def run_benchmark_batch(
                             )
                             _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="dry_run")
                         else:
+                            status = "failed"
+                            error_text = ""
                             try:
-                                submit(
-                                    base_url,
-                                    sanitize_payload_for_server(payload),
+                                status, error_text, queued_count = _submit_payload_with_spool(
+                                    queue_dir=args.queue_dir,
+                                    base_url=base_url,
+                                    payload=sanitize_payload_for_server(payload),
                                     api_key=args.api_key,
                                     retries=max(1, args.retries),
-                                    use_token=config._env_flag('INGEST_USE_TOKENS', False) or bool(getattr(args, 'use_token', False)),
+                                    use_token=use_token,
                                 )
-                                submitted_count += 1
-                                _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="submitted")
-                            except Exception as e:
-                                print(f"Failed to submit {payload['preset']}: {e}", file=sys.stderr)
-                                try:
-                                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{payload['preset']}.json")
-                                    with open(fname, 'w', encoding='utf-8') as fh:
-                                        json.dump(sanitize_payload_for_server(payload), fh, separators=(',', ':'))
-                                    queued_count += 1
-                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="queued", error=str(e))
-                                except Exception as qe:
-                                    print(f"Failed to queue payload: {qe}", file=sys.stderr)
+                                if status == "submitted":
+                                    queued_count = _replay_pending_uploads(
+                                        queue_dir=args.queue_dir,
+                                        base_url=base_url,
+                                        api_key=args.api_key,
+                                        retries=max(1, args.retries),
+                                        use_token=use_token,
+                                    )
+                                    submitted_count += 1
+                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="submitted")
+                                elif status == "retained":
+                                    print_warning(f"Queued payload for retry: {payload['preset']} ({error_text})")
+                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="queued", error=error_text)
+                                else:
                                     failed_count += 1
-                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="failed", error=str(qe))
+                                    print(f"Failed to submit {payload['preset']}: {error_text}", file=sys.stderr)
+                                    _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="failed", error=error_text)
+                            except Exception as e:
+                                failed_count += 1
+                                error_text = str(e)
+                                print(f"Failed to submit {payload['preset']}: {error_text}", file=sys.stderr)
+                                queued_count = count_pending_entries(args.queue_dir)
+                                _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="failed", error=error_text)
                             progress.update_counters(
                                 submitted=submitted_count, skipped=skipped_count,
                                 queued=queued_count, failed=failed_count,
                             )
-                        _emit_event(
+                        _emit_counters(
                             event_sink,
-                            "counters",
                             submitted=submitted_count,
                             skipped=skipped_count,
                             queued=queued_count,
@@ -551,13 +638,21 @@ def run_benchmark_batch(
 
                         processed_total += 1
                         progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
-                        _emit_event(event_sink, "task_complete", processed=processed_total, total=total_tasks)
+                        _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
     except KeyboardInterrupt:
         print_warning("Batch run interrupted by user.")
         _emit_event(event_sink, "run_interrupted", scope="batch", processed=processed_total, total=total_tasks)
         return 130
 
     elapsed_seconds = max(0.0, time.time() - run_started_at)
+    if not getattr(args, 'no_submit', False):
+        queued_count = _replay_pending_uploads(
+            queue_dir=args.queue_dir,
+            base_url=base_url,
+            api_key=args.api_key,
+            retries=max(1, args.retries),
+            use_token=use_token,
+        )
     throughput_per_hour = (completed_count_local / elapsed_seconds * 3600.0) if elapsed_seconds > 0 else 0.0
     print_batch_summary({
         "totalTasks": total_tasks,
@@ -700,9 +795,22 @@ def run_with_args(
         preset_list = ["fast", "medium", "slow"]
 
     base_url = args.base_url
+    use_token = _should_use_submit_token(args)
     user_crf: Optional[int] = args.crf
     if preset_list:
         combos = [(p, user_crf) for p in preset_list]
+    queued_count = count_pending_entries(args.queue_dir)
+    if not args.no_submit:
+        queued_count = _replay_pending_uploads(
+            queue_dir=args.queue_dir,
+            base_url=base_url,
+            api_key=args.api_key,
+            retries=max(1, args.retries),
+            use_token=use_token,
+        )
+    submitted_count = 0
+    skipped_count = 0
+    failed_count = 0
     _emit_event(
         event_sink,
         "run_start",
@@ -718,6 +826,7 @@ def run_with_args(
             "os": hardware.os,
         },
     )
+    _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
     benchmark_start_ts = time.time()
     try:
         original_size_bytes = os.path.getsize(input_path)
@@ -766,6 +875,14 @@ def run_with_args(
                 fps=float(payload.get("fps") or 0.0),
                 fileSizeBytes=int(payload.get("fileSizeBytes") or 0),
                 runMs=int(payload.get("runMs") or 0),
+                telemetry={
+                    key: payload[key]
+                    for key in list(EXTENDED_TELEMETRY_KEYS) + list(RAW_TELEMETRY_KEYS) + [
+                        'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+                        'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
+                    ]
+                    if key in payload
+                },
                 metrics={
                     "vmaf": payload.get("vmaf"),
                     "ssim": payload.get("ssim"),
@@ -791,44 +908,60 @@ def run_with_args(
                         f"Skipped submission for preset={preset} due to encode failure "
                         f"(fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})"
                     )
+                    failed_count += 1
                     progress.advance(description=f"{preset} (failed)")
                     _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset)
+                    _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
                     _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
                     continue
                 clean_payload = sanitize_payload_for_server(payload)
-                submit(base_url, clean_payload, api_key=args.api_key, retries=max(1, args.retries))
-                print_success("Submitted Results")
-                progress.advance(description=f"{preset} (submitted)")
-                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="submitted", preset=preset)
+                status, message, queued_count = _submit_payload_with_spool(
+                    queue_dir=args.queue_dir,
+                    base_url=base_url,
+                    payload=clean_payload,
+                    api_key=args.api_key,
+                    retries=max(1, args.retries),
+                    use_token=use_token,
+                )
+                if status == "submitted":
+                    queued_count = _replay_pending_uploads(
+                        queue_dir=args.queue_dir,
+                        base_url=base_url,
+                        api_key=args.api_key,
+                        retries=max(1, args.retries),
+                        use_token=use_token,
+                    )
+                    submitted_count += 1
+                    print_success("Submitted Results")
+                    progress.advance(description=f"{preset} (submitted)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="submitted", preset=preset)
+                elif status == "retained":
+                    print_warning(f"Queued for retry: {preset} ({message})")
+                    progress.advance(description=f"{preset} (queued)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="queued", preset=preset, error=message)
+                else:
+                    failed_count += 1
+                    print(f"Failed to submit {preset}: {message}", file=sys.stderr)
+                    progress.advance(description=f"{preset} (failed)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=message)
             except Exception as e:
+                failed_count += 1
                 print(f"Failed to submit {preset}: {e}", file=sys.stderr)
-                try:
-                    fname = os.path.join(args.queue_dir, f"{int(time.time()*1000)}-{preset}.json")
-                    with open(fname, "w", encoding="utf-8") as fh:
-                        json.dump(sanitize_payload_for_server(payload), fh, separators=(",", ":"))
-                    print_info(f"Queued for retry: {fname}")
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="queued", preset=preset, error=str(e))
-                except Exception as qe:
-                    print(f"Failed to queue payload: {qe}", file=sys.stderr)
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=str(qe))
-                progress.advance(description=f"{preset} (queued)")
+                queued_count = count_pending_entries(args.queue_dir)
+                progress.advance(description=f"{preset} (failed)")
+                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=str(e))
+            _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
             _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
 
-    try:
-        files = sorted([f for f in os.listdir(args.queue_dir) if f.endswith('.json')])
-        for fn in files:
-            fpath = os.path.join(args.queue_dir, fn)
-            try:
-                with open(fpath, 'r', encoding='utf-8') as fh:
-                    payload = json.load(fh)
-                clean_payload = sanitize_payload_for_server(payload if isinstance(payload, dict) else {})
-                submit(base_url, clean_payload, api_key=args.api_key, retries=max(1, args.retries))
-                os.remove(fpath)
-                print(f"Retried and submitted: {fn}")
-            except Exception:
-                pass
-    except Exception:
-        pass
+    if not args.no_submit:
+        queued_count = _replay_pending_uploads(
+            queue_dir=args.queue_dir,
+            base_url=base_url,
+            api_key=args.api_key,
+            retries=max(1, args.retries),
+            use_token=use_token,
+        )
+        _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
     if show_end_screen and not config._BATCH_ACTIVE:
         _clear_screen()
         elapsed_sec = max(0.0, time.time() - benchmark_start_ts)

@@ -7,6 +7,8 @@ import routes, {
   DEFAULT_QUERY_LIMIT,
   TEST_VIDEO_CATALOG,
   normalizeCpuFreqMHz,
+  parseTelemetryFromNotes,
+  parseTelemetryMetaFromNotes,
   parseSkipParam,
   parseTakeParam,
   runSubmitTransactionWithRetry,
@@ -205,8 +207,14 @@ test('buildSubmissionPayloadHash changes when telemetry changes', () => {
     powerSource: 'ac',
     sampleCount: 320,
     monitorDurationMs: 125000,
+    cpuSampleCount: 310,
+    gpuSampleCount: 295,
+    ffmpegSampleCount: 320,
+    batterySampleCount: 2,
+    telemetrySources: 'cpu_psutil,gpu_nvml',
+    telemetryMissing: 'battery_unavailable',
   };
-  const variant = { ...base, cpuUtilMax: 99.1 };
+  const variant = { ...base, cpuSampleCount: 311 };
   const h1 = buildSubmissionPayloadHash(base);
   const h2 = buildSubmissionPayloadHash(variant);
   assert.notEqual(h1, h2);
@@ -257,6 +265,24 @@ test('normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry',
   assert.equal(normalizeCpuFreqMHz(0), null);
   assert.equal(normalizeCpuFreqMHz(-1), null);
   assert.equal(normalizeCpuFreqMHz('not-a-number'), null);
+});
+
+test('parseTelemetryFromNotes reads new numeric coverage fields', () => {
+  const parsed = parseTelemetryFromNotes(
+    'telemetry={"cpuSampleCount":12,"gpuSampleCount":8,"ffmpegSampleCount":12,"batterySampleCount":2}; other=data',
+  );
+  assert.equal(parsed.cpuSampleCount, 12);
+  assert.equal(parsed.gpuSampleCount, 8);
+  assert.equal(parsed.ffmpegSampleCount, 12);
+  assert.equal(parsed.batterySampleCount, 2);
+});
+
+test('parseTelemetryMetaFromNotes reads raw diagnostic strings', () => {
+  const parsed = parseTelemetryMetaFromNotes(
+    'telemetry_meta={"telemetrySources":"cpu_psutil,gpu_nvml","telemetryMissing":"battery_unavailable"}',
+  );
+  assert.equal(parsed.telemetrySources, 'cpu_psutil,gpu_nvml');
+  assert.equal(parsed.telemetryMissing, 'battery_unavailable');
 });
 
 test('parseTakeParam normalizes invalid, float, and oversized values', () => {

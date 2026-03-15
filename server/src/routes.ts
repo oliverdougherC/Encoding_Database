@@ -62,6 +62,12 @@ const benchmarkSchema = z.object({
   powerSource: z.enum(['ac', 'battery']).optional().nullable(),
   sampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
   monitorDurationMs: z.coerce.number().int().min(0).max(24 * 60 * 60 * 1000).optional().nullable(),
+  cpuSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  gpuSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  ffmpegSampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  batterySampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
+  telemetrySources: z.string().max(400).optional().nullable(),
+  telemetryMissing: z.string().max(400).optional().nullable(),
 }).strict();
 
 const CPU_FREQ_MIN_MHZ = 100;
@@ -145,6 +151,12 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
     powerSource: data.powerSource ?? null,
     sampleCount: data.sampleCount ?? null,
     monitorDurationMs: data.monitorDurationMs ?? null,
+    cpuSampleCount: data.cpuSampleCount ?? null,
+    gpuSampleCount: data.gpuSampleCount ?? null,
+    ffmpegSampleCount: data.ffmpegSampleCount ?? null,
+    batterySampleCount: data.batterySampleCount ?? null,
+    telemetrySources: data.telemetrySources ?? null,
+    telemetryMissing: data.telemetryMissing ?? null,
   } as const;
   return crypto.createHash('sha256').update(JSON.stringify(significant)).digest('hex');
 }
@@ -190,8 +202,9 @@ export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<
 }
 
 const TELEMETRY_NOTE_REGEX = /telemetry=(\{[\s\S]*?\})(?:;|$)/;
+const TELEMETRY_META_NOTE_REGEX = /telemetry_meta=(\{[\s\S]*?\})(?:;|$)/;
 
-function _parseTelemetryFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
+export function parseTelemetryFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
   if (!notes) return {};
   const match = TELEMETRY_NOTE_REGEX.exec(notes);
   if (!match?.[1]) return {};
@@ -236,13 +249,37 @@ function _parseTelemetryFromNotes(notes: string | null | undefined): Partial<Ben
   if (ps === 'ac' || ps === 'battery') out.powerSource = ps;
   putNumber('sampleCount', true);
   putNumber('monitorDurationMs', true);
+  putNumber('cpuSampleCount', true);
+  putNumber('gpuSampleCount', true);
+  putNumber('ffmpegSampleCount', true);
+  putNumber('batterySampleCount', true);
 
   return out;
 }
 
+export function parseTelemetryMetaFromNotes(notes: string | null | undefined): Partial<BenchmarkSubmission> {
+  if (!notes) return {};
+  const match = TELEMETRY_META_NOTE_REGEX.exec(notes);
+  if (!match?.[1]) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[1]);
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== 'object') return {};
+  const raw = parsed as Record<string, unknown>;
+  const out: Partial<BenchmarkSubmission> = {};
+  const sources = typeof raw.telemetrySources === 'string' ? raw.telemetrySources.trim() : '';
+  if (sources) out.telemetrySources = sources.slice(0, 400);
+  const missing = typeof raw.telemetryMissing === 'string' ? raw.telemetryMissing.trim() : '';
+  if (missing) out.telemetryMissing = missing.slice(0, 400);
+  return out;
+}
+
 function _applyTelemetryFallback(data: BenchmarkSubmission): void {
-  const telemetry = _parseTelemetryFromNotes(data.notes);
-  if (!telemetry) return;
+  const telemetry = parseTelemetryFromNotes(data.notes);
+  const telemetryMeta = parseTelemetryMetaFromNotes(data.notes);
   const keys: Array<keyof BenchmarkSubmission> = [
     'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
     'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
@@ -251,11 +288,18 @@ function _applyTelemetryFallback(data: BenchmarkSubmission): void {
     'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
     'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
     'powerSource', 'sampleCount', 'monitorDurationMs',
+    'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
   ];
   for (const key of keys) {
     if (data[key] == null && telemetry[key] != null) {
       (data[key] as BenchmarkSubmission[typeof key]) = telemetry[key] as BenchmarkSubmission[typeof key];
     }
+  }
+  if (data.telemetrySources == null && telemetryMeta.telemetrySources != null) {
+    data.telemetrySources = telemetryMeta.telemetrySources;
+  }
+  if (data.telemetryMissing == null && telemetryMeta.telemetryMissing != null) {
+    data.telemetryMissing = telemetryMeta.telemetryMissing;
   }
 }
 
@@ -477,6 +521,12 @@ router.post('/submit', async (req, res) => {
           powerSource: data.powerSource ?? null,
           sampleCount: data.sampleCount != null ? Number(data.sampleCount) : null,
           monitorDurationMs: data.monitorDurationMs != null ? Number(data.monitorDurationMs) : null,
+          cpuSampleCount: data.cpuSampleCount != null ? Number(data.cpuSampleCount) : null,
+          gpuSampleCount: data.gpuSampleCount != null ? Number(data.gpuSampleCount) : null,
+          ffmpegSampleCount: data.ffmpegSampleCount != null ? Number(data.ffmpegSampleCount) : null,
+          batterySampleCount: data.batterySampleCount != null ? Number(data.batterySampleCount) : null,
+          telemetrySources: data.telemetrySources ?? null,
+          telemetryMissing: data.telemetryMissing ?? null,
           payloadHash,
           status,
           qualityScore,
@@ -526,6 +576,14 @@ router.post('/submit', async (req, res) => {
         const initialSampleCountSum = (status === 'accepted' && data.sampleCount != null) ? Number(data.sampleCount) : 0;
         const initialMonitorDurationSamples = (status === 'accepted' && data.monitorDurationMs != null) ? 1 : 0;
         const initialMonitorDurationSum = (status === 'accepted' && data.monitorDurationMs != null) ? Number(data.monitorDurationMs) : 0;
+        const initialCpuSampleCountSamples = (status === 'accepted' && data.cpuSampleCount != null) ? 1 : 0;
+        const initialCpuSampleCountSum = (status === 'accepted' && data.cpuSampleCount != null) ? Number(data.cpuSampleCount) : 0;
+        const initialGpuSampleCountSamples = (status === 'accepted' && data.gpuSampleCount != null) ? 1 : 0;
+        const initialGpuSampleCountSum = (status === 'accepted' && data.gpuSampleCount != null) ? Number(data.gpuSampleCount) : 0;
+        const initialFfmpegSampleCountSamples = (status === 'accepted' && data.ffmpegSampleCount != null) ? 1 : 0;
+        const initialFfmpegSampleCountSum = (status === 'accepted' && data.ffmpegSampleCount != null) ? Number(data.ffmpegSampleCount) : 0;
+        const initialBatterySampleCountSamples = (status === 'accepted' && data.batterySampleCount != null) ? 1 : 0;
+        const initialBatterySampleCountSum = (status === 'accepted' && data.batterySampleCount != null) ? Number(data.batterySampleCount) : 0;
         return tx.benchmark.create({
           data: {
             cpuModel: key.cpuModel,
@@ -565,6 +623,10 @@ router.post('/submit', async (req, res) => {
           powerSource: data.powerSource ?? null,
           sampleCount: data.sampleCount != null ? Number(data.sampleCount) : null,
           monitorDurationMs: data.monitorDurationMs != null ? Number(data.monitorDurationMs) : null,
+          cpuSampleCount: data.cpuSampleCount != null ? Number(data.cpuSampleCount) : null,
+          gpuSampleCount: data.gpuSampleCount != null ? Number(data.gpuSampleCount) : null,
+          ffmpegSampleCount: data.ffmpegSampleCount != null ? Number(data.ffmpegSampleCount) : null,
+          batterySampleCount: data.batterySampleCount != null ? Number(data.batterySampleCount) : null,
           status,
           ffmpegVersion: data.ffmpegVersion || null,
           encoderName: data.encoderName || null,
@@ -608,6 +670,14 @@ router.post('/submit', async (req, res) => {
             sampleCountSum: initialSampleCountSum,
             monitorDurationSamples: initialMonitorDurationSamples,
             monitorDurationSum: initialMonitorDurationSum,
+            cpuSampleCountSamples: initialCpuSampleCountSamples,
+            cpuSampleCountSum: initialCpuSampleCountSum,
+            gpuSampleCountSamples: initialGpuSampleCountSamples,
+            gpuSampleCountSum: initialGpuSampleCountSum,
+            ffmpegSampleCountSamples: initialFfmpegSampleCountSamples,
+            ffmpegSampleCountSum: initialFfmpegSampleCountSum,
+            batterySampleCountSamples: initialBatterySampleCountSamples,
+            batterySampleCountSum: initialBatterySampleCountSum,
           },
         });
       }
@@ -667,6 +737,14 @@ router.post('/submit', async (req, res) => {
       const sampleCountVal = hasSampleCount ? Number(data.sampleCount) : 0;
       const hasMonitorDuration = data.monitorDurationMs != null;
       const monitorDurationVal = hasMonitorDuration ? Number(data.monitorDurationMs) : 0;
+      const hasCpuSampleCount = data.cpuSampleCount != null;
+      const cpuSampleCountVal = hasCpuSampleCount ? Number(data.cpuSampleCount) : 0;
+      const hasGpuSampleCount = data.gpuSampleCount != null;
+      const gpuSampleCountVal = hasGpuSampleCount ? Number(data.gpuSampleCount) : 0;
+      const hasFfmpegSampleCount = data.ffmpegSampleCount != null;
+      const ffmpegSampleCountVal = hasFfmpegSampleCount ? Number(data.ffmpegSampleCount) : 0;
+      const hasBatterySampleCount = data.batterySampleCount != null;
+      const batterySampleCountVal = hasBatterySampleCount ? Number(data.batterySampleCount) : 0;
 
       await tx.$executeRaw`
         UPDATE "Benchmark"
@@ -705,6 +783,14 @@ router.post('/submit', async (req, res) => {
             "sampleCountSum" = "sampleCountSum" + ${sampleCountVal}::double precision,
             "monitorDurationSamples" = "monitorDurationSamples" + ${hasMonitorDuration ? 1 : 0},
             "monitorDurationSum" = "monitorDurationSum" + ${monitorDurationVal}::double precision,
+            "cpuSampleCountSamples" = "cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0},
+            "cpuSampleCountSum" = "cpuSampleCountSum" + ${cpuSampleCountVal}::double precision,
+            "gpuSampleCountSamples" = "gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0},
+            "gpuSampleCountSum" = "gpuSampleCountSum" + ${gpuSampleCountVal}::double precision,
+            "ffmpegSampleCountSamples" = "ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0},
+            "ffmpegSampleCountSum" = "ffmpegSampleCountSum" + ${ffmpegSampleCountVal}::double precision,
+            "batterySampleCountSamples" = "batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0},
+            "batterySampleCountSum" = "batterySampleCountSum" + ${batterySampleCountVal}::double precision,
             "peakMemoryMax" = CASE
               WHEN ${hasPeakMem} AND (${peakMemVal}::double precision > COALESCE("peakMemoryMax", 0))
               THEN ${peakMemVal}::double precision
@@ -812,6 +898,26 @@ router.post('/submit', async (req, res) => {
               THEN ("monitorDurationSum" + ${monitorDurationVal}::double precision) / ("monitorDurationSamples" + ${hasMonitorDuration ? 1 : 0})
               ELSE "monitorDurationMs"
             END,
+            "cpuSampleCount" = CASE
+              WHEN "cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0} > 0
+              THEN ("cpuSampleCountSum" + ${cpuSampleCountVal}::double precision) / ("cpuSampleCountSamples" + ${hasCpuSampleCount ? 1 : 0})
+              ELSE "cpuSampleCount"
+            END,
+            "gpuSampleCount" = CASE
+              WHEN "gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0} > 0
+              THEN ("gpuSampleCountSum" + ${gpuSampleCountVal}::double precision) / ("gpuSampleCountSamples" + ${hasGpuSampleCount ? 1 : 0})
+              ELSE "gpuSampleCount"
+            END,
+            "ffmpegSampleCount" = CASE
+              WHEN "ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0} > 0
+              THEN ("ffmpegSampleCountSum" + ${ffmpegSampleCountVal}::double precision) / ("ffmpegSampleCountSamples" + ${hasFfmpegSampleCount ? 1 : 0})
+              ELSE "ffmpegSampleCount"
+            END,
+            "batterySampleCount" = CASE
+              WHEN "batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0} > 0
+              THEN ("batterySampleCountSum" + ${batterySampleCountVal}::double precision) / ("batterySampleCountSamples" + ${hasBatterySampleCount ? 1 : 0})
+              ELSE "batterySampleCount"
+            END,
             "status" = 'accepted',
             "updatedAt" = NOW()
         WHERE "id" = ${existing.id}
@@ -883,6 +989,7 @@ const SORT_WHITELIST = new Set([
   'gpuUtilAvg', 'gpuPowerAvgW', 'cpuUtilAvg',
   'gpuTempMaxC', 'cpuTempMaxC', 'ffmpegCpuUtilAvg',
   'batteryPercentDrop', 'sampleCount', 'monitorDurationMs',
+  'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
 ]);
 
 function numberParam(query: Record<string, string | undefined>, key: string): number | undefined {
@@ -1003,6 +1110,10 @@ router.get('/query', async (req, res) => {
     applyRangeFilter(where, query, 'batteryPercentDrop');
     applyRangeFilter(where, query, 'sampleCount');
     applyRangeFilter(where, query, 'monitorDurationMs');
+    applyRangeFilter(where, query, 'cpuSampleCount');
+    applyRangeFilter(where, query, 'gpuSampleCount');
+    applyRangeFilter(where, query, 'ffmpegSampleCount');
+    applyRangeFilter(where, query, 'batterySampleCount');
 
     // Build orderBy with whitelist validation
     let orderBy: Record<string, string> = { createdAt: 'desc' };

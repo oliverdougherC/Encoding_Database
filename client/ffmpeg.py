@@ -22,7 +22,13 @@ EXTENDED_TELEMETRY_KEYS: tuple = (
     'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
     'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
     'powerSource', 'sampleCount', 'monitorDurationMs',
+    'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
 )
+RAW_TELEMETRY_KEYS: tuple = ('telemetrySources', 'telemetryMissing')
+_FALLBACK_TELEMETRY_KEYS: tuple = (
+    'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
+    'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
+) + EXTENDED_TELEMETRY_KEYS
 
 
 def _videotoolbox_target_bitrate(encoder: str, crf: Optional[int]) -> str:
@@ -221,25 +227,83 @@ def _encoder_family_for(encoder: str) -> Optional[str]:
     return None
 
 
-def _build_telemetry_note(telemetry: Dict[str, Any], max_len: int = 3200) -> Optional[str]:
-    if not telemetry:
+def _csv_stable(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    parts = [str(part).strip() for part in str(value).split(",") if str(part).strip()]
+    if not parts:
+        return None
+    return ",".join(sorted(dict.fromkeys(parts)))
+
+
+def _serialize_note_chunk(prefix: str, payload: Dict[str, Any], max_len: int) -> Optional[str]:
+    if not payload or max_len <= 0:
         return None
     try:
-        blob = json.dumps(telemetry, separators=(",", ":"), sort_keys=True)
+        blob = json.dumps(payload, separators=(",", ":"), sort_keys=True)
     except Exception:
         return None
-    if len(blob) > max_len:
-        blob = blob[:max_len]
-    return f"telemetry={blob}"
+    chunk = f"{prefix}={blob}"
+    if len(chunk) > max_len:
+        return None
+    return chunk
 
 
-def _run_monitored(cmd: List[str]) -> tuple:
+def build_telemetry_notes(
+    telemetry: Dict[str, Any],
+    telemetry_meta: Dict[str, Any],
+    *,
+    max_len: int = 3200,
+) -> List[str]:
+    notes: List[str] = []
+    remaining = max_len
+
+    telemetry_chunk = _serialize_note_chunk("telemetry", telemetry, remaining)
+    if telemetry_chunk:
+        notes.append(telemetry_chunk)
+        remaining -= len(telemetry_chunk)
+        if remaining > 2:
+            remaining -= 2  # account for "; "
+
+    if remaining <= 0:
+        return notes
+
+    stable_meta = {
+        key: _csv_stable(telemetry_meta.get(key))
+        for key in RAW_TELEMETRY_KEYS
+        if telemetry_meta.get(key)
+    }
+    if not stable_meta:
+        return notes
+
+    meta_candidates: List[Dict[str, Any]] = []
+    if stable_meta.get('telemetryMissing'):
+        meta_candidates.append({'telemetryMissing': stable_meta['telemetryMissing']})
+    if stable_meta.get('telemetrySources'):
+        base = dict(meta_candidates[0]) if meta_candidates else {}
+        base['telemetrySources'] = stable_meta['telemetrySources']
+        meta_candidates.insert(0, base)
+
+    for meta_payload in meta_candidates:
+        meta_chunk = _serialize_note_chunk("telemetry_meta", meta_payload, remaining)
+        if meta_chunk:
+            notes.append(meta_chunk)
+            break
+    return notes
+
+
+def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optional[List[str]] = None) -> tuple:
     """Run an FFmpeg command with hardware monitoring via Popen.
 
     Returns (stdout, stderr, returncode, elapsed, hw_metrics).
     """
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    monitor = HardwareMonitor(ffmpeg_pid=proc.pid, interval=0.5)
+    monitor = HardwareMonitor(
+        ffmpeg_pid=proc.pid,
+        interval=0.5,
+        encoder_name=encoder_name,
+        host_gpu_vendors=host_gpu_vendors,
+    )
     monitor.start()
     start = time.time()
     stdout, stderr = proc.communicate()
@@ -249,7 +313,16 @@ def _run_monitored(cmd: List[str]) -> tuple:
     return stdout, stderr, proc.returncode, elapsed, hw_metrics
 
 
-def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optional[int], out_dir: str, artifact_name: str) -> Dict[str, Any]:
+def encode_to_artifact(
+    *,
+    input_path: str,
+    encoder: str,
+    preset: str,
+    crf: Optional[int],
+    out_dir: str,
+    artifact_name: str,
+    host_gpu_vendors: Optional[List[str]] = None,
+) -> Dict[str, Any]:
     os.makedirs(out_dir, exist_ok=True)
     artifact_path = os.path.join(out_dir, artifact_name)
     cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=encoder, preset_name=preset, crf=crf)
@@ -257,7 +330,11 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
     if "-loglevel" in cmd:
         idx = cmd.index("-loglevel")
         cmd[idx + 1] = "info"
-    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(cmd)
+    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
+        cmd,
+        encoder_name=encoder,
+        host_gpu_vendors=host_gpu_vendors,
+    )
     original_encoder = encoder
     if (returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
         family = _encoder_family_for(encoder)
@@ -270,7 +347,11 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
                     if "-loglevel" in cmd_sw:
                         idx = cmd_sw.index("-loglevel")
                         cmd_sw[idx + 1] = "info"
-                    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(cmd_sw)
+                    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
+                        cmd_sw,
+                        encoder_name=sw,
+                        host_gpu_vendors=host_gpu_vendors,
+                    )
                     encoder = sw
                     if returncode == 0 and os.path.exists(artifact_path) and os.path.getsize(artifact_path) > 0:
                         print(f"  Software encoder '{sw}' succeeded.")
@@ -292,6 +373,7 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
         'fps': float(fps_val),
         'fileSizeBytes': int(size_val),
         'error': err_msg,
+        'encoderRequested': original_encoder,
     }
     if hw_metrics.gpu_util_avg is not None:
         result['gpuUtilAvg'] = round(hw_metrics.gpu_util_avg, 2)
@@ -337,20 +419,29 @@ def encode_to_artifact(*, input_path: str, encoder: str, preset: str, crf: Optio
         result['sampleCount'] = int(hw_metrics.sample_count)
     if hw_metrics.monitor_duration_ms is not None:
         result['monitorDurationMs'] = int(hw_metrics.monitor_duration_ms)
+    if hw_metrics.cpu_sample_count is not None:
+        result['cpuSampleCount'] = int(hw_metrics.cpu_sample_count)
+    if hw_metrics.gpu_sample_count is not None:
+        result['gpuSampleCount'] = int(hw_metrics.gpu_sample_count)
+    if hw_metrics.ffmpeg_sample_count is not None:
+        result['ffmpegSampleCount'] = int(hw_metrics.ffmpeg_sample_count)
+    if hw_metrics.battery_sample_count is not None:
+        result['batterySampleCount'] = int(hw_metrics.battery_sample_count)
+    if hw_metrics.telemetry_sources:
+        result['telemetrySources'] = hw_metrics.telemetry_sources
+    if hw_metrics.telemetry_missing:
+        result['telemetryMissing'] = hw_metrics.telemetry_missing
 
-    telemetry: Dict[str, Any] = {}
-    for key in ('gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
-                'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle'):
-        if key in result:
-            telemetry[key] = result[key]
-    for key in EXTENDED_TELEMETRY_KEYS:
-        if key in result:
-            telemetry[key] = result[key]
-    note = _build_telemetry_note(telemetry)
+    telemetry: Dict[str, Any] = {key: result[key] for key in _FALLBACK_TELEMETRY_KEYS if key in result}
+    telemetry_meta: Dict[str, Any] = {key: result[key] for key in RAW_TELEMETRY_KEYS if key in result}
+    notes = build_telemetry_notes(telemetry, telemetry_meta)
     if telemetry:
         result['telemetry'] = telemetry
-    if note:
-        result['telemetryNote'] = note
+    if telemetry_meta:
+        result['telemetryMeta'] = telemetry_meta
+    if notes:
+        result['telemetryNotes'] = notes
+        result['telemetryNote'] = "; ".join(notes)
     return result
 
 
@@ -427,6 +518,7 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
             crf=crf,
             out_dir=td,
             artifact_name="out.mp4",
+            host_gpu_vendors=list(getattr(hardware, 'gpuVendors', []) or []),
         )
         actual_encoder = info.get('encoderUsed', codec)
         vmaf: Optional[float] = None
@@ -465,10 +557,14 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
     for hw_key in EXTENDED_TELEMETRY_KEYS:
         if info.get(hw_key) is not None:
             payload[hw_key] = info[hw_key]
+    for hw_key in RAW_TELEMETRY_KEYS:
+        if info.get(hw_key) is not None:
+            payload[hw_key] = info[hw_key]
     note_parts: List[str] = []
-    if info.get('error'):
-        note_parts.append(str(info['error']).strip())
-    if info.get('telemetryNote'):
+    telemetry_notes = info.get('telemetryNotes')
+    if isinstance(telemetry_notes, list):
+        note_parts.extend([str(part).strip() for part in telemetry_notes if str(part).strip()])
+    elif info.get('telemetryNote'):
         note_parts.append(str(info['telemetryNote']).strip())
     if note_parts:
         payload["notes"] = "; ".join(note_parts)[:3500]

@@ -14,6 +14,21 @@ _REJECTED_KEYS_LOCK = threading.Lock()
 _SERVER_REJECTED_KEYS: Dict[str, Set[str]] = {}
 
 
+class SubmitError(RuntimeError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        retryable: bool,
+        status_code: Optional[int] = None,
+        body: str = "",
+    ) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+        self.status_code = status_code
+        self.body = body
+
+
 def _base_key(base_url: str) -> str:
     try:
         return base_url.rstrip('/').lower()
@@ -188,15 +203,41 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                 except Exception:
                     delay = backoff_seconds * attempt * 2
                 if attempt >= retries:
-                    r.raise_for_status()
+                    raise SubmitError(
+                        f"submit rate limited ({r.status_code})",
+                        retryable=True,
+                        status_code=r.status_code,
+                        body=(r.text or ""),
+                    )
                 time.sleep(max(0.5, delay))
                 attempt += 1
                 continue
             if r.status_code >= 500:
+                if attempt >= retries:
+                    raise SubmitError(
+                        f"server_error {r.status_code}",
+                        retryable=True,
+                        status_code=r.status_code,
+                        body=(r.text or ""),
+                    )
                 raise RuntimeError(f"server_error {r.status_code}")
+            if r.status_code >= 400:
+                raise SubmitError(
+                    f"submit rejected ({r.status_code})",
+                    retryable=False,
+                    status_code=r.status_code,
+                    body=(r.text or ""),
+                )
             r.raise_for_status()
             return
         except Exception as e:
+            retryable = True
+            status_code: Optional[int] = None
+            body = ""
+            if isinstance(e, SubmitError):
+                retryable = e.retryable
+                status_code = e.status_code
+                body = e.body
             if attempt == retries:
                 try:
                     import requests as _req  # type: ignore
@@ -211,6 +252,15 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                         print(f"submit error body ({resp.status_code}): {err_text}\n(sent_token={sent_token}, sent_nonce={sent_nonce})", file=sys.stderr)
                 except Exception:
                     pass
+                if isinstance(e, SubmitError):
+                    raise
+                raise SubmitError(
+                    str(e),
+                    retryable=True,
+                    status_code=status_code,
+                    body=body,
+                ) from e
+            if isinstance(e, SubmitError) and not retryable:
                 raise
             time.sleep(backoff_seconds * attempt)
             attempt += 1
