@@ -6,8 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run typecheck"
+    "lint": "eslint . --max-warnings=0 && npm run typecheck"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.18",
@@ -17,9 +19,18 @@
     "react-dom": "19.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.0",
+    "globals": "^16.4.0",
+    "jsdom": "^27.0.1",
+    "typescript": "^5",
+    "typescript-eslint": "^8.46.1",
+    "vitest": "^3.2.4"
   }
 }

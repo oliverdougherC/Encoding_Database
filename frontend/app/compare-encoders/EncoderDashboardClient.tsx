@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Benchmark } from "../components/BenchmarksTable";
+import type { AnalyticsFilters, EncoderAnalyticsRow } from "../lib/types";
 import { CODEC_COLORS, codecColorKey } from "../lib/chartColors";
 import { useChartTheme } from "../lib/useChartTheme";
 import { escapeHtml } from "../lib/escapeHtml";
@@ -10,47 +10,15 @@ import PageHeader from "../components/ui/PageHeader";
 import SectionCard from "../components/ui/SectionCard";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
+import AnalyticsFilterBar from "../components/AnalyticsFilterBar";
 import styles from "./page.module.css";
 
 const AXES = ["Speed", "Quality", "Compression", "SSIM", "PSNR"] as const;
 
-type EncoderStats = {
-  codec: string;
-  avgFps: number;
-  avgVmaf: number;
-  avgSsim: number;
-  avgPsnr: number;
-  avgSizeMB: number;
-  count: number;
+type EncoderStats = EncoderAnalyticsRow & {
+  label: string;
   color: string;
 };
-
-function computeEncoderStats(data: Benchmark[]): Map<string, EncoderStats> {
-  const map = new Map<string, { fps: number; vmaf: number; ssim: number; psnr: number; size: number; vmafN: number; ssimN: number; psnrN: number; fpsN: number; sizeN: number }>();
-  for (const d of data) {
-    const agg = map.get(d.codec) || { fps: 0, vmaf: 0, ssim: 0, psnr: 0, size: 0, fpsN: 0, vmafN: 0, ssimN: 0, psnrN: 0, sizeN: 0 };
-    if (d.fps > 0) { agg.fps += d.fps; agg.fpsN++; }
-    if (typeof d.vmaf === "number") { agg.vmaf += d.vmaf; agg.vmafN++; }
-    if (typeof d.ssim === "number") { agg.ssim += d.ssim; agg.ssimN++; }
-    if (typeof d.psnr === "number") { agg.psnr += d.psnr; agg.psnrN++; }
-    if (d.fileSizeBytes > 0) { agg.size += d.fileSizeBytes / (1024 * 1024); agg.sizeN++; }
-    map.set(d.codec, agg);
-  }
-  const result = new Map<string, EncoderStats>();
-  for (const [codec, agg] of map.entries()) {
-    result.set(codec, {
-      codec,
-      avgFps: agg.fpsN > 0 ? agg.fps / agg.fpsN : 0,
-      avgVmaf: agg.vmafN > 0 ? agg.vmaf / agg.vmafN : 0,
-      avgSsim: agg.ssimN > 0 ? agg.ssim / agg.ssimN : 0,
-      avgPsnr: agg.psnrN > 0 ? agg.psnr / agg.psnrN : 0,
-      avgSizeMB: agg.sizeN > 0 ? agg.size / agg.sizeN : 0,
-      count: agg.fpsN,
-      color: CODEC_COLORS[codecColorKey(codec)] || CODEC_COLORS.other,
-    });
-  }
-  return result;
-}
 
 function bestIndex(values: Array<number | null>, higherIsBetter: boolean): number | null {
   const usable = values.filter((v): v is number => typeof v === "number");
@@ -69,29 +37,38 @@ function bestIndex(values: Array<number | null>, higherIsBetter: boolean): numbe
   return best;
 }
 
-export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) {
+export default function EncoderDashboardClient({
+  data,
+  filters,
+}: {
+  data: EncoderAnalyticsRow[];
+  filters: AnalyticsFilters;
+}) {
   const t = useChartTheme();
-  const allStats = useMemo(() => computeEncoderStats(data), [data]);
-  const codecs = useMemo(() => Array.from(allStats.keys()).sort(), [allStats]);
+  const profiles = useMemo(() => data.map((row) => ({
+    ...row,
+    label: `${row.encoderName} / ${row.preset}`,
+    color: CODEC_COLORS[codecColorKey(row.codecFamily)] || CODEC_COLORS.other,
+  })), [data]);
 
   const [codecQuery, setCodecQuery] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
 
-  const visibleCodecs = useMemo(() => {
+  const visibleProfiles = useMemo(() => {
     const q = codecQuery.trim().toLowerCase();
-    if (!q) return codecs;
-    return codecs.filter((c) => c.toLowerCase().includes(q));
-  }, [codecs, codecQuery]);
+    if (!q) return profiles;
+    return profiles.filter((profile) => profile.label.toLowerCase().includes(q));
+  }, [profiles, codecQuery]);
 
-  const toggleCodec = (codec: string) => {
+  const toggleCodec = (label: string) => {
     setSelected((prev) => {
-      if (prev.includes(codec)) return prev.filter((c) => c !== codec);
+      if (prev.includes(label)) return prev.filter((entry) => entry !== label);
       if (prev.length >= 4) return prev;
-      return [...prev, codec];
+      return [...prev, label];
     });
   };
 
-  const selectedStats = selected.map((c) => allStats.get(c)).filter(Boolean) as EncoderStats[];
+  const selectedStats = selected.map((label) => profiles.find((profile) => profile.label === label)).filter(Boolean) as EncoderStats[];
 
   const radarOption = useMemo(() => {
     if (selectedStats.length < 2) return null;
@@ -101,17 +78,17 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
     const maxSsim = 1;
     const maxPsnr = 50;
 
-    for (const s of selectedStats) {
-      if (s.avgFps > maxFps) maxFps = s.avgFps;
-      if (s.avgSizeMB > maxSize) maxSize = s.avgSizeMB;
+    for (const stat of selectedStats) {
+      if (stat.avgFps > maxFps) maxFps = stat.avgFps;
+      if (stat.avgSizeBytes > maxSize) maxSize = stat.avgSizeBytes;
     }
 
-    const normalize = (s: EncoderStats): number[] => [
-      Math.min(100, (s.avgFps / maxFps) * 100),
-      Math.min(100, (s.avgVmaf / maxVmaf) * 100),
-      s.avgSizeMB > 0 ? Math.min(100, ((maxSize - s.avgSizeMB) / maxSize) * 100 + 10) : 0,
-      Math.min(100, (s.avgSsim / maxSsim) * 100),
-      s.avgPsnr >= 20 ? Math.min(100, ((s.avgPsnr - 20) / (maxPsnr - 20)) * 100) : 0,
+    const normalize = (stat: EncoderStats): number[] => [
+      Math.min(100, (stat.avgFps / maxFps) * 100),
+      Math.min(100, ((stat.avgVmaf ?? 0) / maxVmaf) * 100),
+      stat.avgSizeBytes > 0 ? Math.min(100, ((maxSize - stat.avgSizeBytes) / maxSize) * 100 + 10) : 0,
+      Math.min(100, ((stat.avgSsim ?? 0) / maxSsim) * 100),
+      (stat.avgPsnr ?? 0) >= 20 ? Math.min(100, (((stat.avgPsnr ?? 0) - 20) / (maxPsnr - 20)) * 100) : 0,
     ];
 
     return {
@@ -122,12 +99,12 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
         borderColor: t.border,
         textStyle: { color: t.fg, fontSize: 12 },
         formatter: (params: { name: string; value: number[] }) => {
-          const lines = AXES.map((ax, i) => `${ax}: <b>${(params.value[i] || 0).toFixed(1)}</b>`).join("<br/>");
+          const lines = AXES.map((axis, i) => `${axis}: <b>${(params.value[i] || 0).toFixed(1)}</b>`).join("<br/>");
           return `<b>${escapeHtml(params.name)}</b><br/>${lines}`;
         },
       },
       legend: {
-        data: selectedStats.map((s) => s.codec),
+        data: selectedStats.map((stat) => stat.label),
         textStyle: { color: t.fg, fontSize: 11 },
         top: 0,
         type: "scroll" as const,
@@ -144,12 +121,12 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
       series: [
         {
           type: "radar",
-          data: selectedStats.map((s) => ({
-            name: s.codec,
-            value: normalize(s),
-            lineStyle: { color: s.color, width: 2 },
-            areaStyle: { color: s.color, opacity: 0.15 },
-            itemStyle: { color: s.color },
+          data: selectedStats.map((stat) => ({
+            name: stat.label,
+            value: normalize(stat),
+            lineStyle: { color: stat.color, width: 2 },
+            areaStyle: { color: stat.color, opacity: 0.15 },
+            itemStyle: { color: stat.color },
             symbol: "circle",
             symbolSize: 5,
           })),
@@ -160,14 +137,13 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
 
   const metricRows = useMemo(() => {
     const rows = [
-      { label: "Avg FPS", values: selectedStats.map((s) => s.avgFps), higherIsBetter: true, digits: 1 },
-      { label: "Avg VMAF", values: selectedStats.map((s) => s.avgVmaf), higherIsBetter: true, digits: 1 },
-      { label: "Avg SSIM", values: selectedStats.map((s) => s.avgSsim), higherIsBetter: true, digits: 4 },
-      { label: "Avg PSNR", values: selectedStats.map((s) => s.avgPsnr), higherIsBetter: true, digits: 2 },
-      { label: "Avg Size (MB)", values: selectedStats.map((s) => s.avgSizeMB), higherIsBetter: false, digits: 2 },
-      { label: "Samples", values: selectedStats.map((s) => s.count), higherIsBetter: true, digits: 0 },
+      { label: "Avg FPS", values: selectedStats.map((stat) => stat.avgFps), higherIsBetter: true, digits: 1 },
+      { label: "Avg VMAF", values: selectedStats.map((stat) => stat.avgVmaf), higherIsBetter: true, digits: 1 },
+      { label: "Avg SSIM", values: selectedStats.map((stat) => stat.avgSsim), higherIsBetter: true, digits: 4 },
+      { label: "Avg PSNR", values: selectedStats.map((stat) => stat.avgPsnr), higherIsBetter: true, digits: 2 },
+      { label: "Avg Size (MB)", values: selectedStats.map((stat) => stat.avgSizeBytes / (1024 * 1024)), higherIsBetter: false, digits: 2 },
+      { label: "Samples", values: selectedStats.map((stat) => stat.sampleCount), higherIsBetter: true, digits: 0 },
     ];
-
     return rows.map((row) => ({ ...row, best: bestIndex(row.values, row.higherIsBetter) }));
   }, [selectedStats]);
 
@@ -175,58 +151,61 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
     <div className={`page ${styles.workspace}`}>
       <PageHeader
         title="Compare Workspace"
-        subtitle="Select 2-4 encoders to compare performance profiles."
+        subtitle="Select 2-4 encoder profiles to compare side by side within a fixed workload slice."
         actions={
           <Button variant="secondary" onClick={() => setSelected([])}>Clear</Button>
         }
       />
 
+      <SectionCard title="Benchmark Slice" subtitle="All comparisons below stay inside this workload slice.">
+        <AnalyticsFilterBar filters={filters} />
+      </SectionCard>
+
       <div className={styles.grid}>
-        <SectionCard title="Encoder Selector" subtitle="Choose up to 4 encoders." className={styles.selectorPanel}>
+        <SectionCard title="Encoder Selector" subtitle="Choose up to 4 encoder/preset profiles." className={styles.selectorPanel}>
           <input
             className="input"
-            placeholder="Filter encoders"
+            placeholder="Filter profiles"
             value={codecQuery}
             onChange={(e) => setCodecQuery(e.target.value)}
-            aria-label="Filter encoders"
+            aria-label="Filter profiles"
           />
           <div className={styles.selectionCount}>{selected.length} of 4 selected</div>
           <div className={styles.codecList}>
-            {visibleCodecs.map((codec) => {
-              const isSelected = selected.includes(codec);
-              const stats = allStats.get(codec)!;
+            {visibleProfiles.map((profile) => {
+              const isSelected = selected.includes(profile.label);
               return (
                 <button
-                  key={codec}
+                  key={profile.label}
                   type="button"
                   className={`${styles.codecBtn} ${isSelected ? styles.codecBtnActive : ""}`.trim()}
-                  onClick={() => toggleCodec(codec)}
+                  onClick={() => toggleCodec(profile.label)}
                   disabled={!isSelected && selected.length >= 4}
                 >
-                  <span className={styles.codecTag} style={{ background: stats.color }} />
-                  <span>{codec}</span>
-                  <span className={styles.codecCount}>{stats.count}</span>
+                  <span className={styles.codecTag} style={{ background: profile.color }} />
+                  <span>{profile.label}</span>
+                  <span className={styles.codecCount}>{profile.sampleCount}</span>
                 </button>
               );
             })}
           </div>
         </SectionCard>
 
-        <SectionCard title="Performance Profile" subtitle="Selection visualized across core axes." className={styles.chartPanel}>
-          {radarOption ? <EChart option={radarOption} height={380} /> : <EmptyState title="Select at least two encoders" description="The radar chart appears once two or more encoders are selected." />}
+        <SectionCard title="Performance Profile" subtitle="Selection visualized across the active slice." className={styles.chartPanel}>
+          {radarOption ? <EChart option={radarOption} height={380} /> : <EmptyState title="Select at least two profiles" description="The radar chart appears once two or more encoder profiles are selected." />}
         </SectionCard>
 
         <SectionCard title="Decision Matrix" subtitle="Best-in-row values are highlighted." className={styles.matrixPanel}>
           {selectedStats.length === 0 ? (
-            <EmptyState title="No encoders selected" description="Pick encoders from the selector to populate the matrix." />
+            <EmptyState title="No profiles selected" description="Pick encoder profiles from the selector to populate the matrix." />
           ) : (
             <div className={styles.matrixWrap}>
               <table className={styles.matrixTable}>
                 <thead>
                   <tr>
                     <th>Metric</th>
-                    {selectedStats.map((s) => (
-                      <th key={s.codec}>{s.codec}</th>
+                    {selectedStats.map((stat) => (
+                      <th key={stat.label}>{stat.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -234,9 +213,9 @@ export default function EncoderDashboardClient({ data }: { data: Benchmark[] }) 
                   {metricRows.map((row) => (
                     <tr key={row.label}>
                       <td className={styles.metricLabel}>{row.label}</td>
-                      {row.values.map((v, i) => (
-                        <td key={`${row.label}-${selectedStats[i]?.codec}`} className={row.best === i ? styles.bestCell : ""}>
-                          {typeof v === "number" ? v.toFixed(row.digits) : "-"}
+                      {row.values.map((value, index) => (
+                        <td key={`${row.label}-${selectedStats[index]?.label}`} className={row.best === index ? styles.bestCell : ""}>
+                          {typeof value === "number" ? value.toFixed(row.digits) : "-"}
                         </td>
                       ))}
                     </tr>

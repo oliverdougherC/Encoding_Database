@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Benchmark } from "./BenchmarksTable";
+import type { HardwareAnalyticsRow } from "../lib/types";
 import { useChartTheme } from "../lib/useChartTheme";
 import { escapeHtml } from "../lib/escapeHtml";
 import EChart from "./EChart";
@@ -9,13 +10,28 @@ import EChart from "./EChart";
 const CHART_COLORS = ["#6C8FD5", "#52b788", "#9693CC", "#d4a843", "#e07a5f", "#8aabea"];
 const MAX_BARS = 8;
 
-export default function EfficiencyChart({ data, title }: { data: Benchmark[]; title?: string }) {
+type EfficiencyDatum = Benchmark | HardwareAnalyticsRow;
+
+export default function EfficiencyChart({ data, title }: { data: EfficiencyDatum[]; title?: string }) {
   const t = useChartTheme();
 
   const { bars, hasPowerData } = useMemo(() => {
+    const isHardwareAnalytics = data.length > 0 && "avgFps" in data[0]!;
+    if (isHardwareAnalytics) {
+      const hardwareBars = (data as HardwareAnalyticsRow[])
+        .filter((row) => row.fpsPerWatt != null && row.fpsPerWatt > 0)
+        .sort((a, b) => (b.fpsPerWatt ?? 0) - (a.fpsPerWatt ?? 0))
+        .slice(0, MAX_BARS)
+        .map((row) => ({
+          codec: `${row.encoderName} / ${row.preset}`,
+          value: row.fpsPerWatt ?? 0,
+        }));
+      return { bars: hardwareBars, hasPowerData: true };
+    }
+
     // Try power-based efficiency first
     const powerSums = new Map<string, { total: number; count: number }>();
-    for (const row of data) {
+    for (const row of data as Benchmark[]) {
       const power = row.gpuPowerAvgW;
       if (typeof power !== "number" || power <= 0 || row.fps <= 0) continue;
       const cur = powerSums.get(row.codec) || { total: 0, count: 0 };
@@ -35,7 +51,7 @@ export default function EfficiencyChart({ data, title }: { data: Benchmark[]; ti
     }
 
     // Fallback: Quality Efficiency = VMAF / (fileSize / medianFileSize)
-    const validRows = data.filter((d) => typeof d.vmaf === "number" && d.fileSizeBytes > 0);
+    const validRows = (data as Benchmark[]).filter((d) => typeof d.vmaf === "number" && d.fileSizeBytes > 0);
     if (validRows.length === 0) return { bars: [], hasPowerData: false };
 
     const sizes = validRows.map((d) => d.fileSizeBytes).sort((a, b) => a - b);

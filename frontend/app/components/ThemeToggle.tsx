@@ -29,7 +29,9 @@ export default function ThemeToggle({ className = "" }: { className?: string }) 
     setTheme(next);
     try {
       localStorage.setItem("theme", next);
-    } catch {}
+    } catch {
+      // Ignore storage failures and still update the live theme.
+    }
     document.documentElement.setAttribute("data-theme", next);
   }
 

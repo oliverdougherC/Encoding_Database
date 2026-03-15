@@ -1,17 +1,17 @@
 "use client";
 
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import styles from "./BenchmarksTable.module.css";
 import ComparePanel, { CompareStickyBar } from "./ComparePanel";
 import { formatCodecLabel } from "./codecLabel";
 import type { Benchmark } from "../lib/types";
 import { createPlScoreContext, scorePlBenchmarkV6 } from "../lib/plScore";
+import { WORKBENCH_PAGE_SIZE, buildWorkbenchSearchString, type EncoderTypeFilter, type WorkbenchSortKey } from "../lib/queryState";
 
 export type { Benchmark } from "../lib/types";
 
-const PAGE_SIZE = 50;
 const COL_WIDTHS = "minmax(38px,0.45fr) minmax(72px,0.9fr) minmax(170px,2fr) minmax(170px,2fr) minmax(130px,1.5fr) minmax(58px,0.7fr) minmax(108px,1.15fr) minmax(96px,1.05fr) minmax(78px,0.85fr) minmax(56px,0.7fr)";
 
 function clamp(value: number, min: number, max: number): number {
@@ -36,9 +36,19 @@ type EnrichedBenchmark = PerRowMetrics & {
   _plScore: number;
 };
 
-type SortKey = "cpuModel" | "gpuModel" | "codec" | "crf" | "preset" | "_plScore";
+type SortKey = WorkbenchSortKey;
 
-export default function BenchmarksTable({ initialData }: { initialData: Benchmark[] }) {
+export default function BenchmarksTable({
+  initialData,
+  totalCount,
+  currentPage,
+}: {
+  initialData: Benchmark[];
+  totalCount: number;
+  currentPage: number;
+}) {
+  const router = useRouter();
+  const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
   const isInitRef = useRef(false);
 
@@ -48,40 +58,39 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
   const [presetFilter, setPresetFilter] = useState(() => searchParams.get("preset") || "");
   const [sortKey, setSortKey] = useState<SortKey>(() => {
     const s = searchParams.get("sort");
-    if (s === "_plove") return "_plScore"; // backward compatibility with older links
-    if (s && ["cpuModel", "gpuModel", "codec", "crf", "preset", "_plScore"].includes(s)) return s as SortKey;
-    return "_plScore";
+    if (s && ["cpuModel", "gpuModel", "codec", "crf", "preset"].includes(s)) return s as SortKey;
+    return "";
   });
   const [sortDir, setSortDir] = useState<"asc" | "desc">(() => {
     const d = searchParams.get("dir");
     return d === "asc" ? "asc" : "desc";
   });
-  // Encoder type filters
-  const [softwareOnly, setSoftwareOnly] = useState<boolean>(() => searchParams.get("sw") === "1");
-  const [hardwareOnly, setHardwareOnly] = useState<boolean>(() => searchParams.get("hw") === "1");
+  const [encoderType, setEncoderType] = useState<EncoderTypeFilter>(() => {
+    const raw = searchParams.get("encoderType");
+    return raw === "hardware" || raw === "software" ? raw : "";
+  });
+  const [page, setPage] = useState<number>(() => Math.max(1, currentPage));
 
-  // Sync filter state to URL search params using native replaceState (F-07)
+  // Sync filter state to URL search params and let the server render the active slice.
   const urlDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (!isInitRef.current) { isInitRef.current = true; return; }
     if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current);
     urlDebounceRef.current = setTimeout(() => {
-      if (typeof window === "undefined") return;
-      const params = new URLSearchParams();
-      if (cpuFilter) params.set("cpu", cpuFilter);
-      if (gpuFilter) params.set("gpu", gpuFilter);
-      if (codecFilter) params.set("codec", codecFilter);
-      if (presetFilter) params.set("preset", presetFilter);
-      if (sortKey !== "_plScore") params.set("sort", sortKey);
-      if (sortDir !== "desc") params.set("dir", sortDir);
-      if (softwareOnly) params.set("sw", "1");
-      if (hardwareOnly) params.set("hw", "1");
-      const qs = params.toString();
-      const base = window.location.pathname;
-      window.history.replaceState(null, "", qs ? `${base}?${qs}` : base);
+      const query = buildWorkbenchSearchString({
+        page,
+        cpu: cpuFilter,
+        gpu: gpuFilter,
+        codec: codecFilter,
+        preset: presetFilter,
+        sort: sortKey,
+        dir: sortDir,
+        encoderType,
+      });
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
     }, 300);
     return () => { if (urlDebounceRef.current) clearTimeout(urlDebounceRef.current); };
-  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, sortKey, sortDir, softwareOnly, hardwareOnly]);
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, sortKey, sortDir, encoderType, page, pathname, router]);
 
   // Core PL Score v6 weights (sum normalized to 1.0)
   const [wQuality, setWQuality] = useState<number>(1 / 3);
@@ -115,40 +124,30 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
   }, []);
   const clearSelection = useCallback(() => { setSelectedIds(new Set()); setShowCompare(false); }, []);
-  const [page, setPage] = useState(0);
-
-  // Reset page when any filter changes
-  useEffect(() => {
-    setPage(0);
-  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
-
-  const codecs = useMemo(() => Array.from(new Set(initialData.map(d => d.codec))).sort(), [initialData]);
-  const presets = useMemo(() => Array.from(new Set(initialData.map(d => d.preset))).sort(), [initialData]);
-  const filteredPresets = useMemo(() => {
-    if (!codecFilter) return presets;
-    const lower = codecFilter.toLowerCase();
-    const matching = initialData.filter(r => r.codec.toLowerCase().includes(lower));
-    return Array.from(new Set(matching.map(r => r.preset))).sort();
-  }, [initialData, codecFilter, presets]);
 
   const activeFilterChips = useMemo(() => {
     const chips: Array<{ key: string; label: string; clear: () => void }> = [];
-    if (cpuFilter) chips.push({ key: "cpu", label: `CPU: ${cpuFilter}`, clear: () => setCpuFilter("") });
-    if (gpuFilter) chips.push({ key: "gpu", label: `GPU: ${gpuFilter}`, clear: () => setGpuFilter("") });
-    if (codecFilter) chips.push({ key: "codec", label: `Codec: ${codecFilter}`, clear: () => setCodecFilter("") });
-    if (presetFilter) chips.push({ key: "preset", label: `Preset: ${presetFilter}`, clear: () => setPresetFilter("") });
-    if (softwareOnly) chips.push({ key: "sw", label: "Software Only", clear: () => setSoftwareOnly(false) });
-    if (hardwareOnly) chips.push({ key: "hw", label: "Hardware Only", clear: () => setHardwareOnly(false) });
+    if (cpuFilter) chips.push({ key: "cpu", label: `CPU: ${cpuFilter}`, clear: () => { setCpuFilter(""); setPage(1); } });
+    if (gpuFilter) chips.push({ key: "gpu", label: `GPU: ${gpuFilter}`, clear: () => { setGpuFilter(""); setPage(1); } });
+    if (codecFilter) chips.push({ key: "codec", label: `Codec: ${codecFilter}`, clear: () => { setCodecFilter(""); setPage(1); } });
+    if (presetFilter) chips.push({ key: "preset", label: `Preset: ${presetFilter}`, clear: () => { setPresetFilter(""); setPage(1); } });
+    if (encoderType) chips.push({
+      key: "encoderType",
+      label: encoderType === "hardware" ? "Hardware Only" : "Software Only",
+      clear: () => { setEncoderType(""); setPage(1); },
+    });
     return chips;
-  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
+  }, [cpuFilter, gpuFilter, codecFilter, presetFilter, encoderType]);
 
   const resetAllFilters = useCallback(() => {
     setCpuFilter("");
     setGpuFilter("");
     setCodecFilter("");
     setPresetFilter("");
-    setSoftwareOnly(false);
-    setHardwareOnly(false);
+    setEncoderType("");
+    setSortKey("");
+    setSortDir("desc");
+    setPage(1);
   }, []);
 
   // Pre-compute hardware encoder classification once per row to avoid repeated regex tests
@@ -159,25 +158,11 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
   }, [initialData]);
 
-  const filtered = useMemo(() => {
-    const cpu = cpuFilter.trim().toLowerCase();
-    const gpu = gpuFilter.trim().toLowerCase();
-    return dataWithHwClass.filter(row => {
-      if (cpu && !row.cpuModel.toLowerCase().includes(cpu)) return false;
-      if (gpu && !(row.gpuModel ?? "").toLowerCase().includes(gpu)) return false;
-      if (codecFilter && !row.codec.toLowerCase().includes(codecFilter.toLowerCase())) return false;
-      if (presetFilter && row.preset !== presetFilter) return false;
-      if (softwareOnly && !hardwareOnly) return !row._isHardware;
-      if (hardwareOnly && !softwareOnly) return row._isHardware;
-      return true;
-    });
-  }, [dataWithHwClass, cpuFilter, gpuFilter, codecFilter, presetFilter, softwareOnly, hardwareOnly]);
-
-  const plContext = useMemo(() => createPlScoreContext(filtered), [filtered]);
+  const plContext = useMemo(() => createPlScoreContext(dataWithHwClass), [dataWithHwClass]);
 
   // Stage 1: compute PL Score v6 components that are independent from user weights
   const perRowMetrics = useMemo((): PerRowMetrics[] => {
-    return filtered.map((row): PerRowMetrics => {
+    return dataWithHwClass.map((row): PerRowMetrics => {
       const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / plContext.sizeBaseline : 1;
       const encoder = (row.encoderName ?? row.codec ?? "").toLowerCase();
       const codecLabel = formatCodecLabel(encoder);
@@ -194,7 +179,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         _codecLabel: codecLabel,
       };
     });
-  }, [filtered, plContext]);
+  }, [dataWithHwClass, plContext]);
 
   // Stage 2: recompute final PL score when weights change
   const withScores = useMemo((): EnrichedBenchmark[] => {
@@ -214,30 +199,9 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
     });
   }, [perRowMetrics, wQuality, wSize, wSpeed]);
 
-  const sorted = useMemo((): EnrichedBenchmark[] => {
-    const data = [...withScores];
-    data.sort((a, b) => {
-      const mul = sortDir === "asc" ? 1 : -1;
-      const getValue = (row: EnrichedBenchmark): string | number | null => {
-        if (sortKey === "codec") return row._codecLabel;
-        if (sortKey === "_plScore") return row._plScore;
-        return row[sortKey] ?? null;
-      };
-      const av = getValue(a);
-      const bv = getValue(b);
-      if (av == null && bv != null) return 1 * mul;
-      if (av != null && bv == null) return -1 * mul;
-      if (typeof av === "number" && typeof bv === "number") return (av - bv) * mul;
-      const as = String(av);
-      const bs = String(bv);
-      return as.localeCompare(bs) * mul;
-    });
-    return data;
-  }, [withScores, sortKey, sortDir]);
-
-  // Keep selections in-sync with currently visible filtered dataset.
+  // Keep selections in-sync with the currently loaded page.
   useEffect(() => {
-    const allowed = new Set(sorted.map(row => row.id));
+    const allowed = new Set(withScores.map(row => row.id));
     setSelectedIds(prev => {
       let changed = false;
       const next = new Set<string>();
@@ -250,26 +214,15 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       }
       return changed ? next : prev;
     });
-  }, [sorted]);
+  }, [withScores]);
 
-  const totalRows = sorted.length;
-  const totalPages = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
-  useEffect(() => {
-    if (page >= totalPages) {
-      setPage(Math.max(0, totalPages - 1));
-    }
-  }, [page, totalPages]);
-
-  const pagedRows = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return sorted.slice(start, start + PAGE_SIZE);
-  }, [sorted, page]);
-
-  const compareRows = useMemo(() => sorted.filter(r => selectedIds.has(r.id)), [sorted, selectedIds]);
+  const compareRows = useMemo(() => withScores.filter(r => selectedIds.has(r.id)), [withScores, selectedIds]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / WORKBENCH_PAGE_SIZE));
 
   const setSort = (key: SortKey) => {
     if (key === sortKey) setSortDir(d => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
+    setPage(1);
   };
 
   function applyWeightsFromUI() {
@@ -301,50 +254,44 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         <input
           placeholder="Filter CPU model"
           value={cpuFilter}
-          onChange={e => setCpuFilter(e.target.value)}
+          onChange={e => { setCpuFilter(e.target.value); setPage(1); }}
           className="input"
         />
         <input
           placeholder="Filter GPU model"
           value={gpuFilter}
-          onChange={e => setGpuFilter(e.target.value)}
+          onChange={e => { setGpuFilter(e.target.value); setPage(1); }}
           className="input"
         />
-        <div>
-          <input
-            list="codec-options"
-            placeholder="Filter codec (type to search)"
-            value={codecFilter}
-            onChange={e => { setCodecFilter(e.target.value); setPresetFilter(""); }}
-            className="input"
-          />
-          <datalist id="codec-options">
-            {codecs.map(c => (<option key={c} value={c} />))}
-          </datalist>
-        </div>
-        <select
+        <input
+          placeholder="Filter encoder/codec"
+          value={codecFilter}
+          onChange={e => { setCodecFilter(e.target.value); setPage(1); }}
+          className="input"
+        />
+        <input
+          placeholder="Filter preset"
           value={presetFilter}
-          onChange={e => setPresetFilter(e.target.value)}
-          className={`input${codecFilter && filteredPresets.length > 0 ? "" : ` ${styles.presetDisabled}`}`}
-          disabled={!codecFilter || filteredPresets.length === 0}
-          aria-disabled={!codecFilter || filteredPresets.length === 0}
-          aria-label={!codecFilter ? "Preset filter (type a codec first)" : "Filter by preset"}
-          title={!codecFilter ? "Type a codec first" : undefined}
-        >
-          <option value="">All presets</option>
-          {filteredPresets.map(p => (<option key={p} value={p}>{p}</option>))}
-        </select>
+          onChange={e => { setPresetFilter(e.target.value); setPage(1); }}
+          className="input"
+        />
       </div>
 
       <div className={styles.encoderFilters}>
-        <label className={`btn ${styles.encoderFilterLabel}${softwareOnly ? ` ${styles.encoderFilterActive}` : ""}`}>
-          <input type="checkbox" checked={softwareOnly} onChange={e => { const v = e.target.checked; setSoftwareOnly(v); if (v) setHardwareOnly(false); }} />
+        <button
+          type="button"
+          className={`btn ${styles.encoderFilterLabel}${encoderType === "software" ? ` ${styles.encoderFilterActive}` : ""}`}
+          onClick={() => { setEncoderType(prev => prev === "software" ? "" : "software"); setPage(1); }}
+        >
           Software Only
-        </label>
-        <label className={`btn ${styles.encoderFilterLabel}${hardwareOnly ? ` ${styles.encoderFilterActive}` : ""}`}>
-          <input type="checkbox" checked={hardwareOnly} onChange={e => { const v = e.target.checked; setHardwareOnly(v); if (v) setSoftwareOnly(false); }} />
+        </button>
+        <button
+          type="button"
+          className={`btn ${styles.encoderFilterLabel}${encoderType === "hardware" ? ` ${styles.encoderFilterActive}` : ""}`}
+          onClick={() => { setEncoderType(prev => prev === "hardware" ? "" : "hardware"); setPage(1); }}
+        >
           Hardware Only
-        </label>
+        </button>
       </div>
 
       <div className={styles.commandRow}>
@@ -366,7 +313,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
       <div className={styles.weightsGrid}>
         <div>
           <div className={styles.weightsLabel}>PL Score v6 Core Weights</div>
-          <div className={`subtle ${styles.weightSliderValue}`}>Quality, Size, and Speed are normalized to sum to 1.00</div>
+          <div className={`subtle ${styles.weightSliderValue}`}>Scores are recalculated against the currently loaded page slice.</div>
         </div>
         <WeightSlider label="Quality (VMAF/SSIM/PSNR)" value={uiQuality} onChange={setUiQuality} />
         <WeightSlider label="Size" value={uiSize} onChange={setUiSize} />
@@ -384,7 +331,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
       <div className={styles.desktopTable}>
         <VirtualTable
-          rows={pagedRows}
+          rows={withScores}
           selectedIds={selectedIds}
           toggleSelect={toggleSelect}
           setShowDetailId={setShowDetailId}
@@ -395,7 +342,7 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
         />
       </div>
       <MobileCards
-        rows={pagedRows}
+        rows={withScores}
         selectedIds={selectedIds}
         toggleSelect={toggleSelect}
         setShowDetailId={setShowDetailId}
@@ -404,24 +351,24 @@ export default function BenchmarksTable({ initialData }: { initialData: Benchmar
 
       <div className={styles.paginationBar}>
         <span className="subtle">
-          Showing {totalRows === 0 ? 0 : page * PAGE_SIZE + 1}-{Math.min((page + 1) * PAGE_SIZE, totalRows)} of {totalRows}
+          Showing {totalCount === 0 ? 0 : (currentPage - 1) * WORKBENCH_PAGE_SIZE + 1}-{Math.min(currentPage * WORKBENCH_PAGE_SIZE, totalCount)} of {totalCount}
         </span>
         <div className={styles.paginationActions}>
-          <button className={`btn ${styles.paginationBtn}`} disabled={page === 0} onClick={() => setPage(p => Math.max(0, p - 1))}>Prev</button>
-          <span>Page {page + 1} of {totalPages}</span>
-          <button className={`btn ${styles.paginationBtn}`} disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
+          <button className={`btn ${styles.paginationBtn}`} disabled={currentPage <= 1} onClick={() => setPage(Math.max(1, currentPage - 1))}>Prev</button>
+          <span>Page {currentPage} of {totalPages}</span>
+          <button className={`btn ${styles.paginationBtn}`} disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Next</button>
         </div>
       </div>
 
       {showDetailId && (() => {
-        const detailRow = sorted.find(r => r.id === showDetailId);
+        const detailRow = withScores.find(r => r.id === showDetailId);
         return detailRow ? (
           <DetailsModal row={detailRow} onClose={() => setShowDetailId(null)} relSize={detailRow._relSize} />
         ) : null;
       })()}
 
       {showFfmpegId && (() => {
-        const ffmpegRow = sorted.find(r => r.id === showFfmpegId);
+        const ffmpegRow = withScores.find(r => r.id === showFfmpegId);
         return ffmpegRow ? (
           <FfmpegModal row={ffmpegRow} onClose={() => setShowFfmpegId(null)} />
         ) : null;
@@ -457,7 +404,7 @@ function VirtualTable({ rows, selectedIds, toggleSelect, setShowDetailId, setSho
         <ThDiv onClick={() => setSort("codec")} label="Codec" active={sortKey === "codec"} dir={sortDir} />
         <ThDiv onClick={() => setSort("crf")} label="CRF" active={sortKey === "crf"} dir={sortDir} align="right" />
         <ThDiv onClick={() => setSort("preset")} label="Preset" active={sortKey === "preset"} dir={sortDir} />
-        <ThDiv onClick={() => setSort("_plScore")} label="PL Score v6" active={sortKey === "_plScore"} dir={sortDir} align="right" />
+        <div className={`th ${styles.textRight}`} role="columnheader">PL Score v6</div>
         <div className={`th ${styles.textCenter}`} role="columnheader">FFmpeg</div>
         <div className={`th ${styles.textCenter}`} role="columnheader" title="Accepted submissions">Subs</div>
       </div>
@@ -796,7 +743,9 @@ function FfmpegModal({ row, onClose }: { row: EnrichedBenchmark; onClose: () => 
     try {
       await navigator.clipboard.writeText(command);
       setCopied(true);
-    } catch {}
+    } catch {
+      // Ignore clipboard failures; the command remains visible for manual copy.
+    }
   };
 
   return (

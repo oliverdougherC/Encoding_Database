@@ -7,7 +7,17 @@ import SectionCard from "./ui/SectionCard";
 import Button from "./ui/Button";
 import styles from "./CommandWorkbench.module.css";
 
-export default function CommandWorkbench({ data }: { data: Benchmark[] }) {
+export default function CommandWorkbench({
+  data,
+  totalCount,
+  queryKey,
+  currentPage,
+}: {
+  data: Benchmark[];
+  totalCount: number;
+  queryKey: string;
+  currentPage: number;
+}) {
   const [open, setOpen] = useState(true);
 
   return (
@@ -22,7 +32,7 @@ export default function CommandWorkbench({ data }: { data: Benchmark[] }) {
     >
       {open ? (
         <div id="workbench-grid" className={styles.workbenchBody}>
-          <BenchmarksTable initialData={data} />
+          <BenchmarksTable key={queryKey} initialData={data} totalCount={totalCount} currentPage={currentPage} />
         </div>
       ) : (
         <div className={styles.collapsed}>Workbench collapsed. Expand to continue interactive filtering.</div>

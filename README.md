@@ -198,7 +198,10 @@ npm run dev
 ```bash
 cd frontend
 npm ci
-echo "NEXT_PUBLIC_API_BASE_URL=http://localhost:3001" > .env.local
+cat > .env.local <<'EOF'
+INTERNAL_API_BASE_URL=http://127.0.0.1:3001
+APP_URL=http://127.0.0.1:3000
+EOF
 npm run dev
 ```
 

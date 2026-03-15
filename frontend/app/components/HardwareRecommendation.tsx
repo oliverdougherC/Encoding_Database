@@ -1,22 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { Benchmark } from "./BenchmarksTable";
+import type { HardwareAnalyticsRow } from "../lib/types";
 import styles from "./HardwareRecommendation.module.css";
 
-type HardwareProfile = {
-  cpuModel: string;
-  gpuModel: string;
-  avgFps: number;
-  avgVmaf: number | null;
-  avgPower: number | null;
-  fpsPerWatt: number | null;
-  samples: number;
-};
-
 type Priority = "speed" | "quality" | "efficiency" | "balanced";
-
-const PROFILE_KEY_SEP = "\u241F"; // unit separator — safe for CPU/GPU model names
 
 type NormalizationMaxima = {
   maxFps: number;
@@ -24,36 +12,14 @@ type NormalizationMaxima = {
   maxEff: number;
 };
 
-export default function HardwareRecommendation({ data }: { data: Benchmark[] }) {
-  const [codec, setCodec] = useState("");
+export default function HardwareRecommendation({ data }: { data: HardwareAnalyticsRow[] }) {
+  const [encoderFilter, setEncoderFilter] = useState("");
   const [priority, setPriority] = useState<Priority>("balanced");
 
-  const codecs = useMemo(() => Array.from(new Set(data.map(d => d.codec))).sort(), [data]);
+  const encoders = useMemo(() => Array.from(new Set(data.map((d) => d.encoderName))).sort(), [data]);
 
   const recommendations = useMemo(() => {
-    const filtered = codec ? data.filter(d => d.codec === codec) : data;
-    const profiles = new Map<string, { fps: number[]; vmaf: number[]; power: number[] }>();
-
-    for (const row of filtered) {
-      if (row.fps <= 0) continue;
-      const key = [row.cpuModel, row.gpuModel ?? ""].join(PROFILE_KEY_SEP);
-      if (!profiles.has(key)) profiles.set(key, { fps: [], vmaf: [], power: [] });
-      const p = profiles.get(key)!;
-      p.fps.push(row.fps);
-      if (row.vmaf != null) p.vmaf.push(row.vmaf);
-      const power = row.gpuPowerAvgW;
-      if (typeof power === "number" && power > 0) p.power.push(power);
-    }
-
-    const results: HardwareProfile[] = [];
-    for (const [key, p] of profiles.entries()) {
-      const [cpuModel, gpuModel] = key.split(PROFILE_KEY_SEP);
-      const avgFps = p.fps.reduce((a, b) => a + b, 0) / p.fps.length;
-      const avgVmaf = p.vmaf.length > 0 ? p.vmaf.reduce((a, b) => a + b, 0) / p.vmaf.length : null;
-      const avgPower = p.power.length > 0 ? p.power.reduce((a, b) => a + b, 0) / p.power.length : null;
-      const fpsPerWatt = avgPower != null && avgPower > 0 ? avgFps / avgPower : null;
-      results.push({ cpuModel, gpuModel, avgFps, avgVmaf, avgPower, fpsPerWatt, samples: p.fps.length });
-    }
+    const results = encoderFilter ? data.filter((row) => row.encoderName === encoderFilter) : data.slice();
 
     if (priority === "speed") {
       results.sort((a, b) => b.avgFps - a.avgFps);
@@ -76,16 +42,16 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
       .sort((a, b) => b.score - a.score)
       .slice(0, 20)
       .map((entry) => entry.hw);
-  }, [data, codec, priority]);
+  }, [data, encoderFilter, priority]);
 
   return (
     <div>
       <div className={styles.controlsRow}>
         <div>
-          <label className={styles.label}>Codec</label>
-          <select className={`input ${styles.select}`} value={codec} onChange={e => setCodec(e.target.value)}>
-            <option value="">All Codecs</option>
-            {codecs.map(c => <option key={c} value={c}>{c}</option>)}
+          <label className={styles.label}>Encoder</label>
+          <select className={`input ${styles.select}`} value={encoderFilter} onChange={e => setEncoderFilter(e.target.value)}>
+            <option value="">All Encoders</option>
+            {encoders.map((encoder) => <option key={encoder} value={encoder}>{encoder}</option>)}
           </select>
         </div>
         <div>
@@ -128,9 +94,9 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
                   <td className="td">{hw.gpuModel || "-"}</td>
                   <td className={`td ${styles.numCell}`}>{hw.avgFps.toFixed(2)}</td>
                   <td className={`td ${styles.numCell}`}>{hw.avgVmaf != null ? hw.avgVmaf.toFixed(1) : "-"}</td>
-                  <td className={`td ${styles.numCell}`}>{hw.avgPower != null ? hw.avgPower.toFixed(1) : "-"}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.avgPowerW != null ? hw.avgPowerW.toFixed(1) : "-"}</td>
                   <td className={`td ${styles.numCell}`}>{hw.fpsPerWatt != null ? hw.fpsPerWatt.toFixed(2) : "-"}</td>
-                  <td className={`td ${styles.numCell}`}>{hw.samples}</td>
+                  <td className={`td ${styles.numCell}`}>{hw.sampleCount}</td>
                 </tr>
               ))}
             </tbody>
@@ -141,7 +107,7 @@ export default function HardwareRecommendation({ data }: { data: Benchmark[] }) 
   );
 }
 
-function buildNormalizationMaxima(all: HardwareProfile[]): NormalizationMaxima {
+function buildNormalizationMaxima(all: HardwareAnalyticsRow[]): NormalizationMaxima {
   let maxFps = 1;
   let maxVmaf = 1;
   let maxEff = 1;
@@ -153,7 +119,7 @@ function buildNormalizationMaxima(all: HardwareProfile[]): NormalizationMaxima {
   return { maxFps, maxVmaf, maxEff };
 }
 
-function normalizedScore(hw: HardwareProfile, maxima: NormalizationMaxima): number {
+function normalizedScore(hw: HardwareAnalyticsRow, maxima: NormalizationMaxima): number {
   const speedScore = hw.avgFps / maxima.maxFps;
   const qualityScore = hw.avgVmaf != null ? hw.avgVmaf / maxima.maxVmaf : 0.5;
   const effScore = hw.fpsPerWatt != null ? hw.fpsPerWatt / maxima.maxEff : 0.3;
