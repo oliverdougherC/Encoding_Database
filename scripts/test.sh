@@ -396,6 +396,7 @@ if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
 fi
 
 if [[ "$PRECHECK_OK" -eq 1 ]]; then
+  run_step "Client: install test dependencies" "python3 -m pip install --disable-pip-version-check -r \"$ROOT_DIR/client/requirements-ci.txt\""
   run_step "Client: compile Python modules" "PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall client"
   run_step "Client: import core modules" "python3 -c \"import client.config, client.network, client.ffmpeg, client.main\""
   run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"

@@ -4,6 +4,7 @@ import re
 import sys
 import time
 import threading
+import warnings
 from typing import Optional, Dict, Any, List, Set
 from urllib.parse import urljoin
 
@@ -12,6 +13,16 @@ from . import config
 
 _REJECTED_KEYS_LOCK = threading.Lock()
 _SERVER_REJECTED_KEYS: Dict[str, Set[str]] = {}
+
+
+def _load_requests():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*urllib3 v2 only supports OpenSSL.*",
+        )
+        import requests  # type: ignore
+    return requests
 
 
 class SubmitError(RuntimeError):
@@ -86,7 +97,7 @@ def _extract_unrecognized_keys(error_text: str) -> List[str]:
 
 
 def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0, use_token: Optional[bool] = None) -> None:
-    import requests  # lazy import
+    requests = _load_requests()
     url = f"{base_url.rstrip('/')}/submit"
     payload_to_send: Dict[str, Any] = dict(payload)
     for dropped in _get_rejected_keys(base_url):
@@ -240,7 +251,7 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                 body = e.body
             if attempt == retries:
                 try:
-                    import requests as _req  # type: ignore
+                    _req = _load_requests()
                     if isinstance(e, _req.HTTPError) and getattr(e, 'response', None) is not None:
                         resp = e.response
                         try:
@@ -276,7 +287,7 @@ def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
             config._BASELINE_ROWS_CACHE = None
 
     try:
-        import requests  # lazy import
+        requests = _load_requests()
         url = f"{base_url.rstrip('/')}/query?limit=500"
         r = requests.get(url, timeout=15, verify=config.REQUESTS_VERIFY)
         if r.status_code == 200:
