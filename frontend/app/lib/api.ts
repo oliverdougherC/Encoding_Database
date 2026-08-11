@@ -116,7 +116,7 @@ export async function fetchWorkbenchPage(state: WorkbenchSearchState): Promise<{
     total: 1,
     cpu: state.cpu || undefined,
     gpu: state.gpu || undefined,
-    codecSearch: state.codec || undefined,
+    search: state.search || undefined,
     preset: state.preset || undefined,
     sort: state.sort || undefined,
     dir: state.sort ? state.dir : undefined,

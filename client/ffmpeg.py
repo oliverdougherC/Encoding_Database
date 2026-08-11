@@ -11,7 +11,7 @@ from typing import Optional, Dict, Any, List
 
 from . import config
 from .encoders import (
-    map_preset_for_encoder, pick_software_encoder_for_family,
+    effective_preset_for_encoder, map_preset_for_encoder, pick_software_encoder_for_family,
     has_encoder,
 )
 from .hardware_monitor import HardwareMonitor
@@ -82,8 +82,6 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
     if encoder.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi")):
         cmd += ["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p"]
     e = encoder.strip().lower()
-    if e.endswith("_videotoolbox"):
-        cmd += ["-allow_sw", "1"]
     if e == "h264_videotoolbox":
         if crf is None:
             cmd += ["-b:v", _videotoolbox_target_bitrate(e, None)]
@@ -151,8 +149,8 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
     for filt in filter_candidates:
         cmd = [
             config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
-            "-i", input_path,
             "-i", encoded_path,
+            "-i", input_path,
             "-lavfi", filt,
             "-f", "null", "-",
         ]
@@ -336,6 +334,8 @@ def encode_to_artifact(
         host_gpu_vendors=host_gpu_vendors,
     )
     original_encoder = encoder
+    original_preset = preset
+    effective_preset = effective_preset_for_encoder(encoder, preset)
     if (returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
         family = _encoder_family_for(encoder)
         if family:
@@ -344,6 +344,7 @@ def encode_to_artifact(
                 try:
                     print(f"  Hardware encoder '{encoder}' failed, falling back to software encoder '{sw}'...")
                     cmd_sw = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=sw, preset_name=preset, crf=crf)
+                    effective_preset = effective_preset_for_encoder(sw, preset)
                     if "-loglevel" in cmd_sw:
                         idx = cmd_sw.index("-loglevel")
                         cmd_sw[idx + 1] = "info"
@@ -374,6 +375,8 @@ def encode_to_artifact(
         'fileSizeBytes': int(size_val),
         'error': err_msg,
         'encoderRequested': original_encoder,
+        'presetRequested': original_preset,
+        'presetUsed': effective_preset,
     }
     if hw_metrics.gpu_util_avg is not None:
         result['gpuUtilAvg'] = round(hw_metrics.gpu_util_avg, 2)
@@ -521,6 +524,7 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
             host_gpu_vendors=list(getattr(hardware, 'gpuVendors', []) or []),
         )
         actual_encoder = info.get('encoderUsed', codec)
+        actual_preset = info.get('presetUsed', preset)
         vmaf: Optional[float] = None
         ssim: Optional[float] = None
         psnr: Optional[float] = None
@@ -537,7 +541,7 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
         "ramGB": hardware.ramGB,
         "os": hardware.os,
         "codec": actual_encoder,
-        "preset": preset,
+        "preset": actual_preset,
         "crf": crf,
         "fps": float(info.get('fps', 0.0)),
         "fileSizeBytes": int(info.get('fileSizeBytes', 0)),

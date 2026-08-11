@@ -21,6 +21,8 @@ type PrismaErrorLike = {
   meta?: { target?: string[] | string };
 };
 
+type SubmissionDisposition = 'pending' | 'accepted' | 'rejected' | 'suspect';
+
 // Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
 const VALID_CONTENT_CLASSES = ['mixed', 'talkingHead', 'action', 'animation', 'screen', 'nature', 'gaming'] as const;
@@ -210,6 +212,16 @@ export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<
   }
 }
 
+export function determineSubmissionStatus(input: {
+  plausible: boolean;
+  canonicalInput: boolean;
+  maxAbsoluteZScore: number;
+}): SubmissionDisposition {
+  if (!input.plausible || input.maxAbsoluteZScore > 6) return 'rejected';
+  if (input.maxAbsoluteZScore > 3) return 'suspect';
+  return input.canonicalInput ? 'accepted' : 'pending';
+}
+
 const TELEMETRY_NOTE_REGEX = /telemetry=(\{[\s\S]*?\})(?:;|$)/;
 const TELEMETRY_META_NOTE_REGEX = /telemetry_meta=(\{[\s\S]*?\})(?:;|$)/;
 
@@ -328,6 +340,38 @@ const CANONICAL_INPUT_HASHES = new Set<string>([
   '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8',
 ]);
 
+type AggregateKeySource = Pick<
+  Prisma.SubmissionGetPayload<Record<string, never>>,
+  'cpuModel' | 'gpuModel' | 'ramGB' | 'os' | 'codec' | 'preset' | 'crf' | 'contentClass' | 'resolution' | 'passes'
+>;
+
+export function benchmarkWhereFromSubmission(submission: AggregateKeySource): Prisma.BenchmarkWhereInput {
+  return {
+    cpuModel: submission.cpuModel,
+    gpuModel: submission.gpuModel,
+    ramGB: submission.ramGB,
+    os: submission.os,
+    codec: submission.codec,
+    preset: submission.preset,
+    crf: submission.crf,
+    contentClass: submission.contentClass,
+    resolution: submission.resolution,
+    passes: submission.passes,
+  };
+}
+
+async function findBenchmarkForPayloadHash(payloadHash: string): Promise<BenchmarkRow | null> {
+  // Submission is the immutable idempotency record. Benchmark.payloadHash only identifies
+  // the first payload that created an aggregate and cannot resolve later retries.
+  const submission = await prisma.submission.findUnique({ where: { payloadHash } });
+  if (submission) {
+    return prisma.benchmark.findFirst({ where: benchmarkWhereFromSubmission(submission) });
+  }
+
+  // Preserve idempotency for records written before Submission became authoritative.
+  return prisma.benchmark.findUnique({ where: { payloadHash } });
+}
+
 // Method guard for /submit (reject non-POST) - must be registered before the POST handler
 router.all('/submit', (req, res, next) => {
   if (req.method === 'POST') {
@@ -358,7 +402,7 @@ router.post('/submit', async (req, res) => {
 
   try {
     // Fast path: if the exact same payload was already counted, return existing (idempotency)
-    const existingByHash = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch((err: unknown) => {
+    const existingByHash = await findBenchmarkForPayloadHash(payloadHash).catch((err: unknown) => {
       logError('findUnique by payloadHash', err);
       return null;
     });
@@ -466,10 +510,12 @@ router.post('/submit', async (req, res) => {
 
     // Penalize extreme deviations; also check impossible combos
     const impossible = !(isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
-    const extreme = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ)) > 6; // conservative threshold
-    const suspect = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ)) > 3;  // softer threshold
-    const baselineOk = inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
-    const status: 'pending' | 'accepted' | 'rejected' | 'suspect' = impossible ? 'rejected' : (extreme ? 'rejected' : (suspect ? 'suspect' : (baselineOk ? 'accepted' : 'pending')));
+    const maxAbsoluteZScore = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ));
+    const status = determineSubmissionStatus({
+      plausible: !impossible,
+      canonicalInput: inputHashOk,
+      maxAbsoluteZScore,
+    });
     const qualityScore = (() => {
       // Score 0..100 combining normalized robust Z deviations
       const clamp = (x: number) => Math.max(0, Math.min(100, x));
@@ -945,7 +991,7 @@ router.post('/submit', async (req, res) => {
     if (errCode === 'P2002') {
       // Unique constraint violation: return the existing row idempotently
       try {
-        const existing = await prisma.benchmark.findUnique({ where: { payloadHash } });
+        const existing = await findBenchmarkForPayloadHash(payloadHash);
         if (existing) return res.status(200).json(existing);
       } catch (findErr) {
         logError('findExistingAfterP2002', findErr);
@@ -996,12 +1042,12 @@ function invalidateRouteCaches(): void {
 }
 
 // Whitelist of allowed sort fields to prevent injection
-const SORT_WHITELIST = new Set([
+export const SORT_WHITELIST = new Set([
   'createdAt', 'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'codec', 'cpuModel',
   'gpuModel', 'preset', 'crf',
   'gpuUtilAvg', 'gpuPowerAvgW', 'cpuUtilAvg',
   'gpuTempMaxC', 'cpuTempMaxC', 'ffmpegCpuUtilAvg',
-  'batteryPercentDrop', 'sampleCount', 'monitorDurationMs',
+  'batteryPercentDrop', 'samples', 'sampleCount', 'monitorDurationMs',
   'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
 ]);
 
@@ -1029,15 +1075,6 @@ export function parseTakeParam(raw: string | undefined): number {
 
 export function parseSkipParam(raw: string | undefined): number | undefined {
   return parsePositiveInt(raw);
-}
-
-function booleanParam(query: Record<string, string | undefined>, key: string): boolean | undefined {
-  const raw = query[key];
-  if (!raw) return undefined;
-  const v = raw.trim().toLowerCase();
-  if (v === '1' || v === 'true' || v === 'yes') return true;
-  if (v === '0' || v === 'false' || v === 'no') return false;
-  return undefined;
 }
 
 function applyRangeFilter(
@@ -1070,92 +1107,125 @@ export function getQueryCacheSize(): number {
   return queryCache.size();
 }
 
-function buildEncoderTypeFilter(kind: 'hardware' | 'software'): Prisma.BenchmarkWhereInput {
-  const hardwareMatchers: Prisma.BenchmarkWhereInput[] = [
-    { codec: { endsWith: '_videotoolbox' } },
-    { codec: { endsWith: '_nvenc' } },
-    { codec: { endsWith: '_qsv' } },
-    { codec: { endsWith: '_amf' } },
-    { codec: { endsWith: '_vaapi' } },
-  ];
+export function buildEncoderTypeFilter(kind: 'hardware' | 'software'): Prisma.BenchmarkWhereInput {
+  const suffixes = ['_videotoolbox', '_nvenc', '_qsv', '_amf', '_vaapi', '_v4l2m2m', '_omx'];
+  const hardwareMatchers: Prisma.BenchmarkWhereInput[] = suffixes.flatMap((suffix) => [
+    { codec: { endsWith: suffix } },
+    { encoderName: { endsWith: suffix } },
+  ]);
   if (kind === 'hardware') {
     return { OR: hardwareMatchers };
   }
   return { NOT: { OR: hardwareMatchers } };
 }
 
+export function buildGlobalSearchFilter(search: string): Prisma.BenchmarkWhereInput {
+  const normalized = search.trim();
+  if (!normalized) return {};
+  const textMatch = { contains: normalized, mode: 'insensitive' as const };
+  const matches: Prisma.BenchmarkWhereInput[] = [
+    { cpuModel: textMatch },
+    { gpuModel: textMatch },
+    { os: textMatch },
+    { encoderName: textMatch },
+    { codec: textMatch },
+    { preset: textMatch },
+    { ffmpegVersion: textMatch },
+    { contentClass: textMatch },
+    { resolution: textMatch },
+  ];
+  const numericSearch = Number(normalized);
+  if (Number.isFinite(numericSearch)) {
+    matches.push(
+      { fps: numericSearch },
+      { vmaf: numericSearch },
+      { ssim: numericSearch },
+      { psnr: numericSearch },
+      { gpuPowerAvgW: numericSearch },
+    );
+    if (Number.isSafeInteger(numericSearch)) {
+      matches.push(
+        { ramGB: numericSearch },
+        { crf: numericSearch },
+        { fileSizeBytes: numericSearch },
+        { samples: numericSearch },
+      );
+    }
+  }
+  return { OR: matches };
+}
+
+export function buildWorkbenchWhere(query: Record<string, string | undefined>): Prisma.BenchmarkWhereInput {
+  const where: Prisma.BenchmarkWhereInput = { status: 'accepted' };
+  if (query.passes === '1') where.passes = 1;
+  if (query.codec) where.codec = query.codec;
+  if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
+  if (query.preset) where.preset = { contains: query.preset, mode: 'insensitive' };
+  if (query.crf && /^\d+$/.test(query.crf)) where.crf = Number(query.crf);
+  if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
+  if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
+  if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
+    where.contentClass = query.contentClass;
+  }
+  if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
+    where.resolution = query.resolution;
+  }
+  if (query.encoderType === 'hardware' || query.encoderType === 'software') {
+    where.AND = [buildEncoderTypeFilter(query.encoderType)];
+  }
+  const globalSearch = query.search?.trim();
+  if (globalSearch) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      buildGlobalSearchFilter(globalSearch),
+    ];
+  }
+
+  applyRangeFilter(where, query, 'fps');
+  applyRangeFilter(where, query, 'vmaf');
+  applyRangeFilter(where, query, 'ssim');
+  applyRangeFilter(where, query, 'psnr');
+  applyRangeFilter(where, query, 'fileSizeBytes', { integer: true });
+  applyRangeFilter(where, query, 'runMs', { integer: true });
+  applyRangeFilter(where, query, 'gpuUtilAvg');
+  applyRangeFilter(where, query, 'gpuPowerAvgW');
+  applyRangeFilter(where, query, 'gpuMemPeakMB');
+  applyRangeFilter(where, query, 'cpuUtilAvg');
+  applyRangeFilter(where, query, 'cpuUtilMax');
+  applyRangeFilter(where, query, 'peakMemoryMB');
+  applyRangeFilter(where, query, 'gpuTempMaxC');
+  applyRangeFilter(where, query, 'cpuFreqAvgMHz');
+  applyRangeFilter(where, query, 'cpuTempMaxC');
+  applyRangeFilter(where, query, 'ffmpegCpuUtilAvg');
+  applyRangeFilter(where, query, 'ffmpegCpuUtilMax');
+  applyRangeFilter(where, query, 'ffmpegReadMB');
+  applyRangeFilter(where, query, 'ffmpegWriteMB');
+  applyRangeFilter(where, query, 'ffmpegCpuTimeS');
+  applyRangeFilter(where, query, 'batteryPercentStart');
+  applyRangeFilter(where, query, 'batteryPercentEnd');
+  applyRangeFilter(where, query, 'batteryPercentDrop');
+  applyRangeFilter(where, query, 'sampleCount');
+  applyRangeFilter(where, query, 'monitorDurationMs');
+  applyRangeFilter(where, query, 'cpuSampleCount');
+  applyRangeFilter(where, query, 'gpuSampleCount');
+  applyRangeFilter(where, query, 'ffmpegSampleCount');
+  applyRangeFilter(where, query, 'batterySampleCount');
+  return where;
+}
+
 router.get('/query', async (req, res) => {
   try {
     const query = req.query as Record<string, string | undefined>;
+    if (query.powerSource != null || query.thermalThrottle != null) {
+      return res.status(400).json({
+        error: 'powerSource and thermalThrottle filters are unavailable for aggregated results',
+        details: 'These values vary by submission and cannot truthfully filter a mixed aggregate.',
+      });
+    }
     const take = parseTakeParam(query.limit);
     const skip = parseSkipParam(query.skip);
 
-    const where: Prisma.BenchmarkWhereInput = { status: 'accepted' };
-    if (query.passes) {
-      const p = Number(query.passes);
-      if (p === 1) where.passes = 1;
-    }
-    // Sprint 4: additional filters
-    if (query.codec) where.codec = query.codec;
-    if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
-    if (query.preset) where.preset = { contains: query.preset, mode: 'insensitive' };
-    if (query.crf && /^\d+$/.test(query.crf)) where.crf = Number(query.crf);
-    if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
-    if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
-    if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
-      where.contentClass = query.contentClass;
-    }
-    if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
-      where.resolution = query.resolution;
-    }
-    if (query.powerSource === 'ac' || query.powerSource === 'battery') {
-      where.powerSource = query.powerSource;
-    }
-    const throttle = booleanParam(query, 'thermalThrottle');
-    if (throttle != null) {
-      where.thermalThrottle = throttle;
-    }
-    if (query.encoderType === 'hardware' || query.encoderType === 'software') {
-      const encoderTypeFilter = buildEncoderTypeFilter(query.encoderType);
-      if (where.AND) {
-        const existing = Array.isArray(where.AND) ? where.AND : [where.AND];
-        where.AND = [...existing, encoderTypeFilter];
-      } else {
-        where.AND = [encoderTypeFilter];
-      }
-    }
-
-    // Numeric range filters (query by appending Min/Max suffixes)
-    applyRangeFilter(where, query, 'fps');
-    applyRangeFilter(where, query, 'vmaf');
-    applyRangeFilter(where, query, 'ssim');
-    applyRangeFilter(where, query, 'psnr');
-    applyRangeFilter(where, query, 'fileSizeBytes', { integer: true });
-    applyRangeFilter(where, query, 'runMs', { integer: true });
-
-    applyRangeFilter(where, query, 'gpuUtilAvg');
-    applyRangeFilter(where, query, 'gpuPowerAvgW');
-    applyRangeFilter(where, query, 'gpuMemPeakMB');
-    applyRangeFilter(where, query, 'cpuUtilAvg');
-    applyRangeFilter(where, query, 'cpuUtilMax');
-    applyRangeFilter(where, query, 'peakMemoryMB');
-    applyRangeFilter(where, query, 'gpuTempMaxC');
-    applyRangeFilter(where, query, 'cpuFreqAvgMHz');
-    applyRangeFilter(where, query, 'cpuTempMaxC');
-    applyRangeFilter(where, query, 'ffmpegCpuUtilAvg');
-    applyRangeFilter(where, query, 'ffmpegCpuUtilMax');
-    applyRangeFilter(where, query, 'ffmpegReadMB');
-    applyRangeFilter(where, query, 'ffmpegWriteMB');
-    applyRangeFilter(where, query, 'ffmpegCpuTimeS');
-    applyRangeFilter(where, query, 'batteryPercentStart');
-    applyRangeFilter(where, query, 'batteryPercentEnd');
-    applyRangeFilter(where, query, 'batteryPercentDrop');
-    applyRangeFilter(where, query, 'sampleCount');
-    applyRangeFilter(where, query, 'monitorDurationMs');
-    applyRangeFilter(where, query, 'cpuSampleCount');
-    applyRangeFilter(where, query, 'gpuSampleCount');
-    applyRangeFilter(where, query, 'ffmpegSampleCount');
-    applyRangeFilter(where, query, 'batterySampleCount');
+    const where = buildWorkbenchWhere(query);
 
     // Build orderBy with whitelist validation
     let orderBy: Record<string, string> = { createdAt: 'desc' };

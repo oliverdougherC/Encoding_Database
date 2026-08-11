@@ -7,38 +7,51 @@ on:
 
 jobs:
   smoke:
-    if: ${{ secrets.API_BASE_URL != '' }}
     runs-on: ubuntu-latest
     env:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
     steps:
+      - name: Check required configuration
+        id: configuration
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${API_BASE_URL:-}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "configured=false" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "::error::API_BASE_URL is required for a manually dispatched smoke test."
+            exit 1
+          fi
+
+          echo "::notice::Skipping the scheduled smoke test because API_BASE_URL is not configured."
+
       - name: Checkout
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
         uses: actions/checkout@v4
 
       - name: Setup curl and jq
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: Check required secrets
-        run: |
-          set -euo pipefail
-          if [ -z "${API_BASE_URL:-}" ]; then
-            echo "Missing secret API_BASE_URL, skipping job." >&2
-            exit 0
-          fi
-          echo "API_BASE_URL is set"
-
       - name: Health check
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
         run: |
           set -euo pipefail
           curl -fsSL "$API_BASE_URL/health/ready" | jq .
 
       - name: Query should return JSON array
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
         run: |
           set -euo pipefail
           curl -fsSL "$API_BASE_URL/query" | jq -e 'type == "array"' >/dev/null
 
       - name: Submit sample (optional)
-        if: ${{ github.event_name == 'workflow_dispatch' }}
+        if: ${{ steps.configuration.outputs.configured == 'true' && github.event_name == 'workflow_dispatch' }}
         run: |
           set -euo pipefail
           payload=$(jq -nc '{
@@ -58,10 +71,10 @@ jobs:
             -d "$payload" | jq .
 
       - name: Validation and method guard
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
         run: |
           set -euo pipefail
           code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$API_BASE_URL/submit" -H "Content-Type: application/json" -d '{}')
           test "$code" = "400"
           code=$(curl -s -o /dev/null -w "%{http_code}" -X GET "$API_BASE_URL/submit")
           test "$code" = "405"
-

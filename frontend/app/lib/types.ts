@@ -20,9 +20,12 @@ export type Benchmark = {
   encoderName?: string | null;
   clientVersion?: string | null;
   inputHash?: string | null;
+  contentClass?: string | null;
+  resolution?: string | null;
+  passes?: number | null;
   runMs?: number | null;
   status?: string | null;
-  samples?: number;
+  samples: number;
   vmafSamples?: number;
   ssimSamples?: number;
   psnrSamples?: number;

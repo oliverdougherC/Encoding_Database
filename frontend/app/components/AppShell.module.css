@@ -1,17 +1,20 @@
 .shell { min-height: 100vh; background: var(--canvas); }
 .header { position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 94%, transparent); backdrop-filter: blur(10px); }
-.bar { max-width: 1320px; min-height: 58px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 28px; }
-.brand { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; }
-.brandMark { font-family: var(--mono); font-size: 0.67rem; letter-spacing: .08em; color: var(--accent); border: 1px solid var(--accent); border-radius: 5px; padding: 3px 5px; }
+.bar { max-width: 1440px; min-height: 58px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 26px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size:16px; letter-spacing: -0.02em; white-space: nowrap; }
+.brandMark { width:22px; height:22px; padding:4px; display:grid; grid-template-columns:repeat(3,1fr); gap:2px; border:1px solid var(--border-strong); border-radius:6px; background:var(--surface-2); }
+.brandMark i { display:block; border-radius:1px; background:var(--muted); opacity:.85; }
+.brandMark i:nth-child(2),.brandMark i:nth-child(5),.brandMark i:nth-child(7) { background:var(--accent); }
 .nav { display: flex; align-items: center; gap: 20px; font-size: .88rem; color: var(--muted); }
-.nav a { padding: 19px 0 17px; border-bottom: 2px solid transparent; }
-.nav a:hover, .nav .active { color: var(--text); border-color: var(--accent); }
+.nav a { padding: 8px 0; }
+.nav a:hover, .nav .active { color: var(--text); }
 .actions { margin-left: auto; display: flex; align-items: center; gap: 12px; font-size: .85rem; }
 .actions > a:not(.runButton) { color: var(--muted); }
 .actions > a:not(.runButton):hover { color: var(--text); }
-.runButton { padding: 7px 10px; border-radius: 6px; background: var(--accent); color: white; font-weight: 650; border: 1px solid var(--accent); }
+.runButton { padding: 8px 12px; border-radius: 7px; background: var(--accent); color: white; font-weight: 650; border: 1px solid var(--accent); }
 .runButton:hover { background: var(--accent-hover); }
 .menuButton { display: none; }
-.main { min-width: 0; padding: 32px 24px 48px; }
-@media (max-width: 800px) { .bar { padding: 0 16px; gap: 12px; flex-wrap: wrap; } .menuButton { display: inline-flex; margin-left: auto; border: 0; background: transparent; color: var(--text); font: inherit; padding: 9px 0; } .nav { order: 4; display: none; flex-basis: 100%; padding-bottom: 12px; gap: 16px; } .navOpen { display: flex; } .nav a { padding: 5px 0; } .actions { margin-left: 0; gap: 8px; } .actions > a:not(.runButton) { display: none; } .main { padding: 24px 12px 36px; } }
+.main { min-width: 0; padding: 38px 24px 20px; }
+.footer { max-width:1440px; margin:42px auto 0; padding:18px 24px 28px; border-top:1px solid var(--border); display:flex; justify-content:space-between; gap:16px; color:var(--muted); font-size:11px; }
+@media (max-width: 800px) { .bar { padding: 0 14px; gap: 12px; flex-wrap: wrap; } .menuButton { display: inline-flex; margin-left: auto; border: 0; background: transparent; color: var(--text); font: inherit; padding: 9px 0; } .nav { order: 4; display: none; flex-basis: 100%; padding-bottom: 12px; gap: 16px; } .navOpen { display: flex; } .nav a { padding: 5px 0; } .actions { margin-left: 0; gap: 8px; } .actions > a:not(.runButton) { display: none; } .main { padding: 24px 14px 20px; } .footer { margin-top:28px; padding:16px 14px 24px; flex-direction:column; } }
 @media (max-width: 440px) { .runButton { font-size: .78rem; padding: 7px; } }

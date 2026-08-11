@@ -37,10 +37,8 @@ export async function proxyOrMock<T>(
         const mock = mockFactory();
         return mock instanceof NextResponse ? mock : NextResponse.json(mock);
       }
-      return NextResponse.json(
-        { error: `Upstream request failed: ${error instanceof Error ? error.message : String(error)}` },
-        { status: 502 },
-      );
+      console.error("Upstream API request failed", { upstreamPath, error });
+      return NextResponse.json({ error: "Backend unavailable" }, { status: 502 });
     }
   }
 

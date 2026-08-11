@@ -43,4 +43,22 @@ describe("frontend query proxy", () => {
     expect(response.headers.get("X-Total-Count")).toBe("7");
     await expect(response.json()).resolves.toEqual([{ id: "row-1" }]);
   });
+
+  it("returns a stable 502 without exposing upstream exception details", async () => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const internalMessage = "connect ECONNREFUSED 10.0.0.12:3001";
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error(internalMessage));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await GET(new NextRequest("http://localhost:3000/api/query"));
+
+    expect(response.status).toBe(502);
+    const body = await response.json();
+    expect(body).toEqual({ error: "Backend unavailable" });
+    expect(JSON.stringify(body)).not.toContain(internalMessage);
+    expect(consoleError).toHaveBeenCalledWith(
+      "Upstream API request failed",
+      expect.objectContaining({ upstreamPath: "/query", error: expect.any(Error) }),
+    );
+  });
 });

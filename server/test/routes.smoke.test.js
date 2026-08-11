@@ -4,15 +4,21 @@ import net from 'node:net';
 import express from 'express';
 import routes, {
   buildSubmissionPayloadHash,
+  benchmarkWhereFromSubmission,
+  buildEncoderTypeFilter,
+  buildGlobalSearchFilter,
+  buildWorkbenchWhere,
   DEFAULT_QUERY_LIMIT,
   TEST_VIDEO_CATALOG,
   getQueryCacheSize,
   normalizeCpuFreqMHz,
+  determineSubmissionStatus,
   parseTelemetryFromNotes,
   parseTelemetryMetaFromNotes,
   parseSkipParam,
   parseTakeParam,
   runSubmitTransactionWithRetry,
+  SORT_WHITELIST,
 } from '../dist/routes.js';
 import { prisma } from '../dist/db.js';
 import {
@@ -118,6 +124,24 @@ test('Method guard: POST /query is 405 with Allow=GET, HEAD', async (t) => {
     assert.equal(res.headers.get('allow'), 'GET, HEAD');
     const body = await res.json();
     assert.equal(body.error, 'Method Not Allowed');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /query rejects categorical telemetry filters on mixed aggregates', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+  const { server, baseUrl } = await startTestServer();
+  try {
+    for (const params of ['powerSource=ac', 'thermalThrottle=false']) {
+      const res = await fetch(`${baseUrl}/query?${params}`);
+      assert.equal(res.status, 400);
+      const body = await res.json();
+      assert.match(body.error, /unavailable for aggregated results/);
+    }
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -261,6 +285,10 @@ test('DEFAULT_QUERY_LIMIT is sane', () => {
   assert.ok(DEFAULT_QUERY_LIMIT <= 500);
 });
 
+test('aggregate sample count is an allowed workbench sort', () => {
+  assert.ok(SORT_WHITELIST.has('samples'));
+});
+
 test('TEST_VIDEO_CATALOG has no placeholders', () => {
   assert.ok(TEST_VIDEO_CATALOG.length >= 1);
   for (const row of TEST_VIDEO_CATALOG) {
@@ -345,6 +373,48 @@ test('runSubmitTransactionWithRetry does not retry payloadHash conflicts', async
     });
   }, /payload hash conflict/);
   assert.equal(attempts, 1);
+});
+
+test('only canonical, plausible submissions can be accepted', () => {
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: true, maxAbsoluteZScore: 0 }), 'accepted');
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: false, maxAbsoluteZScore: 0 }), 'pending');
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: true, maxAbsoluteZScore: 4 }), 'suspect');
+  assert.equal(determineSubmissionStatus({ plausible: false, canonicalInput: true, maxAbsoluteZScore: 0 }), 'rejected');
+});
+
+test('idempotent retry lookup derives the aggregate key from Submission', () => {
+  const source = {
+    cpuModel: 'Ryzen 9 7950X', gpuModel: 'RTX 4090', ramGB: 64, os: 'Linux',
+    codec: 'h264_nvenc', preset: 'p6', crf: 0, contentClass: 'gaming', resolution: '4k', passes: 1,
+  };
+  assert.deepEqual(benchmarkWhereFromSubmission(source), source);
+});
+
+test('global workbench search spans advertised text and numeric result fields', () => {
+  const text = buildGlobalSearchFilter('RTX 4090');
+  assert.ok(text.OR.some((entry) => entry.cpuModel?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.gpuModel?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.encoderName?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.preset?.contains === 'RTX 4090'));
+
+  const numeric = buildGlobalSearchFilter('24');
+  assert.ok(numeric.OR.some((entry) => entry.crf === 24));
+  assert.ok(numeric.OR.some((entry) => entry.fps === 24));
+  assert.ok(numeric.OR.some((entry) => entry.samples === 24));
+});
+
+test('workbench CPU and GPU filters remain server-side alongside global search', () => {
+  const where = buildWorkbenchWhere({ cpu: 'Ryzen', gpu: '4090', search: 'nvenc' });
+  assert.deepEqual(where.cpuModel, { contains: 'Ryzen', mode: 'insensitive' });
+  assert.deepEqual(where.gpuModel, { contains: '4090', mode: 'insensitive' });
+  assert.ok(where.AND.some((entry) => Array.isArray(entry.OR)));
+});
+
+test('hardware encoder classification includes Linux and Raspberry Pi suffixes', () => {
+  const filter = buildEncoderTypeFilter('hardware');
+  const suffixes = filter.OR.flatMap((entry) => [entry.codec?.endsWith, entry.encoderName?.endsWith]).filter(Boolean);
+  assert.ok(suffixes.includes('_v4l2m2m'));
+  assert.ok(suffixes.includes('_omx'));
 });
 
 function makeBenchmarkRow(overrides = {}) {
@@ -464,6 +534,10 @@ test('parseAnalyticsFilters defaults to the canonical comparison slice', () => {
     crf: 24,
     passes: 1,
   });
+});
+
+test('parseAnalyticsFilters preserves lossless CRF 0', () => {
+  assert.equal(parseAnalyticsFilters({ crf: '0' }).crf, 0);
 });
 
 test('aggregateLeaderboards keeps distinct workload slices separate and enforces minSamples', () => {

@@ -129,10 +129,15 @@ function rememberSignature(sig: string, nowMs: number): void {
 }
 
 // In-memory submit token store
-type TokenMeta = { ip: string; expMs: number; used: boolean };
+type TokenState = 'available' | 'in_flight' | 'used';
+type TokenMeta = { ip: string; expMs: number; state: TokenState };
 const tokenStore = new Map<string, TokenMeta>();
 const submitTokenTtlSeconds = Number(process.env.SUBMIT_TOKEN_TTL_SECONDS || 60);
-const ingestMode = (process.env.INGEST_MODE || 'public').toLowerCase(); // public | signed | hybrid
+const ingestModeRaw = String(process.env.INGEST_MODE || 'public').trim().toLowerCase();
+if (!['public', 'signed', 'hybrid'].includes(ingestModeRaw)) {
+  throw new Error(`Invalid INGEST_MODE "${process.env.INGEST_MODE}". Expected public, signed, or hybrid.`);
+}
+const ingestMode = ingestModeRaw as 'public' | 'signed' | 'hybrid';
 const powEnabled = String(process.env.POW_ENABLED || '0') === '1';
 const powDifficulty = Math.max(0, Number(process.env.POW_DIFFICULTY || 0)); // leading zero hex chars approx
 
@@ -150,7 +155,7 @@ setInterval(() => {
 
   // Clean up expired/used tokens
   for (const [token, meta] of tokenStore.entries()) {
-    if (meta.expMs < now || meta.used) {
+    if (meta.expMs < now || meta.state === 'used') {
       tokenStore.delete(token);
     }
   }
@@ -162,6 +167,45 @@ function normalizeIp(ip: string | undefined): string {
   return ip.replace(/^::ffff:/i, '');
 }
 
+// Apply abuse controls before token issuance and submit authentication. All
+// limiters use an IP-only key so rotating a client-controlled header cannot
+// create a fresh quota bucket.
+function ipRateLimitKey(req: express.Request): string {
+  return normalizeIp(req.ip) || 'unknown';
+}
+
+const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
+const maxReqs = Number(process.env.RATE_LIMIT_MAX || 300);
+app.use(rateLimit({
+  windowMs,
+  max: maxReqs,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skip: (req) => req.path.startsWith('/health'),
+  keyGenerator: ipRateLimitKey,
+}));
+
+const tokenWindowMs = Number(process.env.SUBMIT_TOKEN_RATE_WINDOW_MS || 60_000);
+const tokenMax = Number(process.env.SUBMIT_TOKEN_RATE_MAX || 60);
+const tokenLimiter = rateLimit({
+  windowMs: tokenWindowMs,
+  max: tokenMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: ipRateLimitKey,
+});
+app.use(['/submit-token', '/submit/token', '/health/token'], tokenLimiter);
+
+const submitWindowMs = Number(process.env.SUBMIT_RATE_WINDOW_MS || 60_000);
+const submitMax = Number(process.env.SUBMIT_RATE_MAX || 30);
+app.post('/submit', rateLimit({
+  windowMs: submitWindowMs,
+  max: submitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: ipRateLimitKey,
+}));
+
 // Token endpoint - short-lived, one-time token bound to IP
 const TOKEN_STORE_MAX_SIZE = 10_000;
 function issueSubmitToken(req: express.Request, res: express.Response) {
@@ -170,7 +214,7 @@ function issueSubmitToken(req: express.Request, res: express.Response) {
   }
   const token = crypto.randomBytes(16).toString('hex');
   const expMs = Date.now() + submitTokenTtlSeconds * 1000;
-  tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, used: false });
+  tokenStore.set(token, { ip: normalizeIp(req.ip), expMs, state: 'available' });
   res.json({ token, exp: Math.floor(expMs / 1000), pow: powEnabled ? { difficulty: powDifficulty } : { difficulty: 0 } });
 }
 app.get('/submit-token', (req, res) => issueSubmitToken(req, res));
@@ -227,7 +271,7 @@ app.use('/submit', (req, res, next) => {
     const meta = tokenStore.get(token);
     if (!meta) return { code: 401, error: 'invalid_token' };
     const now = Date.now();
-    if (meta.used) return { code: 409, error: 'token_used' };
+    if (meta.state !== 'available') return { code: 409, error: 'token_used' };
     if (meta.expMs < now) return { code: 401, error: 'token_expired' };
     const reqIp = normalizeIp(req.ip);
     if (meta.ip && reqIp && meta.ip !== reqIp) {
@@ -240,9 +284,23 @@ app.use('/submit', (req, res, next) => {
       const requiredPrefix = '0'.repeat(Math.max(0, Math.floor(powDifficulty)));
       if (!h.startsWith(requiredPrefix)) return { code: 401, error: 'invalid_pow' };
     }
-    // mark used (one-time)
-    meta.used = true;
-    tokenStore.set(token, meta);
+    // Reserve the token while this request is running. Consume it only after a
+    // successful durable response; validation and transient failures release it
+    // so retrying the same request remains possible without allowing concurrent
+    // reuse.
+    meta.state = 'in_flight';
+    let finished = false;
+    res.once('finish', () => {
+      finished = true;
+      const current = tokenStore.get(token);
+      if (current !== meta || current.state !== 'in_flight') return;
+      current.state = res.statusCode >= 200 && res.statusCode < 300 ? 'used' : 'available';
+    });
+    res.once('close', () => {
+      if (finished) return;
+      const current = tokenStore.get(token);
+      if (current === meta && current.state === 'in_flight') current.state = 'available';
+    });
     return true;
   };
 
@@ -271,39 +329,8 @@ app.use('/submit', (req, res, next) => {
     if (okT === true) return next();
     return res.status(okT.code).json({ error: okT.error });
   }
-  // Fall back to unsigned acceptance for maximum compatibility
-  return next();
+  return res.status(401).json({ error: 'authentication_required' });
 });
-
-// Rate limiter key: combine IP + User-Agent to reduce NAT collisions (B-S04)
-function rateLimitKeyGenerator(req: express.Request): string {
-  const ip = normalizeIp(req.ip) || 'unknown';
-  const ua = (req.headers['user-agent'] || '').slice(0, 64);
-  return `${ip}:${ua}`;
-}
-
-// Basic rate limiting (skip health endpoints)
-const windowMs = Number(process.env.RATE_LIMIT_WINDOW_MS || 60_000);
-const maxReqs = Number(process.env.RATE_LIMIT_MAX || 300);
-app.use(rateLimit({
-  windowMs,
-  max: maxReqs,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skip: (req) => req.path.startsWith('/health'),
-  keyGenerator: rateLimitKeyGenerator,
-}));
-
-// Stricter limiter for public submissions
-const submitWindowMs = Number(process.env.SUBMIT_RATE_WINDOW_MS || 60_000);
-const submitMax = Number(process.env.SUBMIT_RATE_MAX || 30);
-app.use('/submit', rateLimit({
-  windowMs: submitWindowMs,
-  max: submitMax,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: rateLimitKeyGenerator,
-}));
 
 // Health endpoints
 app.get('/health/live', (_req, res) => {

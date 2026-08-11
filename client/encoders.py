@@ -353,7 +353,7 @@ def sort_presets_by_speed_desc(encoder: str, presets: List[str]) -> List[str]:
     if e in ("libsvtav1", "libaom-av1", "libvpx-vp9"):
         return sorted(presets, key=_numeric_speed_key)
     if e.endswith("_nvenc"):
-        ordering = ["p7", "p6", "p5", "p4", "p3", "p2", "p1"]
+        ordering = ["p1", "p2", "p3", "p4", "p5", "p6", "p7"]
         order_index = {name: i for i, name in enumerate(ordering)}
         return sorted(presets, key=lambda n: order_index.get(n, len(ordering)))
     if e.endswith("_qsv"):
@@ -395,7 +395,7 @@ def map_preset_for_encoder(encoder: str, preset_name: str) -> List[str]:
     if e.endswith("_nvenc"):
         if re.fullmatch(r"p[1-7]", name):
             return ["-preset", name]
-        nv = {"ultrafast": "p7", "veryfast": "p6", "fast": "p5", "medium": "p4", "slow": "p3", "veryslow": "p2"}
+        nv = {"ultrafast": "p1", "veryfast": "p2", "fast": "p3", "medium": "p4", "slow": "p5", "veryslow": "p6"}
         return ["-preset", nv.get(name, "p4")]
     if e.endswith("_qsv"):
         qsv = {"faster": "faster", "fast": "fast", "medium": "medium", "slow": "slow"}
@@ -404,3 +404,14 @@ def map_preset_for_encoder(encoder: str, preset_name: str) -> List[str]:
         amf = {"fast": "speed", "medium": "balanced", "slow": "quality"}
         return ["-quality", amf.get(name, "balanced")]
     return []
+
+
+def effective_preset_for_encoder(encoder: str, preset_name: str) -> str:
+    """Return the preset value FFmpeg will actually receive for an encoder."""
+    args = map_preset_for_encoder(encoder, preset_name)
+    for option in ("-preset", "-cpu-used", "-quality"):
+        if option in args:
+            index = args.index(option)
+            if index + 1 < len(args):
+                return str(args[index + 1])
+    return "default"

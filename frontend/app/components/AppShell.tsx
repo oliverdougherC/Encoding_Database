@@ -23,9 +23,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       <header className={styles.header}>
         <div className={styles.bar}>
           <Link className={styles.brand} href="/" onClick={() => setMenuOpen(false)} aria-label="EncodingDB home">
-            <span className={styles.brandMark}>EDB</span><span>EncodingDB</span>
+            <span className={styles.brandMark} aria-hidden="true">{Array.from({length:9},(_,index)=><i key={index}/>)}</span><span>EncodingDB</span>
           </Link>
-          <button className={styles.menuButton} type="button" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>Menu</button>
+          <button className={styles.menuButton} type="button" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>☰</button>
           <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ""}`} aria-label="Primary navigation">
             {NAV.map((item) => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active(item.href) ? "page" : undefined} className={active(item.href) ? styles.active : ""}>{item.label}</Link>)}
           </nav>
@@ -37,6 +37,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </header>
       <main className={styles.main}>{children}</main>
+      <footer className={styles.footer}><span>EncodingDB · public, reproducible encoding data</span><span>Measurements are observations, not recommendations.</span></footer>
     </div>
   );
 }

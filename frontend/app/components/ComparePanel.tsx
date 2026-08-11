@@ -19,6 +19,9 @@ const METRICS: Metric[] = [
   { label: "Encoder", getValue: r => r.encoderName || r.codec, getNumeric: () => null, higherIsBetter: true },
   { label: "CRF", getValue: r => r.crf == null ? "-" : String(r.crf), getNumeric: r => r.crf ?? null, higherIsBetter: false },
   { label: "Preset", getValue: r => r.preset, getNumeric: () => null, higherIsBetter: true },
+  { label: "Content class", getValue: r => r.contentClass || "-", getNumeric: () => null, higherIsBetter: true },
+  { label: "Resolution", getValue: r => r.resolution || "-", getNumeric: () => null, higherIsBetter: true },
+  { label: "Passes", getValue: r => r.passes == null ? "-" : String(r.passes), getNumeric: () => null, higherIsBetter: true },
   { label: "FPS", getValue: r => r.fps.toFixed(2), getNumeric: r => r.fps, higherIsBetter: true },
   { label: "VMAF", getValue: r => r.vmaf == null ? "-" : r.vmaf.toFixed(1), getNumeric: r => r.vmaf, higherIsBetter: true },
   { label: "SSIM", getValue: r => r.ssim == null ? "-" : r.ssim.toFixed(4), getNumeric: r => r.ssim, higherIsBetter: true },
@@ -50,6 +53,18 @@ function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
   return bestIdx;
 }
 
+const normalizeIdentityPart = (value: string | number | null | undefined) => String(value ?? "").trim().toLowerCase();
+
+export function workloadIdentity(row: CompareRow): string {
+  return [row.codec, row.preset, row.crf, row.contentClass, row.resolution, row.passes, row.inputHash]
+    .map(normalizeIdentityPart)
+    .join("|");
+}
+
+export function hasIncompatibleWorkloads(rows: CompareRow[]): boolean {
+  return new Set(rows.map(workloadIdentity)).size > 1;
+}
+
 export default function ComparePanel({
   rows,
   onClose,
@@ -76,7 +91,7 @@ export default function ComparePanel({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const incompatible = new Set(rows.map((row) => `${row.codec}|${row.preset}|${row.crf ?? ""}`)).size > 1;
+  const incompatible = hasIncompatibleWorkloads(rows);
   return (
     <div
       className={styles.panelBackdrop}
@@ -90,7 +105,7 @@ export default function ComparePanel({
       <div className={styles.panel} ref={panelRef} tabIndex={-1}>
         <div className={styles.panelHeader}>
           <div id="compare-panel-title" className={styles.panelTitle}>
-            Compare selected results
+            Compare selected configurations
           </div>
           <div className={styles.panelActions}>
             <button type="button" onClick={onClear} className={`btn btn-ghost ${styles.clearBtn}`}>Clear All</button>
@@ -98,7 +113,7 @@ export default function ComparePanel({
           </div>
         </div>
         <div className={styles.panelBody}>
-          {incompatible ? <p className={styles.compatibilityWarning}>These results use different codecs or configurations. Compare individual metrics carefully; they may not represent equivalent workloads.</p> : null}
+          {incompatible ? <p className={styles.compatibilityWarning}>These configurations differ by codec, preset, CRF, content class, resolution, pass count, or canonical input. Their performance, size, and quality metrics are not directly comparable.</p> : null}
           <table className={styles.compareTable}>
             <thead>
               <tr>

@@ -132,6 +132,14 @@ function asPositiveInt(raw: string | undefined, fallback: number): number {
   return parsed;
 }
 
+function asNonNegativeInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  if (!/^\d+$/.test(raw.trim())) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) return fallback;
+  return parsed;
+}
+
 export function parseAnalyticsFilters(query: Record<string, string | undefined>): AnalyticsFilters {
   const contentClass = VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])
     ? String(query.contentClass)
@@ -139,7 +147,7 @@ export function parseAnalyticsFilters(query: Record<string, string | undefined>)
   const resolution = VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])
     ? String(query.resolution)
     : DEFAULT_ANALYTICS_FILTERS.resolution;
-  const crf = asPositiveInt(query.crf, DEFAULT_ANALYTICS_FILTERS.crf);
+  const crf = asNonNegativeInt(query.crf, DEFAULT_ANALYTICS_FILTERS.crf);
   const passes = query.passes === '1' ? 1 : DEFAULT_ANALYTICS_FILTERS.passes;
   const minSamples = asPositiveInt(query.minSamples, DEFAULT_ANALYTICS_FILTERS.minSamples);
   return { contentClass, resolution, crf, passes, minSamples };

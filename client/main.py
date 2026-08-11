@@ -53,6 +53,8 @@ from .ui import (
     print_info, print_success, print_warning, print_batch_summary,
 )
 
+CLIENT_VERSION = "client/0.1.1"
+
 
 def _resolve_input_for_task(
     default_input: str,
@@ -282,7 +284,7 @@ def run_benchmark_batch(
         )
         return 6
     default_input_hash = sha256_of_file(input_path)
-    client_version = "client/0.1.0"
+    client_version = CLIENT_VERSION
     workers = resolve_batch_size(getattr(args, 'batch_size', 0))
     chunk_size = max(1, workers)
     total_tasks = len(tasks)
@@ -399,10 +401,11 @@ def run_benchmark_batch(
                         info['_input_hash'] = input_hash
                         info['_effective_input'] = effective_input
                         final_encoder = str(info.get('encoderUsed') or enc)
+                        final_preset = str(info.get('presetUsed') or preset)
                         progress.set_current_test(
                             stage="Encoded",
                             encoder=final_encoder,
-                            preset=preset,
+                            preset=final_preset,
                             crf=crf,
                             passes=1,
                             isHardware=is_hardware_encoder_name(final_encoder),
@@ -415,7 +418,7 @@ def run_benchmark_batch(
                             index=global_index,
                             total=total_tasks,
                             encoder=final_encoder,
-                            preset=preset,
+                            preset=final_preset,
                             crf=crf,
                             fps=float(info.get("fps") or 0.0),
                             fileSizeBytes=int(info.get("fileSizeBytes") or 0),
@@ -432,7 +435,7 @@ def run_benchmark_batch(
                             batchNo=batch_no,
                         )
                         progress.advance_phase(
-                            description=_batch_status("Encoded", processed_total + idx, final_encoder, preset),
+                            description=_batch_status("Encoded", processed_total + idx, final_encoder, final_preset),
                         )
 
                     for metric_idx, info in enumerate(artifacts_info, start=1):
@@ -444,7 +447,7 @@ def run_benchmark_batch(
                         progress.set_current_test(
                             stage="Metrics",
                             encoder=str(info.get('encoderUsed') or info['task']['encoder']),
-                            preset=str(info['task']['preset']),
+                            preset=str(info.get('presetUsed') or info['task']['preset']),
                             crf=info['task'].get('crf'),
                             passes=1,
                             isHardware=is_hardware_encoder_name(str(info.get('encoderUsed') or info['task']['encoder'])),
@@ -454,7 +457,7 @@ def run_benchmark_batch(
                                 _batch_status(
                                     "Metrics", metric_index,
                                     str(info.get('encoderUsed') or info['task']['encoder']),
-                                    str(info['task']['preset']),
+                                    str(info.get('presetUsed') or info['task']['preset']),
                                 )
                             )
                             _emit_event(
@@ -463,7 +466,7 @@ def run_benchmark_batch(
                                 index=metric_index,
                                 total=total_tasks,
                                 encoder=str(info.get('encoderUsed') or info['task']['encoder']),
-                                preset=str(info['task']['preset']),
+                                preset=str(info.get('presetUsed') or info['task']['preset']),
                                 crf=info['task'].get('crf'),
                             )
                             metrics = compute_metrics_parallel(effective_input, [ap], workers, quiet=True)
@@ -476,7 +479,7 @@ def run_benchmark_batch(
                             index=metric_index,
                             total=total_tasks,
                             encoder=str(info.get('encoderUsed') or info['task']['encoder']),
-                            preset=str(info['task']['preset']),
+                            preset=str(info.get('presetUsed') or info['task']['preset']),
                             crf=info['task'].get('crf'),
                             metrics=info.get("_metrics", {}),
                         )
@@ -485,7 +488,7 @@ def run_benchmark_batch(
                                 "Metrics done",
                                 metric_index,
                                 str(info.get('encoderUsed') or info['task']['encoder']),
-                                str(info['task']['preset']),
+                                str(info.get('presetUsed') or info['task']['preset']),
                             ),
                         )
 
@@ -500,7 +503,7 @@ def run_benchmark_batch(
                             'ramGB': hardware.ramGB,
                             'os': hardware.os,
                             'codec': info.get('encoderUsed') or t['encoder'],
-                            'preset': t['preset'],
+                            'preset': info.get('presetUsed') or t['preset'],
                             'crf': t.get('crf'),
                             'passes': 1,
                             'fps': float(info.get('fps') or 0.0),
@@ -787,7 +790,7 @@ def run_with_args(
 
     hardware = detect_hardware()
     input_hash = sha256_of_file(input_path)
-    client_version = "client/0.1.0"
+    client_version = CLIENT_VERSION
     combos: List[Tuple[str, Optional[int]]] = []
     try:
         preset_list = [s.strip() for s in args.presets.split(",") if s.strip()]
@@ -856,6 +859,7 @@ def run_with_args(
             payload["clientVersion"] = client_version
             payload["inputHash"] = input_hash
             payload["passes"] = 1
+            effective_preset = str(payload.get("preset") or preset)
 
             size_val = payload.get("fileSizeBytes")
             try:
@@ -870,7 +874,7 @@ def run_with_args(
                 index=task_index,
                 total=len(combos),
                 encoder=payload.get("codec", resolved_encoder),
-                preset=preset,
+                preset=effective_preset,
                 crf=crf_val,
                 fps=float(payload.get("fps") or 0.0),
                 fileSizeBytes=int(payload.get("fileSizeBytes") or 0),
@@ -897,22 +901,22 @@ def run_with_args(
                         config._BATCH_COMPLETED_COUNT += 1
 
             if args.no_submit:
-                print_info(f"Dry-run: not submitting preset={preset}")
-                progress.advance(description=f"{preset} (dry-run)")
-                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="dry_run", preset=preset)
-                _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
+                print_info(f"Dry-run: not submitting preset={effective_preset}")
+                progress.advance(description=f"{effective_preset} (dry-run)")
+                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="dry_run", preset=effective_preset)
+                _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=effective_preset)
                 continue
             try:
                 if payload.get("fps", 0.0) <= 0 or payload.get("fileSizeBytes", 0) <= 0:
                     print_warning(
-                        f"Skipped submission for preset={preset} due to encode failure "
+                        f"Skipped submission for preset={effective_preset} due to encode failure "
                         f"(fps={payload.get('fps')}, size={payload.get('fileSizeBytes')})"
                     )
                     failed_count += 1
-                    progress.advance(description=f"{preset} (failed)")
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset)
+                    progress.advance(description=f"{effective_preset} (failed)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=effective_preset)
                     _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
-                    _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
+                    _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=effective_preset)
                     continue
                 clean_payload = sanitize_payload_for_server(payload)
                 status, message, queued_count = _submit_payload_with_spool(
@@ -933,25 +937,25 @@ def run_with_args(
                     )
                     submitted_count += 1
                     print_success("Submitted Results")
-                    progress.advance(description=f"{preset} (submitted)")
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="submitted", preset=preset)
+                    progress.advance(description=f"{effective_preset} (submitted)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="submitted", preset=effective_preset)
                 elif status == "retained":
-                    print_warning(f"Queued for retry: {preset} ({message})")
-                    progress.advance(description=f"{preset} (queued)")
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="queued", preset=preset, error=message)
+                    print_warning(f"Queued for retry: {effective_preset} ({message})")
+                    progress.advance(description=f"{effective_preset} (queued)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="queued", preset=effective_preset, error=message)
                 else:
                     failed_count += 1
-                    print(f"Failed to submit {preset}: {message}", file=sys.stderr)
-                    progress.advance(description=f"{preset} (failed)")
-                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=message)
+                    print(f"Failed to submit {effective_preset}: {message}", file=sys.stderr)
+                    progress.advance(description=f"{effective_preset} (failed)")
+                    _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=effective_preset, error=message)
             except Exception as e:
                 failed_count += 1
-                print(f"Failed to submit {preset}: {e}", file=sys.stderr)
+                print(f"Failed to submit {effective_preset}: {e}", file=sys.stderr)
                 queued_count = count_pending_entries(args.queue_dir)
-                progress.advance(description=f"{preset} (failed)")
-                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=preset, error=str(e))
+                progress.advance(description=f"{effective_preset} (failed)")
+                _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=effective_preset, error=str(e))
             _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
-            _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=preset)
+            _emit_event(event_sink, "task_complete", scope="single", processed=task_index, total=len(combos), preset=effective_preset)
 
     if not args.no_submit:
         queued_count = _replay_pending_uploads(
