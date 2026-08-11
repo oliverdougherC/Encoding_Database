@@ -14,121 +14,137 @@ datasource db {
 }
 
 model Benchmark {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Hardware info
-  cpuModel       String
-  gpuModel       String   @default("")
-  ramGB          Int
-  os             String
+  cpuModel String
+  gpuModel String @default("")
+  ramGB    Int
+  os       String
 
   // Test parameters
-  codec          String
-  preset         String
-  crf            Int      @default(24)
-  contentClass   String   @default("mixed")
-  resolution     String   @default("1080p")
-  passes         Int      @default(1)
+  codec        String
+  preset       String
+  crf          Int    @default(24)
+  contentClass String @default("mixed")
+  resolution   String @default("1080p")
+  passes       Int    @default(1)
 
   // Results
-  fps            Float
-  vmaf           Float?
-  ssim           Float?
-  psnr           Float?
-  fileSizeBytes  Int
+  fps                   Float
+  vmaf                  Float?
+  vmafP5                Float?
+  ssim                  Float?
+  psnr                  Float?
+  fileSizeBytes         Int
+  videoBitrateBps       Float?
+  sourceFps             Float?
+  sourceDurationSeconds Float?
 
-  notes          String?
+  notes String?
 
   // Hardware metrics (Sprint 6)
-  gpuUtilAvg      Float?
-  gpuPowerAvgW    Float?
-  gpuMemPeakMB    Float?
-  cpuUtilAvg      Float?
-  cpuUtilMax      Float?
-  peakMemoryMB    Float?
-  thermalThrottle Boolean?
+  gpuUtilAvg          Float?
+  gpuPowerAvgW        Float?
+  gpuMemPeakMB        Float?
+  cpuUtilAvg          Float?
+  cpuUtilMax          Float?
+  peakMemoryMB        Float?
+  thermalThrottle     Boolean?
   // Extended telemetry (Sprint 7)
-  gpuTempMaxC        Float?
-  cpuFreqAvgMHz      Float?
-  cpuTempMaxC        Float?
-  ffmpegCpuUtilAvg   Float?
-  ffmpegCpuUtilMax   Float?
-  ffmpegReadMB       Float?
-  ffmpegWriteMB      Float?
-  ffmpegCpuTimeS     Float?
+  gpuTempMaxC         Float?
+  cpuFreqAvgMHz       Float?
+  cpuTempMaxC         Float?
+  ffmpegCpuUtilAvg    Float?
+  ffmpegCpuUtilMax    Float?
+  ffmpegReadMB        Float?
+  ffmpegWriteMB       Float?
+  ffmpegCpuTimeS      Float?
   batteryPercentStart Float?
   batteryPercentEnd   Float?
   batteryPercentDrop  Float?
-  powerSource        String?
-  sampleCount        Float?
-  monitorDurationMs  Float?
-  cpuSampleCount     Float?
-  gpuSampleCount     Float?
-  ffmpegSampleCount  Float?
-  batterySampleCount Float?
+  powerSource         String?
+  sampleCount         Float?
+  monitorDurationMs   Float?
+  cpuSampleCount      Float?
+  gpuSampleCount      Float?
+  ffmpegSampleCount   Float?
+  batterySampleCount  Float?
 
   // Aggregation
-  samples        Int      @default(0)
-  vmafSamples    Int      @default(0)
-  fpsSum         Float    @default(0)
-  fileSizeSum    Float    @default(0)
-  vmafSum        Float    @default(0)
-  ssimSamples    Int      @default(0)
-  ssimSum        Float    @default(0)
-  psnrSamples    Int      @default(0)
-  psnrSum        Float    @default(0)
+  samples             Int   @default(0)
+  vmafSamples         Int   @default(0)
+  fpsSum              Float @default(0)
+  fileSizeSum         Float @default(0)
+  vmafSum             Float @default(0)
+  vmafP5Samples       Int   @default(0)
+  vmafP5Sum           Float @default(0)
+  videoBitrateSamples Int   @default(0)
+  videoBitrateSum     Float @default(0)
+  sourceFpsSamples    Int   @default(0)
+  sourceFpsSum        Float @default(0)
+  ssimSamples         Int   @default(0)
+  ssimSum             Float @default(0)
+  psnrSamples         Int   @default(0)
+  psnrSum             Float @default(0)
 
   // Hardware metrics aggregation (Sprint 6)
-  gpuUtilSamples  Int     @default(0)
-  gpuUtilSum      Float   @default(0)
-  gpuPowerSamples Int     @default(0)
-  gpuPowerSum     Float   @default(0)
-  cpuUtilSamples  Int     @default(0)
-  cpuUtilSum      Float   @default(0)
-  peakMemoryMax   Float?
+  gpuUtilSamples            Int    @default(0)
+  gpuUtilSum                Float  @default(0)
+  gpuPowerSamples           Int    @default(0)
+  gpuPowerSum               Float  @default(0)
+  cpuUtilSamples            Int    @default(0)
+  cpuUtilSum                Float  @default(0)
+  peakMemoryMax             Float?
   // Extended telemetry aggregation (Sprint 7)
-  cpuFreqSamples         Int   @default(0)
-  cpuFreqSum             Float @default(0)
-  ffmpegCpuUtilSamples   Int   @default(0)
-  ffmpegCpuUtilSum       Float @default(0)
-  ffmpegReadSamples      Int   @default(0)
-  ffmpegReadSum          Float @default(0)
-  ffmpegWriteSamples     Int   @default(0)
-  ffmpegWriteSum         Float @default(0)
-  ffmpegCpuTimeSamples   Int   @default(0)
-  ffmpegCpuTimeSum       Float @default(0)
-  batteryStartSamples    Int   @default(0)
-  batteryStartSum        Float @default(0)
-  batteryEndSamples      Int   @default(0)
-  batteryEndSum          Float @default(0)
-  batteryDropSamples     Int   @default(0)
-  batteryDropSum         Float @default(0)
-  sampleCountSamples     Int   @default(0)
-  sampleCountSum         Float @default(0)
-  monitorDurationSamples Int   @default(0)
-  monitorDurationSum     Float @default(0)
-  cpuSampleCountSamples     Int   @default(0)
-  cpuSampleCountSum         Float @default(0)
-  gpuSampleCountSamples     Int   @default(0)
-  gpuSampleCountSum         Float @default(0)
-  ffmpegSampleCountSamples  Int   @default(0)
-  ffmpegSampleCountSum      Float @default(0)
-  batterySampleCountSamples Int   @default(0)
-  batterySampleCountSum     Float @default(0)
+  cpuFreqSamples            Int    @default(0)
+  cpuFreqSum                Float  @default(0)
+  ffmpegCpuUtilSamples      Int    @default(0)
+  ffmpegCpuUtilSum          Float  @default(0)
+  ffmpegReadSamples         Int    @default(0)
+  ffmpegReadSum             Float  @default(0)
+  ffmpegWriteSamples        Int    @default(0)
+  ffmpegWriteSum            Float  @default(0)
+  ffmpegCpuTimeSamples      Int    @default(0)
+  ffmpegCpuTimeSum          Float  @default(0)
+  batteryStartSamples       Int    @default(0)
+  batteryStartSum           Float  @default(0)
+  batteryEndSamples         Int    @default(0)
+  batteryEndSum             Float  @default(0)
+  batteryDropSamples        Int    @default(0)
+  batteryDropSum            Float  @default(0)
+  sampleCountSamples        Int    @default(0)
+  sampleCountSum            Float  @default(0)
+  monitorDurationSamples    Int    @default(0)
+  monitorDurationSum        Float  @default(0)
+  cpuSampleCountSamples     Int    @default(0)
+  cpuSampleCountSum         Float  @default(0)
+  gpuSampleCountSamples     Int    @default(0)
+  gpuSampleCountSum         Float  @default(0)
+  ffmpegSampleCountSamples  Int    @default(0)
+  ffmpegSampleCountSum      Float  @default(0)
+  batterySampleCountSamples Int    @default(0)
+  batterySampleCountSum     Float  @default(0)
 
   // Submission metadata
-  status         String   @default("pending") // pending | accepted | rejected
-  ffmpegVersion  String?
-  encoderName    String?
-  clientVersion  String?
-  inputHash      String?
-  runMs          Int?
+  status                   String  @default("pending") // pending | accepted | rejected
+  ffmpegVersion            String?
+  encoderName              String?
+  clientVersion            String?
+  inputHash                String?
+  runMs                    Int?
+  scoreFormulaVersion      String?
+  benchmarkProtocolVersion String?
+  sourceSuiteVersion       String?
+  workloadId               String?
+  metricModelId            String?
 
   // Idempotency and deduplication
-  payloadHash    String?  @unique
+  payloadHash String? @unique
 
+  @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes, workloadId])
   @@index([createdAt])
   @@index([status])
   @@index([codec])
@@ -137,83 +153,92 @@ model Benchmark {
   @@index([resolution])
   @@index([contentClass, resolution])
   @@index([inputHash])
+  @@index([workloadId])
   @@index([codec, preset])
   @@index([status, createdAt])
   @@index([cpuModel])
   @@index([gpuModel])
-  @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])
 }
 
 model Submission {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Hardware info
-  cpuModel       String
-  gpuModel       String   @default("")
-  ramGB          Int
-  os             String
+  cpuModel String
+  gpuModel String @default("")
+  ramGB    Int
+  os       String
 
   // Test parameters
-  codec          String
-  preset         String
-  crf            Int      @default(24)
-  contentClass   String   @default("mixed")
-  resolution     String   @default("1080p")
-  passes         Int      @default(1)
+  codec        String
+  preset       String
+  crf          Int    @default(24)
+  contentClass String @default("mixed")
+  resolution   String @default("1080p")
+  passes       Int    @default(1)
 
   // Results
-  fps            Float
-  vmaf           Float?
-  ssim           Float?
-  psnr           Float?
-  fileSizeBytes  Int
-  notes          String?
+  fps                   Float
+  vmaf                  Float?
+  vmafP5                Float?
+  ssim                  Float?
+  psnr                  Float?
+  fileSizeBytes         Int
+  videoBitrateBps       Float?
+  sourceFps             Float?
+  sourceDurationSeconds Float?
+  notes                 String?
 
   // Hardware metrics (Sprint 6)
-  gpuUtilAvg      Float?
-  gpuPowerAvgW    Float?
-  gpuMemPeakMB    Float?
-  cpuUtilAvg      Float?
-  cpuUtilMax      Float?
-  peakMemoryMB    Float?
-  thermalThrottle Boolean?
+  gpuUtilAvg          Float?
+  gpuPowerAvgW        Float?
+  gpuMemPeakMB        Float?
+  cpuUtilAvg          Float?
+  cpuUtilMax          Float?
+  peakMemoryMB        Float?
+  thermalThrottle     Boolean?
   // Extended telemetry (Sprint 7)
-  gpuTempMaxC        Float?
-  cpuFreqAvgMHz      Float?
-  cpuTempMaxC        Float?
-  ffmpegCpuUtilAvg   Float?
-  ffmpegCpuUtilMax   Float?
-  ffmpegReadMB       Float?
-  ffmpegWriteMB      Float?
-  ffmpegCpuTimeS     Float?
+  gpuTempMaxC         Float?
+  cpuFreqAvgMHz       Float?
+  cpuTempMaxC         Float?
+  ffmpegCpuUtilAvg    Float?
+  ffmpegCpuUtilMax    Float?
+  ffmpegReadMB        Float?
+  ffmpegWriteMB       Float?
+  ffmpegCpuTimeS      Float?
   batteryPercentStart Float?
   batteryPercentEnd   Float?
   batteryPercentDrop  Float?
-  powerSource        String?
-  sampleCount        Int?
-  monitorDurationMs  Int?
-  cpuSampleCount     Int?
-  gpuSampleCount     Int?
-  ffmpegSampleCount  Int?
-  batterySampleCount Int?
-  telemetrySources   String?
-  telemetryMissing   String?
+  powerSource         String?
+  sampleCount         Int?
+  monitorDurationMs   Int?
+  cpuSampleCount      Int?
+  gpuSampleCount      Int?
+  ffmpegSampleCount   Int?
+  batterySampleCount  Int?
+  telemetrySources    String?
+  telemetryMissing    String?
 
   // Submission metadata
-  ffmpegVersion  String?
-  encoderName    String?
-  clientVersion  String?
-  inputHash      String?
-  runMs          Int?
+  ffmpegVersion            String?
+  encoderName              String?
+  clientVersion            String?
+  inputHash                String?
+  runMs                    Int?
+  scoreFormulaVersion      String?
+  benchmarkProtocolVersion String?
+  sourceSuiteVersion       String?
+  workloadId               String?
+  metricModelId            String?
 
   // Quality evaluation
-  status         String   @default("pending") // pending | accepted | rejected | suspect
-  qualityScore   Float?
+  status       String @default("pending") // pending | accepted | rejected | suspect
+  qualityScore Float?
 
   // Idempotency and deduplication
-  payloadHash    String?  @unique
+  payloadHash String? @unique
 
   @@index([createdAt])
   @@index([status])
@@ -221,6 +246,7 @@ model Submission {
   @@index([preset])
   @@index([contentClass])
   @@index([resolution])
+  @@index([workloadId])
   @@index([contentClass, resolution])
   @@index([codec, preset])
   @@index([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])

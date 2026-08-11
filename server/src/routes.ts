@@ -41,15 +41,24 @@ const benchmarkSchema = z.object({
   passes: z.coerce.number().int().min(1).max(1).optional().nullable(),
   fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
+  vmafP5: z.coerce.number().min(0).max(100).optional().nullable(),
   ssim: z.coerce.number().min(0).max(1).optional().nullable(),
   psnr: z.coerce.number().min(0).max(100).optional().nullable(),
   fileSizeBytes: z.coerce.number().int().nonnegative().max(1_000 * 1024 * 1024),
+  videoBitrateBps: z.coerce.number().positive().max(10_000_000_000).optional().nullable(),
+  sourceFps: z.coerce.number().positive().max(1000).optional().nullable(),
+  sourceDurationSeconds: z.coerce.number().positive().max(24 * 60 * 60).optional().nullable(),
   notes: z.string().max(4000).optional().nullable(),
   ffmpegVersion: z.string().max(200).optional().nullable(),
   encoderName: z.string().max(100).optional().nullable(),
   clientVersion: z.string().max(100).optional().nullable(),
   inputHash: z.string().length(64).regex(/^[0-9a-f]+$/).optional().nullable(),
   runMs: z.coerce.number().int().nonnegative().max(24 * 60 * 60 * 1000).optional().nullable(),
+  scoreFormulaVersion: z.literal('7.0').optional().nullable(),
+  benchmarkProtocolVersion: z.string().max(32).optional().nullable(),
+  sourceSuiteVersion: z.string().max(100).optional().nullable(),
+  workloadId: z.string().max(100).optional().nullable(),
+  metricModelId: z.string().max(200).optional().nullable(),
   // Hardware metrics (Sprint 6)
   gpuUtilAvg: z.coerce.number().min(0).max(100).optional().nullable(),
   gpuPowerAvgW: z.coerce.number().min(0).max(1000).optional().nullable(),
@@ -79,7 +88,18 @@ const benchmarkSchema = z.object({
   batterySampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
   telemetrySources: z.string().max(400).optional().nullable(),
   telemetryMissing: z.string().max(400).optional().nullable(),
-}).strict();
+}).strict().superRefine((data, ctx) => {
+  if (data.scoreFormulaVersion !== '7.0') return;
+  const required: Array<keyof typeof data> = [
+    'vmaf', 'vmafP5', 'videoBitrateBps', 'sourceFps', 'sourceDurationSeconds',
+    'benchmarkProtocolVersion', 'sourceSuiteVersion', 'workloadId', 'metricModelId',
+  ];
+  for (const field of required) {
+    if (data[field] == null || data[field] === '') {
+      ctx.addIssue({ code: 'custom', path: [field], message: `PL Score v7 requires ${field}` });
+    }
+  }
+});
 
 const CPU_FREQ_MIN_MHZ = 100;
 const CPU_FREQ_MAX_MHZ = 10_000;
@@ -132,15 +152,24 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
     passes: 1,
     fps: Number(data.fps),
     vmaf: data.vmaf ?? null,
+    vmafP5: data.vmafP5 ?? null,
     ssim: data.ssim ?? null,
     psnr: data.psnr ?? null,
     fileSizeBytes: Number(data.fileSizeBytes),
+    videoBitrateBps: data.videoBitrateBps ?? null,
+    sourceFps: data.sourceFps ?? null,
+    sourceDurationSeconds: data.sourceDurationSeconds ?? null,
     notes: data.notes ?? null,
     ffmpegVersion: data.ffmpegVersion ?? null,
     encoderName: data.encoderName ?? null,
     clientVersion: data.clientVersion ?? null,
     inputHash: data.inputHash ?? null,
     runMs: data.runMs ?? null,
+    scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+    benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+    sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+    workloadId: data.workloadId ?? null,
+    metricModelId: data.metricModelId ?? null,
     gpuUtilAvg: data.gpuUtilAvg ?? null,
     gpuPowerAvgW: data.gpuPowerAvgW ?? null,
     gpuMemPeakMB: data.gpuMemPeakMB ?? null,
@@ -342,7 +371,7 @@ const CANONICAL_INPUT_HASHES = new Set<string>([
 
 type AggregateKeySource = Pick<
   Prisma.SubmissionGetPayload<Record<string, never>>,
-  'cpuModel' | 'gpuModel' | 'ramGB' | 'os' | 'codec' | 'preset' | 'crf' | 'contentClass' | 'resolution' | 'passes'
+  'cpuModel' | 'gpuModel' | 'ramGB' | 'os' | 'codec' | 'preset' | 'crf' | 'contentClass' | 'resolution' | 'passes' | 'workloadId'
 >;
 
 export function benchmarkWhereFromSubmission(submission: AggregateKeySource): Prisma.BenchmarkWhereInput {
@@ -357,6 +386,7 @@ export function benchmarkWhereFromSubmission(submission: AggregateKeySource): Pr
     contentClass: submission.contentClass,
     resolution: submission.resolution,
     passes: submission.passes,
+    workloadId: submission.workloadId ?? null,
   };
 }
 
@@ -432,6 +462,7 @@ router.post('/submit', async (req, res) => {
       contentClass: contentClassValue,
       resolution: resolutionValue,
       passes: passesValue,
+      workloadId: data.workloadId ?? null,
     };
 
     // Compute robust Z-scores via PostgreSQL (S-06): median + MAD in a single query
@@ -459,6 +490,7 @@ router.post('/submit', async (req, res) => {
             AND "contentClass" = ${key.contentClass}
             AND "resolution" = ${key.resolution}
             AND "passes" = ${key.passes}
+            AND "workloadId" IS NOT DISTINCT FROM ${key.workloadId}
           ORDER BY "createdAt" DESC
           LIMIT 200
         )
@@ -546,15 +578,24 @@ router.post('/submit', async (req, res) => {
           passes: passesValue,
           fps: Number(data.fps),
           vmaf: data.vmaf == null ? null : Number(data.vmaf),
+          vmafP5: data.vmafP5 == null ? null : Number(data.vmafP5),
           ssim: data.ssim == null ? null : Number(data.ssim),
           psnr: data.psnr == null ? null : Number(data.psnr),
           fileSizeBytes: Number(data.fileSizeBytes),
+          videoBitrateBps: data.videoBitrateBps == null ? null : Number(data.videoBitrateBps),
+          sourceFps: data.sourceFps == null ? null : Number(data.sourceFps),
+          sourceDurationSeconds: data.sourceDurationSeconds == null ? null : Number(data.sourceDurationSeconds),
           notes: data.notes || null,
           ffmpegVersion: data.ffmpegVersion || null,
           encoderName: data.encoderName || null,
           clientVersion: data.clientVersion || null,
           inputHash: data.inputHash || null,
           runMs: data.runMs != null ? Number(data.runMs) : null,
+          scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+          benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+          sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+          workloadId: data.workloadId ?? null,
+          metricModelId: data.metricModelId ?? null,
           gpuUtilAvg: data.gpuUtilAvg != null ? Number(data.gpuUtilAvg) : null,
           gpuPowerAvgW: data.gpuPowerAvgW != null ? Number(data.gpuPowerAvgW) : null,
           gpuMemPeakMB: data.gpuMemPeakMB != null ? Number(data.gpuMemPeakMB) : null,
@@ -597,11 +638,17 @@ router.post('/submit', async (req, res) => {
         // For new benchmarks, only count as sample if accepted
         const initialSamples = status === 'accepted' ? 1 : 0;
         const initialVmafSamples = (status === 'accepted' && data.vmaf != null) ? 1 : 0;
+        const initialVmafP5Samples = (status === 'accepted' && data.vmafP5 != null) ? 1 : 0;
+        const initialVideoBitrateSamples = (status === 'accepted' && data.videoBitrateBps != null) ? 1 : 0;
+        const initialSourceFpsSamples = (status === 'accepted' && data.sourceFps != null) ? 1 : 0;
         const initialSsimSamples = (status === 'accepted' && data.ssim != null) ? 1 : 0;
         const initialPsnrSamples = (status === 'accepted' && data.psnr != null) ? 1 : 0;
         const initialFpsSum = status === 'accepted' ? Number(data.fps) : 0;
         const initialFileSizeSum = status === 'accepted' ? Number(data.fileSizeBytes) : 0;
         const initialVmafSum = (status === 'accepted' && data.vmaf != null) ? Number(data.vmaf) : 0;
+        const initialVmafP5Sum = (status === 'accepted' && data.vmafP5 != null) ? Number(data.vmafP5) : 0;
+        const initialVideoBitrateSum = (status === 'accepted' && data.videoBitrateBps != null) ? Number(data.videoBitrateBps) : 0;
+        const initialSourceFpsSum = (status === 'accepted' && data.sourceFps != null) ? Number(data.sourceFps) : 0;
         const initialSsimSum = (status === 'accepted' && data.ssim != null) ? Number(data.ssim) : 0;
         const initialPsnrSum = (status === 'accepted' && data.psnr != null) ? Number(data.psnr) : 0;
         const initialGpuUtilSamples = (status === 'accepted' && data.gpuUtilAvg != null) ? 1 : 0;
@@ -653,9 +700,13 @@ router.post('/submit', async (req, res) => {
             passes: key.passes,
             fps: data.fps,
             vmaf: data.vmaf ?? null,
+            vmafP5: data.vmafP5 ?? null,
             ssim: data.ssim ?? null,
             psnr: data.psnr ?? null,
             fileSizeBytes: data.fileSizeBytes,
+            videoBitrateBps: data.videoBitrateBps ?? null,
+            sourceFps: data.sourceFps ?? null,
+            sourceDurationSeconds: data.sourceDurationSeconds ?? null,
           notes: data.notes || null,
           gpuUtilAvg: data.gpuUtilAvg != null ? Number(data.gpuUtilAvg) : null,
           gpuPowerAvgW: data.gpuPowerAvgW != null ? Number(data.gpuPowerAvgW) : null,
@@ -688,6 +739,11 @@ router.post('/submit', async (req, res) => {
           clientVersion: data.clientVersion || null,
             inputHash: data.inputHash || null,
             runMs: data.runMs != null ? Number(data.runMs) : null,
+            scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+            benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+            sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+            workloadId: data.workloadId ?? null,
+            metricModelId: data.metricModelId ?? null,
             payloadHash,
             samples: initialSamples,
             vmafSamples: initialVmafSamples,
@@ -696,6 +752,12 @@ router.post('/submit', async (req, res) => {
             fpsSum: initialFpsSum,
             fileSizeSum: initialFileSizeSum,
             vmafSum: initialVmafSum,
+            vmafP5Samples: initialVmafP5Samples,
+            vmafP5Sum: initialVmafP5Sum,
+            videoBitrateSamples: initialVideoBitrateSamples,
+            videoBitrateSum: initialVideoBitrateSum,
+            sourceFpsSamples: initialSourceFpsSamples,
+            sourceFpsSum: initialSourceFpsSum,
             ssimSum: initialSsimSum,
             psnrSum: initialPsnrSum,
             gpuUtilSamples: initialGpuUtilSamples,
@@ -752,6 +814,12 @@ router.post('/submit', async (req, res) => {
       const sizeVal = Number(data.fileSizeBytes);
       const hasVmaf = data.vmaf != null;
       const vmafVal = hasVmaf ? Number(data.vmaf) : 0;
+      const hasVmafP5 = data.vmafP5 != null;
+      const vmafP5Val = hasVmafP5 ? Number(data.vmafP5) : 0;
+      const hasVideoBitrate = data.videoBitrateBps != null;
+      const videoBitrateVal = hasVideoBitrate ? Number(data.videoBitrateBps) : 0;
+      const hasSourceFps = data.sourceFps != null;
+      const sourceFpsVal = hasSourceFps ? Number(data.sourceFps) : 0;
       const hasSsim = data.ssim != null;
       const ssimVal = hasSsim ? Number(data.ssim) : 0;
       const hasPsnr = data.psnr != null;
@@ -808,6 +876,12 @@ router.post('/submit', async (req, res) => {
             "fileSizeSum" = "fileSizeSum" + ${sizeVal}::double precision,
             "vmafSamples" = "vmafSamples" + ${hasVmaf ? 1 : 0},
             "vmafSum" = "vmafSum" + ${vmafVal}::double precision,
+            "vmafP5Samples" = "vmafP5Samples" + ${hasVmafP5 ? 1 : 0},
+            "vmafP5Sum" = "vmafP5Sum" + ${vmafP5Val}::double precision,
+            "videoBitrateSamples" = "videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0},
+            "videoBitrateSum" = "videoBitrateSum" + ${videoBitrateVal}::double precision,
+            "sourceFpsSamples" = "sourceFpsSamples" + ${hasSourceFps ? 1 : 0},
+            "sourceFpsSum" = "sourceFpsSum" + ${sourceFpsVal}::double precision,
             "ssimSamples" = "ssimSamples" + ${hasSsim ? 1 : 0},
             "ssimSum" = "ssimSum" + ${ssimVal}::double precision,
             "psnrSamples" = "psnrSamples" + ${hasPsnr ? 1 : 0},
@@ -858,6 +932,26 @@ router.post('/submit', async (req, res) => {
               THEN ("vmafSum" + ${vmafVal}::double precision) / ("vmafSamples" + ${hasVmaf ? 1 : 0})
               ELSE "vmaf"
             END,
+            "vmafP5" = CASE
+              WHEN "vmafP5Samples" + ${hasVmafP5 ? 1 : 0} > 0
+              THEN ("vmafP5Sum" + ${vmafP5Val}::double precision) / ("vmafP5Samples" + ${hasVmafP5 ? 1 : 0})
+              ELSE "vmafP5"
+            END,
+            "videoBitrateBps" = CASE
+              WHEN "videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0} > 0
+              THEN ("videoBitrateSum" + ${videoBitrateVal}::double precision) / ("videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0})
+              ELSE "videoBitrateBps"
+            END,
+            "sourceFps" = CASE
+              WHEN "sourceFpsSamples" + ${hasSourceFps ? 1 : 0} > 0
+              THEN ("sourceFpsSum" + ${sourceFpsVal}::double precision) / ("sourceFpsSamples" + ${hasSourceFps ? 1 : 0})
+              ELSE "sourceFps"
+            END,
+            "scoreFormulaVersion" = COALESCE(${data.scoreFormulaVersion ?? null}, "scoreFormulaVersion"),
+            "benchmarkProtocolVersion" = COALESCE(${data.benchmarkProtocolVersion ?? null}, "benchmarkProtocolVersion"),
+            "sourceSuiteVersion" = COALESCE(${data.sourceSuiteVersion ?? null}, "sourceSuiteVersion"),
+            "workloadId" = COALESCE(${data.workloadId ?? null}, "workloadId"),
+            "metricModelId" = COALESCE(${data.metricModelId ?? null}, "metricModelId"),
             "ssim" = CASE
               WHEN "ssimSamples" + ${hasSsim ? 1 : 0} > 0
               THEN ("ssimSum" + ${ssimVal}::double precision) / ("ssimSamples" + ${hasSsim ? 1 : 0})

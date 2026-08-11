@@ -40,7 +40,7 @@ from .ffmpeg import (
     EXTENDED_TELEMETRY_KEYS,
     RAW_TELEMETRY_KEYS,
     run_single_benchmark, sha256_of_file, verify_sample_video,
-    load_presets_config, get_default_sample_path,
+    load_presets_config, get_default_sample_path, probe_video_stream_metrics,
 )
 from .network import fetch_baseline_rows
 from .spool import count_pending_entries, replay_spool, spool_payload, submit_spooled_path
@@ -53,7 +53,7 @@ from .ui import (
     print_info, print_success, print_warning, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.1.1"
+CLIENT_VERSION = "client/0.2.0"
 
 
 def _resolve_input_for_task(
@@ -80,12 +80,40 @@ def _infer_encoder_family(encoder: str) -> Optional[str]:
 def _emit_event(event_sink: Optional[Callable[[Dict[str, Any]], None]], event_type: str, **payload: Any) -> None:
     if event_sink is None:
         return
-    event = {"type": event_type, "ts": time.time()}
+    event = {"type": event_type, "ts": time.time(), "monotonicNs": time.perf_counter_ns()}
     event.update(payload)
     try:
         event_sink(event)
     except Exception:
         pass
+
+
+def _filter_canonical_encoders(encoders: List[str]) -> List[str]:
+    filtered: List[str] = []
+    for encoder in encoders:
+        if not is_hardware_encoder_name(encoder) or is_hardware_encoder_usable(encoder):
+            filtered.append(encoder)
+    return filtered
+
+
+def _apply_v7_score_contract(payload: Dict[str, Any]) -> None:
+    required_fields = (
+        payload.get("vmaf") is not None,
+        payload.get("vmafP5") is not None,
+        payload.get("videoBitrateBps") is not None,
+        payload.get("sourceFps") is not None,
+        payload.get("sourceDurationSeconds") is not None,
+        bool(payload.get("benchmarkProtocolVersion")),
+        bool(payload.get("sourceSuiteVersion")),
+        bool(payload.get("workloadId")),
+        bool(payload.get("metricModelId")),
+    )
+    if all(required_fields):
+        payload["scoreFormulaVersion"] = config.SCORE_FORMULA_VERSION
+        payload["scoreEligibilityNote"] = "Content-specific quick test; eligible for PL v7 benchmark scoring, not General PL."
+        return
+    payload.pop("scoreFormulaVersion", None)
+    payload["scoreEligibilityNote"] = "Content-specific quick test only; not score-eligible for PL v7 canonical scoring and never General PL."
 
 
 def _is_cancelled(cancel_event: Optional[Any]) -> bool:
@@ -289,7 +317,7 @@ def run_benchmark_batch(
     chunk_size = max(1, workers)
     total_tasks = len(tasks)
     total_batches = (total_tasks + chunk_size - 1) // chunk_size if total_tasks > 0 else 0
-    run_started_at = time.time()
+    run_started_at = time.perf_counter()
     use_token = _should_use_submit_token(args)
     baseline_rows: List[Dict[str, Any]] = []
     queued_count = count_pending_entries(args.queue_dir)
@@ -400,6 +428,7 @@ def run_benchmark_batch(
                         info['task'] = t
                         info['_input_hash'] = input_hash
                         info['_effective_input'] = effective_input
+                        info['_source_probe'] = probe_video_stream_metrics(effective_input)
                         final_encoder = str(info.get('encoderUsed') or enc)
                         final_preset = str(info.get('presetUsed') or preset)
                         progress.set_current_test(
@@ -513,11 +542,32 @@ def run_benchmark_batch(
                             'encoderName': info.get('encoderUsed') or t['encoder'],
                             'clientVersion': client_version,
                             'inputHash': input_hash,
+                            'benchmarkProtocolVersion': config.BENCHMARK_PROTOCOL_VERSION,
+                            'sourceSuiteVersion': config.SOURCE_SUITE_VERSION,
+                            'workloadId': config.WORKLOAD_ID,
                         }
+                        source_probe = info.get('_source_probe', {})
+                        if isinstance(source_probe, dict) and source_probe.get('sourceFps') is not None:
+                            payload['sourceFps'] = float(source_probe['sourceFps'])
+                        if isinstance(source_probe, dict) and source_probe.get('sourceDurationSeconds') is not None:
+                            payload['sourceDurationSeconds'] = float(source_probe['sourceDurationSeconds'])
+                        artifact_probe = probe_video_stream_metrics(str(info['artifactPath']))
+                        if artifact_probe.get('videoBitrateBps') is not None:
+                            payload['videoBitrateBps'] = float(artifact_probe['videoBitrateBps'])
                         artifact_metrics = info.get('_metrics', {})
                         vmaf_score = artifact_metrics.get('vmaf')
                         if vmaf_score is not None:
                             payload['vmaf'] = float(vmaf_score)
+                        vmaf_mean = artifact_metrics.get('vmafMean')
+                        if vmaf_mean is not None:
+                            payload['vmafMean'] = float(vmaf_mean)
+                        vmaf_p5 = artifact_metrics.get('vmafP5')
+                        if vmaf_p5 is not None:
+                            payload['vmafP5'] = float(vmaf_p5)
+                        metric_model_id = artifact_metrics.get('metricModelId')
+                        if metric_model_id:
+                            payload['metricModelId'] = str(metric_model_id)
+                        _apply_v7_score_contract(payload)
                         ssim_score = artifact_metrics.get('ssim')
                         if ssim_score is not None:
                             payload['ssim'] = float(ssim_score)
@@ -580,6 +630,8 @@ def run_benchmark_batch(
                             )
                             _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="skipped", reason=reason)
                         elif args.no_submit:
+                            if payload.get('scoreEligibilityNote'):
+                                print_info(str(payload['scoreEligibilityNote']))
                             progress.set_description(_batch_status("Dry-run", next_index, str(payload['codec']), str(payload['preset'])))
                             progress.update_counters(
                                 submitted=submitted_count, skipped=skipped_count,
@@ -587,6 +639,8 @@ def run_benchmark_batch(
                             )
                             _emit_event(event_sink, "submit_result", index=next_index, total=total_tasks, status="dry_run")
                         else:
+                            if payload.get('scoreEligibilityNote') and not payload.get('scoreFormulaVersion'):
+                                print_warning(str(payload['scoreEligibilityNote']))
                             status = "failed"
                             error_text = ""
                             try:
@@ -647,7 +701,7 @@ def run_benchmark_batch(
         _emit_event(event_sink, "run_interrupted", scope="batch", processed=processed_total, total=total_tasks)
         return 130
 
-    elapsed_seconds = max(0.0, time.time() - run_started_at)
+    elapsed_seconds = max(0.0, time.perf_counter() - run_started_at)
     if not getattr(args, 'no_submit', False):
         queued_count = _replay_pending_uploads(
             queue_dir=args.queue_dir,
@@ -767,26 +821,16 @@ def run_with_args(
     if is_hardware_encoder_name(resolved_encoder) and not is_hardware_encoder_usable(resolved_encoder):
         if explicit_encoder_selection:
             print(
-                f"Selected hardware encoder '{resolved_encoder}' may not be usable on this machine. "
-                "Attempting it anyway; software fallback will be used if needed."
+                f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine.",
+                file=sys.stderr,
             )
         else:
-            fam = _infer_encoder_family(resolved_encoder)
-            sw = pick_software_encoder_for_family(fam) if fam else None
-            if sw and has_encoder(sw):
-                print(
-                    f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine. "
-                    f"Using software encoder '{sw}' instead."
-                )
-                resolved_encoder = sw
-            else:
-                print(
-                    f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine, "
-                    "and no software fallback was found.",
-                    file=sys.stderr,
-                )
-                _emit_event(event_sink, "run_error", scope="single", code=4, message="hardware encoder unusable and no fallback")
-                return 4
+            print(
+                f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine.",
+                file=sys.stderr,
+            )
+        _emit_event(event_sink, "run_error", scope="single", code=4, message="hardware encoder unusable")
+        return 4
 
     hardware = detect_hardware()
     input_hash = sha256_of_file(input_path)
@@ -830,13 +874,13 @@ def run_with_args(
         },
     )
     _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
-    benchmark_start_ts = time.time()
+    benchmark_start_ts = time.perf_counter()
     try:
         original_size_bytes = os.path.getsize(input_path)
     except Exception:
         original_size_bytes = 0
     completed_count = 0
-    with BenchmarkProgress(len(combos), title="Single Benchmark Progress") as progress:
+    with BenchmarkProgress(len(combos), title="Single Benchmark Progress (content-specific quick test)") as progress:
         for task_index, (preset, crf_val) in enumerate(combos, start=1):
             if _is_cancelled(cancel_event):
                 _emit_event(event_sink, "run_interrupted", scope="single", completed=completed_count, total=len(combos))
@@ -859,6 +903,10 @@ def run_with_args(
             payload["clientVersion"] = client_version
             payload["inputHash"] = input_hash
             payload["passes"] = 1
+            payload["benchmarkProtocolVersion"] = config.BENCHMARK_PROTOCOL_VERSION
+            payload["sourceSuiteVersion"] = config.SOURCE_SUITE_VERSION
+            payload["workloadId"] = config.WORKLOAD_ID
+            _apply_v7_score_contract(payload)
             effective_preset = str(payload.get("preset") or preset)
 
             size_val = payload.get("fileSizeBytes")
@@ -867,6 +915,8 @@ def run_with_args(
             except Exception:
                 rel_size = None
             print_benchmark_result(payload, rel_size)
+            if payload.get("scoreEligibilityNote"):
+                print_info(str(payload["scoreEligibilityNote"]))
             _emit_event(
                 event_sink,
                 "encode_done",
@@ -981,7 +1031,7 @@ def run_with_args(
         scope="single",
         completed=completed_count,
         total=len(combos),
-        elapsedSeconds=max(0.0, time.time() - benchmark_start_ts),
+        elapsedSeconds=max(0.0, time.perf_counter() - benchmark_start_ts),
     )
     return 0
 
@@ -1018,7 +1068,7 @@ def run_batch_mode(
     show_end_screen: bool = True,
 ) -> int:
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
-    encoders = list_all_available_encoders()
+    encoders = _filter_canonical_encoders(list_all_available_encoders())
     if not encoders:
         print("No available encoders found in this ffmpeg build.", file=sys.stderr)
         return 4
@@ -1032,7 +1082,7 @@ def run_batch_mode(
         default_crf=int(base_args.crf) if isinstance(base_args.crf, int) else 24,
     )
     config._BATCH_ACTIVE = True
-    config._BATCH_START_TS = time.time()
+    config._BATCH_START_TS = time.perf_counter()
     config._BATCH_COMPLETED_COUNT = 0
     try:
         rc = run_benchmark_batch(
@@ -1053,7 +1103,7 @@ def run_batch_mode(
             event_sink=event_sink,
             cancel_event=cancel_event,
         )
-        elapsed_sec = max(0.0, time.time() - config._BATCH_START_TS)
+        elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
         if show_end_screen:
             _clear_screen()
             print_end_screen(config._BATCH_COMPLETED_COUNT, elapsed_sec)
@@ -1095,7 +1145,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
     f_hours = estimates["fullHours"]
     print_info("Select an option:")
     menu = [
-        "Run Single Benchmark",
+        "Run Single Benchmark [content-specific quick test, not General PL]",
         f"Run Small Benchmark [~{s_minutes} minutes]",
         f"Run Medium Benchmark [~{m_hours} hours] (Recommended)",
         f"Run Full Benchmark [~{f_hours} hours] (Not recommended for most machines, intended for servers)",
@@ -1114,7 +1164,7 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         sw_set = set([enc for _family, lst in SOFTWARE_ENCODERS_ORDER.items() for enc in lst])
         hw_set = set([enc for _family, lst in HARDWARE_ENCODERS.items() for enc, _ in lst])
         sw_encs = [e for e in all_encs if e in sw_set]
-        hw_encs = [e for e in all_encs if e in hw_set]
+        hw_encs = [e for e in all_encs if e in hw_set and is_hardware_encoder_usable(e)]
 
         print_info("Select an encoder:")
         idx_map: List[str] = []

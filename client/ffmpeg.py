@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import re
 import subprocess
@@ -11,8 +12,7 @@ from typing import Optional, Dict, Any, List
 
 from . import config
 from .encoders import (
-    effective_preset_for_encoder, map_preset_for_encoder, pick_software_encoder_for_family,
-    has_encoder,
+    effective_preset_for_encoder, map_preset_for_encoder,
 )
 from .hardware_monitor import HardwareMonitor
 
@@ -29,6 +29,7 @@ _FALLBACK_TELEMETRY_KEYS: tuple = (
     'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
     'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
 ) + EXTENDED_TELEMETRY_KEYS
+_VIDEO_PROBE_CACHE: Dict[str, Dict[str, Optional[float]]] = {}
 
 
 def _videotoolbox_target_bitrate(encoder: str, crf: Optional[int]) -> str:
@@ -59,7 +60,8 @@ def _videotoolbox_target_bitrate(encoder: str, crf: Optional[int]) -> str:
 
 def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, preset_name: str, crf: Optional[int] = None) -> List[str]:
     cmd: List[str] = [
-        config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error", "-nostdin",
+        config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error", "-nostdin", "-nostats",
+        "-progress", "pipe:1",
         "-i", input_path,
         "-c:v", encoder,
     ]
@@ -79,8 +81,6 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
         elif e.endswith("_videotoolbox"):
             # VideoToolbox reliability is significantly better with explicit bitrate.
             cmd += ["-b:v", _videotoolbox_target_bitrate(e, crf)]
-    if encoder.endswith(("_nvenc", "_qsv", "_amf", "_videotoolbox", "_vaapi")):
-        cmd += ["-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-pix_fmt", "yuv420p"]
     e = encoder.strip().lower()
     if e == "h264_videotoolbox":
         if crf is None:
@@ -97,9 +97,9 @@ def build_ffmpeg_encode_cmd(*, input_path: str, output_path: str, encoder: str, 
     return cmd
 
 
-def _parse_frame_count_from_stderr(stderr: str) -> int:
-    """Extract the last frame= value from FFmpeg's stderr progress output."""
-    matches = re.findall(r'frame=\s*(\d+)', stderr or '')
+def _parse_frame_count(progress_output: str) -> int:
+    """Extract the last frame= value from FFmpeg progress output."""
+    matches = re.findall(r'frame=\s*(\d+)', progress_output or '')
     if matches:
         try:
             return int(matches[-1])
@@ -112,15 +112,11 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "out.mp4")
         cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset, crf=crf)
-        # Use -loglevel info to get frame= progress lines in stderr
-        if "-loglevel" in cmd:
-            idx = cmd.index("-loglevel")
-            cmd[idx + 1] = "info"
-        start = time.time()
+        start = time.perf_counter()
         proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        end = time.time()
+        end = time.perf_counter()
         elapsed = max(0.0001, end - start)
-        total_frames = _parse_frame_count_from_stderr(proc.stderr)
+        total_frames = _parse_frame_count(proc.stdout) or _parse_frame_count(proc.stderr)
         fps = (total_frames / elapsed) if total_frames > 0 else 0.0
         size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
         result: Dict[str, Any] = {"fps": fps, "fileSizeBytes": size, "_encode_rc": proc.returncode, "elapsedMs": int(round(elapsed * 1000))}
@@ -132,43 +128,155 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
         return result
 
 
-def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
-    filter_candidates: List[str] = []
-    filter_candidates.append("libvmaf=model=version=vmaf_v0.6.1:log_fmt=json:log_path=-")
-    filter_candidates.append("libvmaf=log_fmt=json:log_path=-")
-    common_paths = [
-        "/opt/homebrew/opt/libvmaf/share/model/vmaf_v0.6.1.json",
-        "/usr/local/opt/libvmaf/share/model/vmaf_v0.6.1.json",
-        "/usr/local/share/model/vmaf_v0.6.1.json",
-        "/usr/share/model/vmaf_v0.6.1.json",
-    ]
-    for p in common_paths:
-        if os.path.exists(p):
-            filter_candidates.append(f"libvmaf=model_path={p}:log_fmt=json:log_path=-")
+def _extract_json_blob(text: str) -> Optional[str]:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    return text[start:end + 1]
 
-    for filt in filter_candidates:
+
+def _safe_float(value: Any) -> Optional[float]:
+    try:
+        number = float(value)
+    except Exception:
+        return None
+    if not math.isfinite(number):
+        return None
+    return number
+
+
+def _percentile(values: List[float], q: float) -> Optional[float]:
+    if not values:
+        return None
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    rank = max(0.0, min(1.0, q)) * (len(ordered) - 1)
+    lower = int(math.floor(rank))
+    upper = int(math.ceil(rank))
+    if lower == upper:
+        return ordered[lower]
+    weight = rank - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * weight
+
+
+def _parse_vmaf_report(report_text: str, *, model_id: str) -> Optional[Dict[str, Any]]:
+    json_blob = _extract_json_blob(report_text or "")
+    if json_blob:
+        try:
+            payload = json.loads(json_blob)
+        except Exception:
+            payload = None
+        if isinstance(payload, dict):
+            frame_scores: List[float] = []
+            for frame in payload.get("frames", []):
+                if not isinstance(frame, dict):
+                    continue
+                metrics = frame.get("metrics")
+                candidates: List[Any] = []
+                if isinstance(metrics, dict):
+                    candidates.extend([
+                        metrics.get("vmaf"),
+                        metrics.get("vmaf_score"),
+                        metrics.get("VMAF_score"),
+                    ])
+                candidates.extend([frame.get("vmaf"), frame.get("VMAF_score")])
+                for candidate in candidates:
+                    score = _safe_float(candidate)
+                    if score is not None:
+                        frame_scores.append(score)
+                        break
+
+            pooled = payload.get("pooled_metrics")
+            mean_score: Optional[float] = None
+            if isinstance(pooled, dict):
+                for key in ("vmaf", "VMAF_score"):
+                    metric_payload = pooled.get(key)
+                    if isinstance(metric_payload, dict):
+                        mean_score = _safe_float(metric_payload.get("mean"))
+                        if mean_score is not None:
+                            break
+            if mean_score is None:
+                aggregate = payload.get("aggregate")
+                if isinstance(aggregate, dict):
+                    mean_score = _safe_float(aggregate.get("mean"))
+                    if mean_score is None:
+                        vmaf_aggregate = aggregate.get("VMAF_score")
+                        if isinstance(vmaf_aggregate, dict):
+                            mean_score = _safe_float(vmaf_aggregate.get("mean"))
+            if mean_score is None and frame_scores:
+                mean_score = sum(frame_scores) / len(frame_scores)
+            if mean_score is not None:
+                p5_score = _percentile(frame_scores, 0.05) if frame_scores else None
+                return {
+                    "vmaf": float(mean_score),
+                    "vmafMean": float(mean_score),
+                    "vmafP5": float(p5_score) if p5_score is not None else None,
+                    "metricModelId": model_id,
+                    "vmafFrameCount": len(frame_scores),
+                }
+
+    mean_match = re.search(r'"VMAF_score"\s*:\s*([0-9]+(?:\.[0-9]+)?)', report_text or "")
+    if not mean_match:
+        mean_match = re.search(r'"aggregate"[\s\S]*?"mean"\s*:\s*([0-9]+(?:\.[0-9]+)?)', report_text or "")
+    if not mean_match:
+        mean_match = re.search(r'"vmaf"\s*:\s*([0-9]+(?:\.[0-9]+)?)', report_text or "")
+    if not mean_match:
+        mean_match = re.search(r'VMAF\s+score\s*:\s*([0-9]+(?:\.[0-9]+)?)', report_text or "", re.IGNORECASE)
+    if mean_match:
+        mean_score = float(mean_match.group(1))
+        return {
+            "vmaf": mean_score,
+            "vmafMean": mean_score,
+            "vmafP5": None,
+            "metricModelId": model_id,
+            "vmafFrameCount": 0,
+        }
+    return None
+
+
+def _vmaf_filter_candidates() -> List[Dict[str, str]]:
+    candidates: List[Dict[str, str]] = []
+    v1_paths = [
+        "/opt/homebrew/opt/libvmaf/share/libvmaf/model/vmaf_v1.0.16/vmaf_v1.0.16_3d0h.json",
+        "/opt/homebrew/Cellar/libvmaf/3.2.0/share/libvmaf/model/vmaf_v1.0.16/vmaf_v1.0.16_3d0h.json",
+        "/usr/local/opt/libvmaf/share/libvmaf/model/vmaf_v1.0.16/vmaf_v1.0.16_3d0h.json",
+        "/usr/local/share/libvmaf/model/vmaf_v1.0.16/vmaf_v1.0.16_3d0h.json",
+        "/usr/share/libvmaf/model/vmaf_v1.0.16/vmaf_v1.0.16_3d0h.json",
+    ]
+    for model_path in v1_paths:
+        if os.path.exists(model_path):
+            candidates.append({
+                "filter": f"libvmaf=model='path={model_path}':log_fmt=json:log_path=-",
+                "metricModelId": "vmaf-v1-sdr-1080p",
+            })
+    return candidates
+
+
+def compute_vmaf_metrics(input_path: str, encoded_path: str) -> Dict[str, Any]:
+    for candidate in _vmaf_filter_candidates():
         cmd = [
             config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
             "-i", encoded_path,
             "-i", input_path,
-            "-lavfi", filt,
+            "-lavfi", candidate["filter"],
             "-f", "null", "-",
         ]
         try:
             proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-            out = proc.stdout
-            m = re.search(r'"VMAF_score"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
-            if not m:
-                m = re.search(r'"aggregate"[\s\S]*?"mean"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
-            if not m:
-                m = re.search(r'"vmaf"\s*:\s*([0-9]+(?:\.[0-9]+)?)', out)
-            if not m:
-                m = re.search(r'VMAF\s+score\s*:\s*([0-9]+(?:\.[0-9]+)?)', out, re.IGNORECASE)
-            if m:
-                return float(m.group(1))
         except Exception:
             continue
-    return None
+        parsed = _parse_vmaf_report(proc.stdout or "", model_id=candidate["metricModelId"])
+        if parsed:
+            return parsed
+    return {}
+
+
+def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
+    metrics = compute_vmaf_metrics(input_path, encoded_path)
+    score = _safe_float(metrics.get("vmaf"))
+    return float(score) if score is not None else None
 
 
 def compute_ssim(input_path: str, encoded_path: str) -> Optional[float]:
@@ -209,19 +317,6 @@ def compute_psnr(input_path: str, encoded_path: str) -> Optional[float]:
             return min(float(val), 100.0)
     except Exception:
         pass
-    return None
-
-
-def _encoder_family_for(encoder: str) -> Optional[str]:
-    e = (encoder or '').lower()
-    if 'h264' in e:
-        return 'h264'
-    if 'hevc' in e or 'h265' in e:
-        return 'hevc'
-    if 'av1' in e:
-        return 'av1'
-    if 'vp9' in e:
-        return 'vp9'
     return None
 
 
@@ -303,9 +398,9 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
         host_gpu_vendors=host_gpu_vendors,
     )
     monitor.start()
-    start = time.time()
+    start = time.perf_counter()
     stdout, stderr = proc.communicate()
-    end = time.time()
+    end = time.perf_counter()
     hw_metrics = monitor.stop()
     elapsed = max(0.0001, end - start)
     return stdout, stderr, proc.returncode, elapsed, hw_metrics
@@ -324,10 +419,6 @@ def encode_to_artifact(
     os.makedirs(out_dir, exist_ok=True)
     artifact_path = os.path.join(out_dir, artifact_name)
     cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=encoder, preset_name=preset, crf=crf)
-    # Use -loglevel info to get frame= progress lines in stderr
-    if "-loglevel" in cmd:
-        idx = cmd.index("-loglevel")
-        cmd[idx + 1] = "info"
     stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
         cmd,
         encoder_name=encoder,
@@ -336,37 +427,15 @@ def encode_to_artifact(
     original_encoder = encoder
     original_preset = preset
     effective_preset = effective_preset_for_encoder(encoder, preset)
-    if (returncode != 0 or not os.path.exists(artifact_path) or os.path.getsize(artifact_path) <= 0):
-        family = _encoder_family_for(encoder)
-        if family:
-            sw = pick_software_encoder_for_family(family)
-            if sw and sw != encoder and has_encoder(sw):
-                try:
-                    print(f"  Hardware encoder '{encoder}' failed, falling back to software encoder '{sw}'...")
-                    cmd_sw = build_ffmpeg_encode_cmd(input_path=input_path, output_path=artifact_path, encoder=sw, preset_name=preset, crf=crf)
-                    effective_preset = effective_preset_for_encoder(sw, preset)
-                    if "-loglevel" in cmd_sw:
-                        idx = cmd_sw.index("-loglevel")
-                        cmd_sw[idx + 1] = "info"
-                    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
-                        cmd_sw,
-                        encoder_name=sw,
-                        host_gpu_vendors=host_gpu_vendors,
-                    )
-                    encoder = sw
-                    if returncode == 0 and os.path.exists(artifact_path) and os.path.getsize(artifact_path) > 0:
-                        print(f"  Software encoder '{sw}' succeeded.")
-                    else:
-                        print(f"  Software encoder '{sw}' also failed.", file=sys.stderr)
-                except Exception as e:
-                    print(f"  Fallback to software encoder failed: {e}", file=sys.stderr)
-    total_frames = _parse_frame_count_from_stderr(stderr)
+    total_frames = _parse_frame_count(stdout) or _parse_frame_count(stderr)
     fps_val = (total_frames / elapsed) if total_frames > 0 else 0.0
     size_val = os.path.getsize(artifact_path) if os.path.exists(artifact_path) else 0
     err_msg: Optional[str] = None
     if returncode != 0 or size_val <= 0 or fps_val <= 0.0:
-        stderr_lines = (stderr or '').splitlines()
-        err_msg = '; '.join([ln.strip() for ln in stderr_lines[-5:]]) if stderr_lines else 'ffmpeg failed'
+        err_lines = (stderr or '').splitlines()
+        if not err_lines:
+            err_lines = (stdout or '').splitlines()
+        err_msg = '; '.join([ln.strip() for ln in err_lines[-5:]]) if err_lines else 'ffmpeg failed'
     result: Dict[str, Any] = {
         'artifactPath': artifact_path,
         'encoderUsed': encoder,
@@ -448,6 +517,72 @@ def encode_to_artifact(
     return result
 
 
+def _parse_ratio(value: Any) -> Optional[float]:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if "/" in text:
+        try:
+            num_text, den_text = text.split("/", 1)
+            numerator = float(num_text)
+            denominator = float(den_text)
+            if denominator == 0:
+                return None
+            return numerator / denominator
+        except Exception:
+            return None
+    return _safe_float(text)
+
+
+def probe_video_stream_metrics(path: str) -> Dict[str, Optional[float]]:
+    resolved = os.path.realpath(path)
+    cached = _VIDEO_PROBE_CACHE.get(resolved)
+    if cached is not None:
+        return dict(cached)
+
+    result: Dict[str, Optional[float]] = {
+        "sourceFps": None,
+        "sourceDurationSeconds": None,
+        "videoBitrateBps": None,
+    }
+    cmd = [
+        config.ffprobe_exe(),
+        "-v", "error",
+        "-select_streams", "v:0",
+        "-show_entries", "stream=avg_frame_rate,bit_rate,duration:format=duration",
+        "-of", "json",
+        path,
+    ]
+    try:
+        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        payload = json.loads(proc.stdout or "{}")
+        if isinstance(payload, dict):
+            streams = payload.get("streams")
+            if isinstance(streams, list) and streams:
+                stream = streams[0] if isinstance(streams[0], dict) else {}
+                if isinstance(stream, dict):
+                    result["sourceFps"] = _parse_ratio(stream.get("avg_frame_rate"))
+                    duration = _safe_float(stream.get("duration"))
+                    if duration is not None and duration > 0:
+                        result["sourceDurationSeconds"] = duration
+                    bitrate = _safe_float(stream.get("bit_rate"))
+                    if bitrate is not None and bitrate > 0:
+                        result["videoBitrateBps"] = bitrate
+            if result["sourceDurationSeconds"] is None:
+                fmt = payload.get("format")
+                if isinstance(fmt, dict):
+                    duration = _safe_float(fmt.get("duration"))
+                    if duration is not None and duration > 0:
+                        result["sourceDurationSeconds"] = duration
+    except Exception:
+        pass
+
+    _VIDEO_PROBE_CACHE[resolved] = dict(result)
+    return result
+
+
 def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -> Dict[str, Optional[float]]:
     results: Dict[str, Optional[float]] = {}
     if not artifacts:
@@ -476,14 +611,17 @@ def compute_vmaf_parallel(input_path: str, artifacts: List[str], workers: int) -
 def compute_metrics_parallel(input_path: str, artifacts: List[str], workers: int, quiet: bool = False) -> Dict[str, Dict[str, Optional[float]]]:
     """Compute VMAF, SSIM, and PSNR for each artifact in parallel.
 
-    Returns {artifact_path: {'vmaf': X, 'ssim': Y, 'psnr': Z}}.
+    Returns {artifact_path: {'vmaf': X, 'vmafMean': X, 'vmafP5': Y, 'metricModelId': Z, 'ssim': A, 'psnr': B}}.
     """
-    results: Dict[str, Dict[str, Optional[float]]] = {ap: {'vmaf': None, 'ssim': None, 'psnr': None} for ap in artifacts}
+    results: Dict[str, Dict[str, Optional[float]]] = {
+        ap: {'vmaf': None, 'vmafMean': None, 'vmafP5': None, 'metricModelId': None, 'ssim': None, 'psnr': None}
+        for ap in artifacts
+    }
     if not artifacts:
         return results
     metric_fns: List[tuple] = []
     for ap in artifacts:
-        metric_fns.append((ap, 'vmaf', compute_vmaf))
+        metric_fns.append((ap, 'vmaf_bundle', compute_vmaf_metrics))
         metric_fns.append((ap, 'ssim', compute_ssim))
         metric_fns.append((ap, 'psnr', compute_psnr))
     total = len(metric_fns)
@@ -495,9 +633,22 @@ def compute_metrics_parallel(input_path: str, artifacts: List[str], workers: int
         for fut in as_completed(futs):
             ap, metric_name = futs[fut]
             try:
-                results[ap][metric_name] = fut.result()
+                metric_value = fut.result()
+                if metric_name == 'vmaf_bundle':
+                    if isinstance(metric_value, dict):
+                        results[ap].update(metric_value)
+                    else:
+                        results[ap]['vmaf'] = None
+                else:
+                    results[ap][metric_name] = metric_value
             except Exception:
-                results[ap][metric_name] = None
+                if metric_name == 'vmaf_bundle':
+                    results[ap]['vmaf'] = None
+                    results[ap]['vmafMean'] = None
+                    results[ap]['vmafP5'] = None
+                    results[ap]['metricModelId'] = None
+                else:
+                    results[ap][metric_name] = None
             done += 1
             try:
                 pct = (done / total) * 100.0
@@ -511,8 +662,7 @@ def compute_metrics_parallel(input_path: str, artifacts: List[str], workers: int
 
 
 def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset: str, codec: str = "libx264", crf: Optional[int] = None) -> Dict[str, Any]:
-    # Single encode via encode_to_artifact (which handles HW→SW fallback),
-    # then compute VMAF on the same artifact. No double-encode. (B-C01)
+    source_probe = probe_video_stream_metrics(input_path)
     with tempfile.TemporaryDirectory() as td:
         info = encode_to_artifact(
             input_path=input_path,
@@ -525,13 +675,14 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
         )
         actual_encoder = info.get('encoderUsed', codec)
         actual_preset = info.get('presetUsed', preset)
-        vmaf: Optional[float] = None
+        vmaf_metrics: Dict[str, Any] = {}
         ssim: Optional[float] = None
         psnr: Optional[float] = None
         artifact_path = info.get('artifactPath', os.path.join(td, "out.mp4"))
+        artifact_probe = probe_video_stream_metrics(artifact_path)
         if info.get('error') is None and float(info.get('fps', 0.0)) > 0 and int(info.get('fileSizeBytes', 0)) > 0:
             print("Calculating quality metrics (VMAF, SSIM, PSNR)...")
-            vmaf = compute_vmaf(input_path, artifact_path)
+            vmaf_metrics = compute_vmaf_metrics(input_path, artifact_path)
             ssim = compute_ssim(input_path, artifact_path)
             psnr = compute_psnr(input_path, artifact_path)
 
@@ -546,9 +697,38 @@ def run_single_benchmark(hardware: config.HardwareInfo, input_path: str, preset:
         "fps": float(info.get('fps', 0.0)),
         "fileSizeBytes": int(info.get('fileSizeBytes', 0)),
         "runMs": int(info.get('elapsedMs') or 0),
+        "sourceFps": source_probe.get("sourceFps"),
+        "videoBitrateBps": artifact_probe.get("videoBitrateBps"),
+        "benchmarkProtocolVersion": config.BENCHMARK_PROTOCOL_VERSION,
+        "sourceSuiteVersion": config.SOURCE_SUITE_VERSION,
+        "workloadId": config.WORKLOAD_ID,
     }
-    if vmaf is not None:
-        payload["vmaf"] = float(vmaf)
+    if source_probe.get("sourceDurationSeconds") is not None:
+        payload["sourceDurationSeconds"] = source_probe.get("sourceDurationSeconds")
+    if vmaf_metrics.get("vmaf") is not None:
+        payload["vmaf"] = float(vmaf_metrics["vmaf"])
+    if vmaf_metrics.get("vmafMean") is not None:
+        payload["vmafMean"] = float(vmaf_metrics["vmafMean"])
+    if vmaf_metrics.get("vmafP5") is not None:
+        payload["vmafP5"] = float(vmaf_metrics["vmafP5"])
+    if vmaf_metrics.get("metricModelId"):
+        payload["metricModelId"] = str(vmaf_metrics["metricModelId"])
+    required_v7_fields = (
+        payload.get("vmaf") is not None,
+        payload.get("vmafP5") is not None,
+        payload.get("videoBitrateBps") is not None,
+        payload.get("sourceFps") is not None,
+        payload.get("sourceDurationSeconds") is not None,
+        bool(payload.get("benchmarkProtocolVersion")),
+        bool(payload.get("sourceSuiteVersion")),
+        bool(payload.get("workloadId")),
+        bool(payload.get("metricModelId")),
+    )
+    if all(required_v7_fields):
+        payload["scoreFormulaVersion"] = config.SCORE_FORMULA_VERSION
+        payload["scoreEligibilityNote"] = "Content-specific quick test; eligible for PL v7 benchmark scoring, not General PL."
+    else:
+        payload["scoreEligibilityNote"] = "Content-specific quick test only; not score-eligible for PL v7 canonical scoring and never General PL."
     if ssim is not None:
         payload["ssim"] = float(ssim)
     if psnr is not None:

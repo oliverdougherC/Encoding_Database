@@ -311,10 +311,23 @@ def print_benchmark_result(payload: Dict[str, Any], relative_file_size_pct: Opti
         table = _Table(show_header=False, box=None, pad_edge=False)
         table.add_column(style="muted", width=30)
         table.add_column(style="accent", justify="right")
+        if payload.get("workloadId"):
+            table.add_row("Scope", f"{payload.get('workloadId')} quick test (not General PL)")
         table.add_row("FPS", _fmt_float(payload.get("fps"), 2))
         table.add_row("VMAF", _fmt_float(payload.get("vmaf"), 2) if payload.get("vmaf") is not None else "N/A")
+        vmaf_mean = payload.get("vmafMean", payload.get("vmaf"))
+        if vmaf_mean is not None or payload.get("vmafP5") is not None:
+            table.add_row(
+                "VMAF Dist",
+                f"mean={_fmt_float(vmaf_mean, 2)} p5={_fmt_float(payload.get('vmafP5'), 2)}",
+            )
         table.add_row("SSIM", _fmt_float(payload.get("ssim"), 4) if payload.get("ssim") is not None else "N/A")
         table.add_row("PSNR", (_fmt_float(payload.get("psnr"), 2) + " dB") if payload.get("psnr") is not None else "N/A")
+        if payload.get("sourceFps") is not None:
+            table.add_row("Source FPS", _fmt_float(payload.get("sourceFps"), 2))
+        if payload.get("videoBitrateBps") is not None:
+            bitrate_mbps = float(payload.get("videoBitrateBps") or 0.0) / 1_000_000.0
+            table.add_row("Video Bitrate", f"{_fmt_float(bitrate_mbps, 2)} Mbps")
         if relative_file_size_pct is not None:
             table.add_row("Relative File Size", f"{_fmt_float(relative_file_size_pct, 1)}%")
         else:
@@ -339,14 +352,28 @@ def print_benchmark_result(payload: Dict[str, Any], relative_file_size_pct: Opti
         return
 
     print("\n|---------------------------")
+    if payload.get("workloadId"):
+        print(f"| Scope: {payload.get('workloadId')} quick test (not General PL)")
+        print("|---------------------------")
     print(f"| FPS: {_fmt_float(payload.get('fps'), 2)}")
     print("|---------------------------")
     print(f"| VMAF: {_fmt_float(payload.get('vmaf'), 2) if payload.get('vmaf') is not None else 'N/A'}")
     print("|---------------------------")
+    vmaf_mean = payload.get("vmafMean", payload.get("vmaf"))
+    if vmaf_mean is not None or payload.get("vmafP5") is not None:
+        print(f"| VMAF Dist: mean={_fmt_float(vmaf_mean, 2)} p5={_fmt_float(payload.get('vmafP5'), 2)}")
+        print("|---------------------------")
     print(f"| SSIM: {_fmt_float(payload.get('ssim'), 4) if payload.get('ssim') is not None else 'N/A'}")
     print("|---------------------------")
     print(f"| PSNR: {(_fmt_float(payload.get('psnr'), 2) + ' dB') if payload.get('psnr') is not None else 'N/A'}")
     print("|---------------------------")
+    if payload.get("sourceFps") is not None:
+        print(f"| Source FPS: {_fmt_float(payload.get('sourceFps'), 2)}")
+        print("|---------------------------")
+    if payload.get("videoBitrateBps") is not None:
+        bitrate_mbps = float(payload.get("videoBitrateBps") or 0.0) / 1_000_000.0
+        print(f"| Video Bitrate: {_fmt_float(bitrate_mbps, 2)} Mbps")
+        print("|---------------------------")
     if relative_file_size_pct is not None:
         print(f"| Relative File Size: {_fmt_float(relative_file_size_pct, 1)}%")
     else:

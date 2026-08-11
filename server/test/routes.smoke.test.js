@@ -210,6 +210,7 @@ test('buildSubmissionPayloadHash changes when telemetry changes', () => {
     contentClass: 'mixed',
     resolution: '1080p',
     passes: 1,
+    workloadId: null,
     fps: 120.5,
     vmaf: 95.3,
     ssim: 0.98,
@@ -385,7 +386,7 @@ test('only canonical, plausible submissions can be accepted', () => {
 test('idempotent retry lookup derives the aggregate key from Submission', () => {
   const source = {
     cpuModel: 'Ryzen 9 7950X', gpuModel: 'RTX 4090', ramGB: 64, os: 'Linux',
-    codec: 'h264_nvenc', preset: 'p6', crf: 0, contentClass: 'gaming', resolution: '4k', passes: 1,
+    codec: 'h264_nvenc', preset: 'p6', crf: 0, contentClass: 'gaming', resolution: '4k', passes: 1, workloadId: null,
   };
   assert.deepEqual(benchmarkWhereFromSubmission(source), source);
 });
@@ -434,9 +435,13 @@ function makeBenchmarkRow(overrides = {}) {
     passes: 1,
     fps: 120,
     vmaf: 95,
+    vmafP5: null,
     ssim: 0.98,
     psnr: 41,
     fileSizeBytes: 80_000_000,
+    videoBitrateBps: null,
+    sourceFps: null,
+    sourceDurationSeconds: null,
     notes: null,
     gpuUtilAvg: null,
     gpuPowerAvgW: 200,
@@ -468,6 +473,12 @@ function makeBenchmarkRow(overrides = {}) {
     fpsSum: 360,
     fileSizeSum: 240_000_000,
     vmafSum: 285,
+    vmafP5Samples: 0,
+    vmafP5Sum: 0,
+    videoBitrateSamples: 0,
+    videoBitrateSum: 0,
+    sourceFpsSamples: 0,
+    sourceFpsSum: 0,
     ssimSamples: 3,
     ssimSum: 2.94,
     psnrSamples: 3,
@@ -513,6 +524,11 @@ function makeBenchmarkRow(overrides = {}) {
     clientVersion: null,
     inputHash: null,
     runMs: null,
+    scoreFormulaVersion: null,
+    benchmarkProtocolVersion: null,
+    sourceSuiteVersion: null,
+    workloadId: null,
+    metricModelId: null,
     payloadHash: null,
     ...overrides,
   };
@@ -552,6 +568,34 @@ test('aggregateLeaderboards keeps distinct workload slices separate and enforces
   assert.equal(result[0].resolution, '720p');
   assert.equal(result[1].resolution, '1080p');
   assert.ok(result.every((row) => row.sampleCount >= 3));
+});
+
+test('aggregateLeaderboards computes filter-invariant PL v7 only from complete versioned evidence', () => {
+  const priorRefs = process.env.PL_V7_REFERENCE_BITRATES_JSON;
+  const priorVersion = process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+  process.env.PL_V7_REFERENCE_BITRATES_JSON = JSON.stringify({ 'sports-1080p': 4_000_000 });
+  process.env.PL_V7_REFERENCE_CONTEXT_VERSION = 'test-reference-v1';
+  try {
+    const scored = makeBenchmarkRow({
+      id: 'pl7', workloadId: 'sports-1080p', samples: 3, fpsSum: 180,
+      vmafSum: 282, vmafSamples: 3, vmafP5Sum: 264, vmafP5Samples: 3,
+      videoBitrateSum: 12_000_000, videoBitrateSamples: 3,
+      sourceFpsSum: 90, sourceFpsSamples: 3,
+    });
+    const unrelated = makeBenchmarkRow({ id: 'unrelated', encoderName: 'libx264', preset: 'slow', samples: 3 });
+    const alone = aggregateLeaderboards([scored], 3).find((row) => row.encoderName === 'h264_nvenc');
+    const withCandidate = aggregateLeaderboards([scored, unrelated], 3).find((row) => row.encoderName === 'h264_nvenc');
+    assert.ok(alone.plScore != null);
+    assert.equal(withCandidate.plScore, alone.plScore);
+    assert.equal(alone.plScoreVersion, '7.0');
+    assert.equal(alone.plScoreContext.referenceContextVersion, 'test-reference-v1');
+    assert.ok(alone.plScoreComponents.quality > 0);
+  } finally {
+    if (priorRefs == null) delete process.env.PL_V7_REFERENCE_BITRATES_JSON;
+    else process.env.PL_V7_REFERENCE_BITRATES_JSON = priorRefs;
+    if (priorVersion == null) delete process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+    else process.env.PL_V7_REFERENCE_CONTEXT_VERSION = priorVersion;
+  }
 });
 
 test('aggregateHardware computes stable weighted averages within a fixed slice', () => {

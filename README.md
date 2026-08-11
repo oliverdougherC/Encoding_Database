@@ -36,7 +36,7 @@ This release documents work completed since `v1.0.2` and reflects a major platfo
 - Expanded analysis views with SSIM/PSNR histograms, SSIM vs VMAF scatter, and rate-distortion visualization.
 - Added/expanded comparison tooling, leaderboards, and encoder dashboard workflows.
 - Added hardware intelligence views: efficiency metrics, GPU utilization, power comparison, CPU heatmaps, and recommendations.
-- Fixed PL score behavior and control UX issues (median-size scoring bug, zero-weight guardrails, real-time normalization).
+- Replaced candidate-relative scoring with the fixed, versioned PL Score v7 Q/B/S utility and explicit evidence requirements.
 
 ### Database and integrity model
 
@@ -78,7 +78,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 - Data integrity controls: canonical input hash checks, idempotent payload hash, accepted/suspect/rejected submission status.
 - Aggregation model: rolling sums/sample counts for stable recomputation and drift-resistant averages.
 - Query API: filtering, sorting, ranges, pagination, derived efficiency metrics.
-- Frontend analytics: scatter plots, histograms, rate-distortion, content/resolution comparisons, PL Score v6 leaderboards.
+- Frontend analytics: scatter plots, histograms, rate-distortion, content/resolution comparisons, and PL Score v7 results when complete v7 evidence and frozen workload references are available.
 
 ## Telemetry and privacy
 
@@ -245,7 +245,7 @@ Additional controls:
 - `/compare-encoders`: focused encoder comparison dashboard.
 - `/leaderboards`: top encoders by speed/quality/compression/PL Score.
 - `/hardware`: efficiency and hardware intelligence charts.
-- `/plove`: PL Score v6 documentation and formula overview.
+- `/plove`: legacy redirect to the current PL Score v7 methodology.
 
 ## Build packaged clients
 

@@ -12,9 +12,12 @@ export type Benchmark = {
   preset: string;
   fps: number;
   vmaf: number | null;
+  vmafP5?: number | null;
   ssim: number | null;
   psnr: number | null;
   fileSizeBytes: number;
+  videoBitrateBps?: number | null;
+  sourceFps?: number | null;
   notes: string | null;
   ffmpegVersion?: string | null;
   encoderName?: string | null;
@@ -24,6 +27,11 @@ export type Benchmark = {
   resolution?: string | null;
   passes?: number | null;
   runMs?: number | null;
+  scoreFormulaVersion?: string | null;
+  benchmarkProtocolVersion?: string | null;
+  sourceSuiteVersion?: string | null;
+  workloadId?: string | null;
+  metricModelId?: string | null;
   status?: string | null;
   samples: number;
   vmafSamples?: number;
@@ -64,13 +72,26 @@ export type LeaderboardAnalyticsRow = {
   sampleCount: number;
   avgFps: number;
   avgVmaf: number | null;
+  avgVmafP5: number | null;
   avgSsim: number | null;
   avgPsnr: number | null;
   avgSizeBytes: number;
+  avgVideoBitrateBps: number | null;
+  avgSourceFps: number | null;
   avgPowerW: number | null;
   fpsPerWatt: number | null;
   qualityPerWatt: number | null;
-  plScore: number;
+  plScore: number | null;
+  plScoreVersion: "7.0";
+  plScoreComponents: { quality: number; bitrate: number; speed: number } | null;
+  plScoreWorkloadId: string;
+  plScoreContext: {
+    referenceContextVersion: string;
+    workloadReferenceBitrateBps: number;
+    qualityExponent: 2.4;
+    speedCurveRate: 1.2;
+    speedSaturationRealtime: 4;
+  } | null;
 };
 
 export type HardwareAnalyticsRow = {

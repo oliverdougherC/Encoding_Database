@@ -49,6 +49,9 @@ _ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
     'codec', 'preset', 'crf', 'passes',
     'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'notes',
     'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs',
+    'vmafP5', 'sourceFps', 'sourceDurationSeconds', 'videoBitrateBps',
+    'scoreFormulaVersion', 'benchmarkProtocolVersion', 'sourceSuiteVersion', 'metricModelId',
+    'workloadId',
     'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
     'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
     # Extended telemetry (Sprint 7)
@@ -60,6 +63,11 @@ _ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
     'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
     'telemetrySources', 'telemetryMissing',
 )
+
+SCORE_FORMULA_VERSION = "7.0"
+BENCHMARK_PROTOCOL_VERSION = "7.0"
+SOURCE_SUITE_VERSION = "legacy-single-sample-v1"
+WORKLOAD_ID = "legacy-sample-1080p"
 
 # Batch aggregation for Small/Full multi-run flows
 _BATCH_ACTIVE: bool = False
