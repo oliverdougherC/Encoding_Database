@@ -2,77 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import styles from "./AppShell.module.css";
 
-type NavItem = { href: string; label: string };
-
-const CORE_NAV: NavItem[] = [
-  { href: "/", label: "Command Center" },
-  { href: "/compare-encoders", label: "Compare" },
-  { href: "/leaderboards", label: "Leaderboards" },
+const NAV = [
+  { href: "/", label: "Browse" },
   { href: "/hardware", label: "Hardware" },
-  { href: "/plove", label: "PL Reference" },
+  { href: "/encoders", label: "Encoders" },
+  { href: "/methodology", label: "Methodology" },
 ];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? "/";
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const activePath = useMemo(() => pathname, [pathname]);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const active = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
     <div className={styles.shell}>
-      <button
-        type="button"
-        className={styles.mobileMenuBtn}
-        aria-expanded={mobileOpen}
-        aria-controls="workspace-nav"
-        onClick={() => setMobileOpen((v) => !v)}
-      >
-        Workspace
-      </button>
-
-      {mobileOpen ? <button type="button" aria-label="Close navigation" className={styles.backdrop} onClick={() => setMobileOpen(false)} /> : null}
-
-      <aside id="workspace-nav" className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ""}`.trim()}>
-        <div className={styles.brandRow}>
-          <Link href="/" className={styles.brand} onClick={() => setMobileOpen(false)}>
-            <span className={styles.brandMark} aria-hidden="true">EDB</span>
-            <span className={styles.brandText}>Encoding Database</span>
+      <header className={styles.header}>
+        <div className={styles.bar}>
+          <Link className={styles.brand} href="/" onClick={() => setMenuOpen(false)} aria-label="EncodingDB home">
+            <span className={styles.brandMark}>EDB</span><span>EncodingDB</span>
           </Link>
-          <ThemeToggle className={styles.themeToggle} />
-        </div>
-
-        <div className={styles.quickActions}>
-          <a href="https://github.com/oliverdougherC/Encoding_Database/releases" target="_blank" rel="noreferrer" className={styles.quickAction}>
-            Download Client
-          </a>
-        </div>
-
-        <nav className={styles.navSection} aria-label="Core">
-          <div className={styles.sectionTitle}>Core</div>
-          <div className={styles.itemList}>
-            {CORE_NAV.map((item) => {
-              const active = item.href === "/" ? activePath === "/" : activePath.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`${styles.navItem} ${active ? styles.navItemActive : ""}`.trim()}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
+          <button className={styles.menuButton} type="button" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>Menu</button>
+          <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ""}`} aria-label="Primary navigation">
+            {NAV.map((item) => <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} aria-current={active(item.href) ? "page" : undefined} className={active(item.href) ? styles.active : ""}>{item.label}</Link>)}
+          </nav>
+          <div className={styles.actions}>
+            <a href="https://github.com/oliverdougherC/Encoding_Database" target="_blank" rel="noreferrer">GitHub</a>
+            <ThemeToggle />
+            <a className={styles.runButton} href="/run">Run a benchmark</a>
           </div>
-        </nav>
-
-      </aside>
-
-      <main className={styles.workspace}>{children}</main>
+        </div>
+      </header>
+      <main className={styles.main}>{children}</main>
     </div>
   );
 }

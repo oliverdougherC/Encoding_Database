@@ -3,16 +3,16 @@
   bottom: 10px;
   left: 10px;
   right: 10px;
-  border: 1px solid color-mix(in srgb, var(--stroke-strong) 72%, var(--brand) 28%);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface-1) 86%, var(--surface-2) 14%);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
   padding: 10px 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   z-index: 30;
-  box-shadow: var(--shadow-2);
+  box-shadow: 0 8px 24px rgba(0,0,0,.22);
 }
 
 .compareBtn {
@@ -35,13 +35,13 @@
 }
 
 .panel {
-  border-radius: 14px;
+  border-radius: 8px;
   width: 100%;
   max-width: 980px;
   max-height: 80vh;
   overflow: auto;
-  background: color-mix(in srgb, var(--surface-1) 86%, var(--surface-2) 14%);
-  border: 1px solid color-mix(in srgb, var(--stroke-soft) 70%, var(--brand) 30%);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
 }
 
 .panelHeader {
@@ -50,10 +50,10 @@
   align-items: center;
   padding: 12px 16px;
   border-bottom: 1px solid color-mix(in srgb, var(--stroke-soft) 78%, transparent);
-  border-top: 3px solid var(--brand);
+  border-top: 3px solid var(--accent);
   position: sticky;
   top: 0;
-  background: color-mix(in srgb, var(--surface-1) 92%, var(--surface-2) 8%);
+  background: var(--surface);
   z-index: 1;
 }
 
@@ -61,7 +61,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-family: "Rajdhani", "Bahnschrift", sans-serif;
+  font-family: inherit;
 }
 
 .panelActions {
@@ -83,12 +83,12 @@
 .compareTable th,
 .compareTable td {
   padding: 8px 12px;
-  border-top: 1px solid color-mix(in srgb, var(--stroke-soft) 82%, transparent);
+  border-top: 1px solid var(--border);
   text-align: left;
 }
 
 .compareTable th {
-  background: color-mix(in srgb, var(--surface-2) 88%, var(--surface-1) 12%);
+  background: var(--surface-2);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -98,5 +98,7 @@
 }
 
 .bestCell {
-  background: color-mix(in srgb, var(--success-bg) 45%, var(--surface-1));
+  background: var(--teal-soft);
 }
+
+.compatibilityWarning { margin: 0 0 14px; padding: 9px 10px; border: 1px solid var(--amber); border-radius: 6px; background: var(--amber-soft); color: var(--text); font-size: .84rem; }

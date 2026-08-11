@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import styles from "./ComparePanel.module.css";
 
-type CompareRow = Benchmark & { _plScore: number; _relSize: number; _codecLabel: string };
+type CompareRow = Benchmark;
 
 type Metric = {
   label: string;
@@ -16,7 +16,7 @@ type Metric = {
 const METRICS: Metric[] = [
   { label: "CPU", getValue: r => r.cpuModel, getNumeric: () => null, higherIsBetter: true },
   { label: "GPU", getValue: r => r.gpuModel || "-", getNumeric: () => null, higherIsBetter: true },
-  { label: "Codec", getValue: r => r._codecLabel, getNumeric: () => null, higherIsBetter: true },
+  { label: "Encoder", getValue: r => r.encoderName || r.codec, getNumeric: () => null, higherIsBetter: true },
   { label: "CRF", getValue: r => r.crf == null ? "-" : String(r.crf), getNumeric: r => r.crf ?? null, higherIsBetter: false },
   { label: "Preset", getValue: r => r.preset, getNumeric: () => null, higherIsBetter: true },
   { label: "FPS", getValue: r => r.fps.toFixed(2), getNumeric: r => r.fps, higherIsBetter: true },
@@ -24,7 +24,6 @@ const METRICS: Metric[] = [
   { label: "SSIM", getValue: r => r.ssim == null ? "-" : r.ssim.toFixed(4), getNumeric: r => r.ssim, higherIsBetter: true },
   { label: "PSNR (dB)", getValue: r => r.psnr == null ? "-" : r.psnr.toFixed(2), getNumeric: r => r.psnr, higherIsBetter: true },
   { label: "File Size (MB)", getValue: r => (r.fileSizeBytes / (1024 * 1024)).toFixed(2), getNumeric: r => r.fileSizeBytes, higherIsBetter: false },
-  { label: "PL Score v6", getValue: r => r._plScore > 0 ? r._plScore.toFixed(2) : "-", getNumeric: r => r._plScore > 0 ? r._plScore : null, higherIsBetter: true },
   { label: "GPU Util (%)", getValue: r => r.gpuUtilAvg != null ? r.gpuUtilAvg.toFixed(1) : "-", getNumeric: r => r.gpuUtilAvg ?? null, higherIsBetter: true },
   { label: "GPU Power (W)", getValue: r => r.gpuPowerAvgW != null ? r.gpuPowerAvgW.toFixed(1) : "-", getNumeric: r => r.gpuPowerAvgW ?? null, higherIsBetter: false },
   { label: "FPS/Watt", getValue: r => r.fpsPerWatt != null ? r.fpsPerWatt.toFixed(2) : "-", getNumeric: r => r.fpsPerWatt ?? null, higherIsBetter: true },
@@ -77,6 +76,7 @@ export default function ComparePanel({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
+  const incompatible = new Set(rows.map((row) => `${row.codec}|${row.preset}|${row.crf ?? ""}`)).size > 1;
   return (
     <div
       className={styles.panelBackdrop}
@@ -90,7 +90,7 @@ export default function ComparePanel({
       <div className={styles.panel} ref={panelRef} tabIndex={-1}>
         <div className={styles.panelHeader}>
           <div id="compare-panel-title" className={styles.panelTitle}>
-            Comparing {rows.length} Benchmarks
+            Compare selected results
           </div>
           <div className={styles.panelActions}>
             <button type="button" onClick={onClear} className={`btn btn-ghost ${styles.clearBtn}`}>Clear All</button>
@@ -98,6 +98,7 @@ export default function ComparePanel({
           </div>
         </div>
         <div className={styles.panelBody}>
+          {incompatible ? <p className={styles.compatibilityWarning}>These results use different codecs or configurations. Compare individual metrics carefully; they may not represent equivalent workloads.</p> : null}
           <table className={styles.compareTable}>
             <thead>
               <tr>
