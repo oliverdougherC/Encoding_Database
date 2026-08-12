@@ -2,6 +2,7 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -579,37 +580,37 @@ def ensure_suite_clip(
     cache_root: Optional[str] = None,
     regenerate_on_mismatch: bool = True,
 ) -> PreparedSuiteClip:
-    if cache_root is None:
-        for manifest_path in _manifest_resource_candidates():
-            packaged_path = os.path.join(os.path.dirname(manifest_path), "canonical", clip.file_name)
-            if not os.path.exists(packaged_path):
-                continue
-            packaged_result = verify_suite_clip(packaged_path, clip)
-            if not packaged_result.ok:
-                raise RuntimeError(f"Packaged canonical suite asset is invalid: {packaged_result.message}")
-            return PreparedSuiteClip(
-                suite_version=SUITE_VERSION,
-                clip_id=clip.clip_id,
-                canonical_content_class=clip.canonical_content_class,
-                payload_content_class=clip.payload_content_class,
-                workload_id=clip.clip_id,
-                path=packaged_path,
-                input_hash=clip.sha256,
-                file_name=clip.file_name,
-            )
+    packaged_path: Optional[str] = None
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), "canonical", clip.file_name)
+        if not os.path.exists(candidate):
+            continue
+        packaged_result = verify_suite_clip(candidate, clip)
+        if not packaged_result.ok:
+            raise RuntimeError(f"Packaged canonical suite asset is invalid: {packaged_result.message}")
+        packaged_path = candidate
+        break
+    if packaged_path is None:
+        raise RuntimeError(f"Packaged canonical suite asset is missing: {clip.file_name}")
 
-    root = cache_root or _suite_cache_root()
-    path = clip_cache_path(clip, root)
-    if not os.path.exists(path):
-        _generate_clip(clip.lavfi, path, clip.media.frame_count)
-
-    result = verify_suite_clip(path, clip)
-    if not result.ok and regenerate_on_mismatch:
-        try:
-            os.remove(path)
-        except FileNotFoundError:
-            pass
-        _generate_clip(clip.lavfi, path, clip.media.frame_count)
+    path = packaged_path
+    if cache_root is not None:
+        path = clip_cache_path(clip, cache_root)
+        result = verify_suite_clip(path, clip)
+        if not result.ok and regenerate_on_mismatch:
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            handle, staging_path = tempfile.mkstemp(prefix=f".{clip.clip_id}-", suffix=".staging", dir=os.path.dirname(path))
+            os.close(handle)
+            try:
+                shutil.copyfile(packaged_path, staging_path)
+                os.replace(staging_path, path)
+            finally:
+                try:
+                    os.remove(staging_path)
+                except FileNotFoundError:
+                    pass
+            result = verify_suite_clip(path, clip)
+    else:
         result = verify_suite_clip(path, clip)
     if not result.ok:
         raise RuntimeError(result.message)

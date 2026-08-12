@@ -44,7 +44,7 @@ class SuiteV1Tests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertIn("frameCount mismatch", result.message)
 
-    def test_ensure_suite_clip_generates_and_verifies_valid_clip(self) -> None:
+    def test_ensure_suite_clip_copies_and_verifies_frozen_packaged_clip(self) -> None:
         manifest = suite.load_default_suite_manifest()
         clip = suite.get_default_quick_clip(manifest)
         with tempfile.TemporaryDirectory() as cache_root:
