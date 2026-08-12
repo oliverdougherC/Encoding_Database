@@ -6,7 +6,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createArtifactPipelineRouter, inferMediaContainerFromFormatName } from '../dist/v7/artifacts.js';
+import { createArtifactPipelineRouter, inferBitDepth, inferMediaContainerFromFormatName } from '../dist/v7/artifacts.js';
 import { createDefaultDerivedRecomputeCallback } from '../dist/v7/artifacts.js';
 import {
   DEFAULT_ANALYZER_VERSION,
@@ -29,6 +29,14 @@ const PRIMARY_CLIP = SUITE_MANIFEST.clips[0];
 test('ffprobe MOV-family aliases normalize to the canonical MP4 container', () => {
   assert.equal(inferMediaContainerFromFormatName('mov,mp4,m4a,3gp,3g2,mj2'), 'mp4');
   assert.equal(inferMediaContainerFromFormatName('matroska,webm'), 'mkv');
+});
+
+test('ffprobe pixel formats infer component depth instead of chroma digits', () => {
+  assert.equal(inferBitDepth('yuv420p', 0), 8);
+  assert.equal(inferBitDepth('yuv422p10le', 0), 10);
+  assert.equal(inferBitDepth('gbrp12le', null), 12);
+  assert.equal(inferBitDepth('p010le', null), 10);
+  assert.equal(inferBitDepth('yuv420p', 8), 8);
 });
 
 const CAN_BIND_LOOPBACK = await new Promise((resolve) => {

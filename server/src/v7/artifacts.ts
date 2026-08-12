@@ -810,15 +810,17 @@ export function inferMediaContainerFromFormatName(formatName: string | null | un
   return formats[0] ?? null;
 }
 
-function inferBitDepth(pixelFormat: string | null | undefined, rawBits: number | null): number | null {
+export function inferBitDepth(pixelFormat: string | null | undefined, rawBits: number | null): number | null {
   if (rawBits != null && Number.isFinite(rawBits) && rawBits > 0) {
     return Math.trunc(rawBits);
   }
   const text = String(pixelFormat || '').toLowerCase();
-  const match = text.match(/(?:p|yuv|gbr|gray)(\d{2})/);
-  if (match?.[1]) return Number(match[1]);
   if (text.includes('p010') || text.includes('10le')) return 10;
+  const packedDepth = text.match(/(?:p|gray)(9|10|12|14|16)(?:le|be)?(?:$|[^0-9])/);
+  if (packedDepth?.[1]) return Number(packedDepth[1]);
   if (text.includes('12le')) return 12;
+  if (text.includes('14le')) return 14;
+  if (text.includes('16le')) return 16;
   if (text) return 8;
   return null;
 }
