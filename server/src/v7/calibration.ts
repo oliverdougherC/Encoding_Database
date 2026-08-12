@@ -280,8 +280,15 @@ export function assessCalibrationEvidence(
     addFinding(errors, 'machine_source_coverage', `Need at least ${requirements.minimumMachineSources} independent machine sources; found ${machineSources.length}`);
   }
 
+  const sanityReviews: readonly MetricSanityReview[] = Array.isArray(document.metricSanityReviews) ? document.metricSanityReviews : [];
+  const reviewedExpectedSuspectEvidence = new Set(sanityReviews
+    .filter((review) => review.disposition === 'EXPECTED'
+      && validReviewer(review.reviewer)
+      && validRationale(review.rationale))
+    .flatMap((review) => review.evidenceIds));
   const rateGroups = new Map<string, Set<string>>();
-  for (const evidence of corpus.filter((entry) => entry.runStatus === 'ACCEPTED')) {
+  for (const evidence of corpus.filter((entry) => entry.runStatus === 'ACCEPTED'
+    || (entry.runStatus === 'SUSPECT' && reviewedExpectedSuspectEvidence.has(entry.evidenceId)))) {
     const key = `${evidence.workloadId}\u241f${evidence.encoderImplementation}`;
     const fingerprints = rateGroups.get(key) ?? new Set<string>();
     fingerprints.add(evidence.recipeFingerprint);
@@ -368,7 +375,6 @@ export function assessCalibrationEvidence(
     }
   }
 
-  const sanityReviews: readonly MetricSanityReview[] = Array.isArray(document.metricSanityReviews) ? document.metricSanityReviews : [];
   for (const caseType of METRIC_SANITY_CASES) {
     if (!sanityReviews.some((review) => review.caseType === caseType)) {
       addFinding(errors, 'missing_metric_sanity_case', `Missing metric sanity review for ${caseType}`);

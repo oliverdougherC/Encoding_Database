@@ -191,6 +191,21 @@ test('placeholder decisions and rejected holdouts cannot freeze production polic
   assert.equal(assessment.readyForProductionFreeze, false);
 });
 
+test('knowledgeably reviewed expected SUSPECT evidence can establish a rate-quality point', () => {
+  const document = completeDocument();
+  document.corpus[0].runStatus = 'SUSPECT';
+  document.corpus[0].analysisStatus = 'SUSPECT';
+  document.corpus[0].recipeFingerprint = 'reviewed-suspect-rate-point';
+  for (const entry of document.corpus.slice(1, 4)) entry.recipeFingerprint = 'accepted-rate-point';
+  document.reviewHash = buildCalibrationReviewHash(document);
+  document.evidenceHash = buildCalibrationEvidenceHash(document);
+
+  const assessment = assessCalibrationEvidence(document, requirements);
+  assert.equal(assessment.errors.some((finding) => finding.code === 'rate_quality_coverage'), false);
+  assert.equal(assessment.errors.some((finding) => finding.code === 'unreviewed_suspect'), false);
+  assert.equal(assessment.readyForProductionFreeze, true);
+});
+
 test('checked-in Apple pilot binds exact retained evidence while remaining impossible to freeze', () => {
   const document = parseCalibrationEvidence(readFileSync(
     new URL('../config/calibration/pla-87-apple-m4-pro-pilot-2026-08-12.draft.json', import.meta.url),

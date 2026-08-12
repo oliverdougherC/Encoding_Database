@@ -34,7 +34,7 @@ from .hardware import (
 from .hardware_monitor import HardwareMonitor
 from .encoders import (
     ensure_ffmpeg_and_ffprobe, has_encoder, has_libvmaf,
-    normalize_codec_family, pick_software_encoder_for_family,
+    is_codec_family_selector, normalize_codec_family, pick_software_encoder_for_family,
     discover_hardware_encoders_for_family, list_all_available_encoders,
     enumerate_supported_presets_for_encoder, sort_presets_by_speed_desc,
     get_encoder_friendly_label, is_hardware_encoder_name, is_hardware_encoder_usable,
@@ -1859,9 +1859,11 @@ def run_v7_suite_clip_mode(
         return 4
     if has_encoder(requested_codec):
         resolved_encoder = requested_codec
-    else:
+    elif is_codec_family_selector(requested_codec):
         family = normalize_codec_family(requested_codec)
         resolved_encoder = pick_software_encoder_for_family(family) if family else None
+    else:
+        resolved_encoder = None
     if not resolved_encoder or not has_encoder(resolved_encoder):
         print(f"Requested encoder '{requested_codec}' is not available.", file=sys.stderr)
         return 4

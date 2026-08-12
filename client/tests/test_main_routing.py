@@ -624,6 +624,41 @@ class MainRoutingTests(unittest.TestCase):
 
         self.assertEqual(rc, 1)
 
+    def test_run_v7_suite_clip_mode_rejects_unavailable_explicit_encoder_without_family_fallback(self) -> None:
+        clip = self._quick_clip()
+        base_args = client_main.argparse.Namespace(
+            base_url="https://example.invalid", api_key="", codec="libsvtav1", presets="fast",
+            no_submit=False, crf=24, target_bitrate_kbps=None, retries=1, queue_dir="/tmp/queue",
+            menu=False, batch_size=0, use_token=False, pause_on_exit=False, v7_suite_clip=clip.clip_id,
+        )
+        with mock.patch.object(client_main, "_prepare_named_suite_clip", return_value=clip), \
+                mock.patch.object(client_main, "has_encoder", return_value=False), \
+                mock.patch.object(client_main, "pick_software_encoder_for_family") as pick_mock, \
+                mock.patch.object(client_main, "run_benchmark_batch") as run_mock:
+            rc = client_main.run_v7_suite_clip_mode(base_args=base_args)
+
+        self.assertEqual(rc, 4)
+        pick_mock.assert_not_called()
+        run_mock.assert_not_called()
+
+    def test_run_v7_suite_clip_mode_allows_generic_family_selection(self) -> None:
+        clip = self._quick_clip()
+        base_args = client_main.argparse.Namespace(
+            base_url="https://example.invalid", api_key="", codec="av1", presets="fast",
+            no_submit=True, crf=24, target_bitrate_kbps=None, retries=1, queue_dir="/tmp/queue",
+            menu=False, batch_size=0, use_token=False, pause_on_exit=False, v7_suite_clip=clip.clip_id,
+        )
+        with mock.patch.object(client_main, "_prepare_named_suite_clip", return_value=clip), \
+                mock.patch.object(client_main, "has_encoder", side_effect=lambda encoder: encoder == "libaom-av1"), \
+                mock.patch.object(client_main, "pick_software_encoder_for_family", return_value="libaom-av1") as pick_mock, \
+                mock.patch.object(client_main, "detect_hardware", return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")), \
+                mock.patch.object(client_main, "run_benchmark_batch", return_value=0) as run_mock:
+            rc = client_main.run_v7_suite_clip_mode(base_args=base_args)
+
+        self.assertEqual(rc, 0)
+        pick_mock.assert_called_once_with("av1")
+        self.assertEqual(run_mock.call_args.kwargs["tasks"][0]["encoder"], "libaom-av1")
+
 
 if __name__ == "__main__":
     unittest.main()

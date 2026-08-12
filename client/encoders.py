@@ -22,6 +22,16 @@ CODEC_ALIASES: Dict[str, str] = {
     "vp9": "vp9", "libvpx": "vp9", "libvpx-vp9": "vp9",
 }
 
+# Only these values ask the client to choose an implementation. Names such as
+# libsvtav1, x264, or svt identify a specific implementation and must never be
+# silently replaced when that implementation is unavailable.
+CODEC_FAMILY_SELECTORS = frozenset({"h264", "h.264", "avc", "h265", "h.265", "hevc", "av1", "vp9"})
+
+
+def is_codec_family_selector(value: str) -> bool:
+    return str(value or "").strip().lower() in CODEC_FAMILY_SELECTORS
+
+
 HARDWARE_ENCODERS: Dict[str, List[Tuple[str, str]]] = {
     "h264": [
         ("h264_nvenc", "NVENC"),

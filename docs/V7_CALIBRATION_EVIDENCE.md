@@ -36,6 +36,9 @@ review hash without a circular digest. The canonical evidence hash then covers
 the whole document except itself. Any edit after reviewer sign-off invalidates
 one or both hashes. A `DRAFT`
 document is never production-ready even if its other fields are complete.
+An observation retained as `SUSPECT` may contribute to rate-quality coverage
+only after a knowledgeable metric-sanity review marks it `EXPECTED`; merely
+recording or retaining a suspect run never makes it calibration-eligible.
 
 ## Reproducible commands
 
