@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
-import { writeFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { PrismaClient } from '@prisma/client';
 import { pathToFileURL } from 'node:url';
 
@@ -39,6 +39,22 @@ export function validateCertificationSnapshot(snapshot, expectedEncoders) {
   }
   if (expectedEncoders[0] === expectedEncoders[1]) fail('Software and hardware encoders must be distinct');
   if (!Array.isArray(snapshot.runs) || snapshot.runs.length === 0) fail('No v7 benchmark runs were retained');
+  const uploadAttempts = snapshot.uploadInterruptionEvidence?.uploadAttempts;
+  const interrupted = Array.isArray(uploadAttempts) && uploadAttempts.find((attempt) => attempt.injected && attempt.status === 503);
+  const recovered = Array.isArray(uploadAttempts) && uploadAttempts.find((attempt) => (
+    !attempt.injected
+    && attempt.status === 200
+    && attempt.benchmarkRunId === interrupted?.benchmarkRunId
+  ));
+  if (snapshot.uploadInterruptionEvidence?.injectedFailures !== 1 || !interrupted || !recovered) {
+    fail('Packaged client upload interruption was not recovered for the same benchmark run');
+  }
+  if (snapshot.invalidArtifactEvidence?.createStatus !== 201
+      || snapshot.invalidArtifactEvidence?.artifactStorageState !== 'REJECTED'
+      || !['REJECTED', 'INVALID'].includes(snapshot.invalidArtifactEvidence?.benchmarkRunStatus)
+      || !snapshot.invalidArtifactEvidence?.stateReason) {
+    fail('Invalid artifact was not retained as explicit rejected evidence');
+  }
   if (!snapshot.reanalysisEvidence?.ok || snapshot.reanalysisEvidence.status !== 200) {
     fail('Retained artifact reanalysis did not complete successfully');
   }
@@ -136,7 +152,7 @@ function parseArgs(argv) {
     args[key.slice(2)] = value;
     index += 1;
   }
-  for (const required of ['since', 'software-encoder', 'hardware-encoder', 'server-url', 'frontend-url', 'output']) {
+  for (const required of ['since', 'software-encoder', 'hardware-encoder', 'server-url', 'frontend-url', 'fault-evidence', 'output']) {
     if (!args[required]) fail(`--${required} is required`);
   }
   const since = new Date(args.since);
@@ -214,6 +230,104 @@ async function main(argv) {
       include,
       orderBy: { createdAt: 'asc' },
     });
+    const invalidBytes = Buffer.from('encodingdb-certification-invalid-video-v1\n', 'utf8');
+    const invalidSha256 = crypto.createHash('sha256').update(invalidBytes).digest('hex');
+    const source = runs[0];
+    const invalidPayloadHash = crypto.createHash('sha256')
+      .update(`${source.id}:invalid-artifact-certification-v1`)
+      .digest('hex');
+    const invalidCreateResponse = await fetch(`${args['server-url'].replace(/\/$/, '')}/v7/benchmark-runs`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        benchmarkProtocol: {
+          protocolVersion: source.benchmarkProtocol.protocolVersion,
+          sourceSuiteVersion: source.benchmarkProtocol.sourceSuiteVersion,
+          minimumClientVersion: source.benchmarkProtocol.minimumClientVersion,
+          canonicalRecipeRules: source.benchmarkProtocol.canonicalRecipeRules,
+          canonicalOutputRules: source.benchmarkProtocol.canonicalOutputRules,
+          metricWorkerVersion: source.benchmarkProtocol.metricWorkerVersion,
+        },
+        testClip: {
+          suiteId: source.testClip.suiteId,
+          suiteVersion: source.testClip.suiteVersion,
+          clipKey: source.testClip.clipKey,
+          sha256: source.testClip.sha256,
+          workloadId: source.workloadId,
+        },
+        recipe: {
+          fingerprint: source.recipe.fingerprint,
+          canonicalJson: source.recipe.canonicalJson,
+          identity: source.recipe.canonicalJson,
+        },
+        environment: {
+          fingerprint: source.environment.fingerprint,
+          canonicalJson: source.environment.canonicalJson,
+          identity: source.environment.canonicalJson,
+        },
+        payloadHash: invalidPayloadHash,
+        workloadId: source.workloadId,
+        expectedMetricModelId: priorAnalysis.metricModelId,
+        inputHash: source.inputHash,
+        campaignId: 'certification-invalid-artifact-v1',
+        repetitionGroupId: 'certification-invalid-artifact-v1',
+        repetitionIndex: 0,
+        encodeWallTimeMs: 1,
+        encodeFps: 1,
+        sourceFps: source.sourceFps,
+        realTimeRatio: 1 / source.sourceFps,
+        sourceFrameCount: source.sourceFrameCount,
+        encodedFrameCount: 1,
+        artifact: {
+          role: 'ENCODED',
+          sha256: invalidSha256,
+          byteSize: invalidBytes.length,
+          mediaContainer: 'mp4',
+        },
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    const invalidCreateBody = await invalidCreateResponse.json();
+    const invalidRunId = invalidCreateBody.benchmarkRun?.id;
+    if (!invalidRunId) fail(`Invalid-artifact run creation failed (${invalidCreateResponse.status})`);
+    const invalidAuthResponse = await fetch(
+      `${args['server-url'].replace(/\/$/, '')}/v7/benchmark-runs/${encodeURIComponent(invalidRunId)}/artifacts/ENCODED/upload-authorizations`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ sha256: invalidSha256, byteSize: invalidBytes.length, contentType: 'video/mp4' }),
+        signal: AbortSignal.timeout(20_000),
+      },
+    );
+    const invalidAuthBody = await invalidAuthResponse.json();
+    const invalidUploadResponse = await fetch(
+      `${args['server-url'].replace(/\/$/, '')}/v7/artifact-uploads/${invalidAuthBody.token}`,
+      {
+        method: 'PUT',
+        headers: { 'content-type': 'video/mp4' },
+        body: invalidBytes,
+        signal: AbortSignal.timeout(120_000),
+      },
+    );
+    const invalidBundleResponse = await fetch(
+      `${args['server-url'].replace(/\/$/, '')}/v7/benchmark-runs/${encodeURIComponent(invalidRunId)}/artifacts/ENCODED`,
+      { signal: AbortSignal.timeout(20_000) },
+    );
+    const invalidBundle = await invalidBundleResponse.json();
+    const invalidArtifactEvidence = {
+      createStatus: invalidCreateResponse.status,
+      authorizationStatus: invalidAuthResponse.status,
+      uploadStatus: invalidUploadResponse.status,
+      bundleStatus: invalidBundleResponse.status,
+      benchmarkRunId: invalidRunId,
+      benchmarkRunStatus: invalidBundle.benchmarkRun?.status ?? null,
+      artifactId: invalidBundle.artifact?.id ?? null,
+      artifactStorageState: invalidBundle.artifact?.storageState ?? null,
+      stateReason: invalidBundle.artifact?.stateReason ?? null,
+      sha256: invalidSha256,
+      byteSize: invalidBytes.length,
+    };
+    const uploadInterruptionEvidence = JSON.parse(await readFile(args['fault-evidence'], 'utf8'));
     const immutableScopes = [...new Map(runs.flatMap((run) => run.derivedMembers.map((member) => ({
       environmentId: run.environmentId,
       workloadId: run.workloadId,
@@ -236,6 +350,8 @@ async function main(argv) {
       evidenceVersion: E2E_EVIDENCE_VERSION,
       capturedAt: new Date().toISOString(),
       since: args.since.toISOString(),
+      uploadInterruptionEvidence,
+      invalidArtifactEvidence,
       reanalysisEvidence,
       serverAnalyticsScopes,
       frontendAnalyticsScopes,

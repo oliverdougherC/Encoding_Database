@@ -2730,6 +2730,16 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             deletedAt: input.storageState === 'DELETED' ? new Date() : undefined,
           } as any,
         });
+        if (input.storageState === 'REJECTED') {
+          await tx.benchmarkRun.update({
+            where: { id: artifact.benchmarkRunId },
+            data: {
+              status: 'REJECTED',
+              statusReason: input.stateReason ?? 'Encoded artifact rejected',
+              decidedAt: new Date(),
+            },
+          });
+        }
         return await tx.benchmarkRun.findUniqueOrThrow({
           where: { id: artifact.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,

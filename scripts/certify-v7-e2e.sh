@@ -11,7 +11,17 @@ SOFTWARE_CRF="${SOFTWARE_CRF:-24}"
 HARDWARE_TARGET_BITRATE_KBPS="${HARDWARE_TARGET_BITRATE_KBPS:-2500}"
 SUITE_CLIP="${SUITE_CLIP:-sports-action-960x540-24p}"
 EVIDENCE_ROOT="${EVIDENCE_ROOT:-$ROOT_DIR/.test-reports/pl-v7-e2e}"
+FAULT_PROXY_PORT="${FAULT_PROXY_PORT:-3011}"
 BUILD_CLIENT=1
+FAULT_PROXY_PID=""
+
+cleanup() {
+  if [[ -n "$FAULT_PROXY_PID" ]] && kill -0 "$FAULT_PROXY_PID" 2>/dev/null; then
+    kill "$FAULT_PROXY_PID" 2>/dev/null || true
+    wait "$FAULT_PROXY_PID" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
 
 usage() {
   echo "Usage: scripts/certify-v7-e2e.sh --hardware-encoder NAME [options]"
@@ -93,10 +103,22 @@ STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 CLIENT_SHA256="$(shasum -a 256 "$CLIENT_BINARY" | awk '{print $1}')"
 QUEUE_DIR="$RUN_DIR/client-queue"
 mkdir -p "$QUEUE_DIR"
+FAULT_EVIDENCE="$RUN_DIR/upload-interruption.json"
+FAULT_PROXY_URL="http://127.0.0.1:${FAULT_PROXY_PORT}"
+UPSTREAM_URL="$SERVER_URL" PORT="$FAULT_PROXY_PORT" EVIDENCE_PATH="$FAULT_EVIDENCE" \
+  node "$ROOT_DIR/scripts/v7-upload-fault-proxy.mjs" >"$RUN_DIR/upload-fault-proxy.log" 2>&1 &
+FAULT_PROXY_PID=$!
+for _ in $(seq 1 50); do
+  curl --fail --silent "$FAULT_PROXY_URL/health/ready" >/dev/null 2>&1 && break
+  kill -0 "$FAULT_PROXY_PID" 2>/dev/null || { echo "Upload fault proxy exited" >&2; exit 1; }
+  sleep 0.1
+done
+curl --fail --silent --show-error "$FAULT_PROXY_URL/health/ready" >/dev/null
 
 run_path() {
   local kind="$1"
   local encoder="$2"
+  local submission_url="$3"
   local log="$RUN_DIR/${kind}-client.log"
   local -a native_rate_control=(--crf "$SOFTWARE_CRF")
   if [[ "$kind" == "hardware" ]]; then
@@ -105,7 +127,7 @@ run_path() {
   echo "Running packaged $kind path with $encoder"
   ENCODINGDB_PROTOCOL_SEED=701 \
     "$CLIENT_BINARY" \
-      --base-url "$SERVER_URL" \
+      --base-url "$submission_url" \
       --codec "$encoder" \
       --v7-suite-clip "$SUITE_CLIP" \
       --presets fast \
@@ -119,8 +141,12 @@ run_path() {
   fi
 }
 
-run_path software "$SOFTWARE_ENCODER"
-run_path hardware "$HARDWARE_ENCODER"
+run_path software "$SOFTWARE_ENCODER" "$FAULT_PROXY_URL"
+grep -q 'Queued payload for retry' "$RUN_DIR/software-client.log" \
+  || { echo "Software path did not observe the injected upload interruption" >&2; exit 1; }
+grep -q 'Submitted 1 queued payload(s)' "$RUN_DIR/software-client.log" \
+  || { echo "Packaged client did not recover its queued upload" >&2; exit 1; }
+run_path hardware "$HARDWARE_ENCODER" "$SERVER_URL"
 SOFTWARE_IMPLEMENTATION="$SOFTWARE_ENCODER"
 HARDWARE_IMPLEMENTATION="${HARDWARE_ENCODER##*_}"
 
@@ -137,6 +163,7 @@ cat >"$RUN_DIR/execution.json" <<EOF
   "softwareRateControl": { "mode": "CRF", "crf": $SOFTWARE_CRF },
   "hardwareEncoder": "$HARDWARE_ENCODER",
   "hardwareRateControl": { "mode": "TARGET_BITRATE", "targetBitrateKbps": $HARDWARE_TARGET_BITRATE_KBPS },
+  "uploadInterruptionEvidence": "upload-interruption.json",
   "softwareImplementation": "$SOFTWARE_IMPLEMENTATION",
   "hardwareImplementation": "$HARDWARE_IMPLEMENTATION"
 }
@@ -148,6 +175,7 @@ EOF
   --hardware-encoder "$HARDWARE_IMPLEMENTATION" \
   --server-url "$SERVER_URL" \
   --frontend-url "$FRONTEND_URL" \
+  --fault-evidence "$FAULT_EVIDENCE" \
   --output "$RUN_DIR/authority-chain.json")
 
 find "$RUN_DIR" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \

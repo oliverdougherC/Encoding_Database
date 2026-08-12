@@ -320,6 +320,10 @@ class MemoryPersistence {
     artifact.storageState = input.storageState;
     artifact.stateReason = input.stateReason ?? null;
     artifact.stateDetails = input.stateDetails ?? null;
+    if (input.storageState === 'REJECTED') {
+      record.run.status = 'REJECTED';
+      record.run.statusReason = input.stateReason ?? 'Encoded artifact rejected';
+    }
     if (input.storageState === 'VERIFIED') artifact.verifiedAt = new Date();
     if (input.storageState === 'RETAINED') artifact.retainedAt = new Date();
     if (input.storageState === 'DELETED') artifact.deletedAt = new Date();
@@ -815,6 +819,33 @@ test('upload authorization enforces expiry, type, size, overwrite, and rate-ish 
     body: JSON.stringify({ sha256: '5f5c8f55b6cd3726e1eb3ca0c5d90f4f5efc72187eab8fdf6e8f77fca7f56d89', byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
   });
   assert.equal(overwriteAttempt.status, 409);
+});
+
+test('rejected encoded artifact makes the immutable benchmark run non-canonical', async (t) => {
+  if (!CAN_BIND_LOOPBACK) return t.skip('loopback bind unavailable');
+  const harness = await createHarness();
+  t.after(async () => harness.close());
+  const run = await createRun(harness.baseUrl, harness.fixtures, {
+    payloadHash: '7'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+  });
+  const auth = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
+  });
+  const authorization = await auth.json();
+  const rejected = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authorization.token}`, {
+    method: 'PUT',
+    headers: { 'content-type': 'video/mp4' },
+    body: ARTIFACT_BYTES.subarray(1),
+  });
+  assert.equal(rejected.status, 400);
+  const bundle = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED`).then((response) => response.json());
+  assert.equal(bundle.artifact.storageState, 'REJECTED');
+  assert.equal(bundle.benchmarkRun.status, 'REJECTED');
+  assert.match(bundle.benchmarkRun.statusReason, /size mismatch/i);
 });
 
 test('retained artifacts can be reanalyzed with a newer worker version while same-version jobs stay idempotent', async (t) => {

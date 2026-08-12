@@ -50,6 +50,19 @@ function validSnapshot() {
       { ok: true, sha256: 'hard', rowCount: 1, encoderNames: ['videotoolbox'] },
     ],
     frontendPage: { ok: true },
+    uploadInterruptionEvidence: {
+      injectedFailures: 1,
+      uploadAttempts: [
+        { injected: true, status: 503, benchmarkRunId: 'software-1' },
+        { injected: false, status: 200, benchmarkRunId: 'software-1' },
+      ],
+    },
+    invalidArtifactEvidence: {
+      createStatus: 201,
+      benchmarkRunStatus: 'REJECTED',
+      artifactStorageState: 'REJECTED',
+      stateReason: 'ffprobe rejected invalid media',
+    },
     reanalysisEvidence: {
       ok: true,
       status: 200,
@@ -93,6 +106,24 @@ test('certification rejects frontend data that differs from the server', () => {
   );
 });
 
+test('certification rejects missing interruption recovery evidence', () => {
+  const snapshot = validSnapshot();
+  snapshot.uploadInterruptionEvidence.uploadAttempts.pop();
+  assert.throws(
+    () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
+    /upload interruption was not recovered/,
+  );
+});
+
+test('certification rejects invalid media that was not explicitly rejected', () => {
+  const snapshot = validSnapshot();
+  snapshot.invalidArtifactEvidence.artifactStorageState = 'RETAINED';
+  assert.throws(
+    () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
+    /Invalid artifact was not retained as explicit rejected evidence/,
+  );
+});
+
 test('certificate checksum manifest cannot hash itself', async () => {
   const script = await readFile(new URL('../../scripts/certify-v7-e2e.sh', import.meta.url), 'utf8');
   assert.match(script, /! -name SHA256SUMS/);
@@ -111,4 +142,12 @@ test('certificate queries one exact immutable environment and score context', as
   const verifier = await readFile(new URL('../scripts/verify-v7-e2e.mjs', import.meta.url), 'utf8');
   assert.match(verifier, /environmentId=.*scoreContextId=/);
   assert.match(verifier, /member\.derivedResult\.scoreContextId/);
+});
+
+test('certificate routes the packaged software path through one-shot upload fault injection', async () => {
+  const script = await readFile(new URL('../../scripts/certify-v7-e2e.sh', import.meta.url), 'utf8');
+  assert.match(script, /v7-upload-fault-proxy\.mjs/);
+  assert.match(script, /Queued payload for retry/);
+  assert.match(script, /Submitted 1 queued payload/);
+  assert.match(script, /--fault-evidence/);
 });

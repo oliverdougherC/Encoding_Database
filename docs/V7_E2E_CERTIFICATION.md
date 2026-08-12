@@ -10,6 +10,13 @@ including warmup and repeated measured runs. The default representative workload
 is `sports-action-960x540-24p`; `--suite-clip` may select another canonical v1
 clip without bypassing protocol validation.
 
+The software path is routed through a local one-shot fault proxy. Its first
+encoded-artifact upload receives an injected HTTP 503 after the request body is
+consumed. Certification requires the packaged client to spool that submission,
+replay it successfully for the same immutable BenchmarkRun, and leave no queued
+payload behind. The proxy attempt ledger is retained in
+`upload-interruption.json`.
+
 The server and frontend must already be running against the same migrated
 PostgreSQL database. The frontend must have `INTERNAL_API_BASE_URL` set to the
 server URL and must not enable query mocks. Run from a clean `beta` commit:
@@ -42,6 +49,9 @@ Evidence is retained under `.test-reports/pl-v7-e2e/<commit>-<UTC timestamp>/`:
   and frontend-proxy evidence. The verifier also reanalyzes one retained software
   artifact under a distinct worker identity and requires that exact new analysis
   to replace aggregate membership, proving retained-artifact recomputation.
+- The verifier submits a separately identified byte-valid but structurally invalid
+  `video/mp4` payload and requires an explicit rejected Artifact plus a
+  rejected/invalid BenchmarkRun. That media is never reused as a canonical path.
 - `SHA256SUMS` hashes every other evidence file and deliberately excludes itself,
   making later alteration detectable without a circular or empty-file digest.
 
