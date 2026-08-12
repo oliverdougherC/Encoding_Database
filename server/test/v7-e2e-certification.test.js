@@ -33,17 +33,17 @@ function validSnapshot() {
     runs: [
       run('software-1', 'libx264', 'env-software'),
       run('software-2', 'libx264', 'env-software'),
-      run('hardware-1', 'h264_videotoolbox', 'env-hardware'),
-      run('hardware-2', 'h264_videotoolbox', 'env-hardware'),
+      run('hardware-1', 'videotoolbox', 'env-hardware'),
+      run('hardware-2', 'videotoolbox', 'env-hardware'),
     ],
-    serverAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['h264_videotoolbox', 'libx264'] },
-    frontendAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['h264_videotoolbox', 'libx264'] },
+    serverAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['videotoolbox', 'libx264'] },
+    frontendAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['videotoolbox', 'libx264'] },
     frontendPage: { ok: true },
   };
 }
 
 test('certification accepts a complete software and hardware authority chain', () => {
-  const paths = validateCertificationSnapshot(validSnapshot(), ['libx264', 'h264_videotoolbox']);
+  const paths = validateCertificationSnapshot(validSnapshot(), ['libx264', 'videotoolbox']);
   assert.equal(paths.length, 2);
   assert.deepEqual(paths.map((path) => path.kind), ['software', 'hardware']);
 });
@@ -52,7 +52,7 @@ test('certification rejects client/server evidence without authoritative analysi
   const snapshot = validSnapshot();
   snapshot.runs[0].qualityAnalyses[0].analysisProvenance.pipelineVersion = 'client-local';
   assert.throws(
-    () => validateCertificationSnapshot(snapshot, ['libx264', 'h264_videotoolbox']),
+    () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
     /lacks authoritative server provenance/,
   );
 });
@@ -61,7 +61,7 @@ test('certification rejects a hardware path that never reached aggregation', () 
   const snapshot = validSnapshot();
   snapshot.runs[2].derivedMembers = [];
   assert.throws(
-    () => validateCertificationSnapshot(snapshot, ['libx264', 'h264_videotoolbox']),
+    () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
     /did not reach PL aggregation/,
   );
 });
@@ -70,7 +70,7 @@ test('certification rejects frontend data that differs from the server', () => {
   const snapshot = validSnapshot();
   snapshot.frontendAnalytics.sha256 = 'different';
   assert.throws(
-    () => validateCertificationSnapshot(snapshot, ['libx264', 'h264_videotoolbox']),
+    () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
     /differs from the authoritative server response/,
   );
 });

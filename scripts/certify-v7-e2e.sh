@@ -111,6 +111,8 @@ run_path() {
 
 run_path software "$SOFTWARE_ENCODER"
 run_path hardware "$HARDWARE_ENCODER"
+SOFTWARE_IMPLEMENTATION="$SOFTWARE_ENCODER"
+HARDWARE_IMPLEMENTATION="${HARDWARE_ENCODER##*_}"
 
 cat >"$RUN_DIR/execution.json" <<EOF
 {
@@ -122,14 +124,16 @@ cat >"$RUN_DIR/execution.json" <<EOF
   "packagedClient": { "path": "$CLIENT_BINARY", "sha256": "$CLIENT_SHA256" },
   "suiteClip": "$SUITE_CLIP",
   "softwareEncoder": "$SOFTWARE_ENCODER",
-  "hardwareEncoder": "$HARDWARE_ENCODER"
+  "hardwareEncoder": "$HARDWARE_ENCODER",
+  "softwareImplementation": "$SOFTWARE_IMPLEMENTATION",
+  "hardwareImplementation": "$HARDWARE_IMPLEMENTATION"
 }
 EOF
 
 (cd "$ROOT_DIR/server" && node scripts/verify-v7-e2e.mjs \
   --since "$STARTED_AT" \
-  --software-encoder "$SOFTWARE_ENCODER" \
-  --hardware-encoder "$HARDWARE_ENCODER" \
+  --software-encoder "$SOFTWARE_IMPLEMENTATION" \
+  --hardware-encoder "$HARDWARE_IMPLEMENTATION" \
   --server-url "$SERVER_URL" \
   --frontend-url "$FRONTEND_URL" \
   --output "$RUN_DIR/authority-chain.json")
