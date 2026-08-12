@@ -40,6 +40,7 @@ class ReleasePackagingTests(unittest.TestCase):
             register_at = text.index("scripts/register_ffmpeg_runtime.py")
             self.assertLess(install_at, verify_at)
             self.assertLess(install_at, register_at)
+            self.assertIn('FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH"', text)
             self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py"', text)
             self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/register_ffmpeg_runtime.py"', text)
 
@@ -49,6 +50,8 @@ class ReleasePackagingTests(unittest.TestCase):
         register_at = windows.index('"scripts\\register_ffmpeg_runtime.py"')
         self.assertLess(install_at, verify_at)
         self.assertLess(install_at, register_at)
+        self.assertIn("$env:FFMPEG_EXE = $ffmpegPath", windows)
+        self.assertIn("$env:FFPROBE_EXE = $ffprobePath", windows)
         self.assertIn("& $buildPython @verifyArgs", windows)
         self.assertIn("& $buildPython @runtimeRegisterArgs", windows)
 

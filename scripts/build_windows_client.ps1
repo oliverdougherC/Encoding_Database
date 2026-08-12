@@ -123,6 +123,8 @@ if ($LASTEXITCODE -ne 0) { Fail "Unable to create isolated build environment" }
 $buildPython = Join-Path $venvDir "Scripts\python.exe"
 & $buildPython -m pip install --disable-pip-version-check -r $buildRequirements
 if ($LASTEXITCODE -ne 0) { Fail "Unable to install pinned build requirements" }
+$env:FFMPEG_EXE = $ffmpegPath
+$env:FFPROBE_EXE = $ffprobePath
 
 $runtimeRegisterArgs = @(
     (Join-Path $rootDir "scripts\register_ffmpeg_runtime.py"),

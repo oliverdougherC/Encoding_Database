@@ -68,7 +68,8 @@ python3 -m venv "$BUILD_ROOT/venv"
 "$BUILD_ROOT/venv/bin/python" -m pip install --disable-pip-version-check -r "$BUILD_REQUIREMENTS" >/dev/null
 PYI_CMD=("$BUILD_ROOT/venv/bin/python" -m PyInstaller)
 BUILD_PYTHON="$BUILD_ROOT/venv/bin/python"
-"$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
+FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH" \
+  "$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
   || die "Canonical suite asset verification failed"
 REGISTER_ARGS=()
 if [[ "${ENCODINGDB_REGISTER_RUNTIME:-0}" == "1" ]]; then REGISTER_ARGS+=(--update); fi
@@ -80,7 +81,8 @@ if [[ "${ENCODINGDB_REGISTER_RUNTIME:-0}" == "1" ]]; then REGISTER_ARGS+=(--upda
   "${REGISTER_ARGS[@]}" \
   --stage-runtime-dir "$RUNTIME_RESOURCE_DIR" \
   >/dev/null
-"$BUILD_PYTHON" "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
+FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH" \
+  "$BUILD_PYTHON" "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
   --staged-resource-dir "$SUITE_RESOURCE_DIR" \
   --pack-out "$SUITE_PACK_PATH" \
   >/dev/null
