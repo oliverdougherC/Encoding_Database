@@ -64,6 +64,12 @@ export default function LeaderboardsPanel({
           {payload.environmentScope.available.map((environment) => <option key={environment.environmentId} value={environment.environmentId}>{environment.label}</option>)}
         </select>
       </label>
+      <label>Score context
+        <select name="scoreContextId" defaultValue={payload.contextScope.selectedScoreContextId ?? ""} required>
+          <option value="">Select a score context</option>
+          {payload.contextScope.available.map((context) => <option key={context.scoreContextId} value={context.scoreContextId}>{context.label}</option>)}
+        </select>
+      </label>
       <label>Workload ID<input name="workloadId" placeholder="sports-action-960x540-24p" defaultValue={searchState?.workloadId ?? ""} /></label>
       <label>Resolution<input name="resolution" defaultValue={searchState?.resolution ?? "1080p"} /></label>
       <label>Minimum quality<input name="minimumQuality" type="number" step="0.1" defaultValue={searchState?.minimumQuality ?? ""} /></label>
@@ -75,6 +81,7 @@ export default function LeaderboardsPanel({
     </form>
 
     {!payload.environmentScope.exact ? <p className={styles.withheld}>Ranking and Pareto analysis are withheld until one immutable Environment is selected. Results from different machines are never compared.</p> : null}
+    {payload.environmentScope.exact && !payload.contextScope.exact ? <p className={styles.withheld}>Ranking is withheld until one immutable ScoreContext is selected. Historical score contexts are never mixed.</p> : null}
 
     <div className={styles.modeCard}>
       <strong>{profiles[selectedMode].label}</strong>
@@ -127,7 +134,9 @@ export default function LeaderboardsPanel({
               <td>
                 <strong>{row.hardwareLabel}</strong>
                 <div>{row.workloadId}</div>
-                <div>{row.benchmarkProtocolVersion ?? "No protocol"} / {row.qualityModelId ?? "No model"}</div>
+                <div>{row.context.referenceContextVersion ?? "No reference context"} / formula {row.context.formulaVersion ?? "unknown"}</div>
+                <div>{row.context.benchmarkProtocolVersion ?? "No protocol"} / {row.context.sourceSuiteVersion ?? "No suite"}</div>
+                <div>{row.context.qualityModelId ?? "No model"} / {row.context.scoreContextId}</div>
               </td>
             </tr>;
           })}

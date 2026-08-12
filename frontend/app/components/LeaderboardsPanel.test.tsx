@@ -50,5 +50,26 @@ describe("LeaderboardsPanel", () => {
     expect(activeMode?.textContent).toMatch(new RegExp(`^${mode}$`, "i"));
     expect(screen.getByText(/PL Score stays fixed/i)).toBeInTheDocument();
     expect(screen.getAllByText(/CONSTANT_QUALITY 24/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reference-frontier-v1 \/ formula 7.0/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/benchmark-protocol-v1 \/ encodingdb-test-suite-v1/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/vmaf-v1 \/ score-context-v1/i).length).toBeGreaterThan(0);
+  });
+
+  it("withholds historical-context ranking until an immutable ScoreContext is selected", () => {
+    const payload = payloadForMode("balanced");
+    payload.contextScope.selectedScoreContextId = null;
+    payload.contextScope.exact = false;
+    payload.rows = [];
+    payload.recommendation = {
+      rowId: null,
+      label: null,
+      reason: "Select one immutable score context before ranking or requesting a recommendation.",
+    };
+
+    render(<LeaderboardsPanel payload={payload} />);
+
+    expect(screen.getByRole("combobox", { name: /score context/i })).toBeRequired();
+    expect(screen.getByText(/Historical score contexts are never mixed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Select one immutable score context/i)).toBeInTheDocument();
   });
 });

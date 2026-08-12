@@ -33,6 +33,7 @@ export type AnalyticsFilters = {
   requireRecommendationEligibility: boolean;
   environmentId: string | null;
   environmentFingerprint: string | null;
+  scoreContextId: string | null;
 };
 
 export type LeaderboardAnalyticsRow = {
@@ -215,6 +216,7 @@ export function parseAnalyticsFilters(query: Record<string, string | undefined>)
     requireRecommendationEligibility: query.requireRecommendationEligibility === '1',
     environmentId: query.environmentId?.trim() || null,
     environmentFingerprint: query.environmentFingerprint?.trim() || null,
+    scoreContextId: query.scoreContextId?.trim() || null,
   };
 }
 

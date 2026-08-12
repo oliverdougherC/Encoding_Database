@@ -129,10 +129,15 @@ export type LeaderboardDecisionRow = {
   hardwareLabel: string;
   realtimeRatio: number | null;
   effectiveQuality: number | null;
-  scoreFormulaVersion: string | null;
-  benchmarkProtocolVersion: string | null;
-  sourceSuiteVersion: string | null;
-  qualityModelId: string | null;
+  context: {
+    scoreContextId: string;
+    formulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
+    referenceContextVersion: string | null;
+    workloadReferenceBitrateBps: number | null;
+  };
   hardwareContext: {
     environmentId: string;
     environmentFingerprint: string;
@@ -231,6 +236,20 @@ export type LeaderboardAnalyticsResponse = {
       gpuModel: string;
       ramGB: number;
       os: string;
+      label: string;
+    }>;
+  };
+  contextScope: {
+    selectedScoreContextId: string | null;
+    exact: boolean;
+    available: Array<{
+      scoreContextId: string;
+      formulaVersion: string | null;
+      benchmarkProtocolVersion: string | null;
+      sourceSuiteVersion: string | null;
+      qualityModelId: string | null;
+      referenceContextVersion: string | null;
+      workloadReferenceBitrateBps: number | null;
       label: string;
     }>;
   };

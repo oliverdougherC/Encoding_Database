@@ -112,10 +112,15 @@ export function buildMockLeaderboards() {
     hardwareLabel: "Apple M2 / CPU-only / macOS 15",
     realtimeRatio: avgFps / 30,
     effectiveQuality: (avgVmaf * 0.85) + (avgVmafP5 * 0.15),
-    scoreFormulaVersion: "7.0",
-    benchmarkProtocolVersion: "benchmark-protocol-v1",
-    sourceSuiteVersion: "encodingdb-test-suite-v1",
-    qualityModelId: "vmaf-v1",
+    context: {
+      scoreContextId: "score-context-v1",
+      formulaVersion: "7.0",
+      benchmarkProtocolVersion: "benchmark-protocol-v1",
+      sourceSuiteVersion: "encodingdb-test-suite-v1",
+      qualityModelId: "vmaf-v1",
+      referenceContextVersion: "reference-frontier-v1",
+      workloadReferenceBitrateBps: 5_000_000,
+    },
     hardwareContext: { environmentId: "env-apple-m2", environmentFingerprint: "envfp-apple-m2", cpuModel: "Apple M2", gpuModel: "", ramGB: 16, os: "macOS 15" },
     sampleCount: 4,
     avgFps,
@@ -196,6 +201,11 @@ export function buildMockLeaderboards() {
       selectedEnvironmentFingerprint: "envfp-apple-m2",
       exact: true,
       available: [{ environmentId: "env-apple-m2", environmentFingerprint: "envfp-apple-m2", cpuModel: "Apple M2", gpuModel: "", ramGB: 16, os: "macOS 15", label: "Apple M2 / CPU-only / macOS 15" }],
+    },
+    contextScope: {
+      selectedScoreContextId: "score-context-v1",
+      exact: true,
+      available: [{ scoreContextId: "score-context-v1", formulaVersion: "7.0", benchmarkProtocolVersion: "benchmark-protocol-v1", sourceSuiteVersion: "encodingdb-test-suite-v1", qualityModelId: "vmaf-v1", referenceContextVersion: "reference-frontier-v1", workloadReferenceBitrateBps: 5_000_000, label: "reference-frontier-v1 / vmaf-v1 / formula 7.0 / protocol benchmark-protocol-v1" }],
     },
   };
 }

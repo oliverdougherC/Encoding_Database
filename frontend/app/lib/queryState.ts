@@ -7,6 +7,7 @@ export type AnalyticsSearchState = {
   workloadId?:string;
   environmentId?:string;
   environmentFingerprint?:string;
+  scoreContextId?:string;
   contentClass:string;
   resolution:string;
   minSamples:number;
@@ -33,6 +34,7 @@ export function parseAnalyticsSearchParams(params:Params):AnalyticsSearchState {
     workloadId:params.get("workloadId")||"",
     environmentId:params.get("environmentId")||"",
     environmentFingerprint:params.get("environmentFingerprint")||"",
+    scoreContextId:params.get("scoreContextId")||"",
     contentClass:params.get("contentClass")||"mixed",
     resolution:params.get("resolution")||"1080p",
     minSamples:positive(params.get("minSamples"),3),
@@ -52,6 +54,7 @@ export function buildAnalyticsSearchString(state:AnalyticsSearchState):string {
   if(state.workloadId)p.set("workloadId",state.workloadId);
   if(state.environmentId)p.set("environmentId",state.environmentId);
   if(state.environmentFingerprint)p.set("environmentFingerprint",state.environmentFingerprint);
+  if(state.scoreContextId)p.set("scoreContextId",state.scoreContextId);
   if(state.contentClass!=="mixed")p.set("contentClass",state.contentClass);
   if(state.resolution!=="1080p")p.set("resolution",state.resolution);
   if(state.minSamples!==3)p.set("minSamples",String(state.minSamples));

@@ -640,6 +640,7 @@ test('parseAnalyticsFilters defaults to the canonical comparison slice', () => {
     requireRecommendationEligibility: false,
     environmentId: null,
     environmentFingerprint: null,
+    scoreContextId: null,
   });
   assert.deepEqual(buildAnalyticsWhere(filters), {
     status: 'accepted',
@@ -669,7 +670,7 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
     makeDerivedResultRow({
       id: 'derived-2',
       recipeId: 'recipe-2',
-      scoreContextId: 'score-context-2',
+      scoreContextId: 'score-context-1',
       centerEncodeFps: 90,
       centerRealTimeRatio: 3,
       centerVideoBitrateBps: 5_100_000,
@@ -707,7 +708,7 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
         effectiveQualityValue: 24,
       },
       scoreContext: {
-        id: 'score-context-2',
+        id: 'score-context-1',
         formulaVersion: '7.0',
         contextVersion: 'reference-frontier-v1',
         workloadId: 'mixed-1080p',
@@ -739,7 +740,7 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
 
   const { server, baseUrl } = await startTestServer();
   try {
-    const res = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2`);
+    const res = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2&scoreContextId=score-context-1`);
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(benchmarkCalls, 0);
@@ -763,6 +764,8 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
       os: 'Linux 6.10',
     });
     assert.equal(data.environmentScope.exact, true);
+    assert.equal(data.contextScope.exact, true);
+    assert.equal(data.contextScope.selectedScoreContextId, 'score-context-1');
     assert.equal(data.rows.every((row) => row.encoderName !== 'legacy_benchmark_only'), true);
 
     canonicalRows.push(makeDerivedResultRow({
@@ -778,11 +781,41 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
         cpuModel: 'Unrelated faster CPU',
       },
     }));
-    const invariantRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2&environmentFingerprint=environment-fingerprint-2`);
+    canonicalRows.push(makeDerivedResultRow({
+      id: 'derived-future-context',
+      environmentId: 'environment-2',
+      scoreContextId: 'score-context-future',
+      plTotal: 99.8,
+      environment: canonicalRows[1].environment,
+      scoreContext: {
+        ...canonicalRows[1].scoreContext,
+        id: 'score-context-future',
+        contextVersion: 'reference-frontier-future',
+      },
+    }));
+    const invariantRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2&environmentFingerprint=environment-fingerprint-2&scoreContextId=score-context-1`);
     assert.equal(invariantRes.status, 200);
     const invariant = await invariantRes.json();
     assert.equal(invariant.recommendation.rowId, data.recommendation.rowId);
     assert.deepEqual(invariant.rows.map((row) => row.rowId), data.rows.map((row) => row.rowId));
+    assert.deepEqual(invariant.rows.map((row) => row.plScore), data.rows.map((row) => row.plScore));
+
+    const constrainedRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&environmentId=environment-2&scoreContextId=score-context-1&fitMode=quality&minimumQuality=99`);
+    assert.equal(constrainedRes.status, 200);
+    const constrained = await constrainedRes.json();
+    assert.equal(constrained.rows[0].plScore, data.rows[0].plScore);
+    assert.equal(constrained.rows[0].context.scoreContextId, 'score-context-1');
+
+    const ambiguousContextRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&environmentId=environment-2`);
+    assert.equal(ambiguousContextRes.status, 200);
+    const ambiguousContext = await ambiguousContextRes.json();
+    assert.equal(ambiguousContext.rows.length, 0);
+    assert.equal(ambiguousContext.contextScope.exact, false);
+    assert.deepEqual(ambiguousContext.contextScope.available.map((context) => context.scoreContextId).sort(), [
+      'score-context-1',
+      'score-context-future',
+    ]);
+    assert.match(ambiguousContext.recommendation.reason, /immutable score context/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }

@@ -34,11 +34,12 @@ describe("queryState", () => {
       encoderType: "software",
     });
 
-    const analytics = parseAnalyticsSearchParams(new URLSearchParams("resolution=720p&crf=26&minSamples=5"));
+    const analytics = parseAnalyticsSearchParams(new URLSearchParams("resolution=720p&crf=26&minSamples=5&scoreContextId=context-1"));
     expect(analytics).toEqual({
       workloadId: "",
       environmentId: "",
       environmentFingerprint: "",
+      scoreContextId: "context-1",
       contentClass: "mixed",
       resolution: "720p",
       minSamples: 5,

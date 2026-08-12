@@ -325,6 +325,7 @@ function deriveCanonicalContext(row: CanonicalLeaderboardRecord) {
   const speedCurveRate = asFiniteNumber(rawConstants?.speedCurveRate) ?? 1.2;
   const speedSaturationRealtime = asFiniteNumber(rawConstants?.speedSaturationRealtime) ?? 4;
   return {
+    scoreContextId: row.scoreContext.id,
     formulaVersion: row.scoreContext.formulaVersion,
     benchmarkProtocolVersion: row.scoreContext.benchmarkProtocol.protocolVersion,
     sourceSuiteVersion: row.scoreContext.benchmarkProtocol.sourceSuiteVersion,
@@ -1532,9 +1533,13 @@ router.get('/analytics/leaderboards', async (req, res) => {
     const canonicalRows = await loadCanonicalLeaderboardRecords(filters);
     const canonicalCandidates = canonicalRows.map((row) => decisionCandidateFromCanonicalDerivedResult(row, filters));
     const hasExactEnvironment = Boolean(filters.environmentId || filters.environmentFingerprint);
-    const scopedCandidates = hasExactEnvironment ? canonicalCandidates.filter((row) => (
+    const hasExactContext = Boolean(filters.scoreContextId);
+    const environmentCandidates = hasExactEnvironment ? canonicalCandidates.filter((row) => (
       (!filters.environmentId || row.hardwareContext.environmentId === filters.environmentId)
       && (!filters.environmentFingerprint || row.hardwareContext.environmentFingerprint === filters.environmentFingerprint)
+    )) : [];
+    const scopedCandidates = hasExactContext ? environmentCandidates.filter((row) => (
+      row.context.scoreContextId === filters.scoreContextId
     )) : [];
     // Native rate-control settings are part of each immutable Recipe identity.
     // Never compare or filter heterogeneous encoder families through a generic
@@ -1551,6 +1556,7 @@ router.get('/analytics/leaderboards', async (req, res) => {
         selectedMode: filters.fitMode,
         selectedEnvironmentId: filters.environmentId,
         selectedEnvironmentFingerprint: filters.environmentFingerprint,
+        selectedScoreContextId: filters.scoreContextId,
         customProfile: {
           weights: customWeights,
           constraints: {
@@ -1569,14 +1575,23 @@ router.get('/analytics/leaderboards', async (req, res) => {
       const label = `${environment.cpuModel} / ${environment.gpuModel.trim() || 'CPU-only'} / ${environment.os}`;
       return [environment.environmentFingerprint || environment.environmentId, { ...environment, label }];
     })).values()).sort((left, right) => left.label.localeCompare(right.label));
-    if (!filters.environmentId && !filters.environmentFingerprint) {
+    payload.contextScope.available = Array.from(new Map(canonicalCandidates.map((candidate) => {
+      const context = candidate.context;
+      const label = [context.referenceContextVersion, context.qualityModelId, `formula ${context.formulaVersion ?? 'unknown'}`, `protocol ${context.benchmarkProtocolVersion ?? 'unknown'}`]
+        .filter(Boolean).join(' / ');
+      return [context.scoreContextId, { ...context, label }];
+    })).values()).sort((left, right) => left.label.localeCompare(right.label));
+    if (!hasExactEnvironment || !hasExactContext) {
       payload.rows = [];
       payload.recommendation = {
         rowId: null,
         label: null,
-        reason: 'Select one exact benchmark environment before ranking or requesting a recommendation.',
+        reason: !hasExactEnvironment
+          ? 'Select one exact benchmark environment before ranking or requesting a recommendation.'
+          : 'Select one immutable score context before ranking or requesting a recommendation.',
       };
-      payload.environmentScope.exact = false;
+      payload.environmentScope.exact = hasExactEnvironment;
+      payload.contextScope.exact = hasExactContext;
     }
     analyticsCache.set(cacheKey, payload);
     res.json(payload);

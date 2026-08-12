@@ -13,6 +13,7 @@ export interface DecisionHardwareContext {
 }
 
 export interface DecisionContext {
+  scoreContextId: string;
   formulaVersion: string | null;
   benchmarkProtocolVersion: string | null;
   sourceSuiteVersion: string | null;
@@ -88,6 +89,7 @@ export interface DecisionRequest {
   selectedMode: PlFitMode;
   selectedEnvironmentId?: string | null;
   selectedEnvironmentFingerprint?: string | null;
+  selectedScoreContextId?: string | null;
   customProfile?: Partial<{
     weights: Partial<DecisionWeights>;
     constraints: DecisionConstraints;
@@ -184,6 +186,11 @@ export interface DecisionPayload {
     selectedEnvironmentFingerprint: string | null;
     exact: boolean;
     available: Array<DecisionHardwareContext & { label: string }>;
+  };
+  contextScope: {
+    selectedScoreContextId: string | null;
+    exact: boolean;
+    available: Array<DecisionContext & { label: string }>;
   };
 }
 
@@ -857,6 +864,20 @@ export function buildDecisionPayload(
       available: Array.from(new Map(candidates.map((candidate) => {
         const hardware = candidate.hardwareContext;
         return [buildHardwareKey(hardware), { ...hardware, label: buildHardwareLabel(hardware) }];
+      })).values()).sort((left, right) => left.label.localeCompare(right.label)),
+    },
+    contextScope: {
+      selectedScoreContextId: request.selectedScoreContextId ?? null,
+      exact: Boolean(request.selectedScoreContextId),
+      available: Array.from(new Map(candidates.map((candidate) => {
+        const context = candidate.context;
+        const label = [
+          context.referenceContextVersion,
+          context.qualityModelId,
+          `formula ${context.formulaVersion ?? 'unknown'}`,
+          `protocol ${context.benchmarkProtocolVersion ?? 'unknown'}`,
+        ].filter(Boolean).join(' / ');
+        return [context.scoreContextId, { ...context, label }];
       })).values()).sort((left, right) => left.label.localeCompare(right.label)),
     },
   };
