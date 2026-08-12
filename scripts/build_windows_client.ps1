@@ -104,6 +104,15 @@ if ($pythonCmd.Count -gt 1) {
 
 Write-Log ("Using Python command: " + ($pythonCmd -join " "))
 
+$verifyArgs = $pythonPrefixArgs + @(
+    (Join-Path $rootDir "scripts\verify_suite_assets.py"),
+    (Join-Path $clientDir "resources\test_suite_v1")
+)
+& $pythonExe @verifyArgs
+if ($LASTEXITCODE -ne 0) {
+    Fail "Canonical suite asset verification failed"
+}
+
 $checkArgs = $pythonPrefixArgs + @("-m", "PyInstaller", "--version")
 & $pythonExe @checkArgs *> $null
 if ($LASTEXITCODE -ne 0) {

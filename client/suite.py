@@ -579,6 +579,25 @@ def ensure_suite_clip(
     cache_root: Optional[str] = None,
     regenerate_on_mismatch: bool = True,
 ) -> PreparedSuiteClip:
+    if cache_root is None:
+        for manifest_path in _manifest_resource_candidates():
+            packaged_path = os.path.join(os.path.dirname(manifest_path), "canonical", clip.file_name)
+            if not os.path.exists(packaged_path):
+                continue
+            packaged_result = verify_suite_clip(packaged_path, clip)
+            if not packaged_result.ok:
+                raise RuntimeError(f"Packaged canonical suite asset is invalid: {packaged_result.message}")
+            return PreparedSuiteClip(
+                suite_version=SUITE_VERSION,
+                clip_id=clip.clip_id,
+                canonical_content_class=clip.canonical_content_class,
+                payload_content_class=clip.payload_content_class,
+                workload_id=clip.clip_id,
+                path=packaged_path,
+                input_hash=clip.sha256,
+                file_name=clip.file_name,
+            )
+
     root = cache_root or _suite_cache_root()
     path = clip_cache_path(clip, root)
     if not os.path.exists(path):

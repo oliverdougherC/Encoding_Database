@@ -56,6 +56,15 @@ class SuiteV1Tests(unittest.TestCase):
         self.assertEqual(prepared.workload_id, clip.clip_id)
         self.assertEqual(prepared.canonical_content_class, clip.canonical_content_class)
 
+    def test_all_packaged_canonical_assets_match_the_frozen_manifest(self) -> None:
+        manifest = suite.load_default_suite_manifest()
+        prepared = suite.ensure_suite(manifest)
+
+        self.assertEqual(len(prepared), 7)
+        for prepared_clip, manifest_clip in zip(prepared, manifest.clips):
+            self.assertIn("resources/test_suite_v1/canonical", prepared_clip.path.replace("\\", "/"))
+            self.assertTrue(suite.verify_suite_clip(prepared_clip.path, manifest_clip).ok)
+
     def test_general_pl_coverage_requires_all_declared_classes(self) -> None:
         prepared = [
             suite.PreparedSuiteClip(

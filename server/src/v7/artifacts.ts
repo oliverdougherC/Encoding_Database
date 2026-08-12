@@ -33,6 +33,7 @@ import {
   parseSuiteManifest,
   type SuiteTestClipRecordInput,
   type SuiteV1Manifest,
+  SUITE_V1_MANIFEST_PATH,
   SUITE_V1_VERSION,
 } from './suite.js';
 import {
@@ -1085,6 +1086,18 @@ function flattenCliTokens(values: ReadonlyArray<string>): string[] {
 
 async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<string> {
   const provenance = asJsonObject(testClip.sourceProvenance);
+  const packagedFileName = typeof provenance?.fileName === 'string'
+    ? provenance.fileName
+    : `${testClip.workloadId}.mkv`;
+  const packagedPath = fileURLToPath(new URL(`canonical/${packagedFileName}`, SUITE_V1_MANIFEST_PATH));
+  if (await fileExists(packagedPath)) {
+    const packagedBytes = await readFile(packagedPath);
+    if (sha256Hex(packagedBytes) !== testClip.sha256 || packagedBytes.length !== testClip.byteSize) {
+      throw new Error(`Packaged canonical reference ${path.basename(packagedPath)} failed manifest verification`);
+    }
+    return packagedPath;
+  }
+
   const candidates = provenance ? [
     provenance.referencePath,
     provenance.localPath,
@@ -1126,17 +1139,26 @@ async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<s
     const ffmpegArgs = [
       '-hide_banner',
       '-loglevel', 'error',
-      ...flattenCliTokens(deterministicFlags),
       '-f', 'lavfi',
       '-i', acquisition.ffmpegLavfi,
       '-frames:v', String(testClip.exactFrameCount),
       '-an',
-      '-c:v', String(acquisition.videoCodec || 'ffv1'),
+      '-sn',
+      '-dn',
+      ...flattenCliTokens(deterministicFlags),
+      '-vf', 'setparams=range=tv:color_primaries=bt709:color_trc=bt709:colorspace=bt709:field_mode=prog',
       '-pix_fmt', testClip.pixelFormat,
       ...(testClip.colorPrimaries ? ['-color_primaries', testClip.colorPrimaries] : []),
       ...(testClip.transferCharacteristics ? ['-color_trc', testClip.transferCharacteristics] : []),
       ...(testClip.matrixCoefficients ? ['-colorspace', testClip.matrixCoefficients] : []),
       ...(testClip.colorRange ? ['-color_range', testClip.colorRange] : []),
+      '-c:v', String(acquisition.videoCodec || 'ffv1'),
+      '-level', '3',
+      '-coder', '1',
+      '-context', '1',
+      '-g', '1',
+      '-slices', '16',
+      '-slicecrc', '1',
       tempPath,
     ];
     await execFileAsync('ffmpeg', ffmpegArgs, { maxBuffer: 10 * 1024 * 1024 });

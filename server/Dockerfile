@@ -83,6 +83,7 @@ COPY prisma ./prisma
 RUN echo "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app/resources/vmaf/vmaf_v1.0.16_3d0h.json" \
     | sha256sum -c - \
     && test -f /app/resources/test_suite_v1/manifest.json \
+    && node -e 'const fs=require("fs"),crypto=require("crypto"),path=require("path"); const root="/app/resources/test_suite_v1"; const manifest=JSON.parse(fs.readFileSync(path.join(root,"manifest.json"))); for(const clip of manifest.clips){const bytes=fs.readFileSync(path.join(root,"canonical",clip.fileName)); if(bytes.length!==clip.byteSize||crypto.createHash("sha256").update(bytes).digest("hex")!==clip.sha256) throw new Error(`invalid canonical source ${clip.id}`)}' \
     && test -f /app/config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json \
     && ffmpeg -hide_banner -loglevel error \
       -f lavfi -i testsrc2=size=960x540:rate=2:duration=2 \

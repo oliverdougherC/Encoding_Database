@@ -1,15 +1,27 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 
 import {
   SUITE_V1_CANONICAL_CONTENT_CLASSES,
   SUITE_V1_DETERMINISTIC_FLAGS,
+  SUITE_V1_MANIFEST_PATH,
   buildPublicTestVideoCatalog,
   buildSuiteTestClipUpsertArgs,
   loadAuthoritativeSuiteManifest,
   parseSuiteManifest,
   upsertSuiteTestClips,
 } from '../dist/v7/suite.js';
+
+test('all packaged canonical source artifacts match manifest bytes and hashes', () => {
+  const manifest = loadAuthoritativeSuiteManifest();
+  for (const clip of manifest.clips) {
+    const bytes = readFileSync(new URL(`canonical/${clip.fileName}`, SUITE_V1_MANIFEST_PATH));
+    assert.equal(bytes.length, clip.byteSize, clip.id);
+    assert.equal(createHash('sha256').update(bytes).digest('hex'), clip.sha256, clip.id);
+  }
+});
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));

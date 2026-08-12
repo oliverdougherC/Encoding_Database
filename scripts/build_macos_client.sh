@@ -41,6 +41,8 @@ fi
 if [[ ! -f "$ENTRYPOINT" ]]; then
   die "Missing entrypoint: $ENTRYPOINT"
 fi
+python3 "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
+  || die "Canonical suite asset verification failed"
 
 if command -v pyinstaller >/dev/null 2>&1; then
   PYI_CMD=(pyinstaller)
