@@ -57,7 +57,9 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn("$env:FFPROBE_EXE = $ffprobePath", windows)
         self.assertIn("& $buildPython @verifyArgs", windows)
         self.assertIn("& $buildPython @runtimeRegisterArgs", windows)
-        self.assertLess(windows.index('@("python.exe")'), windows.index('@("py", "-3")'))
+        self.assertLess(windows.index('Exe = "python.exe"'), windows.index('Exe = "py"'))
+        self.assertIn("$pythonExe = $pythonCmd.Exe", windows)
+        self.assertIn("$pythonPrefixArgs = @($pythonCmd.PrefixArgs)", windows)
         self.assertIn('"--add-data", "$clientDir\\presets.json;."', windows)
         self.assertIn('"--add-data", "$clientDir\\resources\\vmaf;resources/vmaf"', windows)
 

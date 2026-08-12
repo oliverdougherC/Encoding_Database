@@ -26,22 +26,19 @@ function Ensure-Exists {
 
 function Resolve-PythonCommand {
     $candidates = @(
-        @("python.exe"),
-        @("python"),
-        @("py", "-3"),
-        @("py.exe", "-3")
+        [PSCustomObject]@{ Exe = "python.exe"; PrefixArgs = @() },
+        [PSCustomObject]@{ Exe = "python"; PrefixArgs = @() },
+        [PSCustomObject]@{ Exe = "py"; PrefixArgs = @("-3") },
+        [PSCustomObject]@{ Exe = "py.exe"; PrefixArgs = @("-3") }
     )
 
     foreach ($candidate in $candidates) {
-        $exe = $candidate[0]
+        $exe = $candidate.Exe
         if (-not (Get-Command $exe -ErrorAction SilentlyContinue)) {
             continue
         }
         try {
-            $args = @()
-            if ($candidate.Count -gt 1) {
-                $args += $candidate[1..($candidate.Count - 1)]
-            }
+            $args = @($candidate.PrefixArgs)
             $args += "--version"
             & $exe @args *> $null
             if ($LASTEXITCODE -eq 0) {
@@ -108,13 +105,10 @@ New-Item -ItemType Directory -Path $pyiWorkDir -Force | Out-Null
 New-Item -ItemType Directory -Path $pyiSpecDir -Force | Out-Null
 
 $pythonCmd = Resolve-PythonCommand
-$pythonExe = $pythonCmd[0]
-$pythonPrefixArgs = @()
-if ($pythonCmd.Count -gt 1) {
-    $pythonPrefixArgs = $pythonCmd[1..($pythonCmd.Count - 1)]
-}
+$pythonExe = $pythonCmd.Exe
+$pythonPrefixArgs = @($pythonCmd.PrefixArgs)
 
-Write-Log ("Using Python command: " + ($pythonCmd -join " "))
+Write-Log ("Using Python command: " + ((@($pythonExe) + $pythonPrefixArgs) -join " "))
 
 $venvDir = Join-Path $buildRoot "venv"
 $venvCreateArgs = $pythonPrefixArgs + @("-m", "venv", $venvDir)
