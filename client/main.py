@@ -164,11 +164,9 @@ def _load_suite_manifest_clip(prepared_clip: PreparedSuiteClip) -> Dict[str, Any
             return {
                 "suiteId": "encodingdb-test-suite",
                 "suiteVersion": manifest.suite_version,
-                "manifestVersion": manifest.manifest_version,
                 "clipKey": clip.clip_id,
                 "workloadId": clip.clip_id,
                 "sha256": clip.sha256,
-                "byteSize": clip.byte_size,
             }
     raise RuntimeError(f"Suite clip {prepared_clip.clip_id} not found in manifest")
 

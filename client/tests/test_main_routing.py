@@ -204,6 +204,12 @@ class MainRoutingTests(unittest.TestCase):
         self.assertEqual(payload["decodeBenchmark"]["status"], "complete")
         self.assertEqual(payload["decodeBenchmark"]["executionMode"], "software")
         self.assertEqual(payload["decodeBenchmark"]["cpuTimeMs"], 1500.0)
+        self.assertEqual(
+            set(payload["testClip"]),
+            {"suiteId", "suiteVersion", "clipKey", "workloadId", "sha256"},
+        )
+        self.assertNotIn("manifestVersion", payload["testClip"])
+        self.assertNotIn("byteSize", payload["testClip"])
 
     def test_menu_flag_overrides_direct_cli_intent(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:
