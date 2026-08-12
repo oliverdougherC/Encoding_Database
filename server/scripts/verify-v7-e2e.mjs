@@ -173,7 +173,8 @@ async function main(argv) {
     });
     const environmentIds = [...new Set(runs.map((run) => run.environmentId))];
     const scopedPairs = await Promise.all(environmentIds.map(async (environmentId) => {
-      const query = `?fitMode=balanced&minSamples=1&environmentId=${encodeURIComponent(environmentId)}`;
+      const workloadId = runs.find((run) => run.environmentId === environmentId)?.workloadId;
+      const query = `?fitMode=balanced&minSamples=1&environmentId=${encodeURIComponent(environmentId)}&workloadId=${encodeURIComponent(workloadId || '')}`;
       return await Promise.all([
         fetchEvidence(`${args['server-url'].replace(/\/$/, '')}/analytics/leaderboards${query}`),
         fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/api/analytics/leaderboards${query}`),
