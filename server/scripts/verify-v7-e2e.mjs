@@ -171,10 +171,16 @@ async function main(argv) {
       },
       orderBy: { createdAt: 'asc' },
     });
-    const environmentIds = [...new Set(runs.map((run) => run.environmentId))];
-    const scopedPairs = await Promise.all(environmentIds.map(async (environmentId) => {
-      const workloadId = runs.find((run) => run.environmentId === environmentId)?.workloadId;
-      const query = `?fitMode=balanced&minSamples=1&environmentId=${encodeURIComponent(environmentId)}&workloadId=${encodeURIComponent(workloadId || '')}`;
+    const immutableScopes = [...new Map(runs.flatMap((run) => run.derivedMembers.map((member) => ({
+      environmentId: run.environmentId,
+      workloadId: run.workloadId,
+      scoreContextId: member.derivedResult.scoreContextId,
+    }))).map((scope) => [
+      `${scope.environmentId}:${scope.workloadId}:${scope.scoreContextId}`,
+      scope,
+    ])).values()];
+    const scopedPairs = await Promise.all(immutableScopes.map(async ({ environmentId, workloadId, scoreContextId }) => {
+      const query = `?fitMode=balanced&minSamples=1&environmentId=${encodeURIComponent(environmentId)}&workloadId=${encodeURIComponent(workloadId)}&scoreContextId=${encodeURIComponent(scoreContextId)}`;
       return await Promise.all([
         fetchEvidence(`${args['server-url'].replace(/\/$/, '')}/analytics/leaderboards${query}`),
         fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/api/analytics/leaderboards${query}`),

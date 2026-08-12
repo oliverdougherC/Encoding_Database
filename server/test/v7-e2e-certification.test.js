@@ -95,3 +95,9 @@ test('certificate records explicit native rate-control settings', async () => {
   assert.match(script, /"softwareRateControl"/);
   assert.match(script, /"hardwareRateControl"/);
 });
+
+test('certificate queries one exact immutable environment and score context', async () => {
+  const verifier = await readFile(new URL('../scripts/verify-v7-e2e.mjs', import.meta.url), 'utf8');
+  assert.match(verifier, /environmentId=.*scoreContextId=/);
+  assert.match(verifier, /member\.derivedResult\.scoreContextId/);
+});
