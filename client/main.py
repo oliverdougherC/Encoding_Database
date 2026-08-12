@@ -1604,12 +1604,19 @@ def run_benchmark_batch(
                 if note_parts:
                     payload['notes'] = "; ".join(note_parts)[:3500]
 
-                skip, reason = should_skip_submission(
+                advisory_skip, reason = should_skip_submission(
                     hardware=hardware,
                     payload=payload,
                     background_cpu_pct=float(getattr(record.environment_snapshot, 'background_cpu_pct', 0.0) or 0.0),
                     baseline_rows=baseline_rows,
                 )
+                if advisory_skip:
+                    # Legacy aggregate heuristics are advisory only in the v7
+                    # evidence epoch. Canonical validity is decided by the
+                    # protocol record and authoritative server analysis.
+                    payload['legacySubmissionAdvisory'] = reason
+                    print_info(f"Legacy submission advisory for {payload['codec']} {payload['preset']}: {reason}")
+                skip = False
                 if skip:
                     print_warning(f"Skipped submission for {payload['codec']} {payload['preset']} (reason: {reason})")
                     skipped_count += 1
