@@ -1219,6 +1219,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         dynamicRange: 'sdr' as const,
       };
       const plan = resolveQualityAnalysisExecutionPlan(source, this.vmafModelPath, vmafLogPath);
+      const diagnosticInputs = `[0:v]fps=${source.frameRate},settb=AVTB,setpts=N/(${source.frameRate}*TB)[distorted];[1:v]fps=${source.frameRate},settb=AVTB,setpts=N/(${source.frameRate}*TB)[reference]`;
       await execFileAsync('ffmpeg', [
         '-hide_banner',
         '-loglevel', 'error',
@@ -1234,7 +1235,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', '[0:v][1:v]xpsnr',
+        '-lavfi', `${diagnosticInputs};[distorted][reference]xpsnr`,
         '-an',
         '-f', 'null',
         '-',
@@ -1243,7 +1244,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', '[0:v][1:v]ssim',
+        '-lavfi', `${diagnosticInputs};[distorted][reference]ssim`,
         '-an',
         '-f', 'null',
         '-',
@@ -1252,7 +1253,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', '[0:v][1:v]psnr',
+        '-lavfi', `${diagnosticInputs};[distorted][reference]psnr`,
         '-an',
         '-f', 'null',
         '-',

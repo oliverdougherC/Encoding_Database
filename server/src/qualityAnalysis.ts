@@ -248,10 +248,11 @@ function harmonicMean(values: readonly number[]): number {
   return values.length / inverseSum;
 }
 
-function buildCanonicalFilterGraph(metricModelPath: string, logPath: string): string {
+function buildCanonicalFilterGraph(metricModelPath: string, logPath: string, frameRate: number): string {
+  const cadence = Number(frameRate.toFixed(9));
   return [
-    `[${CANONICAL_DISTORTED_INPUT_INDEX}:v]settb=AVTB,setpts=PTS-STARTPTS,format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[distorted]`,
-    `[${CANONICAL_REFERENCE_INPUT_INDEX}:v]settb=AVTB,setpts=PTS-STARTPTS,format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[reference]`,
+    `[${CANONICAL_DISTORTED_INPUT_INDEX}:v]fps=${cadence},settb=AVTB,setpts=N/(${cadence}*TB),format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[distorted]`,
+    `[${CANONICAL_REFERENCE_INPUT_INDEX}:v]fps=${cadence},settb=AVTB,setpts=N/(${cadence}*TB),format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[reference]`,
     `[distorted][reference]libvmaf=model='path=${escapeFilterValue(metricModelPath)}'`
       + `:log_fmt=${CANONICAL_VMAF_LOG_FORMAT}:log_path=${escapeFilterValue(logPath)}:n_threads=${CANONICAL_VMAF_THREADS}`,
   ].join(';');
@@ -370,7 +371,7 @@ export function resolveQualityAnalysisExecutionPlan(
     analysisPixelFormat: CANONICAL_ANALYSIS_PIXEL_FORMAT,
     distortedInputIndex: CANONICAL_DISTORTED_INPUT_INDEX,
     referenceInputIndex: CANONICAL_REFERENCE_INPUT_INDEX,
-    filterGraph: buildCanonicalFilterGraph(metricModelPath, logPath),
+    filterGraph: buildCanonicalFilterGraph(metricModelPath, logPath, frameRate),
   };
 }
 
