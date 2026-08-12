@@ -16,9 +16,9 @@ export default function MethodologyPage() {
         <p className={styles.lede}>PL Score v7 is a fixed public score for one benchmark workload: how good the picture looks, how much bitrate it used, and how fast it ran. The goal is not to replace human judgment. The goal is to make tradeoffs legible, reproducible, and comparable without hiding the math.</p>
       </div>
       <aside className={styles.statusCard} aria-label="Methodology status">
-        <p className={styles.kicker}>Current status</p>
-        <div className={styles.big}>v7.0</div>
-        <p className={styles.statusCopy}>This page documents the current best scoring method in the project. It is intentionally fixed, versioned, and narrower than a personalized recommendation system.</p>
+        <p className={styles.kicker}>Pre-epoch status</p>
+        <div className={styles.big}>v7.0 pilot</div>
+        <p className={styles.statusCopy}>The formula and measurement contract are versioned, but calibration is still provisional. The public v7 epoch is not open, and pilot results are not recommendation-eligible.</p>
         <div className={styles.statusGrid}>
           <div><strong>4x</strong><span>real-time speed saturation</span></div>
           <div><strong>P5</strong><span>guards against ugly low points</span></div>
@@ -30,7 +30,7 @@ export default function MethodologyPage() {
 
     <section className={styles.summary} aria-label="PL7 summary">
       <StatCard label="Public formula" value="Fixed" note="No dataset-relative reweighting in the public score." />
-      <StatCard label="Bitrate reference" value="Frozen" note="Each workload carries its own reference bitrate." />
+      <StatCard label="Bitrate reference" value="Pilot only" note="Production frontiers remain blocked on calibration evidence." />
       <StatCard label="General score" value="Multi-class" note="Only valid with complete equal-class suite coverage." />
     </section>
 
@@ -103,7 +103,7 @@ export default function MethodologyPage() {
             <p>A separate trust signal about evidence quality and completeness. Confidence should explain how much to trust a score, not secretly change the score itself.</p>
           </article>
         </div>
-        <p>Keeping those ideas separate is another reason v7 is the best version so far. It removes a common source of confusion: a public benchmark should not quietly turn into a recommendation engine.</p>
+        <p>Keeping those ideas separate removes a common source of confusion: a public benchmark should not quietly turn into a recommendation engine.</p>
       </Section>
 
       <Section eyebrow="Scope" title="Content-specific PL7 and General PL7 solve different problems">
@@ -138,7 +138,7 @@ export default function MethodologyPage() {
 
     <aside className={styles.note}>
       <strong>Rollout note</strong>
-      <span>This page documents the v7 methodology and its guardrails. A v7 score appears only after a row retains every required input and the server has a frozen reference bitrate for that exact workload; older or incomplete evidence remains visible without being mislabeled as PL Score v7.</span>
+      <span>This page documents the v7 methodology and its guardrails before the public epoch opens. Current evidence uses a provisional, recommendation-ineligible policy. Production scores require a retained calibration corpus, expert review, holdouts, and a frozen production reference context; older or incomplete evidence remains visible without being mislabeled as final PL Score v7.</span>
     </aside>
   </div>;
 }
