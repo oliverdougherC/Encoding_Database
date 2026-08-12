@@ -9,6 +9,8 @@ import rateLimit from 'express-rate-limit';
 import routes from './routes.js';
 import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { collectV7EvidenceHealth } from './v7/operationalHealth.js';
 
 export const app = express();
 
@@ -343,6 +345,20 @@ app.get('/health/ready', async (_req, res) => {
     res.json({ status: 'ok' });
   } catch {
     res.status(503).json({ status: 'degraded', error: 'db_unreachable' });
+  }
+});
+
+app.get('/health/v7-evidence', async (_req, res) => {
+  try {
+    const health = await collectV7EvidenceHealth(prisma, {
+      storageRoot: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || path.join(process.cwd(), '.artifacts')),
+      pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
+      pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
+      orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
+    });
+    res.status(health.status === 'ok' ? 200 : 503).json(health);
+  } catch {
+    res.status(503).json({ status: 'degraded', reasons: ['evidence_health_unavailable'] });
   }
 });
 

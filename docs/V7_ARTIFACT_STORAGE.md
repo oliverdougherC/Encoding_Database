@@ -20,8 +20,11 @@ An operator may delete only an unreferenced abandoned staging object after confi
 
 - Production uses the `artifact-data` Docker volume mounted at the configured storage root. The application must not use an ephemeral container layer for canonical objects.
 - Database and artifact-volume backups are one recovery unit. Restore validation must confirm every retained `Artifact.sha256` and byte length before analytics are published.
+- Create that unit with `DATABASE_URL=... ARTIFACT_STORAGE_ROOT=... scripts/v7-backup.sh OUTPUT_DIR`. The command exports a custom-format PostgreSQL dump, the complete artifact tree, an exact retained-Artifact/DerivedResultMember inventory, and a non-self-referential SHA-256 manifest.
+- Validate recovery with `scripts/v7-restore-drill.sh OUTPUT_DIR`. The drill verifies the bundle hashes, restores into an isolated disposable PostgreSQL 16 container and temporary artifact root, then checks the restored database inventory and every retained object's byte length and SHA-256. It never drops or writes to the source database.
 - The upload secret is required in production. Object keys are server-generated; client paths are never trusted.
 - Operators should alert on queued uploads older than the normal client retry window, failed checksum validation, analysis failures, orphan staging files, missing retained objects, and a `DerivedResultMember` whose selected analysis or artifact cannot be resolved.
+- `GET /health/v7-evidence` implements that alert surface. It returns HTTP 503 with stable reason codes for stale pending uploads/analyses, failed analyses, stale staging entries, missing retained objects, or unresolved selected-analysis membership. It also reports artifact/analysis state counts and server-analysis latency p50/p95. Alert thresholds are configurable with `V7_PENDING_UPLOAD_ALERT_SECONDS`, `V7_PENDING_ANALYSIS_ALERT_SECONDS`, and `V7_ORPHAN_STAGING_ALERT_SECONDS`.
 
 ## Reproducibility guarantee
 
