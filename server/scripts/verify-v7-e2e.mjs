@@ -91,15 +91,23 @@ export function validateCertificationSnapshot(snapshot, expectedEncoders) {
   if (hardwareRuns.every((run) => softwareEnvironmentIds.has(run.environmentId))) {
     fail('Hardware path did not produce a distinct deterministic environment identity');
   }
-  if (!snapshot.serverAnalytics?.ok || !snapshot.frontendAnalytics?.ok || !snapshot.frontendPage?.ok) {
+  const serverScopes = snapshot.serverAnalyticsScopes ?? [snapshot.serverAnalytics];
+  const frontendScopes = snapshot.frontendAnalyticsScopes ?? [snapshot.frontendAnalytics];
+  if (!snapshot.frontendPage?.ok || serverScopes.length === 0 || serverScopes.length !== frontendScopes.length
+      || serverScopes.some((scope) => !scope?.ok) || frontendScopes.some((scope) => !scope?.ok)) {
     fail('The authoritative evidence did not reach both the analytics API and frontend surface');
   }
-  if (snapshot.serverAnalytics.sha256 !== snapshot.frontendAnalytics.sha256) {
-    fail('Frontend analytics proxy response differs from the authoritative server response');
+  for (let index = 0; index < serverScopes.length; index += 1) {
+    if (serverScopes[index].sha256 !== frontendScopes[index].sha256) {
+      fail('Frontend analytics proxy response differs from the authoritative server response');
+    }
   }
-  if (!(snapshot.serverAnalytics.rowCount > 0)) fail('Analytics API returned no PL decision rows');
+  if (!(serverScopes.reduce((sum, scope) => sum + (scope.rowCount || 0), 0) > 0)) {
+    fail('Analytics API returned no PL decision rows');
+  }
+  const surfacedEncoders = new Set(serverScopes.flatMap((scope) => scope.encoderNames || []));
   for (const encoder of expectedEncoders) {
-    if (!snapshot.serverAnalytics.encoderNames?.includes(encoder)) {
+    if (!surfacedEncoders.has(encoder)) {
       fail(`Analytics/frontend surface does not contain certified encoder ${encoder}`);
     }
   }
@@ -163,18 +171,23 @@ async function main(argv) {
       },
       orderBy: { createdAt: 'asc' },
     });
-    const query = '?fitMode=balanced&minSamples=1';
-    const [serverAnalytics, frontendAnalytics, frontendPage] = await Promise.all([
-      fetchEvidence(`${args['server-url'].replace(/\/$/, '')}/analytics/leaderboards${query}`),
-      fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/api/analytics/leaderboards${query}`),
-      fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/leaderboards`),
-    ]);
+    const environmentIds = [...new Set(runs.map((run) => run.environmentId))];
+    const scopedPairs = await Promise.all(environmentIds.map(async (environmentId) => {
+      const query = `?fitMode=balanced&minSamples=1&environmentId=${encodeURIComponent(environmentId)}`;
+      return await Promise.all([
+        fetchEvidence(`${args['server-url'].replace(/\/$/, '')}/analytics/leaderboards${query}`),
+        fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/api/analytics/leaderboards${query}`),
+      ]);
+    }));
+    const frontendPage = await fetchEvidence(`${args['frontend-url'].replace(/\/$/, '')}/leaderboards`);
+    const serverAnalyticsScopes = scopedPairs.map(([server]) => server);
+    const frontendAnalyticsScopes = scopedPairs.map(([, frontend]) => frontend);
     const snapshot = {
       evidenceVersion: E2E_EVIDENCE_VERSION,
       capturedAt: new Date().toISOString(),
       since: args.since.toISOString(),
-      serverAnalytics,
-      frontendAnalytics,
+      serverAnalyticsScopes,
+      frontendAnalyticsScopes,
       frontendPage,
       runs,
     };

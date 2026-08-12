@@ -36,8 +36,14 @@ function validSnapshot() {
       run('hardware-1', 'videotoolbox', 'env-hardware'),
       run('hardware-2', 'videotoolbox', 'env-hardware'),
     ],
-    serverAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['videotoolbox', 'libx264'] },
-    frontendAnalytics: { ok: true, sha256: 'feed', rowCount: 2, encoderNames: ['videotoolbox', 'libx264'] },
+    serverAnalyticsScopes: [
+      { ok: true, sha256: 'soft', rowCount: 1, encoderNames: ['libx264'] },
+      { ok: true, sha256: 'hard', rowCount: 1, encoderNames: ['videotoolbox'] },
+    ],
+    frontendAnalyticsScopes: [
+      { ok: true, sha256: 'soft', rowCount: 1, encoderNames: ['libx264'] },
+      { ok: true, sha256: 'hard', rowCount: 1, encoderNames: ['videotoolbox'] },
+    ],
     frontendPage: { ok: true },
   };
 }
@@ -68,7 +74,7 @@ test('certification rejects a hardware path that never reached aggregation', () 
 
 test('certification rejects frontend data that differs from the server', () => {
   const snapshot = validSnapshot();
-  snapshot.frontendAnalytics.sha256 = 'different';
+  snapshot.frontendAnalyticsScopes[0].sha256 = 'different';
   assert.throws(
     () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
     /differs from the authoritative server response/,
