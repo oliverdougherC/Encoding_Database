@@ -572,7 +572,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
         (
             "stream=index,codec_type,codec_name,codec_tag_string,profile,level,pix_fmt,bits_per_raw_sample,"
             "color_range,color_space,color_transfer,color_primaries,width,height,avg_frame_rate,time_base,"
-            "nb_read_frames,nb_frames:format=duration,size"
+            "nb_read_frames,nb_frames:format=duration,size,format_name"
         ),
         "-of", "json",
         path,
@@ -759,7 +759,7 @@ def _build_protocol_recipe_specs(
             max_b_frames=requested_output.maxBFrames,
             b_frame_reordering=requested_output.bFrameReordering,
             avg_frame_rate=source_fps,
-            time_base=source_probe.time_base,
+            time_base=_parse_ratio(requested_output.timeBase),
             no_audio=True,
         )
         specs.append(

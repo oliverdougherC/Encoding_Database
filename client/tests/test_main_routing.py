@@ -95,7 +95,7 @@ class MainRoutingTests(unittest.TestCase):
             color_primaries="bt709",
             container_format="mp4",
             avg_frame_rate=24.0,
-            time_base=1 / 24.0,
+            time_base=1 / 24000.0,
             has_audio=False,
             size_bytes=1_000_000,
             truncated=False,

@@ -162,7 +162,7 @@ def _build_rate_control_args(
 
 def _special_output_args(encoder: str) -> List[str]:
     enc = encoder.strip().lower()
-    args = ["-pix_fmt", "yuv420p"]
+    args = ["-pix_fmt", "yuv420p", "-video_track_timescale", "24000"]
     if enc == "h264_videotoolbox":
         return args + ["-profile:v", "high", "-g", "120"]
     if enc == "hevc_videotoolbox":
@@ -181,6 +181,7 @@ def _requested_output_identity(
     kwargs: Dict[str, Any] = {
         "container_format": "mp4",
         "pixel_format": "yuv420p",
+        "time_base": "1/24000",
     }
     if enc == "h264_videotoolbox":
         kwargs["profile"] = "high"
@@ -1007,12 +1008,13 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
         "maxBFrames": None,
         "bFrameReordering": None,
         "videoTag": None,
+        "timeBase": None,
     }
     cmd = [
         config.ffprobe_exe(),
         "-v", "error",
         "-select_streams", "v:0",
-        "-show_entries", "stream=avg_frame_rate,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
+        "-show_entries", "stream=avg_frame_rate,time_base,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
         "-of", "json",
         path,
     ]
@@ -1025,6 +1027,9 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
                 stream = streams[0] if isinstance(streams[0], dict) else {}
                 if isinstance(stream, dict):
                     result["sourceFps"] = _parse_ratio(stream.get("avg_frame_rate"))
+                    raw_time_base = str(stream.get("time_base") or "").strip()
+                    if raw_time_base:
+                        result["timeBase"] = raw_time_base
                     duration = _safe_float(stream.get("duration"))
                     if duration is not None and duration > 0:
                         result["sourceDurationSeconds"] = duration

@@ -118,6 +118,7 @@ class OutputIdentity:
     filmGrainSynthesis: Optional[int] = None
     lookaheadFrames: Optional[int] = None
     videoTag: Optional[str] = None
+    timeBase: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -372,6 +373,7 @@ def build_output_identity(
     film_grain_synthesis: Optional[int] = None,
     lookahead_frames: Optional[int] = None,
     video_tag: Optional[str] = None,
+    time_base: Optional[str] = None,
 ) -> OutputIdentity:
     normalized_pixel_format = normalize_pixel_format(pixel_format)
     return OutputIdentity(
@@ -393,6 +395,7 @@ def build_output_identity(
         filmGrainSynthesis=_coerce_int(film_grain_synthesis),
         lookaheadFrames=_coerce_int(lookahead_frames),
         videoTag=str(video_tag).strip().lower() if video_tag else None,
+        timeBase=str(time_base).strip() if time_base else None,
     )
 
 
@@ -411,6 +414,7 @@ def build_output_identity_from_probe(probe: Optional[Mapping[str, Any]]) -> Outp
         max_b_frames=data.get("maxBFrames"),
         b_frame_reordering=data.get("bFrameReordering"),
         video_tag=data.get("videoTag"),
+        time_base=data.get("timeBase"),
     )
 
 
@@ -427,6 +431,9 @@ def compare_output_identities(requested: OutputIdentity, effective: OutputIdenti
         ("maxBFrames", "max B-frames"),
         ("bFrameReordering", "B-frame reordering"),
         ("videoTag", "video tag"),
+        ("timeBase", "time base"),
+        ("gopFrames", "GOP size"),
+        ("keyintMin", "minimum keyframe interval"),
     ):
         expected = getattr(requested, field_name)
         if expected is None:
