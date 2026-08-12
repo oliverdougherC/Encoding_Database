@@ -12,7 +12,8 @@ if [[ ! -d "$ARTIFACT_STORAGE_ROOT" ]]; then echo "artifact root is not a direct
 mkdir -p "$OUTPUT_DIR"
 trap 'if [[ ! -f "$OUTPUT_DIR/SHA256SUMS" ]]; then rm -rf "$OUTPUT_DIR"; fi' EXIT
 
-pg_dump --format=custom --no-owner --no-acl --file "$OUTPUT_DIR/database.dump" "$DATABASE_URL"
+PG_DATABASE_URL="$(python3 -c 'import sys,urllib.parse as u; p=u.urlsplit(sys.argv[1]); q=u.urlencode([(k,v) for k,v in u.parse_qsl(p.query) if k != "schema"]); print(u.urlunsplit((p.scheme,p.netloc,p.path,q,p.fragment)))' "$DATABASE_URL")"
+pg_dump --format=custom --no-owner --no-acl --file "$OUTPUT_DIR/database.dump" "$PG_DATABASE_URL"
 DATABASE_URL="$DATABASE_URL" node "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs" \
   --mode export --artifact-root "$ARTIFACT_STORAGE_ROOT" \
   --inventory "$OUTPUT_DIR/inventory.json" --output "$OUTPUT_DIR/inventory.json"

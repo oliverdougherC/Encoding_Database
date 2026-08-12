@@ -479,6 +479,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
         if [[ "$SERVER_RUNNING_OK" -eq 1 ]]; then
           run_step "API: health live" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/live\" >/dev/null"
           run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
+          run_step "API: PL-v7 evidence health" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/v7-evidence\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert data['status'] == 'ok' and data['reasons'] == []\""
           run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
           run_v7_api_contract_smoke
           run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
