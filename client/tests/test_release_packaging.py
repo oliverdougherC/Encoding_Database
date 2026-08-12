@@ -48,6 +48,7 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertIn('FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH"', text)
             self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py"', text)
             self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/register_ffmpeg_runtime.py"', text)
+            self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/release_manifest_lib.py"', text)
 
         windows = (root / "scripts/build_windows_client.ps1").read_text(encoding="utf-8")
         install_at = windows.index("-m pip install")
@@ -59,6 +60,8 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn("$env:FFPROBE_EXE = $ffprobePath", windows)
         self.assertIn("& $buildPython @verifyArgs", windows)
         self.assertIn("& $buildPython @runtimeRegisterArgs", windows)
+        self.assertIn("& $buildPython @guiReleaseManifestArgs", windows)
+        self.assertIn("& $buildPython @releaseManifestArgs", windows)
         self.assertLess(windows.index('Exe = "python.exe"'), windows.index('Exe = "py"'))
         self.assertIn("$pythonExe = $pythonCmd.Exe", windows)
         self.assertIn("$pythonPrefixArgs = @($pythonCmd.PrefixArgs)", windows)

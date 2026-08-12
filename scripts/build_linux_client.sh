@@ -111,7 +111,7 @@ chmod +x "$OUTPUT_PATH" || true
 if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
   log "Build-only validation complete; release sidecars require an assigned project version."
 else
-  python3 "$ROOT_DIR/scripts/release_manifest_lib.py" \
+  "$BUILD_PYTHON" "$ROOT_DIR/scripts/release_manifest_lib.py" \
     --artifact-path "$OUTPUT_PATH" \
     --platform linux \
     --ffmpeg-path "$FFMPEG_PATH" \

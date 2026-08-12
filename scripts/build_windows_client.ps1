@@ -217,7 +217,7 @@ Move-Item -LiteralPath $builtConsoleExe -Destination $consoleOutputPath -Force
 if ($env:ENCODINGDB_BUILD_ONLY -eq "1") {
     Write-Log "Build-only validation complete; release sidecars require an assigned project version."
 } else {
-    $guiReleaseManifestArgs = $pythonPrefixArgs + @(
+    $guiReleaseManifestArgs = @(
         (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
         "--artifact-path", $guiOutputPath,
         "--platform", "win",
@@ -228,12 +228,12 @@ if ($env:ENCODINGDB_BUILD_ONLY -eq "1") {
         "--output-dir", $rootDir,
         "--skip-smoke"
     )
-    & $pythonExe @guiReleaseManifestArgs
+    & $buildPython @guiReleaseManifestArgs
     if ($LASTEXITCODE -ne 0) {
         Fail "GUI release manifest finalization failed"
     }
 
-    $releaseManifestArgs = $pythonPrefixArgs + @(
+    $releaseManifestArgs = @(
         (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
         "--artifact-path", $consoleOutputPath,
         "--platform", "win",
@@ -243,7 +243,7 @@ if ($env:ENCODINGDB_BUILD_ONLY -eq "1") {
         "--suite-pack-path", $suitePackPath,
         "--output-dir", $rootDir
     )
-    & $pythonExe @releaseManifestArgs
+    & $buildPython @releaseManifestArgs
     if ($LASTEXITCODE -ne 0) {
         Fail "Release manifest finalization failed"
     }
