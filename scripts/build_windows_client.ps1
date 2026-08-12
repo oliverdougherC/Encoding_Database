@@ -116,7 +116,15 @@ if ($pythonCmd.Count -gt 1) {
 
 Write-Log ("Using Python command: " + ($pythonCmd -join " "))
 
-$runtimeRegisterArgs = $pythonPrefixArgs + @(
+$venvDir = Join-Path $buildRoot "venv"
+$venvCreateArgs = $pythonPrefixArgs + @("-m", "venv", $venvDir)
+& $pythonExe @venvCreateArgs
+if ($LASTEXITCODE -ne 0) { Fail "Unable to create isolated build environment" }
+$buildPython = Join-Path $venvDir "Scripts\python.exe"
+& $buildPython -m pip install --disable-pip-version-check -r $buildRequirements
+if ($LASTEXITCODE -ne 0) { Fail "Unable to install pinned build requirements" }
+
+$runtimeRegisterArgs = @(
     (Join-Path $rootDir "scripts\register_ffmpeg_runtime.py"),
     "--platform", "win",
     "--ffmpeg-path", $ffmpegPath,
@@ -125,37 +133,29 @@ $runtimeRegisterArgs = $pythonPrefixArgs + @(
     "--stage-runtime-dir", $runtimeResourceDir
 )
 if ($env:ENCODINGDB_REGISTER_RUNTIME -eq "1") { $runtimeRegisterArgs += "--update" }
-& $pythonExe @runtimeRegisterArgs *> $null
+& $buildPython @runtimeRegisterArgs *> $null
 if ($LASTEXITCODE -ne 0) {
     Fail "Runtime lock validation failed"
 }
 
-$suitePrepareArgs = $pythonPrefixArgs + @(
+$suitePrepareArgs = @(
     (Join-Path $rootDir "scripts\prepare_client_suite_distribution.py"),
     "--staged-resource-dir", $suiteResourceDir,
     "--pack-out", $suitePackPath
 )
-& $pythonExe @suitePrepareArgs *> $null
+& $buildPython @suitePrepareArgs *> $null
 if ($LASTEXITCODE -ne 0) {
     Fail "Suite pack preparation failed"
 }
 
-$verifyArgs = $pythonPrefixArgs + @(
+$verifyArgs = @(
     (Join-Path $rootDir "scripts\verify_suite_assets.py"),
     (Join-Path $clientDir "resources\test_suite_v1")
 )
-& $pythonExe @verifyArgs
+& $buildPython @verifyArgs
 if ($LASTEXITCODE -ne 0) {
     Fail "Canonical suite asset verification failed"
 }
-
-$venvDir = Join-Path $buildRoot "venv"
-$venvCreateArgs = $pythonPrefixArgs + @("-m", "venv", $venvDir)
-& $pythonExe @venvCreateArgs
-if ($LASTEXITCODE -ne 0) { Fail "Unable to create isolated build environment" }
-$buildPython = Join-Path $venvDir "Scripts\python.exe"
-& $buildPython -m pip install --disable-pip-version-check -r $buildRequirements
-if ($LASTEXITCODE -ne 0) { Fail "Unable to install pinned build requirements" }
 
 function Invoke-PyInstallerBuild {
     param(

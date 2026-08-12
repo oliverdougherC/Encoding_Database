@@ -25,9 +25,32 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertEqual(workflow.count('ENCODINGDB_BUILD_ONLY: "1"'), 3)
         self.assertNotIn("${{ runner.temp }}", workflow)
         self.assertNotIn("| head -n 1", workflow)
+        self.assertEqual(workflow.count("find \"$PWD\" -mindepth 1 -maxdepth 1"), 3)
 
         preflight_workflow = (root / ".github/workflows/release-preflight.yml").read_text(encoding="utf-8")
         self.assertNotIn("| head -n 1", preflight_workflow)
+        self.assertIn("find \"$PWD\" -mindepth 1 -maxdepth 1", preflight_workflow)
+
+    def test_native_build_helpers_run_after_isolated_dependencies_are_installed(self) -> None:
+        root = release_manifest_lib.ROOT_DIR
+        for relative_path in ("scripts/build_linux_client.sh", "scripts/build_macos_client.sh"):
+            text = (root / relative_path).read_text(encoding="utf-8")
+            install_at = text.index("-m pip install")
+            verify_at = text.index("scripts/verify_suite_assets.py")
+            register_at = text.index("scripts/register_ffmpeg_runtime.py")
+            self.assertLess(install_at, verify_at)
+            self.assertLess(install_at, register_at)
+            self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py"', text)
+            self.assertIn('"$BUILD_PYTHON" "$ROOT_DIR/scripts/register_ffmpeg_runtime.py"', text)
+
+        windows = (root / "scripts/build_windows_client.ps1").read_text(encoding="utf-8")
+        install_at = windows.index("-m pip install")
+        verify_at = windows.index('"scripts\\verify_suite_assets.py"')
+        register_at = windows.index('"scripts\\register_ffmpeg_runtime.py"')
+        self.assertLess(install_at, verify_at)
+        self.assertLess(install_at, register_at)
+        self.assertIn("& $buildPython @verifyArgs", windows)
+        self.assertIn("& $buildPython @runtimeRegisterArgs", windows)
 
     def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):

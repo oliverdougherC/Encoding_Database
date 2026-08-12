@@ -55,8 +55,6 @@ fi
 if [[ ! -f "$CLIENT_DIR/resources/test_suite_v1/suite-pack.json" ]]; then
   die "Missing $CLIENT_DIR/resources/test_suite_v1/suite-pack.json"
 fi
-python3 "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
-  || die "Canonical suite asset verification failed"
 
 log "Preparing output directory..."
 rm -rf "$BUILD_ROOT"
@@ -69,9 +67,12 @@ mkdir -p "$PYI_DIST_DIR" "$PYI_WORK_DIR" "$PYI_SPEC_DIR"
 python3 -m venv "$BUILD_ROOT/venv"
 "$BUILD_ROOT/venv/bin/python" -m pip install --disable-pip-version-check -r "$BUILD_REQUIREMENTS" >/dev/null
 PYI_CMD=("$BUILD_ROOT/venv/bin/python" -m PyInstaller)
+BUILD_PYTHON="$BUILD_ROOT/venv/bin/python"
+"$BUILD_PYTHON" "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
+  || die "Canonical suite asset verification failed"
 REGISTER_ARGS=()
 if [[ "${ENCODINGDB_REGISTER_RUNTIME:-0}" == "1" ]]; then REGISTER_ARGS+=(--update); fi
-python3 "$ROOT_DIR/scripts/register_ffmpeg_runtime.py" \
+"$BUILD_PYTHON" "$ROOT_DIR/scripts/register_ffmpeg_runtime.py" \
   --platform mac \
   --ffmpeg-path "$FFMPEG_PATH" \
   --ffprobe-path "$FFPROBE_PATH" \
@@ -79,7 +80,7 @@ python3 "$ROOT_DIR/scripts/register_ffmpeg_runtime.py" \
   "${REGISTER_ARGS[@]}" \
   --stage-runtime-dir "$RUNTIME_RESOURCE_DIR" \
   >/dev/null
-python3 "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
+"$BUILD_PYTHON" "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
   --staged-resource-dir "$SUITE_RESOURCE_DIR" \
   --pack-out "$SUITE_PACK_PATH" \
   >/dev/null
