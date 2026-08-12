@@ -14,7 +14,10 @@ The software path is routed through a local one-shot fault proxy. Its first
 encoded-artifact upload receives an injected HTTP 503 after the request body is
 consumed. Certification requires the packaged client to spool that submission,
 replay it successfully for the same immutable BenchmarkRun, and leave no queued
-payload behind. The proxy attempt ledger is retained in
+payload behind. The recovered run must be accepted with a retained artifact and
+complete authoritative analysis. Recovery can use a second upload or the
+server's content-addressed deduplication when an identical artifact was retained
+in the meantime. The proxy ledger and canonical recovery state are retained in
 `upload-interruption.json`.
 
 The server and frontend must already be running against the same migrated

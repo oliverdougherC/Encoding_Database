@@ -41,13 +41,14 @@ export function validateCertificationSnapshot(snapshot, expectedEncoders) {
   if (!Array.isArray(snapshot.runs) || snapshot.runs.length === 0) fail('No v7 benchmark runs were retained');
   const uploadAttempts = snapshot.uploadInterruptionEvidence?.uploadAttempts;
   const interrupted = Array.isArray(uploadAttempts) && uploadAttempts.find((attempt) => attempt.injected && attempt.status === 503);
-  const recovered = Array.isArray(uploadAttempts) && uploadAttempts.find((attempt) => (
-    !attempt.injected
-    && attempt.status === 200
-    && attempt.benchmarkRunId === interrupted?.benchmarkRunId
-  ));
-  if (snapshot.uploadInterruptionEvidence?.injectedFailures !== 1 || !interrupted || !recovered) {
-    fail('Packaged client upload interruption was not recovered for the same benchmark run');
+  const recovery = snapshot.uploadInterruptionEvidence?.recovery;
+  if (snapshot.uploadInterruptionEvidence?.injectedFailures !== 1
+      || !interrupted
+      || recovery?.benchmarkRunId !== interrupted.benchmarkRunId
+      || recovery?.benchmarkRunStatus !== 'ACCEPTED'
+      || recovery?.artifactStorageState !== 'RETAINED'
+      || !(recovery?.completeAnalysisCount > 0)) {
+    fail('Packaged client upload interruption did not recover canonical evidence for the same benchmark run');
   }
   if (snapshot.invalidArtifactEvidence?.createStatus !== 201
       || snapshot.invalidArtifactEvidence?.artifactStorageState !== 'REJECTED'
@@ -328,6 +329,23 @@ async function main(argv) {
       byteSize: invalidBytes.length,
     };
     const uploadInterruptionEvidence = JSON.parse(await readFile(args['fault-evidence'], 'utf8'));
+    const interruptedAttempt = uploadInterruptionEvidence.uploadAttempts?.find((attempt) => (
+      attempt.injected && attempt.status === 503
+    ));
+    const interruptedRun = runs.find((run) => run.id === interruptedAttempt?.benchmarkRunId);
+    const interruptedArtifact = interruptedRun?.artifacts?.find((artifact) => artifact.role === 'ENCODED');
+    uploadInterruptionEvidence.recovery = {
+      benchmarkRunId: interruptedAttempt?.benchmarkRunId ?? null,
+      benchmarkRunStatus: interruptedRun?.status ?? null,
+      artifactId: interruptedArtifact?.id ?? null,
+      artifactStorageState: interruptedArtifact?.storageState ?? null,
+      completeAnalysisCount: interruptedRun?.qualityAnalyses?.filter((analysis) => analysis.status === 'COMPLETE').length ?? 0,
+      recoveryMechanism: uploadInterruptionEvidence.uploadAttempts?.some((attempt) => (
+        !attempt.injected
+        && attempt.status === 200
+        && attempt.benchmarkRunId === interruptedAttempt?.benchmarkRunId
+      )) ? 'RETRIED_UPLOAD' : 'CONTENT_ADDRESSED_DEDUPLICATION',
+    };
     const immutableScopes = [...new Map(runs.flatMap((run) => run.derivedMembers.map((member) => ({
       environmentId: run.environmentId,
       workloadId: run.workloadId,

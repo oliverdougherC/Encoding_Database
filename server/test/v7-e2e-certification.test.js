@@ -54,8 +54,14 @@ function validSnapshot() {
       injectedFailures: 1,
       uploadAttempts: [
         { injected: true, status: 503, benchmarkRunId: 'software-1' },
-        { injected: false, status: 200, benchmarkRunId: 'software-1' },
       ],
+      recovery: {
+        benchmarkRunId: 'software-1',
+        benchmarkRunStatus: 'ACCEPTED',
+        artifactStorageState: 'RETAINED',
+        completeAnalysisCount: 1,
+        recoveryMechanism: 'CONTENT_ADDRESSED_DEDUPLICATION',
+      },
     },
     invalidArtifactEvidence: {
       createStatus: 201,
@@ -108,10 +114,10 @@ test('certification rejects frontend data that differs from the server', () => {
 
 test('certification rejects missing interruption recovery evidence', () => {
   const snapshot = validSnapshot();
-  snapshot.uploadInterruptionEvidence.uploadAttempts.pop();
+  snapshot.uploadInterruptionEvidence.recovery.completeAnalysisCount = 0;
   assert.throws(
     () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
-    /upload interruption was not recovered/,
+    /upload interruption did not recover canonical evidence/,
   );
 });
 
