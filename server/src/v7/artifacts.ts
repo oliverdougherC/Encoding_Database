@@ -761,7 +761,9 @@ class LocalArtifactStorage {
       return { key, absolutePath };
     }
     await ensureParentDir(absolutePath);
-    const tempDir = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-artifact-'));
+    const stagingRoot = path.join(this.config.rootDir, '.staging');
+    await mkdir(stagingRoot, { recursive: true });
+    const tempDir = await mkdtemp(path.join(stagingRoot, 'encodingdb-artifact-'));
     const tempFile = path.join(tempDir, sha256);
     try {
       await writeFile(tempFile, body);
