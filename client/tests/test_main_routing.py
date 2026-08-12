@@ -1,3 +1,5 @@
+import hashlib
+import json
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -210,6 +212,12 @@ class MainRoutingTests(unittest.TestCase):
         )
         self.assertNotIn("manifestVersion", payload["testClip"])
         self.assertNotIn("byteSize", payload["testClip"])
+        recipe_canonical = json.dumps(payload["recipe"]["identity"], sort_keys=True, separators=(",", ":"))
+        environment_canonical = json.dumps(payload["environment"]["identity"], sort_keys=True, separators=(",", ":"))
+        self.assertEqual(payload["recipe"]["fingerprint"], hashlib.sha256(recipe_canonical.encode()).hexdigest())
+        self.assertEqual(payload["environment"]["fingerprint"], hashlib.sha256(environment_canonical.encode()).hexdigest())
+        self.assertNotEqual(payload["recipe"]["fingerprint"], "1" * 64)
+        self.assertNotEqual(payload["environment"]["fingerprint"], "3" * 64)
 
     def test_menu_flag_overrides_direct_cli_intent(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:

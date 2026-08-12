@@ -301,12 +301,10 @@ def _build_authoritative_run_create_request(
         },
         "testClip": suite_clip,
         "recipe": build_recipe_bootstrap(
-            recipe_fingerprint=str(info.get("recipeFingerprint") or ""),
             requested_recipe_json=str(info.get("requestedRecipeJson") or "{}"),
             effective_recipe_json=str(info.get("effectiveRecipeJson") or "{}"),
         ),
         "environment": build_environment_bootstrap(
-            environment_fingerprint=str(execution_identity_payload.get("environmentFingerprint") or ""),
             environment_json=str(execution_identity_payload.get("environmentJson") or "{}"),
             cpu_model=hardware.cpuModel,
         ),

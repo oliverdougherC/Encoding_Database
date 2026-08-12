@@ -39,7 +39,6 @@ def infer_content_type(*, media_container: Optional[str], artifact_path: str) ->
 
 def build_recipe_bootstrap(
     *,
-    recipe_fingerprint: str,
     requested_recipe_json: str,
     effective_recipe_json: str,
 ) -> Dict[str, Any]:
@@ -61,8 +60,10 @@ def build_recipe_bootstrap(
         "chromaSubsampling": output_effective.get("chromaSubsampling") or output_requested.get("chromaSubsampling"),
         "containerFormat": output_effective.get("containerFormat") or output_requested.get("containerFormat"),
         "videoCodecTag": output_effective.get("videoTag") or output_requested.get("videoTag"),
-        "requestedRateControl": requested.get("rateControlRequested") or {},
-        "effectiveRateControl": effective.get("rateControlEffective") or effective.get("rateControlRequested") or {},
+        "requestedRateControl": _canonical_rate_control(requested.get("rateControlRequested")),
+        "effectiveRateControl": _canonical_rate_control(
+            effective.get("rateControlEffective") or effective.get("rateControlRequested")
+        ),
         "requestedOutputSettings": output_requested,
         "effectiveOutputSettings": output_effective,
         "normalizedRequestedOptions": requested.get("nativeOptionsRequested"),
@@ -84,40 +85,74 @@ def build_recipe_bootstrap(
         ),
     }
     return {
-        "fingerprint": recipe_fingerprint,
+        "fingerprint": _sha256_text(_canonical_json(identity)),
         "canonicalJson": identity,
         "identity": identity,
     }
 
 
+def _canonical_rate_control(value: Any) -> Dict[str, Any]:
+    raw = value if isinstance(value, dict) else {}
+    return {
+        "mode": str(raw.get("mode") or "other").strip().lower(),
+        "qualityValue": raw.get("qualityValue"),
+        "targetBitrateKbps": raw.get("targetBitrateKbps"),
+        "maxBitrateKbps": raw.get("maxBitrateKbps"),
+        "bufferSizeKbits": raw.get("bufferSizeKbits"),
+        "qmin": raw.get("qmin"),
+        "qmax": raw.get("qmax"),
+        "extras": raw.get("extras"),
+    }
+
+
 def build_environment_bootstrap(
     *,
-    environment_fingerprint: str,
     environment_json: str,
     cpu_model: str,
 ) -> Dict[str, Any]:
     identity = json.loads(environment_json or "{}")
     environment_identity = {
-        "cpuModel": cpu_model,
-        "cpuArchitecture": identity.get("cpuArchitecture"),
+        "cpuModel": " ".join(str(cpu_model).split()),
+        "cpuArchitecture": _canonical_architecture(identity.get("cpuArchitecture")),
         "physicalCoreCount": identity.get("cpuPhysicalCores"),
         "logicalThreadCount": identity.get("cpuLogicalCores"),
-        "gpuModel": identity.get("gpuModel"),
-        "selectedAcceleratorId": identity.get("accelerator"),
-        "selectedAccelerator": identity.get("accelerator"),
-        "driverVersion": identity.get("driverVersion"),
-        "osName": identity.get("osName"),
-        "osVersion": identity.get("osVersion"),
-        "ffmpegBuildFingerprint": identity.get("ffmpegBuildFingerprint"),
-        "ffmpegVersion": identity.get("ffmpegVersion"),
-        "encoderVersion": identity.get("encoderVersion"),
-        "clientVersion": identity.get("clientVersion"),
+        "gpuModel": _canonical_optional_text(identity.get("gpuModel")),
+        "selectedAcceleratorId": _canonical_optional_text(identity.get("accelerator"), lowercase=True),
+        "selectedAccelerator": _canonical_optional_text(identity.get("accelerator")),
+        "driverVersion": _canonical_optional_text(identity.get("driverVersion")),
+        "osName": _canonical_required_text(identity.get("osName"), lowercase=True),
+        "osVersion": _canonical_required_text(identity.get("osVersion"), lowercase=True),
+        "ffmpegBuildFingerprint": _canonical_required_text(identity.get("ffmpegBuildFingerprint")),
+        "ffmpegVersion": _canonical_required_text(identity.get("ffmpegVersion")),
+        "encoderVersion": _canonical_optional_text(identity.get("encoderVersion")),
+        "clientVersion": _canonical_required_text(identity.get("clientVersion")),
     }
     return {
-        "fingerprint": environment_fingerprint,
-        "canonicalJson": identity,
+        "fingerprint": _sha256_text(_canonical_json(environment_identity)),
+        "canonicalJson": environment_identity,
         "identity": environment_identity,
     }
+
+
+def _canonical_optional_text(value: Any, *, lowercase: bool = False) -> Optional[str]:
+    if value is None:
+        return None
+    normalized = " ".join(str(value).split())
+    if not normalized:
+        return None
+    return normalized.lower() if lowercase else normalized
+
+
+def _canonical_required_text(value: Any, *, lowercase: bool = False) -> str:
+    normalized = _canonical_optional_text(value, lowercase=lowercase)
+    if normalized is None:
+        raise ValueError("required environment identity field is missing")
+    return normalized
+
+
+def _canonical_architecture(value: Any) -> str:
+    architecture = _canonical_required_text(value, lowercase=True)
+    return {"aarch64": "arm64", "amd64": "x86_64", "x64": "x86_64"}.get(architecture, architecture)
 
 
 def build_artifact_submission_payload(
