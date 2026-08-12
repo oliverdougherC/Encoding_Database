@@ -1247,6 +1247,7 @@ def run_benchmark_batch(
                     encoder=encoder,
                     preset=preset,
                     crf=crf,
+                    rate_control=rate_control,
                     out_dir=batch_dir,
                     artifact_name=artifact_name,
                     host_gpu_vendors=list(getattr(hardware, 'gpuVendors', []) or []),
@@ -1872,11 +1873,20 @@ def run_v7_suite_clip_mode(
     if not preset_list:
         preset_list = ["medium"]
     crf_value = getattr(base_args, "crf", None)
+    target_bitrate_kbps = getattr(base_args, "target_bitrate_kbps", None)
+    if resolved_encoder.lower().endswith("_videotoolbox"):
+        if target_bitrate_kbps is None or target_bitrate_kbps <= 0:
+            print("VideoToolbox v7 runs require --target-bitrate-kbps.", file=sys.stderr)
+            return 4
+        task_rate_control = {"mode": "vbr", "targetBitrateKbps": int(target_bitrate_kbps)}
+    else:
+        task_rate_control = None
     tasks = [
         {
             "encoder": resolved_encoder,
             "preset": preset,
             "crf": crf_value,
+            "rateControl": task_rate_control,
             "suiteClip": suite_clip,
         }
         for preset in preset_list
