@@ -28,9 +28,10 @@ def prepare_distribution(
     staged_resource_dir = staged_resource_dir.resolve()
     pack_out = pack_out.resolve()
 
-    suite.verify_suite_pack_metadata(str(source_suite_dir), suite.load_suite_pack_metadata(str(source_suite_dir / "suite-pack.json")))
+    metadata_path = source_suite_dir / "suite-pack.json"
+    metadata = suite.load_suite_pack_metadata(str(metadata_path))
+    suite.verify_suite_pack_metadata(str(source_suite_dir), metadata)
     suite.build_suite_pack_archive(str(source_suite_dir), str(pack_out))
-    metadata = suite.load_suite_pack_metadata(str(source_suite_dir / "suite-pack.json"))
     distribution = dict(metadata.get("distribution") or {})
     expected_name = str(distribution.get("fileName") or suite.DEFAULT_SUITE_PACK_FILE_NAME)
     if pack_out.name != expected_name:

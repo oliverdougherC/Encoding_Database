@@ -375,6 +375,19 @@ def _assert_binary_identity(label: str, path: str, expected: Mapping[str, Any], 
         raise RuntimeLockError(f"{label} build fingerprint mismatch for {path}")
 
 
+def _capability_list(
+    capabilities: Mapping[str, Any],
+    *,
+    keys: Sequence[str],
+    fallback: Sequence[str],
+) -> List[str]:
+    for key in keys:
+        value = capabilities.get(key)
+        if isinstance(value, list):
+            return value
+    return list(fallback)
+
+
 def verify_runtime_lock(
     *,
     platform_key: Optional[str] = None,
@@ -401,25 +414,25 @@ def verify_runtime_lock(
         ffmpeg_path=resolved_ffmpeg,
         ffprobe_path=resolved_ffprobe,
         platform_key=selected_platform,
-        required_filters=capabilities.get("filters") if isinstance(capabilities.get("filters"), list) else default_requirements["filters"],
-        required_encoders=(
-            capabilities.get("requiredEncoders")
-            if isinstance(capabilities.get("requiredEncoders"), list)
-            else capabilities.get("encoders")
-            if isinstance(capabilities.get("encoders"), list)
-            else default_requirements["requiredEncoders"]
+        required_filters=_capability_list(
+            capabilities,
+            keys=("filters",),
+            fallback=default_requirements["filters"],
         ),
-        optional_encoders=(
-            capabilities.get("optionalEncoders")
-            if isinstance(capabilities.get("optionalEncoders"), list)
-            else default_requirements["optionalEncoders"]
+        required_encoders=_capability_list(
+            capabilities,
+            keys=("requiredEncoders", "encoders"),
+            fallback=default_requirements["requiredEncoders"],
         ),
-        smoke_test_encoders=(
-            capabilities.get("smokeTestEncoders")
-            if isinstance(capabilities.get("smokeTestEncoders"), list)
-            else capabilities.get("encoders")
-            if isinstance(capabilities.get("encoders"), list)
-            else default_requirements["smokeTestEncoders"]
+        optional_encoders=_capability_list(
+            capabilities,
+            keys=("optionalEncoders",),
+            fallback=default_requirements["optionalEncoders"],
+        ),
+        smoke_test_encoders=_capability_list(
+            capabilities,
+            keys=("smokeTestEncoders", "encoders"),
+            fallback=default_requirements["smokeTestEncoders"],
         ),
     )
     _assert_binary_identity("ffmpeg", resolved_ffmpeg, expected_ffmpeg, observed["ffmpeg"])
