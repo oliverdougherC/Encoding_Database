@@ -8,7 +8,9 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "generate:reference-context": "npm run build && node ../scripts/generate-reference-context.mjs"
+    "generate:reference-context": "npm run build && node ../scripts/generate-reference-context.mjs",
+    "generate:calibration-evidence": "npm run build && node ../scripts/generate-calibration-evidence.mjs",
+    "validate:calibration-evidence": "npm run build && node ../scripts/validate-calibration-evidence.mjs"
   },
   "keywords": [],
   "author": "",

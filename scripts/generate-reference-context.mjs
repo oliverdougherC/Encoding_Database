@@ -60,6 +60,16 @@ if (flags.has('--benchmark-protocol-id')) {
   context = referenceContextModule.buildReferenceContextFromSweep(sweep);
 }
 
+if (flags.has('--calibration-evidence')) {
+  if (!flags.has('--benchmark-protocol-id')) {
+    throw new Error('--calibration-evidence can only promote a context generated from retained database evidence');
+  }
+  const calibrationPath = path.resolve(process.cwd(), flags.get('--calibration-evidence'));
+  const calibrationModule = await import(path.join(serverRoot, 'dist', 'v7', 'calibration.js'));
+  const calibration = calibrationModule.parseCalibrationEvidence(readFileSync(calibrationPath, 'utf8'));
+  context = referenceContextModule.activateReferenceContextForProduction(context, calibration);
+}
+
 mkdirSync(path.dirname(outputPath), { recursive: true });
 writeFileSync(outputPath, `${JSON.stringify(context, null, 2)}\n`, 'utf8');
 process.stdout.write(`${outputPath}\n`);

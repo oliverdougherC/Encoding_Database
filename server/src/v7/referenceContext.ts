@@ -4,6 +4,10 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 
 import { computePlScoreV7 } from '../plScore.js';
 import {
+  assertCalibrationReadyForFreeze,
+  type CalibrationEvidenceDocument,
+} from './calibration.js';
+import {
   persistDerivedResultRecord,
   type DerivedResultPersistenceClient,
   type DerivedResultPersistenceShape,
@@ -174,6 +178,8 @@ export interface ReferenceContext {
     stage: ReferenceContextActivationStage;
     productionActivationAllowed: boolean;
     note: string;
+    calibrationVersion?: string;
+    calibrationReviewHash?: string;
   };
   provenance: {
     sourceMode: ReferenceContextSourceMode;
@@ -979,9 +985,9 @@ export function buildReferenceContextFromRetainedEvidence(input: BuildRetainedRe
     requiredWorkloads: normalized.requiredWorkloads,
     requiredContentClasses: normalized.requiredContentClasses,
     activation: {
-      stage: 'PRODUCTION',
-      productionActivationAllowed: true,
-      note: 'Generated from retained accepted BenchmarkRun, retained ENCODED Artifact, and authoritative COMPLETE QualityAnalysis evidence.',
+      stage: 'TEST_ONLY_PROVISIONAL',
+      productionActivationAllowed: false,
+      note: 'Generated from retained authoritative evidence, but blocked from production activation until PLA-87 calibration, holdouts, and knowledgeable review are complete.',
     },
     provenance: {
       sourceMode: 'retained-benchmark-evidence',
@@ -992,6 +998,61 @@ export function buildReferenceContextFromRetainedEvidence(input: BuildRetainedRe
     },
     frontiers,
   });
+}
+
+function productionActivationCandidate(
+  context: ReferenceContext,
+  calibrationVersion: string,
+  calibrationReviewHash: string,
+): ReferenceContext {
+  const { hash: _oldHash, ...payload } = context;
+  const promotedPayload = {
+    ...payload,
+    activation: {
+      stage: 'PRODUCTION' as const,
+      productionActivationAllowed: true,
+      note: 'Activated only after a complete hash-verified PLA-87 calibration, holdout, metric-sanity, and knowledgeable-review record.',
+      calibrationVersion,
+      calibrationReviewHash,
+    },
+  };
+  return {
+    ...promotedPayload,
+    hash: hashContextPayload(promotedPayload),
+  };
+}
+
+export function calculateProductionReferenceContextHash(
+  context: ReferenceContext,
+  calibrationVersion: string,
+  calibrationReviewHash: string,
+): string {
+  if (context.provenance.sourceMode !== 'retained-benchmark-evidence') {
+    throw new Error('Only a reference context generated from retained benchmark evidence can be considered for production');
+  }
+  return productionActivationCandidate(context, calibrationVersion, calibrationReviewHash).hash;
+}
+
+export function activateReferenceContextForProduction(
+  context: ReferenceContext,
+  calibration: CalibrationEvidenceDocument,
+): ReferenceContext {
+  assertCalibrationReadyForFreeze(calibration);
+  if (!calibration.freeze) throw new Error('Complete calibration evidence unexpectedly lacks a freeze record');
+  const mismatches = [
+    ['benchmark protocol', context.benchmarkProtocolVersion, calibration.benchmarkProtocolVersion],
+    ['source suite', context.sourceSuiteVersion, calibration.sourceSuiteVersion],
+    ['quality model', context.qualityModelId, calibration.qualityModelId],
+    ['score formula', context.formulaVersion, calibration.scoreFormulaVersion],
+  ].filter(([, contextValue, calibrationValue]) => contextValue !== calibrationValue);
+  if (mismatches.length) {
+    throw new Error(`Calibration evidence is incompatible with the reference context: ${mismatches.map(([name]) => name).join(', ')}`);
+  }
+  const promoted = productionActivationCandidate(context, calibration.calibrationVersion, calibration.reviewHash);
+  if (calibration.freeze.scoreContextHash !== promoted.hash) {
+    throw new Error(`Calibration freeze references score-context hash ${calibration.freeze.scoreContextHash}, expected ${promoted.hash}`);
+  }
+  return promoted;
 }
 
 export function parseReferenceContext(raw: string): ReferenceContext {
@@ -1005,6 +1066,13 @@ export function parseReferenceContext(raw: string): ReferenceContext {
   }
   if (parsed.activation.stage === 'TEST_ONLY_PROVISIONAL' && parsed.activation.productionActivationAllowed) {
     throw new Error('Test-only provisional reference contexts must not allow production activation');
+  }
+  if (parsed.activation.stage === 'PRODUCTION') {
+    if (!parsed.activation.productionActivationAllowed
+      || !parsed.activation.calibrationVersion?.trim()
+      || !/^[0-9a-f]{64}$/.test(parsed.activation.calibrationReviewHash ?? '')) {
+      throw new Error('Production reference contexts require a versioned, hash-bound PLA-87 calibration review');
+    }
   }
   return parsed;
 }

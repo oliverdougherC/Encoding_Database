@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
+  activateReferenceContextForProduction,
   buildReferenceContextFromRetainedEvidence,
   buildGeneralScopeWorkloadId,
   buildReferenceContextFromSweep,
+  calculateProductionReferenceContextHash,
   buildScoreContextSeedRecords,
   loadRetainedReferenceEvidence,
   loadReferenceContext,
@@ -13,6 +15,12 @@ import {
   persistScoreContextsFromReferenceContext,
   recomputeReferenceScores,
 } from '../dist/v7/referenceContext.js';
+import {
+  CALIBRATION_EVIDENCE_SCHEMA_VERSION,
+  buildCalibrationEvidenceHash,
+  buildCalibrationReviewHash,
+  parseCalibrationEvidence,
+} from '../dist/v7/calibration.js';
 
 const sweepFixturePath = new URL('../config/reference-sweeps/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.json', import.meta.url);
 const contextFixturePath = new URL('../config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json', import.meta.url);
@@ -99,6 +107,119 @@ function buildRetainedReferenceEvidenceFixture() {
       vmafMean: 92.4,
     },
   ]));
+}
+
+function buildCompleteCalibrationForContext(context) {
+  const implementations = [
+    ['libx264', 'software'],
+    ['libx265', 'software'],
+    ['libsvtav1', 'software'],
+    ['h264_nvenc', 'nvenc'],
+    ['h264_videotoolbox', 'videotoolbox'],
+  ];
+  const corpus = context.workloads.flatMap((workload, workloadIndex) => implementations.flatMap(([implementation, hardwareFamily], implementationIndex) => [0, 1].map((rateIndex) => {
+    const evidenceId = `reviewed-${workloadIndex}-${implementationIndex}-${rateIndex}`;
+    return {
+      evidenceId,
+      partition: rateIndex === 0 ? 'CALIBRATION' : 'HOLDOUT',
+      benchmarkRunId: `run-${evidenceId}`,
+      artifactId: `artifact-${evidenceId}`,
+      artifactSha256: `${workloadIndex + 1}${implementationIndex}${rateIndex}`.padStart(64, '0'),
+      artifactStorageState: 'RETAINED',
+      qualityAnalysisId: `analysis-${evidenceId}`,
+      analysisWorkerVersion: 'authoritative-analysis/v1',
+      recipeFingerprint: `recipe-${implementation}-${rateIndex}`,
+      environmentFingerprint: `environment-${hardwareFamily}-${rateIndex}`,
+      machineSourceId: rateIndex === 0 ? 'machine-a' : 'machine-b',
+      workloadId: workload.workloadId,
+      contentClass: workload.contentClass,
+      encoderFamily: implementation.includes('265') ? 'hevc' : implementation.includes('av1') ? 'av1' : 'h264',
+      encoderImplementation: implementation,
+      hardwareFamily,
+      nativeRateControl: { mode: hardwareFamily === 'software' ? 'crf' : 'vbr', value: rateIndex === 0 ? 30 : 18 },
+      preset: rateIndex === 0 ? 'fast' : 'slow',
+      runStatus: 'ACCEPTED',
+      analysisStatus: 'COMPLETE',
+      vmafMean: 88 + rateIndex * 4,
+      vmafP5: 84 + rateIndex * 4,
+      xpsnr: 35 + rateIndex,
+      videoBitrateBps: 1_000_000 + rateIndex * 1_000_000,
+      realTimeRatio: 2 + rateIndex,
+    };
+  })));
+  const reviewer = {
+    reviewerId: 'encoding-expert-test',
+    expertise: 'Production video encoding and codec evaluation',
+    reviewedAt: '2026-08-12T10:00:00.000Z',
+  };
+  const calibrationIds = corpus.filter((entry) => entry.partition === 'CALIBRATION').map((entry) => entry.evidenceId);
+  const holdoutIds = corpus.filter((entry) => entry.partition === 'HOLDOUT').map((entry) => entry.evidenceId);
+  const document = {
+    schemaVersion: CALIBRATION_EVIDENCE_SCHEMA_VERSION,
+    calibrationVersion: 'reviewed-calibration/v1',
+    status: 'COMPLETE',
+    benchmarkProtocolVersion: context.benchmarkProtocolVersion,
+    sourceSuiteVersion: context.sourceSuiteVersion,
+    qualityModelId: context.qualityModelId,
+    scoreFormulaVersion: context.formulaVersion,
+    generatedAt: '2026-08-12T10:00:00.000Z',
+    corpus,
+    goldenDecisions: ['BALANCED', 'QUALITY', 'STORAGE', 'REALTIME'].map((scenario, index) => ({
+      comparisonId: `golden-${scenario.toLowerCase()}`,
+      scenario,
+      candidateEvidenceIds: calibrationIds.slice(index * 2, index * 2 + 2),
+      selectedEvidenceId: calibrationIds[index * 2 + 1],
+      reviewer,
+      rationale: `The selected candidate is the expert-reviewed ${scenario.toLowerCase()} choice for this comparison.`,
+    })),
+    holdoutEvaluations: ['HARDWARE_FAMILY', 'ENCODER_FAMILY', 'CONTENT_CLASS', 'RECIPE_RANGE'].map((dimension, index) => ({
+      evaluationId: `holdout-${dimension.toLowerCase()}`,
+      dimension,
+      evidenceIds: holdoutIds.slice(index * 2, index * 2 + 2),
+      scenario: ['BALANCED', 'QUALITY', 'STORAGE', 'REALTIME'][index],
+      predictedTopEvidenceId: holdoutIds[index * 2 + 1],
+      recommendationAccepted: true,
+      reviewer,
+      rationale: `The held-out ${dimension.toLowerCase()} result generalized without a systematic ranking failure.`,
+    })),
+    topResultReviews: [
+      ...implementations.map(([implementation]) => `encoder:${implementation}`),
+      'hardware:nvenc',
+      'hardware:videotoolbox',
+    ].map((familyKey, index) => ({
+      reviewId: `top-${index}`,
+      familyKey,
+      evidenceId: corpus.find((entry) => familyKey === `encoder:${entry.encoderImplementation}` || familyKey === `hardware:${entry.hardwareFamily}`).evidenceId,
+      wouldChooseFirst: true,
+      reviewer,
+      rationale: `A knowledgeable encoder user would choose this top-ranked ${familyKey} result under the stated scenario.`,
+    })),
+    metricSanityReviews: ['DISAGREEMENT', 'GRAIN_OR_NOISE', 'DARK_OR_GRADIENT', 'LOCALIZED_TAIL'].map((caseType, index) => ({
+      reviewId: `sanity-${caseType.toLowerCase()}`,
+      caseType,
+      evidenceIds: [corpus[index].evidenceId],
+      disposition: 'EXPECTED',
+      reviewer,
+      rationale: `The ${caseType.toLowerCase()} case was visually inspected and agrees with the retained distribution.`,
+    })),
+    freeze: null,
+    reviewHash: '',
+    evidenceHash: '',
+  };
+  document.reviewHash = buildCalibrationReviewHash(document);
+  document.freeze = {
+    scoreContextArtifactPath: 'server/config/reference-contexts/production-v7.json',
+    scoreContextHash: calculateProductionReferenceContextHash(context, document.calibrationVersion, document.reviewHash),
+    evidencePolicyVersion: 'recommendation-evidence/v7-calibrated-v1',
+    qualityExponent: 2.4,
+    bitrateReferenceVmafAnchor: 90,
+    speedCurveRate: 1.2,
+    speedSaturationRealtime: 4,
+    calibrationRationale: 'Knowledgeable review, disjoint holdouts, and complete retained coverage support this frozen test context.',
+    frozenAt: '2026-08-12T11:00:00.000Z',
+  };
+  document.evidenceHash = buildCalibrationEvidenceHash(document);
+  return document;
 }
 
 test('reference context generation is deterministic and order-invariant', () => {
@@ -213,11 +334,70 @@ test('retained authoritative evidence generation is deterministic and retains pr
   });
 
   assert.deepEqual(left, right);
-  assert.equal(left.activation.stage, 'PRODUCTION');
+  assert.equal(left.activation.stage, 'TEST_ONLY_PROVISIONAL');
+  assert.equal(left.activation.productionActivationAllowed, false);
   assert.equal(left.provenance.sourceMode, 'retained-benchmark-evidence');
   assert.equal(left.qualityModelId, 'vmaf-v1-sdr-sd');
   assert.equal(left.workloads[0].referenceFrontier[0].evidence[0].artifactSha256?.length, 64);
   assert.match(left.workloads[0].referenceFrontier[0].evidence[0].qualityAnalysisId, /^analysis-/);
+});
+
+test('retained evidence cannot be promoted with the checked-in incomplete PLA-87 pilot', () => {
+  const synthetic = loadReferenceContext(contextFixturePath);
+  const context = buildReferenceContextFromRetainedEvidence({
+    benchmarkProtocolId: 'proto-1',
+    benchmarkProtocolVersion: '7.0',
+    sourceSuiteVersion: synthetic.sourceSuiteVersion,
+    qualityModelId: 'vmaf-v1-sdr-sd',
+    contextVersion: 'pl-v7-reference-context-calibration-gate-test',
+    formulaVersion: '7.0',
+    targetMetricValue: 90,
+    qualityExponent: 2.4,
+    speedCurveRate: 1.2,
+    speedSaturationRealtime: 4,
+    requiredWorkloads: synthetic.workloads.map((workload) => ({ workloadId: workload.workloadId, contentClass: workload.contentClass })),
+    requiredContentClasses: synthetic.generalPolicy.requiredContentClasses,
+    evidence: buildRetainedReferenceEvidenceFixture().map((entry) => ({
+      ...entry,
+      benchmarkProtocolVersion: '7.0',
+    })),
+  });
+  const calibration = parseCalibrationEvidence(readFileSync(
+    new URL('../config/calibration/pla-87-apple-m4-pro-pilot-2026-08-12.draft.json', import.meta.url),
+    'utf8',
+  ));
+
+  assert.throws(
+    () => activateReferenceContextForProduction(context, calibration),
+    /PL v7 calibration is not ready for production freeze/,
+  );
+});
+
+test('production promotion binds a complete calibration review hash and exact context hash', () => {
+  const synthetic = loadReferenceContext(contextFixturePath);
+  const context = buildReferenceContextFromRetainedEvidence({
+    benchmarkProtocolId: 'proto-1',
+    benchmarkProtocolVersion: '7.0',
+    sourceSuiteVersion: synthetic.sourceSuiteVersion,
+    qualityModelId: 'vmaf-v1-sdr-sd',
+    contextVersion: 'pl-v7-reference-context-complete-calibration-test',
+    formulaVersion: '7.0',
+    targetMetricValue: 90,
+    qualityExponent: 2.4,
+    speedCurveRate: 1.2,
+    speedSaturationRealtime: 4,
+    requiredWorkloads: synthetic.workloads.map((workload) => ({ workloadId: workload.workloadId, contentClass: workload.contentClass })),
+    requiredContentClasses: synthetic.generalPolicy.requiredContentClasses,
+    evidence: buildRetainedReferenceEvidenceFixture().map((entry) => ({ ...entry, benchmarkProtocolVersion: '7.0' })),
+  });
+  const calibration = buildCompleteCalibrationForContext(context);
+  const promoted = activateReferenceContextForProduction(context, calibration);
+
+  assert.equal(promoted.activation.stage, 'PRODUCTION');
+  assert.equal(promoted.activation.productionActivationAllowed, true);
+  assert.equal(promoted.activation.calibrationVersion, calibration.calibrationVersion);
+  assert.equal(promoted.activation.calibrationReviewHash, calibration.reviewHash);
+  assert.equal(promoted.hash, calibration.freeze.scoreContextHash);
 });
 
 test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses', async () => {
