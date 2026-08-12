@@ -95,6 +95,19 @@ PORT="$(docker port "$CONTAINER_NAME" 5432/tcp | head -1 | sed 's/.*://')"
 [[ "$PORT" =~ ^[0-9]+$ ]] || { echo "could not resolve postgres port" >&2; exit 1; }
 DATABASE_URL="postgresql://app:app@127.0.0.1:${PORT}/benchmarks"
 
+host_db_ready=0
+for _ in $(seq 1 30); do
+  if psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'SELECT 1' >/dev/null 2>&1; then
+    host_db_ready=1
+    break
+  fi
+  sleep 1
+done
+if (( host_db_ready != 1 )); then
+  echo "rehearsal postgres host port did not become ready in time" >&2
+  exit 1
+fi
+
 run_sql_file() {
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$1" >/dev/null
 }

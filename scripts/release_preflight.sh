@@ -162,6 +162,10 @@ check_migrations() {
 
 check_production_compose() {
   require_docker_compose
+  if [[ ! -f "$ROOT_DIR/.env" ]]; then
+    : > "$ROOT_DIR/.env"
+    trap 'rm -f "$ROOT_DIR/.env"' EXIT
+  fi
   run_shell "ARTIFACT_UPLOAD_SECRET=release-preflight-placeholder APP_URL=https://release-preflight.invalid docker compose -f docker-compose.prod.yml config -q"
 }
 

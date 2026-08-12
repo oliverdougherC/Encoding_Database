@@ -10,6 +10,16 @@ from scripts import release_manifest_lib
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_external_preflight_dependencies_are_clean_checkout_safe(self) -> None:
+        root = release_manifest_lib.ROOT_DIR
+        preflight = (root / "scripts" / "release_preflight.sh").read_text(encoding="utf-8")
+        rehearsal = (root / "scripts" / "v7-migration-rehearsal.sh").read_text(encoding="utf-8")
+
+        self.assertIn('if [[ ! -f "$ROOT_DIR/.env" ]]', preflight)
+        self.assertIn("trap 'rm -f \"$ROOT_DIR/.env\"' EXIT", preflight)
+        self.assertIn("host_db_ready=0", rehearsal)
+        self.assertIn("psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -c 'SELECT 1'", rehearsal)
+
     def test_release_json_uses_canonical_suite_identity_before_freeze(self) -> None:
         payload = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text(encoding="utf-8"))
 
