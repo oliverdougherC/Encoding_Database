@@ -68,7 +68,7 @@ class ReleasePreflightTests(unittest.TestCase):
                 )
 
             for command_name in ("bash", "dirname", "mktemp", "python3", "rg", "rm", "sed"):
-                target = shutil.which(command_name)
+                target = shutil.which("grep" if command_name == "rg" else command_name)
                 self.assertIsNotNone(target, msg=f"{command_name} must be installed for this test")
                 os.symlink(target, bin_dir / command_name)
 

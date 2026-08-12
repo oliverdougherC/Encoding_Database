@@ -57,6 +57,9 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn("$env:FFPROBE_EXE = $ffprobePath", windows)
         self.assertIn("& $buildPython @verifyArgs", windows)
         self.assertIn("& $buildPython @runtimeRegisterArgs", windows)
+        self.assertLess(windows.index('@("python.exe")'), windows.index('@("py", "-3")'))
+        self.assertIn('"--add-data", "$clientDir\\presets.json;."', windows)
+        self.assertIn('"--add-data", "$clientDir\\resources\\vmaf;resources/vmaf"', windows)
 
     def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):

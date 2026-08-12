@@ -26,10 +26,10 @@ function Ensure-Exists {
 
 function Resolve-PythonCommand {
     $candidates = @(
-        @("py", "-3"),
-        @("py.exe", "-3"),
         @("python.exe"),
-        @("python")
+        @("python"),
+        @("py", "-3"),
+        @("py.exe", "-3")
     )
 
     foreach ($candidate in $candidates) {
@@ -182,10 +182,10 @@ function Invoke-PyInstallerBuild {
         "--paths", $rootDir,
         "--add-data", "$ffmpegPath;bin/win",
         "--add-data", "$ffprobePath;bin/win",
-        "--add-data", "client/presets.json;.",
+        "--add-data", "$clientDir\presets.json;.",
         "--add-data", "$suiteResourceDir;resources/test_suite_v1",
         "--add-data", "$runtimeResourceDir;resources/runtime",
-        "--add-data", "client/resources/vmaf;resources/vmaf"
+        "--add-data", "$clientDir\resources\vmaf;resources/vmaf"
     )
     if ($Windowed) {
         $buildArgs += "--windowed"
