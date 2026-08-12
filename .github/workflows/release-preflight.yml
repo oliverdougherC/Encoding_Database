@@ -45,6 +45,7 @@ jobs:
           test -x "$bundle_dir/bin/ffprobe"
           echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
           echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
+          echo "$bundle_dir/bin" >> "$GITHUB_PATH"
       - name: Generate ignored dev TLS cert
         run: bash scripts/generate-dev-cert.sh
       - name: Run release preflight

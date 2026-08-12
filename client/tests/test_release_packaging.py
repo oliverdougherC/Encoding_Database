@@ -26,10 +26,12 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertNotIn("${{ runner.temp }}", workflow)
         self.assertNotIn("| head -n 1", workflow)
         self.assertEqual(workflow.count("find \"$PWD\" -mindepth 1 -maxdepth 1"), 3)
+        self.assertIn('echo "$bundle_dir/bin" >> "$GITHUB_PATH"', workflow)
 
         preflight_workflow = (root / ".github/workflows/release-preflight.yml").read_text(encoding="utf-8")
         self.assertNotIn("| head -n 1", preflight_workflow)
         self.assertIn("find \"$PWD\" -mindepth 1 -maxdepth 1", preflight_workflow)
+        self.assertIn('echo "$bundle_dir/bin" >> "$GITHUB_PATH"', preflight_workflow)
 
     def test_native_build_helpers_run_after_isolated_dependencies_are_installed(self) -> None:
         root = release_manifest_lib.ROOT_DIR
