@@ -5,7 +5,10 @@ import subprocess
 from typing import Optional, Dict, List, Tuple
 
 import psutil
-import cpuinfo  # type: ignore
+try:
+    import cpuinfo  # type: ignore
+except Exception:
+    cpuinfo = None  # type: ignore
 
 try:
     import GPUtil  # type: ignore
@@ -29,7 +32,7 @@ def _detect_gpu_vendors_from_name(name: str) -> List[str]:
 
 
 def detect_hardware() -> config.HardwareInfo:
-    cpu = cpuinfo.get_cpu_info()
+    cpu = cpuinfo.get_cpu_info() if cpuinfo is not None else {}
     cpu_model = cpu.get("brand_raw") or cpu.get("brand") or platform.processor() or "Unknown CPU"
 
     def normalize_apple_silicon_label(label: str) -> Optional[str]:
@@ -186,7 +189,8 @@ def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> 
 def detect_virtualization(hardware: config.HardwareInfo) -> Tuple[bool, str]:
     hints: List[str] = []
     try:
-        info = cpuinfo.get_cpu_info() or {}
+        info = cpuinfo.get_cpu_info() if cpuinfo is not None else {}
+        info = info or {}
         flags = set(info.get('flags') or [])
         if 'hypervisor' in flags:
             hints.append('cpu_hypervisor_flag')

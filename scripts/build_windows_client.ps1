@@ -74,8 +74,10 @@ $logFile = Join-Path $buildRoot "build.log"
 
 Ensure-Exists -Path (Join-Path $binDir "ffmpeg.exe") -Description "ffmpeg.exe"
 Ensure-Exists -Path (Join-Path $binDir "ffprobe.exe") -Description "ffprobe.exe"
-Ensure-Exists -Path (Join-Path $rootDir "sample.mp4") -Description "sample.mp4"
 Ensure-Exists -Path (Join-Path $clientDir "presets.json") -Description "presets.json"
+Ensure-Exists -Path (Join-Path $clientDir "resources\\test_suite_v1\\manifest.json") -Description "suite manifest"
+Ensure-Exists -Path (Join-Path $clientDir "resources\vmaf\manifest.json") -Description "VMAF manifest"
+Ensure-Exists -Path (Join-Path $clientDir "resources\vmaf\vmaf_v1.0.16_3d0h.json") -Description "VMAF model"
 Ensure-Exists -Path $guiEntrypoint -Description "GUI PyInstaller entrypoint"
 Ensure-Exists -Path $consoleEntrypoint -Description "Console PyInstaller entrypoint"
 
@@ -131,8 +133,9 @@ function Invoke-PyInstallerBuild {
         "--paths", $rootDir,
         "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
         "--add-data", "client/bin/win/ffprobe.exe;bin/win",
-        "--add-data", "sample.mp4;.",
-        "--add-data", "client/presets.json;."
+        "--add-data", "client/presets.json;.",
+        "--add-data", "client/resources/test_suite_v1;resources/test_suite_v1",
+        "--add-data", "client/resources/vmaf;resources/vmaf"
     )
     if ($Windowed) {
         $buildArgs += "--windowed"

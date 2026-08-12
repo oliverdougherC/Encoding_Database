@@ -61,7 +61,54 @@ export type AnalyticsFilters = {
   minSamples: number;
 };
 
-export type LeaderboardAnalyticsRow = {
+export type PlFitMode = "balanced" | "quality" | "storage" | "realtime" | "custom";
+export type EvidenceTier = "PROVISIONAL" | "LOW" | "MEDIUM" | "HIGH";
+
+export type DecisionWeights = {
+  quality: number;
+  bitrate: number;
+  speed: number;
+};
+
+export type FitProfile = {
+  mode: PlFitMode;
+  label: string;
+  weights: DecisionWeights;
+  constraints: {
+    minimumQuality?: number | null;
+    minimumRealtimeRatio?: number | null;
+    maximumBitrateBps?: number | null;
+    compatibleCodecFamilies?: Array<"h264" | "hevc" | "av1" | "vp9" | "other"> | null;
+    requireRecommendationEligibility?: boolean;
+  };
+};
+
+export type ConstraintStatus = {
+  passed: boolean;
+  required: number | string | readonly string[] | boolean | null;
+  actual: number | string | boolean | readonly string[] | null;
+  reason: string | null;
+};
+
+export type FitEvaluation = {
+  mode: PlFitMode;
+  label: string;
+  eligible: boolean;
+  score: number | null;
+  rank: number;
+  reasons: string[];
+  weights: DecisionWeights;
+  constraints: {
+    minimumQuality: ConstraintStatus;
+    minimumRealtimeRatio: ConstraintStatus;
+    maximumBitrateBps: ConstraintStatus;
+    compatibility: ConstraintStatus;
+    recommendationEligibility: ConstraintStatus;
+  };
+};
+
+export type LeaderboardDecisionRow = {
+  rowId: string;
   encoderName: string;
   codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
   preset: string;
@@ -69,6 +116,23 @@ export type LeaderboardAnalyticsRow = {
   contentClass: string;
   resolution: string;
   passes: number;
+  workloadId: string;
+  hardwareKey: string;
+  hardwareLabel: string;
+  realtimeRatio: number | null;
+  effectiveQuality: number | null;
+  scoreFormulaVersion: string | null;
+  benchmarkProtocolVersion: string | null;
+  sourceSuiteVersion: string | null;
+  qualityModelId: string | null;
+  hardwareContext: {
+    environmentId: string;
+    environmentFingerprint: string;
+    cpuModel: string;
+    gpuModel: string;
+    ramGB: number;
+    os: string;
+  };
   sampleCount: number;
   avgFps: number;
   avgVmaf: number | null;
@@ -86,12 +150,82 @@ export type LeaderboardAnalyticsRow = {
   plScoreComponents: { quality: number; bitrate: number; speed: number } | null;
   plScoreWorkloadId: string;
   plScoreContext: {
+    formulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
     referenceContextVersion: string;
     workloadReferenceBitrateBps: number;
     qualityExponent: 2.4;
     speedCurveRate: 1.2;
     speedSaturationRealtime: 4;
   } | null;
+  evidence: {
+    evidenceTier: EvidenceTier;
+    provisional: boolean;
+    eligibleForDefaultRecommendation: boolean;
+    confidence: {
+      available: boolean;
+      lower: number | null;
+      upper: number | null;
+      width: number | null;
+      unavailableReason: string | null;
+    };
+  };
+  pareto: {
+    available: boolean;
+    efficient: boolean;
+    frontierRank: number | null;
+    dominatorRowIds: string[];
+    dominatedRowIds: string[];
+    unavailableReason: string | null;
+    canonical: {
+      quality: number | null;
+      bitrate: number | null;
+      speed: number | null;
+    };
+  };
+  bdRate: {
+    available: boolean;
+    valuePercent: number | null;
+    versusRowId: string | null;
+    versusLabel: string | null;
+    method: "piecewise-log-linear" | null;
+    matchedPointCount: number;
+    overlapQualityRange: [number, number] | null;
+    unavailableReason: string | null;
+  };
+  fit: {
+    selectedMode: PlFitMode;
+    modes: Record<PlFitMode, FitEvaluation>;
+    recommended: boolean;
+    recommendationReason: string | null;
+  };
+};
+
+export type LeaderboardAnalyticsResponse = {
+  selectedMode: PlFitMode;
+  profiles: Record<PlFitMode, FitProfile>;
+  rows: LeaderboardDecisionRow[];
+  recommendation: {
+    rowId: string | null;
+    label: string | null;
+    reason: string | null;
+  };
+  environmentScope: {
+    selectedEnvironmentId: string | null;
+    selectedEnvironmentFingerprint: string | null;
+    exact: boolean;
+    available: Array<{
+      environmentId: string;
+      environmentFingerprint: string;
+      cpuModel: string;
+      gpuModel: string;
+      ramGB: number;
+      os: string;
+      label: string;
+    }>;
+  };
 };
 
 export type HardwareAnalyticsRow = {

@@ -32,19 +32,23 @@ services:
       NODE_ENV: production
       PORT: ${PORT:-3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-benchmarks}?schema=public}
+      ARTIFACT_STORAGE_ROOT: /app/artifacts
+      ARTIFACT_UPLOAD_SECRET: ${ARTIFACT_UPLOAD_SECRET:?ARTIFACT_UPLOAD_SECRET is required}
     depends_on:
       db:
         condition: service_healthy
     # Do not expose server directly; reachable only via internal network and nginx
     command: sh -c "npx prisma migrate deploy && node dist/index.js"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3001/health/ready"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health/ready', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
     networks:
       - app
+    volumes:
+      - artifact_data:/app/artifacts
     deploy:
       resources:
         limits:
@@ -109,6 +113,7 @@ services:
 
 volumes:
   db_data:
+  artifact_data:
 
 networks:
   app:

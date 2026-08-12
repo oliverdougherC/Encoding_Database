@@ -3,16 +3,11 @@ import json
 import re
 import sys
 import time
-import threading
 import warnings
-from typing import Optional, Dict, Any, List, Set
+from typing import Optional, Dict, Any, List
 from urllib.parse import urljoin
 
 from . import config
-
-
-_REJECTED_KEYS_LOCK = threading.Lock()
-_SERVER_REJECTED_KEYS: Dict[str, Set[str]] = {}
 
 
 def _load_requests():
@@ -38,62 +33,6 @@ class SubmitError(RuntimeError):
         self.retryable = retryable
         self.status_code = status_code
         self.body = body
-
-
-def _base_key(base_url: str) -> str:
-    try:
-        return base_url.rstrip('/').lower()
-    except Exception:
-        return base_url
-
-
-def _get_rejected_keys(base_url: str) -> Set[str]:
-    key = _base_key(base_url)
-    with _REJECTED_KEYS_LOCK:
-        existing = _SERVER_REJECTED_KEYS.get(key)
-        return set(existing) if existing else set()
-
-
-def _remember_rejected_keys(base_url: str, keys: List[str]) -> Set[str]:
-    key = _base_key(base_url)
-    cleaned = [str(k).strip() for k in keys if isinstance(k, str) and str(k).strip()]
-    if not cleaned:
-        return _get_rejected_keys(base_url)
-    with _REJECTED_KEYS_LOCK:
-        bucket = _SERVER_REJECTED_KEYS.setdefault(key, set())
-        bucket.update(cleaned)
-        return set(bucket)
-
-
-def _extract_unrecognized_keys(error_text: str) -> List[str]:
-    if not error_text:
-        return []
-    messages: List[str] = []
-    try:
-        data = json.loads(error_text)
-        details = data.get('details') if isinstance(data, dict) else None
-        form_errors = details.get('formErrors') if isinstance(details, dict) else None
-        if isinstance(form_errors, list):
-            for entry in form_errors:
-                if isinstance(entry, str):
-                    messages.append(entry)
-    except Exception:
-        pass
-    if not messages:
-        messages = [error_text]
-
-    out: List[str] = []
-    for msg in messages:
-        match = re.search(r"Unrecognized keys?:\s*(.*)", msg)
-        if not match:
-            continue
-        key_blob = match.group(1)
-        for key in re.findall(r'"([^"]+)"', key_blob):
-            if not re.fullmatch(r"[A-Za-z][A-Za-z0-9_]*", key):
-                continue
-            if key not in out:
-                out.append(key)
-    return out
 
 
 def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
@@ -166,8 +105,6 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
     requests = _load_requests()
     url = f"{base_url.rstrip('/')}/submit"
     payload_to_send: Dict[str, Any] = dict(payload)
-    for dropped in _get_rejected_keys(base_url):
-        payload_to_send.pop(dropped, None)
 
     base_headers: Dict[str, str] = {"Content-Type": "application/json"}
     if use_token is None:
@@ -177,8 +114,6 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
 
     attempt = 1
     last_hmac_timestamp = 0
-    max_compat_retries = max(1, len(payload_to_send))
-    compat_retries = 0
     while attempt <= retries:
         body = json.dumps(payload_to_send, separators=(",", ":"))
         headers = dict(base_headers)
@@ -208,28 +143,6 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                         redirect_headers["x-signature"] = redirect_sig
                         redirect_headers["x-timestamp"] = str(redirect_ts)
                     r = requests.post(redirect_url, data=body, timeout=30, headers=redirect_headers, verify=config.REQUESTS_VERIFY, allow_redirects=False)
-            if r.status_code == 400:
-                try:
-                    err_text = r.text
-                except Exception:
-                    err_text = ""
-                unknown_keys = _extract_unrecognized_keys(err_text)
-                if unknown_keys:
-                    removed_now: List[str] = []
-                    for key in unknown_keys:
-                        if key in payload_to_send:
-                            payload_to_send.pop(key, None)
-                            removed_now.append(key)
-                    if removed_now:
-                        all_rejected = _remember_rejected_keys(base_url, removed_now)
-                        print(
-                            "submit compatibility: server rejected fields; retrying without: "
-                            + ", ".join(sorted(all_rejected)),
-                            file=sys.stderr,
-                        )
-                        compat_retries += 1
-                        if compat_retries <= max_compat_retries:
-                            continue
             if r.status_code == 429:
                 try:
                     ra = r.headers.get('Retry-After')

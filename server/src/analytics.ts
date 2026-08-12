@@ -16,11 +16,23 @@ const VALID_RESOLUTIONS = ['480p', '720p', '1080p', '1440p', '4k'] as const;
 export type CodecFamily = 'h264' | 'hevc' | 'av1' | 'vp9' | 'other';
 
 export type AnalyticsFilters = {
+  workloadId: string | null;
   contentClass: string;
   resolution: string;
   crf: number;
   passes: 1;
   minSamples: number;
+  fitMode: 'balanced' | 'quality' | 'storage' | 'realtime' | 'custom';
+  customQualityWeight: number | null;
+  customBitrateWeight: number | null;
+  customSpeedWeight: number | null;
+  minimumQuality: number | null;
+  minimumRealtimeRatio: number | null;
+  maximumBitrateBps: number | null;
+  compatibleCodecFamilies: CodecFamily[] | null;
+  requireRecommendationEligibility: boolean;
+  environmentId: string | null;
+  environmentFingerprint: string | null;
 };
 
 export type LeaderboardAnalyticsRow = {
@@ -31,6 +43,13 @@ export type LeaderboardAnalyticsRow = {
   contentClass: string;
   resolution: string;
   passes: number;
+  rowId: string;
+  hardwareContext: {
+    cpuModel: string;
+    gpuModel: string;
+    ramGB: number;
+    os: string;
+  };
   sampleCount: number;
   avgFps: number;
   avgVmaf: number | null;
@@ -47,7 +66,15 @@ export type LeaderboardAnalyticsRow = {
   plScoreVersion: typeof PL_SCORE_V7_VERSION;
   plScoreComponents: { quality: number; bitrate: number; speed: number } | null;
   plScoreWorkloadId: string;
+  scoreFormulaVersion: string | null;
+  benchmarkProtocolVersion: string | null;
+  sourceSuiteVersion: string | null;
+  qualityModelId: string | null;
   plScoreContext: {
+    formulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
     referenceContextVersion: string;
     workloadReferenceBitrateBps: number;
     qualityExponent: 2.4;
@@ -114,7 +141,14 @@ type AggregatedMetrics = {
   thermalThrottle: boolean;
 };
 
-type GroupAccumulator<Key extends Record<string, string | number>> = Key & AggregatedMetrics;
+type GroupAccumulator<Key extends Record<string, string | number | null>> = Key & AggregatedMetrics;
+
+type HardwareScope = {
+  cpuModel: string;
+  gpuModel: string;
+  ramGB: number;
+  os: string;
+};
 
 function asPositiveInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
@@ -132,6 +166,26 @@ function asNonNegativeInt(raw: string | undefined, fallback: number): number {
   return parsed;
 }
 
+function asOptionalFinite(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseFitMode(raw: string | undefined): AnalyticsFilters['fitMode'] {
+  if (raw === 'quality' || raw === 'storage' || raw === 'realtime' || raw === 'custom') return raw;
+  return 'balanced';
+}
+
+function parseCodecFamilyList(raw: string | undefined): CodecFamily[] | null {
+  if (!raw) return null;
+  const values = raw.split(',').map((value) => value.trim()).filter(Boolean);
+  const valid = values.filter((value): value is CodecFamily => (
+    value === 'h264' || value === 'hevc' || value === 'av1' || value === 'vp9' || value === 'other'
+  ));
+  return valid.length > 0 ? Array.from(new Set(valid)) : null;
+}
+
 export function parseAnalyticsFilters(query: Record<string, string | undefined>): AnalyticsFilters {
   const contentClass = VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])
     ? String(query.contentClass)
@@ -142,7 +196,26 @@ export function parseAnalyticsFilters(query: Record<string, string | undefined>)
   const crf = asNonNegativeInt(query.crf, DEFAULT_ANALYTICS_FILTERS.crf);
   const passes = query.passes === '1' ? 1 : DEFAULT_ANALYTICS_FILTERS.passes;
   const minSamples = asPositiveInt(query.minSamples, DEFAULT_ANALYTICS_FILTERS.minSamples);
-  return { contentClass, resolution, crf, passes, minSamples };
+  const maximumBitrateMbps = asOptionalFinite(query.maximumBitrateMbps);
+  return {
+    workloadId: query.workloadId?.trim() || null,
+    contentClass,
+    resolution,
+    crf,
+    passes,
+    minSamples,
+    fitMode: parseFitMode(query.fitMode),
+    customQualityWeight: asOptionalFinite(query.customQualityWeight),
+    customBitrateWeight: asOptionalFinite(query.customBitrateWeight),
+    customSpeedWeight: asOptionalFinite(query.customSpeedWeight),
+    minimumQuality: asOptionalFinite(query.minimumQuality),
+    minimumRealtimeRatio: asOptionalFinite(query.minimumRealtimeRatio),
+    maximumBitrateBps: maximumBitrateMbps == null ? null : maximumBitrateMbps * 1_000_000,
+    compatibleCodecFamilies: parseCodecFamilyList(query.compatibleCodecFamilies),
+    requireRecommendationEligibility: query.requireRecommendationEligibility === '1',
+    environmentId: query.environmentId?.trim() || null,
+    environmentFingerprint: query.environmentFingerprint?.trim() || null,
+  };
 }
 
 export function buildAnalyticsWhere(filters: AnalyticsFilters): Prisma.BenchmarkWhereInput {
@@ -151,6 +224,15 @@ export function buildAnalyticsWhere(filters: AnalyticsFilters): Prisma.Benchmark
     contentClass: filters.contentClass,
     resolution: filters.resolution,
     crf: filters.crf,
+    passes: filters.passes,
+  };
+}
+
+export function buildLeaderboardCurveWhere(filters: AnalyticsFilters): Prisma.BenchmarkWhereInput {
+  return {
+    status: 'accepted',
+    contentClass: filters.contentClass,
+    resolution: filters.resolution,
     passes: filters.passes,
   };
 }
@@ -235,8 +317,18 @@ function finalizeSize(sum: number, count: number): number {
   return Math.round(sum / count);
 }
 
+function resolveHardwareScope(row: Pick<Benchmark, 'cpuModel' | 'gpuModel' | 'ramGB' | 'os'>): HardwareScope {
+  return {
+    cpuModel: row.cpuModel,
+    gpuModel: row.gpuModel,
+    ramGB: row.ramGB,
+    os: row.os,
+  };
+}
+
 export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): LeaderboardAnalyticsRow[] {
   const grouped = new Map<string, GroupAccumulator<{
+    rowId: string;
     encoderName: string;
     codecFamily: CodecFamily;
     preset: string;
@@ -245,11 +337,24 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
     resolution: string;
     passes: number;
     workloadId: string;
+    cpuModel: string;
+    gpuModel: string;
+    ramGB: number;
+    os: string;
+    scoreFormulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
   }>>();
 
   for (const row of rows) {
     const encoderName = resolveEncoderName(row);
-    const key = [
+    const hardwareScope = resolveHardwareScope(row);
+    const rowId = [
+      hardwareScope.cpuModel,
+      hardwareScope.gpuModel,
+      hardwareScope.ramGB,
+      hardwareScope.os,
       encoderName,
       row.preset,
       row.crf,
@@ -257,8 +362,31 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       row.resolution,
       row.passes,
       row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      row.scoreFormulaVersion ?? '',
+      row.benchmarkProtocolVersion ?? '',
+      row.sourceSuiteVersion ?? '',
+      row.metricModelId ?? '',
+    ].join('\u241F');
+    const key = [
+      rowId,
+      hardwareScope.cpuModel,
+      hardwareScope.gpuModel,
+      hardwareScope.ramGB,
+      hardwareScope.os,
+      encoderName,
+      row.preset,
+      row.crf,
+      row.contentClass,
+      row.resolution,
+      row.passes,
+      row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      row.scoreFormulaVersion ?? '',
+      row.benchmarkProtocolVersion ?? '',
+      row.sourceSuiteVersion ?? '',
+      row.metricModelId ?? '',
     ].join('\u241F');
     const existing = grouped.get(key) ?? {
+      rowId,
       encoderName,
       codecFamily: deriveCodecFamily(encoderName),
       preset: row.preset,
@@ -267,6 +395,11 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       resolution: row.resolution,
       passes: row.passes,
       workloadId: row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      ...hardwareScope,
+      scoreFormulaVersion: row.scoreFormulaVersion ?? null,
+      benchmarkProtocolVersion: row.benchmarkProtocolVersion ?? null,
+      sourceSuiteVersion: row.sourceSuiteVersion ?? null,
+      qualityModelId: row.metricModelId ?? null,
       ...initMetrics(),
     };
     accumulateMetrics(existing, row);
@@ -276,6 +409,7 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
   const items = Array.from(grouped.values())
     .filter((entry) => entry.sampleCount >= minSamples)
     .map((entry) => ({
+      rowId: entry.rowId,
       encoderName: entry.encoderName,
       codecFamily: entry.codecFamily,
       preset: entry.preset,
@@ -283,6 +417,12 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       contentClass: entry.contentClass,
       resolution: entry.resolution,
       passes: entry.passes,
+      hardwareContext: {
+        cpuModel: entry.cpuModel,
+        gpuModel: entry.gpuModel,
+        ramGB: entry.ramGB,
+        os: entry.os,
+      },
       sampleCount: entry.sampleCount,
       avgFps: Number((entry.fpsSum / entry.sampleCount).toFixed(4)),
       avgVmaf: finalizeAverage(entry.vmafSum, entry.vmafSamples),
@@ -299,6 +439,10 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       plScoreVersion: PL_SCORE_V7_VERSION,
       plScoreComponents: null as { quality: number; bitrate: number; speed: number } | null,
       plScoreWorkloadId: entry.workloadId,
+      scoreFormulaVersion: entry.scoreFormulaVersion,
+      benchmarkProtocolVersion: entry.benchmarkProtocolVersion,
+      sourceSuiteVersion: entry.sourceSuiteVersion,
+      qualityModelId: entry.qualityModelId,
       plScoreContext: null as LeaderboardAnalyticsRow['plScoreContext'],
     }));
 
@@ -324,6 +468,10 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       item.plScore = Number(score.total.toFixed(4));
       item.plScoreComponents = { quality: score.quality, bitrate: score.bitrate, speed: score.speed };
       item.plScoreContext = {
+        formulaVersion: item.scoreFormulaVersion,
+        benchmarkProtocolVersion: item.benchmarkProtocolVersion,
+        sourceSuiteVersion: item.sourceSuiteVersion,
+        qualityModelId: item.qualityModelId,
         referenceContextVersion: referenceContextVersion!,
         workloadReferenceBitrateBps: referenceBitrate!,
         qualityExponent: 2.4,

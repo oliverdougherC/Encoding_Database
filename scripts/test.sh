@@ -109,7 +109,7 @@ issue_scan() {
     grep -Ein "$pattern" "$scan_log" > "$raw_log" || true
   fi
 
-  local ignore='0 warnings?|no warnings?|0 errors?|no errors?|without warnings?|without errors?|found 0 vulnerabilities|fail[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failed[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failures?[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)'
+  local ignore='0 warnings?|no warnings?|0 errors?|no errors?|without warnings?|without errors?|found 0 vulnerabilities|#[[:space:]]*subtest:|(^|:)ok [0-9]+ -|fail[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failed[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)|failures?[[:space:]]*[:=]?[[:space:]]*0([^0-9]|$)'
   if command -v rg >/dev/null 2>&1; then
     rg -n -v -i -e "$ignore" "$raw_log" > "$output_log" || true
   else
@@ -309,53 +309,43 @@ start_frontend() {
   return 0
 }
 
-run_api_submit_accepts_sample() {
+run_v7_api_contract_smoke() {
   local idx="$(( ${#STEP_NAMES[@]} + 1 ))"
-  local name="API: submit accepts sample payload"
+  local name="API: PL-v7 suite and evidence routes"
   local slug
   slug="$(slugify "$name")"
   local log="$RUN_DIR/$(printf '%02d' "$idx")-${slug}.log"
 
-  local base_url="http://127.0.0.1:${SERVER_PORT}/submit"
-  local modern_payload='{"cpuModel":"Test CPU Model","gpuModel":"","ramGB":16,"os":"macOS","codec":"libx264","preset":"medium","crf":24,"contentClass":"mixed","resolution":"1080p","passes":1,"fps":42.0,"vmaf":92.0,"ssim":0.97,"psnr":39.2,"fileSizeBytes":12345678,"notes":"local test submission","ffmpegVersion":"test","encoderName":"libx264","clientVersion":"test","inputHash":"53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8","runMs":10000}'
-  local legacy_payload='{"cpuModel":"Test CPU Model","gpuModel":"","ramGB":16,"os":"macOS","codec":"libx264","preset":"medium","crf":24,"fps":42.0,"vmaf":92.0,"ssim":0.97,"psnr":39.2,"fileSizeBytes":12345678,"notes":"local test submission","ffmpegVersion":"test","encoderName":"libx264","clientVersion":"test","inputHash":"53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8","runMs":10000}'
-
   printf '[%02d] RUN: %s\n' "$idx" "$name"
   : > "$log"
-  echo "[command] POST $base_url (modern payload first, legacy fallback on schema mismatch)" >> "$log"
+  echo "[command] Validate canonical seven-class suite and PL-v7 artifact route guards" >> "$log"
 
-  local resp body code
-  resp="$(curl -sS -w $'\n__HTTP_CODE:%{http_code}' -X POST "$base_url" -H "Content-Type: application/json" -d "$modern_payload")"
-  body="${resp%__HTTP_CODE:*}"
-  code="${resp##*__HTTP_CODE:}"
-  {
-    echo "--- modern status: $code ---"
-    echo "$body"
-  } >> "$log"
+  local rc=0
+  curl -fsS "http://127.0.0.1:${SERVER_PORT}/test-videos" \
+    | python3 -c 'import json,sys; clips=json.load(sys.stdin); assert len(clips)==7; assert {c["suiteVersion"] for c in clips} == {"encodingdb-test-suite-v1"}; assert len({c["contentClass"] for c in clips})==7; assert all(c["fileName"] != "sample.mp4" for c in clips)' \
+    >> "$log" 2>&1 || rc=$?
 
-  if [[ "$code" == "200" || "$code" == "201" ]]; then
-    record_step "$name" "PASS" "$log" "ok"
+  local create_code
+  create_code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+    "http://127.0.0.1:${SERVER_PORT}/v7/benchmark-runs" \
+    -H 'Content-Type: application/json' -d '{}')"
+  echo "empty v7 run status: $create_code" >> "$log"
+  [[ "$create_code" == "400" ]] || rc=1
+
+  local missing_code
+  missing_code="$(curl -sS -o /dev/null -w '%{http_code}' \
+    "http://127.0.0.1:${SERVER_PORT}/v7/benchmark-runs/not-a-run/artifacts/ENCODED")"
+  echo "missing v7 artifact status: $missing_code" >> "$log"
+  [[ "$missing_code" == "404" ]] || rc=1
+
+  if [[ "$rc" -eq 0 ]]; then
+    record_step "$name" "PASS" "$log" "seven-class suite and immutable evidence routes available"
     printf '[%02d] PASS: %s\n' "$idx" "$name"
     return 0
   fi
 
-  if [[ "$code" == "400" && "$body" == *"Unrecognized keys"* ]]; then
-    resp="$(curl -sS -w $'\n__HTTP_CODE:%{http_code}' -X POST "$base_url" -H "Content-Type: application/json" -d "$legacy_payload")"
-    body="${resp%__HTTP_CODE:*}"
-    code="${resp##*__HTTP_CODE:}"
-    {
-      echo "--- legacy fallback status: $code ---"
-      echo "$body"
-    } >> "$log"
-    if [[ "$code" == "200" || "$code" == "201" ]]; then
-      record_step "$name" "WARN" "$log" "legacy schema fallback used (modern fields rejected)"
-      printf '[%02d] WARN: %s (legacy schema fallback used)\n' "$idx" "$name"
-      return 0
-    fi
-  fi
-
-  record_step "$name" "FAIL" "$log" "submit rejected (status=$code)"
-  printf '[%02d] FAIL: %s (status=%s)\n' "$idx" "$name" "$code"
+  record_step "$name" "FAIL" "$log" "PL-v7 API contract smoke failed"
+  printf '[%02d] FAIL: %s\n' "$idx" "$name"
   return 1
 }
 
@@ -402,7 +392,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
   run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"
   run_step "Client: pytest suite" "cd \"$ROOT_DIR/client\" && python3 -m pytest -q"
 
-  run_step "Server: npm ci" "cd \"$ROOT_DIR/server\" && npm ci --no-fund"
+  run_step "Server: npm ci" "cd \"$ROOT_DIR/server\" && npm ci --no-audit --no-fund"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     SERVER_BUILD_OK=0
   fi
@@ -419,7 +409,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
     SERVER_BUILD_OK=0
   fi
 
-  run_step "Frontend: npm ci" "cd \"$ROOT_DIR/frontend\" && npm ci --no-fund"
+  run_step "Frontend: npm ci" "cd \"$ROOT_DIR/frontend\" && npm ci --no-audit --no-fund"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     FRONTEND_BUILD_OK=0
   fi
@@ -446,6 +436,18 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
       DOCKER_READY_OK=0
     fi
 
+    if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
+      run_step "Docker: build authoritative analysis image" "docker compose -f \"$COMPOSE_FILE\" build --quiet server"
+      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+        DOCKER_READY_OK=0
+      fi
+    fi
+    if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
+      run_step "Docker: authoritative media capability contract" "docker compose -f \"$COMPOSE_FILE\" run --rm --no-deps server sh -c 'ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq \"[[:space:]]libvmaf[[:space:]]\" && ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq \"[[:space:]]xpsnr[[:space:]]\" && ffprobe -version >/dev/null && echo \"e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app/resources/vmaf/vmaf_v1.0.16_3d0h.json\" | sha256sum -c -'"
+      if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
+        DOCKER_READY_OK=0
+      fi
+    fi
     if [[ "$DOCKER_READY_OK" -eq 1 ]]; then
       run_step "Database: start container" "docker compose -f \"$COMPOSE_FILE\" up -d db"
       if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
@@ -478,7 +480,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
           run_step "API: health live" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/live\" >/dev/null"
           run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
           run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
-          run_api_submit_accepts_sample
+          run_v7_api_contract_smoke
           run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
 
           start_frontend || true

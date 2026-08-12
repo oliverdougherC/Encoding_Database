@@ -5,7 +5,9 @@ import threading
 import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import ClassVar, Optional
+from unittest import mock
 
+from client.artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND
 from client.spool import count_pending_entries, load_spool_entry, replay_spool, spool_payload
 
 
@@ -40,6 +42,19 @@ class _SpoolHandler(BaseHTTPRequestHandler):
 
 
 class SpoolTests(unittest.TestCase):
+    def _authoritative_payload(self, artifact_path: str) -> dict:
+        return {
+            "submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND,
+            "artifactPath": artifact_path,
+            "artifactSha256": "a" * 64,
+            "artifactByteSize": 4,
+            "contentType": "video/mp4",
+            "runCreate": {
+                "payloadHash": "b" * 64,
+                "artifact": {"sha256": "a" * 64, "byteSize": 4, "mediaContainer": "mp4"},
+            },
+        }
+
     def _start_server(self) -> tuple[HTTPServer, threading.Thread, str]:
         server = HTTPServer(("127.0.0.1", 0), _SpoolHandler)
         port = server.server_port
@@ -138,6 +153,75 @@ class SpoolTests(unittest.TestCase):
             self.assertEqual(count_pending_entries(queue_dir), 0)
             dead_dir = os.path.join(queue_dir, "dead-letter")
             self.assertEqual(len(os.listdir(dead_dir)), 1)
+
+    def test_spool_payload_preserves_authoritative_artifact_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            source_path = os.path.join(source_dir, "artifact.mp4")
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            _path, entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            managed_path = entry["payload"]["artifactPath"]
+            self.assertTrue(os.path.exists(managed_path))
+            self.assertNotEqual(os.path.realpath(managed_path), os.path.realpath(source_path))
+            self.assertEqual(count_pending_entries(queue_dir), 1)
+
+    def test_replay_spool_dead_letters_missing_authoritative_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            source_path = os.path.join(source_dir, "artifact.mp4")
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            path, _entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            managed_path = load_spool_entry(path)["payload"]["artifactPath"]
+            os.remove(managed_path)
+            stats = replay_spool(
+                queue_dir,
+                base_url="http://127.0.0.1:9",
+                api_key="",
+                retries=1,
+                use_token=False,
+            )
+            self.assertEqual(stats.dead_lettered, 1)
+            dead_dir = os.path.join(queue_dir, "dead-letter")
+            self.assertTrue(os.listdir(dead_dir))
+
+    def test_replay_spool_retries_authoritative_submission_then_cleans_up_artifact(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            source_path = os.path.join(source_dir, "artifact.mp4")
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            path, _entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            managed_path = load_spool_entry(path)["payload"]["artifactPath"]
+            side_effects = [
+                Exception("unexpected"),
+                None,
+            ]
+
+            def fake_submit(*args, **kwargs):
+                outcome = side_effects.pop(0)
+                if outcome is None:
+                    return {"analyses": [{"vmafMean": 95.25}]}
+                raise outcome
+
+            with mock.patch("client.spool.submit_artifact_submission", side_effect=fake_submit):
+                first = replay_spool(
+                    queue_dir,
+                    base_url="http://127.0.0.1:9",
+                    api_key="",
+                    retries=1,
+                    use_token=False,
+                )
+                self.assertEqual(first.retained, 1)
+                self.assertTrue(os.path.exists(managed_path))
+                second = replay_spool(
+                    queue_dir,
+                    base_url="http://127.0.0.1:9",
+                    api_key="",
+                    retries=1,
+                    use_token=False,
+                )
+            self.assertEqual(second.submitted, 1)
+            self.assertEqual(count_pending_entries(queue_dir), 0)
+            self.assertFalse(os.path.exists(managed_path))
 
 
 if __name__ == "__main__":

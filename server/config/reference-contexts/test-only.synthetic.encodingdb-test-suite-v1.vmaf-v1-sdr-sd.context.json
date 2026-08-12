@@ -1,0 +1,450 @@
+{
+  "schemaVersion": "pl-reference-context-v1",
+  "contextVersion": "test-only.synthetic.pl-v7-reference-context-2026a",
+  "formulaVersion": "7.0",
+  "benchmarkProtocolVersion": "EDB-2026.1",
+  "sourceSuiteVersion": "encodingdb-test-suite-v1",
+  "qualityModelId": "vmaf-v1-sdr-sd",
+  "targetMetric": "vmafMean",
+  "targetMetricValue": 90,
+  "bitrateInterpolation": "log-linear",
+  "transformConstants": {
+    "qualityExponent": 2.4,
+    "speedCurveRate": 1.2,
+    "speedSaturationRealtime": 4
+  },
+  "generalPolicy": {
+    "requiresCompleteCoverage": true,
+    "weighting": "equal-class-geometric-mean",
+    "requiredContentClasses": [
+      "animation-flat-fields",
+      "dark-gradients-shadows",
+      "film-grain-noise",
+      "fine-natural-detail",
+      "high-motion-sports",
+      "screen-text",
+      "talking-head"
+    ]
+  },
+  "activation": {
+    "stage": "TEST_ONLY_PROVISIONAL",
+    "productionActivationAllowed": false,
+    "note": "Synthetic controlled sweep fixture for tests and local development only; not retained authoritative public PL evidence."
+  },
+  "provenance": {
+    "sourceMode": "synthetic-controlled-sweep",
+    "sourceVersion": "test-only.synthetic.encodingdb-controlled-reference-sweep-v1",
+    "inputHash": "fc7a3c5dda47edda48e5b5f5af073db9408e5cd4c6bdb6432a5467b3254cb268",
+    "inputRecordCount": 28,
+    "sourceIdHash": "0c6402ed204594d4c2111ee8dea7644fc3d8786b240fb4178e206f9222d8084b"
+  },
+  "workloads": [
+    {
+      "workloadId": "animation-960x540-24p",
+      "contentClass": "animation-flat-fields",
+      "workloadReferenceBitrateBps": 1579089.899414,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 1100000,
+          "vmafMean": 85,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "anim-h264-20",
+              "sampleId": "anim-h264-20",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1500000,
+          "vmafMean": 89,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "anim-hevc-24",
+              "sampleId": "anim-hevc-24",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1750000,
+          "vmafMean": 92,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "anim-av1-28",
+              "sampleId": "anim-av1-28",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "dark-gradients-960x540-24p",
+      "contentClass": "dark-gradients-shadows",
+      "workloadReferenceBitrateBps": 1396424.004377,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 900000,
+          "vmafMean": 82,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "dark-h264-22",
+              "sampleId": "dark-h264-22",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1300000,
+          "vmafMean": 88.7,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "dark-hevc-26",
+              "sampleId": "dark-hevc-26",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1500000,
+          "vmafMean": 91.3,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "dark-av1-30",
+              "sampleId": "dark-av1-30",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "grain-noise-960x540-24p",
+      "contentClass": "film-grain-noise",
+      "workloadReferenceBitrateBps": 6523366.403467,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 4200000,
+          "vmafMean": 83,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "grain-h264-18",
+              "sampleId": "grain-h264-18",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 5800000,
+          "vmafMean": 88,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "grain-hevc-22",
+              "sampleId": "grain-hevc-22",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 7000000,
+          "vmafMean": 91.2,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "grain-av1-26",
+              "sampleId": "grain-av1-26",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "natural-detail-960x540-24p",
+      "contentClass": "fine-natural-detail",
+      "workloadReferenceBitrateBps": 3884844.360699,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 2800000,
+          "vmafMean": 84,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "natural-h264-18",
+              "sampleId": "natural-h264-18",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 3600000,
+          "vmafMean": 88.5,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "natural-hevc-22",
+              "sampleId": "natural-hevc-22",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 4300000,
+          "vmafMean": 92,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "natural-av1-26",
+              "sampleId": "natural-av1-26",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "sports-action-960x540-24p",
+      "contentClass": "high-motion-sports",
+      "workloadReferenceBitrateBps": 2792848.008754,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 2000000,
+          "vmafMean": 82,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "sports-h264-18",
+              "sampleId": "sports-h264-18",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 2600000,
+          "vmafMean": 88.5,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "sports-hevc-22",
+              "sampleId": "sports-hevc-22",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 3000000,
+          "vmafMean": 91.5,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "sports-av1-26",
+              "sampleId": "sports-av1-26",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "screen-text-960x540-24p",
+      "contentClass": "screen-text",
+      "workloadReferenceBitrateBps": 2054205.418317,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 1400000,
+          "vmafMean": 84,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "screen-h264-18",
+              "sampleId": "screen-h264-18",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1900000,
+          "vmafMean": 88.8,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "screen-hevc-22",
+              "sampleId": "screen-hevc-22",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 2250000,
+          "vmafMean": 91.4,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "screen-av1-26",
+              "sampleId": "screen-av1-26",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "workloadId": "talking-head-960x540-24p",
+      "contentClass": "talking-head",
+      "workloadReferenceBitrateBps": 1051581.900017,
+      "referenceFrontier": [
+        {
+          "bitrateBps": 800000,
+          "vmafMean": 84.5,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "talk-h264-20",
+              "sampleId": "talk-h264-20",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1000000,
+          "vmafMean": 89.2,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "talk-hevc-24",
+              "sampleId": "talk-hevc-24",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        },
+        {
+          "bitrateBps": 1200000,
+          "vmafMean": 92.1,
+          "evidence": [
+            {
+              "kind": "synthetic-sample",
+              "referenceId": "talk-av1-28",
+              "sampleId": "talk-av1-28",
+              "benchmarkRunId": null,
+              "payloadHash": null,
+              "artifactId": null,
+              "artifactSha256": null,
+              "qualityAnalysisId": null,
+              "analysisWorkerVersion": null
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "hash": "5bfce80c5fb809cd0597bdece0dc98d4b373bca371fe0560cc6b98b8de2f4714"
+}

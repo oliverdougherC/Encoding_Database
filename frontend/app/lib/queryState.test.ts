@@ -36,10 +36,22 @@ describe("queryState", () => {
 
     const analytics = parseAnalyticsSearchParams(new URLSearchParams("resolution=720p&crf=26&minSamples=5"));
     expect(analytics).toEqual({
+      workloadId: "",
+      environmentId: "",
+      environmentFingerprint: "",
       contentClass: "mixed",
       resolution: "720p",
       crf: 26,
       minSamples: 5,
+      fitMode: "balanced",
+      customQualityWeight: null,
+      customBitrateWeight: null,
+      customSpeedWeight: null,
+      minimumQuality: null,
+      minimumRealtimeRatio: null,
+      maximumBitrateMbps: null,
+      compatibleCodecFamilies: null,
+      requireRecommendationEligibility: false,
     });
   });
 
@@ -54,12 +66,14 @@ describe("queryState", () => {
       resolution: "1080p",
       crf: 24,
       minSamples: 3,
+      fitMode: "balanced",
     })).toBe("");
     expect(buildAnalyticsSearchString({
       contentClass: "action",
       resolution: "1080p",
       crf: 24,
       minSamples: 3,
+      fitMode: "balanced",
     })).toBe("contentClass=action");
   });
 });

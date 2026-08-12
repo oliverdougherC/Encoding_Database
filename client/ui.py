@@ -312,7 +312,10 @@ def print_benchmark_result(payload: Dict[str, Any], relative_file_size_pct: Opti
         table.add_column(style="muted", width=30)
         table.add_column(style="accent", justify="right")
         if payload.get("workloadId"):
-            table.add_row("Scope", f"{payload.get('workloadId')} quick test (not General PL)")
+            label = str(payload.get("workloadId"))
+            if payload.get("contentClass"):
+                label += f" · {payload.get('contentClass')}"
+            table.add_row("Scope", f"{label} quick test (not General PL)")
         table.add_row("FPS", _fmt_float(payload.get("fps"), 2))
         table.add_row("VMAF", _fmt_float(payload.get("vmaf"), 2) if payload.get("vmaf") is not None else "N/A")
         vmaf_mean = payload.get("vmafMean", payload.get("vmaf"))
@@ -353,7 +356,10 @@ def print_benchmark_result(payload: Dict[str, Any], relative_file_size_pct: Opti
 
     print("\n|---------------------------")
     if payload.get("workloadId"):
-        print(f"| Scope: {payload.get('workloadId')} quick test (not General PL)")
+        scope = str(payload.get("workloadId"))
+        if payload.get("contentClass"):
+            scope += f" · {payload.get('contentClass')}"
+        print(f"| Scope: {scope} quick test (not General PL)")
         print("|---------------------------")
     print(f"| FPS: {_fmt_float(payload.get('fps'), 2)}")
     print("|---------------------------")

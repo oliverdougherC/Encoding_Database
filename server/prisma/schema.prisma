@@ -144,7 +144,6 @@ model Benchmark {
   // Idempotency and deduplication
   payloadHash String? @unique
 
-  @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes, workloadId])
   @@index([createdAt])
   @@index([status])
   @@index([codec])
@@ -266,4 +265,408 @@ model TestVideo {
   @@index([contentClass])
   @@index([resolution])
   @@index([contentClass, resolution])
+}
+
+enum RateControlMode {
+  CRF
+  CQ
+  ICQ
+  CQP
+  QP
+  VBR
+  CBR
+  ABR
+  OTHER
+}
+
+enum BenchmarkProtocolState {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum BenchmarkRunStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SUSPECT
+  INVALID
+}
+
+enum ArtifactRole {
+  ENCODED
+  METADATA
+  TELEMETRY
+  LOG
+  ANALYSIS_REPORT
+}
+
+enum ArtifactStorageState {
+  PENDING
+  UPLOADED
+  VERIFIED
+  RETAINED
+  REJECTED
+  DELETED
+}
+
+enum QualityAnalysisStatus {
+  PENDING
+  COMPLETE
+  SUSPECT
+  REJECTED
+  FAILED
+}
+
+enum DerivedResultKind {
+  CLIP
+  WORKLOAD
+  GENERAL
+}
+
+enum EvidenceTier {
+  PROVISIONAL
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model BenchmarkProtocol {
+  id                   String                 @id @default(cuid())
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  protocolVersion      String
+  sourceSuiteVersion   String
+  minimumClientVersion String
+  canonicalRecipeRules Json
+  canonicalOutputRules Json
+  metricWorkerVersion  String
+  state                BenchmarkProtocolState @default(ACTIVE)
+  activatedAt          DateTime?
+  retiredAt            DateTime?
+
+  benchmarkRuns BenchmarkRun[]
+  scoreContexts ScoreContext[]
+  derivedResults DerivedResult[]
+
+  @@unique([protocolVersion, sourceSuiteVersion, metricWorkerVersion])
+  @@index([state])
+}
+
+model TestClip {
+  id                      String   @id @default(cuid())
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  suiteId                 String
+  suiteVersion            String
+  manifestVersion         String
+  clipKey                 String
+  displayName             String
+  workloadId              String
+  contentClass            String
+  sourceProvenance        Json
+  sha256                  String   @unique
+  byteSize                Int
+  exactFrameCount         Int
+  exactDurationSeconds    Float
+  frameRateNumerator      Int
+  frameRateDenominator    Int
+  width                   Int
+  height                  Int
+  pixelFormat             String
+  bitDepth                Int
+  chromaSubsampling       String
+  colorPrimaries          String?
+  transferCharacteristics String?
+  matrixCoefficients      String?
+  colorRange              String?
+  scanType                String   @default("progressive")
+  hdrMetadata             Json?
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@unique([suiteId, suiteVersion, clipKey])
+  @@index([workloadId])
+  @@index([contentClass])
+}
+
+model Recipe {
+  id                         String          @id @default(cuid())
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  fingerprint                String          @unique
+  canonicalJson              Json
+  codecFamily                String
+  encoderImplementation      String
+  encoderVersion             String?
+  preset                     String?
+  tune                       String?
+  profile                    String?
+  level                      String?
+  tier                       String?
+  pixelFormat                String
+  bitDepth                   Int
+  chromaSubsampling          String
+  containerFormat            String?
+  videoCodecTag              String?
+  requestedRateControlMode   RateControlMode
+  requestedQualityValue      Float?
+  requestedTargetBitrateKbps Int?
+  requestedMaxBitrateKbps    Int?
+  requestedBufferSizeKbits   Int?
+  requestedQmin              Int?
+  requestedQmax              Int?
+  effectiveRateControlMode   RateControlMode
+  effectiveQualityValue      Float?
+  effectiveTargetBitrateKbps Int?
+  effectiveMaxBitrateKbps    Int?
+  effectiveBufferSizeKbits   Int?
+  effectiveQmin              Int?
+  effectiveQmax              Int?
+  requestedRateControl       Json
+  effectiveRateControl       Json
+  requestedOutputSettings    Json?
+  effectiveOutputSettings    Json?
+  normalizedRequestedOptions Json?
+  normalizedEffectiveOptions Json?
+  gopSize                    Int?
+  keyframeInterval           Int?
+  bFrames                    Int?
+  frameReordering            Boolean?
+  lookahead                  Int?
+  filmGrainSynthesis         Json?
+  majorTools                 Json?
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@index([codecFamily, encoderImplementation, preset])
+}
+
+model Environment {
+  id                     String   @id @default(cuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  fingerprint            String   @unique
+  canonicalJson          Json
+  cpuModel               String
+  cpuArchitecture        String
+  physicalCoreCount      Int?
+  logicalThreadCount     Int?
+  gpuModel               String?
+  selectedAcceleratorId  String?
+  selectedAccelerator    String?
+  driverVersion          String?
+  osName                 String
+  osVersion              String
+  ffmpegBuildFingerprint String
+  ffmpegVersion          String
+  encoderVersion         String?
+  clientVersion          String
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@index([cpuModel])
+  @@index([gpuModel])
+}
+
+model BenchmarkRun {
+  id                      String             @id @default(cuid())
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  benchmarkProtocolId     String
+  testClipId              String
+  workloadId              String
+  recipeId                String
+  environmentId           String
+  payloadHash             String             @unique
+  inputHash               String?
+  campaignId              String?
+  repetitionGroupId       String?
+  repetitionIndex         Int?
+  encodeWallTimeMs        Int?
+  encodeFps               Float?
+  sourceFps               Float?
+  realTimeRatio           Float?
+  sourceFrameCount        Int?
+  encodedFrameCount       Int?
+  telemetry               Json?
+  telemetrySources        Json?
+  telemetryMissing        Json?
+  energyDomains           Json?
+  decodeBenchmark         Json?
+  preRunEnvironmentCheck  Json?
+  ffmpegProgressTelemetry Json?
+  clientQualityDebug      Json?
+  status                  BenchmarkRunStatus @default(PENDING)
+  statusReason            String?
+  decidedAt               DateTime?
+
+  benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip          @relation(fields: [testClipId], references: [id], onDelete: Restrict)
+  recipe            Recipe            @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment       @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  artifacts         Artifact[]
+  qualityAnalyses   QualityAnalysis[]
+  derivedMembers    DerivedResultMember[]
+
+  @@index([benchmarkProtocolId, workloadId, recipeId, environmentId, status])
+  @@index([repetitionGroupId])
+}
+
+model Artifact {
+  id           String               @id @default(cuid())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  benchmarkRunId String
+  role         ArtifactRole
+  sha256       String?
+  byteSize     Int?
+  storageState ArtifactStorageState @default(PENDING)
+  storageProvider String?
+  storageBucket String?
+  storageKey   String?
+  storageUrl   String?
+  mediaContainer String?
+  stateReason  String?
+  stateDetails Json?
+  uploadedAt   DateTime?
+  verifiedAt   DateTime?
+  retainedAt   DateTime?
+  deletedAt    DateTime?
+
+  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  qualityAnalyses QualityAnalysis[]
+
+  @@unique([benchmarkRunId, role])
+  @@index([storageState])
+  @@index([sha256])
+}
+
+model QualityAnalysis {
+  id                      String                @id @default(cuid())
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  benchmarkRunId          String
+  artifactId              String?
+  status                  QualityAnalysisStatus @default(PENDING)
+  metricModelId           String
+  qualityContextId        String?
+  analysisWorkerVersion   String
+  analysisProvenance      Json
+  vmafMean                Float?
+  vmafMedian              Float?
+  vmafP1                  Float?
+  vmafP5                  Float?
+  vmafMin                 Float?
+  vmafMax                 Float?
+  vmafStdDev              Float?
+  vmafHarmonicMean        Float?
+  worstFrameIndex         Int?
+  worstFrameTimestampMs   Int?
+  belowThresholdFractions Json?
+  vmafDistribution        Json?
+  xpsnr                   Float?
+  ssim                    Float?
+  psnr                    Float?
+  videoBitrateBps         Float?
+  videoPayloadBytes       Int?
+  videoPacketCount        Int?
+  measuredDurationSeconds Float?
+  bitrateMethod           String?
+  containerBitrateBps     Float?
+  fileSizeBytes           Int?
+
+  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  artifact     Artifact?     @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+  derivedMembers DerivedResultMember[]
+
+  @@unique([benchmarkRunId, metricModelId, analysisWorkerVersion])
+  @@index([status])
+}
+
+model ScoreContext {
+  id                         String   @id @default(cuid())
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  benchmarkProtocolId        String
+  formulaVersion             String
+  contextVersion             String
+  workloadId                 String
+  qualityModelId             String
+  workloadReferenceBitrateBps Float
+  transformConstants         Json
+  referenceFrontier          Json?
+
+  benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  derivedResults    DerivedResult[]
+
+  @@unique([formulaVersion, contextVersion, workloadId, qualityModelId])
+  @@index([benchmarkProtocolId])
+}
+
+model DerivedResult {
+  id                    String            @id @default(cuid())
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  kind                  DerivedResultKind
+  scopeKey              String
+  benchmarkProtocolId   String
+  workloadId            String
+  testClipId            String?
+  recipeId              String
+  environmentId         String
+  scoreContextId        String
+  aggregatorVersion     String
+  acceptedRunCount      Int
+  suspectRunCount       Int               @default(0)
+  rejectedRunCount      Int               @default(0)
+  invalidRunCount       Int               @default(0)
+  repetitionCount       Int
+  centerEncodeFps       Float?
+  centerRealTimeRatio   Float?
+  centerVideoBitrateBps Float?
+  centerFileSizeBytes   Float?
+  centerVmafMean        Float?
+  centerVmafP5          Float?
+  plQuality             Float?
+  plBitrate             Float?
+  plSpeed               Float?
+  plTotal               Float?
+  confidenceLower       Float?
+  confidenceUpper       Float?
+  evidenceTier          EvidenceTier      @default(PROVISIONAL)
+  evidenceSummary       Json
+  confidenceIntervals   Json
+  dispersion            Json
+  recomputationSpec     Json
+
+  benchmarkProtocol BenchmarkProtocol  @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip?          @relation(fields: [testClipId], references: [id], onDelete: SetNull)
+  recipe            Recipe             @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment        @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  scoreContext      ScoreContext       @relation(fields: [scoreContextId], references: [id], onDelete: Restrict)
+  members           DerivedResultMember[]
+
+  @@unique([kind, benchmarkProtocolId, recipeId, environmentId, scoreContextId, scopeKey])
+  @@index([workloadId])
+  @@index([evidenceTier])
+}
+
+model DerivedResultMember {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  derivedResultId String
+  benchmarkRunId  String
+  qualityAnalysisId String
+
+  derivedResult DerivedResult @relation(fields: [derivedResultId], references: [id], onDelete: Cascade)
+  benchmarkRun  BenchmarkRun  @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  qualityAnalysis QualityAnalysis @relation(fields: [qualityAnalysisId], references: [id], onDelete: Restrict)
+
+  @@unique([derivedResultId, qualityAnalysisId])
+  @@index([benchmarkRunId])
+  @@index([qualityAnalysisId])
 }

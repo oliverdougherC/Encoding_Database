@@ -116,7 +116,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.preset_combo = ttk.Combobox(row3, textvariable=self.selected_preset_var, state="readonly", width=18)
             self.preset_combo.pack(side="left", padx=(8, 16))
 
-            ttk.Label(row3, text="CRF").pack(side="left")
+            ttk.Label(row3, text="Native quality value").pack(side="left")
             self.crf_spin = ttk.Spinbox(row3, from_=10, to=40, textvariable=self.crf_var, width=6)
             self.crf_spin.pack(side="left", padx=(8, 0))
 

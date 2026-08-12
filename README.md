@@ -17,7 +17,7 @@ This release documents work completed since `v1.0.2` and reflects a major platfo
 
 - Reworked benchmark execution to avoid double-encoding and measure speed/size/quality from one artifact.
 - Added SSIM and PSNR computation (alongside VMAF), including parallelized quality analysis.
-- Fixed hardware encoder CRF handling (VideoToolbox, QSV, AMF, VAAPI) where CRF could previously be ignored.
+- Added native encoder rate-control handling (CRF, CQ/ICQ/QP, and bitrate modes) without treating their numeric controls as interchangeable.
 - Improved benchmark throughput with cached encoder discovery, FFmpeg progress parsing, and SHA256 caching.
 - Fixed progress accounting and baseline cache behavior (including TTL support).
 - Added hardware telemetry capture for GPU utilization/power, CPU utilization, memory peaks, and thermal throttling.
@@ -43,7 +43,7 @@ This release documents work completed since `v1.0.2` and reflects a major platfo
 - Tightened schema integrity with non-null `crf` defaults and normalized `gpuModel` handling.
 - Standardized canonical input hash enforcement for reproducible benchmark comparisons.
 - Extended benchmark rows with telemetry and quality sample-count fields for higher confidence analysis.
-- Enforced CRF single-pass policy (`passes=1`) across the pipeline for consistency.
+- Added immutable PL-v7 runs, artifacts, authoritative analyses, score contexts, and derived results.
 
 ## Why this project exists
 
@@ -55,11 +55,11 @@ Encoder performance claims are often hard to compare because workloads, settings
 
 ## System architecture
 
-1. The client runs benchmark tasks (single run or benchmark batches) against a canonical input clip.
-2. The client computes quality and performance metrics and captures optional system telemetry during encode.
-3. The client submits an allowlisted payload to `/submit`.
-4. The server validates payloads, deduplicates with a hash, scores quality confidence, stores an immutable audit row, and updates aggregate benchmark rows transactionally.
-5. The frontend queries `/query` for accepted aggregates and renders analytics/leaderboards.
+1. The client runs benchmark tasks against the versioned EncodingDB Test Suite v1 manifest.
+2. The client executes native, fingerprinted recipes under the versioned benchmark protocol and captures performance and environment evidence.
+3. The client uploads the encoded artifact through the v7 artifact API. Client-calculated quality is diagnostic only.
+4. The server verifies the artifact, performs the pinned authoritative quality analysis, and rebuilds immutable, hardware-scoped derived results from accepted runs.
+5. The frontend ranks canonical derived results and exposes PL, PL Fit, confidence, scope, Pareto, and valid BD-rate evidence.
 
 ## Repository layout
 
@@ -68,15 +68,16 @@ Encoder performance claims are often hard to compare because workloads, settings
 - `frontend/`: Next.js 15 app with benchmark table, analytics, leaderboards, and hardware pages.
 - `nginx/`: reverse-proxy configuration for production.
 - `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.ps1`).
-- `sample.mp4`: canonical baseline clip used by the benchmark flow.
+- `client/resources/test_suite_v1/manifest.json`: machine-readable manifest for the seven-class EncodingDB Test Suite v1.
+- `client/ENCODINGDB_TEST_SUITE_V1.md`: provenance, licensing, and General PL coverage notes for the suite.
 
 ## Current platform capabilities
 
-- Benchmark dimensions: codec/encoder, preset, CRF, content class, resolution (single-pass CRF mode).
-- Core quality/performance: FPS, file size, VMAF, SSIM, PSNR.
+- Benchmark dimensions: codec/encoder, preset, explicit native rate-control structure, exact output recipe, content class, suite clip, and hardware environment.
+- Core quality/performance: encode FPS, deterministic video-payload bitrate, full VMAF-v1 distribution, XPSNR, SSIM, and PSNR.
 - Hardware telemetry: utilization, power, memory, temperatures, CPU frequency, process I/O and CPU time, battery state.
 - Data integrity controls: canonical input hash checks, idempotent payload hash, accepted/suspect/rejected submission status.
-- Aggregation model: rolling sums/sample counts for stable recomputation and drift-resistant averages.
+- Aggregation model: immutable runs and analyses with robust medians, dispersion, confidence intervals, evidence tiers, and reproducible derived-result recomputation.
 - Query API: filtering, sorting, ranges, pagination, derived efficiency metrics.
 - Frontend analytics: scatter plots, histograms, rate-distortion, content/resolution comparisons, and PL Score v7 results when complete v7 evidence and frozen workload references are available.
 
@@ -261,12 +262,19 @@ Windows (PowerShell):
 .\scripts\build_windows_client.ps1
 ```
 
+Linux:
+
+```bash
+./scripts/build_linux_client.sh
+```
+
 The Windows build now outputs two executables in the repository root:
 
 - `encodingdb-client-windows.exe` (GUI-first for testers)
 - `encodingdb-client-windows-console.exe` (console fallback/debug)
 
-Both packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
+Packaged clients also bundle the pinned `vmaf-v1-sdr-1080p` model manifest and JSON under `client/resources/vmaf/`.
+Packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<platform>/`.
 
 ## Testing and validation scripts
 
@@ -295,9 +303,9 @@ Frontend-only deployment notes are in `frontend/DEPLOYMENT.md`.
 
 ## Notes on benchmark scope
 
-- Canonical clip integrity is enforced by SHA256 (`sample.mp4`).
-- Multi-content/resolution fields are supported in schema and UI; the canonical sample remains the default guaranteed clip path.
-- Encoding mode is intentionally fixed to CRF single-pass (`passes=1`) across client, ingest, and frontend.
+- Canonical suite clip integrity is enforced by SHA256 plus ffprobe-verified media contracts from `client/resources/test_suite_v1/manifest.json`.
+- General PL v7 requires complete EncodingDB Test Suite v1 coverage with equal-class weighting; the local quick-test path is content-specific only and is never General PL.
+- Rate control is encoder-native and part of the requested/effective recipe identity; a legacy `--crf` UI input is only an explicit edge conversion for encoders whose native mode supports it.
 - Some telemetry fields are platform-dependent and may be unavailable on certain systems (for example, GPU power on non-NVIDIA hardware).
 
 ## Contributing

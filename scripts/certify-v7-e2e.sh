@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+SERVER_URL="${SERVER_URL:-http://127.0.0.1:3001}"
+FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:3100}"
+SOFTWARE_ENCODER="${SOFTWARE_ENCODER:-libx264}"
+HARDWARE_ENCODER="${HARDWARE_ENCODER:-}"
+SUITE_CLIP="${SUITE_CLIP:-sports-action-960x540-24p}"
+EVIDENCE_ROOT="${EVIDENCE_ROOT:-$ROOT_DIR/.test-reports/pl-v7-e2e}"
+BUILD_CLIENT=1
+
+usage() {
+  echo "Usage: scripts/certify-v7-e2e.sh --hardware-encoder NAME [options]"
+  echo "  --software-encoder NAME  Software encoder (default: libx264)"
+  echo "  --hardware-encoder NAME  Required real hardware encoder"
+  echo "  --suite-clip ID          Canonical representative clip (default: sports-action-960x540-24p)"
+  echo "  --server-url URL         Running v7 server (default: http://127.0.0.1:3001)"
+  echo "  --frontend-url URL       Running frontend wired to that server (default: http://127.0.0.1:3100)"
+  echo "  --evidence-root PATH     Retained evidence parent"
+  echo "  --skip-build             Use an already packaged client"
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --software-encoder) SOFTWARE_ENCODER="${2:?missing software encoder}"; shift 2 ;;
+    --hardware-encoder) HARDWARE_ENCODER="${2:?missing hardware encoder}"; shift 2 ;;
+    --suite-clip) SUITE_CLIP="${2:?missing suite clip ID}"; shift 2 ;;
+    --server-url) SERVER_URL="${2:?missing server URL}"; shift 2 ;;
+    --frontend-url) FRONTEND_URL="${2:?missing frontend URL}"; shift 2 ;;
+    --evidence-root) EVIDENCE_ROOT="${2:?missing evidence root}"; shift 2 ;;
+    --skip-build) BUILD_CLIENT=0; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "Unknown argument: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+[[ -n "$HARDWARE_ENCODER" ]] || { echo "--hardware-encoder is required; hardware evidence is never simulated" >&2; exit 2; }
+[[ "$SOFTWARE_ENCODER" != "$HARDWARE_ENCODER" ]] || { echo "Software and hardware encoders must be distinct" >&2; exit 2; }
+[[ -n "${DATABASE_URL:-}" ]] || { echo "DATABASE_URL is required for evidence-chain verification" >&2; exit 2; }
+
+BRANCH="$(git -C "$ROOT_DIR" branch --show-current)"
+COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
+[[ "$BRANCH" == "beta" ]] || { echo "Certification must run on beta, not $BRANCH" >&2; exit 2; }
+if [[ -n "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=all | grep -v '^.. \.omx/' || true)" ]]; then
+  echo "Certification requires a clean beta commit (OMX runtime state is ignored)" >&2
+  exit 2
+fi
+
+case "$(uname -s)" in
+  Darwin)
+    BUILD_SCRIPT="$ROOT_DIR/scripts/build_macos_client.sh"
+    CLIENT_BINARY="$ROOT_DIR/encodingdb-client-macos"
+    BUNDLED_FFMPEG="$ROOT_DIR/client/bin/mac/ffmpeg"
+    ;;
+  Linux)
+    BUILD_SCRIPT="$ROOT_DIR/scripts/build_linux_client.sh"
+    CLIENT_BINARY="$ROOT_DIR/encodingdb-client-linux"
+    BUNDLED_FFMPEG="$ROOT_DIR/client/bin/linux/ffmpeg"
+    ;;
+  *) echo "No certification packaging path for $(uname -s)" >&2; exit 2 ;;
+esac
+
+[[ -x "$BUNDLED_FFMPEG" ]] || { echo "Bundled ffmpeg missing: $BUNDLED_FFMPEG" >&2; exit 2; }
+"$BUNDLED_FFMPEG" -hide_banner -encoders 2>/dev/null | grep -Eq "[[:space:]]${SOFTWARE_ENCODER}[[:space:]]" \
+  || { echo "Software encoder unavailable in packaged ffmpeg: $SOFTWARE_ENCODER" >&2; exit 2; }
+"$BUNDLED_FFMPEG" -hide_banner -encoders 2>/dev/null | grep -Eq "[[:space:]]${HARDWARE_ENCODER}[[:space:]]" \
+  || { echo "Hardware encoder unavailable in packaged ffmpeg: $HARDWARE_ENCODER" >&2; exit 2; }
+
+curl --fail --silent --show-error "$SERVER_URL/health/ready" >/dev/null
+curl --fail --silent --show-error "$FRONTEND_URL/leaderboards" >/dev/null
+
+if [[ "$BUILD_CLIENT" -eq 1 ]]; then
+  "$BUILD_SCRIPT"
+fi
+[[ -x "$CLIENT_BINARY" ]] || { echo "Packaged client missing: $CLIENT_BINARY" >&2; exit 2; }
+
+RUN_STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+RUN_DIR="$EVIDENCE_ROOT/${COMMIT}-${RUN_STAMP}"
+mkdir -p "$RUN_DIR"
+STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+CLIENT_SHA256="$(shasum -a 256 "$CLIENT_BINARY" | awk '{print $1}')"
+QUEUE_DIR="$RUN_DIR/client-queue"
+mkdir -p "$QUEUE_DIR"
+
+run_path() {
+  local kind="$1"
+  local encoder="$2"
+  local log="$RUN_DIR/${kind}-client.log"
+  local -a native_rate_control=(--crf 24)
+  if [[ "$kind" == "hardware" ]]; then
+    native_rate_control=(--target-bitrate-kbps 2500)
+  fi
+  echo "Running packaged $kind path with $encoder"
+  ENCODINGDB_PROTOCOL_SEED=701 \
+    "$CLIENT_BINARY" \
+      --base-url "$SERVER_URL" \
+      --codec "$encoder" \
+      --v7-suite-clip "$SUITE_CLIP" \
+      --presets fast \
+      "${native_rate_control[@]}" \
+      --retries 1 \
+      --queue-dir "$QUEUE_DIR" \
+      >"$log" 2>&1
+  if find "$QUEUE_DIR" -maxdepth 1 -type f -name '*.json' -print -quit | grep -q .; then
+    echo "$kind client retained an upload/submission in its retry queue" >&2
+    exit 1
+  fi
+}
+
+run_path software "$SOFTWARE_ENCODER"
+run_path hardware "$HARDWARE_ENCODER"
+
+cat >"$RUN_DIR/execution.json" <<EOF
+{
+  "evidenceVersion": "encodingdb-pl-v7-e2e/v1",
+  "branch": "$BRANCH",
+  "commit": "$COMMIT",
+  "startedAt": "$STARTED_AT",
+  "completedClientRunsAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "packagedClient": { "path": "$CLIENT_BINARY", "sha256": "$CLIENT_SHA256" },
+  "suiteClip": "$SUITE_CLIP",
+  "softwareEncoder": "$SOFTWARE_ENCODER",
+  "hardwareEncoder": "$HARDWARE_ENCODER"
+}
+EOF
+
+(cd "$ROOT_DIR/server" && node scripts/verify-v7-e2e.mjs \
+  --since "$STARTED_AT" \
+  --software-encoder "$SOFTWARE_ENCODER" \
+  --hardware-encoder "$HARDWARE_ENCODER" \
+  --server-url "$SERVER_URL" \
+  --frontend-url "$FRONTEND_URL" \
+  --output "$RUN_DIR/authority-chain.json")
+
+find "$RUN_DIR" -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 >"$RUN_DIR/SHA256SUMS"
+echo "PL v7 E2E certification passed: $RUN_DIR"

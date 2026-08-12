@@ -4,7 +4,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import ClassVar, Optional
 
-from client.network import submit
+from client.network import SubmitError, submit
 
 
 class _CompatHandler(BaseHTTPRequestHandler):
@@ -52,7 +52,7 @@ class _CompatHandler(BaseHTTPRequestHandler):
 
 
 class SubmitCompatibilityTests(unittest.TestCase):
-    def test_submit_retries_without_rejected_new_keys(self) -> None:
+    def test_submit_never_drops_rejected_evidence_fields(self) -> None:
         _CompatHandler.attempts = 0
         _CompatHandler.final_body = None
 
@@ -62,27 +62,28 @@ class SubmitCompatibilityTests(unittest.TestCase):
         thread.start()
 
         try:
-            submit(
-                f"http://127.0.0.1:{port}",
-                {
-                    "cpuModel": "Test CPU",
-                    "telemetrySources": "cpu_psutil",
-                    "telemetryMissing": "battery_unavailable",
-                    "cpuSampleCount": 4,
-                    "gpuUtilAvg": 33.2,
-                },
-                retries=1,
-                use_token=False,
-            )
+            with self.assertRaises(SubmitError):
+                submit(
+                    f"http://127.0.0.1:{port}",
+                    {
+                        "cpuModel": "Test CPU",
+                        "telemetrySources": "cpu_psutil",
+                        "telemetryMissing": "battery_unavailable",
+                        "cpuSampleCount": 4,
+                        "gpuUtilAvg": 33.2,
+                    },
+                    retries=1,
+                    use_token=False,
+                )
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)
 
-        self.assertEqual(_CompatHandler.attempts, 2)
-        self.assertEqual(_CompatHandler.final_body, {"cpuModel": "Test CPU", "gpuUtilAvg": 33.2})
+        self.assertEqual(_CompatHandler.attempts, 1)
+        self.assertIsNone(_CompatHandler.final_body)
 
-    def test_token_enabled_compatibility_retry_uses_fresh_token(self) -> None:
+    def test_token_rejection_does_not_retry_with_truncated_payload(self) -> None:
         _CompatHandler.attempts = 0
         _CompatHandler.final_body = None
         _CompatHandler.issued_tokens = 0
@@ -92,20 +93,21 @@ class SubmitCompatibilityTests(unittest.TestCase):
         thread = threading.Thread(target=server.serve_forever, daemon=True)
         thread.start()
         try:
-            submit(
-                f"http://127.0.0.1:{server.server_port}",
-                {"cpuModel": "Test CPU", "telemetrySources": "cpu_psutil"},
-                retries=1,
-                use_token=True,
-            )
+            with self.assertRaises(SubmitError):
+                submit(
+                    f"http://127.0.0.1:{server.server_port}",
+                    {"cpuModel": "Test CPU", "telemetrySources": "cpu_psutil"},
+                    retries=1,
+                    use_token=True,
+                )
         finally:
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)
 
-        self.assertEqual(_CompatHandler.attempts, 2)
-        self.assertEqual(_CompatHandler.issued_tokens, 2)
-        self.assertEqual(len(set(_CompatHandler.posted_tokens)), 2)
+        self.assertEqual(_CompatHandler.attempts, 1)
+        self.assertEqual(_CompatHandler.issued_tokens, 1)
+        self.assertEqual(len(set(_CompatHandler.posted_tokens)), 1)
 
 
 class _TransientHandler(_CompatHandler):

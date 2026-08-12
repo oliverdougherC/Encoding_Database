@@ -26,11 +26,17 @@ die() {
 if [[ ! -x "$BIN_DIR/ffmpeg" ]] || [[ ! -x "$BIN_DIR/ffprobe" ]]; then
   die "Expected executable ffmpeg and ffprobe at $BIN_DIR"
 fi
-if [[ ! -f "$ROOT_DIR/sample.mp4" ]]; then
-  die "Missing $ROOT_DIR/sample.mp4"
-fi
 if [[ ! -f "$CLIENT_DIR/presets.json" ]]; then
   die "Missing $CLIENT_DIR/presets.json"
+fi
+if [[ ! -f "$CLIENT_DIR/resources/test_suite_v1/manifest.json" ]]; then
+  die "Missing $CLIENT_DIR/resources/test_suite_v1/manifest.json"
+fi
+if [[ ! -f "$CLIENT_DIR/resources/vmaf/manifest.json" ]]; then
+  die "Missing $CLIENT_DIR/resources/vmaf/manifest.json"
+fi
+if [[ ! -f "$CLIENT_DIR/resources/vmaf/vmaf_v1.0.16_3d0h.json" ]]; then
+  die "Missing $CLIENT_DIR/resources/vmaf/vmaf_v1.0.16_3d0h.json"
 fi
 if [[ ! -f "$ENTRYPOINT" ]]; then
   die "Missing entrypoint: $ENTRYPOINT"
@@ -64,8 +70,9 @@ cd "$ROOT_DIR"
   --paths "$ROOT_DIR" \
   --add-data "$BIN_DIR/ffmpeg:bin/mac" \
   --add-data "$BIN_DIR/ffprobe:bin/mac" \
-  --add-data "$ROOT_DIR/sample.mp4:." \
   --add-data "$CLIENT_DIR/presets.json:." \
+  --add-data "$CLIENT_DIR/resources/test_suite_v1:resources/test_suite_v1" \
+  --add-data "$CLIENT_DIR/resources/vmaf:resources/vmaf" \
   "$ENTRYPOINT"
 
 if [[ ! -f "$PYI_DIST_DIR/$APP_NAME" ]]; then

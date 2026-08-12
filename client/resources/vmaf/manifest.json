@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "metricModelId": "vmaf-v1-sdr-1080p",
+  "metricModelVersion": "v1.0.16_3d0h",
+  "libvmafModelName": "vmaf_v1.0.16_3d0h",
+  "filename": "vmaf_v1.0.16_3d0h.json",
+  "bundleRelativePath": "resources/vmaf/vmaf_v1.0.16_3d0h.json",
+  "sha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+  "analysisContextId": "libvmaf-json-distorted-first-stdout",
+  "distortedInputIndex": 0,
+  "referenceInputIndex": 1,
+  "filterOptions": {
+    "log_fmt": "json",
+    "log_path": "-"
+  }
+}

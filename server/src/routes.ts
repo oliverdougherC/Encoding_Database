@@ -8,18 +8,22 @@ import {
   addDerivedBenchmarkFields,
   aggregateEncoders,
   aggregateHardware,
-  aggregateLeaderboards,
   buildAnalyticsWhere,
   parseAnalyticsFilters,
 } from './analytics.js';
+import { buildDecisionPayload, type DecisionCandidate, type EvidenceTier } from './v7/decision.js';
+import { buildPublicTestVideoCatalog } from './v7/suite.js';
+import { createArtifactPipelineRouter } from './v7/artifacts.js';
 
 const router = Router();
+router.use(createArtifactPipelineRouter());
 
 type BenchmarkRow = Awaited<ReturnType<typeof prisma.benchmark.findMany>>[number];
 type PrismaErrorLike = {
   code?: string;
   meta?: { target?: string[] | string };
 };
+type CanonicalLeaderboardRecord = Awaited<ReturnType<typeof loadCanonicalLeaderboardRecords>>[number];
 
 type SubmissionDisposition = 'pending' | 'accepted' | 'rejected' | 'suspect';
 
@@ -224,6 +228,130 @@ function isRetryableSubmitConflict(error: unknown): boolean {
 }
 
 const MAX_SUBMIT_TRANSACTION_RETRIES = 1;
+const CANONICAL_PL_SCORE_VERSION = '7.0';
+
+function asFiniteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function canonicalWorkloadIdForFilters(filters: ReturnType<typeof parseAnalyticsFilters>): string {
+  return filters.workloadId ?? `${filters.contentClass}-${filters.resolution}`;
+}
+
+async function loadCanonicalLeaderboardRecords(filters: ReturnType<typeof parseAnalyticsFilters>) {
+  const workloadId = canonicalWorkloadIdForFilters(filters);
+  return prisma.derivedResult.findMany({
+    where: {
+      kind: 'WORKLOAD',
+      workloadId,
+      acceptedRunCount: { gte: filters.minSamples },
+      scoreContext: {
+        formulaVersion: CANONICAL_PL_SCORE_VERSION,
+        workloadId,
+        benchmarkProtocol: {
+          state: 'ACTIVE',
+        },
+      },
+    },
+    include: {
+      environment: true,
+      recipe: true,
+      scoreContext: {
+        include: {
+          benchmarkProtocol: true,
+        },
+      },
+    },
+    orderBy: [
+      { recipe: { preset: 'asc' } },
+      { createdAt: 'asc' },
+    ],
+  });
+}
+
+function deriveCanonicalCrf(row: CanonicalLeaderboardRecord): number {
+  const requested = asFiniteNumber(row.recipe.requestedQualityValue);
+  if (requested != null) return Math.round(requested);
+  const effective = asFiniteNumber(row.recipe.effectiveQualityValue);
+  if (effective != null) return Math.round(effective);
+  return -1;
+}
+
+function deriveCanonicalSourceFps(row: CanonicalLeaderboardRecord): number | null {
+  const encodeFps = asFiniteNumber(row.centerEncodeFps);
+  const realtime = asFiniteNumber(row.centerRealTimeRatio);
+  if (encodeFps == null || realtime == null || realtime <= 0) return null;
+  return encodeFps / realtime;
+}
+
+function deriveCanonicalContext(row: CanonicalLeaderboardRecord) {
+  const rawConstants = asObject(row.scoreContext.transformConstants);
+  const qualityExponent = asFiniteNumber(rawConstants?.qualityExponent) ?? 2.4;
+  const speedCurveRate = asFiniteNumber(rawConstants?.speedCurveRate) ?? 1.2;
+  const speedSaturationRealtime = asFiniteNumber(rawConstants?.speedSaturationRealtime) ?? 4;
+  return {
+    formulaVersion: row.scoreContext.formulaVersion,
+    benchmarkProtocolVersion: row.scoreContext.benchmarkProtocol.protocolVersion,
+    sourceSuiteVersion: row.scoreContext.benchmarkProtocol.sourceSuiteVersion,
+    qualityModelId: row.scoreContext.qualityModelId,
+    referenceContextVersion: row.scoreContext.contextVersion,
+    workloadReferenceBitrateBps: row.scoreContext.workloadReferenceBitrateBps,
+    qualityExponent,
+    speedCurveRate,
+    speedSaturationRealtime,
+  };
+}
+
+function decisionCandidateFromCanonicalDerivedResult(
+  row: CanonicalLeaderboardRecord,
+  filters: ReturnType<typeof parseAnalyticsFilters>,
+): DecisionCandidate {
+  const evidenceSummary = asObject(row.evidenceSummary);
+  const evidenceTier = String(row.evidenceTier) as EvidenceTier;
+  const context = deriveCanonicalContext(row);
+  return {
+    rowId: row.id,
+    encoderName: row.recipe.encoderImplementation,
+    codecFamily: row.recipe.codecFamily as DecisionCandidate['codecFamily'],
+    preset: row.recipe.preset ?? 'default',
+    crf: deriveCanonicalCrf(row),
+    contentClass: filters.contentClass,
+    resolution: filters.resolution,
+    passes: filters.passes,
+    workloadId: row.workloadId,
+    hardwareContext: {
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      cpuModel: row.environment.cpuModel,
+      gpuModel: row.environment.gpuModel ?? '',
+      ramGB: row.environment.physicalCoreCount ?? row.environment.logicalThreadCount ?? 0,
+      os: `${row.environment.osName} ${row.environment.osVersion}`.trim(),
+    },
+    sampleCount: row.acceptedRunCount,
+    avgFps: row.centerEncodeFps ?? 0,
+    avgVmaf: row.centerVmafMean,
+    avgVmafP5: row.centerVmafP5,
+    avgVideoBitrateBps: row.centerVideoBitrateBps,
+    avgSourceFps: deriveCanonicalSourceFps(row),
+    plScore: row.plTotal,
+    canonical: {
+      quality: row.plQuality,
+      bitrate: row.plBitrate,
+      speed: row.plSpeed,
+    },
+    context,
+    confidenceLower: row.confidenceLower,
+    confidenceUpper: row.confidenceUpper,
+    evidenceTier,
+    eligibleForDefaultRecommendation: evidenceSummary?.eligibleForDefaultRecommendation === true,
+  };
+}
 
 export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<T>): Promise<T> {
   let attemptsRemaining = MAX_SUBMIT_TRANSACTION_RETRIES;
@@ -1372,8 +1500,55 @@ router.get('/analytics/leaderboards', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateLeaderboards(rows, filters.minSamples);
+    const canonicalRows = await loadCanonicalLeaderboardRecords(filters);
+    const canonicalCandidates = canonicalRows.map((row) => decisionCandidateFromCanonicalDerivedResult(row, filters));
+    const hasExactEnvironment = Boolean(filters.environmentId || filters.environmentFingerprint);
+    const scopedCandidates = hasExactEnvironment ? canonicalCandidates.filter((row) => (
+      (!filters.environmentId || row.hardwareContext.environmentId === filters.environmentId)
+      && (!filters.environmentFingerprint || row.hardwareContext.environmentFingerprint === filters.environmentFingerprint)
+    )) : [];
+    // Native rate-control settings are part of each immutable Recipe identity.
+    // Never compare or filter heterogeneous encoder families through a generic
+    // cross-encoder CRF axis.
+    const focusedRows = scopedCandidates;
+    const customWeights = {
+      ...(filters.customQualityWeight != null ? { quality: filters.customQualityWeight } : {}),
+      ...(filters.customBitrateWeight != null ? { bitrate: filters.customBitrateWeight } : {}),
+      ...(filters.customSpeedWeight != null ? { speed: filters.customSpeedWeight } : {}),
+    };
+    const payload = buildDecisionPayload(
+      focusedRows,
+      {
+        selectedMode: filters.fitMode,
+        selectedEnvironmentId: filters.environmentId,
+        selectedEnvironmentFingerprint: filters.environmentFingerprint,
+        customProfile: {
+          weights: customWeights,
+          constraints: {
+            minimumQuality: filters.minimumQuality,
+            minimumRealtimeRatio: filters.minimumRealtimeRatio,
+            maximumBitrateBps: filters.maximumBitrateBps,
+            compatibleCodecFamilies: filters.compatibleCodecFamilies,
+            requireRecommendationEligibility: filters.requireRecommendationEligibility,
+          },
+        },
+      },
+      scopedCandidates,
+    );
+    payload.environmentScope.available = Array.from(new Map(canonicalCandidates.map((candidate) => {
+      const environment = candidate.hardwareContext;
+      const label = `${environment.cpuModel} / ${environment.gpuModel.trim() || 'CPU-only'} / ${environment.os}`;
+      return [environment.environmentFingerprint || environment.environmentId, { ...environment, label }];
+    })).values()).sort((left, right) => left.label.localeCompare(right.label));
+    if (!filters.environmentId && !filters.environmentFingerprint) {
+      payload.rows = [];
+      payload.recommendation = {
+        rowId: null,
+        label: null,
+        reason: 'Select one exact benchmark environment before ranking or requesting a recommendation.',
+      };
+      payload.environmentScope.exact = false;
+    }
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1390,8 +1565,32 @@ router.get('/analytics/hardware', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateHardware(rows, filters.minSamples);
+    const rows = await loadCanonicalLeaderboardRecords(filters);
+    const scoped = rows.filter((row) => (
+      (filters.environmentId || filters.environmentFingerprint)
+      && (!filters.environmentId || row.environment.id === filters.environmentId)
+      && (!filters.environmentFingerprint || row.environment.fingerprint === filters.environmentFingerprint)
+    ));
+    const payload = scoped.map((row) => ({
+      cpuModel: row.environment.cpuModel,
+      gpuModel: row.environment.gpuModel ?? '',
+      encoderName: row.recipe.encoderImplementation,
+      codecFamily: row.recipe.codecFamily,
+      preset: row.recipe.preset ?? 'default',
+      crf: deriveCanonicalCrf(row),
+      contentClass: filters.contentClass,
+      resolution: filters.resolution,
+      passes: filters.passes,
+      sampleCount: row.acceptedRunCount,
+      avgFps: row.centerEncodeFps ?? 0,
+      avgVmaf: row.centerVmafMean,
+      avgPowerW: null,
+      fpsPerWatt: null,
+      score: row.plTotal ?? 0,
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      evidenceTier: row.evidenceTier,
+    })).sort((left, right) => right.score - left.score);
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1408,8 +1607,31 @@ router.get('/analytics/encoders', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateEncoders(rows, filters.minSamples);
+    const rows = await loadCanonicalLeaderboardRecords(filters);
+    const scoped = rows.filter((row) => (
+      (filters.environmentId || filters.environmentFingerprint)
+      && (!filters.environmentId || row.environment.id === filters.environmentId)
+      && (!filters.environmentFingerprint || row.environment.fingerprint === filters.environmentFingerprint)
+    ));
+    const payload = scoped.map((row) => ({
+      encoderName: row.recipe.encoderImplementation,
+      codecFamily: row.recipe.codecFamily,
+      preset: row.recipe.preset ?? 'default',
+      crf: deriveCanonicalCrf(row),
+      contentClass: filters.contentClass,
+      resolution: filters.resolution,
+      passes: filters.passes,
+      sampleCount: row.acceptedRunCount,
+      avgFps: row.centerEncodeFps ?? 0,
+      avgVmaf: row.centerVmafMean,
+      avgSsim: null,
+      avgPsnr: null,
+      avgSizeBytes: Math.round(row.centerFileSizeBytes ?? 0),
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      plScore: row.plTotal,
+      evidenceTier: row.evidenceTier,
+    })).sort((left, right) => left.encoderName.localeCompare(right.encoderName) || left.preset.localeCompare(right.preset));
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1418,18 +1640,10 @@ router.get('/analytics/encoders', async (req, res) => {
   }
 });
 
-// Test video catalog (Sprint 5)
-export const TEST_VIDEO_CATALOG = [
-  { name: 'sample.mp4', duration: 20.0, sha256: '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8', sizeBytes: 66045059 },
-];
+export const TEST_VIDEO_CATALOG = buildPublicTestVideoCatalog();
 
 router.get('/test-videos', (_req, res) => {
-  const baseUrl = 'https://github.com/oliverdougherC/Encoding_Database/releases/download/test-clips-v1';
-  const catalog = TEST_VIDEO_CATALOG.map(v => ({
-    ...v,
-    downloadUrl: `${baseUrl}/${v.name}`,
-  }));
-  res.json(catalog);
+  res.json(TEST_VIDEO_CATALOG);
 });
 
 export default router;

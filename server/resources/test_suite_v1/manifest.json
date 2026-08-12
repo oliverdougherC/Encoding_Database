@@ -1,0 +1,377 @@
+{
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "displayName": "EncodingDB Test Suite v1",
+  "manifestVersion": 1,
+  "defaultQuickClipId": "sports-action-960x540-24p",
+  "requiredContentClasses": [
+    "high-motion-sports",
+    "fine-natural-detail",
+    "film-grain-noise",
+    "dark-gradients-shadows",
+    "animation-flat-fields",
+    "screen-text",
+    "talking-head"
+  ],
+  "generalPlPolicy": {
+    "requiresCompleteCoverage": true,
+    "weighting": "equal-class-geometric-mean",
+    "legacySingleClipGeneralPlAllowed": false
+  },
+  "redistribution": {
+    "license": "CC0-1.0",
+    "notes": "Every clip in suite v1 is project-generated and reproducible from the checked-in manifest plus bundled/system ffmpeg."
+  },
+  "clips": [
+    {
+      "id": "sports-action-960x540-24p",
+      "displayName": "High motion / sports synthetic master",
+      "contentClass": "high-motion-sports",
+      "payloadContentClass": "action",
+      "description": "Fast motion, zoom, and repeated texture changes intended to stress motion handling.",
+      "fileName": "sports-action-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "testsrc2=size=960x540:rate=24,zoompan=z='1+0.06*sin(on/8)':x='iw/2-(iw/zoom/2)+sin(on/4)*38':y='ih/2-(ih/zoom/2)+cos(on/6)*20':d=1:s=960x540:fps=24",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a",
+      "byteSize": 3243818
+    },
+    {
+      "id": "natural-detail-960x540-24p",
+      "displayName": "Fine natural detail / texture synthetic master",
+      "contentClass": "fine-natural-detail",
+      "payloadContentClass": "nature",
+      "description": "Fractal detail with dense high-frequency structure intended to stand in for foliage and texture retention.",
+      "fileName": "natural-detail-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "mandelbrot=size=960x540:rate=24:maxiter=80:end_scale=0.4:outer=1:inner=3",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "5af2b9497236bf06ceb9119b5aab0e5d3d4fa60b3e2e8a3610e88857bb5366f4",
+      "byteSize": 9140428
+    },
+    {
+      "id": "grain-noise-960x540-24p",
+      "displayName": "Film grain / noise synthetic master",
+      "contentClass": "film-grain-noise",
+      "payloadContentClass": "gaming",
+      "description": "Low-contrast structured luma with deterministic temporal noise intended to stress grain retention without external media.",
+      "fileName": "grain-noise-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "nullsrc=size=960x540:rate=24,geq=lum='96+20*sin((X+N*7)/29)+18*sin((Y+N*5)/31)':cb='128+10*sin((X+N*2)/17)':cr='128+10*sin((Y+N*3)/19)',noise=alls=24:all_seed=71:allf=t+u",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "f6056ba8b0bd4c78552b517d49d54bf142f1eeb473f6d5acdebda1b509a1ea48",
+      "byteSize": 40486681
+    },
+    {
+      "id": "dark-gradients-960x540-24p",
+      "displayName": "Dark gradients / shadows synthetic master",
+      "contentClass": "dark-gradients-shadows",
+      "payloadContentClass": "mixed",
+      "description": "Low-luma gradients with slight motion intended to expose banding and shadow instability.",
+      "fileName": "dark-gradients-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "nullsrc=size=960x540:rate=24,geq=lum='16+18*X/W+7*sin((X+N*3)/47)+5*sin((Y+N*2)/53)':cb='128+2*sin((X+N)/41)':cr='128+2*sin((Y+N)/37)'",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "6659e4e2332a24a9ca6b0947c153ec75698a501ebe5fd9cccac1e85431ff11df",
+      "byteSize": 1155412
+    },
+    {
+      "id": "animation-960x540-24p",
+      "displayName": "Animation / flat fields / hard edges synthetic master",
+      "contentClass": "animation-flat-fields",
+      "payloadContentClass": "animation",
+      "description": "Flat fills, saturated color regions, and hard edges intended to reflect animation-specific tradeoffs.",
+      "fileName": "animation-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "color=c=0x8ad4ff:size=960x540:rate=24,drawbox=x='140+110*sin(t*3)':y=70:w=140:h=140:color=0xff6b35@1:t=fill,drawbox=x='620+90*cos(t*2.4)':y=280:w=180:h=180:color=0x2a4bff@1:t=fill,drawbox=x=0:y=420:w=960:h=120:color=0x2ecc71@1:t=fill",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "488c9428690e590377265516e7c7f7be97c1428e30be6681afb4a63fe4297cd4",
+      "byteSize": 595940
+    },
+    {
+      "id": "screen-text-960x540-24p",
+      "displayName": "Screen / text synthetic master",
+      "contentClass": "screen-text",
+      "payloadContentClass": "screen",
+      "description": "Grid, labels, and sharp transitions intended to approximate UI and screen-recording behavior without external fonts or screenshots.",
+      "fileName": "screen-text-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "testsrc=size=960x540:rate=24,drawgrid=w=80:h=54:t=2:c=white@0.35",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "f65c1bc4421c7f6fb03edf9e1949574b434c5bcd072e77016ef4ab362bf4743b",
+      "byteSize": 1057353
+    },
+    {
+      "id": "talking-head-960x540-24p",
+      "displayName": "Low-motion face / talking head synthetic master",
+      "contentClass": "talking-head",
+      "payloadContentClass": "talkingHead",
+      "description": "Low-motion portrait-like composition intended to stand in for webcam and interview material.",
+      "fileName": "talking-head-960x540-24p.mkv",
+      "source": {
+        "kind": "project-generated",
+        "provenance": "Generated from deterministic FFmpeg lavfi graphs owned by the project; no third-party media redistribution required.",
+        "license": "CC0-1.0"
+      },
+      "acquisition": {
+        "kind": "generated",
+        "ffmpegLavfi": "color=c=0x31445a:size=960x540:rate=24,drawbox=x=280:y=100:w=400:h=360:color=0xd9b18c@1:t=fill,drawbox=x=350:y=220:w=48:h=24:color=black@0.95:t=fill,drawbox=x=562:y=220:w=48:h=24:color=black@0.95:t=fill,drawbox=x='430+6*sin(t*3)':y='330+4*sin(t*2.2)':w=100:h=16:color=0x7a342d@0.95:t=fill,drawbox=x=310:y=380:w=340:h=100:color=0x6a7d95@1:t=fill",
+        "container": "mkv",
+        "videoCodec": "ffv1",
+        "deterministicFlags": [
+          "-threads 1",
+          "-fflags +bitexact",
+          "-flags:v +bitexact",
+          "-map_metadata -1",
+          "-map_chapters -1"
+        ]
+      },
+      "media": {
+        "frameCount": 72,
+        "duration": {
+          "numerator": 3,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 960,
+        "height": 540,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "dbc92d9910207f7ef30669ae5251110afb541f3fb2d343d2dcc6cbe9bd178faa",
+      "byteSize": 600620
+    }
+  ]
+}
