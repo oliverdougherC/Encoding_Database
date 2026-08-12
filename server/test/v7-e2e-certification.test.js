@@ -25,7 +25,11 @@ function run(id, encoder, environmentId) {
       vmafP5: 91,
       videoBitrateBps: 2_000_000,
     }],
-    derivedMembers: [{ derivedResultId: `derived-${id}`, derivedResult: { acceptedRunCount: 2 } }],
+    derivedMembers: [{
+      derivedResultId: `derived-${id}`,
+      qualityAnalysisId: `analysis-${id}`,
+      derivedResult: { acceptedRunCount: 2 },
+    }],
   };
 }
 
@@ -46,6 +50,13 @@ function validSnapshot() {
       { ok: true, sha256: 'hard', rowCount: 1, encoderNames: ['videotoolbox'] },
     ],
     frontendPage: { ok: true },
+    reanalysisEvidence: {
+      ok: true,
+      status: 200,
+      benchmarkRunId: 'software-1',
+      qualityAnalysisId: 'analysis-software-1',
+      analysisWorkerVersion: 'authoritative-analysis/v1',
+    },
   };
 }
 

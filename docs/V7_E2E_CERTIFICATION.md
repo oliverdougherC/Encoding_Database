@@ -39,7 +39,9 @@ Evidence is retained under `.test-reports/pl-v7-e2e/<commit>-<UTC timestamp>/`:
 - `software-client.log` and `hardware-client.log` retain the packaged executions.
 - `authority-chain.json` contains immutable run, recipe, environment, artifact,
   authoritative quality-analysis, derived-result membership, server analytics,
-  and frontend-proxy evidence.
+  and frontend-proxy evidence. The verifier also reanalyzes one retained software
+  artifact under a distinct worker identity and requires that exact new analysis
+  to replace aggregate membership, proving retained-artifact recomputation.
 - `SHA256SUMS` hashes every other evidence file and deliberately excludes itself,
   making later alteration detectable without a circular or empty-file digest.
 

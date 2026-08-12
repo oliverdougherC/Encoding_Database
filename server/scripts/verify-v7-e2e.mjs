@@ -39,6 +39,18 @@ export function validateCertificationSnapshot(snapshot, expectedEncoders) {
   }
   if (expectedEncoders[0] === expectedEncoders[1]) fail('Software and hardware encoders must be distinct');
   if (!Array.isArray(snapshot.runs) || snapshot.runs.length === 0) fail('No v7 benchmark runs were retained');
+  if (!snapshot.reanalysisEvidence?.ok || snapshot.reanalysisEvidence.status !== 200) {
+    fail('Retained artifact reanalysis did not complete successfully');
+  }
+  const reanalyzedRun = snapshot.runs.find((run) => run.id === snapshot.reanalysisEvidence.benchmarkRunId);
+  if (!reanalyzedRun?.qualityAnalyses?.some((analysis) => (
+    analysis.id === snapshot.reanalysisEvidence.qualityAnalysisId
+    && analysis.analysisWorkerVersion === snapshot.reanalysisEvidence.analysisWorkerVersion
+    && analysis.status === 'COMPLETE'
+  ))) fail('Reanalysis evidence is not retained as a complete immutable QualityAnalysis');
+  if (!reanalyzedRun.derivedMembers?.some((member) => (
+    member.qualityAnalysisId === snapshot.reanalysisEvidence.qualityAnalysisId
+  ))) fail('Reanalyzed QualityAnalysis did not reach aggregate recomputation');
 
   const paths = expectedEncoders.map((encoderImplementation, index) => {
     const matching = snapshot.runs.filter((run) => run.recipe?.encoderImplementation === encoderImplementation);
@@ -155,20 +167,51 @@ async function main(argv) {
   const args = parseArgs(argv);
   const prisma = new PrismaClient();
   try {
-    const runs = await prisma.benchmarkRun.findMany({
+    const include = {
+      recipe: true,
+      environment: true,
+      benchmarkProtocol: true,
+      testClip: true,
+      artifacts: true,
+      qualityAnalyses: true,
+      derivedMembers: { include: { derivedResult: true } },
+    };
+    let runs = await prisma.benchmarkRun.findMany({
       where: {
         createdAt: { gte: args.since },
         recipe: { encoderImplementation: { in: [args['software-encoder'], args['hardware-encoder']] } },
       },
-      include: {
-        recipe: true,
-        environment: true,
-        benchmarkProtocol: true,
-        testClip: true,
-        artifacts: true,
-        qualityAnalyses: true,
-        derivedMembers: { include: { derivedResult: true } },
+      include,
+      orderBy: { createdAt: 'asc' },
+    });
+    const reanalysisRun = runs.find((run) => run.recipe?.encoderImplementation === args['software-encoder']);
+    const priorAnalysis = reanalysisRun?.qualityAnalyses?.find((analysis) => analysis.status === 'COMPLETE');
+    if (!reanalysisRun || !priorAnalysis) fail('No completed software analysis is available for retained-artifact reanalysis');
+    const analysisWorkerVersion = `${priorAnalysis.analysisWorkerVersion}-certification-reanalysis`;
+    const reanalysisResponse = await fetch(
+      `${args['server-url'].replace(/\/$/, '')}/v7/benchmark-runs/${encodeURIComponent(reanalysisRun.id)}/artifacts/ENCODED/reanalyze`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          analysisWorkerVersion,
+          metricModelId: priorAnalysis.metricModelId,
+        }),
+        signal: AbortSignal.timeout(120_000),
       },
+    );
+    const reanalysisBody = await reanalysisResponse.json();
+    const reanalysis = reanalysisBody.analyses?.find((analysis) => analysis.analysisWorkerVersion === analysisWorkerVersion);
+    const reanalysisEvidence = {
+      ok: reanalysisResponse.ok,
+      status: reanalysisResponse.status,
+      benchmarkRunId: reanalysisRun.id,
+      qualityAnalysisId: reanalysis?.id ?? null,
+      analysisWorkerVersion,
+    };
+    runs = await prisma.benchmarkRun.findMany({
+      where: { id: { in: runs.map((run) => run.id) } },
+      include,
       orderBy: { createdAt: 'asc' },
     });
     const immutableScopes = [...new Map(runs.flatMap((run) => run.derivedMembers.map((member) => ({
@@ -193,6 +236,7 @@ async function main(argv) {
       evidenceVersion: E2E_EVIDENCE_VERSION,
       capturedAt: new Date().toISOString(),
       since: args.since.toISOString(),
+      reanalysisEvidence,
       serverAnalyticsScopes,
       frontendAnalyticsScopes,
       frontendPage,
