@@ -7,6 +7,8 @@ SERVER_URL="${SERVER_URL:-http://127.0.0.1:3001}"
 FRONTEND_URL="${FRONTEND_URL:-http://127.0.0.1:3100}"
 SOFTWARE_ENCODER="${SOFTWARE_ENCODER:-libx264}"
 HARDWARE_ENCODER="${HARDWARE_ENCODER:-}"
+SOFTWARE_CRF="${SOFTWARE_CRF:-24}"
+HARDWARE_TARGET_BITRATE_KBPS="${HARDWARE_TARGET_BITRATE_KBPS:-2500}"
 SUITE_CLIP="${SUITE_CLIP:-sports-action-960x540-24p}"
 EVIDENCE_ROOT="${EVIDENCE_ROOT:-$ROOT_DIR/.test-reports/pl-v7-e2e}"
 BUILD_CLIENT=1
@@ -15,6 +17,8 @@ usage() {
   echo "Usage: scripts/certify-v7-e2e.sh --hardware-encoder NAME [options]"
   echo "  --software-encoder NAME  Software encoder (default: libx264)"
   echo "  --hardware-encoder NAME  Required real hardware encoder"
+  echo "  --software-crf INTEGER   Native software CRF (default: 24)"
+  echo "  --hardware-target-bitrate-kbps INTEGER  Native hardware target bitrate (default: 2500)"
   echo "  --suite-clip ID          Canonical representative clip (default: sports-action-960x540-24p)"
   echo "  --server-url URL         Running v7 server (default: http://127.0.0.1:3001)"
   echo "  --frontend-url URL       Running frontend wired to that server (default: http://127.0.0.1:3100)"
@@ -26,6 +30,8 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --software-encoder) SOFTWARE_ENCODER="${2:?missing software encoder}"; shift 2 ;;
     --hardware-encoder) HARDWARE_ENCODER="${2:?missing hardware encoder}"; shift 2 ;;
+    --software-crf) SOFTWARE_CRF="${2:?missing software CRF}"; shift 2 ;;
+    --hardware-target-bitrate-kbps) HARDWARE_TARGET_BITRATE_KBPS="${2:?missing hardware target bitrate}"; shift 2 ;;
     --suite-clip) SUITE_CLIP="${2:?missing suite clip ID}"; shift 2 ;;
     --server-url) SERVER_URL="${2:?missing server URL}"; shift 2 ;;
     --frontend-url) FRONTEND_URL="${2:?missing frontend URL}"; shift 2 ;;
@@ -38,6 +44,10 @@ done
 
 [[ -n "$HARDWARE_ENCODER" ]] || { echo "--hardware-encoder is required; hardware evidence is never simulated" >&2; exit 2; }
 [[ "$SOFTWARE_ENCODER" != "$HARDWARE_ENCODER" ]] || { echo "Software and hardware encoders must be distinct" >&2; exit 2; }
+[[ "$SOFTWARE_CRF" =~ ^[0-9]+$ ]] && (( SOFTWARE_CRF >= 0 && SOFTWARE_CRF <= 63 )) \
+  || { echo "--software-crf must be an integer from 0 through 63" >&2; exit 2; }
+[[ "$HARDWARE_TARGET_BITRATE_KBPS" =~ ^[1-9][0-9]*$ ]] \
+  || { echo "--hardware-target-bitrate-kbps must be a positive integer" >&2; exit 2; }
 [[ -n "${DATABASE_URL:-}" ]] || { echo "DATABASE_URL is required for evidence-chain verification" >&2; exit 2; }
 
 BRANCH="$(git -C "$ROOT_DIR" branch --show-current)"
@@ -88,9 +98,9 @@ run_path() {
   local kind="$1"
   local encoder="$2"
   local log="$RUN_DIR/${kind}-client.log"
-  local -a native_rate_control=(--crf 24)
+  local -a native_rate_control=(--crf "$SOFTWARE_CRF")
   if [[ "$kind" == "hardware" ]]; then
-    native_rate_control=(--target-bitrate-kbps 2500)
+    native_rate_control=(--target-bitrate-kbps "$HARDWARE_TARGET_BITRATE_KBPS")
   fi
   echo "Running packaged $kind path with $encoder"
   ENCODINGDB_PROTOCOL_SEED=701 \
@@ -116,7 +126,7 @@ HARDWARE_IMPLEMENTATION="${HARDWARE_ENCODER##*_}"
 
 cat >"$RUN_DIR/execution.json" <<EOF
 {
-  "evidenceVersion": "encodingdb-pl-v7-e2e/v1",
+  "evidenceVersion": "encodingdb-pl-v7-e2e/v2",
   "branch": "$BRANCH",
   "commit": "$COMMIT",
   "startedAt": "$STARTED_AT",
@@ -124,7 +134,9 @@ cat >"$RUN_DIR/execution.json" <<EOF
   "packagedClient": { "path": "$CLIENT_BINARY", "sha256": "$CLIENT_SHA256" },
   "suiteClip": "$SUITE_CLIP",
   "softwareEncoder": "$SOFTWARE_ENCODER",
+  "softwareRateControl": { "mode": "CRF", "crf": $SOFTWARE_CRF },
   "hardwareEncoder": "$HARDWARE_ENCODER",
+  "hardwareRateControl": { "mode": "TARGET_BITRATE", "targetBitrateKbps": $HARDWARE_TARGET_BITRATE_KBPS },
   "softwareImplementation": "$SOFTWARE_IMPLEMENTATION",
   "hardwareImplementation": "$HARDWARE_IMPLEMENTATION"
 }
@@ -138,5 +150,7 @@ EOF
   --frontend-url "$FRONTEND_URL" \
   --output "$RUN_DIR/authority-chain.json")
 
-find "$RUN_DIR" -maxdepth 1 -type f -print0 | sort -z | xargs -0 shasum -a 256 >"$RUN_DIR/SHA256SUMS"
+find "$RUN_DIR" -maxdepth 1 -type f ! -name SHA256SUMS -print0 \
+  | sort -z \
+  | xargs -0 shasum -a 256 >"$RUN_DIR/SHA256SUMS"
 echo "PL v7 E2E certification passed: $RUN_DIR"

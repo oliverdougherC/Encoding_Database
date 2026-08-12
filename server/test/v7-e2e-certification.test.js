@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import { validateCertificationSnapshot } from '../scripts/verify-v7-e2e.mjs';
 
@@ -79,4 +80,18 @@ test('certification rejects frontend data that differs from the server', () => {
     () => validateCertificationSnapshot(snapshot, ['libx264', 'videotoolbox']),
     /differs from the authoritative server response/,
   );
+});
+
+test('certificate checksum manifest cannot hash itself', async () => {
+  const script = await readFile(new URL('../../scripts/certify-v7-e2e.sh', import.meta.url), 'utf8');
+  assert.match(script, /! -name SHA256SUMS/);
+  assert.doesNotMatch(script, /-print0[^\n]*\|[^\n]*>"\$RUN_DIR\/SHA256SUMS"/);
+});
+
+test('certificate records explicit native rate-control settings', async () => {
+  const script = await readFile(new URL('../../scripts/certify-v7-e2e.sh', import.meta.url), 'utf8');
+  assert.match(script, /--software-crf/);
+  assert.match(script, /--hardware-target-bitrate-kbps/);
+  assert.match(script, /"softwareRateControl"/);
+  assert.match(script, /"hardwareRateControl"/);
 });

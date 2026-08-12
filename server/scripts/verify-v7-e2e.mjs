@@ -5,7 +5,7 @@ import { writeFile } from 'node:fs/promises';
 import { PrismaClient } from '@prisma/client';
 import { pathToFileURL } from 'node:url';
 
-export const E2E_EVIDENCE_VERSION = 'encodingdb-pl-v7-e2e/v1';
+export const E2E_EVIDENCE_VERSION = 'encodingdb-pl-v7-e2e/v2';
 
 function fail(message) {
   throw new Error(message);

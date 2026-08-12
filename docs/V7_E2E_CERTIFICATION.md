@@ -18,9 +18,16 @@ server URL and must not enable query mocks. Run from a clean `beta` commit:
 export DATABASE_URL='postgresql://app:app@127.0.0.1:55432/benchmarks?schema=public'
 scripts/certify-v7-e2e.sh \
   --hardware-encoder h264_videotoolbox \
+  --software-crf 24 \
+  --hardware-target-bitrate-kbps 2500 \
   --server-url http://127.0.0.1:3001 \
   --frontend-url http://127.0.0.1:3100
 ```
+
+For a calibration pilot, invoke the gate separately for every canonical clip and
+every native rate-control point. The two rate-control flags are recorded in
+`execution.json`; they are not converted into a synthetic cross-encoder quality
+scale. A single invocation remains a path certificate, not a complete pilot.
 
 On Linux use a hardware encoder that is both compiled in and backed by the host,
 such as the host's verified VAAPI, QSV, or NVENC implementation. Merely appearing
@@ -33,7 +40,8 @@ Evidence is retained under `.test-reports/pl-v7-e2e/<commit>-<UTC timestamp>/`:
 - `authority-chain.json` contains immutable run, recipe, environment, artifact,
   authoritative quality-analysis, derived-result membership, server analytics,
   and frontend-proxy evidence.
-- `SHA256SUMS` makes later alteration detectable.
+- `SHA256SUMS` hashes every other evidence file and deliberately excludes itself,
+  making later alteration detectable without a circular or empty-file digest.
 
 Certification fails unless both paths are accepted, encoded artifacts are
 retained with verified hashes, server VMAF distributions and canonical score
