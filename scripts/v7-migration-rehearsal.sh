@@ -188,10 +188,10 @@ INSERT INTO "Recipe" (
 INSERT INTO "Environment" (
   "id", "createdAt", "updatedAt", "fingerprint", "canonicalJson", "cpuModel",
   "cpuArchitecture", "physicalCoreCount", "logicalThreadCount", "gpuModel",
-  "physicalMemoryBytes", "osName", "osVersion", "ffmpegBuildFingerprint", "ffmpegVersion", "clientVersion"
+  "osName", "osVersion", "ffmpegBuildFingerprint", "ffmpegVersion", "clientVersion"
 ) VALUES (
   'env-v7', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'environment-fingerprint',
-  '{}'::jsonb, 'Apple M4 Pro', 'arm64', 12, 12, 'Integrated', 51539607552, 'macOS', '15',
+  '{"physicalMemoryBytes":51539607552}'::jsonb, 'Apple M4 Pro', 'arm64', 12, 12, 'Integrated', 'macOS', '15',
   'ffmpeg-build-fingerprint', '7.1', 'client/1.0.0'
 );
 
@@ -289,6 +289,7 @@ DECLARE
   member_quality_analysis TEXT;
   member_count INTEGER;
   legacy_exists INTEGER;
+  environment_physical_memory BIGINT;
 BEGIN
   SELECT "qualityAnalysisId" INTO member_quality_analysis
   FROM "DerivedResultMember"
@@ -310,6 +311,13 @@ BEGIN
   WHERE "id" = 'legacy-benchmark-1';
   IF legacy_exists <> 1 THEN
     RAISE EXCEPTION 'legacy Benchmark row did not survive migration';
+  END IF;
+
+  SELECT "physicalMemoryBytes" INTO environment_physical_memory
+  FROM "Environment"
+  WHERE "id" = 'env-v7';
+  IF environment_physical_memory <> 51539607552 THEN
+    RAISE EXCEPTION 'physicalMemoryBytes backfill failed: %', environment_physical_memory;
   END IF;
 END $$;
 SQL
