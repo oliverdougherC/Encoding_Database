@@ -761,7 +761,9 @@ def build_suite_pack_archive(
     entries = _suite_pack_source_entries(manifest_value, suite_root_abs)
     os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
     with open(output_path, "wb") as raw_handle:
-        with gzip.GzipFile(fileobj=raw_handle, mode="wb", mtime=0, filename="") as gzip_handle:
+        # Stored DEFLATE blocks avoid zlib-version/platform compression choices so
+        # native builders produce the exact same SHA-locked pack bytes.
+        with gzip.GzipFile(fileobj=raw_handle, mode="wb", mtime=0, filename="", compresslevel=0) as gzip_handle:
             with tarfile.open(fileobj=gzip_handle, mode="w") as archive:
                 for relative_path, absolute_path in entries:
                     info = tarfile.TarInfo(name=relative_path.replace("\\", "/"))
@@ -788,8 +790,17 @@ def verify_suite_pack_metadata(
         pack_file_name=str(dict(metadata.get("distribution") or {}).get("fileName") or DEFAULT_SUITE_PACK_FILE_NAME),
         download_urls=list(dict(metadata.get("distribution") or {}).get("downloadUrls") or []),
     )
-    if expected != dict(metadata):
-        raise RuntimeError("suite pack metadata does not match the current suite resources")
+    actual = dict(metadata)
+    if expected != actual:
+        if expected.get("contents") != actual.get("contents"):
+            mismatch = "contents inventory"
+        elif expected.get("suiteFingerprint") != actual.get("suiteFingerprint"):
+            mismatch = "suite fingerprint"
+        elif expected.get("distribution") != actual.get("distribution"):
+            mismatch = "distribution archive"
+        else:
+            mismatch = "top-level identity"
+        raise RuntimeError(f"suite pack metadata does not match the current suite resources: {mismatch}")
 
 
 def _verify_suite_pack_file(path: str, metadata: Mapping[str, Any]) -> ClipVerificationResult:

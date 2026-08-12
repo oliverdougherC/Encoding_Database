@@ -79,6 +79,18 @@ class SuiteV1Tests(unittest.TestCase):
             suite.load_suite_pack_metadata(),
         )
 
+    def test_suite_pack_uses_platform_stable_stored_gzip(self) -> None:
+        source_suite_root = Path(suite.get_manifest_path()).parent
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = Path(temp_dir) / "first.tar.gz"
+            second = Path(temp_dir) / "second.tar.gz"
+            suite.build_suite_pack_archive(str(source_suite_root), str(first))
+            suite.build_suite_pack_archive(str(source_suite_root), str(second))
+
+            self.assertEqual(first.read_bytes(), second.read_bytes())
+            # XFL=0 identifies stored/no-compression gzip output; OS=255 is portable.
+            self.assertEqual(first.read_bytes()[8:10], b"\x00\xff")
+
     def test_ensure_suite_clip_can_materialize_from_external_suite_pack_without_packaged_canonical_media(self) -> None:
         manifest = suite.load_default_suite_manifest()
         clip = manifest.clips[0]
