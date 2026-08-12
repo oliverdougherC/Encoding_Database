@@ -60,6 +60,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install media probe runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Install client test dependencies
         working-directory: client
         run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
@@ -118,5 +120,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install media probe runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Run end-to-end smoke harness
         run: bash scripts/test.sh
