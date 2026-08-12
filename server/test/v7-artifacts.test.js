@@ -6,7 +6,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createArtifactPipelineRouter } from '../dist/v7/artifacts.js';
+import { createArtifactPipelineRouter, inferMediaContainerFromFormatName } from '../dist/v7/artifacts.js';
 import { createDefaultDerivedRecomputeCallback } from '../dist/v7/artifacts.js';
 import {
   DEFAULT_ANALYZER_VERSION,
@@ -25,6 +25,11 @@ const ARTIFACT_BYTES = Buffer.from('artifact-data');
 const ARTIFACT_SHA256 = '682709f36991fd3910d7343e6264dd5510bf02005fa6503a4878ff17530751d8';
 const SUITE_MANIFEST = loadAuthoritativeSuiteManifest();
 const PRIMARY_CLIP = SUITE_MANIFEST.clips[0];
+
+test('ffprobe MOV-family aliases normalize to the canonical MP4 container', () => {
+  assert.equal(inferMediaContainerFromFormatName('mov,mp4,m4a,3gp,3g2,mj2'), 'mp4');
+  assert.equal(inferMediaContainerFromFormatName('matroska,webm'), 'mkv');
+});
 
 const CAN_BIND_LOOPBACK = await new Promise((resolve) => {
   const probe = net.createServer();

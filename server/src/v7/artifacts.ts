@@ -798,9 +798,13 @@ function normalizeError(error: unknown): string {
   return String(error);
 }
 
-function inferMediaContainerFromFormatName(formatName: string | null | undefined): string | null {
+export function inferMediaContainerFromFormatName(formatName: string | null | undefined): string | null {
   if (!formatName) return null;
-  return formatName.split(',')[0]?.trim().toLowerCase() || null;
+  const formats = formatName.split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);
+  if (formats.some((value) => ['mp4', 'mov', 'm4v', '3gp', '3g2', 'mj2'].includes(value))) return 'mp4';
+  if (formats.some((value) => ['matroska', 'mkv'].includes(value))) return 'mkv';
+  if (formats.includes('webm')) return 'webm';
+  return formats[0] ?? null;
 }
 
 function inferBitDepth(pixelFormat: string | null | undefined, rawBits: number | null): number | null {
