@@ -23,6 +23,11 @@ class ReleasePackagingTests(unittest.TestCase):
 
         workflow = (root / ".github/workflows/build.yml").read_text(encoding="utf-8")
         self.assertEqual(workflow.count('ENCODINGDB_BUILD_ONLY: "1"'), 3)
+        self.assertNotIn("${{ runner.temp }}", workflow)
+        self.assertNotIn("| head -n 1", workflow)
+
+        preflight_workflow = (root / ".github/workflows/release-preflight.yml").read_text(encoding="utf-8")
+        self.assertNotIn("| head -n 1", preflight_workflow)
 
     def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):

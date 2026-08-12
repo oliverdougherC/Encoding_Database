@@ -40,7 +40,7 @@ jobs:
             https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz
           echo "bf877874d030e0dfca62a78b1730feaa01b5938285b5aefe9438a8f20187ecef  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
           tar -xf ffmpeg-linux.tar.xz
-          bundle_dir="$(find "$PWD" -maxdepth 1 -type d -name 'ffmpeg-*' | head -n 1)"
+          bundle_dir="$(find "$PWD" -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
           test -x "$bundle_dir/bin/ffmpeg"
           test -x "$bundle_dir/bin/ffprobe"
           echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
