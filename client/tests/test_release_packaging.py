@@ -33,6 +33,9 @@ class ReleasePackagingTests(unittest.TestCase):
 
     def test_native_build_helpers_run_after_isolated_dependencies_are_installed(self) -> None:
         root = release_manifest_lib.ROOT_DIR
+        attributes = (root / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("client/resources/test_suite_v1/*.json text eol=lf", attributes)
+        self.assertIn("server/resources/test_suite_v1/*.json text eol=lf", attributes)
         for relative_path in ("scripts/build_linux_client.sh", "scripts/build_macos_client.sh"):
             text = (root / relative_path).read_text(encoding="utf-8")
             install_at = text.index("-m pip install")

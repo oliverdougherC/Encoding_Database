@@ -135,7 +135,7 @@ $runtimeRegisterArgs = @(
     "--stage-runtime-dir", $runtimeResourceDir
 )
 if ($env:ENCODINGDB_REGISTER_RUNTIME -eq "1") { $runtimeRegisterArgs += "--update" }
-& $buildPython @runtimeRegisterArgs *> $null
+& $buildPython @runtimeRegisterArgs
 if ($LASTEXITCODE -ne 0) {
     Fail "Runtime lock validation failed"
 }
@@ -145,7 +145,7 @@ $suitePrepareArgs = @(
     "--staged-resource-dir", $suiteResourceDir,
     "--pack-out", $suitePackPath
 )
-& $buildPython @suitePrepareArgs *> $null
+& $buildPython @suitePrepareArgs
 if ($LASTEXITCODE -ne 0) {
     Fail "Suite pack preparation failed"
 }

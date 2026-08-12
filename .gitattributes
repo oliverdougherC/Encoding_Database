@@ -1,3 +1,6 @@
 # Normalize line endings: use LF for shell scripts so Git Bash/MSYS2 works
 *.sh text eol=lf
 
+# Suite fingerprints include these bytes; keep deterministic checkouts on Windows.
+client/resources/test_suite_v1/*.json text eol=lf
+server/resources/test_suite_v1/*.json text eol=lf

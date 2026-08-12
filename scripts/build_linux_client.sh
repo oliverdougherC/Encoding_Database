@@ -77,13 +77,11 @@ if [[ "${ENCODINGDB_REGISTER_RUNTIME:-0}" == "1" ]]; then REGISTER_ARGS+=(--upda
   --ffprobe-path "$FFPROBE_PATH" \
   --lock-path "$RUNTIME_LOCK_PATH" \
   "${REGISTER_ARGS[@]}" \
-  --stage-runtime-dir "$RUNTIME_RESOURCE_DIR" \
-  >/dev/null
+  --stage-runtime-dir "$RUNTIME_RESOURCE_DIR"
 FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH" \
   "$BUILD_PYTHON" "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
   --staged-resource-dir "$SUITE_RESOURCE_DIR" \
-  --pack-out "$SUITE_PACK_PATH" \
-  >/dev/null
+  --pack-out "$SUITE_PACK_PATH"
 
 log "Running PyInstaller..."
 cd "$ROOT_DIR"
