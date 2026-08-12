@@ -6,9 +6,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import tarfile
+import warnings
+import gzip
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import config
 
@@ -17,6 +20,9 @@ DEFAULT_QUICK_CLIP_ID = "sports-action-960x540-24p"
 MANIFEST_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "manifest.json")
 FINALIZATION_STATUS_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "finalization-status.json")
 SUITE_LOCK_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "suite-lock.json")
+SUITE_PACK_METADATA_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "suite-pack.json")
+SUITE_PACK_SCHEMA_VERSION = 1
+DEFAULT_SUITE_PACK_FILE_NAME = f"{SUITE_VERSION}.tar.gz"
 
 REQUIRED_CONTENT_CLASSES: Tuple[str, ...] = (
     "high-motion-sports",
@@ -183,6 +189,14 @@ def get_suite_lock_path() -> str:
     raise FileNotFoundError("EncodingDB Test Suite v1 lock not found")
 
 
+def get_suite_pack_metadata_path() -> str:
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), os.path.basename(SUITE_PACK_METADATA_RELATIVE_PATH))
+        if os.path.exists(candidate):
+            return candidate
+    raise FileNotFoundError("EncodingDB Test Suite v1 pack metadata not found")
+
+
 def load_finalization_status(path: Optional[str] = None) -> Dict[str, Any]:
     with open(path or get_finalization_status_path(), "r", encoding="utf-8") as handle:
         payload = json.load(handle)
@@ -196,6 +210,14 @@ def load_suite_lock(path: Optional[str] = None) -> Dict[str, Any]:
         payload = json.load(handle)
     if not isinstance(payload, dict):
         raise RuntimeError("suite lock is invalid")
+    return payload
+
+
+def load_suite_pack_metadata(path: Optional[str] = None) -> Dict[str, Any]:
+    with open(path or get_suite_pack_metadata_path(), "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise RuntimeError("suite pack metadata is invalid")
     return payload
 
 
@@ -237,9 +259,7 @@ def _manifest_media_from_dict(data: Dict[str, Any]) -> ClipMediaContract:
     )
 
 
-def load_default_suite_manifest() -> SuiteManifest:
-    with open(get_manifest_path(), "r", encoding="utf-8") as handle:
-        payload = json.load(handle)
+def manifest_from_payload(payload: Mapping[str, Any]) -> SuiteManifest:
     clips = []
     for clip in payload.get("clips", []):
         clips.append(
@@ -265,6 +285,12 @@ def load_default_suite_manifest() -> SuiteManifest:
         required_content_classes=tuple(str(value) for value in payload.get("requiredContentClasses", [])),
         clips=tuple(clips),
     )
+
+
+def load_default_suite_manifest() -> SuiteManifest:
+    with open(get_manifest_path(), "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    return manifest_from_payload(payload)
 
 
 def _clip_file_name(clip_id: str) -> str:
@@ -398,6 +424,30 @@ def _bit_depth_from_pix_fmt(pix_fmt: str) -> Optional[int]:
     return None
 
 
+def _normalize_container_alias(value: str) -> str:
+    normalized = str(value or "").split(",", 1)[0].strip().lower()
+    aliases = {
+        "mkv": "matroska",
+        "matroska": "matroska",
+        "mov": "mov",
+        "mp4": "mp4",
+        "mpegts": "mpegts",
+        "ts": "mpegts",
+        "avi": "avi",
+    }
+    return aliases.get(normalized, normalized)
+
+
+def _container_matches(expected: str, actual: str) -> bool:
+    expected_value = _normalize_container_alias(expected)
+    actual_values = {
+        _normalize_container_alias(part)
+        for part in str(actual or "").split(",")
+        if str(part).strip()
+    }
+    return bool(expected_value and expected_value in actual_values)
+
+
 def _probe_clip(path: str) -> Dict[str, Any]:
     cmd = [
         config.ffprobe_exe(),
@@ -405,7 +455,7 @@ def _probe_clip(path: str) -> Dict[str, Any]:
         "-count_frames",
         "-select_streams", "v:0",
         "-show_entries",
-        "stream=width,height,pix_fmt,bits_per_raw_sample,color_range,color_space,color_transfer,color_primaries,field_order,avg_frame_rate,r_frame_rate,nb_read_frames:stream_side_data",
+        "format=format_name:stream=codec_name,width,height,pix_fmt,bits_per_raw_sample,color_range,color_space,color_transfer,color_primaries,field_order,avg_frame_rate,r_frame_rate,nb_read_frames:stream_side_data",
         "-of", "json",
         path,
     ]
@@ -413,8 +463,11 @@ def _probe_clip(path: str) -> Dict[str, Any]:
     payload = json.loads(proc.stdout or "{}")
     streams = payload.get("streams") if isinstance(payload, dict) else None
     stream = streams[0] if isinstance(streams, list) and streams else {}
+    container = payload.get("format") if isinstance(payload, dict) else None
     if not isinstance(stream, dict):
         stream = {}
+    if not isinstance(container, dict):
+        container = {}
 
     avg_rate = _probe_ratio(stream.get("avg_frame_rate")) or _probe_ratio(stream.get("r_frame_rate"))
     frame_count = 0
@@ -438,6 +491,8 @@ def _probe_clip(path: str) -> Dict[str, Any]:
     return {
         "width": int(stream.get("width") or 0),
         "height": int(stream.get("height") or 0),
+        "containerFormat": str(container.get("format_name") or ""),
+        "videoCodec": str(stream.get("codec_name") or ""),
         "pixFmt": str(stream.get("pix_fmt") or ""),
         "bitDepth": bit_depth,
         "chromaSubsampling": _chroma_subsampling_for_pix_fmt(str(stream.get("pix_fmt") or "")),
@@ -544,7 +599,413 @@ def get_default_quick_clip(manifest: Optional[SuiteManifest] = None) -> SuiteCli
 
 
 def clip_cache_path(clip: SuiteClip, cache_root: Optional[str] = None) -> str:
-    return os.path.join(cache_root or _suite_cache_root(), clip.file_name)
+    return os.path.join(cache_root or _suite_cache_root(), "canonical", clip.file_name)
+
+
+def _cache_suite_pack_path(pack_metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    distribution = dict(pack_metadata.get("distribution") or {})
+    file_name = str(distribution.get("fileName") or DEFAULT_SUITE_PACK_FILE_NAME)
+    return os.path.join(cache_root or _suite_cache_root(), "packs", file_name)
+
+
+def _suite_pack_extract_root(pack_metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    suite_fingerprint = str(pack_metadata.get("suiteFingerprint") or "").strip()
+    if not suite_fingerprint:
+        raise RuntimeError("suite pack metadata is missing suiteFingerprint")
+    return os.path.join(cache_root or _suite_cache_root(), ".suite-pack", suite_fingerprint)
+
+
+def _canonical_json(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def _sha256_text(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _suite_pack_source_entries(manifest: SuiteManifest, suite_root: str) -> List[Tuple[str, str]]:
+    entries: List[Tuple[str, str]] = [
+        ("manifest.json", os.path.join(suite_root, "manifest.json")),
+        ("finalization-status.json", os.path.join(suite_root, "finalization-status.json")),
+    ]
+    lock_path = os.path.join(suite_root, "suite-lock.json")
+    if os.path.exists(lock_path):
+        entries.append(("suite-lock.json", lock_path))
+    for clip in manifest.clips:
+        entries.append((f"canonical/{clip.file_name}", os.path.join(suite_root, "canonical", clip.file_name)))
+    return entries
+
+
+def _build_suite_pack_inventory(manifest: SuiteManifest, suite_root: str) -> Dict[str, Any]:
+    manifest_path = os.path.join(suite_root, "manifest.json")
+    status_path = os.path.join(suite_root, "finalization-status.json")
+    lock_path = os.path.join(suite_root, "suite-lock.json")
+    canonical_entries = []
+    for clip in manifest.clips:
+        clip_path = os.path.join(suite_root, "canonical", clip.file_name)
+        canonical_entries.append(
+            {
+                "clipId": clip.clip_id,
+                "fileName": clip.file_name,
+                "sha256": clip.sha256,
+                "byteSize": clip.byte_size,
+            }
+        )
+    inventory: Dict[str, Any] = {
+        "manifest": {
+            "sha256": _sha256_of_file(manifest_path),
+            "byteSize": os.path.getsize(manifest_path),
+        },
+        "finalizationStatus": {
+            "sha256": _sha256_of_file(status_path),
+            "byteSize": os.path.getsize(status_path),
+        },
+        "suiteLock": None,
+        "canonical": canonical_entries,
+    }
+    if os.path.exists(lock_path):
+        inventory["suiteLock"] = {
+            "sha256": _sha256_of_file(lock_path),
+            "byteSize": os.path.getsize(lock_path),
+        }
+    return inventory
+
+
+def build_suite_pack_metadata(
+    suite_root: str,
+    *,
+    manifest: Optional[SuiteManifest] = None,
+    pack_file_name: str = DEFAULT_SUITE_PACK_FILE_NAME,
+    download_urls: Optional[Sequence[str]] = None,
+    output_path: Optional[str] = None,
+) -> Dict[str, Any]:
+    suite_root_abs = os.path.abspath(suite_root)
+    manifest_value = manifest
+    if manifest_value is None:
+        with open(os.path.join(suite_root_abs, "manifest.json"), "r", encoding="utf-8") as handle:
+            manifest_value = manifest_from_payload(json.load(handle))
+    inventory = _build_suite_pack_inventory(manifest_value, suite_root_abs)
+    suite_fingerprint = _sha256_text(
+        _canonical_json(
+            {
+                "suiteId": "encodingdb-test-suite",
+                "suiteVersion": manifest_value.suite_version,
+                "manifestVersion": manifest_value.manifest_version,
+                "contents": inventory,
+            }
+        )
+    )
+    temp_output = output_path
+    cleanup_output = False
+    if temp_output is None:
+        fd, temp_output = tempfile.mkstemp(prefix="encodingdb-suite-pack-", suffix=".tar.gz")
+        os.close(fd)
+        cleanup_output = True
+    build_suite_pack_archive(suite_root_abs, temp_output, manifest=manifest_value)
+    try:
+        return {
+            "schemaVersion": SUITE_PACK_SCHEMA_VERSION,
+            "suiteId": "encodingdb-test-suite",
+            "suiteVersion": manifest_value.suite_version,
+            "manifestVersion": manifest_value.manifest_version,
+            "suiteFingerprint": suite_fingerprint,
+            "distributionMode": "external-suite-pack",
+            "distribution": {
+                "format": "tar.gz",
+                "fileName": pack_file_name,
+                "sha256": _sha256_of_file(temp_output),
+                "byteSize": os.path.getsize(temp_output),
+                "downloadUrls": [str(value).strip() for value in (download_urls or []) if str(value).strip()],
+            },
+            "contents": inventory,
+        }
+    finally:
+        if cleanup_output:
+            try:
+                os.remove(temp_output)
+            except FileNotFoundError:
+                pass
+
+
+def write_suite_pack_metadata(
+    suite_root: str,
+    *,
+    pack_file_name: str = DEFAULT_SUITE_PACK_FILE_NAME,
+    download_urls: Optional[Sequence[str]] = None,
+    output_path: Optional[str] = None,
+) -> str:
+    metadata = build_suite_pack_metadata(
+        suite_root,
+        pack_file_name=pack_file_name,
+        download_urls=download_urls,
+    )
+    destination = os.path.abspath(output_path or os.path.join(suite_root, "suite-pack.json"))
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    with open(destination, "w", encoding="utf-8") as handle:
+        json.dump(metadata, handle, indent=2, sort_keys=False)
+        handle.write("\n")
+    return destination
+
+
+def build_suite_pack_archive(
+    suite_root: str,
+    output_path: str,
+    *,
+    manifest: Optional[SuiteManifest] = None,
+) -> str:
+    suite_root_abs = os.path.abspath(suite_root)
+    manifest_value = manifest
+    if manifest_value is None:
+        with open(os.path.join(suite_root_abs, "manifest.json"), "r", encoding="utf-8") as handle:
+            manifest_value = manifest_from_payload(json.load(handle))
+    entries = _suite_pack_source_entries(manifest_value, suite_root_abs)
+    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
+    with open(output_path, "wb") as raw_handle:
+        with gzip.GzipFile(fileobj=raw_handle, mode="wb", mtime=0, filename="") as gzip_handle:
+            with tarfile.open(fileobj=gzip_handle, mode="w") as archive:
+                for relative_path, absolute_path in entries:
+                    info = tarfile.TarInfo(name=relative_path.replace("\\", "/"))
+                    info.size = os.path.getsize(absolute_path)
+                    info.mode = 0o644
+                    info.uid = 0
+                    info.gid = 0
+                    info.uname = ""
+                    info.gname = ""
+                    info.mtime = 0
+                    with open(absolute_path, "rb") as source_handle:
+                        archive.addfile(info, source_handle)
+    return os.path.abspath(output_path)
+
+
+def verify_suite_pack_metadata(
+    suite_root: str,
+    metadata: Mapping[str, Any],
+) -> None:
+    manifest = load_default_suite_manifest() if os.path.abspath(suite_root) == os.path.dirname(get_manifest_path()) else None
+    expected = build_suite_pack_metadata(
+        suite_root,
+        manifest=manifest,
+        pack_file_name=str(dict(metadata.get("distribution") or {}).get("fileName") or DEFAULT_SUITE_PACK_FILE_NAME),
+        download_urls=list(dict(metadata.get("distribution") or {}).get("downloadUrls") or []),
+    )
+    if expected != dict(metadata):
+        raise RuntimeError("suite pack metadata does not match the current suite resources")
+
+
+def _verify_suite_pack_file(path: str, metadata: Mapping[str, Any]) -> ClipVerificationResult:
+    distribution = dict(metadata.get("distribution") or {})
+    expected_size = int(distribution.get("byteSize") or 0)
+    expected_hash = str(distribution.get("sha256") or "").strip().lower()
+    if not os.path.exists(path):
+        return ClipVerificationResult(False, "suite pack not found", {"path": path})
+    actual_size = os.path.getsize(path)
+    if actual_size != expected_size:
+        return ClipVerificationResult(
+            False,
+            "suite pack size mismatch",
+            {"path": path, "expected": expected_size, "actual": actual_size, "field": "byteSize"},
+        )
+    actual_hash = _sha256_of_file(path)
+    if actual_hash.lower() != expected_hash:
+        return ClipVerificationResult(
+            False,
+            "suite pack checksum mismatch",
+            {"path": path, "expected": expected_hash, "actual": actual_hash, "field": "sha256"},
+        )
+    return ClipVerificationResult(True, "ok", {"path": path})
+
+
+def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any]) -> None:
+    contents = dict(metadata.get("contents") or {})
+    required_files = (
+        ("manifest", "manifest.json"),
+        ("finalizationStatus", "finalization-status.json"),
+    )
+    for entry_key, relative_name in required_files:
+        payload = dict(contents.get(entry_key) or {})
+        absolute_path = os.path.join(extract_root, relative_name)
+        if not os.path.exists(absolute_path):
+            raise RuntimeError(f"extracted suite pack is missing {relative_name}")
+        if _sha256_of_file(absolute_path) != str(payload.get("sha256") or "").lower():
+            raise RuntimeError(f"extracted suite pack {relative_name} hash mismatch")
+    lock_payload = contents.get("suiteLock")
+    lock_path = os.path.join(extract_root, "suite-lock.json")
+    if lock_payload is None:
+        if os.path.exists(lock_path):
+            raise RuntimeError("extracted suite pack unexpectedly includes suite-lock.json")
+    else:
+        if not os.path.exists(lock_path):
+            raise RuntimeError("extracted suite pack is missing suite-lock.json")
+        if _sha256_of_file(lock_path) != str(dict(lock_payload).get("sha256") or "").lower():
+            raise RuntimeError("extracted suite pack suite-lock.json hash mismatch")
+    with open(os.path.join(extract_root, "manifest.json"), "r", encoding="utf-8") as handle:
+        manifest = manifest_from_payload(json.load(handle))
+    for clip in manifest.clips:
+        result = verify_suite_clip(os.path.join(extract_root, "canonical", clip.file_name), clip)
+        if not result.ok:
+            raise RuntimeError(f"extracted suite pack verification failed for {clip.clip_id}: {result.message}")
+
+
+def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    target_root = _suite_pack_extract_root(metadata, cache_root)
+    canonical_root = os.path.join(target_root, "canonical")
+    try:
+        _verify_extracted_suite_pack(target_root, metadata)
+        return canonical_root
+    except Exception:
+        pass
+    parent_dir = os.path.dirname(target_root)
+    os.makedirs(parent_dir, exist_ok=True)
+    staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=parent_dir)
+    try:
+        with tarfile.open(pack_path, "r:gz") as archive:
+            archive.extractall(staging_root)
+        _verify_extracted_suite_pack(staging_root, metadata)
+        shutil.rmtree(target_root, ignore_errors=True)
+        os.replace(staging_root, target_root)
+    except Exception:
+        shutil.rmtree(staging_root, ignore_errors=True)
+        raise
+    return os.path.join(target_root, "canonical")
+
+
+def _load_requests():
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*urllib3 v2 only supports OpenSSL.*",
+        )
+        import requests  # type: ignore
+    return requests
+
+
+def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]) -> None:
+    distribution = dict(metadata.get("distribution") or {})
+    expected_size = int(distribution.get("byteSize") or 0)
+    temp_path = f"{destination}.part"
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    requests = _load_requests()
+    resume_from = 0
+    if os.path.exists(temp_path):
+        size = os.path.getsize(temp_path)
+        if 0 < size < expected_size:
+            resume_from = size
+        else:
+            os.remove(temp_path)
+    for allow_resume in (resume_from > 0, False):
+        headers: Dict[str, str] = {}
+        mode = "wb"
+        if allow_resume and resume_from > 0:
+            headers["Range"] = f"bytes={resume_from}-"
+            mode = "ab"
+        response = requests.get(url, stream=True, timeout=30, headers=headers, verify=config.REQUESTS_VERIFY)
+        if response.status_code not in (200, 206):
+            response.raise_for_status()
+        if allow_resume and response.status_code != 206:
+            try:
+                os.remove(temp_path)
+            except FileNotFoundError:
+                pass
+            continue
+        with open(temp_path, mode) as handle:
+            for chunk in response.iter_content(chunk_size=1024 * 1024):
+                if chunk:
+                    handle.write(chunk)
+        break
+    result = _verify_suite_pack_file(temp_path, metadata)
+    if not result.ok:
+        raise RuntimeError(result.message)
+    os.replace(temp_path, destination)
+
+
+def _local_suite_pack_candidates(file_name: str) -> List[str]:
+    candidates: List[str] = []
+    explicit = os.environ.get("ENCODINGDB_SUITE_PACK_PATH", "").strip()
+    if explicit:
+        candidates.append(os.path.abspath(explicit))
+    if getattr(sys, "frozen", False):
+        candidates.append(os.path.join(os.path.dirname(os.path.abspath(sys.executable)), file_name))
+    for manifest_path in _manifest_resource_candidates():
+        suite_root = os.path.dirname(manifest_path)
+        candidates.append(os.path.join(suite_root, "packs", file_name))
+        candidates.append(os.path.join(suite_root, file_name))
+    unique: List[str] = []
+    seen = set()
+    for candidate in candidates:
+        normalized = os.path.abspath(candidate)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        unique.append(normalized)
+    return unique
+
+
+def _ensure_suite_pack_available(pack_metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    cached_pack_path = _cache_suite_pack_path(pack_metadata, cache_root)
+    result = _verify_suite_pack_file(cached_pack_path, pack_metadata)
+    if result.ok:
+        return cached_pack_path
+    distribution = dict(pack_metadata.get("distribution") or {})
+    file_name = str(distribution.get("fileName") or DEFAULT_SUITE_PACK_FILE_NAME)
+    for candidate in _local_suite_pack_candidates(file_name):
+        candidate_result = _verify_suite_pack_file(candidate, pack_metadata)
+        if not candidate_result.ok:
+            continue
+        os.makedirs(os.path.dirname(cached_pack_path), exist_ok=True)
+        staging = tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(cached_pack_path), prefix=".suite-pack-", suffix=".tmp")
+        staging.close()
+        try:
+            shutil.copyfile(candidate, staging.name)
+            verified = _verify_suite_pack_file(staging.name, pack_metadata)
+            if not verified.ok:
+                raise RuntimeError(verified.message)
+            os.replace(staging.name, cached_pack_path)
+            return cached_pack_path
+        finally:
+            try:
+                os.remove(staging.name)
+            except FileNotFoundError:
+                pass
+    download_urls = [str(value).strip() for value in distribution.get("downloadUrls") or [] if str(value).strip()]
+    override_url = os.environ.get("ENCODINGDB_SUITE_PACK_URL", "").strip()
+    if override_url:
+        download_urls.insert(0, override_url)
+    last_error: Optional[str] = None
+    for url in download_urls:
+        try:
+            _download_suite_pack(url, cached_pack_path, pack_metadata)
+            return cached_pack_path
+        except Exception as exc:
+            last_error = str(exc)
+    if last_error:
+        raise RuntimeError(f"EncodingDB suite pack could not be acquired: {last_error}")
+    raise RuntimeError(
+        f"EncodingDB suite pack is unavailable. Expected {file_name} next to the packaged client, "
+        "at ENCODINGDB_SUITE_PACK_PATH, or from ENCODINGDB_SUITE_PACK_URL."
+    )
+
+
+def _materialize_clip_from_suite_pack(clip: SuiteClip, pack_metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    cache_base = cache_root or _suite_cache_root()
+    pack_path = _ensure_suite_pack_available(pack_metadata, cache_base)
+    extracted_canonical_root = _extract_suite_pack(pack_path, pack_metadata, cache_base)
+    source_path = os.path.join(extracted_canonical_root, clip.file_name)
+    target_path = clip_cache_path(clip, cache_base)
+    os.makedirs(os.path.dirname(target_path), exist_ok=True)
+    staging = tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(target_path), prefix=f".{clip.clip_id}-", suffix=".staging")
+    staging.close()
+    try:
+        shutil.copyfile(source_path, staging.name)
+        result = verify_suite_clip(staging.name, clip)
+        if not result.ok:
+            raise RuntimeError(result.message)
+        os.replace(staging.name, target_path)
+    finally:
+        try:
+            os.remove(staging.name)
+        except FileNotFoundError:
+            pass
+    return target_path
 
 
 def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
@@ -566,6 +1027,21 @@ def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
         )
 
     probe = _probe_clip(path)
+    expected_container = str(clip.acquisition.get("container") or "").strip()
+    if expected_container and not _container_matches(expected_container, str(probe.get("containerFormat") or "")):
+        return ClipVerificationResult(
+            False,
+            f"{clip.file_name} container mismatch (expected {expected_container}, got {probe.get('containerFormat')})",
+            {"path": path, "field": "container", "expected": expected_container, "actual": probe.get("containerFormat")},
+        )
+    expected_codec = str(clip.acquisition.get("videoCodec") or "").strip().lower()
+    actual_codec = str(probe.get("videoCodec") or "").strip().lower()
+    if expected_codec and expected_codec != "retained-reference" and expected_codec != actual_codec:
+        return ClipVerificationResult(
+            False,
+            f"{clip.file_name} videoCodec mismatch (expected {expected_codec}, got {actual_codec})",
+            {"path": path, "field": "videoCodec", "expected": expected_codec, "actual": actual_codec},
+        )
     expected_pairs: Tuple[Tuple[str, Any, Any], ...] = (
         ("width", clip.media.width, probe["width"]),
         ("height", clip.media.height, probe["height"]),
@@ -614,6 +1090,7 @@ def ensure_suite_clip(
     cache_root: Optional[str] = None,
     regenerate_on_mismatch: bool = True,
 ) -> PreparedSuiteClip:
+    resolved_cache_root = cache_root or _suite_cache_root()
     packaged_path: Optional[str] = None
     for manifest_path in _manifest_resource_candidates():
         candidate = os.path.join(os.path.dirname(manifest_path), "canonical", clip.file_name)
@@ -624,12 +1101,17 @@ def ensure_suite_clip(
             raise RuntimeError(f"Packaged canonical suite asset is invalid: {packaged_result.message}")
         packaged_path = candidate
         break
-    if packaged_path is None:
-        raise RuntimeError(f"Packaged canonical suite asset is missing: {clip.file_name}")
-
     path = packaged_path
-    if cache_root is not None:
-        path = clip_cache_path(clip, cache_root)
+    if packaged_path is None:
+        path = clip_cache_path(clip, resolved_cache_root)
+        result = verify_suite_clip(path, clip)
+        if not result.ok and regenerate_on_mismatch:
+            path = _materialize_clip_from_suite_pack(clip, load_suite_pack_metadata(), resolved_cache_root)
+            result = verify_suite_clip(path, clip)
+        if not result.ok:
+            raise RuntimeError(result.message)
+    elif cache_root is not None:
+        path = clip_cache_path(clip, resolved_cache_root)
         result = verify_suite_clip(path, clip)
         if not result.ok and regenerate_on_mismatch:
             os.makedirs(os.path.dirname(path), exist_ok=True)

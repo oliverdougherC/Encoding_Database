@@ -454,6 +454,7 @@ model Environment {
   cpuArchitecture        String
   physicalCoreCount      Int?
   logicalThreadCount     Int?
+  physicalMemoryBytes    BigInt?
   gpuModel               String?
   selectedAcceleratorId  String?
   selectedAccelerator    String?

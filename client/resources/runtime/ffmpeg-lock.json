@@ -24,11 +24,25 @@
           "libvmaf",
           "xpsnr"
         ],
-        "encoders": [
+        "requiredEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "optionalEncoders": [
           "h264_videotoolbox",
           "hevc_videotoolbox",
+          "libopenh264"
+        ],
+        "smokeTestEncoders": [
           "libaom-av1",
-          "libopenh264",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "encoders": [
+          "libaom-av1",
           "libvpx-vp9",
           "libx264",
           "libx265"

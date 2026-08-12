@@ -8,7 +8,7 @@ export interface DecisionHardwareContext {
   environmentFingerprint: string;
   cpuModel: string;
   gpuModel: string;
-  ramGB: number;
+  ramGB: number | null;
   os: string;
 }
 

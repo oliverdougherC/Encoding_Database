@@ -114,8 +114,9 @@ def build_environment_bootstrap(
     environment_identity = {
         "cpuModel": " ".join(str(cpu_model).split()),
         "cpuArchitecture": _canonical_architecture(identity.get("cpuArchitecture")),
-        "physicalCoreCount": identity.get("cpuPhysicalCores"),
-        "logicalThreadCount": identity.get("cpuLogicalCores"),
+        "physicalCoreCount": _canonical_optional_int(identity.get("cpuPhysicalCores")),
+        "logicalThreadCount": _canonical_optional_int(identity.get("cpuLogicalCores")),
+        "physicalMemoryBytes": _canonical_optional_int(identity.get("physicalMemoryBytes")),
         "gpuModel": _canonical_optional_text(identity.get("gpuModel")),
         "selectedAcceleratorId": _canonical_optional_text(identity.get("accelerator"), lowercase=True),
         "selectedAccelerator": _canonical_optional_text(identity.get("accelerator")),
@@ -148,6 +149,12 @@ def _canonical_required_text(value: Any, *, lowercase: bool = False) -> str:
     if normalized is None:
         raise ValueError("required environment identity field is missing")
     return normalized
+
+
+def _canonical_optional_int(value: Any) -> Optional[int]:
+    if value is None or value == "":
+        return None
+    return int(value)
 
 
 def _canonical_architecture(value: Any) -> str:

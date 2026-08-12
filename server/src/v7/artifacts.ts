@@ -1590,7 +1590,10 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
 
 class AuthoritativeAnalysisCoordinator {
   private active = 0;
+  private reserved = 0;
   private started = false;
+  private draining = false;
+  private drainRequested = false;
   private timer: NodeJS.Timeout | null = null;
 
   constructor(
@@ -1603,31 +1606,56 @@ class AuthoritativeAnalysisCoordinator {
     if (this.started) return;
     this.started = true;
     this.timer = setInterval(() => {
-      void this.drain();
+      this.requestDrain();
     }, this.config.analysisPollIntervalMs);
     this.timer.unref();
-    void this.drain();
+    this.requestDrain();
   }
 
   kick(): void {
     this.start();
-    void this.drain();
+    this.requestDrain();
   }
 
-  private async drain(): Promise<void> {
-    while (this.active < this.config.analysisMaxConcurrent) {
+  private requestDrain(): void {
+    this.drainRequested = true;
+    if (this.draining) return;
+    this.draining = true;
+    void this.runDrainLoop();
+  }
+
+  private async runDrainLoop(): Promise<void> {
+    try {
+      while (this.drainRequested) {
+        this.drainRequested = false;
+        await this.drainOnce();
+      }
+    } finally {
+      this.draining = false;
+      if (this.drainRequested) {
+        this.draining = true;
+        void this.runDrainLoop();
+      }
+    }
+  }
+
+  private async drainOnce(): Promise<void> {
+    while (this.active + this.reserved < this.config.analysisMaxConcurrent) {
+      this.reserved += 1;
       const leaseToken = crypto.randomUUID();
       const now = new Date();
       const claim = await this.persistence.claimNextQueuedQualityAnalysis({
         leaseToken,
         leaseExpiresAt: new Date(now.getTime() + this.config.analysisLeaseMs),
         now,
+      }).finally(() => {
+        this.reserved = Math.max(0, this.reserved - 1);
       });
       if (!claim) break;
       this.active += 1;
       void this.processClaim(claim).finally(() => {
         this.active = Math.max(0, this.active - 1);
-        void this.drain();
+        this.requestDrain();
       });
     }
   }
@@ -2989,6 +3017,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           cpuArchitecture: normalized.cpuArchitecture,
           physicalCoreCount: normalized.physicalCoreCount,
           logicalThreadCount: normalized.logicalThreadCount,
+          physicalMemoryBytes: normalized.physicalMemoryBytes == null ? null : BigInt(normalized.physicalMemoryBytes),
           gpuModel: normalized.gpuModel,
           selectedAcceleratorId: normalized.selectedAcceleratorId,
           selectedAccelerator: normalized.selectedAccelerator,

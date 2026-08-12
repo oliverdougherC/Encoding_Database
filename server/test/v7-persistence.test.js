@@ -17,6 +17,10 @@ const migrationText = readFileSync(
   new URL('../prisma/migrations/20260812010000_v7_evidence_epoch/migration.sql', import.meta.url),
   'utf8',
 );
+const physicalMemoryMigrationText = readFileSync(
+  new URL('../prisma/migrations/20260812153000_v7_environment_physical_memory/migration.sql', import.meta.url),
+  'utf8',
+);
 
 test('canonicalJsonString sorts nested object keys deterministically', () => {
   const left = canonicalJsonString({
@@ -109,6 +113,7 @@ test('buildEnvironmentFingerprint normalizes architecture aliases but keeps mate
     cpuArchitecture: 'AMD64',
     physicalCoreCount: 16,
     logicalThreadCount: 32,
+    physicalMemoryBytes: 68719476736,
     gpuModel: 'NVIDIA RTX 5090',
     selectedAcceleratorId: 'GPU-0',
     selectedAccelerator: 'RTX 5090',
@@ -126,6 +131,7 @@ test('buildEnvironmentFingerprint normalizes architecture aliases but keeps mate
     cpuArchitecture: 'x86_64',
     physicalCoreCount: 16,
     logicalThreadCount: 32,
+    physicalMemoryBytes: 68719476736,
     gpuModel: 'NVIDIA RTX 5090',
     selectedAcceleratorId: 'gpu-0',
     selectedAccelerator: 'RTX 5090',
@@ -143,6 +149,7 @@ test('buildEnvironmentFingerprint normalizes architecture aliases but keeps mate
     cpuArchitecture: 'x86_64',
     physicalCoreCount: 16,
     logicalThreadCount: 32,
+    physicalMemoryBytes: 68719476736,
     gpuModel: 'NVIDIA RTX 5090',
     selectedAcceleratorId: 'gpu-0',
     selectedAccelerator: 'RTX 5090',
@@ -154,9 +161,27 @@ test('buildEnvironmentFingerprint normalizes architecture aliases but keeps mate
     encoderVersion: 'nvenc-12.1',
     clientVersion: 'v7.0.0',
   });
+  const changedMemory = buildEnvironmentFingerprint({
+    cpuModel: 'AMD Ryzen 9 9950X',
+    cpuArchitecture: 'x86_64',
+    physicalCoreCount: 16,
+    logicalThreadCount: 32,
+    physicalMemoryBytes: 34359738368,
+    gpuModel: 'NVIDIA RTX 5090',
+    selectedAcceleratorId: 'gpu-0',
+    selectedAccelerator: 'RTX 5090',
+    driverVersion: '555.12',
+    osName: 'windows',
+    osVersion: '11 24h2',
+    ffmpegBuildFingerprint: 'ffmpeg-git-123',
+    ffmpegVersion: 'n7.1',
+    encoderVersion: 'nvenc-12.1',
+    clientVersion: 'v7.0.0',
+  });
 
   assert.equal(left.fingerprint, alias.fingerprint);
   assert.notEqual(left.fingerprint, changedDriver.fingerprint);
+  assert.notEqual(left.fingerprint, changedMemory.fingerprint);
 });
 
 test('aggregation compatibility key blocks protocol, workload, recipe, environment, or score-context drift', () => {
@@ -220,6 +245,7 @@ test('schema and migration isolate legacy aggregates and require explicit canoni
     /@@unique\(\[cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes, workloadId\]\)/,
   );
   assert.match(schemaText, /model BenchmarkRun \{/);
+  assert.match(schemaText, /physicalMemoryBytes\s+BigInt\?/);
   assert.match(schemaText, /workloadId\s+String/);
   assert.match(schemaText, /energyDomains\s+Json\?/);
   assert.match(schemaText, /decodeBenchmark\s+Json\?/);
@@ -232,6 +258,8 @@ test('schema and migration isolate legacy aggregates and require explicit canoni
 
   assert.match(migrationText, /DROP CONSTRAINT IF EXISTS "Benchmark_v7_aggregate_key"/);
   assert.match(migrationText, /"BenchmarkRun"\s+\([\s\S]*"workloadId" TEXT NOT NULL/);
+  assert.match(physicalMemoryMigrationText, /ALTER TABLE "Environment"[\s\S]*ADD COLUMN "physicalMemoryBytes" BIGINT/);
+  assert.match(physicalMemoryMigrationText, /"canonicalJson"->>'physicalMemoryBytes'/);
   assert.match(migrationText, /"BenchmarkRun"\s+\([\s\S]*"energyDomains" JSONB/);
   assert.match(migrationText, /"BenchmarkRun"\s+\([\s\S]*"decodeBenchmark" JSONB/);
   assert.match(migrationText, /"ScoreContext"\s+\([\s\S]*"workloadId" TEXT NOT NULL/);

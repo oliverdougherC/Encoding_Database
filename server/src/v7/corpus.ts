@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_ANALYZER_VERSION } from './artifacts.js';
 
-export const PUBLIC_CORPUS_READ_MODEL_VERSION = 'v7-public-corpus-direct-read-model/v2' as const;
+export const PUBLIC_CORPUS_READ_MODEL_VERSION = 'v7-public-corpus-direct-read-model/v3' as const;
 
 export type PublicCorpusScoringStatus =
   | 'PUBLIC'
@@ -70,6 +70,7 @@ export interface PublicCorpusRow {
     cpuArchitecture: string;
     physicalCoreCount: number | null;
     logicalThreadCount: number | null;
+    physicalMemoryBytes: number | null;
     gpuModel: string | null;
     selectedAccelerator: string | null;
     driverVersion: string | null;
@@ -181,6 +182,19 @@ let cachedPublicReferenceContextVersions: ReadonlySet<string> | null = null;
 
 function asFiniteNumber(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function roundPhysicalMemoryBytesToGiB(value: bigint | number | null | undefined): number | null {
+  if (value == null) return null;
+  const bytes = typeof value === 'bigint' ? Number(value) : value;
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return Math.round(bytes / (1024 ** 3));
+}
+
+function normalizePhysicalMemoryBytes(value: bigint | number | null | undefined): number | null {
+  if (value == null) return null;
+  const bytes = typeof value === 'bigint' ? Number(value) : value;
+  return Number.isFinite(bytes) && bytes > 0 ? bytes : null;
 }
 
 function containsInsensitive(value: string): { contains: string; mode: 'insensitive' } {
@@ -533,12 +547,13 @@ export function buildPublicCorpusRows(input: {
       const acceptedIndependentSources = new Set(acceptedRecords.map(independentSourceKey)).size;
       const evidenceTier = classifyEvidenceTier(acceptedRecords.length, acceptedIndependentSources, publicConfidenceWidth);
       const qualityModelId = records[0]?.analysis.metricModelId ?? null;
+      const physicalMemoryBytes = normalizePhysicalMemoryBytes(newestRecord.environment.physicalMemoryBytes);
       return {
         id: key,
         createdAt: newestRecord.createdAt.toISOString(),
         cpuModel: newestRecord.environment.cpuModel,
         gpuModel: newestRecord.environment.gpuModel ?? null,
-        ramGB: newestRecord.environment.physicalCoreCount ?? newestRecord.environment.logicalThreadCount ?? null,
+        ramGB: roundPhysicalMemoryBytesToGiB(physicalMemoryBytes),
         os: `${newestRecord.environment.osName} ${newestRecord.environment.osVersion}`.trim(),
         codec: newestRecord.recipe.codecFamily,
         codecFamily: newestRecord.recipe.codecFamily,
@@ -572,6 +587,7 @@ export function buildPublicCorpusRows(input: {
           cpuArchitecture: newestRecord.environment.cpuArchitecture,
           physicalCoreCount: newestRecord.environment.physicalCoreCount ?? null,
           logicalThreadCount: newestRecord.environment.logicalThreadCount ?? null,
+          physicalMemoryBytes,
           gpuModel: newestRecord.environment.gpuModel ?? null,
           selectedAccelerator: newestRecord.environment.selectedAccelerator ?? null,
           driverVersion: newestRecord.environment.driverVersion ?? null,

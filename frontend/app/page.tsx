@@ -36,8 +36,8 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
       <section className={styles.hero}>
         <div className={styles.heroMain}>
           <p className={styles.kicker}>V7 public corpus</p>
-          <h1>Retained workload evidence, not blended legacy rows.</h1>
-          <p className={styles.lede}>Browse authoritative V7 workload aggregates keyed by immutable recipe, environment, and protocol lineage. Public PL stays nullable until a production reference context is published.</p>
+          <h1>Brevity is the soul of wit.</h1>
+          <p className={styles.lede}>Browse V7 workload results backed by retained evidence, clear hardware context, and canonical recipes. Public PL stays blank until a production reference context is published.</p>
           <HeroSearch className={styles.heroSearch} />
           {!error && <div className={styles.datasetLine}>
             <span><strong>{totalCount.toLocaleString()}</strong> V7 aggregates</span>

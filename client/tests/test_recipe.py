@@ -136,6 +136,7 @@ class RecipeIdentityTests(unittest.TestCase):
             cpu_architecture="ARM64",
             cpu_physical_cores=8,
             cpu_logical_cores=10,
+            physical_memory_bytes=68719476736,
             accelerator="Apple M4 Max Media Engine",
             driver_version="macOS-26.0",
             ffmpeg_version="ffmpeg version 7.0",
@@ -151,6 +152,7 @@ class RecipeIdentityTests(unittest.TestCase):
             cpu_architecture="arm64",
             cpu_physical_cores=8,
             cpu_logical_cores=10,
+            physical_memory_bytes=68719476736,
             accelerator="Apple M4 Max Media Engine",
             driver_version="macOS-26.0",
             ffmpeg_version="ffmpeg version 7.0",
@@ -166,8 +168,25 @@ class RecipeIdentityTests(unittest.TestCase):
             cpu_architecture="arm64",
             cpu_physical_cores=8,
             cpu_logical_cores=10,
+            physical_memory_bytes=68719476736,
             accelerator="Apple M4 Max Media Engine",
             driver_version="macOS-26.1",
+            ffmpeg_version="ffmpeg version 7.0",
+            ffmpeg_banner=banner_b,
+            encoder_version="VideoToolbox 1.0",
+            client_version="client/0.3.0",
+            benchmark_protocol_version="7.1",
+            os_name="Darwin",
+            os_version="26.0",
+            gpu_model="Apple M4 Max",
+        )
+        env_d = recipe.build_environment_identity(
+            cpu_architecture="arm64",
+            cpu_physical_cores=8,
+            cpu_logical_cores=10,
+            physical_memory_bytes=34359738368,
+            accelerator="Apple M4 Max Media Engine",
+            driver_version="macOS-26.0",
             ffmpeg_version="ffmpeg version 7.0",
             ffmpeg_banner=banner_b,
             encoder_version="VideoToolbox 1.0",
@@ -180,6 +199,7 @@ class RecipeIdentityTests(unittest.TestCase):
 
         self.assertEqual(recipe.environment_fingerprint(env_a), recipe.environment_fingerprint(env_b))
         self.assertNotEqual(recipe.environment_fingerprint(env_a), recipe.environment_fingerprint(env_c))
+        self.assertNotEqual(recipe.environment_fingerprint(env_a), recipe.environment_fingerprint(env_d))
 
 
 if __name__ == "__main__":

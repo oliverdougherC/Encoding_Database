@@ -7,11 +7,11 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 - A Node/Express + Prisma API that validates, scores, and aggregates submissions.
 - A Next.js frontend with comparison tools and leaderboards.
 
-The upcoming official V7 release moves the project beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry. Its final project release version and date have not yet been assigned in `release.json`.
+The current beta tracks the upcoming V7 release, which moves the project beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry. Its final project release version and date remain intentionally unassigned in `release.json` until the official release is cut.
 
 ## Upcoming release changelog
 
-This release documents work completed since `v1.0.2` and reflects a major platform overhaul.
+This beta documents work completed since the latest official release, `v1.1.0`, and reflects a major platform overhaul.
 
 ### Client (Python benchmark runner)
 
@@ -69,6 +69,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 - `nginx/`: reverse-proxy configuration for production.
 - `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.ps1`).
 - `client/resources/test_suite_v1/manifest.json`: machine-readable manifest for the seven-class EncodingDB Test Suite v1.
+- `client/resources/test_suite_v1/suite-pack.json`: deterministic metadata for the external canonical-suite pack shipped with release clients.
 - `client/ENCODINGDB_TEST_SUITE_V1.md`: provenance, licensing, and General PL coverage notes for the suite.
 
 ## Current platform capabilities
@@ -100,6 +101,10 @@ The offline spool is also local and persistent:
 
 Failed uploads remain in that queue until they are replayed or explicitly cleaned up.
 
+### Operational logs
+
+Benchmark payloads do not include direct account identity, but normal server request logs currently record standard operational metadata including the remote IP address, request path, response status, timing, and `User-Agent` header. This repository does not currently define a fixed retention period for those logs.
+
 ### Telemetry fields collected and why they matter
 
 | Category | Fields | Why this is collected |
@@ -110,6 +115,8 @@ Failed uploads remain in that queue until they are replayed or explicitly cleane
 | Runtime telemetry (efficiency) | `gpuUtilAvg`, `gpuPowerAvgW`, `gpuMemPeakMB`, `cpuUtilAvg`, `cpuUtilMax`, `peakMemoryMB`, `thermalThrottle` | Enables efficiency and stability analysis beyond raw FPS. |
 | Extended telemetry | `gpuTempMaxC`, `cpuFreqAvgMHz`, `cpuTempMaxC`, `ffmpegCpuUtilAvg`, `ffmpegCpuUtilMax`, `ffmpegReadMB`, `ffmpegWriteMB`, `ffmpegCpuTimeS`, `batteryPercentStart`, `batteryPercentEnd`, `batteryPercentDrop`, `powerSource`, `sampleCount`, `monitorDurationMs` | Improves confidence scoring, thermal context, and power/runtime interpretation. |
 | Tooling metadata | `ffmpegVersion`, `encoderName`, `clientVersion`, `notes` | Aids reproducibility and diagnostics of edge-case runs. |
+
+For canonical V7 artifact-backed runs, environment fingerprints also include exact `physicalMemoryBytes`. Public `/corpus` `ramGB` values are derived from that physical-memory field and are never inferred from CPU core counts.
 
 ### What is not collected
 

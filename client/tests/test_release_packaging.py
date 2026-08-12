@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from client import suite
 from scripts import release_manifest_lib
 
 
@@ -59,6 +60,19 @@ class ReleasePackagingTests(unittest.TestCase):
             temp_root = Path(temp_dir)
             artifact_path = temp_root / "encodingdb-client-macos"
             artifact_path.write_bytes(b"artifact-bytes")
+            suite_pack_path = temp_root / suite.DEFAULT_SUITE_PACK_FILE_NAME
+            suite_pack_path.write_bytes(b"suite-pack-bytes")
+            suite_pack_metadata = {
+                "distributionMode": "external-suite-pack",
+                "suiteFingerprint": "f" * 64,
+                "distribution": {
+                    "fileName": suite_pack_path.name,
+                    "sha256": release_manifest_lib.sha256_path(suite_pack_path),
+                    "byteSize": suite_pack_path.stat().st_size,
+                    "format": "tar.gz",
+                    "downloadUrls": [],
+                },
+            }
 
             with mock.patch.object(
                 release_manifest_lib.runtime_lock,
@@ -73,6 +87,7 @@ class ReleasePackagingTests(unittest.TestCase):
                     "identity": {},
                 },
             ), \
+                    mock.patch.object(release_manifest_lib.suite, "load_suite_pack_metadata", return_value=suite_pack_metadata), \
                     mock.patch.object(release_manifest_lib, "detect_project_version", return_value="1.1.0"), \
                     mock.patch.object(release_manifest_lib, "run_smoke_check", return_value=smoke_payload):
                 sidecars = release_manifest_lib.finalize_release(
@@ -83,6 +98,7 @@ class ReleasePackagingTests(unittest.TestCase):
                     output_dir=temp_root,
                     signing_status="unsigned",
                     signing_evidence_path=None,
+                    suite_pack_path=suite_pack_path,
                 )
 
             manifest_path = sidecars["release_manifest"]
@@ -97,6 +113,8 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertEqual(manifest["platform"], "mac")
             self.assertEqual(manifest["suite"]["distribution"], "development-only")
             self.assertFalse(manifest["suite"]["isFrozen"])
+            self.assertEqual(manifest["suite"]["distributionMode"], "external-suite-pack")
+            self.assertEqual(manifest["suite"]["pack"]["fileName"], suite_pack_path.name)
             self.assertEqual(manifest["signing"]["status"], "unsigned")
             with sidecars["runtime_lock"].open("r", encoding="utf-8") as handle:
                 staged_lock = json.load(handle)
@@ -105,6 +123,7 @@ class ReleasePackagingTests(unittest.TestCase):
             sha_lines = sha_path.read_text(encoding="utf-8").splitlines()
             self.assertTrue(any(line.endswith(f"  {artifact_path.name}") for line in sha_lines))
             self.assertTrue(any(line.endswith(f"  {smoke_path.name}") for line in sha_lines))
+            self.assertTrue(any(line.endswith(f"  {suite_pack_path.name}") for line in sha_lines))
 
 
 if __name__ == "__main__":

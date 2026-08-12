@@ -326,6 +326,13 @@ function deriveCanonicalSourceFps(row: CanonicalLeaderboardRecord): number | nul
   return encodeFps / realtime;
 }
 
+function roundPhysicalMemoryBytesToGiB(value: bigint | number | null | undefined): number | null {
+  if (value == null) return null;
+  const bytes = typeof value === 'bigint' ? Number(value) : value;
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return Math.round(bytes / (1024 ** 3));
+}
+
 function deriveCanonicalContext(row: CanonicalLeaderboardRecord) {
   const rawConstants = asObject(row.scoreContext.transformConstants);
   const qualityExponent = asFiniteNumber(rawConstants?.qualityExponent) ?? 2.4;
@@ -367,7 +374,7 @@ function decisionCandidateFromCanonicalDerivedResult(
       environmentFingerprint: row.environment.fingerprint,
       cpuModel: row.environment.cpuModel,
       gpuModel: row.environment.gpuModel ?? '',
-      ramGB: row.environment.physicalCoreCount ?? row.environment.logicalThreadCount ?? 0,
+      ramGB: roundPhysicalMemoryBytesToGiB(row.environment.physicalMemoryBytes),
       os: `${row.environment.osName} ${row.environment.osVersion}`.trim(),
     },
     sampleCount: row.acceptedRunCount,

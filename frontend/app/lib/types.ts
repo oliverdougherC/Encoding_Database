@@ -48,6 +48,7 @@ export type Benchmark = {
     cpuArchitecture: string;
     physicalCoreCount: number | null;
     logicalThreadCount: number | null;
+    physicalMemoryBytes: number | null;
     gpuModel: string | null;
     selectedAccelerator: string | null;
     driverVersion: string | null;
@@ -206,7 +207,7 @@ export type LeaderboardDecisionRow = {
     environmentFingerprint: string;
     cpuModel: string;
     gpuModel: string;
-    ramGB: number;
+    ramGB: number | null;
     os: string;
   };
   sampleCount: number;
@@ -297,7 +298,7 @@ export type LeaderboardAnalyticsResponse = {
       environmentFingerprint: string;
       cpuModel: string;
       gpuModel: string;
-      ramGB: number;
+      ramGB: number | null;
       os: string;
       label: string;
     }>;

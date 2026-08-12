@@ -97,7 +97,16 @@ def release_sidecar_paths(artifact_path: Path, output_dir: Path) -> Dict[str, Pa
 
 
 def select_smoke_encoder(capabilities: Mapping[str, Any]) -> str:
-    available = [str(value) for value in capabilities.get("encoders") or [] if str(value).strip()]
+    available = [
+        str(value)
+        for value in (
+            capabilities.get("smokeTestEncoders")
+            or capabilities.get("requiredEncoders")
+            or capabilities.get("encoders")
+            or []
+        )
+        if str(value).strip()
+    ]
     for preferred in ("libx264", "libx265", "libaom-av1", "libvpx-vp9", "libopenh264"):
         if preferred in available:
             return preferred
@@ -112,6 +121,7 @@ def run_smoke_check(
     smoke_encoder: str,
     queue_dir: Path,
     suite_cache_dir: Path,
+    suite_pack_path: Optional[Path],
 ) -> Dict[str, Any]:
     base_env = dict(os.environ)
     base_env.update(
@@ -121,6 +131,8 @@ def run_smoke_check(
             "ENCODINGDB_SUITE_CACHE_DIR": str(suite_cache_dir),
         }
     )
+    if suite_pack_path is not None:
+        base_env["ENCODINGDB_SUITE_PACK_PATH"] = str(suite_pack_path)
     queue_dir.mkdir(parents=True, exist_ok=True)
     suite_cache_dir.mkdir(parents=True, exist_ok=True)
     commands: List[Dict[str, Any]] = []
@@ -188,12 +200,22 @@ def build_release_manifest(
     platform: str,
     runtime_lock_payload: Mapping[str, Any],
     signing_payload: Mapping[str, Any],
+    runtime_lock_path: Path,
+    suite_pack_path: Path,
 ) -> Dict[str, Any]:
     suite_manifest = suite.load_default_suite_manifest()
+    suite_pack_metadata = suite.load_suite_pack_metadata()
     finalization_status = suite.load_finalization_status()
     vmaf_manifest = load_vmaf_manifest()
     runtime_fingerprint = hashlib.sha256(canonical_json(runtime_lock_payload).encode("utf-8")).hexdigest()
     artifact_sha = sha256_path(artifact_path)
+    suite_pack_distribution = dict(suite_pack_metadata.get("distribution") or {})
+    suite_pack_file_name = str(suite_pack_distribution.get("fileName") or suite.DEFAULT_SUITE_PACK_FILE_NAME)
+    if suite_pack_path.name != suite_pack_file_name:
+        raise RuntimeError(f"suite pack file name must be {suite_pack_file_name}")
+    suite_pack_verification = suite._verify_suite_pack_file(str(suite_pack_path), suite_pack_metadata)
+    if not suite_pack_verification.ok:
+        raise RuntimeError(f"suite pack verification failed: {suite_pack_verification.message}")
     return {
         "schemaVersion": RELEASE_MANIFEST_SCHEMA_VERSION,
         "projectVersion": detect_project_version(),
@@ -215,6 +237,15 @@ def build_release_manifest(
             "distribution": str(finalization_status.get("distribution") or "unknown"),
             "isFrozen": bool(finalization_status.get("isFrozen")),
             "finalLockPath": finalization_status.get("finalLockPath"),
+            "distributionMode": str(suite_pack_metadata.get("distributionMode") or "unknown"),
+            "suiteFingerprint": suite_pack_metadata.get("suiteFingerprint"),
+            "pack": {
+                "fileName": suite_pack_file_name,
+                "sha256": suite_pack_distribution.get("sha256"),
+                "byteSize": suite_pack_distribution.get("byteSize"),
+                "format": suite_pack_distribution.get("format"),
+                "downloadUrls": suite_pack_distribution.get("downloadUrls"),
+            },
         },
         "qualityModel": {
             "metricModelId": vmaf_manifest.get("metricModelId"),
@@ -225,7 +256,7 @@ def build_release_manifest(
         "runtime": {
             "fingerprint": runtime_fingerprint,
             "payload": runtime_lock_payload,
-            "checkedInLockPath": str((ROOT_DIR / "client" / "resources" / "runtime" / "ffmpeg-lock.json").resolve()),
+            "checkedInLockPath": str(runtime_lock_path.resolve()),
         },
         "signing": signing_payload,
     }
@@ -249,14 +280,19 @@ def finalize_release(
     output_dir: Path,
     signing_status: str,
     signing_evidence_path: Optional[Path],
+    runtime_lock_path: Optional[Path] = None,
+    suite_pack_path: Optional[Path] = None,
     skip_smoke: bool = False,
 ) -> Dict[str, Path]:
     output_dir.mkdir(parents=True, exist_ok=True)
     sidecars = release_sidecar_paths(artifact_path, output_dir)
+    resolved_runtime_lock_path = (runtime_lock_path or Path(runtime_lock.default_runtime_lock_path())).resolve()
+    resolved_suite_pack_path = (suite_pack_path or artifact_path.parent / suite.DEFAULT_SUITE_PACK_FILE_NAME).resolve()
     verified_runtime = runtime_lock.verify_runtime_lock(
         platform_key=platform,
         ffmpeg_path=str(ffmpeg_path),
         ffprobe_path=str(ffprobe_path),
+        lock_path=str(resolved_runtime_lock_path),
     )
     runtime_lock_payload = runtime_lock.filtered_runtime_lock_payload(verified_runtime["payload"], str(platform).strip().lower())
     signing_payload = build_signing_payload(signing_status, signing_evidence_path)
@@ -275,12 +311,15 @@ def finalize_release(
                 smoke_encoder=select_smoke_encoder(runtime_lock_payload["platforms"][str(platform).strip().lower()]["capabilities"]),
                 queue_dir=smoke_root_path / "queue",
                 suite_cache_dir=smoke_root_path / "suite-cache",
+                suite_pack_path=resolved_suite_pack_path,
             )
     manifest_payload = build_release_manifest(
         artifact_path=artifact_path,
         platform=platform,
         runtime_lock_payload=runtime_lock_payload,
         signing_payload=signing_payload,
+        runtime_lock_path=resolved_runtime_lock_path,
+        suite_pack_path=resolved_suite_pack_path,
     )
     atomic_write_json(sidecars["runtime_lock"], runtime_lock_payload)
     atomic_write_json(sidecars["signing"], signing_payload)
@@ -294,6 +333,7 @@ def finalize_release(
             sidecars["signing"],
             sidecars["smoke"],
             sidecars["release_manifest"],
+            resolved_suite_pack_path,
             *( [signing_evidence_path] if signing_evidence_path else [] ),
         ],
     )
@@ -309,6 +349,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", default=None)
     parser.add_argument("--signing-status", default="unsigned")
     parser.add_argument("--signing-evidence-path", default=None)
+    parser.add_argument("--runtime-lock-path", default=runtime_lock.default_runtime_lock_path())
+    parser.add_argument("--suite-pack-path", default=suite.DEFAULT_SUITE_PACK_FILE_NAME)
     parser.add_argument("--skip-smoke", action="store_true")
     return parser.parse_args()
 
@@ -325,6 +367,8 @@ def main() -> int:
         output_dir=output_dir,
         signing_status=str(args.signing_status),
         signing_evidence_path=Path(args.signing_evidence_path).resolve() if args.signing_evidence_path else None,
+        runtime_lock_path=Path(args.runtime_lock_path).resolve() if args.runtime_lock_path else None,
+        suite_pack_path=Path(args.suite_pack_path).resolve() if args.suite_pack_path else None,
         skip_smoke=bool(args.skip_smoke),
     )
     for label, path in sidecars.items():

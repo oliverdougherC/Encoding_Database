@@ -28,4 +28,4 @@ An operator may delete only an unreferenced abandoned staging object after confi
 
 ## Reproducibility guarantee
 
-The database stores the artifact digest, container and elementary-video byte counts, measurement duration and method, authoritative worker/model context, exact selected analysis IDs, recipe/environment fingerprints, and score context. Given the retained object plus frozen server resources, recomputation must reproduce the selected evidence set and score inputs without accepting client quality calculations.
+The database stores the artifact digest, container and elementary-video byte counts, measurement duration and method, authoritative worker/model context, exact selected analysis IDs, recipe/environment fingerprints, canonical physical-memory bytes, and score context. Given the retained object plus frozen server resources, recomputation must reproduce the selected evidence set and score inputs without accepting client quality calculations.

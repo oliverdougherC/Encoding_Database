@@ -54,6 +54,7 @@ def _run_create_template(byte_size: int) -> Dict[str, object]:
             "identity": {
                 "cpuModel": "CPU",
                 "cpuArchitecture": "x86_64",
+                "physicalMemoryBytes": 17179869184,
                 "ffmpegBuildFingerprint": "ffmpeg-build",
                 "ffmpegVersion": "ffmpeg version n7",
                 "clientVersion": "client/0.2.0",

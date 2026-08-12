@@ -52,6 +52,7 @@ export interface EnvironmentIdentityInput {
   cpuArchitecture: string;
   physicalCoreCount?: number | null;
   logicalThreadCount?: number | null;
+  physicalMemoryBytes?: number | null;
   gpuModel?: string | null;
   selectedAcceleratorId?: string | null;
   selectedAccelerator?: string | null;
@@ -131,6 +132,7 @@ type CanonicalEnvironmentIdentity = {
   cpuArchitecture: string;
   physicalCoreCount: number | null;
   logicalThreadCount: number | null;
+  physicalMemoryBytes: number | null;
   gpuModel: string | null;
   selectedAcceleratorId: string | null;
   selectedAccelerator: string | null;
@@ -311,6 +313,7 @@ export function normalizeEnvironmentIdentity(input: EnvironmentIdentityInput): C
     cpuArchitecture,
     physicalCoreCount: normalizeInteger(input.physicalCoreCount, 'physicalCoreCount'),
     logicalThreadCount: normalizeInteger(input.logicalThreadCount, 'logicalThreadCount'),
+    physicalMemoryBytes: normalizeInteger(input.physicalMemoryBytes, 'physicalMemoryBytes'),
     gpuModel: normalizeOptionalText(input.gpuModel),
     selectedAcceleratorId: normalizeOptionalText(input.selectedAcceleratorId, true),
     selectedAccelerator: normalizeOptionalText(input.selectedAccelerator),

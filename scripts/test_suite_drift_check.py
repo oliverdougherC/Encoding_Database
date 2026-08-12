@@ -25,6 +25,7 @@ def main() -> int:
     server_root = ROOT_DIR / "server" / "resources" / "test_suite_v1"
     compare("suite manifest", client_root / "manifest.json", server_root / "manifest.json")
     compare("finalization status", client_root / "finalization-status.json", server_root / "finalization-status.json")
+    compare("suite pack metadata", client_root / "suite-pack.json", server_root / "suite-pack.json")
 
     client_lock = client_root / "suite-lock.json"
     server_lock = server_root / "suite-lock.json"

@@ -8,7 +8,7 @@
     "reviewer": "",
     "redistributionApproved": false,
     "distributionLicense": "",
-    "notes": "Populate this file with reviewed provenance and redistribution metadata before freezing a final suite."
+    "notes": "Populate this file with reviewed provenance, license, and expected-media metadata before freezing a final suite. Compute reviewHash with: python3 scripts/finalize_test_suite_v1.py --review-json /path/to/this-file.json --print-review-hash"
   },
   "clips": [
     {
@@ -25,6 +25,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -41,6 +78,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -57,6 +131,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -73,6 +184,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -89,6 +237,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -105,6 +290,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     },
     {
@@ -121,6 +343,43 @@
         "license": "",
         "reviewed": false,
         "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
       }
     }
   ]

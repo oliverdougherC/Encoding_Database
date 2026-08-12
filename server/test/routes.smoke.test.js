@@ -38,6 +38,9 @@ import { BoundedTtlCache } from '../dist/cache.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
 
+const GIB = 1024n * 1024n * 1024n;
+const SIXTY_FOUR_GIB = 64n * GIB;
+
 const CAN_BIND_LOOPBACK = await new Promise((resolve) => {
   const probe = net.createServer();
   probe.once('error', () => resolve(false));
@@ -204,6 +207,7 @@ test('GET /corpus returns unscored rows from direct retained evidence when no Sc
     assert.equal(data.length, 1);
     assert.equal(data[0].encoderName, 'libx265');
     assert.equal(data[0].samples, 2);
+    assert.equal(data[0].ramGB, 64);
     assert.equal(data[0].sampleCounts.accepted, 2);
     assert.equal(data[0].sampleCounts.repetitions, 2);
     assert.equal(data[0].status.scoring, 'UNSCORED_NO_PUBLIC_DERIVED_RESULT');
@@ -211,6 +215,7 @@ test('GET /corpus returns unscored rows from direct retained evidence when no Sc
     assert.equal(data[0].versions.scoreContextId, null);
     assert.equal(data[0].bitrate.workloadReferenceBitrateBps, null);
     assert.equal(data[0].confidence.available, false);
+    assert.equal(data[0].environment.physicalMemoryBytes, Number(SIXTY_FOUR_GIB));
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -680,6 +685,7 @@ function makeDerivedResultRow(overrides = {}) {
       gpuModel: 'NVIDIA RTX 5090',
       physicalCoreCount: 16,
       logicalThreadCount: 32,
+      physicalMemoryBytes: SIXTY_FOUR_GIB,
       osName: 'Linux',
       osVersion: '6.10',
       ffmpegVersion: '7.1',
@@ -801,6 +807,7 @@ function makeBenchmarkRunRow(overrides = {}) {
       cpuArchitecture: 'x86_64',
       physicalCoreCount: 16,
       logicalThreadCount: 32,
+      physicalMemoryBytes: SIXTY_FOUR_GIB,
       gpuModel: 'NVIDIA RTX 5090',
       selectedAcceleratorId: null,
       selectedAccelerator: 'cuda',
@@ -944,6 +951,7 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
         gpuModel: 'NVIDIA RTX 5090',
         physicalCoreCount: 16,
         logicalThreadCount: 32,
+        physicalMemoryBytes: SIXTY_FOUR_GIB,
         osName: 'Linux',
         osVersion: '6.10',
         ffmpegVersion: '7.1',
@@ -1015,7 +1023,7 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
       environmentFingerprint: 'environment-fingerprint-2',
       cpuModel: 'AMD Ryzen 9 9950X',
       gpuModel: 'NVIDIA RTX 5090',
-      ramGB: 16,
+      ramGB: 64,
       os: 'Linux 6.10',
     });
     assert.equal(data.environmentScope.exact, true);

@@ -53,6 +53,7 @@ vi.mock("./lib/api", () => ({
           cpuArchitecture: "arm64",
           physicalCoreCount: 8,
           logicalThreadCount: 8,
+          physicalMemoryBytes: 8589934592,
           gpuModel: null,
           selectedAccelerator: "videotoolbox",
           driverVersion: null,
@@ -139,7 +140,7 @@ describe("Home page", () => {
     render(await Home({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByText("V7 public corpus")).toBeInTheDocument();
-    expect(screen.getByText("Retained workload evidence, not blended legacy rows.")).toBeInTheDocument();
+    expect(screen.getByText("Brevity is the soul of wit.")).toBeInTheDocument();
     expect(document.body).toHaveTextContent("7 V7 aggregates");
     expect(document.body).toHaveTextContent("1 environments on this page");
     expect(screen.getByText(/hevc_videotoolbox/)).toBeInTheDocument();

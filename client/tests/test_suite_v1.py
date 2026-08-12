@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 from dataclasses import replace
+from pathlib import Path
+from unittest import mock
 
 from client import suite
 
@@ -70,6 +72,32 @@ class SuiteV1Tests(unittest.TestCase):
         for prepared_clip, manifest_clip in zip(prepared, manifest.clips):
             self.assertIn("resources/test_suite_v1/canonical", prepared_clip.path.replace("\\", "/"))
             self.assertTrue(suite.verify_suite_clip(prepared_clip.path, manifest_clip).ok)
+
+    def test_checked_in_suite_pack_metadata_matches_current_suite_resources(self) -> None:
+        suite.verify_suite_pack_metadata(
+            str(Path(suite.get_manifest_path()).parent),
+            suite.load_suite_pack_metadata(),
+        )
+
+    def test_ensure_suite_clip_can_materialize_from_external_suite_pack_without_packaged_canonical_media(self) -> None:
+        manifest = suite.load_default_suite_manifest()
+        clip = manifest.clips[0]
+        source_suite_root = Path(suite.get_manifest_path()).parent
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            packaged_resources = root / "resources" / "test_suite_v1"
+            packaged_resources.mkdir(parents=True, exist_ok=True)
+            for name in ("manifest.json", "finalization-status.json", "suite-pack.json"):
+                (packaged_resources / name).write_bytes((source_suite_root / name).read_bytes())
+            pack_path = root / suite.DEFAULT_SUITE_PACK_FILE_NAME
+            suite.build_suite_pack_archive(str(source_suite_root), str(pack_path))
+            with mock.patch.object(suite, "_manifest_resource_candidates", return_value=[str(packaged_resources / "manifest.json")]), \
+                    mock.patch.dict("os.environ", {"ENCODINGDB_SUITE_PACK_PATH": str(pack_path)}, clear=False):
+                prepared = suite.ensure_suite_clip(clip, cache_root=str(root / "cache"))
+
+            self.assertIn("/cache/canonical/", prepared.path.replace("\\", "/"))
+            self.assertTrue(Path(prepared.path).exists())
+            self.assertTrue(suite.verify_suite_clip(prepared.path, clip).ok)
 
     def test_general_pl_coverage_requires_all_declared_classes(self) -> None:
         prepared = [

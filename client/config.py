@@ -90,6 +90,7 @@ class HardwareInfo:
     gpuModel: Optional[str]
     ramGB: int
     os: str
+    physicalMemoryBytes: Optional[int] = None
     gpuVendors: List[str] = field(default_factory=list)
 
 

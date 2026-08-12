@@ -50,6 +50,7 @@ const benchmark = (overrides: Partial<Benchmark> = {}): Benchmark => ({
     cpuArchitecture: "x86_64",
     physicalCoreCount: 16,
     logicalThreadCount: 32,
+    physicalMemoryBytes: 34359738368,
     gpuModel: "GPU",
     selectedAccelerator: "cuda",
     driverVersion: "1",

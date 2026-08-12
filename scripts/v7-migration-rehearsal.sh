@@ -175,10 +175,10 @@ INSERT INTO "Recipe" (
 INSERT INTO "Environment" (
   "id", "createdAt", "updatedAt", "fingerprint", "canonicalJson", "cpuModel",
   "cpuArchitecture", "physicalCoreCount", "logicalThreadCount", "gpuModel",
-  "osName", "osVersion", "ffmpegBuildFingerprint", "ffmpegVersion", "clientVersion"
+  "physicalMemoryBytes", "osName", "osVersion", "ffmpegBuildFingerprint", "ffmpegVersion", "clientVersion"
 ) VALUES (
   'env-v7', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'environment-fingerprint',
-  '{}'::jsonb, 'Apple M4 Pro', 'arm64', 12, 12, 'Integrated', 'macOS', '15',
+  '{}'::jsonb, 'Apple M4 Pro', 'arm64', 12, 12, 'Integrated', 51539607552, 'macOS', '15',
   'ffmpeg-build-fingerprint', '7.1', 'client/1.0.0'
 );
 

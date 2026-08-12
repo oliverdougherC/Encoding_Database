@@ -150,6 +150,7 @@ class EnvironmentIdentity:
     cpuArchitecture: str
     cpuPhysicalCores: int
     cpuLogicalCores: int
+    physicalMemoryBytes: Optional[int]
     accelerator: Optional[str]
     driverVersion: Optional[str]
     gpuModel: Optional[str]
@@ -518,6 +519,7 @@ def build_environment_identity(
     cpu_architecture: Optional[str] = None,
     cpu_physical_cores: Optional[int] = None,
     cpu_logical_cores: Optional[int] = None,
+    physical_memory_bytes: Optional[int] = None,
     os_name: Optional[str] = None,
     os_version: Optional[str] = None,
     gpu_model: Optional[str] = None,
@@ -531,6 +533,11 @@ def build_environment_identity(
         cpuArchitecture=str(cpu_architecture or platform.machine() or "").strip().lower(),
         cpuPhysicalCores=_coerce_int(cpu_physical_cores) or _physical_core_count(),
         cpuLogicalCores=_coerce_int(cpu_logical_cores) or int(os.cpu_count() or 1),
+        physicalMemoryBytes=(
+            _coerce_int(physical_memory_bytes)
+            or _coerce_int(getattr(hardware_info, "physicalMemoryBytes", None))
+            or _physical_memory_bytes()
+        ),
         accelerator=selected_accelerator,
         driverVersion=str(driver_version).strip() if driver_version else None,
         gpuModel=selected_gpu,
@@ -620,3 +627,13 @@ def _physical_core_count() -> int:
         pass
     logical = int(os.cpu_count() or 1)
     return max(1, logical // 2 if logical > 1 else logical)
+
+
+def _physical_memory_bytes() -> Optional[int]:
+    try:
+        total = config.psutil.virtual_memory().total
+        if isinstance(total, int) and total > 0:
+            return total
+    except Exception:
+        pass
+    return None

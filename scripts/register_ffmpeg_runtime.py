@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--ffprobe-path", required=True)
     parser.add_argument(
         "--lock-path",
-        default=str(ROOT_DIR / "client" / "resources" / "runtime" / "ffmpeg-lock.json"),
+        default=runtime_lock.default_runtime_lock_path(),
     )
     parser.add_argument(
         "--stage-runtime-dir",

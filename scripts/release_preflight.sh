@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/encodingdb-release-preflight.XXXXXX")"
 
 declare -a REQUESTED_CHECKS=("$@")
 if [[ "${#REQUESTED_CHECKS[@]}" -eq 0 ]]; then
@@ -32,6 +33,11 @@ die() {
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
+}
+
+require_docker_compose() {
+  require_cmd docker
+  docker compose version >/dev/null 2>&1 || die "Missing required command: docker compose"
 }
 
 run_root() {
@@ -91,7 +97,7 @@ changelog = open(sys.argv[3], encoding="utf-8").read()
 expected = {
     "benchmarkProtocolVersion": "7.0",
     "plFormulaVersion": "7.0",
-    "suiteVersion": "1.0.0",
+    "suiteVersion": "encodingdb-test-suite-v1",
     "clientImplementationVersion": "client/0.2.0",
 }
 for key, value in expected.items():
@@ -138,23 +144,29 @@ check_client() {
 
 check_stack_smoke() {
   require_cmd bash
+  require_docker_compose
   run_root bash scripts/test.sh
 }
 
 check_ops_hooks() {
+  require_cmd bash
   run_root bash -n scripts/generate-dev-cert.sh scripts/production_smoke.sh scripts/release_preflight.sh scripts/v7-backup.sh scripts/v7-restore-drill.sh scripts/v7-migration-rehearsal.sh scripts/certify-v7-e2e.sh deploy.sh
 }
 
 check_migrations() {
+  require_cmd bash
+  require_cmd psql
+  require_cmd docker
   run_root bash scripts/v7-migration-rehearsal.sh
 }
 
 check_production_compose() {
-  require_cmd docker
+  require_docker_compose
   run_shell "ARTIFACT_UPLOAD_SECRET=release-preflight-placeholder APP_URL=https://release-preflight.invalid docker compose -f docker-compose.prod.yml config -q"
 }
 
 check_suite_contract() {
+  require_cmd python3
   run_root python3 scripts/verify_suite_assets.py client/resources/test_suite_v1
   run_root python3 scripts/test_suite_drift_check.py
   [[ -f "$ROOT_DIR/client/resources/runtime/ffmpeg-lock.json" ]] || die "client FFmpeg runtime lock is missing"
@@ -166,6 +178,7 @@ check_suite_contract() {
 }
 
 check_final_suite() {
+  require_cmd python3
   python3 - "$ROOT_DIR" <<'PY'
 import json, sys
 from pathlib import Path
@@ -175,56 +188,88 @@ server = root / "server/resources/test_suite_v1"
 try:
     cs = json.loads((client / "finalization-status.json").read_text())
     ss = json.loads((server / "finalization-status.json").read_text())
-except Exception:
-    raise SystemExit(1)
-if cs != ss or cs.get("isFrozen") is not True:
-    raise SystemExit(1)
+except FileNotFoundError as exc:
+    raise SystemExit(f"final suite metadata missing: {exc.filename}")
+except Exception as exc:
+    raise SystemExit(f"unable to load final suite metadata: {exc}")
+if cs != ss:
+    raise SystemExit("client/server finalization-status.json differ")
+if cs.get("isFrozen") is not True:
+    raise SystemExit("FINAL_TEST_SUITE_NOT_FROZEN")
 lock_name = cs.get("finalLockPath")
 if not isinstance(lock_name, str) or not lock_name:
-    raise SystemExit(1)
+    raise SystemExit("final suite lock path missing")
 if (client / lock_name).read_bytes() != (server / lock_name).read_bytes():
-    raise SystemExit(1)
+    raise SystemExit("client/server final suite lock differs")
 if (client / "manifest.json").read_bytes() != (server / "manifest.json").read_bytes():
-    raise SystemExit(1)
+    raise SystemExit("client/server final suite manifest differs")
 PY
+}
+
+run_requested_check() {
+  local check="$1"
+  local output_file="$LOG_DIR/${check//[^A-Za-z0-9_.-]/_}.log"
+  (
+    set -Eeuo pipefail
+    case "$check" in
+      hygiene) check_hygiene ;;
+      metadata) check_metadata ;;
+      frontend) check_frontend ;;
+      server) check_server ;;
+      client) check_client ;;
+      stack-smoke) check_stack_smoke ;;
+      migrations) check_migrations ;;
+      production-compose) check_production_compose ;;
+      suite-contract) check_suite_contract ;;
+      ops-hooks) check_ops_hooks ;;
+      final-suite) check_final_suite ;;
+      *)
+        die "unknown check: $check"
+        ;;
+    esac
+  ) >"$output_file" 2>&1
+}
+
+emit_failure_details() {
+  local output_file="$1"
+  if [[ -s "$output_file" ]]; then
+    sed -n '1,200p' "$output_file" >&2
+  fi
+  printf '[release-preflight] details: %s\n' "$output_file" >&2
+}
+
+is_final_suite_not_frozen() {
+  local output_file="$1"
+  local first_line=""
+  local second_line=""
+  {
+    IFS= read -r first_line || true
+    IFS= read -r second_line || true
+  } < "$output_file"
+  [[ "$first_line" == "FINAL_TEST_SUITE_NOT_FROZEN" && -z "$second_line" ]]
 }
 
 failures=0
 final_suite_missing=0
+log "Retaining per-check logs in $LOG_DIR"
 for check in "${REQUESTED_CHECKS[@]}"; do
   label="$check"
-  output_file="$(mktemp "${TMPDIR:-/tmp}/encodingdb-preflight.XXXXXX")"
+  output_file="$LOG_DIR/${check//[^A-Za-z0-9_.-]/_}.log"
   status=0
   set +e
-  case "$check" in
-    hygiene) check_hygiene >"$output_file" 2>&1 || status=$? ;;
-    metadata) check_metadata >"$output_file" 2>&1 || status=$? ;;
-    frontend) check_frontend >"$output_file" 2>&1 || status=$? ;;
-    server) check_server >"$output_file" 2>&1 || status=$? ;;
-    client) check_client >"$output_file" 2>&1 || status=$? ;;
-    stack-smoke) check_stack_smoke >"$output_file" 2>&1 || status=$? ;;
-    migrations) check_migrations >"$output_file" 2>&1 || status=$? ;;
-    production-compose) check_production_compose >"$output_file" 2>&1 || status=$? ;;
-    suite-contract) check_suite_contract >"$output_file" 2>&1 || status=$? ;;
-    ops-hooks) check_ops_hooks >"$output_file" 2>&1 || status=$? ;;
-    final-suite) check_final_suite >"$output_file" 2>&1 || status=$? ;;
-    *)
-      rm -f "$output_file"
-      die "unknown check: $check"
-      ;;
-  esac
+  run_requested_check "$check" || status=$?
   set -e
   if [[ "$status" -eq 0 ]]; then
     printf 'PASS %s\n' "$label"
-  elif [[ "$check" == "final-suite" ]]; then
+  elif [[ "$check" == "final-suite" ]] && is_final_suite_not_frozen "$output_file"; then
     printf 'FAIL FINAL_TEST_SUITE_NOT_FROZEN\n'
+    emit_failure_details "$output_file"
     final_suite_missing=1
   else
     printf 'FAIL %s\n' "$label"
-    sed -n '1,120p' "$output_file" >&2
+    emit_failure_details "$output_file"
     failures=$((failures + 1))
   fi
-  rm -f "$output_file"
 done
 
 if (( failures > 0 || final_suite_missing > 0 )); then

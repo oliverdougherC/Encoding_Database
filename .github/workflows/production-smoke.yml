@@ -12,7 +12,7 @@ jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Check required configuration
         id: configuration
         env:
@@ -35,7 +35,7 @@ jobs:
           fi
       - name: Setup Python
         if: ${{ steps.configuration.outputs.configured == 'true' }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: Run production smoke

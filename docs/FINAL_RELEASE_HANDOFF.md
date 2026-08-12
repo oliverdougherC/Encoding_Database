@@ -10,9 +10,9 @@
    ```
 
 3. Assign the official project version and release date in `release.json`, move the changelog entry out of `Unreleased`, and run `bash scripts/release_preflight.sh` until every gate passes.
-4. Build native clients with the reviewed, lock-matched FFmpeg runtime bundles; sign/notarize when credentials are available; verify each release manifest and SHA256 checksum file.
+4. Build native clients with the reviewed, lock-matched FFmpeg runtime bundles and the matching `encodingdb-test-suite-v1.tar.gz` suite pack; sign/notarize when credentials are available; verify each release manifest and SHA256 checksum file.
 5. Run `bash scripts/v7-backup.sh`, deploy, and run `scripts/production_smoke.sh` against the production API and frontend.
 6. Run one real end-to-end V7 benchmark and confirm its immutable `BenchmarkRun`, retained `Artifact`, completed server `QualityAnalysis`, and public `/corpus` visibility.
-7. Only then merge, tag the official version, create the GitHub release, and upload clients plus checksum/release manifests.
+7. Only then merge, tag the official version, create the GitHub release, and upload clients, the suite pack, and checksum/release manifests.
 
 PL-v7 calibration is a later data activation operation documented separately in `docs/PL_V7_PRODUCTION_ACTIVATION.md`; it requires no application-code change.

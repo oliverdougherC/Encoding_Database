@@ -51,6 +51,7 @@ function makeRow(overrides: Partial<Benchmark> = {}): Benchmark {
       cpuArchitecture: "x86_64",
       physicalCoreCount: 16,
       logicalThreadCount: 32,
+      physicalMemoryBytes: 34359738368,
       gpuModel: "GPU",
       selectedAccelerator: "cuda",
       driverVersion: "555.12",
@@ -61,7 +62,7 @@ function makeRow(overrides: Partial<Benchmark> = {}): Benchmark {
       clientVersion: "client/0.2.0",
     },
     versions: {
-      aggregatorVersion: "v7-public-corpus-direct-read-model/v2",
+      aggregatorVersion: "v7-public-corpus-direct-read-model/v3",
       benchmarkProtocolId: "protocol-1",
       benchmarkProtocolVersion: "benchmark-protocol-v1",
       sourceSuiteVersion: "encodingdb-test-suite-v1",

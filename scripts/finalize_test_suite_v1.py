@@ -7,6 +7,7 @@ import shutil
 import sys
 import tempfile
 from pathlib import Path
+from fractions import Fraction
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
@@ -72,6 +73,8 @@ def default_output_paths() -> Dict[str, Path]:
         "server_lock_out": DEFAULT_SERVER_SUITE_DIR / "suite-lock.json",
         "client_status_out": DEFAULT_CLIENT_SUITE_DIR / "finalization-status.json",
         "server_status_out": DEFAULT_SERVER_SUITE_DIR / "finalization-status.json",
+        "client_pack_manifest_out": DEFAULT_CLIENT_SUITE_DIR / "suite-pack.json",
+        "server_pack_manifest_out": DEFAULT_SERVER_SUITE_DIR / "suite-pack.json",
     }
 
 
@@ -83,6 +86,8 @@ def probe_media_contract(path: Path) -> Dict[str, Any]:
         raise RuntimeError(f"ffprobe contract is incomplete for {path.name}")
     return {
         "frameCount": int(probe.get("frameCount") or 0),
+        "container": str(probe.get("containerFormat") or ""),
+        "videoCodec": str(probe.get("videoCodec") or ""),
         "duration": {"numerator": int(duration_ratio[0]), "denominator": int(duration_ratio[1])},
         "frameRate": {"numerator": int(frame_rate[0]), "denominator": int(frame_rate[1])},
         "width": int(probe.get("width") or 0),
@@ -97,6 +102,191 @@ def probe_media_contract(path: Path) -> Dict[str, Any]:
         "fieldOrder": str(probe.get("fieldOrder") or ""),
         "hdrMetadata": probe.get("hdrMetadata") or None,
     }
+
+
+def _require_mapping(value: Any, label: str) -> Mapping[str, Any]:
+    if not isinstance(value, Mapping):
+        raise RuntimeError(f"{label} must be an object")
+    return value
+
+
+def _normalize_rational(value: Any, label: str) -> Dict[str, int]:
+    if not isinstance(value, Mapping):
+        raise RuntimeError(f"{label} must be an object with numerator and denominator")
+    numerator = int(value.get("numerator") or 0)
+    denominator = int(value.get("denominator") or 0)
+    if numerator <= 0 or denominator <= 0:
+        raise RuntimeError(f"{label} must be a positive rational")
+    return {"numerator": numerator, "denominator": denominator}
+
+
+def _normalize_range_int(value: Any, label: str) -> Dict[str, int]:
+    if isinstance(value, int):
+        if value <= 0:
+            raise RuntimeError(f"{label} must be positive")
+        return {"min": value, "max": value}
+    mapping = _require_mapping(value, label)
+    minimum = int(mapping.get("min") or 0)
+    maximum = int(mapping.get("max") or 0)
+    if minimum <= 0 or maximum <= 0 or minimum > maximum:
+        raise RuntimeError(f"{label} bounds are invalid")
+    return {"min": minimum, "max": maximum}
+
+
+def _normalize_range_rational(value: Any, label: str) -> Dict[str, Dict[str, int]]:
+    if isinstance(value, Mapping) and "numerator" in value and "denominator" in value:
+        exact = _normalize_rational(value, label)
+        return {"min": exact, "max": exact}
+    mapping = _require_mapping(value, label)
+    minimum = _normalize_rational(mapping.get("min"), f"{label}.min")
+    maximum = _normalize_rational(mapping.get("max"), f"{label}.max")
+    minimum_fraction = minimum["numerator"] / minimum["denominator"]
+    maximum_fraction = maximum["numerator"] / maximum["denominator"]
+    if minimum_fraction > maximum_fraction:
+        raise RuntimeError(f"{label} bounds are invalid")
+    return {"min": minimum, "max": maximum}
+
+
+def normalize_expected_media_contract(value: Any) -> Dict[str, Any]:
+    mapping = _require_mapping(value, "expectedMedia")
+    allowed_containers = mapping.get("allowedContainers")
+    if isinstance(allowed_containers, str):
+        allowed_containers = [allowed_containers]
+    if not isinstance(allowed_containers, Sequence) or not allowed_containers:
+        raise RuntimeError("expectedMedia.allowedContainers must declare at least one container")
+    normalized_containers = [str(item).strip().lower() for item in allowed_containers if str(item).strip()]
+    if not normalized_containers:
+        raise RuntimeError("expectedMedia.allowedContainers must declare at least one container")
+
+    allowed_codecs = mapping.get("allowedVideoCodecs")
+    normalized_codecs: List[str] = []
+    if allowed_codecs is not None:
+        if isinstance(allowed_codecs, str):
+            allowed_codecs = [allowed_codecs]
+        if not isinstance(allowed_codecs, Sequence):
+            raise RuntimeError("expectedMedia.allowedVideoCodecs must be a list when present")
+        normalized_codecs = [str(item).strip().lower() for item in allowed_codecs if str(item).strip()]
+        if not normalized_codecs:
+            raise RuntimeError("expectedMedia.allowedVideoCodecs must not be empty when present")
+
+    return {
+        "allowedContainers": normalized_containers,
+        "allowedVideoCodecs": normalized_codecs,
+        "width": int(mapping.get("width") or 0),
+        "height": int(mapping.get("height") or 0),
+        "frameRate": _normalize_rational(mapping.get("frameRate"), "expectedMedia.frameRate"),
+        "fieldOrder": str(mapping.get("fieldOrder") or "").strip(),
+        "pixelFormat": str(mapping.get("pixelFormat") or "").strip(),
+        "bitDepth": int(mapping.get("bitDepth") or 0),
+        "chromaSubsampling": str(mapping.get("chromaSubsampling") or "").strip(),
+        "colorPrimaries": str(mapping.get("colorPrimaries") or "").strip(),
+        "colorTransfer": str(mapping.get("colorTransfer") or "").strip(),
+        "colorMatrix": str(mapping.get("colorMatrix") or "").strip(),
+        "colorRange": str(mapping.get("colorRange") or "").strip(),
+        "hdrMetadata": mapping.get("hdrMetadata"),
+        "frameCount": _normalize_range_int(mapping.get("frameCount"), "expectedMedia.frameCount"),
+        "duration": _normalize_range_rational(mapping.get("duration"), "expectedMedia.duration"),
+    }
+
+
+def _fraction_value(value: Mapping[str, int]) -> Fraction:
+    return Fraction(int(value["numerator"]), int(value["denominator"]))
+
+
+def validate_expected_media_match(review_clip: Mapping[str, Any], expected: Mapping[str, Any], probed: Mapping[str, Any]) -> None:
+    clip_id = str(review_clip.get("id") or "<unknown>")
+    allowed_containers = [str(item).strip().lower() for item in expected.get("allowedContainers") or []]
+    actual_container = str(probed.get("container") or "").strip().lower()
+    if not any(suite._container_matches(container, actual_container) for container in allowed_containers):
+        raise RuntimeError(f"clip {clip_id} container {actual_container or '<none>'} is outside the reviewed allowedContainers contract")
+    allowed_codecs = [str(item).strip().lower() for item in expected.get("allowedVideoCodecs") or []]
+    actual_codec = str(probed.get("videoCodec") or "").strip().lower()
+    if allowed_codecs and actual_codec not in allowed_codecs:
+        raise RuntimeError(f"clip {clip_id} codec {actual_codec or '<none>'} is outside the reviewed allowedVideoCodecs contract")
+    for field_name in (
+        "width",
+        "height",
+        "fieldOrder",
+        "pixelFormat",
+        "bitDepth",
+        "chromaSubsampling",
+        "colorPrimaries",
+        "colorTransfer",
+        "colorMatrix",
+        "colorRange",
+    ):
+        if expected.get(field_name) != probed.get(field_name):
+            raise RuntimeError(f"clip {clip_id} {field_name} mismatch: expected {expected.get(field_name)}, got {probed.get(field_name)}")
+    if expected.get("frameRate") != probed.get("frameRate"):
+        raise RuntimeError(f"clip {clip_id} frameRate mismatch: expected {expected.get('frameRate')}, got {probed.get('frameRate')}")
+    frame_bounds = _require_mapping(expected.get("frameCount"), "expectedMedia.frameCount")
+    actual_frame_count = int(probed.get("frameCount") or 0)
+    if not (int(frame_bounds["min"]) <= actual_frame_count <= int(frame_bounds["max"])):
+        raise RuntimeError(
+            f"clip {clip_id} frameCount {actual_frame_count} is outside the reviewed bounds "
+            f"{frame_bounds['min']}..{frame_bounds['max']}"
+        )
+    duration_bounds = _require_mapping(expected.get("duration"), "expectedMedia.duration")
+    actual_duration = _fraction_value(_require_mapping(probed.get("duration"), "probed duration"))
+    minimum_duration = _fraction_value(_require_mapping(duration_bounds.get("min"), "expectedMedia.duration.min"))
+    maximum_duration = _fraction_value(_require_mapping(duration_bounds.get("max"), "expectedMedia.duration.max"))
+    if actual_duration < minimum_duration or actual_duration > maximum_duration:
+        raise RuntimeError(
+            f"clip {clip_id} duration {actual_duration.numerator}/{actual_duration.denominator} "
+            f"is outside the reviewed bounds "
+            f"{minimum_duration.numerator}/{minimum_duration.denominator}..{maximum_duration.numerator}/{maximum_duration.denominator}"
+        )
+    if expected.get("hdrMetadata") != probed.get("hdrMetadata"):
+        raise RuntimeError(f"clip {clip_id} hdrMetadata mismatch: expected {expected.get('hdrMetadata')}, got {probed.get('hdrMetadata')}")
+
+
+def canonical_review_metadata(review: Mapping[str, Any]) -> Dict[str, Any]:
+    suite_review = _require_mapping(review.get("suiteReview"), "suiteReview")
+    raw_clips = review.get("clips")
+    if not isinstance(raw_clips, list):
+        raise RuntimeError("review file is missing clips[]")
+    normalized_clips = []
+    for clip in raw_clips:
+        clip_mapping = _require_mapping(clip, "clip")
+        source = _require_mapping(clip_mapping.get("source"), f"clip {clip_mapping.get('id')} source")
+        normalized_clips.append(
+            {
+                "id": str(clip_mapping.get("id") or "").strip(),
+                "fileName": str(clip_mapping.get("fileName") or "").strip(),
+                "displayName": str(clip_mapping.get("displayName") or "").strip(),
+                "contentClass": str(clip_mapping.get("contentClass") or "").strip(),
+                "payloadContentClass": str(clip_mapping.get("payloadContentClass") or "").strip(),
+                "description": str(clip_mapping.get("description") or "").strip(),
+                "source": {
+                    "kind": str(source.get("kind") or "").strip(),
+                    "provenance": str(source.get("provenance") or "").strip(),
+                    "license": str(source.get("license") or "").strip(),
+                    "reviewed": bool(source.get("reviewed")),
+                    "redistributionApproved": bool(source.get("redistributionApproved")),
+                },
+                "expectedMedia": normalize_expected_media_contract(clip_mapping.get("expectedMedia")),
+            }
+        )
+    normalized_clips.sort(key=lambda item: item["id"])
+    return {
+        "schemaVersion": int(review.get("schemaVersion") or 1),
+        "suiteId": str(review.get("suiteId") or "").strip(),
+        "suiteVersion": str(review.get("suiteVersion") or "").strip(),
+        "displayName": str(review.get("displayName") or "").strip(),
+        "defaultQuickClipId": str(review.get("defaultQuickClipId") or "").strip(),
+        "suiteReview": {
+            "reviewed": bool(suite_review.get("reviewed")),
+            "reviewer": str(suite_review.get("reviewer") or "").strip(),
+            "redistributionApproved": bool(suite_review.get("redistributionApproved")),
+            "distributionLicense": str(suite_review.get("distributionLicense") or "").strip(),
+            "notes": str(suite_review.get("notes") or "").strip(),
+        },
+        "clips": normalized_clips,
+    }
+
+
+def build_review_hash(review: Mapping[str, Any]) -> str:
+    return sha256_text(canonical_json(canonical_review_metadata(review)))
 
 
 def build_clip_entry(
@@ -114,6 +304,8 @@ def build_clip_entry(
         raise RuntimeError(f"clip {review_clip.get('id')} source file does not exist: {source_path}")
 
     media = probe_media_contract(source_path)
+    expected_media = normalize_expected_media_contract(review_clip.get("expectedMedia"))
+    validate_expected_media_match(review_clip, expected_media, media)
     if media["frameCount"] <= 0:
         raise RuntimeError(f"clip {review_clip.get('id')} has no decoded frames")
     if not media["pixelFormat"] or not media["colorPrimaries"] or not media["fieldOrder"]:
@@ -146,12 +338,12 @@ def build_clip_entry(
         },
         "acquisition": {
             "kind": "retained-original",
-            "container": source_path.suffix.lstrip(".").lower() or "unknown",
-            "videoCodec": "retained-reference",
+            "container": suite._normalize_container_alias(str(media.get("container") or source_path.suffix.lstrip(".").lower() or "unknown")),
+            "videoCodec": str(media.get("videoCodec") or "").strip().lower() or "retained-reference",
             "packagedRelativePath": f"canonical/{file_name}",
             "originalFileName": source_path.name,
         },
-        "media": media,
+        "media": {key: value for key, value in media.items() if key not in {"container", "videoCodec"}},
         "sha256": sha256_path(source_path),
         "byteSize": source_path.stat().st_size,
     }
@@ -163,9 +355,12 @@ def validate_review(review: Mapping[str, Any]) -> None:
         review.get("suiteReview", {}).get("redistributionApproved"),
         "suite redistribution approval is not marked reviewed",
     )
-    review_hash = str(review.get("suiteReview", {}).get("reviewHash") or "").strip()
+    review_hash = str(review.get("suiteReview", {}).get("reviewHash") or "").strip().lower()
     if not review_hash or not re_fullmatch_hex(review_hash):
         raise RuntimeError("suite reviewHash must be a 64-character SHA-256 hex string")
+    expected_hash = build_review_hash(review)
+    if review_hash != expected_hash:
+        raise RuntimeError(f"suite reviewHash does not match the reviewed metadata SHA-256 (expected {expected_hash}, got {review_hash})")
     distribution_license = str(review.get("suiteReview", {}).get("distributionLicense") or "").strip()
     if not distribution_license:
         raise RuntimeError("suite distributionLicense is required")
@@ -235,11 +430,14 @@ def build_lock_payload(manifest_payload: Mapping[str, Any], review_hash: str) ->
         "suiteVersion": manifest_payload["suiteVersion"],
         "manifestSha256": sha256_text(canonical_json(manifest_payload)),
         "reviewHash": review_hash,
+        "reviewedMetadataSha256": review_hash,
         "clips": [
             {
                 "id": clip["id"],
                 "sha256": clip["sha256"],
                 "byteSize": clip["byteSize"],
+                "container": clip["acquisition"]["container"],
+                "videoCodec": clip["acquisition"]["videoCodec"],
                 "frameCount": clip["media"]["frameCount"],
                 "frameRate": clip["media"]["frameRate"],
                 "fieldOrder": clip["media"]["fieldOrder"],
@@ -299,12 +497,15 @@ def stage_outputs(
     manifest_payload: Mapping[str, Any],
     lock_payload: Mapping[str, Any],
     status_payload: Mapping[str, Any],
+    pack_manifest_payload: Mapping[str, Any],
     client_manifest_out: Path,
     server_manifest_out: Path,
     client_lock_out: Path,
     server_lock_out: Path,
     client_status_out: Path,
     server_status_out: Path,
+    client_pack_manifest_out: Path,
+    server_pack_manifest_out: Path,
     source_paths: Mapping[str, Path],
 ) -> List[Tuple[Path, Path]]:
     replacements: List[Tuple[Path, Path]] = []
@@ -315,6 +516,8 @@ def stage_outputs(
         ("server-lock", server_lock_out, lock_payload),
         ("client-status", client_status_out, status_payload),
         ("server-status", server_status_out, status_payload),
+        ("client-pack-manifest", client_pack_manifest_out, pack_manifest_payload),
+        ("server-pack-manifest", server_pack_manifest_out, pack_manifest_payload),
     ):
         staged_path = staging_root / label / final_path.name
         write_json_file(staged_path, payload)
@@ -331,38 +534,15 @@ def stage_outputs(
     return replacements
 
 
-def verify_staged_suite(manifest_payload: Mapping[str, Any], staged_manifest_path: Path, staged_canonical_dir: Path) -> None:
-    clips: List[suite.SuiteClip] = []
-    for clip in manifest_payload["clips"]:
-        clips.append(
-            suite.SuiteClip(
-                clip_id=str(clip["id"]),
-                display_name=str(clip["displayName"]),
-                canonical_content_class=str(clip["contentClass"]),
-                payload_content_class=str(clip["payloadContentClass"]),
-                file_name=str(clip["fileName"]),
-                sha256=str(clip["sha256"]),
-                byte_size=int(clip["byteSize"]),
-                acquisition=dict(clip.get("acquisition") or {}),
-                description=str(clip["description"]),
-                provenance=dict(clip.get("source") or {}),
-                media=suite._manifest_media_from_dict(dict(clip["media"])),
-            )
-        )
-    manifest = suite.SuiteManifest(
-        suite_version=str(manifest_payload["suiteVersion"]),
-        display_name=str(manifest_payload["displayName"]),
-        manifest_version=int(manifest_payload["manifestVersion"]),
-        default_quick_clip_id=str(manifest_payload["defaultQuickClipId"]),
-        required_content_classes=tuple(str(value) for value in manifest_payload["requiredContentClasses"]),
-        clips=tuple(clips),
-    )
+def verify_staged_suite(manifest_payload: Mapping[str, Any], staged_manifest_path: Path, staged_canonical_dir: Path, staged_suite_root: Path) -> None:
+    manifest = suite.manifest_from_payload(manifest_payload)
     for clip in manifest.clips:
         result = suite.verify_suite_clip(str(staged_canonical_dir / clip.file_name), clip)
         if not result.ok:
             raise RuntimeError(f"staged suite verification failed for {clip.clip_id}: {result.message}")
     if not staged_manifest_path.exists():
         raise RuntimeError("staged manifest was not written")
+    suite.verify_suite_pack_metadata(str(staged_suite_root), suite.load_suite_pack_metadata(str(staged_suite_root / "suite-pack.json")))
 
 
 def commit_replacements(replacements: Sequence[Tuple[Path, Path]]) -> None:
@@ -403,7 +583,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--server-lock-out", default=str(default_output_paths()["server_lock_out"]))
     parser.add_argument("--client-status-out", default=str(default_output_paths()["client_status_out"]))
     parser.add_argument("--server-status-out", default=str(default_output_paths()["server_status_out"]))
+    parser.add_argument("--client-pack-manifest-out", default=str(default_output_paths()["client_pack_manifest_out"]))
+    parser.add_argument("--server-pack-manifest-out", default=str(default_output_paths()["server_pack_manifest_out"]))
     parser.add_argument("--manifest-version", type=int, default=1)
+    parser.add_argument("--print-review-hash", action="store_true", help="Print the deterministic review metadata SHA-256 and exit.")
     return parser.parse_args()
 
 
@@ -411,6 +594,9 @@ def main() -> int:
     args = parse_args()
     review_path = Path(args.review_json).resolve()
     review = load_review(review_path)
+    if args.print_review_hash:
+        print(build_review_hash(review))
+        return 0
     source_dir = Path(args.source_dir).resolve() if args.source_dir else None
     source_paths = source_clip_paths(review, review_path.parent, source_dir)
     manifest_payload = build_suite_payload(review, int(args.manifest_version), source_paths)
@@ -423,31 +609,53 @@ def main() -> int:
     server_lock_out = Path(args.server_lock_out).resolve()
     client_status_out = Path(args.client_status_out).resolve()
     server_status_out = Path(args.server_status_out).resolve()
+    client_pack_manifest_out = Path(args.client_pack_manifest_out).resolve()
+    server_pack_manifest_out = Path(args.server_pack_manifest_out).resolve()
 
     with tempfile.TemporaryDirectory(prefix="encodingdb-suite-stage-") as staging_root:
         staging_root_path = Path(staging_root)
+        for tree_label in ("client", "server"):
+            suite_root = staging_root_path / tree_label
+            suite_root.mkdir(parents=True, exist_ok=True)
+            write_json_file(suite_root / "manifest.json", manifest_payload)
+            write_json_file(suite_root / "finalization-status.json", status_payload)
+            write_json_file(suite_root / "suite-lock.json", lock_payload)
+        for tree_label in ("client", "server"):
+            canonical_dir = staging_root_path / tree_label / "canonical"
+            canonical_dir.mkdir(parents=True, exist_ok=True)
+            for clip in manifest_payload["clips"]:
+                source_path = source_paths[str(clip["id"])]
+                shutil.copy2(source_path, canonical_dir / str(clip["fileName"]))
+            suite.write_suite_pack_metadata(str(staging_root_path / tree_label))
+        with open(staging_root_path / "client" / "suite-pack.json", "r", encoding="utf-8") as handle:
+            pack_manifest_payload = json.load(handle)
         replacements = stage_outputs(
             staging_root=staging_root_path,
             manifest_payload=manifest_payload,
             lock_payload=lock_payload,
             status_payload=status_payload,
+            pack_manifest_payload=pack_manifest_payload,
             client_manifest_out=client_manifest_out,
             server_manifest_out=server_manifest_out,
             client_lock_out=client_lock_out,
             server_lock_out=server_lock_out,
             client_status_out=client_status_out,
             server_status_out=server_status_out,
+            client_pack_manifest_out=client_pack_manifest_out,
+            server_pack_manifest_out=server_pack_manifest_out,
             source_paths=source_paths,
         )
         verify_staged_suite(
             manifest_payload,
             staging_root_path / "client-manifest" / client_manifest_out.name,
             staging_root_path / "client" / "canonical",
+            staging_root_path / "client",
         )
         verify_staged_suite(
             manifest_payload,
             staging_root_path / "server-manifest" / server_manifest_out.name,
             staging_root_path / "server" / "canonical",
+            staging_root_path / "server",
         )
         commit_replacements(replacements)
     print(f"frozen suite fingerprint: {lock_payload['fingerprint']}")

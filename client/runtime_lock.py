@@ -16,15 +16,52 @@ RUNTIME_LOCK_SIDECAR_CANDIDATES: Sequence[str] = (
     "runtime-lock.json",
 )
 REQUIRED_FILTERS: Sequence[str] = ("libvmaf", "xpsnr")
-REQUIRED_ENCODERS: Sequence[str] = (
-    "libaom-av1",
-    "libx264",
-    "libopenh264",
-    "h264_videotoolbox",
-    "libx265",
-    "hevc_videotoolbox",
-    "libvpx-vp9",
-)
+PLATFORM_REQUIRED_ENCODERS: Mapping[str, Sequence[str]] = {
+    "linux": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
+    "mac": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
+    "win": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
+}
+PLATFORM_OPTIONAL_ENCODERS: Mapping[str, Sequence[str]] = {
+    "linux": (
+        "libopenh264",
+        "h264_nvenc",
+        "hevc_nvenc",
+        "av1_nvenc",
+        "h264_qsv",
+        "hevc_qsv",
+        "av1_qsv",
+        "vp9_qsv",
+        "h264_vaapi",
+        "hevc_vaapi",
+        "av1_vaapi",
+        "vp9_vaapi",
+        "h264_v4l2m2m",
+        "hevc_v4l2m2m",
+        "av1_v4l2m2m",
+        "vp9_v4l2m2m",
+        "h264_omx",
+    ),
+    "mac": (
+        "libopenh264",
+        "h264_videotoolbox",
+        "hevc_videotoolbox",
+        "av1_videotoolbox",
+    ),
+    "win": (
+        "libopenh264",
+        "h264_nvenc",
+        "hevc_nvenc",
+        "av1_nvenc",
+        "h264_qsv",
+        "hevc_qsv",
+        "av1_qsv",
+        "vp9_qsv",
+        "h264_amf",
+        "hevc_amf",
+        "av1_amf",
+    ),
+}
+DEFAULT_REQUIRED_ENCODERS: Sequence[str] = PLATFORM_REQUIRED_ENCODERS["linux"]
 
 
 class RuntimeLockError(RuntimeError):
@@ -41,6 +78,45 @@ def _sha256_path(path: str) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _normalize_platform_key(platform_key: Optional[str]) -> str:
+    selected = str(platform_key or config._platform_key()).strip().lower()
+    if selected in ("darwin", "macos", "osx"):
+        return "mac"
+    if selected in ("windows", "win32"):
+        return "win"
+    if selected not in PLATFORM_REQUIRED_ENCODERS:
+        return "linux"
+    return selected
+
+
+def _dedupe_strings(values: Iterable[str]) -> List[str]:
+    ordered: List[str] = []
+    seen = set()
+    for value in values:
+        text = str(value).strip()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        ordered.append(text)
+    return ordered
+
+
+def runtime_capability_requirements(platform_key: Optional[str] = None) -> Dict[str, List[str]]:
+    selected = _normalize_platform_key(platform_key)
+    required = _dedupe_strings(PLATFORM_REQUIRED_ENCODERS.get(selected, DEFAULT_REQUIRED_ENCODERS))
+    optional = [
+        encoder for encoder in _dedupe_strings(PLATFORM_OPTIONAL_ENCODERS.get(selected, ()))
+        if encoder not in required
+    ]
+    return {
+        "platform": selected,
+        "filters": sorted(_dedupe_strings(REQUIRED_FILTERS)),
+        "requiredEncoders": sorted(required),
+        "optionalEncoders": sorted(optional),
+        "smokeTestEncoders": [encoder for encoder in required if encoder in ("libx264", "libx265", "libaom-av1", "libvpx-vp9")],
+    }
 
 
 def _run_text(command: Sequence[str]) -> str:
@@ -101,9 +177,13 @@ def probe_runtime_identity(
     *,
     ffmpeg_path: str,
     ffprobe_path: str,
+    platform_key: Optional[str] = None,
     required_filters: Optional[Iterable[str]] = None,
     required_encoders: Optional[Iterable[str]] = None,
+    optional_encoders: Optional[Iterable[str]] = None,
+    smoke_test_encoders: Optional[Iterable[str]] = None,
 ) -> Dict[str, Any]:
+    requirements = runtime_capability_requirements(platform_key)
     ffmpeg_version_output = _run_text([ffmpeg_path, "-version"])
     ffprobe_version_output = _run_text([ffprobe_path, "-version"])
     filter_output = _run_text([ffmpeg_path, "-hide_banner", "-filters"])
@@ -111,8 +191,16 @@ def probe_runtime_identity(
 
     observed_filters = _normalize_filters(filter_output)
     observed_encoders = _normalize_encoders(encoder_output)
-    requested_filters = sorted(set(str(value).strip() for value in (required_filters or REQUIRED_FILTERS) if str(value).strip()))
-    requested_encoders = sorted(set(str(value).strip() for value in (required_encoders or REQUIRED_ENCODERS) if str(value).strip()))
+    requested_filters = sorted(_dedupe_strings(required_filters or requirements["filters"]))
+    requested_encoders = sorted(_dedupe_strings(required_encoders or requirements["requiredEncoders"]))
+    declared_optional_encoders = sorted(
+        encoder for encoder in _dedupe_strings(optional_encoders or requirements["optionalEncoders"])
+        if encoder not in requested_encoders
+    )
+    requested_smoke_encoders = [
+        encoder for encoder in _dedupe_strings(smoke_test_encoders or requirements["smokeTestEncoders"])
+        if encoder in observed_encoders
+    ]
 
     missing_filters = [value for value in requested_filters if value not in observed_filters]
     missing_encoders = [value for value in requested_encoders if value not in observed_encoders]
@@ -120,6 +208,8 @@ def probe_runtime_identity(
         raise RuntimeLockError(f"runtime is missing required ffmpeg filters: {', '.join(missing_filters)}")
     if missing_encoders:
         raise RuntimeLockError(f"runtime is missing required ffmpeg encoders: {', '.join(missing_encoders)}")
+    if not requested_smoke_encoders:
+        raise RuntimeLockError("runtime does not expose any smoke-testable FFmpeg encoders")
 
     ffmpeg_record = _binary_record(ffmpeg_path, ffmpeg_version_output)
     ffprobe_record = _binary_record(ffprobe_path, ffprobe_version_output)
@@ -130,7 +220,10 @@ def probe_runtime_identity(
         "capabilities": {
             "ffprobe": True,
             "filters": requested_filters,
-            "encoders": requested_encoders,
+            "requiredEncoders": requested_encoders,
+            "optionalEncoders": [encoder for encoder in declared_optional_encoders if encoder in observed_encoders],
+            "smokeTestEncoders": requested_smoke_encoders,
+            "encoders": requested_smoke_encoders,
         },
     }
 
@@ -144,12 +237,13 @@ def build_runtime_lock_payload(
     required_encoders: Optional[Iterable[str]] = None,
     source: str = "deterministically-provisioned",
 ) -> Dict[str, Any]:
-    selected_platform = str(platform_key or config._platform_key()).strip().lower()
+    selected_platform = _normalize_platform_key(platform_key)
     resolved_ffmpeg = os.path.abspath(ffmpeg_path or config.ffmpeg_exe())
     resolved_ffprobe = os.path.abspath(ffprobe_path or config.ffprobe_exe())
     identity = probe_runtime_identity(
         ffmpeg_path=resolved_ffmpeg,
         ffprobe_path=resolved_ffprobe,
+        platform_key=selected_platform,
         required_filters=required_filters,
         required_encoders=required_encoders,
     )
@@ -170,6 +264,9 @@ def runtime_resource_dir() -> str:
 
 
 def default_runtime_lock_path() -> str:
+    explicit = str(os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH") or "").strip()
+    if explicit:
+        return os.path.abspath(explicit)
     return config._resource_path(RUNTIME_LOCK_RELATIVE_PATH)
 
 
@@ -285,7 +382,7 @@ def verify_runtime_lock(
     ffprobe_path: Optional[str] = None,
     lock_path: Optional[str] = None,
 ) -> Dict[str, Any]:
-    selected_platform = str(platform_key or config._platform_key()).strip().lower()
+    selected_platform = _normalize_platform_key(platform_key)
     resolved_lock_path = os.path.abspath(lock_path or default_runtime_lock_path())
     payload = load_runtime_lock(resolved_lock_path)
     platform_entry = _platform_entry(payload, selected_platform)
@@ -299,11 +396,31 @@ def verify_runtime_lock(
 
     resolved_ffmpeg = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffmpeg_path, entry=expected_ffmpeg)
     resolved_ffprobe = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffprobe_path, entry=expected_ffprobe)
+    default_requirements = runtime_capability_requirements(selected_platform)
     observed = probe_runtime_identity(
         ffmpeg_path=resolved_ffmpeg,
         ffprobe_path=resolved_ffprobe,
-        required_filters=capabilities.get("filters") if isinstance(capabilities.get("filters"), list) else REQUIRED_FILTERS,
-        required_encoders=capabilities.get("encoders") if isinstance(capabilities.get("encoders"), list) else REQUIRED_ENCODERS,
+        platform_key=selected_platform,
+        required_filters=capabilities.get("filters") if isinstance(capabilities.get("filters"), list) else default_requirements["filters"],
+        required_encoders=(
+            capabilities.get("requiredEncoders")
+            if isinstance(capabilities.get("requiredEncoders"), list)
+            else capabilities.get("encoders")
+            if isinstance(capabilities.get("encoders"), list)
+            else default_requirements["requiredEncoders"]
+        ),
+        optional_encoders=(
+            capabilities.get("optionalEncoders")
+            if isinstance(capabilities.get("optionalEncoders"), list)
+            else default_requirements["optionalEncoders"]
+        ),
+        smoke_test_encoders=(
+            capabilities.get("smokeTestEncoders")
+            if isinstance(capabilities.get("smokeTestEncoders"), list)
+            else capabilities.get("encoders")
+            if isinstance(capabilities.get("encoders"), list)
+            else default_requirements["smokeTestEncoders"]
+        ),
     )
     _assert_binary_identity("ffmpeg", resolved_ffmpeg, expected_ffmpeg, observed["ffmpeg"])
     _assert_binary_identity("ffprobe", resolved_ffprobe, expected_ffprobe, observed["ffprobe"])

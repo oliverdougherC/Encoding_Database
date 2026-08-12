@@ -138,7 +138,8 @@ def detect_hardware() -> config.HardwareInfo:
     except Exception:
         gpu_model = None
 
-    ram_gb = int(round(psutil.virtual_memory().total / (1024 ** 3)))
+    physical_memory_bytes = int(psutil.virtual_memory().total)
+    ram_gb = int(round(physical_memory_bytes / (1024 ** 3)))
     os_name = f"{platform.system()} {platform.release()}"
     # Deduplicate vendors
     vset: Dict[str, bool] = {}
@@ -147,7 +148,7 @@ def detect_hardware() -> config.HardwareInfo:
         if v and not vset.get(v):
             vset[v] = True
             vlist.append(v)
-    return config.HardwareInfo(cpu_model, gpu_model, ram_gb, os_name, vlist)
+    return config.HardwareInfo(cpu_model, gpu_model, ram_gb, os_name, physical_memory_bytes, vlist)
 
 
 def get_physical_core_count() -> int:

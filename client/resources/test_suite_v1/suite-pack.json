@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "manifestVersion": 1,
+  "suiteFingerprint": "0c8b3fecc4e1e0ecb62b237fe0b97d3174280a0153df6029e515b53dce3448fb",
+  "distributionMode": "external-suite-pack",
+  "distribution": {
+    "format": "tar.gz",
+    "fileName": "encodingdb-test-suite-v1.tar.gz",
+    "sha256": "a09f551e5b9103d763444769189e2f778dee69d53a23666599554b57afe7b607",
+    "byteSize": 54003527,
+    "downloadUrls": []
+  },
+  "contents": {
+    "manifest": {
+      "sha256": "e6e6ac59af667bb027e621270618371a2ac8629a2e7ff678d85e7a607eb5013a",
+      "byteSize": 13278
+    },
+    "finalizationStatus": {
+      "sha256": "ad24bb42d067a7cfb2c69466045c3233ebfdbff6292ecc979d5862a40ce895c3",
+      "byteSize": 341
+    },
+    "suiteLock": null,
+    "canonical": [
+      {
+        "clipId": "sports-action-960x540-24p",
+        "fileName": "sports-action-960x540-24p.mkv",
+        "sha256": "8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a",
+        "byteSize": 3243818
+      },
+      {
+        "clipId": "natural-detail-960x540-24p",
+        "fileName": "natural-detail-960x540-24p.mkv",
+        "sha256": "5af2b9497236bf06ceb9119b5aab0e5d3d4fa60b3e2e8a3610e88857bb5366f4",
+        "byteSize": 9140428
+      },
+      {
+        "clipId": "grain-noise-960x540-24p",
+        "fileName": "grain-noise-960x540-24p.mkv",
+        "sha256": "f6056ba8b0bd4c78552b517d49d54bf142f1eeb473f6d5acdebda1b509a1ea48",
+        "byteSize": 40486681
+      },
+      {
+        "clipId": "dark-gradients-960x540-24p",
+        "fileName": "dark-gradients-960x540-24p.mkv",
+        "sha256": "6659e4e2332a24a9ca6b0947c153ec75698a501ebe5fd9cccac1e85431ff11df",
+        "byteSize": 1155412
+      },
+      {
+        "clipId": "animation-960x540-24p",
+        "fileName": "animation-960x540-24p.mkv",
+        "sha256": "488c9428690e590377265516e7c7f7be97c1428e30be6681afb4a63fe4297cd4",
+        "byteSize": 595940
+      },
+      {
+        "clipId": "screen-text-960x540-24p",
+        "fileName": "screen-text-960x540-24p.mkv",
+        "sha256": "f65c1bc4421c7f6fb03edf9e1949574b434c5bcd072e77016ef4ab362bf4743b",
+        "byteSize": 1057353
+      },
+      {
+        "clipId": "talking-head-960x540-24p",
+        "fileName": "talking-head-960x540-24p.mkv",
+        "sha256": "dbc92d9910207f7ef30669ae5251110afb541f3fb2d343d2dcc6cbe9bd178faa",
+        "byteSize": 600620
+      }
+    ]
+  }
+}

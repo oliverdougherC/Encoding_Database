@@ -249,7 +249,7 @@ class MainRoutingTests(unittest.TestCase):
             client_version="7.0.0",
             execution_identity_payload={
                 "environmentFingerprint": "3" * 64,
-                "environmentJson": "{\"cpuArchitecture\":\"x86_64\",\"osName\":\"TestOS\",\"osVersion\":\"1\",\"ffmpegBuildFingerprint\":\"f\",\"ffmpegVersion\":\"n7.1\",\"clientVersion\":\"7.0.0\"}",
+                "environmentJson": "{\"cpuArchitecture\":\"x86_64\",\"physicalMemoryBytes\":17179869184,\"osName\":\"TestOS\",\"osVersion\":\"1\",\"ffmpegBuildFingerprint\":\"f\",\"ffmpegVersion\":\"n7.1\",\"clientVersion\":\"7.0.0\"}",
             },
             protocol_config=ProtocolConfig.for_version("7.0"),
         )
@@ -272,6 +272,7 @@ class MainRoutingTests(unittest.TestCase):
         self.assertEqual(payload["environment"]["fingerprint"], hashlib.sha256(environment_canonical.encode()).hexdigest())
         self.assertNotEqual(payload["recipe"]["fingerprint"], "1" * 64)
         self.assertNotEqual(payload["environment"]["fingerprint"], "3" * 64)
+        self.assertEqual(payload["environment"]["identity"]["physicalMemoryBytes"], 17179869184)
 
     def test_menu_flag_overrides_direct_cli_intent(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:

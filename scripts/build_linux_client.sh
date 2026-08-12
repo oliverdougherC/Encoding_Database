@@ -7,6 +7,8 @@ CLIENT_DIR="$ROOT_DIR/client"
 BUNDLE_DIR="${ENCODINGDB_RUNTIME_BUNDLE_DIR:-$CLIENT_DIR/bin/linux}"
 FFMPEG_PATH="${ENCODINGDB_FFMPEG_PATH:-$BUNDLE_DIR/ffmpeg}"
 FFPROBE_PATH="${ENCODINGDB_FFPROBE_PATH:-$BUNDLE_DIR/ffprobe}"
+DEFAULT_RUNTIME_LOCK_PATH="$CLIENT_DIR/resources/runtime/ffmpeg-lock.json"
+RUNTIME_LOCK_PATH="${ENCODINGDB_RUNTIME_LOCK_PATH:-$DEFAULT_RUNTIME_LOCK_PATH}"
 APP_NAME="encodingdb-client-linux"
 ENTRYPOINT="$CLIENT_DIR/_pyinstaller_entry.py"
 BUILD_ROOT="$ROOT_DIR/.build/clients/linux"
@@ -14,6 +16,8 @@ PYI_DIST_DIR="$BUILD_ROOT/dist"
 PYI_WORK_DIR="$BUILD_ROOT/work"
 PYI_SPEC_DIR="$BUILD_ROOT/spec"
 RUNTIME_RESOURCE_DIR="$BUILD_ROOT/runtime_resources"
+SUITE_RESOURCE_DIR="$BUILD_ROOT/suite_resources/test_suite_v1"
+SUITE_PACK_PATH="${ENCODINGDB_SUITE_PACK_PATH:-$ROOT_DIR/encodingdb-test-suite-v1.tar.gz}"
 OUTPUT_PATH="$ROOT_DIR/$APP_NAME"
 BUILD_REQUIREMENTS="$CLIENT_DIR/requirements-build.txt"
 
@@ -41,11 +45,14 @@ fi
 if [[ ! -f "$CLIENT_DIR/resources/vmaf/vmaf_v1.0.16_3d0h.json" ]]; then
   die "Missing $CLIENT_DIR/resources/vmaf/vmaf_v1.0.16_3d0h.json"
 fi
-if [[ ! -f "$CLIENT_DIR/resources/runtime/ffmpeg-lock.json" ]]; then
-  die "Missing $CLIENT_DIR/resources/runtime/ffmpeg-lock.json"
+if [[ ! -f "$DEFAULT_RUNTIME_LOCK_PATH" ]]; then
+  die "Missing $DEFAULT_RUNTIME_LOCK_PATH"
 fi
 if [[ ! -f "$ENTRYPOINT" ]]; then
   die "Missing entrypoint: $ENTRYPOINT"
+fi
+if [[ ! -f "$CLIENT_DIR/resources/test_suite_v1/suite-pack.json" ]]; then
+  die "Missing $CLIENT_DIR/resources/test_suite_v1/suite-pack.json"
 fi
 python3 "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_suite_v1" \
   || die "Canonical suite asset verification failed"
@@ -53,6 +60,7 @@ python3 "$ROOT_DIR/scripts/verify_suite_assets.py" "$CLIENT_DIR/resources/test_s
 log "Preparing output directory..."
 rm -rf "$BUILD_ROOT"
 rm -f "$OUTPUT_PATH"
+rm -f "$SUITE_PACK_PATH"
 rm -f "$ROOT_DIR/dist/$APP_NAME"
 rm -rf "$ROOT_DIR/build/$APP_NAME"
 mkdir -p "$PYI_DIST_DIR" "$PYI_WORK_DIR" "$PYI_SPEC_DIR"
@@ -65,8 +73,13 @@ python3 "$ROOT_DIR/scripts/register_ffmpeg_runtime.py" \
   --platform linux \
   --ffmpeg-path "$FFMPEG_PATH" \
   --ffprobe-path "$FFPROBE_PATH" \
+  --lock-path "$RUNTIME_LOCK_PATH" \
   "${REGISTER_ARGS[@]}" \
   --stage-runtime-dir "$RUNTIME_RESOURCE_DIR" \
+  >/dev/null
+python3 "$ROOT_DIR/scripts/prepare_client_suite_distribution.py" \
+  --staged-resource-dir "$SUITE_RESOURCE_DIR" \
+  --pack-out "$SUITE_PACK_PATH" \
   >/dev/null
 
 log "Running PyInstaller..."
@@ -82,7 +95,7 @@ cd "$ROOT_DIR"
   --add-data "$FFMPEG_PATH:bin/linux" \
   --add-data "$FFPROBE_PATH:bin/linux" \
   --add-data "$CLIENT_DIR/presets.json:." \
-  --add-data "$CLIENT_DIR/resources/test_suite_v1:resources/test_suite_v1" \
+  --add-data "$SUITE_RESOURCE_DIR:resources/test_suite_v1" \
   --add-data "$RUNTIME_RESOURCE_DIR:resources/runtime" \
   --add-data "$CLIENT_DIR/resources/vmaf:resources/vmaf" \
   "$ENTRYPOINT"
@@ -99,6 +112,9 @@ python3 "$ROOT_DIR/scripts/release_manifest_lib.py" \
   --platform linux \
   --ffmpeg-path "$FFMPEG_PATH" \
   --ffprobe-path "$FFPROBE_PATH" \
+  --runtime-lock-path "$RUNTIME_LOCK_PATH" \
+  --suite-pack-path "$SUITE_PACK_PATH" \
   --output-dir "$ROOT_DIR"
 log "Build complete: $OUTPUT_PATH"
+log "Suite pack: $SUITE_PACK_PATH"
 log "Hidden build artifacts: $BUILD_ROOT"

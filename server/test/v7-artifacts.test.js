@@ -76,6 +76,7 @@ function createFixtureCatalog() {
   const environmentIdentity = {
     cpuModel: 'Test CPU',
     cpuArchitecture: 'x86_64',
+    physicalMemoryBytes: 68719476736,
     osName: 'TestOS',
     osVersion: '1.0',
     ffmpegBuildFingerprint: 'ffmpeg-build-test',
@@ -106,8 +107,9 @@ function createFixtureCatalog() {
 }
 
 class MemoryPersistence {
-  constructor(fixtures) {
+  constructor(fixtures, options = {}) {
     this.fixtures = fixtures;
+    this.options = options;
     this.protocols = new Map();
     this.testClips = new Map();
     this.recipes = new Map();
@@ -122,6 +124,8 @@ class MemoryPersistence {
     this.nextRunId = 1;
     this.nextArtifactId = 1;
     this.nextAnalysisId = 1;
+    this.activeClaimCalls = 0;
+    this.maxConcurrentClaimCalls = 0;
   }
 
   cloneBundle(record, role = 'ENCODED') {
@@ -415,25 +419,38 @@ class MemoryPersistence {
   }
 
   async claimNextQueuedQualityAnalysis(input) {
-    for (const record of this.runs.values()) {
-      const analysis = record.qualityAnalyses.find((entry) => (
-        entry.status === 'PENDING'
-        && (!entry.nextRetryAt || entry.nextRetryAt <= input.now)
-        && (!entry.leaseExpiresAt || entry.leaseExpiresAt <= input.now)
-      ));
-      if (!analysis) continue;
-      analysis.attemptCount += 1;
-      analysis.leaseToken = input.leaseToken;
-      analysis.leaseExpiresAt = input.leaseExpiresAt;
-      analysis.startedAt = input.now;
-      analysis.nextRetryAt = null;
-      analysis.updatedAt = new Date();
-      return {
-        bundle: this.cloneBundle(record),
-        analysis: structuredClone(analysis),
-      };
+    this.activeClaimCalls += 1;
+    this.maxConcurrentClaimCalls = Math.max(this.maxConcurrentClaimCalls, this.activeClaimCalls);
+    try {
+      if (this.options.beforeClaim) {
+        await this.options.beforeClaim({
+          activeClaimCalls: this.activeClaimCalls,
+          maxConcurrentClaimCalls: this.maxConcurrentClaimCalls,
+          input,
+        });
+      }
+      for (const record of this.runs.values()) {
+        const analysis = record.qualityAnalyses.find((entry) => (
+          entry.status === 'PENDING'
+          && (!entry.nextRetryAt || entry.nextRetryAt <= input.now)
+          && (!entry.leaseExpiresAt || entry.leaseExpiresAt <= input.now)
+        ));
+        if (!analysis) continue;
+        analysis.attemptCount += 1;
+        analysis.leaseToken = input.leaseToken;
+        analysis.leaseExpiresAt = input.leaseExpiresAt;
+        analysis.startedAt = input.now;
+        analysis.nextRetryAt = null;
+        analysis.updatedAt = new Date();
+        return {
+          bundle: this.cloneBundle(record),
+          analysis: structuredClone(analysis),
+        };
+      }
+      return null;
+    } finally {
+      this.activeClaimCalls = Math.max(0, this.activeClaimCalls - 1);
     }
-    return null;
   }
 
   async markQualityAnalysisRetry(input) {
@@ -821,9 +838,9 @@ async function createRun(baseUrl, fixtures, overrides = {}) {
   return { response, json, body };
 }
 
-async function createServiceHarness(configOverrides = {}, analyzerOverride = null, startBackground = true) {
+async function createServiceHarness(configOverrides = {}, analyzerOverride = null, startBackground = true, persistenceOptions = {}) {
   const fixtures = createFixtureCatalog();
-  const persistence = new MemoryPersistence(fixtures);
+  const persistence = new MemoryPersistence(fixtures, persistenceOptions);
   const analyzer = analyzerOverride ?? new FakeAnalyzer();
   const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-artifacts-service-test-'));
   const config = {
@@ -1495,6 +1512,65 @@ test('authoritative worker concurrency is bounded by configuration', async (t) =
     (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
     `bounded analysis for ${runId}`,
   )));
+  assert.equal(analyzer.calls.length, 3);
+  assert.equal(analyzer.maxActive, 1);
+});
+
+test('delayed durable claims plus simultaneous kicks still respect authoritative concurrency limits', async (t) => {
+  let releaseClaims;
+  const claimGate = new Promise((resolve) => {
+    releaseClaims = resolve;
+  });
+  const analyzer = new ConcurrencyTrackingAnalyzer();
+  const harness = await createServiceHarness(
+    { autoAnalyzeOnUpload: false, analysisMaxConcurrent: 1, analysisPollIntervalMs: 60_000 },
+    analyzer,
+    false,
+    {
+      beforeClaim: async () => {
+        await claimGate;
+      },
+    },
+  );
+  t.after(() => harness.close());
+
+  const uploadedBundles = [];
+  for (let index = 0; index < 3; index += 1) {
+    const run = await createRunDirect(harness.service, harness.fixtures, {
+      payloadHash: `${index + 4}`.repeat(64),
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+    });
+    const authorization = await harness.service.authorizeUpload(`127.0.1.${index + 1}`, run.bundle.run.id, 'ENCODED', {
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+      contentType: 'video/mp4',
+    });
+    const uploaded = authorization.uploadRequired
+      ? await harness.service.acceptUploadStream(
+        `127.0.1.${index + 1}`,
+        authorization.token,
+        'video/mp4',
+        String(ARTIFACT_BYTES.length),
+        Readable.from([ARTIFACT_BYTES]),
+      )
+      : await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
+    uploadedBundles.push(uploaded);
+  }
+
+  harness.service.startBackgroundWork();
+  await Promise.all(uploadedBundles.map((bundle) => harness.service.queueAuthoritativeAnalysis(bundle, undefined, undefined)));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(harness.persistence.maxConcurrentClaimCalls, 1);
+
+  releaseClaims();
+  await Promise.all(uploadedBundles.map((bundle) => waitForBundleAnalysisState(
+    harness.service,
+    bundle.run.id,
+    (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
+    `bounded delayed-claim analysis for ${bundle.run.id}`,
+  )));
+
   assert.equal(analyzer.calls.length, 3);
   assert.equal(analyzer.maxActive, 1);
 });
