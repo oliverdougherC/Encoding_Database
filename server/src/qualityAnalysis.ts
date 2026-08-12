@@ -518,6 +518,7 @@ export function parseXpsnrReport(report: string | null | undefined, ffmpegVersio
     [
       /xpsnr(?:\s+[^:\n]*)?\s+average[:=]\s*([0-9]+(?:\.[0-9]+)?)/i,
       /average[:=]\s*([0-9]+(?:\.[0-9]+)?)\s*dB/i,
+      /XPSNR\s+y:\s*[0-9]+(?:\.[0-9]+)?\s+u:\s*[0-9]+(?:\.[0-9]+)?\s+v:\s*[0-9]+(?:\.[0-9]+)?\s+\(minimum:\s*([0-9]+(?:\.[0-9]+)?)\)/i,
     ],
     XPSNR_PARSER_ID,
     'xpsnr',

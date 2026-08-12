@@ -132,3 +132,9 @@ test('diagnostic parsers stay deterministic for finite and inf-style outputs', (
   assert.deepEqual(parseSsimReport('[Parsed_ssim_0] SSIM Y:0.98 U:0.99 V:0.99 All:0.9812').value, 0.9812);
   assert.deepEqual(parsePsnrReport('[Parsed_psnr_0] PSNR y:51 u:51 v:51 average:inf').value, 100);
 });
+
+test('XPSNR parser accepts the pinned FFmpeg component/minimum summary', () => {
+  const parsed = parseXpsnrReport('XPSNR  y: 40.0909  u: 38.3661  v: 39.1660  (minimum: 38.3661)', 'ffmpeg 7.1.1');
+  assert.equal(parsed.value, 38.3661);
+  assert.equal(parsed.provenance.averageToken, '38.3661');
+});
