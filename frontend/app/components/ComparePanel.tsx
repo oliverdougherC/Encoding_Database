@@ -16,22 +16,22 @@ type Metric = {
 const METRICS: Metric[] = [
   { label: "CPU", getValue: r => r.cpuModel, getNumeric: () => null, higherIsBetter: true },
   { label: "GPU", getValue: r => r.gpuModel || "-", getNumeric: () => null, higherIsBetter: true },
-  { label: "Encoder", getValue: r => r.encoderName || r.codec, getNumeric: () => null, higherIsBetter: true },
-  { label: "CRF", getValue: r => r.crf == null ? "-" : String(r.crf), getNumeric: r => r.crf ?? null, higherIsBetter: false },
+  { label: "Encoder", getValue: r => r.encoderName, getNumeric: () => null, higherIsBetter: true },
   { label: "Preset", getValue: r => r.preset, getNumeric: () => null, higherIsBetter: true },
-  { label: "Content class", getValue: r => r.contentClass || "-", getNumeric: () => null, higherIsBetter: true },
-  { label: "Resolution", getValue: r => r.resolution || "-", getNumeric: () => null, higherIsBetter: true },
-  { label: "Passes", getValue: r => r.passes == null ? "-" : String(r.passes), getNumeric: () => null, higherIsBetter: true },
-  { label: "FPS", getValue: r => r.fps.toFixed(2), getNumeric: r => r.fps, higherIsBetter: true },
-  { label: "VMAF", getValue: r => r.vmaf == null ? "-" : r.vmaf.toFixed(1), getNumeric: r => r.vmaf, higherIsBetter: true },
-  { label: "SSIM", getValue: r => r.ssim == null ? "-" : r.ssim.toFixed(4), getNumeric: r => r.ssim, higherIsBetter: true },
-  { label: "PSNR (dB)", getValue: r => r.psnr == null ? "-" : r.psnr.toFixed(2), getNumeric: r => r.psnr, higherIsBetter: true },
-  { label: "File Size (MB)", getValue: r => (r.fileSizeBytes / (1024 * 1024)).toFixed(2), getNumeric: r => r.fileSizeBytes, higherIsBetter: false },
-  { label: "GPU Util (%)", getValue: r => r.gpuUtilAvg != null ? r.gpuUtilAvg.toFixed(1) : "-", getNumeric: r => r.gpuUtilAvg ?? null, higherIsBetter: true },
-  { label: "GPU Power (W)", getValue: r => r.gpuPowerAvgW != null ? r.gpuPowerAvgW.toFixed(1) : "-", getNumeric: r => r.gpuPowerAvgW ?? null, higherIsBetter: false },
-  { label: "FPS/Watt", getValue: r => r.fpsPerWatt != null ? r.fpsPerWatt.toFixed(2) : "-", getNumeric: r => r.fpsPerWatt ?? null, higherIsBetter: true },
-  { label: "CPU Util (%)", getValue: r => r.cpuUtilAvg != null ? r.cpuUtilAvg.toFixed(1) : "-", getNumeric: r => r.cpuUtilAvg ?? null, higherIsBetter: false },
-  { label: "Peak Memory (MB)", getValue: r => r.peakMemoryMB != null ? Math.round(r.peakMemoryMB).toString() : "-", getNumeric: r => r.peakMemoryMB ?? null, higherIsBetter: false },
+  { label: "Recipe fingerprint", getValue: r => r.recipe.fingerprint, getNumeric: () => null, higherIsBetter: true },
+  { label: "Rate control", getValue: r => r.recipe.rateControl.label, getNumeric: () => null, higherIsBetter: true },
+  { label: "Workload ID", getValue: r => r.workloadId, getNumeric: () => null, higherIsBetter: true },
+  { label: "FPS", getValue: r => r.performance.encodeFps == null ? "-" : r.performance.encodeFps.toFixed(2), getNumeric: r => r.performance.encodeFps, higherIsBetter: true },
+  { label: "Realtime", getValue: r => r.performance.realTimeRatio == null ? "-" : `${r.performance.realTimeRatio.toFixed(2)}x`, getNumeric: r => r.performance.realTimeRatio, higherIsBetter: true },
+  { label: "VMAF", getValue: r => r.quality.vmafMean == null ? "-" : r.quality.vmafMean.toFixed(1), getNumeric: r => r.quality.vmafMean, higherIsBetter: true },
+  { label: "VMAF p5", getValue: r => r.quality.vmafP5 == null ? "-" : r.quality.vmafP5.toFixed(1), getNumeric: r => r.quality.vmafP5, higherIsBetter: true },
+  { label: "Bitrate (Mbps)", getValue: r => r.bitrate.videoBitrateBps == null ? "-" : (r.bitrate.videoBitrateBps / 1_000_000).toFixed(2), getNumeric: r => r.bitrate.videoBitrateBps, higherIsBetter: false },
+  { label: "File Size (MB)", getValue: r => r.fileSizeBytes == null ? "-" : (r.fileSizeBytes / (1024 * 1024)).toFixed(2), getNumeric: r => r.fileSizeBytes, higherIsBetter: false },
+  { label: "Evidence tier", getValue: r => r.status.evidenceTier, getNumeric: () => null, higherIsBetter: true },
+  { label: "PL status", getValue: r => r.status.scoring === "PUBLIC" ? "Public" : "Withheld", getNumeric: () => null, higherIsBetter: true },
+  { label: "Accepted runs", getValue: r => String(r.sampleCounts.accepted), getNumeric: r => r.sampleCounts.accepted, higherIsBetter: true },
+  { label: "Repetitions", getValue: r => String(r.sampleCounts.repetitions), getNumeric: r => r.sampleCounts.repetitions, higherIsBetter: true },
+  { label: "Confidence", getValue: r => r.confidence.available ? `${r.confidence.lower?.toFixed(3)} to ${r.confidence.upper?.toFixed(3)}` : "Unavailable", getNumeric: () => null, higherIsBetter: true },
 ];
 
 function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
@@ -56,7 +56,7 @@ function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
 const normalizeIdentityPart = (value: string | number | null | undefined) => String(value ?? "").trim().toLowerCase();
 
 export function workloadIdentity(row: CompareRow): string {
-  return [row.codec, row.preset, row.crf, row.contentClass, row.resolution, row.passes, row.inputHash]
+  return [row.workloadId, row.recipe.fingerprint, row.environment.fingerprint, row.versions.referenceContextVersion, row.versions.benchmarkProtocolVersion]
     .map(normalizeIdentityPart)
     .join("|");
 }
@@ -113,7 +113,7 @@ export default function ComparePanel({
           </div>
         </div>
         <div className={styles.panelBody}>
-          {incompatible ? <p className={styles.compatibilityWarning}>These configurations differ by codec, preset, CRF, content class, resolution, pass count, or canonical input. Their performance, size, and quality metrics are not directly comparable.</p> : null}
+          {incompatible ? <p className={styles.compatibilityWarning}>These configurations differ by workload, recipe fingerprint, environment fingerprint, or benchmark protocol lineage. Their performance, bitrate, and quality metrics are not directly comparable.</p> : null}
           <table className={styles.compareTable}>
             <thead>
               <tr>

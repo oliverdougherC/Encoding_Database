@@ -1,5 +1,7 @@
 import hashlib
+import itertools
 import json
+import os
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -140,6 +142,58 @@ class MainRoutingTests(unittest.TestCase):
         run_mock.assert_called_once()
         menu_mock.assert_not_called()
         gui_mock.assert_not_called()
+
+    def test_submit_flag_routes_direct_cli_when_run_settings_come_from_defaults(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            argv = ["prog", "--submit", "--queue-dir", queue_dir]
+            with mock.patch.object(client_main, "ENV_CODEC", "libx264"), \
+                    mock.patch.object(client_main, "ENV_PRESETS", "fast"), \
+                    mock.patch.object(client_main, "ENV_QUEUE_DIR", queue_dir), \
+                    mock.patch.object(client_main, "run_with_args", return_value=17) as run_mock, \
+                    mock.patch.object(client_main, "interactive_menu_flow", return_value=99) as menu_mock, \
+                    mock.patch.object(client_main, "run_windows_gui_flow", return_value=88) as gui_mock:
+                rc = client_main.main(argv)
+
+        self.assertEqual(rc, 17)
+        run_mock.assert_called_once()
+        menu_mock.assert_not_called()
+        gui_mock.assert_not_called()
+        self.assertFalse(run_mock.call_args.kwargs["interactive"])
+
+    def test_noninteractive_submission_policy_defaults_to_dry_run_without_submit_flag(self) -> None:
+        args = client_main.argparse.Namespace(no_submit=False, submit=False, queue_dir="/tmp/queue")
+        updated = client_main._apply_submission_policy(args, interactive=False)
+        self.assertTrue(updated.no_submit)
+        self.assertFalse(updated.submit)
+
+    def test_noninteractive_submission_policy_preserves_submit_flag(self) -> None:
+        args = client_main.argparse.Namespace(no_submit=False, submit=True, queue_dir="/tmp/queue")
+        updated = client_main._apply_submission_policy(args, interactive=False)
+        self.assertFalse(updated.no_submit)
+        self.assertTrue(updated.submit)
+
+    def test_interactive_publication_consent_persists_after_first_accept(self) -> None:
+        with tempfile.TemporaryDirectory() as state_dir:
+            consent_path = os.path.join(state_dir, client_main.PUBLICATION_CONSENT_FILENAME)
+            with mock.patch.object(client_main.config, "default_client_state_dir", return_value=state_dir), \
+                    mock.patch.object(client_main, "prompt_yes_no", return_value=True) as prompt_mock:
+                self.assertTrue(client_main._ensure_interactive_publication_consent(queue_dir="/tmp/queue"))
+                self.assertTrue(os.path.exists(consent_path))
+                self.assertTrue(client_main._ensure_interactive_publication_consent(queue_dir="/tmp/queue"))
+        prompt_mock.assert_called_once()
+
+    def test_interactive_publication_decline_switches_to_dry_run(self) -> None:
+        args = client_main.argparse.Namespace(no_submit=False, submit=False, queue_dir="/tmp/queue")
+        with mock.patch.object(client_main, "_ensure_interactive_publication_consent", return_value=False):
+            updated = client_main._apply_submission_policy(args, interactive=True)
+        self.assertTrue(updated.no_submit)
+
+    def test_queue_status_command_exits_without_running_benchmark(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with mock.patch.object(client_main, "run_with_args", return_value=17) as run_mock:
+                rc = client_main.main(["prog", "--queue-status", "--queue-dir", queue_dir])
+        self.assertEqual(rc, 0)
+        run_mock.assert_not_called()
 
     def test_authoritative_run_create_carries_canonical_energy_and_decode_evidence(self) -> None:
         record = BenchmarkRunRecord(
@@ -348,6 +402,7 @@ class MainRoutingTests(unittest.TestCase):
             {"artifactPath": artifact_paths[1], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
             {"artifactPath": artifact_paths[2], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
         ]
+        perf_ticks = itertools.count(start=0, step=1_000_000_000)
 
         with tempfile.TemporaryDirectory() as queue_dir:
             args = self._batch_args(queue_dir, no_submit=True)
@@ -374,6 +429,7 @@ class MainRoutingTests(unittest.TestCase):
                         selected_accelerator="software",
                         gpu_load_trustworthy=False,
                     )), \
+                    mock.patch.object(client_main.time, "perf_counter_ns", side_effect=lambda: next(perf_ticks)), \
                     mock.patch.object(client_main, "encode_to_artifact", side_effect=encode_infos), \
                     mock.patch.object(
                         client_main,

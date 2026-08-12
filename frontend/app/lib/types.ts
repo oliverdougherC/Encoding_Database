@@ -1,57 +1,120 @@
-/** Shared Benchmark type for server and client. */
+export type PublicCorpusScoringStatus = "PUBLIC" | "UNSCORED_NO_PUBLIC_DERIVED_RESULT";
+
+/** Shared V7 public corpus row shape for server and client. Legacy /query rows remain separate. */
 export type Benchmark = {
   id: string;
   createdAt: string;
   cpuModel: string;
   gpuModel: string | null;
-  ramGB: number;
+  ramGB: number | null;
   os: string;
   codec: string;
-  codecFamily?: "h264" | "hevc" | "av1" | "vp9" | "other";
-  crf?: number | null;
+  codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other" | string;
+  encoderName: string;
   preset: string;
-  fps: number;
+  fps: number | null;
   vmaf: number | null;
-  vmafP5?: number | null;
-  ssim: number | null;
-  psnr: number | null;
-  fileSizeBytes: number;
-  videoBitrateBps?: number | null;
-  sourceFps?: number | null;
-  notes: string | null;
-  ffmpegVersion?: string | null;
-  encoderName?: string | null;
-  clientVersion?: string | null;
-  inputHash?: string | null;
-  contentClass?: string | null;
-  resolution?: string | null;
-  passes?: number | null;
-  runMs?: number | null;
-  scoreFormulaVersion?: string | null;
-  benchmarkProtocolVersion?: string | null;
-  sourceSuiteVersion?: string | null;
-  workloadId?: string | null;
-  metricModelId?: string | null;
-  status?: string | null;
+  vmafP5: number | null;
+  fileSizeBytes: number | null;
+  videoBitrateBps: number | null;
+  sourceFps: number | null;
+  realTimeRatio: number | null;
   samples: number;
-  vmafSamples?: number;
-  ssimSamples?: number;
-  psnrSamples?: number;
-  gpuUtilAvg?: number | null;
-  gpuPowerAvgW?: number | null;
-  gpuMemPeakMB?: number | null;
-  cpuUtilAvg?: number | null;
-  cpuUtilMax?: number | null;
-  peakMemoryMB?: number | null;
-  thermalThrottle?: boolean | null;
-  sampleCount?: number | null;
-  monitorDurationMs?: number | null;
-  cpuSampleCount?: number | null;
-  gpuSampleCount?: number | null;
-  ffmpegSampleCount?: number | null;
-  batterySampleCount?: number | null;
-  fpsPerWatt?: number | null;
-  qualityPerWatt?: number | null;
+  workloadId: string;
+  recipe: {
+    id: string;
+    fingerprint: string;
+    encoderVersion: string | null;
+    tune: string | null;
+    profile: string | null;
+    level: string | null;
+    tier: string | null;
+    pixelFormat: string;
+    bitDepth: number;
+    chromaSubsampling: string;
+    rateControl: {
+      requestedMode: string;
+      effectiveMode: string;
+      qualityValue: number | null;
+      targetBitrateKbps: number | null;
+      maxBitrateKbps: number | null;
+      bufferSizeKbits: number | null;
+      label: string;
+    };
+  };
+  environment: {
+    id: string;
+    fingerprint: string;
+    cpuArchitecture: string;
+    physicalCoreCount: number | null;
+    logicalThreadCount: number | null;
+    gpuModel: string | null;
+    selectedAccelerator: string | null;
+    driverVersion: string | null;
+    osName: string;
+    osVersion: string;
+    ffmpegBuildFingerprint: string;
+    ffmpegVersion: string;
+    clientVersion: string;
+  };
+  versions: {
+    aggregatorVersion: string;
+    benchmarkProtocolId: string;
+    benchmarkProtocolVersion: string;
+    sourceSuiteVersion: string;
+    qualityModelId: string | null;
+    formulaVersion: string | null;
+    scoreContextId: string | null;
+    referenceContextVersion: string | null;
+    analysisWorkerVersion: string | null;
+  };
+  status: {
+    benchmarkProtocol: "ACTIVE";
+    artifactState?: "VERIFIED" | "RETAINED" | "MIXED_VERIFIED_RETAINED";
+    centerBasis?: "accepted" | "suspect";
+    scoring: PublicCorpusScoringStatus;
+    evidenceTier: EvidenceTier;
+    eligibleForDefaultRecommendation: boolean;
+  };
+  sampleCounts: {
+    accepted: number;
+    suspect: number;
+    rejected: number;
+    invalid: number;
+    repetitions: number;
+    independentSources: number | null;
+    machines: number | null;
+    contributors: number | null;
+  };
+  performance: {
+    encodeFps: number | null;
+    realTimeRatio: number | null;
+  };
+  quality: {
+    vmafMean: number | null;
+    vmafP5: number | null;
+    qualityModelId: string | null;
+  };
+  bitrate: {
+    videoBitrateBps: number | null;
+    fileSizeBytes: number | null;
+    workloadReferenceBitrateBps: number | null;
+  };
+  confidence: {
+    available: boolean;
+    lower: number | null;
+    upper: number | null;
+    width: number | null;
+    unavailableReason: string | null;
+  };
+  pl: {
+    total: number | null;
+    components: {
+      quality: number | null;
+      bitrate: number | null;
+      speed: number | null;
+    } | null;
+  };
 };
 
 export type AnalyticsFilters = {

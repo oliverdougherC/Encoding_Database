@@ -20,6 +20,10 @@ import routes, {
   runSubmitTransactionWithRetry,
   SORT_WHITELIST,
 } from '../dist/routes.js';
+import {
+  buildPublicCorpusOrderBy,
+  buildPublicCorpusWhere,
+} from '../dist/v7/corpus.js';
 import { prisma } from '../dist/db.js';
 import {
   aggregateEncoders,
@@ -124,6 +128,89 @@ test('Method guard: POST /query is 405 with Allow=GET, HEAD', async (t) => {
     assert.equal(res.headers.get('allow'), 'GET, HEAD');
     const body = await res.json();
     assert.equal(body.error, 'Method Not Allowed');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('buildPublicCorpusWhere scopes direct V7 evidence filters', async () => {
+  const where = buildPublicCorpusWhere({
+    cpu: 'Ryzen',
+    gpu: 'RTX',
+    search: 'nvenc',
+    preset: 'p6',
+    encoderType: 'hardware',
+  });
+
+  assert.deepEqual(where.status, { in: ['ACCEPTED', 'SUSPECT'] });
+  assert.equal(where.benchmarkProtocol.state, 'ACTIVE');
+  assert.equal(where.artifacts.some.role, 'ENCODED');
+  assert.ok(Array.isArray(where.AND));
+  assert.equal(where.AND.length, 5);
+});
+
+test('buildPublicCorpusOrderBy supports V7 public sort keys only', () => {
+  assert.deepEqual(buildPublicCorpusOrderBy('samples', 'asc'), { sortKey: 'samples', dir: 'asc' });
+  assert.deepEqual(buildPublicCorpusOrderBy('sampleCount', 'asc'), { sortKey: 'createdAt', dir: 'asc' });
+});
+
+test('GET /corpus returns unscored rows from direct retained evidence when no ScoreContext or DerivedResult exists', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+
+  const originalBenchmarkRunFindMany = prisma.benchmarkRun.findMany;
+  const originalDerivedFindMany = prisma.derivedResult.findMany;
+  prisma.benchmarkRun.findMany = async () => [
+    makeBenchmarkRunRow(),
+    makeBenchmarkRunRow({
+      id: 'benchmark-run-2',
+      createdAt: new Date('2026-08-12T00:01:00.000Z'),
+      updatedAt: new Date('2026-08-12T00:01:00.000Z'),
+      payloadHash: 'payload-hash-2',
+      repetitionGroupId: 'repeat-b',
+      repetitionIndex: 1,
+      campaignId: 'campaign-b',
+      encodeFps: 100,
+      artifacts: [{
+        ...makeBenchmarkRunRow().artifacts[0],
+        id: 'artifact-2',
+        benchmarkRunId: 'benchmark-run-2',
+      }],
+      qualityAnalyses: [{
+        ...makeBenchmarkRunRow().qualityAnalyses[0],
+        id: 'analysis-2',
+        benchmarkRunId: 'benchmark-run-2',
+        artifactId: 'artifact-2',
+        vmafMean: 94,
+        vmafP5: 92,
+        videoBitrateBps: 4_200_000,
+      }],
+    }),
+  ];
+  prisma.derivedResult.findMany = async () => [];
+  t.after(() => {
+    prisma.benchmarkRun.findMany = originalBenchmarkRunFindMany;
+    prisma.derivedResult.findMany = originalDerivedFindMany;
+  });
+
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/corpus?total=1&limit=10`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('x-total-count'), '1');
+    const data = await res.json();
+    assert.equal(data.length, 1);
+    assert.equal(data[0].encoderName, 'libx265');
+    assert.equal(data[0].samples, 2);
+    assert.equal(data[0].sampleCounts.accepted, 2);
+    assert.equal(data[0].sampleCounts.repetitions, 2);
+    assert.equal(data[0].status.scoring, 'UNSCORED_NO_PUBLIC_DERIVED_RESULT');
+    assert.equal(data[0].pl.total, null);
+    assert.equal(data[0].versions.scoreContextId, null);
+    assert.equal(data[0].bitrate.workloadReferenceBitrateBps, null);
+    assert.equal(data[0].confidence.available, false);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -616,6 +703,174 @@ function makeDerivedResultRow(overrides = {}) {
         state: 'ACTIVE',
       },
     },
+    ...overrides,
+  };
+}
+
+function makeBenchmarkRunRow(overrides = {}) {
+  return {
+    id: 'benchmark-run-1',
+    createdAt: new Date('2026-08-12T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+    benchmarkProtocolId: 'protocol-1',
+    testClipId: 'clip-1',
+    workloadId: 'mixed-1080p',
+    recipeId: 'recipe-1',
+    environmentId: 'environment-1',
+    payloadHash: 'payload-hash-1',
+    inputHash: null,
+    campaignId: 'campaign-a',
+    repetitionGroupId: 'repeat-a',
+    repetitionIndex: 0,
+    encodeWallTimeMs: 10_000,
+    encodeFps: 120,
+    sourceFps: 30,
+    realTimeRatio: 4,
+    sourceFrameCount: 300,
+    encodedFrameCount: 300,
+    telemetry: null,
+    telemetrySources: null,
+    telemetryMissing: null,
+    energyDomains: null,
+    decodeBenchmark: null,
+    preRunEnvironmentCheck: null,
+    ffmpegProgressTelemetry: null,
+    clientQualityDebug: null,
+    status: 'ACCEPTED',
+    statusReason: null,
+    benchmarkProtocol: {
+      id: 'protocol-1',
+      protocolVersion: 'benchmark-protocol-v1',
+      sourceSuiteVersion: 'encodingdb-test-suite-v1',
+      minimumClientVersion: 'client/0.2.0',
+      metricWorkerVersion: 'authoritative-analysis/v1',
+      canonicalRecipeRules: {},
+      canonicalOutputRules: {},
+      state: 'ACTIVE',
+    },
+    recipe: {
+      id: 'recipe-1',
+      fingerprint: 'recipe-fingerprint',
+      canonicalJson: {},
+      codecFamily: 'hevc',
+      encoderImplementation: 'libx265',
+      encoderVersion: '7.1',
+      preset: 'slow',
+      tune: null,
+      profile: 'main',
+      level: '5.1',
+      tier: null,
+      pixelFormat: 'yuv420p10le',
+      bitDepth: 10,
+      chromaSubsampling: '4:2:0',
+      containerFormat: 'mp4',
+      videoCodecTag: null,
+      requestedRateControlMode: 'CONSTANT_QUALITY',
+      requestedQualityValue: 24,
+      requestedTargetBitrateKbps: null,
+      requestedMaxBitrateKbps: null,
+      requestedBufferSizeKbits: null,
+      requestedQmin: null,
+      requestedQmax: null,
+      effectiveRateControlMode: 'CONSTANT_QUALITY',
+      effectiveQualityValue: 24,
+      effectiveTargetBitrateKbps: null,
+      effectiveMaxBitrateKbps: null,
+      effectiveBufferSizeKbits: null,
+      effectiveQmin: null,
+      effectiveQmax: null,
+      requestedRateControl: {},
+      effectiveRateControl: {},
+      requestedOutputSettings: null,
+      effectiveOutputSettings: null,
+      normalizedRequestedOptions: null,
+      normalizedEffectiveOptions: null,
+      gopSize: null,
+      keyframeInterval: null,
+      bFrames: null,
+      frameReordering: null,
+      lookahead: null,
+      filmGrainSynthesis: null,
+      majorTools: null,
+    },
+    environment: {
+      id: 'environment-1',
+      fingerprint: 'environment-fingerprint',
+      canonicalJson: {},
+      cpuModel: 'AMD Ryzen 9 9950X',
+      cpuArchitecture: 'x86_64',
+      physicalCoreCount: 16,
+      logicalThreadCount: 32,
+      gpuModel: 'NVIDIA RTX 5090',
+      selectedAcceleratorId: null,
+      selectedAccelerator: 'cuda',
+      driverVersion: '555.12',
+      osName: 'Linux',
+      osVersion: '6.10',
+      ffmpegBuildFingerprint: 'ffmpeg-build-fingerprint',
+      ffmpegVersion: '7.1',
+      encoderVersion: '7.1',
+      clientVersion: 'client/0.2.0',
+    },
+    artifacts: [
+      {
+        id: 'artifact-1',
+        createdAt: new Date('2026-08-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+        benchmarkRunId: 'benchmark-run-1',
+        role: 'ENCODED',
+        sha256: 'a'.repeat(64),
+        byteSize: 80_000_000,
+        storageState: 'RETAINED',
+        storageProvider: 'local',
+        storageBucket: 'bucket',
+        storageKey: 'artifact-1',
+        storageUrl: null,
+        mediaContainer: 'mp4',
+        stateReason: null,
+        stateDetails: null,
+        uploadedAt: new Date('2026-08-12T00:00:00.000Z'),
+        verifiedAt: new Date('2026-08-12T00:00:00.000Z'),
+        retainedAt: new Date('2026-08-12T00:00:00.000Z'),
+        deletedAt: null,
+      },
+    ],
+    qualityAnalyses: [
+      {
+        id: 'analysis-1',
+        createdAt: new Date('2026-08-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+        benchmarkRunId: 'benchmark-run-1',
+        artifactId: 'artifact-1',
+        status: 'COMPLETE',
+        metricModelId: 'vmaf-v1-sdr-sd',
+        qualityContextId: null,
+        analysisWorkerVersion: 'authoritative-analysis/v1',
+        analysisProvenance: {},
+        vmafMean: 95,
+        vmafMedian: 95,
+        vmafP1: 90,
+        vmafP5: 93,
+        vmafMin: 88,
+        vmafMax: 98,
+        vmafStdDev: 2,
+        vmafHarmonicMean: 94,
+        worstFrameIndex: 1,
+        worstFrameTimestampMs: 100,
+        belowThresholdFractions: null,
+        vmafDistribution: null,
+        xpsnr: null,
+        ssim: null,
+        psnr: null,
+        videoBitrateBps: 4_500_000,
+        videoPayloadBytes: 79_500_000,
+        videoPacketCount: 1_000,
+        measuredDurationSeconds: 10,
+        bitrateMethod: 'payload',
+        containerBitrateBps: 4_700_000,
+        fileSizeBytes: 80_000_000,
+      },
+    ],
     ...overrides,
   };
 }

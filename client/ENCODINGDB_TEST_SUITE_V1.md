@@ -24,6 +24,12 @@ Suite v1 is fully project-generated. No third-party source media is redistribute
 - Redistribution decision: generated masters are owned by the project and avoid external asset-license ambiguity
 - License for generated suite sources: `CC0-1.0`
 
+Current repository status is explicit:
+
+- Development status file: [client/resources/test_suite_v1/finalization-status.json](/Users/ofhd/Developer/Encoding_Database/client/resources/test_suite_v1/finalization-status.json)
+- Current state: `development-only`, `isFrozen: false`
+- There is intentionally no checked-in final `suite-lock.json` yet
+
 ## Manifest contract
 
 Each clip entry carries:
@@ -42,6 +48,8 @@ Each clip entry carries:
 
 Client verification checks both hash and ffprobe-derived media properties before benchmark execution.
 
+The packaging verifier uses the same strict contract, not just byte hashes.
+
 ## Acquisition and cache
 
 Packaged clients ship the manifest, not prebuilt media. The client materializes suite clips deterministically into a local cache using the bundled or configured FFmpeg binary, then verifies the resulting files against the manifest.
@@ -59,3 +67,33 @@ python3 scripts/build_test_suite_v1.py --output-dir /tmp/encodingdb-suite-v1
 ```
 
 This writes or reuses the declared clip filenames, then fails if any hash or ffprobe contract diverges from the manifest.
+
+## Future final freeze
+
+The final seven real source clips must be frozen with reviewed metadata, not by editing the current synthetic manifest by hand.
+
+- Review template: [client/resources/test_suite_v1/finalization-review.template.json](/Users/ofhd/Developer/Encoding_Database/client/resources/test_suite_v1/finalization-review.template.json)
+- Freezer script: [scripts/finalize_test_suite_v1.py](/Users/ofhd/Developer/Encoding_Database/scripts/finalize_test_suite_v1.py)
+- Drift checker: [scripts/test_suite_drift_check.py](/Users/ofhd/Developer/Encoding_Database/scripts/test_suite_drift_check.py)
+
+Operator path:
+
+```bash
+python3 scripts/finalize_test_suite_v1.py \
+  --review-json /path/to/finalization-review.json \
+  --source-dir /path/to/reviewed-suite-files
+```
+
+That invocation defaults client/server manifest, lock, and status outputs to the repository resource locations. The explicit output flags remain available for tests and nonstandard staging flows.
+
+The finalizer:
+
+- requires exactly seven reviewed logical classes
+- accepts truthful provenance and license metadata, including operator-owned or `CC0-1.0` clips
+- requires an explicit reviewed `distributionLicense`
+- resolves the seven reviewed files from `--source-dir` plus each clip `fileName`; `localPath` is optional and only overrides when explicitly set
+- probes hashes, size, frame count, frame rate, color, progressive/interlace state, and HDR metadata with `ffprobe`
+- copies canonical source assets into synchronized client/server `canonical/` destinations without mutating the reviewed originals
+- stages and validates all outputs as a unit, then atomically replaces manifest/status/lock outputs
+- allows idempotent reruns
+- does not transcode or modify the reviewed source files

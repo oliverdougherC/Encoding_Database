@@ -62,7 +62,7 @@ services:
     environment:
       NODE_ENV: production
       INTERNAL_API_BASE_URL: http://server:3001
-      APP_URL: https://encodingdb.platinumlabs.dev
+      APP_URL: ${APP_URL:?APP_URL is required}
     depends_on:
       server:
         condition: service_started
@@ -94,7 +94,7 @@ services:
       - "80:80"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ${NGINX_CERTS_DIR:-./nginx/dev-certs}:/etc/nginx/certs:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:80/health >/dev/null || exit 1"]
       interval: 30s
@@ -113,7 +113,9 @@ services:
 
 volumes:
   db_data:
+    name: encodingdb_prod_db_data
   artifact_data:
+    name: encodingdb_prod_artifact_data
 
 networks:
   app:

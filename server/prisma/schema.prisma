@@ -578,6 +578,15 @@ model QualityAnalysis {
   bitrateMethod           String?
   containerBitrateBps     Float?
   fileSizeBytes           Int?
+  attemptCount            Int                   @default(0)
+  maxAttempts             Int                   @default(3)
+  nextRetryAt             DateTime?
+  leaseToken              String?
+  leaseExpiresAt          DateTime?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  lastError               String?
+  lastErrorAt             DateTime?
 
   benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
   artifact     Artifact?     @relation(fields: [artifactId], references: [id], onDelete: SetNull)
@@ -585,6 +594,7 @@ model QualityAnalysis {
 
   @@unique([benchmarkRunId, metricModelId, analysisWorkerVersion])
   @@index([status])
+  @@index([status, nextRetryAt, leaseExpiresAt])
 }
 
 model ScoreContext {

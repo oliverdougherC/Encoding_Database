@@ -11,6 +11,7 @@ import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { collectV7EvidenceHealth } from './v7/operationalHealth.js';
+import { startArtifactPipelineBackgroundWork } from './v7/artifacts.js';
 
 export const app = express();
 
@@ -59,7 +60,7 @@ app.use(morgan((tokens: any, req, res) => {
     level: 'info',
     id: call('id'),
     method: call('method'),
-    url: call('url'),
+    url: call('url').replace(/(\/v7\/artifact-uploads\/)[^/?#]+/g, '$1[REDACTED]'),
     status: Number(call('status') || 0),
     length: call('res', 'content-length'),
     responseMs: Number(call('response-time') || 0),
@@ -355,6 +356,8 @@ app.get('/health/v7-evidence', async (_req, res) => {
       pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
       pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
       orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
+      storageQuotaBytes: Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0) || null,
+      storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
     });
     res.status(health.status === 'ok' ? 200 : 503).json(health);
   } catch {
@@ -407,6 +410,7 @@ async function startServer() {
   try {
     // Connect to database before accepting requests
     await connectDatabase();
+    startArtifactPipelineBackgroundWork();
 
     server = app.listen(port, () => {
       console.log(`server listening on ${port}`);

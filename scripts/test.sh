@@ -387,7 +387,7 @@ fi
 
 if [[ "$PRECHECK_OK" -eq 1 ]]; then
   run_step "Client: install test dependencies" "python3 -m pip install --disable-pip-version-check -r \"$ROOT_DIR/client/requirements-ci.txt\""
-  run_step "Client: compile Python modules" "PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall client"
+  run_step "Client: compile Python modules" "PYTHONPYCACHEPREFIX=/tmp/pycache python3 -m compileall -q -x '(^|/)(\\.venv|build|dist)/' client"
   run_step "Client: import core modules" "python3 -c \"import client.config, client.network, client.ffmpeg, client.main\""
   run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"
   run_step "Client: pytest suite" "cd \"$ROOT_DIR/client\" && python3 -m pytest -q"
@@ -421,7 +421,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     FRONTEND_BUILD_OK=0
   fi
-  run_step "Frontend: build" "cd \"$ROOT_DIR/frontend\" && ENABLE_QUERY_MOCK=1 APP_URL=\"http://127.0.0.1:${FRONTEND_PORT}\" npm run build"
+  run_step "Frontend: build" "cd \"$ROOT_DIR/frontend\" && APP_URL=\"http://127.0.0.1:${FRONTEND_PORT}\" npm run build"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     FRONTEND_BUILD_OK=0
   fi
@@ -481,12 +481,15 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
           run_step "API: health ready" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/ready\" >/dev/null"
           run_step "API: PL-v7 evidence health" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/health/v7-evidence\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert data['status'] == 'ok' and data['reasons'] == []\""
           run_step "API: query returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/query?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+          run_step "API: V7 corpus returns array" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/corpus?limit=5\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+          run_step "API: canonical test-video catalog" "curl -fsS \"http://127.0.0.1:${SERVER_PORT}/test-videos\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list) and len(data) == 7\""
           run_v7_api_contract_smoke
           run_step "API: submit method guard" "test \"\$(curl -s -o /dev/null -w '%{http_code}' -X GET \"http://127.0.0.1:${SERVER_PORT}/submit\")\" = \"405\""
 
           start_frontend || true
           run_step "Frontend: homepage response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
           run_step "Frontend: query proxy response" "curl -fsS \"http://127.0.0.1:${FRONTEND_PORT}/api/query?limit=2\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
+          run_step "Frontend: corpus proxy response" "curl -fsS \"http://127.0.0.1:${FRONTEND_PORT}/api/corpus?limit=2\" | python3 -c \"import json,sys; data=json.load(sys.stdin); assert isinstance(data, list)\""
           run_step "Frontend: leaderboard response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/leaderboards\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
           run_step "Frontend: hardware response" "code=\$(curl -s -o /dev/null -w '%{http_code}' \"http://127.0.0.1:${FRONTEND_PORT}/hardware\"); test \"\$code\" = \"200\" -o \"\$code\" = \"304\""
         else

@@ -1,0 +1,52 @@
+name: Production Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 6 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required configuration
+        id: configuration
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          APP_URL: ${{ secrets.APP_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ -n "${API_BASE_URL:-}" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ -z "${API_BASE_URL:-}" ] && [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "::error::API_BASE_URL secret is required for manual production smoke runs."
+            exit 1
+          fi
+          if [ -z "${API_BASE_URL:-}" ]; then
+            echo "::notice::Skipping production smoke because API_BASE_URL is not configured."
+          fi
+      - name: Setup Python
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run production smoke
+        if: ${{ steps.configuration.outputs.configured == 'true' }}
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          set -euo pipefail
+          args=(--api-base-url "$API_BASE_URL")
+          if [ -n "${APP_URL:-}" ]; then
+            args+=(--app-url "$APP_URL")
+          fi
+          bash scripts/production_smoke.sh "${args[@]}"

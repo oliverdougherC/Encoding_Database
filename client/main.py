@@ -70,7 +70,14 @@ from .protocol import (
     StructuralExpectation,
     execute_protocol_campaign,
 )
-from .spool import count_pending_entries, replay_spool, spool_payload, submit_spooled_path
+from .spool import (
+    cleanup_spool,
+    count_pending_entries,
+    inspect_spool,
+    replay_spool,
+    spool_payload,
+    submit_spooled_path,
+)
 from .stats import should_skip_submission
 from .suite import (
     PreparedSuiteClip,
@@ -90,6 +97,134 @@ from .ui import (
 )
 
 CLIENT_VERSION = "client/0.2.0"
+PUBLICATION_CONSENT_VERSION = 1
+PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
+
+
+def _format_byte_count(num_bytes: int) -> str:
+    value = float(max(0, num_bytes))
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1024.0 or unit == "TB":
+            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
+        value /= 1024.0
+    return f"{int(value)} B"
+
+
+def _publication_consent_path() -> str:
+    return os.path.join(config.default_client_state_dir(), PUBLICATION_CONSENT_FILENAME)
+
+
+def _publication_consent_payload() -> Dict[str, Any]:
+    return {
+        "version": PUBLICATION_CONSENT_VERSION,
+        "acceptedAt": int(time.time()),
+        "scope": "benchmark-publication",
+    }
+
+
+def _has_publication_consent() -> bool:
+    path = _publication_consent_path()
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except Exception:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    return int(payload.get("version") or 0) == PUBLICATION_CONSENT_VERSION
+
+
+def _store_publication_consent() -> None:
+    path = _publication_consent_path()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    temp_path = f"{path}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
+    payload = _publication_consent_payload()
+    try:
+        with open(temp_path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, sort_keys=True, separators=(",", ":"))
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, path)
+    finally:
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            pass
+
+
+def _publication_disclosure_lines(queue_dir: str) -> List[str]:
+    return [
+        "Publishing benchmark results sends benchmark evidence to the EncodingDB server.",
+        "Collected fields include hardware profile (CPU model, GPU model, RAM, OS), workload settings (codec, preset, CRF or bitrate, suite clip, input hash), benchmark results (FPS, output size, VMAF, SSIM, PSNR, runtime), and hardware telemetry samples when available.",
+        "Authoritative V7 runs also upload the encoded benchmark artifact so the server can run its own analysis.",
+        "Failed uploads stay in the local offline queue until replayed or explicitly cleaned up.",
+        f"Local queue directory: {queue_dir}",
+        "Not collected: names, email addresses, account identifiers, serial numbers, MAC addresses, general filesystem snapshots, or unrelated personal files.",
+    ]
+
+
+def _ensure_interactive_publication_consent(
+    *,
+    queue_dir: str,
+    prompt_callback: Optional[Callable[[str], bool]] = None,
+) -> bool:
+    if _has_publication_consent():
+        return True
+    disclosure = "\n".join(_publication_disclosure_lines(queue_dir))
+    if prompt_callback is None:
+        print_warning("Publication consent is required before the first interactive submission.")
+        for line in _publication_disclosure_lines(queue_dir):
+            print_info(line)
+        accepted = prompt_yes_no("Allow EncodingDB to publish future benchmark results from this machine?", default_no=True)
+    else:
+        accepted = bool(prompt_callback(disclosure))
+    if not accepted:
+        return False
+    _store_publication_consent()
+    return True
+
+
+def _apply_submission_policy(args: argparse.Namespace, *, interactive: bool) -> argparse.Namespace:
+    effective = argparse.Namespace(**vars(args))
+    if bool(getattr(effective, "no_submit", False)):
+        return effective
+    if interactive:
+        if _ensure_interactive_publication_consent(queue_dir=str(getattr(effective, "queue_dir", ENV_QUEUE_DIR) or ENV_QUEUE_DIR)):
+            return effective
+        effective.no_submit = True
+        print_warning("Publication consent was not granted. Continuing in local dry-run mode.")
+        return effective
+    if bool(getattr(effective, "submit", False)):
+        return effective
+    effective.no_submit = True
+    print_info("Noninteractive CLI defaults to local-only mode. Pass --submit to publish or --no-submit to make dry-run intent explicit.")
+    return effective
+
+
+def _print_queue_status(queue_dir: str) -> None:
+    status = inspect_spool(queue_dir)
+    print_info(f"Queue directory: {queue_dir}")
+    print_info(f"Pending payloads: {status.pending_entries} ({_format_byte_count(status.pending_bytes)})")
+    print_info(f"Dead-letter files: {status.dead_letter_files} ({_format_byte_count(status.dead_letter_bytes)})")
+    print_info(
+        "Managed spool artifacts: "
+        + f"{status.managed_artifact_files} ({_format_byte_count(status.managed_artifact_bytes)})"
+    )
+
+
+def _cleanup_queue(queue_dir: str) -> None:
+    stats = cleanup_spool(queue_dir)
+    print_info(f"Queue directory: {queue_dir}")
+    print_info(
+        "Removed dead-letter files: "
+        + f"{stats.removed_dead_letter_files} ({_format_byte_count(stats.removed_dead_letter_bytes)})"
+    )
+    print_info(
+        "Removed orphaned managed artifacts: "
+        + f"{stats.removed_orphaned_managed_artifacts} ({_format_byte_count(stats.removed_orphaned_managed_artifact_bytes)})"
+    )
+    print_info(f"Pending payloads retained: {stats.pending_entries_retained}")
 
 
 def _resolve_input_for_task(
@@ -942,6 +1077,7 @@ def _has_direct_single_run_intent(raw_args: List[str]) -> bool:
         "--codec",
         "--presets",
         "--crf",
+        "--submit",
         "--no-submit",
         "--use-token",
         "--retries",
@@ -1842,7 +1978,9 @@ def run_v7_suite_clip_mode(
     base_args: argparse.Namespace,
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
+    interactive: bool = False,
 ) -> int:
+    base_args = _apply_submission_policy(base_args, interactive=interactive)
     clip_id = str(getattr(base_args, "v7_suite_clip", "") or "").strip()
     if not clip_id:
         print("--v7-suite-clip is required for v7 suite clip mode.", file=sys.stderr)
@@ -1921,7 +2059,9 @@ def run_with_args(
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
     show_end_screen: bool = True,
+    interactive: bool = True,
 ) -> int:
+    args = _apply_submission_policy(args, interactive=interactive)
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
@@ -2232,6 +2372,7 @@ def build_single_effective_args(
         codec=encoder,
         presets=preset,
         no_submit=base_args.no_submit,
+        submit=getattr(base_args, "submit", False),
         crf=crf,
         retries=base_args.retries,
         queue_dir=base_args.queue_dir,
@@ -2249,7 +2390,9 @@ def run_batch_mode(
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
     show_end_screen: bool = True,
+    interactive: bool = True,
 ) -> int:
+    base_args = _apply_submission_policy(base_args, interactive=interactive)
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     encoders = _filter_canonical_encoders(list_all_available_encoders())
     if not encoders:
@@ -2284,6 +2427,7 @@ def run_batch_mode(
                 base_url=base_args.base_url,
                 api_key=base_args.api_key,
                 no_submit=base_args.no_submit,
+                submit=getattr(base_args, "submit", False),
                 crf=None,
                 retries=base_args.retries,
                 queue_dir=base_args.queue_dir,
@@ -2420,10 +2564,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--codec", default=ENV_CODEC, help="FFmpeg video encoder or codec family (e.g., libx264, h264, av1). If omitted, will prompt.")
     p.add_argument("--presets", default=ENV_PRESETS, help="Comma-separated list of presets (default: fast,medium,slow)")
     p.add_argument("--no-submit", action="store_true", help="Run tests but do not submit results")
+    p.add_argument("--submit", action="store_true", help="Publish benchmark results in noninteractive CLI mode")
     p.add_argument("--crf", type=int, default=int(ENV_CRF) if ENV_CRF.isdigit() else 24, help="Native quality value for CRF/CQ/ICQ/QP encoders. Defaults to 24; never converted across rate-control families.")
     p.add_argument("--target-bitrate-kbps", type=int, default=None, help="Explicit native bitrate target for bitrate-driven encoders such as VideoToolbox.")
     p.add_argument("--retries", type=int, default=3, help="Submission retry attempts (default: 3)")
     p.add_argument("--queue-dir", default=ENV_QUEUE_DIR, help="Directory for offline retry queue")
+    p.add_argument("--queue-status", action="store_true", help="Print offline queue counts and sizes, then exit")
+    p.add_argument("--queue-cleanup", action="store_true", help="Delete dead-letter files and orphaned managed artifacts, then exit")
     p.add_argument("--menu", action="store_true", help="Force interactive menu even if arguments are provided")
     p.add_argument("--batch-size", type=int, default=0, help="Batch size for parallel VMAF (0=auto: cpu_count or 4)")
     p.add_argument("--use-token", action="store_true", help="Use short-lived submit token (opt-in; or set INGEST_USE_TOKENS=1)")
@@ -2462,8 +2609,18 @@ def main(argv: List[str]) -> int:
     if args.gui and args.cli:
         print("--gui and --cli cannot be used together.", file=sys.stderr)
         return 1
+    if args.submit and args.no_submit:
+        print("--submit and --no-submit cannot be used together.", file=sys.stderr)
+        return 1
+    if args.queue_cleanup:
+        _cleanup_queue(args.queue_dir)
+        if not args.queue_status:
+            return 0
+    if args.queue_status:
+        _print_queue_status(args.queue_dir)
+        return 0
     if getattr(args, "v7_suite_clip", ""):
-        return run_v7_suite_clip_mode(base_args=args)
+        return run_v7_suite_clip_mode(base_args=args, interactive=False)
     if args.menu:
         return interactive_menu_flow(parser, args)
     if args.cli:
@@ -2474,7 +2631,7 @@ def main(argv: List[str]) -> int:
             return 1
         return run_windows_gui_flow(args)
     if direct_single_run_intent:
-        return run_with_args(args)
+        return run_with_args(args, interactive=False)
     if os.name == "nt" and bool(getattr(sys, "frozen", False)):
         return run_windows_gui_flow(args)
     return interactive_menu_flow(parser, args)

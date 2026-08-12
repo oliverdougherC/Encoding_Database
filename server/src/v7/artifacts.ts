@@ -1,9 +1,11 @@
 import express, { Router } from 'express';
 import crypto from 'node:crypto';
+import { Transform } from 'node:stream';
+import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import { execFile, spawn } from 'node:child_process';
-import { readdirSync } from 'node:fs';
-import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { createWriteStream, readdirSync } from 'node:fs';
+import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, statfs, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -220,6 +222,15 @@ export interface StoredQualityAnalysis {
   bitrateMethod: string | null;
   containerBitrateBps: number | null;
   fileSizeBytes: number | null;
+  attemptCount: number;
+  maxAttempts: number;
+  nextRetryAt: Date | null;
+  leaseToken: string | null;
+  leaseExpiresAt: Date | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  lastError: string | null;
+  lastErrorAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -402,9 +413,38 @@ export interface ArtifactPipelinePersistence {
     metricModelId: string,
     analysisWorkerVersion: string,
   ): Promise<StoredQualityAnalysis | null>;
+  ensureQualityAnalysisQueued(input: {
+    benchmarkRunId: string;
+    artifactId: string;
+    metricModelId: string;
+    analysisWorkerVersion: string;
+    maxAttempts: number;
+  }): Promise<RunArtifactBundle>;
+  claimNextQueuedQualityAnalysis(input: {
+    leaseToken: string;
+    leaseExpiresAt: Date;
+    now: Date;
+  }): Promise<{ bundle: RunArtifactBundle; analysis: StoredQualityAnalysis } | null>;
+  markQualityAnalysisRetry(input: {
+    analysisId: string;
+    artifactId: string;
+    benchmarkRunId: string;
+    nextRetryAt: Date;
+    errorMessage: string;
+  }): Promise<RunArtifactBundle>;
+  markQualityAnalysisFailed(input: {
+    analysisId: string;
+    artifactId: string;
+    benchmarkRunId: string;
+    errorMessage: string;
+  }): Promise<RunArtifactBundle>;
+  countArtifactsByStates(states: ReadonlyArray<ArtifactStorageStateValue>): Promise<number>;
+  countQualityAnalysesByStatuses(statuses: ReadonlyArray<QualityAnalysisStatusValue>): Promise<number>;
+  sumArtifactBytesByStates(states: ReadonlyArray<ArtifactStorageStateValue>): Promise<number>;
   saveAuthoritativeAnalysis(input: {
     benchmarkRunId: string;
     artifactId: string;
+    analysisId: string;
     result: AuthoritativeAnalysisResult;
   }): Promise<RunArtifactBundle>;
 }
@@ -431,9 +471,20 @@ export interface ArtifactPipelineConfig {
   authRateLimitMax: number;
   uploadRateLimitWindowMs: number;
   uploadRateLimitMax: number;
+  maxConcurrentUploads: number;
+  maxPendingArtifacts: number;
+  maxPendingAnalyses: number;
   storage: ArtifactStorageConfig;
+  storageQuotaBytes: number | null;
+  storageReserveBytes: number;
   analyzerVersion: string;
   autoAnalyzeOnUpload: boolean;
+  validateMediaBeforePublish: boolean;
+  analysisPollIntervalMs: number;
+  analysisLeaseMs: number;
+  analysisRetryBackoffMs: number;
+  analysisMaxAttempts: number;
+  analysisMaxConcurrent: number;
 }
 
 export interface ArtifactPipelineOptions {
@@ -532,6 +583,7 @@ const DEFAULT_ALLOWED_MIME_TYPES = new Set(['video/mp4', 'video/x-matroska', 'ap
 const defaultStorageRoot = path.resolve(process.cwd(), '.artifacts');
 
 function buildDefaultConfig(): ArtifactPipelineConfig {
+  const storageQuotaBytes = Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0);
   return {
     uploadTokenSecret: process.env.ARTIFACT_UPLOAD_SECRET || 'encodingdb-artifact-secret-dev-only',
     uploadTokenTtlMs: Number(process.env.ARTIFACT_UPLOAD_TTL_MS || 15 * 60 * 1000),
@@ -541,13 +593,24 @@ function buildDefaultConfig(): ArtifactPipelineConfig {
     authRateLimitMax: Number(process.env.ARTIFACT_AUTH_RATE_MAX || 30),
     uploadRateLimitWindowMs: Number(process.env.ARTIFACT_UPLOAD_RATE_WINDOW_MS || 60_000),
     uploadRateLimitMax: Number(process.env.ARTIFACT_UPLOAD_RATE_MAX || 20),
+    maxConcurrentUploads: Number(process.env.ARTIFACT_UPLOAD_CONCURRENCY_MAX || 4),
+    maxPendingArtifacts: Number(process.env.ARTIFACT_PENDING_UPLOAD_MAX || 500),
+    maxPendingAnalyses: Number(process.env.ARTIFACT_PENDING_ANALYSIS_MAX || 500),
     storage: {
       rootDir: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || defaultStorageRoot),
       provider: 'localfs',
       bucket: null,
     },
+    storageQuotaBytes: Number.isFinite(storageQuotaBytes) && storageQuotaBytes > 0 ? storageQuotaBytes : null,
+    storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
     analyzerVersion: process.env.ARTIFACT_ANALYZER_VERSION || DEFAULT_ANALYZER_VERSION,
     autoAnalyzeOnUpload: String(process.env.ARTIFACT_AUTO_ANALYZE || '1') !== '0',
+    validateMediaBeforePublish: String(process.env.ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH || '1') !== '0',
+    analysisPollIntervalMs: Number(process.env.ARTIFACT_ANALYSIS_POLL_MS || 1_000),
+    analysisLeaseMs: Number(process.env.ARTIFACT_ANALYSIS_LEASE_MS || 5 * 60 * 1000),
+    analysisRetryBackoffMs: Number(process.env.ARTIFACT_ANALYSIS_RETRY_BACKOFF_MS || 5_000),
+    analysisMaxAttempts: Number(process.env.ARTIFACT_ANALYSIS_MAX_ATTEMPTS || 3),
+    analysisMaxConcurrent: Number(process.env.ARTIFACT_ANALYSIS_CONCURRENCY_MAX || 2),
   };
 }
 
@@ -737,6 +800,18 @@ async function fileExists(filePath: string): Promise<boolean> {
   }
 }
 
+type StoredObjectReference = {
+  key: string;
+  absolutePath: string;
+  observedBytes: number;
+  deduplicated: boolean;
+};
+
+type StorageCapacitySnapshot = {
+  availableBytes: number | null;
+  freeBytes: number | null;
+};
+
 class LocalArtifactStorage {
   constructor(private readonly config: ArtifactStorageConfig) {}
 
@@ -754,27 +829,85 @@ class LocalArtifactStorage {
     }
   }
 
-  async writeObject(sha256: string, body: Buffer): Promise<{ key: string; absolutePath: string }> {
-    const key = buildObjectKey(sha256);
+  async publishObjectStream(input: {
+    expectedSha256: string;
+    expectedSize: number;
+    maxBytes: number;
+    source: NodeJS.ReadableStream;
+    validateStagedObject?: (filePath: string) => Promise<void>;
+  }): Promise<StoredObjectReference> {
+    const key = buildObjectKey(input.expectedSha256);
     const absolutePath = this.resolveAbsolutePath(key);
-    if (await this.hasObject(key, body.length)) {
-      return { key, absolutePath };
+    if (await this.hasObject(key, input.expectedSize)) {
+      return {
+        key,
+        absolutePath,
+        observedBytes: input.expectedSize,
+        deduplicated: true,
+      };
     }
     await ensureParentDir(absolutePath);
     const stagingRoot = path.join(this.config.rootDir, '.staging');
     await mkdir(stagingRoot, { recursive: true });
     const tempDir = await mkdtemp(path.join(stagingRoot, 'encodingdb-artifact-'));
-    const tempFile = path.join(tempDir, sha256);
+    const tempFile = path.join(tempDir, input.expectedSha256);
+    const hash = crypto.createHash('sha256');
+    let observedBytes = 0;
+    let published = false;
+    const output = createWriteStream(tempFile, { flags: 'wx' });
+    const validator = new Transform({
+      transform(chunk, _encoding, callback) {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        observedBytes += buffer.byteLength;
+        if (observedBytes > input.maxBytes) {
+          callback(new HttpError(413, 'Artifact exceeds maximum allowed size'));
+          return;
+        }
+        if (observedBytes > input.expectedSize) {
+          callback(new HttpError(400, 'Artifact byte size exceeds authorization'));
+          return;
+        }
+        hash.update(buffer);
+        callback(null, buffer);
+      },
+    });
     try {
-      await writeFile(tempFile, body);
+      await pipelineAsync(input.source, validator, output);
+      if (observedBytes !== input.expectedSize) {
+        throw new HttpError(400, 'Artifact byte size does not match authorization');
+      }
+      const observedHash = hash.digest('hex');
+      if (observedHash !== input.expectedSha256) {
+        throw new HttpError(400, 'Artifact sha256 does not match authorization');
+      }
+      if (input.validateStagedObject) {
+        await input.validateStagedObject(tempFile);
+      }
+      if (await this.hasObject(key, input.expectedSize)) {
+        return {
+          key,
+          absolutePath,
+          observedBytes,
+          deduplicated: true,
+        };
+      }
       try {
         await rename(tempFile, absolutePath);
+        published = true;
       } catch {
-        if (!(await this.hasObject(key, body.length))) {
-          throw new Error(`Failed to persist artifact object ${sha256}`);
+        if (!(await this.hasObject(key, input.expectedSize))) {
+          throw new Error(`Failed to persist artifact object ${input.expectedSha256}`);
         }
       }
-      return { key, absolutePath };
+      return {
+        key,
+        absolutePath,
+        observedBytes,
+        deduplicated: !published,
+      };
+    } catch (error) {
+      output.destroy();
+      throw error;
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
@@ -785,6 +918,25 @@ class LocalArtifactStorage {
     const absolutePath = this.resolveAbsolutePath(key);
     if (!(await this.hasObject(key, expectedSize))) return null;
     return { key, absolutePath };
+  }
+
+  async inspectCapacity(): Promise<StorageCapacitySnapshot> {
+    await mkdir(this.config.rootDir, { recursive: true });
+    try {
+      const value = await statfs(this.config.rootDir);
+      const blockSize = Number(value.bsize || 0);
+      const availableBlocks = Number((value as { bavail?: number | bigint }).bavail ?? 0);
+      const freeBlocks = Number((value as { bfree?: number | bigint }).bfree ?? 0);
+      if (!Number.isFinite(blockSize) || blockSize <= 0) {
+        return { availableBytes: null, freeBytes: null };
+      }
+      return {
+        availableBytes: availableBlocks >= 0 ? Math.trunc(availableBlocks * blockSize) : null,
+        freeBytes: freeBlocks >= 0 ? Math.trunc(freeBlocks * blockSize) : null,
+      };
+    } catch {
+      return { availableBytes: null, freeBytes: null };
+    }
   }
 }
 
@@ -1422,17 +1574,107 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
         bitrateMethod: analysis.bitrateMethod,
         containerBitrateBps: analysis.containerBitrateBps,
         fileSizeBytes: analysis.fileSizeBytes,
+        attemptCount: analysis.attemptCount,
+        maxAttempts: analysis.maxAttempts,
+        nextRetryAt: analysis.nextRetryAt?.toISOString() ?? null,
+        leaseExpiresAt: analysis.leaseExpiresAt?.toISOString() ?? null,
+        startedAt: analysis.startedAt?.toISOString() ?? null,
+        completedAt: analysis.completedAt?.toISOString() ?? null,
+        lastError: analysis.lastError,
+        lastErrorAt: analysis.lastErrorAt?.toISOString() ?? null,
         createdAt: analysis.createdAt.toISOString(),
         updatedAt: analysis.updatedAt.toISOString(),
       })),
   };
 }
 
+class AuthoritativeAnalysisCoordinator {
+  private active = 0;
+  private started = false;
+  private timer: NodeJS.Timeout | null = null;
+
+  constructor(
+    private readonly persistence: ArtifactPipelinePersistence,
+    private readonly service: ArtifactPipelineService,
+    private readonly config: ArtifactPipelineConfig,
+  ) {}
+
+  start(): void {
+    if (this.started) return;
+    this.started = true;
+    this.timer = setInterval(() => {
+      void this.drain();
+    }, this.config.analysisPollIntervalMs);
+    this.timer.unref();
+    void this.drain();
+  }
+
+  kick(): void {
+    this.start();
+    void this.drain();
+  }
+
+  private async drain(): Promise<void> {
+    while (this.active < this.config.analysisMaxConcurrent) {
+      const leaseToken = crypto.randomUUID();
+      const now = new Date();
+      const claim = await this.persistence.claimNextQueuedQualityAnalysis({
+        leaseToken,
+        leaseExpiresAt: new Date(now.getTime() + this.config.analysisLeaseMs),
+        now,
+      });
+      if (!claim) break;
+      this.active += 1;
+      void this.processClaim(claim).finally(() => {
+        this.active = Math.max(0, this.active - 1);
+        void this.drain();
+      });
+    }
+  }
+
+  private async processClaim(claim: { bundle: RunArtifactBundle; analysis: StoredQualityAnalysis }): Promise<void> {
+    try {
+      await this.service.processQueuedAnalysis(claim.bundle, claim.analysis);
+    } catch (error) {
+      // Claiming the durable lease increments attemptCount atomically. The
+      // claimed value therefore already includes the current execution.
+      const attemptsUsed = claim.analysis.attemptCount;
+      const errorMessage = normalizeError(error);
+      if (attemptsUsed >= claim.analysis.maxAttempts) {
+        await this.persistence.markQualityAnalysisFailed({
+          analysisId: claim.analysis.id,
+          artifactId: claim.bundle.artifact.id,
+          benchmarkRunId: claim.bundle.run.id,
+          errorMessage,
+        });
+        return;
+      }
+      await this.persistence.markQualityAnalysisRetry({
+        analysisId: claim.analysis.id,
+        artifactId: claim.bundle.artifact.id,
+        benchmarkRunId: claim.bundle.run.id,
+        nextRetryAt: new Date(Date.now() + this.config.analysisRetryBackoffMs * attemptsUsed),
+        errorMessage,
+      });
+    }
+  }
+}
+
+const BACKGROUND_ARTIFACT_SERVICES = new Set<ArtifactPipelineService>();
+
+export function startArtifactPipelineBackgroundWork(): void {
+  for (const service of BACKGROUND_ARTIFACT_SERVICES) {
+    service.startBackgroundWork();
+  }
+}
+
 export class ArtifactPipelineService {
   private readonly storage: LocalArtifactStorage;
+  private readonly coordinator: AuthoritativeAnalysisCoordinator;
   private readonly authLimiter: WindowCounter;
   private readonly uploadLimiter: WindowCounter;
   private readonly suiteManifest: SuiteV1Manifest;
+  private activeUploads = 0;
 
   constructor(
     private readonly persistence: ArtifactPipelinePersistence,
@@ -1442,9 +1684,14 @@ export class ArtifactPipelineService {
     private readonly onDerivedRecompute: ((payload: DerivedRecomputeHookPayload) => Promise<void> | void) | undefined,
   ) {
     this.storage = new LocalArtifactStorage(config.storage);
+    this.coordinator = new AuthoritativeAnalysisCoordinator(persistence, this, config);
     this.authLimiter = new WindowCounter(config.authRateLimitMax, config.authRateLimitWindowMs);
     this.uploadLimiter = new WindowCounter(config.uploadRateLimitMax, config.uploadRateLimitWindowMs);
     this.suiteManifest = suiteManifest;
+  }
+
+  startBackgroundWork(): void {
+    this.coordinator.start();
   }
 
   async createRun(input: CreateRunRequestInput): Promise<{ bundle: RunArtifactBundle; created: boolean }> {
@@ -1476,6 +1723,7 @@ export class ArtifactPipelineService {
     if (bundle.artifact.sha256 !== body.sha256 || bundle.artifact.byteSize !== body.byteSize) {
       throw new HttpError(409, 'Upload authorization must match immutable artifact metadata');
     }
+    await this.assertCapacityForUpload(body.byteSize);
 
     const existingObject = await this.storage.linkExistingObject(body.sha256, body.byteSize);
     if (existingObject) {
@@ -1493,7 +1741,7 @@ export class ArtifactPipelineService {
           authorizedAt: nowIso(),
         },
       });
-      const analyzed = this.config.autoAnalyzeOnUpload ? await this.analyzeArtifact(uploaded, undefined, undefined) : uploaded;
+      const analyzed = this.config.autoAnalyzeOnUpload ? await this.queueAuthoritativeAnalysis(uploaded, undefined, undefined) : uploaded;
       return {
         uploadRequired: false,
         reason: 'deduplicated-by-sha256',
@@ -1518,9 +1766,18 @@ export class ArtifactPipelineService {
     };
   }
 
-  async acceptUpload(ip: string, token: string, contentType: string | null, body: Buffer): Promise<RunArtifactBundle> {
+  async acceptUploadStream(
+    ip: string,
+    token: string,
+    contentType: string | null,
+    contentLength: string | null,
+    source: NodeJS.ReadableStream,
+  ): Promise<RunArtifactBundle> {
     if (!this.uploadLimiter.check(ip)) {
       throw new HttpError(429, 'Artifact upload rate limit exceeded');
+    }
+    if (this.activeUploads >= this.config.maxConcurrentUploads) {
+      throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
     }
     const payload = verifyUploadToken(token, this.config.uploadTokenSecret);
     const exp = Number(payload.exp);
@@ -1538,19 +1795,14 @@ export class ArtifactPipelineService {
     if (bundle.artifact.id !== artifactId) {
       throw new HttpError(409, 'Upload token scope does not match artifact binding');
     }
-    if (body.byteLength !== byteSize) {
-      await this.persistence.markArtifactState({
-        artifactId,
-        storageState: 'REJECTED',
-        stateReason: 'Artifact size mismatch during upload',
-        stateDetails: {
-          expectedBytes: byteSize,
-          observedBytes: body.byteLength,
-        },
-      });
+    const declaredLength = contentLength == null ? null : Number(contentLength);
+    if (declaredLength != null && (!Number.isFinite(declaredLength) || declaredLength < 0)) {
+      throw new HttpError(400, 'Artifact upload content-length is invalid');
+    }
+    if (declaredLength != null && declaredLength !== byteSize) {
       throw new HttpError(400, 'Artifact byte size does not match authorization');
     }
-    if (body.byteLength > this.config.maxArtifactBytes) {
+    if (declaredLength != null && declaredLength > this.config.maxArtifactBytes) {
       throw new HttpError(413, 'Artifact exceeds maximum allowed size');
     }
     if (expectedContentType && contentType && expectedContentType !== contentType) {
@@ -1559,44 +1811,74 @@ export class ArtifactPipelineService {
     if (contentType && !this.config.allowedMimeTypes.has(contentType)) {
       throw new HttpError(415, 'Artifact content type is not allowed');
     }
-    const observedHash = sha256Hex(body);
-    if (observedHash !== sha256) {
-      await this.persistence.markArtifactState({
-        artifactId,
-        storageState: 'REJECTED',
-        stateReason: 'Artifact sha256 mismatch during upload',
-        stateDetails: {
+    await this.assertCapacityForUpload(byteSize);
+    this.activeUploads += 1;
+    try {
+      let stored: StoredObjectReference;
+      try {
+        stored = await this.storage.publishObjectStream({
           expectedSha256: sha256,
-          observedSha256: observedHash,
+          expectedSize: byteSize,
+          maxBytes: this.config.maxArtifactBytes,
+          source,
+          ...(this.config.validateMediaBeforePublish ? {
+            validateStagedObject: async (filePath: string) => {
+              try {
+                validateProbeAgainstRun(bundle, await probeMedia(filePath));
+              } catch (error) {
+                throw new HttpError(400, `Artifact media contract validation failed: ${normalizeError(error)}`);
+              }
+            },
+          } : {}),
+        });
+      } catch (error) {
+        const message = normalizeError(error);
+        if (error instanceof HttpError && error.statusCode === 400) {
+          await this.persistence.markArtifactState({
+            artifactId,
+            storageState: 'REJECTED',
+            stateReason: message,
+            stateDetails: {
+              failedAt: nowIso(),
+              phase: 'upload',
+            },
+          });
+        } else {
+          await this.persistence.markArtifactState({
+            artifactId,
+            storageState: 'PENDING',
+            stateReason: message,
+            stateDetails: {
+              failedAt: nowIso(),
+              phase: 'upload',
+              retryable: true,
+            },
+          });
+        }
+        throw error;
+      }
+      const uploaded = await this.persistence.markArtifactUploaded({
+        artifactId,
+        sha256,
+        byteSize: stored.observedBytes,
+        mediaContainer: bundle.artifact.mediaContainer,
+        storageProvider: this.config.storage.provider,
+        storageBucket: this.config.storage.bucket,
+        storageKey: stored.key,
+        storageUrl: stored.absolutePath,
+        stateDetails: {
+          uploadedAt: nowIso(),
+          contentType,
+          deduplicated: stored.deduplicated,
         },
       });
-      throw new HttpError(400, 'Artifact sha256 does not match authorization');
+      return await this.config.autoAnalyzeOnUpload ? this.queueAuthoritativeAnalysis(uploaded, undefined, undefined) : uploaded;
+    } finally {
+      this.activeUploads = Math.max(0, this.activeUploads - 1);
     }
-    if (bundle.artifact.storageState === 'UPLOADED' || bundle.artifact.storageState === 'VERIFIED' || bundle.artifact.storageState === 'RETAINED') {
-      if (bundle.artifact.sha256 === observedHash && bundle.artifact.byteSize === body.byteLength) {
-        return await this.config.autoAnalyzeOnUpload ? this.analyzeArtifact(bundle, undefined, undefined) : bundle;
-      }
-      throw new HttpError(409, 'Artifact already uploaded for this immutable run');
-    }
-    const stored = await this.storage.writeObject(observedHash, body);
-    const uploaded = await this.persistence.markArtifactUploaded({
-      artifactId,
-      sha256: observedHash,
-      byteSize: body.byteLength,
-      mediaContainer: bundle.artifact.mediaContainer,
-      storageProvider: this.config.storage.provider,
-      storageBucket: this.config.storage.bucket,
-      storageKey: stored.key,
-      storageUrl: stored.absolutePath,
-      stateDetails: {
-        uploadedAt: nowIso(),
-        contentType,
-      },
-    });
-    return await this.config.autoAnalyzeOnUpload ? this.analyzeArtifact(uploaded, undefined, undefined) : uploaded;
   }
 
-  async analyzeArtifact(
+  async queueAuthoritativeAnalysis(
     bundleOrRunId: RunArtifactBundle | string,
     requestedAnalysisWorkerVersion: string | null | undefined,
     requestedMetricModelId: string | null | undefined,
@@ -1609,47 +1891,48 @@ export class ArtifactPipelineService {
       throw new HttpError(409, 'Artifact has not been uploaded to object storage');
     }
     const targetWorkerVersion = requestedAnalysisWorkerVersion || bundle.run.benchmarkProtocol.metricWorkerVersion || this.config.analyzerVersion;
-    const existing = await this.persistence.getQualityAnalysis(
-      bundle.run.id,
-      requestedMetricModelId || inferExistingMetricModelId(bundle) || deriveMetricModelFallback(bundle),
-      targetWorkerVersion,
-    );
-    if (existing && existing.status !== 'FAILED') {
+    const targetMetricModelId = requestedMetricModelId || inferExistingMetricModelId(bundle) || deriveMetricModelFallback(bundle);
+    const existing = await this.persistence.getQualityAnalysis(bundle.run.id, targetMetricModelId, targetWorkerVersion);
+    if (existing && existing.status !== 'FAILED' && existing.status !== 'PENDING') {
       return bundle;
     }
-    try {
-      const result = await this.analyzer.analyze({
-        bundle,
-        artifactPath,
-        requestedAnalysisWorkerVersion: targetWorkerVersion,
-        requestedMetricModelId: requestedMetricModelId ?? null,
-      });
-      const saved = await this.persistence.saveAuthoritativeAnalysis({
+    const queued = await this.persistence.ensureQualityAnalysisQueued({
+      benchmarkRunId: bundle.run.id,
+      artifactId: bundle.artifact.id,
+      metricModelId: targetMetricModelId,
+      analysisWorkerVersion: targetWorkerVersion,
+      maxAttempts: this.config.analysisMaxAttempts,
+    });
+    this.coordinator.kick();
+    return queued;
+  }
+
+  async processQueuedAnalysis(bundle: RunArtifactBundle, analysis: StoredQualityAnalysis): Promise<RunArtifactBundle> {
+    const artifactPath = bundle.artifact.storageUrl;
+    if (!artifactPath) {
+      throw new HttpError(409, 'Artifact has not been uploaded to object storage');
+    }
+    const result = await this.analyzer.analyze({
+      bundle,
+      artifactPath,
+      requestedAnalysisWorkerVersion: analysis.analysisWorkerVersion,
+      requestedMetricModelId: analysis.metricModelId,
+    });
+    const saved = await this.persistence.saveAuthoritativeAnalysis({
+      benchmarkRunId: bundle.run.id,
+      artifactId: bundle.artifact.id,
+      analysisId: analysis.id,
+      result,
+    });
+    if (this.onDerivedRecompute) {
+      await this.onDerivedRecompute({
         benchmarkRunId: bundle.run.id,
         artifactId: bundle.artifact.id,
-        result,
+        metricModelId: result.metricModelId,
+        analysisWorkerVersion: result.analysisWorkerVersion,
       });
-      if (this.onDerivedRecompute) {
-        await this.onDerivedRecompute({
-          benchmarkRunId: bundle.run.id,
-          artifactId: bundle.artifact.id,
-          metricModelId: result.metricModelId,
-          analysisWorkerVersion: result.analysisWorkerVersion,
-        });
-      }
-      return saved;
-    } catch (error) {
-      await this.persistence.markArtifactState({
-        artifactId: bundle.artifact.id,
-        storageState: 'REJECTED',
-        stateReason: normalizeError(error),
-        stateDetails: {
-          failedAt: nowIso(),
-          phase: 'analysis',
-        },
-      });
-      throw error;
     }
+    return saved;
   }
 
   async getBundle(benchmarkRunId: string, role: ArtifactRoleValue): Promise<RunArtifactBundle | null> {
@@ -1662,6 +1945,27 @@ export class ArtifactPipelineService {
       throw new HttpError(404, `Benchmark run ${benchmarkRunId} with artifact role ${role} was not found`);
     }
     return bundle;
+  }
+
+  private async assertCapacityForUpload(requestedBytes: number): Promise<void> {
+    const [pendingArtifacts, pendingAnalyses, trackedBytes, disk] = await Promise.all([
+      this.persistence.countArtifactsByStates(['PENDING']),
+      this.persistence.countQualityAnalysesByStatuses(['PENDING']),
+      this.persistence.sumArtifactBytesByStates(['UPLOADED', 'VERIFIED', 'RETAINED']),
+      this.storage.inspectCapacity(),
+    ]);
+    if (pendingArtifacts >= this.config.maxPendingArtifacts) {
+      throw new HttpError(503, 'Artifact upload backlog limit exceeded');
+    }
+    if (pendingAnalyses >= this.config.maxPendingAnalyses) {
+      throw new HttpError(503, 'Authoritative analysis backlog limit exceeded');
+    }
+    if (this.config.storageQuotaBytes != null && trackedBytes + requestedBytes > this.config.storageQuotaBytes) {
+      throw new HttpError(507, 'Artifact storage quota exceeded');
+    }
+    if (disk.availableBytes != null && disk.availableBytes - requestedBytes < this.config.storageReserveBytes) {
+      throw new HttpError(507, 'Artifact storage free space is below reserve');
+    }
   }
 
   private async resolveCreateRunInput(input: CreateRunRequestInput): Promise<CreateRunInput> {
@@ -1772,7 +2076,8 @@ export class ArtifactPipelineService {
 }
 
 function inferExistingMetricModelId(bundle: RunArtifactBundle): string | null {
-  return bundle.qualityAnalyses[0]?.metricModelId ?? null;
+  const preferred = bundle.qualityAnalyses.find((analysis) => analysis.status !== 'PENDING');
+  return preferred?.metricModelId ?? bundle.qualityAnalyses[0]?.metricModelId ?? null;
 }
 
 function deriveMetricModelFallback(bundle: RunArtifactBundle): string {
@@ -1817,6 +2122,17 @@ function serializeError(error: unknown): { status: number; body: JsonObject } {
       error: normalizeError(error),
     },
   };
+}
+
+function sendJson(res: express.Response, status: number, body: JsonObject, closeConnection = false): void {
+  const payload = JSON.stringify(body);
+  res.status(status);
+  res.type('application/json');
+  if (closeConnection) {
+    res.set('connection', 'close');
+  }
+  res.set('content-length', String(Buffer.byteLength(payload)));
+  res.end(payload);
 }
 
 function transformConstantsFromScoreContext(value: unknown): {
@@ -2012,6 +2328,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
     : parseSuiteManifest(options.suiteManifest, 'artifact pipeline suite manifest');
   const onDerivedRecompute = options.onDerivedRecompute ?? createDefaultDerivedRecomputeCallback(prisma);
   const service = new ArtifactPipelineService(persistence, analyzer, config, suiteManifest, onDerivedRecompute);
+  BACKGROUND_ARTIFACT_SERVICES.add(service);
   const router = Router();
 
   router.post('/v7/benchmark-runs', async (req, res) => {
@@ -2080,14 +2397,19 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
     }
   });
 
-  router.put('/v7/artifact-uploads/:token', express.raw({ type: () => true, limit: config.maxArtifactBytes }), async (req, res) => {
+  router.put('/v7/artifact-uploads/:token', async (req, res) => {
     try {
-      const body = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
-      const bundle = await service.acceptUpload(requestIp(req), String(req.params.token), req.get('content-type') ?? null, body);
-      res.json(bundleToResponse(bundle));
+      const bundle = await service.acceptUploadStream(
+        requestIp(req),
+        String(req.params.token),
+        req.get('content-type') ?? null,
+        req.get('content-length') ?? null,
+        req,
+      );
+      sendJson(res, config.autoAnalyzeOnUpload ? 202 : 200, bundleToResponse(bundle), true);
     } catch (error) {
       const serialized = serializeError(error);
-      res.status(serialized.status).json(serialized.body);
+      sendJson(res, serialized.status, serialized.body, true);
     }
   });
 
@@ -2099,12 +2421,12 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         throw new HttpError(400, 'Only encoded artifacts support authoritative reanalysis');
       }
       const payload = REANALYZE_SCHEMA.parse(req.body ?? {});
-      const bundle = await service.analyzeArtifact(
+      const bundle = await service.queueAuthoritativeAnalysis(
         String(req.params.benchmarkRunId),
         payload.analysisWorkerVersion,
         payload.metricModelId,
       );
-      res.json(bundleToResponse(bundle));
+      res.status(202).json(bundleToResponse(bundle));
     } catch (error) {
       const serialized = serializeError(error);
       res.status(serialized.status).json(serialized.body);
@@ -2120,6 +2442,28 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         throw new HttpError(404, 'Artifact not found');
       }
       res.json(bundleToResponse(bundle));
+    } catch (error) {
+      const serialized = serializeError(error);
+      res.status(serialized.status).json(serialized.body);
+    }
+  });
+
+  router.get('/v7/benchmark-runs/:benchmarkRunId/artifacts/:role/analysis-status', async (req, res) => {
+    try {
+      const role = String(req.params.role || '');
+      assertArtifactRole(role);
+      const bundle = await service.getBundle(String(req.params.benchmarkRunId), role);
+      if (!bundle) {
+        throw new HttpError(404, 'Artifact not found');
+      }
+      res.json({
+        artifactId: bundle.artifact.id,
+        benchmarkRunId: bundle.run.id,
+        artifactStorageState: bundle.artifact.storageState,
+        benchmarkRunStatus: bundle.run.status,
+        benchmarkRunStatusReason: bundle.run.statusReason,
+        analyses: bundleToResponse(bundle).analyses,
+      });
     } catch (error) {
       const serialized = serializeError(error);
       res.status(serialized.status).json(serialized.body);
@@ -2270,6 +2614,15 @@ function normalizeBundle(rawRun: any, role: ArtifactRoleValue): RunArtifactBundl
       bitrateMethod: analysis.bitrateMethod,
       containerBitrateBps: analysis.containerBitrateBps,
       fileSizeBytes: analysis.fileSizeBytes,
+      attemptCount: analysis.attemptCount ?? 0,
+      maxAttempts: analysis.maxAttempts ?? 3,
+      nextRetryAt: analysis.nextRetryAt ?? null,
+      leaseToken: analysis.leaseToken ?? null,
+      leaseExpiresAt: analysis.leaseExpiresAt ?? null,
+      startedAt: analysis.startedAt ?? null,
+      completedAt: analysis.completedAt ?? null,
+      lastError: analysis.lastError ?? null,
+      lastErrorAt: analysis.lastErrorAt ?? null,
       createdAt: analysis.createdAt,
       updatedAt: analysis.updatedAt,
     })),
@@ -2284,6 +2637,52 @@ const PRISMA_RUN_INCLUDE = {
   artifacts: true,
   qualityAnalyses: true,
 } as const;
+
+function normalizeStoredQualityAnalysisRow(analysis: any): StoredQualityAnalysis {
+  return {
+    id: analysis.id,
+    benchmarkRunId: analysis.benchmarkRunId,
+    artifactId: analysis.artifactId,
+    status: analysis.status as QualityAnalysisStatusValue,
+    metricModelId: analysis.metricModelId,
+    qualityContextId: analysis.qualityContextId,
+    analysisWorkerVersion: analysis.analysisWorkerVersion,
+    analysisProvenance: analysis.analysisProvenance,
+    vmafMean: analysis.vmafMean,
+    vmafMedian: analysis.vmafMedian,
+    vmafP1: analysis.vmafP1,
+    vmafP5: analysis.vmafP5,
+    vmafMin: analysis.vmafMin,
+    vmafMax: analysis.vmafMax,
+    vmafStdDev: analysis.vmafStdDev,
+    vmafHarmonicMean: analysis.vmafHarmonicMean,
+    worstFrameIndex: analysis.worstFrameIndex,
+    worstFrameTimestampMs: analysis.worstFrameTimestampMs,
+    belowThresholdFractions: analysis.belowThresholdFractions,
+    vmafDistribution: analysis.vmafDistribution,
+    xpsnr: analysis.xpsnr,
+    ssim: analysis.ssim,
+    psnr: analysis.psnr,
+    videoBitrateBps: analysis.videoBitrateBps,
+    videoPayloadBytes: analysis.videoPayloadBytes,
+    videoPacketCount: analysis.videoPacketCount,
+    measuredDurationSeconds: analysis.measuredDurationSeconds,
+    bitrateMethod: analysis.bitrateMethod,
+    containerBitrateBps: analysis.containerBitrateBps,
+    fileSizeBytes: analysis.fileSizeBytes,
+    attemptCount: analysis.attemptCount ?? 0,
+    maxAttempts: analysis.maxAttempts ?? 3,
+    nextRetryAt: analysis.nextRetryAt ?? null,
+    leaseToken: analysis.leaseToken ?? null,
+    leaseExpiresAt: analysis.leaseExpiresAt ?? null,
+    startedAt: analysis.startedAt ?? null,
+    completedAt: analysis.completedAt ?? null,
+    lastError: analysis.lastError ?? null,
+    lastErrorAt: analysis.lastErrorAt ?? null,
+    createdAt: analysis.createdAt,
+    updatedAt: analysis.updatedAt,
+  };
+}
 
 export function createPrismaArtifactPipelinePersistence(client: PrismaClient): ArtifactPipelinePersistence {
   return {
@@ -2757,88 +3156,237 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           },
         },
       });
-      if (!analysis) return null;
-      return {
-        id: analysis.id,
-        benchmarkRunId: analysis.benchmarkRunId,
-        artifactId: analysis.artifactId,
-        status: analysis.status as QualityAnalysisStatusValue,
-        metricModelId: analysis.metricModelId,
-        qualityContextId: analysis.qualityContextId,
-        analysisWorkerVersion: analysis.analysisWorkerVersion,
-        analysisProvenance: analysis.analysisProvenance,
-        vmafMean: analysis.vmafMean,
-        vmafMedian: analysis.vmafMedian,
-        vmafP1: analysis.vmafP1,
-        vmafP5: analysis.vmafP5,
-        vmafMin: analysis.vmafMin,
-        vmafMax: analysis.vmafMax,
-        vmafStdDev: analysis.vmafStdDev,
-        vmafHarmonicMean: analysis.vmafHarmonicMean,
-        worstFrameIndex: analysis.worstFrameIndex,
-        worstFrameTimestampMs: analysis.worstFrameTimestampMs,
-        belowThresholdFractions: analysis.belowThresholdFractions,
-        vmafDistribution: analysis.vmafDistribution,
-        xpsnr: analysis.xpsnr,
-        ssim: analysis.ssim,
-        psnr: analysis.psnr,
-        videoBitrateBps: analysis.videoBitrateBps,
-        videoPayloadBytes: analysis.videoPayloadBytes,
-        videoPacketCount: analysis.videoPacketCount,
-        measuredDurationSeconds: analysis.measuredDurationSeconds,
-        bitrateMethod: analysis.bitrateMethod,
-        containerBitrateBps: analysis.containerBitrateBps,
-        fileSizeBytes: analysis.fileSizeBytes,
-        createdAt: analysis.createdAt,
-        updatedAt: analysis.updatedAt,
-      };
+      return analysis ? normalizeStoredQualityAnalysisRow(analysis) : null;
     },
-    async saveAuthoritativeAnalysis(input) {
+    async ensureQualityAnalysisQueued(input) {
       const run = await client.$transaction(async (tx) => {
-        const existingAnalysis = await tx.qualityAnalysis.findUnique({
+        const now = new Date();
+        const existing = await tx.qualityAnalysis.findUnique({
           where: {
             benchmarkRunId_metricModelId_analysisWorkerVersion: {
               benchmarkRunId: input.benchmarkRunId,
-              metricModelId: input.result.metricModelId,
-              analysisWorkerVersion: input.result.analysisWorkerVersion,
+              metricModelId: input.metricModelId,
+              analysisWorkerVersion: input.analysisWorkerVersion,
             },
           },
         });
-        if (!existingAnalysis) {
+        if (existing) {
+          if (!['FAILED', 'PENDING'].includes(existing.status)) {
+            return await tx.benchmarkRun.findUniqueOrThrow({
+              where: { id: input.benchmarkRunId },
+              include: PRISMA_RUN_INCLUDE,
+            });
+          }
+          await tx.qualityAnalysis.update({
+            where: { id: existing.id },
+            data: {
+              artifactId: input.artifactId,
+              status: 'PENDING',
+              maxAttempts: input.maxAttempts,
+              nextRetryAt: now,
+              leaseToken: null,
+              leaseExpiresAt: null,
+              completedAt: null,
+              lastError: null,
+              lastErrorAt: null,
+            } as any,
+          });
+        } else {
           await tx.qualityAnalysis.create({
             data: {
               benchmarkRunId: input.benchmarkRunId,
               artifactId: input.artifactId,
-              status: input.result.analysisStatus,
-              metricModelId: input.result.metricModelId,
-              qualityContextId: input.result.qualityContextId,
-              analysisWorkerVersion: input.result.analysisWorkerVersion,
-              analysisProvenance: input.result.analysisProvenance as any,
-              vmafMean: input.result.vmafMean,
-              vmafMedian: input.result.vmafMedian,
-              vmafP1: input.result.vmafP1,
-              vmafP5: input.result.vmafP5,
-              vmafMin: input.result.vmafMin,
-              vmafMax: input.result.vmafMax,
-              vmafStdDev: input.result.vmafStdDev,
-              vmafHarmonicMean: input.result.vmafHarmonicMean,
-              worstFrameIndex: input.result.worstFrameIndex,
-              worstFrameTimestampMs: input.result.worstFrameTimestampMs,
-              belowThresholdFractions: input.result.belowThresholdFractions as any,
-              vmafDistribution: input.result.vmafDistribution as any,
-              xpsnr: input.result.xpsnr,
-              ssim: input.result.ssim,
-              psnr: input.result.psnr,
-              videoBitrateBps: input.result.videoBitrateBps,
-              videoPayloadBytes: input.result.videoPayloadBytes,
-              videoPacketCount: input.result.videoPacketCount,
-              measuredDurationSeconds: input.result.measuredDurationSeconds,
-              bitrateMethod: input.result.bitrateMethod,
-              containerBitrateBps: input.result.containerBitrateBps,
-              fileSizeBytes: input.result.fileSizeBytes,
+              status: 'PENDING',
+              metricModelId: input.metricModelId,
+              analysisWorkerVersion: input.analysisWorkerVersion,
+              analysisProvenance: {
+                pipelineVersion: ARTIFACT_PIPELINE_VERSION,
+                queuedAt: now.toISOString(),
+              } as any,
+              maxAttempts: input.maxAttempts,
+              nextRetryAt: now,
             } as any,
           });
         }
+        return await tx.benchmarkRun.findUniqueOrThrow({
+          where: { id: input.benchmarkRunId },
+          include: PRISMA_RUN_INCLUDE,
+        });
+      });
+      return normalizeBundle(run, 'ENCODED');
+    },
+    async claimNextQueuedQualityAnalysis(input) {
+      const candidate = await client.qualityAnalysis.findFirst({
+        where: {
+          status: 'PENDING',
+          AND: [
+            {
+              OR: [
+                { nextRetryAt: null },
+                { nextRetryAt: { lte: input.now } },
+              ],
+            },
+            {
+              OR: [
+                { leaseExpiresAt: null },
+                { leaseExpiresAt: { lte: input.now } },
+              ],
+            },
+          ],
+        },
+        orderBy: [
+          { nextRetryAt: 'asc' },
+          { createdAt: 'asc' },
+        ],
+      });
+      if (!candidate) return null;
+      const claimed = await client.$transaction(async (tx) => {
+        const updated = await tx.qualityAnalysis.updateMany({
+          where: {
+            id: candidate.id,
+            status: 'PENDING',
+            OR: [
+              { leaseExpiresAt: null },
+              { leaseExpiresAt: { lte: input.now } },
+            ],
+          },
+          data: {
+            leaseToken: input.leaseToken,
+            leaseExpiresAt: input.leaseExpiresAt,
+            startedAt: input.now,
+            nextRetryAt: null,
+            attemptCount: { increment: 1 },
+          } as any,
+        });
+        if (updated.count !== 1) return null;
+        const run = await tx.benchmarkRun.findUniqueOrThrow({
+          where: { id: candidate.benchmarkRunId },
+          include: PRISMA_RUN_INCLUDE,
+        });
+        return normalizeBundle(run, 'ENCODED');
+      });
+      if (!claimed) return null;
+      const analysis = claimed.qualityAnalyses.find((entry) => entry.id === candidate.id);
+      return analysis ? { bundle: claimed, analysis } : null;
+    },
+    async markQualityAnalysisRetry(input) {
+      const run = await client.$transaction(async (tx) => {
+        await tx.qualityAnalysis.update({
+          where: { id: input.analysisId },
+          data: {
+            status: 'PENDING',
+            leaseToken: null,
+            leaseExpiresAt: null,
+            nextRetryAt: input.nextRetryAt,
+            lastError: input.errorMessage,
+            lastErrorAt: new Date(),
+          } as any,
+        });
+        return await tx.benchmarkRun.findUniqueOrThrow({
+          where: { id: input.benchmarkRunId },
+          include: PRISMA_RUN_INCLUDE,
+        });
+      });
+      return normalizeBundle(run, 'ENCODED');
+    },
+    async markQualityAnalysisFailed(input) {
+      const run = await client.$transaction(async (tx) => {
+        await tx.qualityAnalysis.update({
+          where: { id: input.analysisId },
+          data: {
+            status: 'FAILED',
+            leaseToken: null,
+            leaseExpiresAt: null,
+            nextRetryAt: null,
+            completedAt: new Date(),
+            lastError: input.errorMessage,
+            lastErrorAt: new Date(),
+          } as any,
+        });
+        const successfulCount = await tx.qualityAnalysis.count({
+          where: {
+            benchmarkRunId: input.benchmarkRunId,
+            status: { in: ['COMPLETE', 'SUSPECT', 'REJECTED'] },
+          },
+        });
+        if (successfulCount === 0) {
+          await tx.benchmarkRun.update({
+            where: { id: input.benchmarkRunId },
+            data: {
+              status: 'INVALID',
+              statusReason: input.errorMessage,
+              decidedAt: new Date(),
+            },
+          });
+        }
+        return await tx.benchmarkRun.findUniqueOrThrow({
+          where: { id: input.benchmarkRunId },
+          include: PRISMA_RUN_INCLUDE,
+        });
+      });
+      return normalizeBundle(run, 'ENCODED');
+    },
+    async countArtifactsByStates(states) {
+      return await client.artifact.count({
+        where: { storageState: { in: states as any[] } },
+      });
+    },
+    async countQualityAnalysesByStatuses(statuses) {
+      return await client.qualityAnalysis.count({
+        where: { status: { in: statuses as any[] } },
+      });
+    },
+    async sumArtifactBytesByStates(states) {
+      const result = await client.artifact.aggregate({
+        where: {
+          storageState: { in: states as any[] },
+          byteSize: { not: null },
+        },
+        _sum: { byteSize: true },
+      });
+      return result._sum.byteSize ?? 0;
+    },
+    async saveAuthoritativeAnalysis(input) {
+      const run = await client.$transaction(async (tx) => {
+        await tx.qualityAnalysis.update({
+          where: { id: input.analysisId },
+          data: {
+            artifactId: input.artifactId,
+            status: input.result.analysisStatus,
+            metricModelId: input.result.metricModelId,
+            qualityContextId: input.result.qualityContextId,
+            analysisWorkerVersion: input.result.analysisWorkerVersion,
+            analysisProvenance: input.result.analysisProvenance as any,
+            vmafMean: input.result.vmafMean,
+            vmafMedian: input.result.vmafMedian,
+            vmafP1: input.result.vmafP1,
+            vmafP5: input.result.vmafP5,
+            vmafMin: input.result.vmafMin,
+            vmafMax: input.result.vmafMax,
+            vmafStdDev: input.result.vmafStdDev,
+            vmafHarmonicMean: input.result.vmafHarmonicMean,
+            worstFrameIndex: input.result.worstFrameIndex,
+            worstFrameTimestampMs: input.result.worstFrameTimestampMs,
+            belowThresholdFractions: input.result.belowThresholdFractions as any,
+            vmafDistribution: input.result.vmafDistribution as any,
+            xpsnr: input.result.xpsnr,
+            ssim: input.result.ssim,
+            psnr: input.result.psnr,
+            videoBitrateBps: input.result.videoBitrateBps,
+            videoPayloadBytes: input.result.videoPayloadBytes,
+            videoPacketCount: input.result.videoPacketCount,
+            measuredDurationSeconds: input.result.measuredDurationSeconds,
+            bitrateMethod: input.result.bitrateMethod,
+            containerBitrateBps: input.result.containerBitrateBps,
+            fileSizeBytes: input.result.fileSizeBytes,
+            nextRetryAt: null,
+            leaseToken: null,
+            leaseExpiresAt: null,
+            completedAt: new Date(),
+            lastError: null,
+            lastErrorAt: null,
+          } as any,
+        });
         await tx.benchmarkRun.update({
           where: { id: input.benchmarkRunId },
           data: {

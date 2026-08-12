@@ -120,6 +120,14 @@ docker-compose.override.yml
 
 # Nginx certs (place externally)
 nginx/certs/
+nginx/dev-certs/
+.omx/context/
+.omx/logs/
+.omx/metrics.json
+.omx/plans/
+.omx/state/
+.omx/tmux-hook.json
+sample.mp4
 IMPROVEMENTS.md
 OPTIMIZATIONS.md
 BUG_FIXES.md

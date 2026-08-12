@@ -5,7 +5,7 @@ Vercel (recommended)
 2) Set Environment Variables:
    - `INTERNAL_API_BASE_URL` = `https://encodingdb.platinumlabs.dev`
    - `APP_URL` = your deployed frontend URL
-3) Build & Output Settings: default (Next.js 15 app dir).
+3) Build & Output Settings: default (Next.js 16 app router project).
 4) Deploy.
 
 Netlify
@@ -32,3 +32,4 @@ npm run dev
 Optional:
 
 - Set `ENABLE_QUERY_MOCK=1` when you want the frontend to build or run without a live API.
+- Run `../scripts/release_preflight.sh metadata frontend` before promotion to confirm the documented frontend version and deployment contract still match the repository release metadata.

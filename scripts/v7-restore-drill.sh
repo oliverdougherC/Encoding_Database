@@ -2,13 +2,52 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUNDLE_DIR="${1:-}"
-if [[ -z "$BUNDLE_DIR" ]]; then echo "usage: v7-restore-drill.sh BACKUP_DIR" >&2; exit 2; fi
+DRY_RUN=0
+BUNDLE_DIR=""
+
+usage() {
+  cat <<'EOF' >&2
+usage: v7-restore-drill.sh [--dry-run] BACKUP_DIR
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    --help|-h)
+      usage
+      exit 0
+      ;;
+    -*)
+      usage
+      exit 2
+      ;;
+    *)
+      if [[ -n "$BUNDLE_DIR" ]]; then usage; exit 2; fi
+      BUNDLE_DIR="$1"
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$BUNDLE_DIR" ]]; then usage; exit 2; fi
 BUNDLE_DIR="$(python3 -c 'import os,sys; print(os.path.abspath(sys.argv[1]))' "$BUNDLE_DIR")"
 for file in SHA256SUMS artifacts.tar.gz database.dump inventory.json; do
   [[ -f "$BUNDLE_DIR/$file" ]] || { echo "backup missing $file" >&2; exit 2; }
 done
 (cd "$BUNDLE_DIR" && shasum -a 256 -c SHA256SUMS)
+
+if (( DRY_RUN == 1 )); then
+  printf '{\n'
+  printf '  "mode": "dry-run",\n'
+  printf '  "bundleDir": "%s",\n' "$BUNDLE_DIR"
+  printf '  "verifiedManifest": true\n'
+  printf '}\n'
+  exit 0
+fi
 
 DRILL_DIR="$(mktemp -d "${TMPDIR:-/tmp}/encodingdb-v7-restore.XXXXXX")"
 CONTAINER_NAME="encodingdb-v7-restore-$RANDOM-$$"

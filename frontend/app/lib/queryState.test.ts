@@ -57,7 +57,8 @@ describe("queryState", () => {
 
   it("accepts aggregate sample sorting and rejects telemetry sample sorting", () => {
     expect(parseWorkbenchSearchParams(new URLSearchParams("sort=samples"))).toMatchObject({ sort: "samples" });
-    expect(parseWorkbenchSearchParams(new URLSearchParams("sort=sampleCount"))).toMatchObject({ sort: "" });
+    expect(parseWorkbenchSearchParams(new URLSearchParams("sort=videoBitrateBps"))).toMatchObject({ sort: "videoBitrateBps" });
+    expect(parseWorkbenchSearchParams(new URLSearchParams("sort=gpuPowerAvgW"))).toMatchObject({ sort: "" });
   });
 
   it("omits default analytics filters from the query string", () => {

@@ -75,6 +75,13 @@ function readMock<T>(endpointPath: string, params?: URLSearchParams | Record<str
     const rows = MOCK_QUERY_ROWS.slice(Math.max(0, skip), Math.max(0, skip) + Math.max(1, limit));
     return { data: rows as T, totalCount: MOCK_QUERY_ROWS.length };
   }
+  if (endpointPath === "/corpus") {
+    const search = params instanceof URLSearchParams ? params : new URLSearchParams(toSearchString(params));
+    const limit = Number(search.get("limit") || WORKBENCH_PAGE_SIZE);
+    const skip = Number(search.get("skip") || 0);
+    const rows = MOCK_QUERY_ROWS.slice(Math.max(0, skip), Math.max(0, skip) + Math.max(1, limit));
+    return { data: rows as T, totalCount: MOCK_QUERY_ROWS.length };
+  }
   if (endpointPath === "/analytics/leaderboards") {
     return { data: buildMockLeaderboards() as T, totalCount: null };
   }
@@ -119,7 +126,7 @@ async function fetchJson<T>(
 }
 
 export async function fetchWorkbenchPage(state: WorkbenchSearchState): Promise<{ rows: Benchmark[]; totalCount: number }> {
-  const { data, totalCount } = await fetchJson<Benchmark[]>("/query", {
+  const { data, totalCount } = await fetchJson<Benchmark[]>("/corpus", {
     limit: WORKBENCH_PAGE_SIZE,
     skip: (state.page - 1) * WORKBENCH_PAGE_SIZE,
     total: 1,

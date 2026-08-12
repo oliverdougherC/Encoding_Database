@@ -58,7 +58,9 @@ function Resolve-PythonCommand {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $rootDir = (Resolve-Path -LiteralPath (Join-Path $scriptDir "..")).Path
 $clientDir = Join-Path $rootDir "client"
-$binDir = Join-Path $clientDir "bin\win"
+$bundleDir = if ($env:ENCODINGDB_RUNTIME_BUNDLE_DIR) { $env:ENCODINGDB_RUNTIME_BUNDLE_DIR } else { Join-Path $clientDir "bin\win" }
+$ffmpegPath = if ($env:ENCODINGDB_FFMPEG_PATH) { $env:ENCODINGDB_FFMPEG_PATH } else { Join-Path $bundleDir "ffmpeg.exe" }
+$ffprobePath = if ($env:ENCODINGDB_FFPROBE_PATH) { $env:ENCODINGDB_FFPROBE_PATH } else { Join-Path $bundleDir "ffprobe.exe" }
 $guiAppName = "encodingdb-client-windows"
 $consoleAppName = "encodingdb-client-windows-console"
 $guiEntrypoint = Join-Path $clientDir "_pyinstaller_gui_entry.py"
@@ -68,18 +70,22 @@ $legacyDistDir = Join-Path $clientDir "dist\windows"
 $pyiDistDir = Join-Path $buildRoot "dist"
 $pyiWorkDir = Join-Path $buildRoot "work"
 $pyiSpecDir = Join-Path $buildRoot "spec"
+$runtimeResourceDir = Join-Path $buildRoot "runtime_resources"
 $guiOutputPath = Join-Path $rootDir "$guiAppName.exe"
 $consoleOutputPath = Join-Path $rootDir "$consoleAppName.exe"
 $logFile = Join-Path $buildRoot "build.log"
+$buildRequirements = Join-Path $clientDir "requirements-build.txt"
 
-Ensure-Exists -Path (Join-Path $binDir "ffmpeg.exe") -Description "ffmpeg.exe"
-Ensure-Exists -Path (Join-Path $binDir "ffprobe.exe") -Description "ffprobe.exe"
+Ensure-Exists -Path $ffmpegPath -Description "ffmpeg.exe"
+Ensure-Exists -Path $ffprobePath -Description "ffprobe.exe"
 Ensure-Exists -Path (Join-Path $clientDir "presets.json") -Description "presets.json"
 Ensure-Exists -Path (Join-Path $clientDir "resources\\test_suite_v1\\manifest.json") -Description "suite manifest"
 Ensure-Exists -Path (Join-Path $clientDir "resources\vmaf\manifest.json") -Description "VMAF manifest"
 Ensure-Exists -Path (Join-Path $clientDir "resources\vmaf\vmaf_v1.0.16_3d0h.json") -Description "VMAF model"
+Ensure-Exists -Path (Join-Path $clientDir "resources\\runtime\\ffmpeg-lock.json") -Description "runtime lock manifest"
 Ensure-Exists -Path $guiEntrypoint -Description "GUI PyInstaller entrypoint"
 Ensure-Exists -Path $consoleEntrypoint -Description "Console PyInstaller entrypoint"
+Ensure-Exists -Path $buildRequirements -Description "pinned build requirements"
 
 Write-Log "Preparing build directories..."
 if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
@@ -104,6 +110,19 @@ if ($pythonCmd.Count -gt 1) {
 
 Write-Log ("Using Python command: " + ($pythonCmd -join " "))
 
+$runtimeRegisterArgs = $pythonPrefixArgs + @(
+    (Join-Path $rootDir "scripts\register_ffmpeg_runtime.py"),
+    "--platform", "win",
+    "--ffmpeg-path", $ffmpegPath,
+    "--ffprobe-path", $ffprobePath,
+    "--stage-runtime-dir", $runtimeResourceDir
+)
+if ($env:ENCODINGDB_REGISTER_RUNTIME -eq "1") { $runtimeRegisterArgs += "--update" }
+& $pythonExe @runtimeRegisterArgs *> $null
+if ($LASTEXITCODE -ne 0) {
+    Fail "Runtime lock validation failed"
+}
+
 $verifyArgs = $pythonPrefixArgs + @(
     (Join-Path $rootDir "scripts\verify_suite_assets.py"),
     (Join-Path $clientDir "resources\test_suite_v1")
@@ -113,11 +132,13 @@ if ($LASTEXITCODE -ne 0) {
     Fail "Canonical suite asset verification failed"
 }
 
-$checkArgs = $pythonPrefixArgs + @("-m", "PyInstaller", "--version")
-& $pythonExe @checkArgs *> $null
-if ($LASTEXITCODE -ne 0) {
-    Fail "PyInstaller is not installed for this interpreter. Install with: $($pythonCmd -join ' ') -m pip install pyinstaller"
-}
+$venvDir = Join-Path $buildRoot "venv"
+$venvCreateArgs = $pythonPrefixArgs + @("-m", "venv", $venvDir)
+& $pythonExe @venvCreateArgs
+if ($LASTEXITCODE -ne 0) { Fail "Unable to create isolated build environment" }
+$buildPython = Join-Path $venvDir "Scripts\python.exe"
+& $buildPython -m pip install --disable-pip-version-check -r $buildRequirements
+if ($LASTEXITCODE -ne 0) { Fail "Unable to install pinned build requirements" }
 
 function Invoke-PyInstallerBuild {
     param(
@@ -131,7 +152,7 @@ function Invoke-PyInstallerBuild {
     New-Item -ItemType Directory -Path $workDirForBuild -Force | Out-Null
     New-Item -ItemType Directory -Path $specDirForBuild -Force | Out-Null
 
-    $buildArgs = $pythonPrefixArgs + @(
+    $buildArgs = @(
         "-m", "PyInstaller",
         "--clean",
         "--onefile",
@@ -140,10 +161,11 @@ function Invoke-PyInstallerBuild {
         "--workpath", $workDirForBuild,
         "--specpath", $specDirForBuild,
         "--paths", $rootDir,
-        "--add-data", "client/bin/win/ffmpeg.exe;bin/win",
-        "--add-data", "client/bin/win/ffprobe.exe;bin/win",
+        "--add-data", "$ffmpegPath;bin/win",
+        "--add-data", "$ffprobePath;bin/win",
         "--add-data", "client/presets.json;.",
         "--add-data", "client/resources/test_suite_v1;resources/test_suite_v1",
+        "--add-data", "$runtimeResourceDir;resources/runtime",
         "--add-data", "client/resources/vmaf;resources/vmaf"
     )
     if ($Windowed) {
@@ -154,7 +176,7 @@ function Invoke-PyInstallerBuild {
     Write-Log "Running PyInstaller for $Name..."
     Push-Location -LiteralPath $rootDir
     try {
-        & $pythonExe @buildArgs *>&1 | Tee-Object -FilePath $logFile -Append
+        & $buildPython @buildArgs *>&1 | Tee-Object -FilePath $logFile -Append
         if ($LASTEXITCODE -ne 0) {
             Fail "PyInstaller failed for $Name. See build log: $logFile"
         }
@@ -178,6 +200,33 @@ if (-not (Test-Path -LiteralPath $builtConsoleExe)) {
 Write-Log "Placing executables in repository root..."
 Move-Item -LiteralPath $builtGuiExe -Destination $guiOutputPath -Force
 Move-Item -LiteralPath $builtConsoleExe -Destination $consoleOutputPath -Force
+
+$guiReleaseManifestArgs = $pythonPrefixArgs + @(
+    (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
+    "--artifact-path", $guiOutputPath,
+    "--platform", "win",
+    "--ffmpeg-path", $ffmpegPath,
+    "--ffprobe-path", $ffprobePath,
+    "--output-dir", $rootDir,
+    "--skip-smoke"
+)
+& $pythonExe @guiReleaseManifestArgs
+if ($LASTEXITCODE -ne 0) {
+    Fail "GUI release manifest finalization failed"
+}
+
+$releaseManifestArgs = $pythonPrefixArgs + @(
+    (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
+    "--artifact-path", $consoleOutputPath,
+    "--platform", "win",
+    "--ffmpeg-path", $ffmpegPath,
+    "--ffprobe-path", $ffprobePath,
+    "--output-dir", $rootDir
+)
+& $pythonExe @releaseManifestArgs
+if ($LASTEXITCODE -ne 0) {
+    Fail "Release manifest finalization failed"
+}
 
 Write-Log "Build complete: $guiOutputPath"
 Write-Log "Build complete: $consoleOutputPath"

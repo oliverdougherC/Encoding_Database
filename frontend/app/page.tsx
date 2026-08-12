@@ -6,19 +6,69 @@ import HeroSearch from "./components/HeroSearch";
 import styles from "./page.module.css";
 
 export const revalidate = 60;
-const toParams=(raw:Record<string,string|string[]|undefined>|undefined)=>{const p=new URLSearchParams();Object.entries(raw||{}).forEach(([k,v])=>{const value=Array.isArray(v)?v[0]:v;if(value)p.set(k,value)});return p};
+function toParams(raw: Record<string, string | string[] | undefined> | undefined) {
+  const params = new URLSearchParams();
+  Object.entries(raw || {}).forEach(([key, rawValue]) => {
+    const value = Array.isArray(rawValue) ? rawValue[0] : rawValue;
+    if (value) params.set(key, value);
+  });
+  return params;
+}
 
-export default async function Home({searchParams}:{searchParams?:Promise<Record<string,string|string[]|undefined>>}) {
-  const state=parseWorkbenchSearchParams(toParams(searchParams?await searchParams:undefined)); let rows:Benchmark[]=[];let totalCount=0;let error:string|null=null;
-  try { const data=await fetchWorkbenchPage(state);rows=data.rows;totalCount=data.totalCount; } catch(e) { error=e instanceof Error?e.message:"Unable to load benchmark results"; }
-  const systems=new Set(rows.map(r=>`${r.cpuModel}|${r.gpuModel||""}`)).size, encoders=new Set(rows.map(r=>r.encoderName||r.codec)).size, codecs=new Set(rows.map(r=>r.codecFamily||r.codec)).size;
-  return <div className={`page ${styles.page}`}>
-    <section className={styles.hero}>
-      <div className={styles.heroMain}><p className={styles.kicker}>Public benchmark database</p><h1>Brevity is the soul of wit.</h1><p className={styles.lede}>Community-submitted FFmpeg performance, quality, and efficiency data. Browse the corpus, inspect aggregate configurations, or filter to hardware you actually own.</p><HeroSearch className={styles.heroSearch}/>{!error&&<div className={styles.datasetLine}><span><strong>{totalCount.toLocaleString()}</strong> configurations</span><span><strong>{systems}</strong> systems on this page</span><span><strong>{encoders}</strong> encoders on this page</span></div>}</div>
-      <aside className={styles.corpus}><p className={styles.kicker}>Corpus status</p><div className={styles.big}>{totalCount.toLocaleString()}</div><p className={styles.corpusLabel}>accepted aggregate configurations available to inspect</p><div className={styles.coverage}><div><strong>{systems}</strong><span>systems shown</span></div><div><strong>{encoders}</strong><span>encoders shown</span></div><div><strong>{codecs}</strong><span>codec families</span></div><div><strong>60s</strong><span>data refresh</span></div></div><p className={styles.callout}><strong>Transparent by design.</strong> Metrics are averages across accepted submissions with the same benchmark configuration.</p></aside>
-    </section>
-    <div className={styles.sectionHead} id="results"><div><h2>Browse results</h2><p>Aggregate benchmark configurations; open a row to inspect the retained fields.</p></div></div>
-    {error ? <div className={styles.error}>Unable to load results: {error}</div> : <BenchmarksTable initialData={rows} totalCount={totalCount} currentPage={state.page}/>} 
-    <aside className={styles.note}><strong>About these configurations</strong><span>Each row aggregates accepted submissions with the same benchmark configuration. Submission-specific software versions, timing, notes, and input provenance are not attributed to an aggregate.</span><a href={`/methodology?${buildWorkbenchSearchString(state)}`}>Read methodology</a></aside>
-  </div>;
+export default async function Home({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  const state = parseWorkbenchSearchParams(toParams(searchParams ? await searchParams : undefined));
+  let rows: Benchmark[] = [];
+  let totalCount = 0;
+  let error: string | null = null;
+  try {
+    const data = await fetchWorkbenchPage(state);
+    rows = data.rows;
+    totalCount = data.totalCount;
+  } catch (cause) {
+    error = cause instanceof Error ? cause.message : "Unable to load benchmark results";
+  }
+  const systems = new Set(rows.map((row) => row.environment.fingerprint)).size;
+  const encoders = new Set(rows.map((row) => row.encoderName)).size;
+  const codecs = new Set(rows.map((row) => row.codecFamily || row.codec)).size;
+
+  return (
+    <div className={`page ${styles.page}`}>
+      <section className={styles.hero}>
+        <div className={styles.heroMain}>
+          <p className={styles.kicker}>V7 public corpus</p>
+          <h1>Retained workload evidence, not blended legacy rows.</h1>
+          <p className={styles.lede}>Browse authoritative V7 workload aggregates keyed by immutable recipe, environment, and protocol lineage. Public PL stays nullable until a production reference context is published.</p>
+          <HeroSearch className={styles.heroSearch} />
+          {!error && <div className={styles.datasetLine}>
+            <span><strong>{totalCount.toLocaleString()}</strong> V7 aggregates</span>
+            <span><strong>{systems}</strong> environments on this page</span>
+            <span><strong>{encoders}</strong> encoders on this page</span>
+          </div>}
+        </div>
+        <aside className={styles.corpus}>
+          <p className={styles.kicker}>Corpus status</p>
+          <div className={styles.big}>{totalCount.toLocaleString()}</div>
+          <p className={styles.corpusLabel}>accepted V7 workload aggregates available to inspect</p>
+          <div className={styles.coverage}>
+            <div><strong>{systems}</strong><span>environments shown</span></div>
+            <div><strong>{encoders}</strong><span>encoders shown</span></div>
+            <div><strong>{codecs}</strong><span>codec families</span></div>
+            <div><strong>60s</strong><span>data refresh</span></div>
+          </div>
+          <p className={styles.callout}><strong>Transparent by design.</strong> Legacy `/query` aggregates remain separate; this surface is V7-only.</p>
+        </aside>
+      </section>
+      <div className={styles.sectionHead} id="results">
+        <div><h2>Browse corpus</h2><p>Open a row to inspect immutable recipe and environment identity, evidence tier, bitrate, confidence, and version lineage.</p></div>
+      </div>
+      {error
+        ? <div className={styles.error}>Unable to load results: {error}</div>
+        : <BenchmarksTable initialData={rows} totalCount={totalCount} currentPage={state.page} />}
+      <aside className={styles.note}>
+        <strong>About this V7 surface</strong>
+        <span>Each row is a retained V7 workload aggregate. Test-only reference contexts never surface as public PL, and submission-specific notes or personal media are never attributed to a corpus row.</span>
+        <a href={`/methodology?${buildWorkbenchSearchString(state)}`}>Read methodology</a>
+      </aside>
+    </div>
+  );
 }

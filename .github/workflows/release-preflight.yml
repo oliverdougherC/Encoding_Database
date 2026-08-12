@@ -1,0 +1,63 @@
+name: Release Preflight
+
+on:
+  push:
+    branches:
+      - beta
+      - main
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      enforce_final_suite:
+        description: "Require the reviewed frozen suite lock (release gate)"
+        type: boolean
+        required: true
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install media probe runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg openssl
+      - name: Generate ignored dev TLS cert
+        run: bash scripts/generate-dev-cert.sh
+      - name: Run release preflight
+        env:
+          ENFORCE_FINAL_SUITE: ${{ github.event_name == 'workflow_dispatch' && inputs.enforce_final_suite || 'false' }}
+        run: |
+          checks=(hygiene metadata frontend server client stack-smoke migrations production-compose suite-contract ops-hooks)
+          if [ "$ENFORCE_FINAL_SUITE" = "true" ]; then
+            checks+=(final-suite)
+          fi
+          bash scripts/release_preflight.sh "${checks[@]}"
+
+  release-sentinel:
+    name: Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)
+    if: ${{ github.event_name != 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Surface the intentional final-suite blocker
+        run: |
+          set +e
+          output="$(bash scripts/release_preflight.sh final-suite 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "Final suite is frozen; the expected pre-freeze sentinel is cleared."
+            exit 0
+          fi
+          grep -Fxq 'FAIL FINAL_TEST_SUITE_NOT_FROZEN' <<<"$output"

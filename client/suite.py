@@ -15,6 +15,8 @@ from . import config
 SUITE_VERSION = "encodingdb-test-suite-v1"
 DEFAULT_QUICK_CLIP_ID = "sports-action-960x540-24p"
 MANIFEST_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "manifest.json")
+FINALIZATION_STATUS_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "finalization-status.json")
+SUITE_LOCK_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "suite-lock.json")
 
 REQUIRED_CONTENT_CLASSES: Tuple[str, ...] = (
     "high-motion-sports",
@@ -116,7 +118,7 @@ class SuiteClip:
     file_name: str
     sha256: str
     byte_size: int
-    lavfi: str
+    acquisition: Dict[str, Any]
     description: str
     provenance: Dict[str, Any]
     media: ClipMediaContract
@@ -163,6 +165,38 @@ def get_manifest_path() -> str:
         if candidate and os.path.exists(candidate):
             return candidate
     raise FileNotFoundError("EncodingDB Test Suite v1 manifest not found")
+
+
+def get_finalization_status_path() -> str:
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), os.path.basename(FINALIZATION_STATUS_RELATIVE_PATH))
+        if os.path.exists(candidate):
+            return candidate
+    raise FileNotFoundError("EncodingDB Test Suite v1 finalization status not found")
+
+
+def get_suite_lock_path() -> str:
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), os.path.basename(SUITE_LOCK_RELATIVE_PATH))
+        if os.path.exists(candidate):
+            return candidate
+    raise FileNotFoundError("EncodingDB Test Suite v1 lock not found")
+
+
+def load_finalization_status(path: Optional[str] = None) -> Dict[str, Any]:
+    with open(path or get_finalization_status_path(), "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise RuntimeError("suite finalization status is invalid")
+    return payload
+
+
+def load_suite_lock(path: Optional[str] = None) -> Dict[str, Any]:
+    with open(path or get_suite_lock_path(), "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise RuntimeError("suite lock is invalid")
+    return payload
 
 
 def _suite_cache_root() -> str:
@@ -217,7 +251,7 @@ def load_default_suite_manifest() -> SuiteManifest:
                 file_name=str(clip["fileName"]),
                 sha256=str(clip["sha256"]),
                 byte_size=int(clip["byteSize"]),
-                lavfi=str(clip["acquisition"]["ffmpegLavfi"]),
+                acquisition=dict(clip.get("acquisition") or {}),
                 description=str(clip.get("description") or ""),
                 provenance=dict(clip.get("source", {})),
                 media=_manifest_media_from_dict(dict(clip["media"])),

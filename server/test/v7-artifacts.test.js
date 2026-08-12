@@ -1,12 +1,20 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import express from 'express';
+import http from 'node:http';
 import net from 'node:net';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { Readable } from 'node:stream';
+import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-import { createArtifactPipelineRouter, inferBitDepth, inferMediaContainerFromFormatName } from '../dist/v7/artifacts.js';
+import {
+  ArtifactPipelineService,
+  createArtifactPipelineRouter,
+  inferBitDepth,
+  inferMediaContainerFromFormatName,
+  startArtifactPipelineBackgroundWork,
+} from '../dist/v7/artifacts.js';
 import { createDefaultDerivedRecomputeCallback } from '../dist/v7/artifacts.js';
 import {
   DEFAULT_ANALYZER_VERSION,
@@ -339,32 +347,169 @@ class MemoryPersistence {
     );
   }
 
-  async saveAuthoritativeAnalysis(input) {
+  async ensureQualityAnalysisQueued(input) {
     const record = this.runs.get(input.benchmarkRunId);
-    const key = `${input.benchmarkRunId}:${input.result.metricModelId}:${input.result.analysisWorkerVersion}`;
-    const existingId = this.analysisIdsByKey.get(key);
     const now = new Date();
-    if (existingId) {
-      const analysis = record.qualityAnalyses.find((entry) => entry.id === existingId);
-      Object.assign(analysis, structuredClone(input.result), {
-        id: existingId,
-        benchmarkRunId: input.benchmarkRunId,
-        artifactId: input.artifactId,
-        createdAt: analysis.createdAt,
-        updatedAt: now,
-      });
+    const existing = record.qualityAnalyses.find((entry) => (
+      entry.metricModelId === input.metricModelId && entry.analysisWorkerVersion === input.analysisWorkerVersion
+    ));
+    if (existing) {
+      existing.status = 'PENDING';
+      existing.artifactId = input.artifactId;
+      existing.maxAttempts = input.maxAttempts;
+      existing.nextRetryAt = now;
+      existing.completedAt = null;
+      existing.leaseToken = null;
+      existing.leaseExpiresAt = null;
+      existing.lastError = null;
+      existing.lastErrorAt = null;
+      existing.updatedAt = now;
     } else {
       const id = `analysis-${this.nextAnalysisId++}`;
-      this.analysisIdsByKey.set(key, id);
+      this.analysisIdsByKey.set(`${input.benchmarkRunId}:${input.metricModelId}:${input.analysisWorkerVersion}`, id);
       record.qualityAnalyses.push({
         id,
         benchmarkRunId: input.benchmarkRunId,
         artifactId: input.artifactId,
         createdAt: now,
         updatedAt: now,
-        ...structuredClone(input.result),
+        status: 'PENDING',
+        metricModelId: input.metricModelId,
+        qualityContextId: null,
+        analysisWorkerVersion: input.analysisWorkerVersion,
+        analysisProvenance: { queued: true },
+        vmafMean: null,
+        vmafMedian: null,
+        vmafP1: null,
+        vmafP5: null,
+        vmafMin: null,
+        vmafMax: null,
+        vmafStdDev: null,
+        vmafHarmonicMean: null,
+        worstFrameIndex: null,
+        worstFrameTimestampMs: null,
+        belowThresholdFractions: null,
+        vmafDistribution: null,
+        xpsnr: null,
+        ssim: null,
+        psnr: null,
+        videoBitrateBps: null,
+        videoPayloadBytes: null,
+        videoPacketCount: null,
+        measuredDurationSeconds: null,
+        bitrateMethod: null,
+        containerBitrateBps: null,
+        fileSizeBytes: null,
+        attemptCount: 0,
+        maxAttempts: input.maxAttempts,
+        nextRetryAt: now,
+        leaseToken: null,
+        leaseExpiresAt: null,
+        startedAt: null,
+        completedAt: null,
+        lastError: null,
+        lastErrorAt: null,
       });
     }
+    return this.cloneBundle(record);
+  }
+
+  async claimNextQueuedQualityAnalysis(input) {
+    for (const record of this.runs.values()) {
+      const analysis = record.qualityAnalyses.find((entry) => (
+        entry.status === 'PENDING'
+        && (!entry.nextRetryAt || entry.nextRetryAt <= input.now)
+        && (!entry.leaseExpiresAt || entry.leaseExpiresAt <= input.now)
+      ));
+      if (!analysis) continue;
+      analysis.attemptCount += 1;
+      analysis.leaseToken = input.leaseToken;
+      analysis.leaseExpiresAt = input.leaseExpiresAt;
+      analysis.startedAt = input.now;
+      analysis.nextRetryAt = null;
+      analysis.updatedAt = new Date();
+      return {
+        bundle: this.cloneBundle(record),
+        analysis: structuredClone(analysis),
+      };
+    }
+    return null;
+  }
+
+  async markQualityAnalysisRetry(input) {
+    const record = this.runs.get(input.benchmarkRunId);
+    const analysis = record.qualityAnalyses.find((entry) => entry.id === input.analysisId);
+    analysis.status = 'PENDING';
+    analysis.nextRetryAt = input.nextRetryAt;
+    analysis.leaseToken = null;
+    analysis.leaseExpiresAt = null;
+    analysis.lastError = input.errorMessage;
+    analysis.lastErrorAt = new Date();
+    analysis.updatedAt = new Date();
+    return this.cloneBundle(record);
+  }
+
+  async markQualityAnalysisFailed(input) {
+    const record = this.runs.get(input.benchmarkRunId);
+    const analysis = record.qualityAnalyses.find((entry) => entry.id === input.analysisId);
+    analysis.status = 'FAILED';
+    analysis.nextRetryAt = null;
+    analysis.leaseToken = null;
+    analysis.leaseExpiresAt = null;
+    analysis.completedAt = new Date();
+    analysis.lastError = input.errorMessage;
+    analysis.lastErrorAt = new Date();
+    analysis.updatedAt = new Date();
+    if (!record.qualityAnalyses.some((entry) => ['COMPLETE', 'SUSPECT', 'REJECTED'].includes(entry.status))) {
+      record.run.status = 'INVALID';
+      record.run.statusReason = input.errorMessage;
+    }
+    return this.cloneBundle(record);
+  }
+
+  async countArtifactsByStates(states) {
+    let count = 0;
+    for (const record of this.runs.values()) {
+      count += record.artifacts.filter((entry) => states.includes(entry.storageState)).length;
+    }
+    return count;
+  }
+
+  async countQualityAnalysesByStatuses(states) {
+    let count = 0;
+    for (const record of this.runs.values()) {
+      count += record.qualityAnalyses.filter((entry) => states.includes(entry.status)).length;
+    }
+    return count;
+  }
+
+  async sumArtifactBytesByStates(states) {
+    let total = 0;
+    for (const record of this.runs.values()) {
+      for (const artifact of record.artifacts) {
+        if (states.includes(artifact.storageState)) total += artifact.byteSize ?? 0;
+      }
+    }
+    return total;
+  }
+
+  async saveAuthoritativeAnalysis(input) {
+    const record = this.runs.get(input.benchmarkRunId);
+    const now = new Date();
+    const analysis = record.qualityAnalyses.find((entry) => entry.id === input.analysisId);
+    Object.assign(analysis, structuredClone(input.result), {
+      id: input.analysisId,
+      benchmarkRunId: input.benchmarkRunId,
+      artifactId: input.artifactId,
+      status: input.result.analysisStatus,
+      leaseToken: null,
+      leaseExpiresAt: null,
+      nextRetryAt: null,
+      completedAt: now,
+      lastError: null,
+      lastErrorAt: null,
+      updatedAt: now,
+    });
 
     const artifact = record.artifacts.find((entry) => entry.id === input.artifactId);
     record.run.status = input.result.runStatus;
@@ -443,6 +588,42 @@ class FakeAnalyzer {
   }
 }
 
+class FailTwiceAnalyzer extends FakeAnalyzer {
+  async analyze(input) {
+    if (this.calls.length < 2) {
+      this.calls.push({ runId: input.bundle.run.id, version: input.requestedAnalysisWorkerVersion });
+      throw new Error('transient analyzer failure');
+    }
+    return await super.analyze(input);
+  }
+}
+
+class AlwaysFailAnalyzer extends FakeAnalyzer {
+  async analyze(input) {
+    this.calls.push({ runId: input.bundle.run.id, version: input.requestedAnalysisWorkerVersion });
+    throw new Error('authoritative analyzer is unavailable');
+  }
+}
+
+class ConcurrencyTrackingAnalyzer extends FakeAnalyzer {
+  constructor() {
+    super();
+    this.active = 0;
+    this.maxActive = 0;
+  }
+
+  async analyze(input) {
+    this.active += 1;
+    this.maxActive = Math.max(this.maxActive, this.active);
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      return await super.analyze(input);
+    } finally {
+      this.active -= 1;
+    }
+  }
+}
+
 async function startServer(router) {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
@@ -487,6 +668,7 @@ async function createHarness(configOverrides = {}) {
       ...configOverrides,
     },
   });
+  startArtifactPipelineBackgroundWork();
   const http = await startServer(router);
   return {
     ...http,
@@ -501,8 +683,86 @@ async function createHarness(configOverrides = {}) {
   };
 }
 
-async function createRun(baseUrl, fixtures, overrides = {}) {
-  const body = {
+async function waitForAnalysisState(baseUrl, benchmarkRunId, predicate, description) {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const response = await requestJson(baseUrl, `/v7/benchmark-runs/${benchmarkRunId}/artifacts/ENCODED/analysis-status`);
+    assert.equal(response.status, 200);
+    const json = response.json;
+    if (predicate(json)) {
+      return json;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`Timed out waiting for ${description}`);
+}
+
+async function requestJson(baseUrl, routePath, options = {}) {
+  const target = new URL(routePath, baseUrl);
+  return await new Promise((resolve, reject) => {
+    let settled = false;
+    const req = http.request({
+      method: options.method ?? 'GET',
+      hostname: target.hostname,
+      port: target.port,
+      path: `${target.pathname}${target.search}`,
+      headers: {
+        connection: 'close',
+        ...(options.headers ?? {}),
+      },
+    }, (res) => {
+      const chunks = [];
+      const expectedBytes = Number(res.headers['content-length'] || 0);
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        const raw = Buffer.concat(chunks).toString('utf8');
+        resolve({
+          status: res.statusCode ?? 0,
+          json: raw ? JSON.parse(raw) : null,
+        });
+        res.destroy();
+      };
+      res.on('data', (chunk) => chunks.push(Buffer.from(chunk)));
+      res.on('data', () => {
+        if (expectedBytes > 0 && Buffer.concat(chunks).byteLength >= expectedBytes) {
+          finish();
+        }
+      });
+      res.on('end', finish);
+      res.setTimeout(3_000, () => {
+        if (!settled) {
+          settled = true;
+          reject(new Error(`${options.method ?? 'GET'} ${routePath} response timed out`));
+          res.destroy();
+        }
+      });
+    });
+    req.setTimeout(3_000, () => {
+      if (!settled) {
+        settled = true;
+        req.destroy(new Error(`${options.method ?? 'GET'} ${routePath} timed out`));
+      }
+    });
+    req.on('error', reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+async function putArtifactUpload(baseUrl, token, body, contentType) {
+  return await requestJson(baseUrl, `/v7/artifact-uploads/${token}`, {
+    method: 'PUT',
+    headers: {
+      'content-type': contentType,
+      'content-length': String(body.byteLength),
+    },
+    body,
+  });
+}
+
+function buildRunBody(fixtures, overrides = {}) {
+  return {
     benchmarkProtocol: {
       protocolVersion: fixtures.protocol.protocolVersion,
       sourceSuiteVersion: fixtures.protocol.sourceSuiteVersion,
@@ -548,6 +808,10 @@ async function createRun(baseUrl, fixtures, overrides = {}) {
       mediaContainer: 'mp4',
     },
   };
+}
+
+async function createRun(baseUrl, fixtures, overrides = {}) {
+  const body = buildRunBody(fixtures, overrides);
   const response = await fetch(`${baseUrl}/v7/benchmark-runs`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -555,6 +819,90 @@ async function createRun(baseUrl, fixtures, overrides = {}) {
   });
   const json = await response.json();
   return { response, json, body };
+}
+
+async function createServiceHarness(configOverrides = {}, analyzerOverride = null, startBackground = true) {
+  const fixtures = createFixtureCatalog();
+  const persistence = new MemoryPersistence(fixtures);
+  const analyzer = analyzerOverride ?? new FakeAnalyzer();
+  const tempRoot = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-artifacts-service-test-'));
+  const config = {
+    uploadTokenSecret: 'test-secret',
+    uploadTokenTtlMs: 30_000,
+    maxArtifactBytes: 1024,
+    allowedMimeTypes: new Set(['video/mp4']),
+    authRateLimitWindowMs: 60_000,
+    authRateLimitMax: 20,
+    uploadRateLimitWindowMs: 60_000,
+    uploadRateLimitMax: 20,
+    maxConcurrentUploads: 4,
+    maxPendingArtifacts: 100,
+    maxPendingAnalyses: 100,
+    storage: {
+      rootDir: tempRoot,
+      provider: 'localfs',
+      bucket: null,
+    },
+    storageQuotaBytes: null,
+    storageReserveBytes: 0,
+    analyzerVersion: 'worker-v1',
+    autoAnalyzeOnUpload: true,
+    validateMediaBeforePublish: false,
+    analysisPollIntervalMs: 10,
+    analysisLeaseMs: 5_000,
+    analysisRetryBackoffMs: 25,
+    analysisMaxAttempts: 3,
+    analysisMaxConcurrent: 2,
+    ...configOverrides,
+  };
+  const service = new ArtifactPipelineService(
+    persistence,
+    analyzer,
+    config,
+    fixtures.suiteManifest,
+    async () => {},
+  );
+  if (startBackground) service.startBackgroundWork();
+  return {
+    fixtures,
+    persistence,
+    analyzer,
+    service,
+    config,
+    tempRoot,
+    async close() {
+      await rm(tempRoot, { recursive: true, force: true });
+    },
+  };
+}
+
+async function createRunDirect(service, fixtures, overrides = {}) {
+  const body = buildRunBody(fixtures, overrides);
+  return {
+    body,
+    ...(await service.createRun(body)),
+  };
+}
+
+async function waitForBundleAnalysisState(service, benchmarkRunId, predicate, description) {
+  const deadline = Date.now() + 5_000;
+  while (Date.now() < deadline) {
+    const bundle = await service.getBundle(benchmarkRunId, 'ENCODED');
+    if (bundle && predicate(bundle)) {
+      return bundle;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  throw new Error(`Timed out waiting for ${description}`);
+}
+
+async function assertNoStagedUploads(tempRoot) {
+  const stagingRoot = path.join(tempRoot, '.staging');
+  const entries = await readdir(stagingRoot).catch((error) => {
+    if (error?.code === 'ENOENT') return [];
+    throw error;
+  });
+  assert.deepEqual(entries, []);
 }
 
 test('run creation validates and persists canonical energy domains and decode evidence', async (t) => {
@@ -629,280 +977,558 @@ test('run creation rejects mislabeled energy/decode evidence instead of storing 
 });
 
 test('artifact upload stores client quality as debug only and returns authoritative server analysis', async (t) => {
-  if (!CAN_BIND_LOOPBACK) {
-    t.skip('Loopback listen is unavailable in this runtime');
-    return;
-  }
-
-  const harness = await createHarness();
-  t.after(async () => {
-    await harness.close();
-  });
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
 
   const uploadBytes = ARTIFACT_BYTES;
   const sha256 = ARTIFACT_SHA256;
-  const run = await createRun(harness.baseUrl, harness.fixtures, {
+  const run = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '1'.repeat(64),
     clientQualityDebug: { vmafMean: 0.1, vmafP5: 0.05, source: 'client-debug' },
     sha256,
     byteSize: uploadBytes.length,
   });
-  assert.equal(run.response.status, 201);
-  assert.equal(run.json.created, true);
+  assert.equal(run.created, true);
 
-  const authResponse = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      sha256,
-      byteSize: uploadBytes.length,
-      contentType: 'video/mp4',
-    }),
+  const authJson = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256,
+    byteSize: uploadBytes.length,
+    contentType: 'video/mp4',
   });
-  assert.equal(authResponse.status, 200);
-  const authJson = await authResponse.json();
   assert.equal(authJson.uploadRequired, true);
 
-  const uploadResponse = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authJson.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: uploadBytes,
-  });
-  assert.equal(uploadResponse.status, 200);
-  const uploadJson = await uploadResponse.json();
-  assert.equal(uploadJson.benchmarkRun.clientQualityDebug.vmafMean, 0.1);
-  assert.equal(uploadJson.analyses.length, 1);
-  assert.equal(uploadJson.analyses[0].vmafMean, 95.25);
-  assert.equal(uploadJson.analyses[0].vmafP5, 90.25);
-  assert.equal(uploadJson.artifact.storageState, 'RETAINED');
-  assert.equal(uploadJson.benchmarkRun.status, 'ACCEPTED');
+  const queuedBundle = await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authJson.token,
+    'video/mp4',
+    String(uploadBytes.length),
+    Readable.from([uploadBytes]),
+  );
+  assert.equal(queuedBundle.run.clientQualityDebug.vmafMean, 0.1);
+  assert.equal(queuedBundle.qualityAnalyses[0].status, 'PENDING');
+  const uploadBundle = await waitForBundleAnalysisState(
+    harness.service,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses.length === 1 && value.qualityAnalyses[0].status === 'COMPLETE',
+    'initial authoritative analysis completion',
+  );
+  assert.equal(uploadBundle.qualityAnalyses[0].vmafMean, 95.25);
+  assert.equal(uploadBundle.qualityAnalyses[0].vmafP5, 90.25);
+  assert.equal(uploadBundle.artifact.storageState, 'RETAINED');
+  assert.equal(uploadBundle.run.status, 'ACCEPTED');
   assert.equal(harness.analyzer.calls.length, 1);
   assert.equal(harness.analyzer.calls[0].clientQualityDebug.vmafMean, 0.1);
 });
 
-test('duplicate payloads and upload retries remain idempotent without duplicating analyses', async (t) => {
-  if (!CAN_BIND_LOOPBACK) {
-    t.skip('Loopback listen is unavailable in this runtime');
-    return;
-  }
-
-  const harness = await createHarness();
-  t.after(async () => {
-    await harness.close();
+test('artifact upload is incrementally streamed across multiple chunks', async (t) => {
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: '9'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
   });
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
+  });
+  const chunks = [ARTIFACT_BYTES.subarray(0, 2), ARTIFACT_BYTES.subarray(2, 7), ARTIFACT_BYTES.subarray(7)];
+  const queued = await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authorization.token,
+    'video/mp4',
+    String(ARTIFACT_BYTES.length),
+    Readable.from(chunks),
+  );
+  assert.equal(queued.artifact.storageState, 'UPLOADED');
+  assert.equal(queued.qualityAnalyses[0].status, 'PENDING');
+  await assertNoStagedUploads(harness.tempRoot);
+});
+
+test('truncated, hash-mismatched, and disconnected streams never publish retained evidence', async (t) => {
+  for (const scenario of [
+    {
+      name: 'truncated',
+      payloadHash: 'a'.repeat(63) + '1',
+      stream: () => Readable.from([ARTIFACT_BYTES.subarray(0, ARTIFACT_BYTES.length - 1)]),
+      pattern: /byte size does not match authorization/,
+    },
+    {
+      name: 'hash mismatch',
+      payloadHash: 'a'.repeat(63) + '2',
+      stream: () => Readable.from([Buffer.from('artifact-datb')]),
+      pattern: /sha256 does not match authorization/,
+    },
+    {
+      name: 'disconnect',
+      payloadHash: 'a'.repeat(63) + '3',
+      stream: () => Readable.from((async function* disconnectedUpload() {
+        yield ARTIFACT_BYTES.subarray(0, 4);
+        throw new Error('client disconnected');
+      })()),
+      pattern: /client disconnected/,
+    },
+  ]) {
+    const harness = await createServiceHarness();
+    t.after(() => harness.close());
+    const run = await createRunDirect(harness.service, harness.fixtures, {
+      payloadHash: scenario.payloadHash,
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+    });
+    const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+      contentType: 'video/mp4',
+    });
+    await assert.rejects(
+      harness.service.acceptUploadStream(
+        '127.0.0.1',
+        authorization.token,
+        'video/mp4',
+        String(ARTIFACT_BYTES.length),
+        scenario.stream(),
+      ),
+      scenario.pattern,
+      scenario.name,
+    );
+    const failed = await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
+    assert.notEqual(failed.artifact.storageState, 'RETAINED', scenario.name);
+    assert.equal(failed.qualityAnalyses.length, 0, scenario.name);
+    await assertNoStagedUploads(harness.tempRoot);
+  }
+});
+
+test('stream overflow stops consumption and leaves no staged or retained object', async (t) => {
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: 'b'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+  });
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
+  });
+  let producedChunks = 0;
+  const source = Readable.from((async function* oversizedUpload() {
+    for (const chunk of [Buffer.alloc(8), Buffer.alloc(8), Buffer.alloc(512), Buffer.alloc(512)]) {
+      producedChunks += 1;
+      yield chunk;
+      await new Promise((resolve) => setImmediate(resolve));
+    }
+  })(), { highWaterMark: 1 });
+  await assert.rejects(
+    harness.service.acceptUploadStream('127.0.0.1', authorization.token, 'video/mp4', null, source),
+    /byte size exceeds authorization/,
+  );
+  assert.ok(producedChunks < 4, 'overflow must abort before the complete request body is consumed');
+  const failed = await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
+  assert.notEqual(failed.artifact.storageState, 'RETAINED');
+  await assertNoStagedUploads(harness.tempRoot);
+});
+
+test('duplicate payloads and upload retries remain idempotent without duplicating analyses', async (t) => {
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
 
   const uploadBytes = ARTIFACT_BYTES;
   const sha256 = ARTIFACT_SHA256;
-  const firstCreate = await createRun(harness.baseUrl, harness.fixtures, {
+  const firstCreate = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '2'.repeat(64),
     sha256,
     byteSize: uploadBytes.length,
   });
-  const secondCreate = await createRun(harness.baseUrl, harness.fixtures, {
+  const secondCreate = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '2'.repeat(64),
     sha256,
     byteSize: uploadBytes.length,
   });
-  assert.equal(secondCreate.response.status, 200);
-  assert.equal(secondCreate.json.created, false);
-  assert.equal(secondCreate.json.benchmarkRun.id, firstCreate.json.benchmarkRun.id);
+  assert.equal(secondCreate.created, false);
+  assert.equal(secondCreate.bundle.run.id, firstCreate.bundle.run.id);
 
-  const authResponse = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${firstCreate.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256, byteSize: uploadBytes.length, contentType: 'video/mp4' }),
+  const authJson = await harness.service.authorizeUpload('127.0.0.1', firstCreate.bundle.run.id, 'ENCODED', {
+    sha256,
+    byteSize: uploadBytes.length,
+    contentType: 'video/mp4',
   });
-  const authJson = await authResponse.json();
 
-  const firstUpload = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authJson.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: uploadBytes,
-  });
-  assert.equal(firstUpload.status, 200);
+  const firstUpload = await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authJson.token,
+    'video/mp4',
+    String(uploadBytes.length),
+    Readable.from([uploadBytes]),
+  );
+  assert.equal(firstUpload.qualityAnalyses[0].status, 'PENDING');
 
-  const retryUpload = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authJson.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: uploadBytes,
-  });
-  assert.equal(retryUpload.status, 200);
-  const retryJson = await retryUpload.json();
-  assert.equal(retryJson.analyses.length, 1);
+  const retryUpload = await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authJson.token,
+    'video/mp4',
+    String(uploadBytes.length),
+    Readable.from([uploadBytes]),
+  );
+  assert.ok(['PENDING', 'COMPLETE'].includes(retryUpload.qualityAnalyses[0].status));
+  const completed = await waitForBundleAnalysisState(
+    harness.service,
+    firstCreate.bundle.run.id,
+    (value) => value.qualityAnalyses.length === 1 && value.qualityAnalyses[0].status === 'COMPLETE',
+    'deduplicated upload analysis completion',
+  );
+  assert.equal(completed.qualityAnalyses.length, 1);
   assert.equal(harness.analyzer.calls.length, 1);
+
+  const deduplicatedRun = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: 'c'.repeat(64),
+    sha256,
+    byteSize: uploadBytes.length,
+  });
+  const deduplicatedAuthorization = await harness.service.authorizeUpload(
+    '127.0.0.1',
+    deduplicatedRun.bundle.run.id,
+    'ENCODED',
+    { sha256, byteSize: uploadBytes.length, contentType: 'video/mp4' },
+  );
+  assert.equal(deduplicatedAuthorization.uploadRequired, false);
+  assert.equal(deduplicatedAuthorization.reason, 'deduplicated-by-sha256');
+  assert.equal(deduplicatedAuthorization.artifact.storageKey, completed.artifact.storageKey);
 });
 
 test('upload authorization enforces expiry, type, size, overwrite, and rate-ish controls', async (t) => {
-  if (!CAN_BIND_LOOPBACK) {
-    t.skip('Loopback listen is unavailable in this runtime');
-    return;
-  }
-
-  const harness = await createHarness({
+  const harness = await createServiceHarness({
     uploadTokenTtlMs: 1,
     authRateLimitMax: 2,
     uploadRateLimitMax: 5,
     maxArtifactBytes: 16,
   });
-  t.after(async () => {
-    await harness.close();
-  });
+  t.after(() => harness.close());
 
-  const run = await createRun(harness.baseUrl, harness.fixtures, {
+  const run = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '3'.repeat(64),
     sha256: ARTIFACT_SHA256,
     byteSize: ARTIFACT_BYTES.length,
   });
 
-  const tooLargeAuth = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: 999, contentType: 'video/mp4' }),
-  });
-  assert.equal(tooLargeAuth.status, 413);
+  await assert.rejects(
+    harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+      sha256: ARTIFACT_SHA256,
+      byteSize: 999,
+      contentType: 'video/mp4',
+    }),
+    /maximum allowed size/,
+  );
 
-  const auth = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
+  const authJson = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
   });
-  assert.equal(auth.status, 200);
-  const authJson = await auth.json();
 
-  const rateLimitedAuth = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
-  });
-  assert.equal(rateLimitedAuth.status, 429);
+  await assert.rejects(
+    harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+      contentType: 'video/mp4',
+    }),
+    /rate limit/,
+  );
 
   await new Promise((resolve) => setTimeout(resolve, 10));
-  const expiredUpload = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authJson.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: ARTIFACT_BYTES,
-  });
-  assert.equal(expiredUpload.status, 401);
+  await assert.rejects(
+    harness.service.acceptUploadStream('127.0.0.1', authJson.token, 'video/mp4', String(ARTIFACT_BYTES.length), Readable.from([ARTIFACT_BYTES])),
+    /expired/,
+  );
 
-  const mismatchedTypeHarness = await createHarness();
-  t.after(async () => {
-    await mismatchedTypeHarness.close();
-  });
-  const mismatchRun = await createRun(mismatchedTypeHarness.baseUrl, mismatchedTypeHarness.fixtures, {
+  const mismatchedTypeHarness = await createServiceHarness();
+  t.after(() => mismatchedTypeHarness.close());
+  const mismatchRun = await createRunDirect(mismatchedTypeHarness.service, mismatchedTypeHarness.fixtures, {
     payloadHash: '4'.repeat(64),
     sha256: ARTIFACT_SHA256,
     byteSize: ARTIFACT_BYTES.length,
   });
-  const mismatchAuthResponse = await fetch(`${mismatchedTypeHarness.baseUrl}/v7/benchmark-runs/${mismatchRun.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
+  const mismatchAuth = await mismatchedTypeHarness.service.authorizeUpload('127.0.0.1', mismatchRun.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
   });
-  const mismatchAuth = await mismatchAuthResponse.json();
-  const mismatchedTypeUpload = await fetch(`${mismatchedTypeHarness.baseUrl}/v7/artifact-uploads/${mismatchAuth.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'application/octet-stream' },
-    body: ARTIFACT_BYTES,
-  });
-  assert.equal(mismatchedTypeUpload.status, 415);
-
-  const successfulUpload = await fetch(`${mismatchedTypeHarness.baseUrl}/v7/artifact-uploads/${mismatchAuth.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: ARTIFACT_BYTES,
-  });
-  assert.equal(successfulUpload.status, 200);
-
-  const overwriteAttempt = await fetch(`${mismatchedTypeHarness.baseUrl}/v7/benchmark-runs/${mismatchRun.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: '5f5c8f55b6cd3726e1eb3ca0c5d90f4f5efc72187eab8fdf6e8f77fca7f56d89', byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
-  });
-  assert.equal(overwriteAttempt.status, 409);
+  await assert.rejects(
+    mismatchedTypeHarness.service.acceptUploadStream(
+      '127.0.0.1',
+      mismatchAuth.token,
+      'application/octet-stream',
+      String(ARTIFACT_BYTES.length),
+      Readable.from([ARTIFACT_BYTES]),
+    ),
+    /content type does not match authorization/,
+  );
+  await mismatchedTypeHarness.service.acceptUploadStream(
+    '127.0.0.1',
+    mismatchAuth.token,
+    'video/mp4',
+    String(ARTIFACT_BYTES.length),
+    Readable.from([ARTIFACT_BYTES]),
+  );
+  await waitForBundleAnalysisState(
+    mismatchedTypeHarness.service,
+    mismatchRun.bundle.run.id,
+    (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
+    'successful upload analysis completion',
+  );
+  await assert.rejects(
+    mismatchedTypeHarness.service.authorizeUpload('127.0.0.1', mismatchRun.bundle.run.id, 'ENCODED', {
+      sha256: '5f5c8f55b6cd3726e1eb3ca0c5d90f4f5efc72187eab8fdf6e8f77fca7f56d89',
+      byteSize: ARTIFACT_BYTES.length,
+      contentType: 'video/mp4',
+    }),
+    /already bound/,
+  );
 });
 
 test('rejected encoded artifact makes the immutable benchmark run non-canonical', async (t) => {
-  if (!CAN_BIND_LOOPBACK) return t.skip('loopback bind unavailable');
-  const harness = await createHarness();
-  t.after(async () => harness.close());
-  const run = await createRun(harness.baseUrl, harness.fixtures, {
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '7'.repeat(64),
     sha256: ARTIFACT_SHA256,
     byteSize: ARTIFACT_BYTES.length,
   });
-  const auth = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
   });
-  const authorization = await auth.json();
-  const rejected = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authorization.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: ARTIFACT_BYTES.subarray(1),
-  });
-  assert.equal(rejected.status, 400);
-  const bundle = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED`).then((response) => response.json());
+  await assert.rejects(
+    harness.service.acceptUploadStream(
+      '127.0.0.1',
+      authorization.token,
+      'video/mp4',
+      String(ARTIFACT_BYTES.length),
+      Readable.from([ARTIFACT_BYTES.subarray(1)]),
+    ),
+    /byte size does not match authorization/,
+  );
+  const bundle = await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
   assert.equal(bundle.artifact.storageState, 'REJECTED');
-  assert.equal(bundle.benchmarkRun.status, 'REJECTED');
-  assert.match(bundle.benchmarkRun.statusReason, /size mismatch/i);
+  assert.equal(bundle.run.status, 'REJECTED');
+  assert.match(bundle.run.statusReason, /size.*match/i);
 });
 
 test('retained artifacts can be reanalyzed with a newer worker version while same-version jobs stay idempotent', async (t) => {
-  if (!CAN_BIND_LOOPBACK) {
-    t.skip('Loopback listen is unavailable in this runtime');
-    return;
-  }
-
-  const harness = await createHarness();
-  t.after(async () => {
-    await harness.close();
-  });
+  const harness = await createServiceHarness();
+  t.after(() => harness.close());
 
   const uploadBytes = ARTIFACT_BYTES;
   const sha256 = ARTIFACT_SHA256;
-  const run = await createRun(harness.baseUrl, harness.fixtures, {
+  const run = await createRunDirect(harness.service, harness.fixtures, {
     payloadHash: '6'.repeat(64),
     sha256,
     byteSize: uploadBytes.length,
   });
-  const authResponse = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/upload-authorizations`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ sha256, byteSize: uploadBytes.length, contentType: 'video/mp4' }),
+  const authJson = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256,
+    byteSize: uploadBytes.length,
+    contentType: 'video/mp4',
   });
-  const authJson = await authResponse.json();
-  const upload = await fetch(`${harness.baseUrl}/v7/artifact-uploads/${authJson.token}`, {
-    method: 'PUT',
-    headers: { 'content-type': 'video/mp4' },
-    body: uploadBytes,
-  });
-  assert.equal(upload.status, 200);
+  await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authJson.token,
+    'video/mp4',
+    String(uploadBytes.length),
+    Readable.from([uploadBytes]),
+  );
+  await waitForBundleAnalysisState(
+    harness.service,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses.length === 1 && value.qualityAnalyses[0].status === 'COMPLETE',
+    'baseline analysis completion before reanalyze',
+  );
   assert.equal(harness.analyzer.calls.length, 1);
 
-  const idempotentReanalyze = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/reanalyze`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, metricModelId: 'vmaf-v1-sdr-sd' }),
-  });
-  assert.equal(idempotentReanalyze.status, 200);
-  const idempotentJson = await idempotentReanalyze.json();
-  assert.equal(idempotentJson.analyses.length, 1);
+  const idempotentBundle = await harness.service.queueAuthoritativeAnalysis(
+    run.bundle.run.id,
+    DEFAULT_ANALYZER_VERSION,
+    'vmaf-v1-sdr-sd',
+  );
+  assert.equal(idempotentBundle.qualityAnalyses.length, 1);
   assert.equal(harness.analyzer.calls.length, 1);
 
-  const upgradedReanalyze = await fetch(`${harness.baseUrl}/v7/benchmark-runs/${run.json.benchmarkRun.id}/artifacts/ENCODED/reanalyze`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ analysisWorkerVersion: 'worker-v2', metricModelId: 'vmaf-v1-sdr-sd' }),
-  });
-  assert.equal(upgradedReanalyze.status, 200);
-  const upgradedJson = await upgradedReanalyze.json();
-  assert.equal(upgradedJson.analyses.length, 2);
-  assert.equal(upgradedJson.analyses[0].analysisWorkerVersion, 'worker-v2');
-  assert.equal(upgradedJson.analyses[0].vmafMean, 97.25);
-  assert.equal(upgradedJson.analyses[1].analysisWorkerVersion, DEFAULT_ANALYZER_VERSION);
-  assert.equal(upgradedJson.artifact.storageState, 'RETAINED');
+  await harness.service.queueAuthoritativeAnalysis(
+    run.bundle.run.id,
+    'worker-v2',
+    'vmaf-v1-sdr-sd',
+  );
+  const upgradedBundle = await waitForBundleAnalysisState(
+    harness.service,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses.some((analysis) => analysis.analysisWorkerVersion === 'worker-v2' && analysis.status === 'COMPLETE'),
+    'upgraded reanalysis completion',
+  );
+  assert.equal(upgradedBundle.qualityAnalyses.length, 2);
+  const upgradedAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === 'worker-v2');
+  const baselineAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION);
+  assert.equal(upgradedAnalysis?.vmafMean, 97.25);
+  assert.ok(baselineAnalysis);
+  assert.equal(upgradedBundle.artifact.storageState, 'RETAINED');
   assert.equal(harness.analyzer.calls.length, 2);
+});
+
+test('analysis maxAttempts counts executions once and permits the configured third attempt', async (t) => {
+  const analyzer = new FailTwiceAnalyzer();
+  const harness = await createServiceHarness({ analysisMaxAttempts: 3, analysisRetryBackoffMs: 1 }, analyzer);
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: '8'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+  });
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
+  });
+  await harness.service.acceptUploadStream(
+    '127.0.0.1',
+    authorization.token,
+    'video/mp4',
+    String(ARTIFACT_BYTES.length),
+    Readable.from([ARTIFACT_BYTES]),
+  );
+  const completed = await waitForBundleAnalysisState(
+    harness.service,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
+    'third authoritative analysis attempt',
+  );
+  assert.equal(analyzer.calls.length, 3);
+  assert.equal(completed.qualityAnalyses[0].attemptCount, 3);
+  assert.equal(completed.run.status, 'ACCEPTED');
+});
+
+test('startup reconciliation resumes durable pending authoritative analysis', async (t) => {
+  const harness = await createServiceHarness({ autoAnalyzeOnUpload: false }, null, false);
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: 'd'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+  });
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
+  });
+  const uploaded = await harness.service.acceptUploadStream(
+    '127.0.0.1', authorization.token, 'video/mp4', String(ARTIFACT_BYTES.length), Readable.from([ARTIFACT_BYTES]),
+  );
+  await harness.persistence.ensureQualityAnalysisQueued({
+    benchmarkRunId: uploaded.run.id,
+    artifactId: uploaded.artifact.id,
+    metricModelId: 'vmaf-v1-sdr-sd',
+    analysisWorkerVersion: 'worker-v1',
+    maxAttempts: 3,
+  });
+
+  const restartedService = new ArtifactPipelineService(
+    harness.persistence,
+    harness.analyzer,
+    harness.config,
+    harness.fixtures.suiteManifest,
+    async () => {},
+  );
+  restartedService.startBackgroundWork();
+  const completed = await waitForBundleAnalysisState(
+    restartedService,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
+    'reconciled authoritative analysis',
+  );
+  assert.equal(completed.artifact.storageState, 'RETAINED');
+  assert.equal(harness.analyzer.calls.length, 1);
+});
+
+test('authoritative worker concurrency is bounded by configuration', async (t) => {
+  const analyzer = new ConcurrencyTrackingAnalyzer();
+  const harness = await createServiceHarness(
+    { autoAnalyzeOnUpload: false, analysisMaxConcurrent: 1 },
+    analyzer,
+    false,
+  );
+  t.after(() => harness.close());
+  const runIds = [];
+  for (let index = 0; index < 3; index += 1) {
+    const run = await createRunDirect(harness.service, harness.fixtures, {
+      payloadHash: `${index + 1}`.repeat(64),
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+    });
+    const authorization = await harness.service.authorizeUpload(`127.0.0.${index + 1}`, run.bundle.run.id, 'ENCODED', {
+      sha256: ARTIFACT_SHA256,
+      byteSize: ARTIFACT_BYTES.length,
+      contentType: 'video/mp4',
+    });
+    const uploaded = authorization.uploadRequired
+      ? await harness.service.acceptUploadStream(
+        `127.0.0.${index + 1}`,
+        authorization.token,
+        'video/mp4',
+        String(ARTIFACT_BYTES.length),
+        Readable.from([ARTIFACT_BYTES]),
+      )
+      : await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
+    await harness.persistence.ensureQualityAnalysisQueued({
+      benchmarkRunId: uploaded.run.id,
+      artifactId: uploaded.artifact.id,
+      metricModelId: 'vmaf-v1-sdr-sd',
+      analysisWorkerVersion: 'worker-v1',
+      maxAttempts: 3,
+    });
+    runIds.push(run.bundle.run.id);
+  }
+  harness.service.startBackgroundWork();
+  await Promise.all(runIds.map((runId) => waitForBundleAnalysisState(
+    harness.service,
+    runId,
+    (value) => value.qualityAnalyses[0]?.status === 'COMPLETE',
+    `bounded analysis for ${runId}`,
+  )));
+  assert.equal(analyzer.calls.length, 3);
+  assert.equal(analyzer.maxActive, 1);
+});
+
+test('exhausted authoritative analysis failures remain observable and retry-counted', async (t) => {
+  const analyzer = new AlwaysFailAnalyzer();
+  const harness = await createServiceHarness(
+    { analysisMaxAttempts: 2, analysisRetryBackoffMs: 1 },
+    analyzer,
+  );
+  t.after(() => harness.close());
+  const run = await createRunDirect(harness.service, harness.fixtures, {
+    payloadHash: 'e'.repeat(64),
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+  });
+  const authorization = await harness.service.authorizeUpload('127.0.0.1', run.bundle.run.id, 'ENCODED', {
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    contentType: 'video/mp4',
+  });
+  await harness.service.acceptUploadStream(
+    '127.0.0.1', authorization.token, 'video/mp4', String(ARTIFACT_BYTES.length), Readable.from([ARTIFACT_BYTES]),
+  );
+  const failed = await waitForBundleAnalysisState(
+    harness.service,
+    run.bundle.run.id,
+    (value) => value.qualityAnalyses[0]?.status === 'FAILED',
+    'exhausted authoritative analysis',
+  );
+  assert.equal(failed.qualityAnalyses[0].attemptCount, 2);
+  assert.match(failed.qualityAnalyses[0].lastError, /analyzer is unavailable/);
+  assert.equal(failed.run.status, 'INVALID');
+  assert.equal(analyzer.calls.length, 2);
 });
 
 test('semantic bootstrap rejects non-canonical protocol drift and minimum-client incompatibility', async (t) => {

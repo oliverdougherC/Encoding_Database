@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "runtimeId": "encodingdb-ffmpeg-runtime",
+  "source": "deterministically-provisioned",
+  "platforms": {
+    "mac": {
+      "ffmpeg": {
+        "relativePath": "bin/mac/ffmpeg",
+        "sha256": "681435111386b2f967d2ae6bb8ed04ea31b813066898824c6c817656a9710af6",
+        "byteSize": 80133504,
+        "versionLine": "ffmpeg version N-121420-gce9d181444-tessus  https://evermeet.cx/ffmpeg/  Copyright (c) 2000-2025 the FFmpeg developers",
+        "buildFingerprint": "fe3b38db2fa97e14d194c2d9557eaa0855dc24edbdfafd91641c38745472f10d"
+      },
+      "ffprobe": {
+        "relativePath": "bin/mac/ffprobe",
+        "sha256": "d4587d13973dcb281f91a0ab6e961dd7d45845d11d5d253c23eca10cd53188fe",
+        "byteSize": 79951584,
+        "versionLine": "ffprobe version N-121420-gce9d181444-tessus  https://evermeet.cx/ffmpeg/  Copyright (c) 2007-2025 the FFmpeg developers",
+        "buildFingerprint": "f73e98cfb7ada760dc05a88b692eed3f9e0d414ee4236bc71c5a10c46a47391c"
+      },
+      "capabilities": {
+        "ffprobe": true,
+        "filters": [
+          "libvmaf",
+          "xpsnr"
+        ],
+        "encoders": [
+          "h264_videotoolbox",
+          "hevc_videotoolbox",
+          "libaom-av1",
+          "libopenh264",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ]
+      }
+    }
+  }
+}

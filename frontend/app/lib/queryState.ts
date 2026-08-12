@@ -1,5 +1,5 @@
 export const WORKBENCH_PAGE_SIZE = 50;
-export type WorkbenchSortKey = "cpuModel" | "gpuModel" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes" | "gpuPowerAvgW" | "samples" | "";
+export type WorkbenchSortKey = "cpuModel" | "gpuModel" | "codec" | "preset" | "fps" | "vmaf" | "fileSizeBytes" | "videoBitrateBps" | "samples" | "";
 export type EncoderTypeFilter = "" | "hardware" | "software";
 export type PlFitMode = "balanced" | "quality" | "storage" | "realtime" | "custom";
 export type WorkbenchSearchState = { page:number; cpu:string; gpu:string; search:string; preset:string; sort:WorkbenchSortKey; dir:"asc"|"desc"; encoderType:EncoderTypeFilter };
@@ -22,7 +22,7 @@ export type AnalyticsSearchState = {
   requireRecommendationEligibility?: boolean;
 };
 type Params = { get(name:string):string|null };
-const sortKeys: WorkbenchSortKey[] = ["cpuModel","gpuModel","codec","preset","fps","vmaf","fileSizeBytes","gpuPowerAvgW","samples",""];
+const sortKeys: WorkbenchSortKey[] = ["cpuModel","gpuModel","codec","preset","fps","vmaf","fileSizeBytes","videoBitrateBps","samples",""];
 const positive = (value:string|null, fallback:number) => value && /^\d+$/.test(value) && Number(value)>0 ? Number(value) : fallback;
 const numeric = (value:string|null) => value != null && value !== "" && Number.isFinite(Number(value)) ? Number(value) : null;
 export function parseWorkbenchSearchParams(params:Params):WorkbenchSearchState { const sort=params.get("sort") as WorkbenchSortKey; const type=params.get("encoderType"); return { page:positive(params.get("page"),1), cpu:params.get("cpu")||"", gpu:params.get("gpu")||"", search:params.get("search")||"", preset:params.get("preset")||"", sort:sortKeys.includes(sort)?sort:"", dir:params.get("dir")==="asc"?"asc":"desc", encoderType:type==="hardware"||type==="software"?type:"" }; }

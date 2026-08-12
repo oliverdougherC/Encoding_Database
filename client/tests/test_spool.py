@@ -1,4 +1,5 @@
 import json
+import hashlib
 import os
 import tempfile
 import threading
@@ -8,7 +9,7 @@ from typing import ClassVar, Optional
 from unittest import mock
 
 from client.artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND
-from client.spool import count_pending_entries, load_spool_entry, replay_spool, spool_payload
+from client.spool import cleanup_spool, count_pending_entries, inspect_spool, load_spool_entry, replay_spool, spool_payload
 
 
 class _SpoolHandler(BaseHTTPRequestHandler):
@@ -43,15 +44,16 @@ class _SpoolHandler(BaseHTTPRequestHandler):
 
 class SpoolTests(unittest.TestCase):
     def _authoritative_payload(self, artifact_path: str) -> dict:
+        artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
         return {
             "submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND,
             "artifactPath": artifact_path,
-            "artifactSha256": "a" * 64,
-            "artifactByteSize": 4,
+            "artifactSha256": hashlib.sha256(artifact_bytes).hexdigest(),
+            "artifactByteSize": len(artifact_bytes),
             "contentType": "video/mp4",
             "runCreate": {
                 "payloadHash": "b" * 64,
-                "artifact": {"sha256": "a" * 64, "byteSize": 4, "mediaContainer": "mp4"},
+                "artifact": {"sha256": hashlib.sha256(artifact_bytes).hexdigest(), "byteSize": len(artifact_bytes), "mediaContainer": "mp4"},
             },
         }
 
@@ -184,6 +186,29 @@ class SpoolTests(unittest.TestCase):
             dead_dir = os.path.join(queue_dir, "dead-letter")
             self.assertTrue(os.listdir(dead_dir))
 
+    def test_replay_rejects_tampered_or_out_of_tree_artifacts_before_network(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            source_path = os.path.join(source_dir, "artifact.mp4")
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            path, _entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            managed_path = load_spool_entry(path)["payload"]["artifactPath"]
+            with open(managed_path, "wb") as handle:
+                handle.write(b"evil")
+            with mock.patch("client.spool.submit_artifact_submission") as submit_mock:
+                stats = replay_spool(queue_dir, base_url="http://127.0.0.1:9", api_key="", retries=1, use_token=False)
+            self.assertEqual(stats.dead_lettered, 1)
+            submit_mock.assert_not_called()
+
+            path, entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            entry["payload"]["artifactPath"] = source_path
+            with open(path, "w", encoding="utf-8") as handle:
+                json.dump(entry, handle)
+            with mock.patch("client.spool.submit_artifact_submission") as submit_mock:
+                stats = replay_spool(queue_dir, base_url="http://127.0.0.1:9", api_key="", retries=1, use_token=False)
+            self.assertEqual(stats.dead_lettered, 1)
+            submit_mock.assert_not_called()
+
     def test_replay_spool_retries_authoritative_submission_then_cleans_up_artifact(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
             source_path = os.path.join(source_dir, "artifact.mp4")
@@ -222,6 +247,43 @@ class SpoolTests(unittest.TestCase):
             self.assertEqual(second.submitted, 1)
             self.assertEqual(count_pending_entries(queue_dir), 0)
             self.assertFalse(os.path.exists(managed_path))
+
+    def test_inspect_and_cleanup_spool_preserve_pending_entries(self) -> None:
+        _SpoolHandler.mode = "permanent"
+        server, thread, base_url = self._start_server()
+        try:
+            with tempfile.TemporaryDirectory() as queue_dir:
+                spool_payload(queue_dir, {"cpuModel": "A", "fps": 100})
+                replay_spool(
+                    queue_dir,
+                    base_url=base_url,
+                    api_key="",
+                    retries=1,
+                    use_token=False,
+                )
+                spool_payload(queue_dir, {"cpuModel": "B", "fps": 200})
+
+                orphan_dir = os.path.join(queue_dir, "artifacts")
+                os.makedirs(orphan_dir, exist_ok=True)
+                orphan_path = os.path.join(orphan_dir, "orphan.bin")
+                with open(orphan_path, "wb") as handle:
+                    handle.write(b"orphan")
+
+                status = inspect_spool(queue_dir)
+                self.assertEqual(status.pending_entries, 1)
+                self.assertGreaterEqual(status.dead_letter_files, 1)
+                self.assertEqual(status.managed_artifact_files, 1)
+
+                cleanup = cleanup_spool(queue_dir)
+                self.assertEqual(cleanup.pending_entries_retained, 1)
+                self.assertGreaterEqual(cleanup.removed_dead_letter_files, 1)
+                self.assertEqual(cleanup.removed_orphaned_managed_artifacts, 1)
+                self.assertEqual(count_pending_entries(queue_dir), 1)
+                self.assertFalse(os.path.exists(orphan_path))
+        finally:
+            server.shutdown()
+            server.server_close()
+            thread.join(timeout=2)
 
 
 if __name__ == "__main__":

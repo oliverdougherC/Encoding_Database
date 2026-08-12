@@ -1,0 +1,111 @@
+import json
+import os
+import tempfile
+import unittest
+from pathlib import Path
+from unittest import mock
+
+from scripts import release_manifest_lib
+
+
+class ReleasePackagingTests(unittest.TestCase):
+    def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
+        with mock.patch.dict(os.environ, {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "Project release version is unassigned"):
+                release_manifest_lib.detect_project_version()
+
+    def test_read_client_minimum_version_is_coherent(self) -> None:
+        self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.2.0")
+
+    def test_finalize_release_writes_expected_sidecars(self) -> None:
+        runtime_payload = {
+            "schemaVersion": 1,
+            "runtimeId": "encodingdb-ffmpeg-runtime",
+            "source": "deterministically-provisioned",
+            "platforms": {
+                "mac": {
+                    "ffmpeg": {
+                        "relativePath": "bin/mac/ffmpeg",
+                        "sha256": "a" * 64,
+                        "byteSize": 1,
+                        "versionLine": "ffmpeg version test",
+                        "buildFingerprint": "b" * 64,
+                    },
+                    "ffprobe": {
+                        "relativePath": "bin/mac/ffprobe",
+                        "sha256": "c" * 64,
+                        "byteSize": 1,
+                        "versionLine": "ffprobe version test",
+                        "buildFingerprint": "d" * 64,
+                    },
+                    "capabilities": {
+                        "ffprobe": True,
+                        "filters": ["libvmaf", "xpsnr"],
+                        "encoders": ["libx264"],
+                    },
+                }
+            },
+        }
+        smoke_payload = {
+            "schemaVersion": 1,
+            "submissionMode": "no-submit",
+            "commands": [
+                {"name": "help", "argv": ["artifact", "--help"], "returnCode": 0},
+                {"name": "no-submit-suite", "argv": ["artifact", "--no-submit"], "returnCode": 0},
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            temp_root = Path(temp_dir)
+            artifact_path = temp_root / "encodingdb-client-macos"
+            artifact_path.write_bytes(b"artifact-bytes")
+
+            with mock.patch.object(
+                release_manifest_lib.runtime_lock,
+                "verify_runtime_lock",
+                return_value={
+                    "platform": "mac",
+                    "lockPath": str(temp_root / "ffmpeg-lock.json"),
+                    "ffmpegPath": str(artifact_path),
+                    "ffprobePath": str(artifact_path),
+                    "fingerprint": "z" * 64,
+                    "payload": runtime_payload,
+                    "identity": {},
+                },
+            ), \
+                    mock.patch.object(release_manifest_lib, "detect_project_version", return_value="1.1.0"), \
+                    mock.patch.object(release_manifest_lib, "run_smoke_check", return_value=smoke_payload):
+                sidecars = release_manifest_lib.finalize_release(
+                    artifact_path=artifact_path,
+                    platform="mac",
+                    ffmpeg_path=artifact_path,
+                    ffprobe_path=artifact_path,
+                    output_dir=temp_root,
+                    signing_status="unsigned",
+                    signing_evidence_path=None,
+                )
+
+            manifest_path = sidecars["release_manifest"]
+            sha_path = sidecars["sha256sums"]
+            smoke_path = sidecars["smoke"]
+            self.assertTrue(manifest_path.exists())
+            self.assertTrue(sha_path.exists())
+            self.assertTrue(smoke_path.exists())
+
+            with manifest_path.open("r", encoding="utf-8") as handle:
+                manifest = json.load(handle)
+            self.assertEqual(manifest["platform"], "mac")
+            self.assertEqual(manifest["suite"]["distribution"], "development-only")
+            self.assertFalse(manifest["suite"]["isFrozen"])
+            self.assertEqual(manifest["signing"]["status"], "unsigned")
+            with sidecars["runtime_lock"].open("r", encoding="utf-8") as handle:
+                staged_lock = json.load(handle)
+            self.assertEqual(sorted(staged_lock["platforms"].keys()), ["mac"])
+
+            sha_lines = sha_path.read_text(encoding="utf-8").splitlines()
+            self.assertTrue(any(line.endswith(f"  {artifact_path.name}") for line in sha_lines))
+            self.assertTrue(any(line.endswith(f"  {smoke_path.name}") for line in sha_lines))
+
+
+if __name__ == "__main__":
+    unittest.main()

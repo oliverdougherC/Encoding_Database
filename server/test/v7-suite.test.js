@@ -102,13 +102,47 @@ test('parseSuiteManifest rejects invalid canonical coverage and corrupted clip e
   );
 
   const corrupted = clone(loadAuthoritativeSuiteManifest());
-  corrupted.clips[0].source.license = 'MIT';
+  corrupted.clips[0].source.provenance = '';
   corrupted.clips[0].sha256 = 'xyz';
   corrupted.clips[0].byteSize = 0;
   assert.throws(
     () => parseSuiteManifest(corrupted, 'corrupted-manifest'),
-    /corrupted-manifest is invalid: .*clips\.0\.source\.license.*clips\.0\.sha256.*clips\.0\.byteSize/s,
+    /corrupted-manifest is invalid: .*clips\.0\.source\.provenance.*clips\.0\.sha256.*clips\.0\.byteSize/s,
   );
+});
+
+test('parseSuiteManifest accepts reviewed retained-reference provenance for future frozen suites', () => {
+  const manifest = clone(loadAuthoritativeSuiteManifest());
+  manifest.redistribution = {
+    license: 'LicenseRef-OperatorDistribution',
+    notes: 'Operator reviewed redistribution for the frozen suite.',
+    reviewed: true,
+    redistributionApproved: true,
+    reviewHash: 'a'.repeat(64),
+    spdxExpression: 'LicenseRef-OperatorDistribution',
+  };
+  manifest.clips[0].source = {
+    kind: 'operator-supplied',
+    provenance: 'Owned and reviewed by the project operator.',
+    license: 'CC0-1.0',
+    reviewed: true,
+    redistributionApproved: true,
+    reviewHash: 'a'.repeat(64),
+  };
+  manifest.clips[0].acquisition = {
+    kind: 'retained-original',
+    container: 'mov',
+    videoCodec: 'retained-reference',
+    packagedRelativePath: 'canonical/sports-action-960x540-24p.mkv',
+    originalFileName: 'sports-action-960x540-24p.mov',
+  };
+
+  const parsed = parseSuiteManifest(manifest, 'retained-reference-manifest');
+
+  assert.equal(parsed.redistribution.redistributionApproved, true);
+  assert.equal(parsed.redistribution.spdxExpression, 'LicenseRef-OperatorDistribution');
+  assert.equal(parsed.clips[0].source.reviewed, true);
+  assert.equal(parsed.clips[0].acquisition.kind, 'retained-original');
 });
 
 test('buildSuiteTestClipUpsertArgs maps suite manifest metadata into immutable TestClip evidence rows', () => {

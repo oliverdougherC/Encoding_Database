@@ -7,9 +7,9 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 - A Node/Express + Prisma API that validates, scores, and aggregates submissions.
 - A Next.js frontend with comparison tools and leaderboards.
 
-With the changes brought by version *v1.1.0*, the project has moved well beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry.
+The upcoming official V7 release moves the project beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry. Its final project release version and date have not yet been assigned in `release.json`.
 
-## Changelog (v1.1.0)
+## Upcoming release changelog
 
 This release documents work completed since `v1.0.2` and reflects a major platform overhaul.
 
@@ -65,7 +65,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 
 - `client/`: Python benchmark runner, hardware detection, FFmpeg orchestration, telemetry sampler.
 - `server/`: Express API, Zod validation, Prisma models/migrations, ingest + query pipeline.
-- `frontend/`: Next.js 15 app with benchmark table, analytics, leaderboards, and hardware pages.
+- `frontend/`: Next.js 16 app with benchmark table, analytics, leaderboards, and hardware pages.
 - `nginx/`: reverse-proxy configuration for production.
 - `scripts/`: consolidated operational scripts (`local_test.sh`, `client_test.sh`, `build_macos_client.sh`, `build_windows_client.ps1`).
 - `client/resources/test_suite_v1/manifest.json`: machine-readable manifest for the seven-class EncodingDB Test Suite v1.
@@ -88,7 +88,17 @@ Encoder performance claims are often hard to compare because workloads, settings
 No user-identifiable data is collected in benchmark telemetry payloads.  
 Only system and benchmark run information is collected for data accuracy, reproducibility, and fairness across hardware.
 
+Interactive client sessions ask once before the first publication and store that consent locally. Noninteractive CLI runs publish only when `--submit` is passed explicitly.
+
 The client submits an explicit allowlist of fields. This prevents accidental inclusion of unrelated machine or user data.
+
+The offline spool is also local and persistent:
+
+- macOS: `~/Library/Application Support/EncodingDB/queue`
+- Linux: `$XDG_STATE_HOME/EncodingDB/queue` or `~/.local/state/EncodingDB/queue`
+- Windows: `%LOCALAPPDATA%\EncodingDB\queue`
+
+Failed uploads remain in that queue until they are replayed or explicitly cleaned up.
 
 ### Telemetry fields collected and why they matter
 
@@ -106,8 +116,10 @@ The client submits an explicit allowlist of fields. This prevents accidental inc
 - No names, emails, accounts, or profile identifiers.
 - No location data.
 - No browser cookies or advertising identifiers.
-- No filesystem snapshots, personal files, or media uploads beyond benchmark metrics.
+- No filesystem snapshots or unrelated personal files.
 - No device serial numbers or MAC addresses in benchmark rows.
+
+For authoritative V7 submissions, the client also uploads the encoded benchmark artifact itself so the server can run pinned analysis. That artifact may be retained in the local queue until upload succeeds or the user explicitly cleans up dead-letter state.
 
 ### Why telemetry is important
 
@@ -126,7 +138,7 @@ The client submits an explicit allowlist of fields. This prevents accidental inc
    - Windows (console fallback/debug): `encodingdb-client-windows-console.exe`
    - macOS: `./encodingdb-client-macos`
 4. On Windows, choose benchmark options in the GUI and start the run. On console builds/macOS, follow interactive prompts.
-5. Results are submitted automatically unless `--no-submit` is enabled.
+5. Interactive runs ask once before first publication. Direct CLI runs stay local unless `--submit` is passed.
 
 ## Client CLI options
 
@@ -139,18 +151,30 @@ python client/main.py \
   --presets fast,medium \
   --crf 24 \
   --batch-size 0 \
-  --no-submit
+  --submit
 ```
 
 Common flags:
 
+- `--submit`: publish results in noninteractive CLI mode.
 - `--no-submit`: run benchmark but do not upload.
 - `--use-token`: use short-lived ingest token flow when server supports it.
 - `--queue-dir`: directory for offline retry queue.
+- `--queue-status`: show pending/dead-letter queue counts and sizes, then exit.
+- `--queue-cleanup`: remove dead-letter files and orphaned managed artifacts without deleting pending queue entries.
 - `--pause-on-exit`: keep console open after run (useful on Windows).
 - `--menu`: force interactive menu mode even when single-run CLI flags are provided.
 - `--gui`: force Windows GUI mode.
 - `--cli`: force terminal mode (overrides auto-GUI on Windows packaged builds).
+
+Examples:
+
+```bash
+python client/main.py --codec libx264 --presets fast --submit
+python client/main.py --codec libx264 --presets fast --no-submit
+python client/main.py --queue-status
+python client/main.py --queue-cleanup
+```
 
 ## Local development
 
@@ -223,6 +247,12 @@ python main.py --no-submit
 - `GET /test-videos`: list known benchmark clips.
 - `GET /submit-token`, `GET /submit/token`, `GET /health/token`: optional short-lived token issuance.
 - `GET /health`, `GET /health/live`, `GET /health/ready`: health checks.
+- `POST /v7/benchmark-runs`: idempotently create immutable V7 run/artifact metadata.
+- `POST /v7/benchmark-runs/:id/artifacts/ENCODED/upload-authorizations`: issue a short-lived, run-bound upload token.
+- `PUT /v7/artifact-uploads/:token`: stream and verify the encoded canonical-suite artifact.
+- `GET /v7/benchmark-runs/:id/artifacts/ENCODED/analysis-status`: inspect durable authoritative analysis state.
+- `GET /corpus`: browse direct accepted/suspect V7 evidence, with PL fields unavailable until production calibration exists.
+- `GET /health/v7-evidence`: machine-readable storage, queue, failed-analysis, and retained-object health.
 
 ## Ingest security modes
 
@@ -238,6 +268,18 @@ Additional controls:
 - body size limits,
 - optional proof-of-work challenge for token mode,
 - replay protection for signatures.
+
+V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to sign short-lived tokens bound to one immutable run, artifact role, SHA-256, size, content type, and expiry. This secret is never distributed in clients. Public clients request scoped tokens; streamed uploads are independently size/hash checked, rate/concurrency limited, capacity checked, and stored under server-derived content-addressed keys. The service accepts only artifacts produced from manifest-verified EncodingDB suite sources, not arbitrary personal media.
+
+## Version identities
+
+- Project release version/date: assigned only at release in `release.json`.
+- Client implementation/minimum version: `client/0.2.0`.
+- Benchmark protocol version: `7.0`.
+- PL formula version: `7.0`.
+- Test-suite version: EncodingDB Test Suite v1 (`encodingdb-test-suite-v1`).
+
+These identities are intentionally independent; the release manifest records each one rather than treating the project tag as the protocol or suite version.
 
 ## Frontend pages
 
@@ -291,15 +333,27 @@ Packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<pla
 ./deploy.sh
 ```
 
+PL v7 production activation, env validation, named-volume backup/restore, and
+pre-V7 migration rehearsal are documented in
+`docs/PL_V7_PRODUCTION_ACTIVATION.md`.
+
 3. Manual compose alternative:
 
 ```bash
+./scripts/generate-dev-cert.sh
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 Security note: for hardened public deployment, set `INGEST_MODE=signed`, a strong `INGEST_HMAC_SECRET`, and an explicit `TRUST_PROXY` value in `.env` that matches your reverse-proxy topology.
 
+Release gate before promotion:
+
+```bash
+./scripts/release_preflight.sh
+```
+
 Frontend-only deployment notes are in `frontend/DEPLOYMENT.md`.
+Release notes are tracked in `CHANGELOG.md`.
 
 ## Notes on benchmark scope
 
@@ -318,4 +372,4 @@ Issues and PRs are welcome. When contributing:
 
 ## License
 
-Apache 2.0
+Apache License 2.0. See `LICENSE` and `NOTICE`.

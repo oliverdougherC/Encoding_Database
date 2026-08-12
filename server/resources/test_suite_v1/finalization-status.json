@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "distribution": "development-only",
+  "isFrozen": false,
+  "finalLockPath": null,
+  "reason": "Synthetic development suite remains non-final until an operator-reviewed final lock is created from the real seven-class source set."
+}

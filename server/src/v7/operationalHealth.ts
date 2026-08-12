@@ -1,16 +1,29 @@
 import path from 'node:path';
-import { readdir, stat } from 'node:fs/promises';
+import { mkdir, readdir, stat, statfs } from 'node:fs/promises';
 
 type CountRow = { storageState?: string; status?: string; _count: { _all: number } };
 
 export type V7EvidenceHealthSnapshot = {
   capturedAt: string;
-  thresholds: { pendingUploadSeconds: number; pendingAnalysisSeconds: number; orphanStagingSeconds: number };
+  thresholds: {
+    pendingUploadSeconds: number;
+    pendingAnalysisSeconds: number;
+    orphanStagingSeconds: number;
+    storageQuotaBytes: number | null;
+    storageReserveBytes: number;
+  };
   artifacts: { byState: Record<string, number>; pendingOldestSeconds: number | null; missingRetainedObjects: number };
   analyses: {
     byStatus: Record<string, number>;
     pendingOldestSeconds: number | null;
     completedLatencySeconds: { sampleCount: number; p50: number | null; p95: number | null };
+  };
+  storage: {
+    rootAvailable: boolean;
+    trackedBytes: number;
+    quotaBytes: number | null;
+    availableBytes: number | null;
+    freeBytes: number | null;
   };
   staging: { entryCount: number; staleEntryCount: number; oldestSeconds: number | null };
   derivations: { unresolvedSelectedAnalyses: number };
@@ -57,12 +70,37 @@ async function countMissingRetainedObjects(rootDir: string, artifacts: Array<{ s
   return missing;
 }
 
+async function inspectStorage(rootDir: string): Promise<{ rootAvailable: boolean; availableBytes: number | null; freeBytes: number | null }> {
+  try {
+    await mkdir(rootDir, { recursive: true });
+    const root = await stat(rootDir);
+    if (!root.isDirectory()) return { rootAvailable: false, availableBytes: null, freeBytes: null };
+    const value = await statfs(rootDir);
+    const blockSize = Number(value.bsize || 0);
+    const availableBlocks = Number((value as { bavail?: number | bigint }).bavail ?? 0);
+    const freeBlocks = Number((value as { bfree?: number | bigint }).bfree ?? 0);
+    if (!Number.isFinite(blockSize) || blockSize <= 0) {
+      return { rootAvailable: true, availableBytes: null, freeBytes: null };
+    }
+    return {
+      rootAvailable: true,
+      availableBytes: Math.trunc(availableBlocks * blockSize),
+      freeBytes: Math.trunc(freeBlocks * blockSize),
+    };
+  } catch {
+    return { rootAvailable: false, availableBytes: null, freeBytes: null };
+  }
+}
+
 export function evaluateV7EvidenceHealth(snapshot: V7EvidenceHealthSnapshot) {
   const reasons: string[] = [];
+  if (!snapshot.storage.rootAvailable) reasons.push('artifact_root_unavailable');
   if ((snapshot.artifacts.pendingOldestSeconds ?? 0) >= snapshot.thresholds.pendingUploadSeconds) reasons.push('stale_pending_uploads');
   if ((snapshot.analyses.pendingOldestSeconds ?? 0) >= snapshot.thresholds.pendingAnalysisSeconds) reasons.push('stale_pending_analyses');
   if ((snapshot.analyses.byStatus.FAILED ?? 0) > 0) reasons.push('failed_analyses');
   if (snapshot.artifacts.missingRetainedObjects > 0) reasons.push('missing_retained_objects');
+  if (snapshot.thresholds.storageQuotaBytes != null && snapshot.storage.trackedBytes > snapshot.thresholds.storageQuotaBytes) reasons.push('storage_quota_exceeded');
+  if (snapshot.storage.availableBytes != null && snapshot.storage.availableBytes < snapshot.thresholds.storageReserveBytes) reasons.push('storage_reserve_exhausted');
   if (snapshot.staging.staleEntryCount > 0) reasons.push('orphan_staging_entries');
   if (snapshot.derivations.unresolvedSelectedAnalyses > 0) reasons.push('unresolved_derived_members');
   return { status: reasons.length ? 'degraded' : 'ok', reasons, ...snapshot };
@@ -74,14 +112,18 @@ export async function collectV7EvidenceHealth(prisma: any, options: {
   pendingUploadSeconds?: number;
   pendingAnalysisSeconds?: number;
   orphanStagingSeconds?: number;
+  storageQuotaBytes?: number | null;
+  storageReserveBytes?: number;
 }) {
   const now = options.now ?? new Date();
   const thresholds = {
     pendingUploadSeconds: options.pendingUploadSeconds ?? 900,
     pendingAnalysisSeconds: options.pendingAnalysisSeconds ?? 1800,
     orphanStagingSeconds: options.orphanStagingSeconds ?? 3600,
+    storageQuotaBytes: options.storageQuotaBytes ?? null,
+    storageReserveBytes: options.storageReserveBytes ?? 512 * 1024 * 1024,
   };
-  const [artifactCounts, analysisCounts, oldestPendingArtifact, oldestPendingAnalysis, retainedArtifacts, completedAnalyses, members, staging] = await Promise.all([
+  const [artifactCounts, analysisCounts, oldestPendingArtifact, oldestPendingAnalysis, retainedArtifacts, completedAnalyses, members, staging, trackedBytes, storage] = await Promise.all([
     prisma.artifact.groupBy({ by: ['storageState'], _count: { _all: true } }),
     prisma.qualityAnalysis.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.artifact.findFirst({ where: { storageState: 'PENDING' }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
@@ -95,6 +137,14 @@ export async function collectV7EvidenceHealth(prisma: any, options: {
     }),
     prisma.derivedResultMember.findMany({ select: { qualityAnalysis: { select: { id: true, artifactId: true } } } }),
     inspectStaging(options.storageRoot, now, thresholds.orphanStagingSeconds),
+    prisma.artifact.aggregate({
+      where: {
+        storageState: { in: ['UPLOADED', 'VERIFIED', 'RETAINED'] },
+        byteSize: { not: null },
+      },
+      _sum: { byteSize: true },
+    }),
+    inspectStorage(options.storageRoot),
   ]);
   const latencies = completedAnalyses.flatMap((analysis: any) => {
     const uploadedAt = analysis.artifact?.uploadedAt;
@@ -112,6 +162,13 @@ export async function collectV7EvidenceHealth(prisma: any, options: {
       byStatus: counts(analysisCounts, 'status'),
       pendingOldestSeconds: secondsSince(oldestPendingAnalysis?.createdAt, now),
       completedLatencySeconds: { sampleCount: latencies.length, p50: percentile(latencies, 0.5), p95: percentile(latencies, 0.95) },
+    },
+    storage: {
+      rootAvailable: storage.rootAvailable,
+      trackedBytes: trackedBytes._sum.byteSize ?? 0,
+      quotaBytes: thresholds.storageQuotaBytes,
+      availableBytes: storage.availableBytes,
+      freeBytes: storage.freeBytes,
     },
     staging,
     derivations: {

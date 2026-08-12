@@ -26,6 +26,7 @@ describe("fetchWorkbenchPage", () => {
     })).resolves.toEqual({ rows: [], totalCount: 3 });
 
     const requested = new URL(String(fetchMock.mock.calls[0][0]));
+    expect(requested.pathname).toBe("/corpus");
     expect(Object.fromEntries(requested.searchParams)).toMatchObject({
       limit: "50",
       skip: "50",

@@ -31,14 +31,33 @@ import psutil
 
 # Fixed backend endpoint for submissions
 BACKEND_BASE_URL = "https://encodingdb.platinumlabs.dev"
+PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
+CLIENT_APP_DIR_NAME = "EncodingDB"
+
+
+def default_client_state_dir() -> str:
+    home = os.path.expanduser("~")
+    system_name = platform.system().lower()
+    if system_name.startswith("darwin"):
+        return os.path.join(home, "Library", "Application Support", CLIENT_APP_DIR_NAME)
+    if system_name.startswith("windows"):
+        base = os.environ.get("LOCALAPPDATA") or os.path.join(home, "AppData", "Local")
+        return os.path.join(base, CLIENT_APP_DIR_NAME)
+    base = os.environ.get("XDG_STATE_HOME") or os.path.join(home, ".local", "state")
+    return os.path.join(base, CLIENT_APP_DIR_NAME)
+
+
+def default_queue_dir() -> str:
+    return os.path.join(default_client_state_dir(), "queue")
+
+
 ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
 ENV_API_KEY = os.environ.get("API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
 ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
-ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", os.path.join(tempfile.gettempdir(), "encodingdb-queue"))
-PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
+ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", default_queue_dir())
 
 SCORE_FORMULA_VERSION = "7.0"
 BENCHMARK_PROTOCOL_VERSION = "7.0"

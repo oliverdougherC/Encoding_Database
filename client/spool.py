@@ -21,6 +21,25 @@ class ReplayStats:
     corrupt: int = 0
 
 
+@dataclass
+class QueueStatus:
+    pending_entries: int = 0
+    pending_bytes: int = 0
+    dead_letter_files: int = 0
+    dead_letter_bytes: int = 0
+    managed_artifact_files: int = 0
+    managed_artifact_bytes: int = 0
+
+
+@dataclass
+class CleanupStats:
+    removed_dead_letter_files: int = 0
+    removed_dead_letter_bytes: int = 0
+    removed_orphaned_managed_artifacts: int = 0
+    removed_orphaned_managed_artifact_bytes: int = 0
+    pending_entries_retained: int = 0
+
+
 def _canonical_payload_json(payload: Dict[str, Any]) -> str:
     return json.dumps(_payload_hash_material(payload), separators=(",", ":"), sort_keys=True)
 
@@ -57,6 +76,107 @@ def count_pending_entries(queue_dir: str) -> int:
         ])
     except Exception:
         return 0
+
+
+def _iter_files(root: str) -> List[str]:
+    files: List[str] = []
+    if not os.path.isdir(root):
+        return files
+    for dirpath, _dirnames, filenames in os.walk(root):
+        for filename in filenames:
+            path = os.path.join(dirpath, filename)
+            if os.path.isfile(path):
+                files.append(path)
+    return files
+
+
+def _sum_file_sizes(paths: List[str]) -> int:
+    total = 0
+    for path in paths:
+        try:
+            total += int(os.path.getsize(path))
+        except Exception:
+            continue
+    return total
+
+
+def inspect_spool(queue_dir: str) -> QueueStatus:
+    status = QueueStatus()
+    try:
+        pending_files = sorted([
+            os.path.join(queue_dir, name)
+            for name in os.listdir(queue_dir)
+            if name.endswith(".json") and os.path.isfile(os.path.join(queue_dir, name))
+        ])
+    except Exception:
+        pending_files = []
+    status.pending_entries = len(pending_files)
+    status.pending_bytes = _sum_file_sizes(pending_files)
+
+    dead_letter_files = _iter_files(_dead_letter_dir(queue_dir))
+    status.dead_letter_files = len(dead_letter_files)
+    status.dead_letter_bytes = _sum_file_sizes(dead_letter_files)
+
+    managed_files = _iter_files(_managed_artifact_dir(queue_dir))
+    status.managed_artifact_files = len(managed_files)
+    status.managed_artifact_bytes = _sum_file_sizes(managed_files)
+    return status
+
+
+def cleanup_spool(queue_dir: str) -> CleanupStats:
+    stats = CleanupStats(pending_entries_retained=count_pending_entries(queue_dir))
+
+    dead_letter_root = _dead_letter_dir(queue_dir)
+    for path in _iter_files(dead_letter_root):
+        try:
+            file_size = int(os.path.getsize(path))
+        except Exception:
+            file_size = 0
+        try:
+            os.remove(path)
+            stats.removed_dead_letter_files += 1
+            stats.removed_dead_letter_bytes += file_size
+        except Exception:
+            continue
+    for dirpath, dirnames, _filenames in os.walk(dead_letter_root, topdown=False):
+        for dirname in dirnames:
+            candidate = os.path.join(dirpath, dirname)
+            try:
+                os.rmdir(candidate)
+            except Exception:
+                pass
+    try:
+        os.rmdir(dead_letter_root)
+    except Exception:
+        pass
+
+    managed_root = _managed_artifact_dir(queue_dir)
+    for path in _iter_files(managed_root):
+        if _managed_artifact_is_referenced(queue_dir, path):
+            continue
+        try:
+            file_size = int(os.path.getsize(path))
+        except Exception:
+            file_size = 0
+        try:
+            os.remove(path)
+            stats.removed_orphaned_managed_artifacts += 1
+            stats.removed_orphaned_managed_artifact_bytes += file_size
+        except Exception:
+            continue
+    for dirpath, dirnames, _filenames in os.walk(managed_root, topdown=False):
+        for dirname in dirnames:
+            candidate = os.path.join(dirpath, dirname)
+            try:
+                os.rmdir(candidate)
+            except Exception:
+                pass
+    try:
+        os.rmdir(managed_root)
+    except Exception:
+        pass
+
+    return stats
 
 
 def _write_json_atomic(path: str, payload: Dict[str, Any]) -> None:
@@ -226,6 +346,24 @@ def _is_managed_artifact_path(queue_dir: str, artifact_path: str) -> bool:
     return common == managed_root
 
 
+def _validate_managed_artifact_for_replay(queue_dir: str, payload: Dict[str, Any]) -> None:
+    artifact_path = str(payload.get("artifactPath") or "").strip()
+    if not artifact_path or not _is_managed_artifact_path(queue_dir, artifact_path):
+        raise SubmitError("spooled artifact path is outside the managed queue", retryable=False)
+    if os.path.islink(artifact_path) or not os.path.isfile(artifact_path):
+        raise SubmitError("spooled artifact must be a regular managed file", retryable=False)
+    expected_hash = str(payload.get("artifactSha256") or "").strip().lower()
+    expected_size = int(payload.get("artifactByteSize") or -1)
+    digest = hashlib.sha256()
+    observed_size = 0
+    with open(artifact_path, "rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            observed_size += len(chunk)
+            digest.update(chunk)
+    if observed_size != expected_size or digest.hexdigest() != expected_hash:
+        raise SubmitError("spooled artifact hash or size no longer matches immutable metadata", retryable=False)
+
+
 def _move_managed_artifact_to_dead_letter(queue_dir: str, source_entry_path: str, entry: Dict[str, Any]) -> Dict[str, Any]:
     artifact_path = _entry_artifact_path(entry)
     if not artifact_path or not os.path.exists(artifact_path) or not _is_managed_artifact_path(queue_dir, artifact_path):
@@ -320,6 +458,7 @@ def submit_spooled_path(
             if not artifact_path or not os.path.exists(artifact_path):
                 move_to_dead_letter(queue_dir, path, entry, "missing_spooled_artifact")
                 return "dead_lettered", "missing_spooled_artifact"
+            _validate_managed_artifact_for_replay(queue_dir, payload)
             response = submit_artifact_submission(
                 base_url,
                 payload,

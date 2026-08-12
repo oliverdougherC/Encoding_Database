@@ -91,7 +91,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.mode_combo.pack(side="left", padx=(8, 16))
             self.mode_combo.bind("<<ComboboxSelected>>", lambda _evt: self._update_single_fields_state())
 
-            ttk.Checkbutton(row1, text="No submit (dry run)", variable=self.no_submit_var).pack(side="left", padx=(0, 12))
+            ttk.Checkbutton(row1, text="No submit (local dry run only)", variable=self.no_submit_var).pack(side="left", padx=(0, 12))
             ttk.Label(row1, text="Retries").pack(side="left")
             self.retries_spin = ttk.Spinbox(row1, from_=1, to=10, textvariable=self.retries_var, width=6)
             self.retries_spin.pack(side="left", padx=(6, 12))
@@ -252,6 +252,19 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.batch_size = max(0, int(self.batch_size_var.get() or 0))
             run_args.pause_on_exit = False
             run_args.menu = False
+            if not run_args.no_submit:
+                consent_ok = client_main._ensure_interactive_publication_consent(
+                    queue_dir=str(run_args.queue_dir),
+                    prompt_callback=lambda disclosure: bool(messagebox.askyesno(
+                        "Allow Benchmark Publication",
+                        disclosure,
+                        icon="warning",
+                    )),
+                )
+                if not consent_ok:
+                    run_args.no_submit = True
+                    self.no_submit_var.set(True)
+                    self._append_log("Publication consent not granted; switching to local dry-run mode.")
 
             self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=True)
             self.worker_thread.start()

@@ -15,6 +15,12 @@ class SuiteV1Tests(unittest.TestCase):
             set(suite.REQUIRED_CONTENT_CLASSES),
         )
 
+    def test_finalization_status_declares_development_only_unfrozen_suite(self) -> None:
+        status = suite.load_finalization_status()
+        self.assertEqual(status["distribution"], "development-only")
+        self.assertFalse(status["isFrozen"])
+        self.assertIsNone(status["finalLockPath"])
+
     def test_verify_suite_clip_reports_missing_clip(self) -> None:
         manifest = suite.load_default_suite_manifest()
         clip = manifest.clips[0]

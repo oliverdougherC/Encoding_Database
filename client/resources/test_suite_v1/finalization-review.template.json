@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "suiteReview": {
+    "reviewed": false,
+    "reviewHash": "",
+    "reviewer": "",
+    "redistributionApproved": false,
+    "distributionLicense": "",
+    "notes": "Populate this file with reviewed provenance and redistribution metadata before freezing a final suite."
+  },
+  "clips": [
+    {
+      "id": "sports-action-960x540-24p",
+      "fileName": "sports-action-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "high-motion-sports",
+      "payloadContentClass": "action",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "natural-detail-960x540-24p",
+      "fileName": "natural-detail-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "fine-natural-detail",
+      "payloadContentClass": "nature",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "grain-noise-960x540-24p",
+      "fileName": "grain-noise-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "film-grain-noise",
+      "payloadContentClass": "gaming",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "dark-gradients-960x540-24p",
+      "fileName": "dark-gradients-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "dark-gradients-shadows",
+      "payloadContentClass": "mixed",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "animation-960x540-24p",
+      "fileName": "animation-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "animation-flat-fields",
+      "payloadContentClass": "animation",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "screen-text-960x540-24p",
+      "fileName": "screen-text-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "screen-text",
+      "payloadContentClass": "screen",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    },
+    {
+      "id": "talking-head-960x540-24p",
+      "fileName": "talking-head-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "talking-head",
+      "payloadContentClass": "talkingHead",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      }
+    }
+  ]
+}

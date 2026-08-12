@@ -12,10 +12,10 @@
     "lint": "eslint . --max-warnings=0 && npm run typecheck"
   },
   "dependencies": {
-    "@tanstack/react-virtual": "^3.13.18",
-    "echarts": "^6.0.0",
+    "@tanstack/react-virtual": "^3.14.9",
+    "echarts": "^6.1.0",
     "katex": "^0.18.4",
-    "next": "^16.1.6",
+    "next": "^16.3.0",
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
