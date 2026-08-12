@@ -8,7 +8,8 @@ import sys
 import tempfile
 import tarfile
 import warnings
-import gzip
+import binascii
+import struct
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
@@ -759,24 +760,51 @@ def build_suite_pack_archive(
         with open(os.path.join(suite_root_abs, "manifest.json"), "r", encoding="utf-8") as handle:
             manifest_value = manifest_from_payload(json.load(handle))
     entries = _suite_pack_source_entries(manifest_value, suite_root_abs)
-    os.makedirs(os.path.dirname(os.path.abspath(output_path)), exist_ok=True)
-    with open(output_path, "wb") as raw_handle:
-        # Stored DEFLATE blocks avoid zlib-version/platform compression choices so
-        # native builders produce the exact same SHA-locked pack bytes.
-        with gzip.GzipFile(fileobj=raw_handle, mode="wb", mtime=0, filename="", compresslevel=0) as gzip_handle:
-            with tarfile.open(fileobj=gzip_handle, mode="w") as archive:
-                for relative_path, absolute_path in entries:
-                    info = tarfile.TarInfo(name=relative_path.replace("\\", "/"))
-                    info.size = os.path.getsize(absolute_path)
-                    info.mode = 0o644
-                    info.uid = 0
-                    info.gid = 0
-                    info.uname = ""
-                    info.gname = ""
-                    info.mtime = 0
-                    with open(absolute_path, "rb") as source_handle:
-                        archive.addfile(info, source_handle)
+    output_path_abs = os.path.abspath(output_path)
+    os.makedirs(os.path.dirname(output_path_abs), exist_ok=True)
+    fd, tar_path = tempfile.mkstemp(prefix="encodingdb-suite-pack-", suffix=".tar", dir=os.path.dirname(output_path_abs))
+    os.close(fd)
+    try:
+        with tarfile.open(tar_path, mode="w", format=tarfile.USTAR_FORMAT) as archive:
+            for relative_path, absolute_path in entries:
+                info = tarfile.TarInfo(name=relative_path.replace("\\", "/"))
+                info.size = os.path.getsize(absolute_path)
+                info.mode = 0o644
+                info.uid = 0
+                info.gid = 0
+                info.uname = ""
+                info.gname = ""
+                info.mtime = 0
+                with open(absolute_path, "rb") as source_handle:
+                    archive.addfile(info, source_handle)
+        _write_portable_stored_gzip(tar_path, output_path_abs)
+    finally:
+        try:
+            os.remove(tar_path)
+        except FileNotFoundError:
+            pass
     return os.path.abspath(output_path)
+
+
+def _write_portable_stored_gzip(source_path: str, output_path: str) -> None:
+    """Write gzip without zlib-dependent compression decisions."""
+    source_size = os.path.getsize(source_path)
+    remaining = source_size
+    checksum = 0
+    with open(source_path, "rb") as source, open(output_path, "wb") as destination:
+        destination.write(b"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff")
+        if remaining == 0:
+            destination.write(b"\x01\x00\x00\xff\xff")
+        while remaining > 0:
+            chunk = source.read(min(65535, remaining))
+            if not chunk:
+                raise RuntimeError("unexpected end of deterministic suite tar stream")
+            remaining -= len(chunk)
+            destination.write(b"\x01" if remaining == 0 else b"\x00")
+            destination.write(struct.pack("<HH", len(chunk), len(chunk) ^ 0xFFFF))
+            destination.write(chunk)
+            checksum = binascii.crc32(chunk, checksum)
+        destination.write(struct.pack("<II", checksum & 0xFFFFFFFF, source_size & 0xFFFFFFFF))
 
 
 def verify_suite_pack_metadata(

@@ -1,4 +1,5 @@
 import tempfile
+import tarfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -90,6 +91,8 @@ class SuiteV1Tests(unittest.TestCase):
             self.assertEqual(first.read_bytes(), second.read_bytes())
             # XFL=0 identifies stored/no-compression gzip output; OS=255 is portable.
             self.assertEqual(first.read_bytes()[8:10], b"\x00\xff")
+            with tarfile.open(first, "r:gz") as archive:
+                self.assertIn("manifest.json", archive.getnames())
 
     def test_ensure_suite_clip_can_materialize_from_external_suite_pack_without_packaged_canonical_media(self) -> None:
         manifest = suite.load_default_suite_manifest()
