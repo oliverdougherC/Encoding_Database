@@ -109,14 +109,18 @@ fi
 log "Placing executable in repository root..."
 mv -f "$PYI_DIST_DIR/$APP_NAME" "$OUTPUT_PATH"
 chmod +x "$OUTPUT_PATH" || true
-python3 "$ROOT_DIR/scripts/release_manifest_lib.py" \
-  --artifact-path "$OUTPUT_PATH" \
-  --platform mac \
-  --ffmpeg-path "$FFMPEG_PATH" \
-  --ffprobe-path "$FFPROBE_PATH" \
-  --runtime-lock-path "$RUNTIME_LOCK_PATH" \
-  --suite-pack-path "$SUITE_PACK_PATH" \
-  --output-dir "$ROOT_DIR"
+if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
+  log "Build-only validation complete; release sidecars require an assigned project version."
+else
+  python3 "$ROOT_DIR/scripts/release_manifest_lib.py" \
+    --artifact-path "$OUTPUT_PATH" \
+    --platform mac \
+    --ffmpeg-path "$FFMPEG_PATH" \
+    --ffprobe-path "$FFPROBE_PATH" \
+    --runtime-lock-path "$RUNTIME_LOCK_PATH" \
+    --suite-pack-path "$SUITE_PACK_PATH" \
+    --output-dir "$ROOT_DIR"
+fi
 log "Build complete: $OUTPUT_PATH"
 log "Suite pack: $SUITE_PACK_PATH"
 log "Hidden build artifacts: $BUILD_ROOT"

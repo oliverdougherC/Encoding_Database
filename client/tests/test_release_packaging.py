@@ -10,6 +10,20 @@ from scripts import release_manifest_lib
 
 
 class ReleasePackagingTests(unittest.TestCase):
+    def test_native_build_validation_is_distinct_from_final_release_packaging(self) -> None:
+        root = release_manifest_lib.ROOT_DIR
+        for relative_path in (
+            "scripts/build_linux_client.sh",
+            "scripts/build_macos_client.sh",
+            "scripts/build_windows_client.ps1",
+        ):
+            text = (root / relative_path).read_text(encoding="utf-8")
+            self.assertIn("ENCODINGDB_BUILD_ONLY", text)
+            self.assertIn("release_manifest_lib.py", text)
+
+        workflow = (root / ".github/workflows/build.yml").read_text(encoding="utf-8")
+        self.assertEqual(workflow.count('ENCODINGDB_BUILD_ONLY: "1"'), 3)
+
     def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
         with mock.patch.dict(os.environ, {}, clear=True):
             with self.assertRaisesRegex(RuntimeError, "Project release version is unassigned"):

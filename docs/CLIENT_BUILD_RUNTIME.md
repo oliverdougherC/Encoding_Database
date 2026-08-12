@@ -36,6 +36,7 @@ Supported builder overrides:
 - `ENCODINGDB_FFPROBE_PATH`
 - `ENCODINGDB_RUNTIME_LOCK_PATH`
 - `ENCODINGDB_REGISTER_RUNTIME=1` (intentional first registration only)
+- `ENCODINGDB_BUILD_ONLY=1` (native CI validation before a project version is assigned; skips final release sidecars only)
 
 ## CI provisioning
 
@@ -45,6 +46,8 @@ Runtime-lock-sensitive CI does not rely on ambient `apt`, `brew`, or `choco` FFm
 - macOS CI downloads the current Evermeet snapshot, verifies the detached GPG signatures with Evermeet's published signing key, and then uses that verified runtime for temporary-lock registration/build validation.
 
 Those CI jobs validate the build path with a controlled operator-supplied fixture. They do not rewrite the checked-in runtime lock unless a maintainer intentionally runs registration and commits the resulting lock change.
+
+Pre-freeze native CI sets `ENCODINGDB_BUILD_ONLY=1` so PyInstaller, runtime registration, suite-pack creation, and executable production are validated while `release.json.projectVersion` is intentionally null. Final release builds omit that flag and remain fail-closed until a project version is assigned, then emit the complete release sidecar set.
 
 ## Release sidecars
 

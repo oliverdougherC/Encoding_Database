@@ -29,8 +29,22 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - name: Install media probe runtime
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg openssl
+      - name: Provision pinned media probe runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openssl
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/latest/download/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz
+          echo "bf877874d030e0dfca62a78b1730feaa01b5938285b5aefe9438a8f20187ecef  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
+          tar -xf ffmpeg-linux.tar.xz
+          bundle_dir="$(find "$PWD" -maxdepth 1 -type d -name 'ffmpeg-*' | head -n 1)"
+          test -x "$bundle_dir/bin/ffmpeg"
+          test -x "$bundle_dir/bin/ffprobe"
+          echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
       - name: Generate ignored dev TLS cert
         run: bash scripts/generate-dev-cert.sh
       - name: Run release preflight

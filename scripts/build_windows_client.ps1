@@ -218,35 +218,39 @@ Write-Log "Placing executables in repository root..."
 Move-Item -LiteralPath $builtGuiExe -Destination $guiOutputPath -Force
 Move-Item -LiteralPath $builtConsoleExe -Destination $consoleOutputPath -Force
 
-$guiReleaseManifestArgs = $pythonPrefixArgs + @(
-    (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
-    "--artifact-path", $guiOutputPath,
-    "--platform", "win",
-    "--ffmpeg-path", $ffmpegPath,
-    "--ffprobe-path", $ffprobePath,
-    "--runtime-lock-path", $runtimeLockPath,
-    "--suite-pack-path", $suitePackPath,
-    "--output-dir", $rootDir,
-    "--skip-smoke"
-)
-& $pythonExe @guiReleaseManifestArgs
-if ($LASTEXITCODE -ne 0) {
-    Fail "GUI release manifest finalization failed"
-}
+if ($env:ENCODINGDB_BUILD_ONLY -eq "1") {
+    Write-Log "Build-only validation complete; release sidecars require an assigned project version."
+} else {
+    $guiReleaseManifestArgs = $pythonPrefixArgs + @(
+        (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
+        "--artifact-path", $guiOutputPath,
+        "--platform", "win",
+        "--ffmpeg-path", $ffmpegPath,
+        "--ffprobe-path", $ffprobePath,
+        "--runtime-lock-path", $runtimeLockPath,
+        "--suite-pack-path", $suitePackPath,
+        "--output-dir", $rootDir,
+        "--skip-smoke"
+    )
+    & $pythonExe @guiReleaseManifestArgs
+    if ($LASTEXITCODE -ne 0) {
+        Fail "GUI release manifest finalization failed"
+    }
 
-$releaseManifestArgs = $pythonPrefixArgs + @(
-    (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
-    "--artifact-path", $consoleOutputPath,
-    "--platform", "win",
-    "--ffmpeg-path", $ffmpegPath,
-    "--ffprobe-path", $ffprobePath,
-    "--runtime-lock-path", $runtimeLockPath,
-    "--suite-pack-path", $suitePackPath,
-    "--output-dir", $rootDir
-)
-& $pythonExe @releaseManifestArgs
-if ($LASTEXITCODE -ne 0) {
-    Fail "Release manifest finalization failed"
+    $releaseManifestArgs = $pythonPrefixArgs + @(
+        (Join-Path $rootDir "scripts\\release_manifest_lib.py"),
+        "--artifact-path", $consoleOutputPath,
+        "--platform", "win",
+        "--ffmpeg-path", $ffmpegPath,
+        "--ffprobe-path", $ffprobePath,
+        "--runtime-lock-path", $runtimeLockPath,
+        "--suite-pack-path", $suitePackPath,
+        "--output-dir", $rootDir
+    )
+    & $pythonExe @releaseManifestArgs
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Release manifest finalization failed"
+    }
 }
 
 Write-Log "Build complete: $guiOutputPath"
