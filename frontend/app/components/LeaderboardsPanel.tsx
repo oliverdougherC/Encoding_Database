@@ -107,6 +107,7 @@ export default function LeaderboardsPanel({
               <td>
                 <strong>{row.encoderName}</strong>
                 <div>{row.preset}</div>
+                <div>{row.rateControl.label}</div>
                 {row.fit.recommended ? <span className={styles.badge}>Recommended</span> : null}
               </td>
               <td>{formatScore(row.plScore)}</td>

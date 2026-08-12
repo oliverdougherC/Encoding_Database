@@ -27,12 +27,22 @@ export interface CanonicalComponents {
   speed: number | null;
 }
 
+export interface NativeRateControl {
+  requestedMode: string;
+  effectiveMode: string;
+  qualityValue: number | null;
+  targetBitrateKbps: number | null;
+  maxBitrateKbps: number | null;
+  bufferSizeKbits: number | null;
+  label: string;
+}
+
 export interface DecisionCandidate {
   rowId: string;
   encoderName: string;
   codecFamily: CodecFamily;
   preset: string;
-  crf: number;
+  rateControl: NativeRateControl;
   contentClass: string;
   resolution: string;
   passes: number;
@@ -184,7 +194,7 @@ type CurvePoint = {
 
 type CurveCandidate = Pick<
   DecisionCandidate,
-  'rowId' | 'encoderName' | 'preset' | 'codecFamily' | 'crf' | 'workloadId' | 'hardwareContext' | 'avgVmaf' | 'avgVideoBitrateBps' | 'context'
+  'rowId' | 'encoderName' | 'preset' | 'codecFamily' | 'workloadId' | 'hardwareContext' | 'avgVmaf' | 'avgVideoBitrateBps' | 'context'
 >;
 
 const MODE_ORDER: readonly PlFitMode[] = ['balanced', 'quality', 'storage', 'realtime', 'custom'] as const;

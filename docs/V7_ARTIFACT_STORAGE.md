@@ -1,0 +1,28 @@
+# PL-v7 artifact storage and retention contract
+
+PL-v7 public evidence is derived only from server-retained encoded artifacts. Client-computed quality values are diagnostic and cannot become canonical `QualityAnalysis` or `DerivedResult` evidence.
+
+## Object lifecycle
+
+1. `POST /v7/artifacts/initiate` reserves an immutable object identity from the run, artifact kind, byte length, and SHA-256 digest.
+2. Upload bytes are written to a staging file on the configured artifact filesystem. The service hashes and sizes the completed staging object before an atomic rename into the durable object path. A process crash can leave an unreferenced staging file, but never a partially published object.
+3. `POST /v7/artifacts/:id/complete` accepts only bytes matching the reservation and transitions the database record to retained evidence. Duplicate completion is idempotent; conflicting bytes are rejected.
+4. Authoritative analysis reads the retained object and server-owned reference source, persists an immutable `QualityAnalysis`, and recomputes exact `DerivedResultMember` membership.
+5. Reanalysis appends a new immutable analysis identity when the worker or metric context changes. It never overwrites the analysis used by an existing derivation.
+
+## Retention policy
+
+The clean-slate v7 epoch is retain-all by default. Encoded artifacts, their hashes, authoritative analyses, run validity evidence, and derivation membership are retained indefinitely while they support a public or provisional result. No automated deletion job is enabled.
+
+An operator may delete only an unreferenced abandoned staging object after confirming that it has no `Artifact` row and no active upload job. Canonical objects referenced by an accepted, suspect, rejected, or invalid run must not be deleted. A future deletion policy must first add an explicit tombstone with actor, reason, timestamp, object hash, and affected derivations, then withdraw and recompute every dependent public result.
+
+## Deployment and recovery
+
+- Production uses the `artifact-data` Docker volume mounted at the configured storage root. The application must not use an ephemeral container layer for canonical objects.
+- Database and artifact-volume backups are one recovery unit. Restore validation must confirm every retained `Artifact.sha256` and byte length before analytics are published.
+- The upload secret is required in production. Object keys are server-generated; client paths are never trusted.
+- Operators should alert on queued uploads older than the normal client retry window, failed checksum validation, analysis failures, orphan staging files, missing retained objects, and a `DerivedResultMember` whose selected analysis or artifact cannot be resolved.
+
+## Reproducibility guarantee
+
+The database stores the artifact digest, container and elementary-video byte counts, measurement duration and method, authoritative worker/model context, exact selected analysis IDs, recipe/environment fingerprints, and score context. Given the retained object plus frozen server resources, recomputation must reproduce the selected evidence set and score inputs without accepting client quality calculations.

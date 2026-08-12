@@ -275,12 +275,41 @@ async function loadCanonicalLeaderboardRecords(filters: ReturnType<typeof parseA
   });
 }
 
-function deriveCanonicalCrf(row: CanonicalLeaderboardRecord): number {
-  const requested = asFiniteNumber(row.recipe.requestedQualityValue);
-  if (requested != null) return Math.round(requested);
-  const effective = asFiniteNumber(row.recipe.effectiveQualityValue);
-  if (effective != null) return Math.round(effective);
-  return -1;
+function deriveNativeRateControl(row: CanonicalLeaderboardRecord): DecisionCandidate['rateControl'] {
+  const requestedMode = String(row.recipe.requestedRateControlMode);
+  const effectiveMode = String(row.recipe.effectiveRateControlMode);
+  const qualityValue = asFiniteNumber(row.recipe.effectiveQualityValue)
+    ?? asFiniteNumber(row.recipe.requestedQualityValue);
+  const targetBitrateKbps = row.recipe.effectiveTargetBitrateKbps
+    ?? row.recipe.requestedTargetBitrateKbps
+    ?? null;
+  const maxBitrateKbps = row.recipe.effectiveMaxBitrateKbps
+    ?? row.recipe.requestedMaxBitrateKbps
+    ?? null;
+  const bufferSizeKbits = row.recipe.effectiveBufferSizeKbits
+    ?? row.recipe.requestedBufferSizeKbits
+    ?? null;
+  const bitrateControlled = effectiveMode.includes('BITRATE') || effectiveMode === 'VBR' || effectiveMode === 'CBR';
+  const details = bitrateControlled && targetBitrateKbps != null
+    ? `${effectiveMode} ${targetBitrateKbps} kbps`
+    : qualityValue != null
+      ? `${effectiveMode} ${qualityValue}`
+      : targetBitrateKbps != null
+        ? `${effectiveMode} ${targetBitrateKbps} kbps`
+        : effectiveMode;
+  const limits = [
+    maxBitrateKbps != null ? `max ${maxBitrateKbps} kbps` : null,
+    bufferSizeKbits != null ? `buffer ${bufferSizeKbits} kbit` : null,
+  ].filter((value): value is string => value != null);
+  return {
+    requestedMode,
+    effectiveMode,
+    qualityValue,
+    targetBitrateKbps,
+    maxBitrateKbps,
+    bufferSizeKbits,
+    label: limits.length > 0 ? `${details} (${limits.join(', ')})` : details,
+  };
 }
 
 function deriveCanonicalSourceFps(row: CanonicalLeaderboardRecord): number | null {
@@ -320,7 +349,7 @@ function decisionCandidateFromCanonicalDerivedResult(
     encoderName: row.recipe.encoderImplementation,
     codecFamily: row.recipe.codecFamily as DecisionCandidate['codecFamily'],
     preset: row.recipe.preset ?? 'default',
-    crf: deriveCanonicalCrf(row),
+    rateControl: deriveNativeRateControl(row),
     contentClass: filters.contentClass,
     resolution: filters.resolution,
     passes: filters.passes,
@@ -1577,7 +1606,7 @@ router.get('/analytics/hardware', async (req, res) => {
       encoderName: row.recipe.encoderImplementation,
       codecFamily: row.recipe.codecFamily,
       preset: row.recipe.preset ?? 'default',
-      crf: deriveCanonicalCrf(row),
+      rateControl: deriveNativeRateControl(row),
       contentClass: filters.contentClass,
       resolution: filters.resolution,
       passes: filters.passes,
@@ -1617,7 +1646,7 @@ router.get('/analytics/encoders', async (req, res) => {
       encoderName: row.recipe.encoderImplementation,
       codecFamily: row.recipe.codecFamily,
       preset: row.recipe.preset ?? 'default',
-      crf: deriveCanonicalCrf(row),
+      rateControl: deriveNativeRateControl(row),
       contentClass: filters.contentClass,
       resolution: filters.resolution,
       passes: filters.passes,

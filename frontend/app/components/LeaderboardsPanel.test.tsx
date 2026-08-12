@@ -49,5 +49,6 @@ describe("LeaderboardsPanel", () => {
     const activeMode = document.querySelector('nav[aria-label="PL Fit modes"] [aria-current="page"]');
     expect(activeMode?.textContent).toMatch(new RegExp(`^${mode}$`, "i"));
     expect(screen.getByText(/PL Score stays fixed/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/CONSTANT_QUALITY 24/i).length).toBeGreaterThan(0);
   });
 });

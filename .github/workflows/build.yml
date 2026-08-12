@@ -44,6 +44,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Install media probe runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Install
         working-directory: server
         run: npm ci --no-audit --no-fund
@@ -107,6 +109,9 @@ jobs:
       - name: Prisma migration status
         working-directory: server
         run: npx prisma migrate status
+      - name: Verify concurrent null-workload uniqueness
+        working-directory: server
+        run: node scripts/verify-legacy-null-workload-concurrency.mjs
 
   stack-smoke:
     name: stack-smoke

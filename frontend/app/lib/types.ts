@@ -112,7 +112,15 @@ export type LeaderboardDecisionRow = {
   encoderName: string;
   codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
   preset: string;
-  crf: number;
+  rateControl: {
+    requestedMode: string;
+    effectiveMode: string;
+    qualityValue: number | null;
+    targetBitrateKbps: number | null;
+    maxBitrateKbps: number | null;
+    bufferSizeKbits: number | null;
+    label: string;
+  };
   contentClass: string;
   resolution: string;
   passes: number;
@@ -234,7 +242,7 @@ export type HardwareAnalyticsRow = {
   encoderName: string;
   codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
   preset: string;
-  crf: number;
+  rateControl: LeaderboardDecisionRow['rateControl'];
   contentClass: string;
   resolution: string;
   passes: number;
@@ -250,7 +258,7 @@ export type EncoderAnalyticsRow = {
   encoderName: string;
   codecFamily: "h264" | "hevc" | "av1" | "vp9" | "other";
   preset: string;
-  crf: number;
+  rateControl: LeaderboardDecisionRow['rateControl'];
   contentClass: string;
   resolution: string;
   passes: number;

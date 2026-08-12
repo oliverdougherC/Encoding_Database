@@ -19,6 +19,7 @@ from .encoders import (
 )
 from .energy import derive_energy_intensities, serialize_energy_domains
 from .hardware_monitor import HardwareMonitor
+from .media_evidence import probe_video_packet_evidence
 
 EXTENDED_TELEMETRY_KEYS: tuple = (
     'gpuTempMaxC', 'cpuFreqAvgMHz', 'cpuTempMaxC',
@@ -1075,29 +1076,9 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
     except Exception:
         pass
 
-    packet_cmd = [
-        config.ffprobe_exe(),
-        "-v", "error",
-        "-select_streams", "v:0",
-        "-show_entries", "packet=size",
-        "-of", "csv=p=0",
-        path,
-    ]
     try:
-        proc = subprocess.run(packet_cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        packet_total = 0
-        saw_packet = False
-        for raw_line in (proc.stdout or "").splitlines():
-            line = raw_line.strip()
-            if not line:
-                continue
-            packet_size = _safe_int(line.split(",", 1)[0])
-            if packet_size is None:
-                continue
-            saw_packet = True
-            packet_total += packet_size
-        if saw_packet and packet_total > 0:
-            result["videoPayloadBytes"] = packet_total
+        packet_evidence = probe_video_packet_evidence(path, config.ffprobe_exe(), subprocess.run)
+        result["videoPayloadBytes"] = packet_evidence["videoPayloadBytes"]
     except Exception:
         pass
 

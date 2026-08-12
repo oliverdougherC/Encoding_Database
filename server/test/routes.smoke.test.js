@@ -580,6 +580,8 @@ function makeDerivedResultRow(overrides = {}) {
       codecFamily: 'hevc',
       encoderImplementation: 'libx265',
       preset: 'slow',
+      requestedRateControlMode: 'CONSTANT_QUALITY',
+      effectiveRateControlMode: 'CONSTANT_QUALITY',
       requestedQualityValue: 24,
       effectiveQualityValue: 24,
     },
@@ -697,6 +699,10 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
         codecFamily: 'hevc',
         encoderImplementation: 'hevc_videotoolbox',
         preset: 'medium',
+        requestedRateControlMode: 'TARGET_BITRATE',
+        effectiveRateControlMode: 'TARGET_BITRATE',
+        requestedTargetBitrateKbps: 5_000,
+        effectiveTargetBitrateKbps: 5_000,
         requestedQualityValue: 24,
         effectiveQualityValue: 24,
       },
@@ -739,6 +745,15 @@ test('GET /analytics/leaderboards uses canonical derived results and an exact im
     assert.equal(benchmarkCalls, 0);
     assert.equal(data.rows.length, 1);
     assert.equal(data.rows[0].encoderName, 'hevc_videotoolbox');
+    assert.deepEqual(data.rows[0].rateControl, {
+      requestedMode: 'TARGET_BITRATE',
+      effectiveMode: 'TARGET_BITRATE',
+      qualityValue: 24,
+      targetBitrateKbps: 5_000,
+      maxBitrateKbps: null,
+      bufferSizeKbits: null,
+      label: 'TARGET_BITRATE 5000 kbps',
+    });
     assert.deepEqual(data.rows[0].hardwareContext, {
       environmentId: 'environment-2',
       environmentFingerprint: 'environment-fingerprint-2',

@@ -9,7 +9,6 @@ export type AnalyticsSearchState = {
   environmentFingerprint?:string;
   contentClass:string;
   resolution:string;
-  crf:number;
   minSamples:number;
   fitMode: PlFitMode;
   customQualityWeight?: number | null;
@@ -36,7 +35,6 @@ export function parseAnalyticsSearchParams(params:Params):AnalyticsSearchState {
     environmentFingerprint:params.get("environmentFingerprint")||"",
     contentClass:params.get("contentClass")||"mixed",
     resolution:params.get("resolution")||"1080p",
-    crf:positive(params.get("crf"),24),
     minSamples:positive(params.get("minSamples"),3),
     fitMode,
     customQualityWeight:numeric(params.get("customQualityWeight")),
@@ -56,7 +54,6 @@ export function buildAnalyticsSearchString(state:AnalyticsSearchState):string {
   if(state.environmentFingerprint)p.set("environmentFingerprint",state.environmentFingerprint);
   if(state.contentClass!=="mixed")p.set("contentClass",state.contentClass);
   if(state.resolution!=="1080p")p.set("resolution",state.resolution);
-  if(state.crf!==24)p.set("crf",String(state.crf));
   if(state.minSamples!==3)p.set("minSamples",String(state.minSamples));
   if(state.fitMode!=="balanced")p.set("fitMode",state.fitMode);
   if(state.customQualityWeight!=null)p.set("customQualityWeight",String(state.customQualityWeight));

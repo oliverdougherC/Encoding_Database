@@ -999,7 +999,7 @@ function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonOb
   };
 }
 
-async function streamPacketEvidence(filePath: string): Promise<{ bytes: number; packetCount: number }> {
+export async function streamPacketEvidence(filePath: string): Promise<{ bytes: number; packetCount: number }> {
   return await new Promise<{ bytes: number; packetCount: number }>((resolve, reject) => {
     const child = spawn('ffprobe', [
       '-v', 'error',
