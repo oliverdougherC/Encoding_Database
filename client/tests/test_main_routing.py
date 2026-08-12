@@ -43,6 +43,9 @@ class _DummyDashboard:
 
 
 class MainRoutingTests(unittest.TestCase):
+    def test_runtime_environment_sampler_dependency_is_imported(self) -> None:
+        self.assertEqual(client_main.HardwareMonitor.__module__, "client.hardware_monitor")
+
     def test_batch_requires_explicit_videotoolbox_bitrate_recipe(self) -> None:
         presets = {"smallBenchmark": {"crfValues": [24]}}
         with mock.patch.object(client_main, "enumerate_supported_presets_for_encoder", return_value=["default"]), \

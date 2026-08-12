@@ -31,6 +31,7 @@ from .config import (
 from .hardware import (
     detect_hardware, resolve_batch_size, measure_background_cpu_load,
 )
+from .hardware_monitor import HardwareMonitor
 from .encoders import (
     ensure_ffmpeg_and_ffprobe, has_encoder, has_libvmaf,
     normalize_codec_family, pick_software_encoder_for_family,
