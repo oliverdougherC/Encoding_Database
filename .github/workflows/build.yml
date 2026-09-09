@@ -122,6 +122,8 @@ jobs:
           test -x "$bundle_dir/bin/ffprobe"
           echo "ENCODINGDB_FFMPEG_PATH=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Generate proposed linux runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -138,9 +140,6 @@ jobs:
           path: proposed-runtime-linux.json
           retention-days: 90
           if-no-files-found: error
-      - name: Install canonical-suite validation dependencies
-        if: ${{ !inputs.runtime_lock_evidence }}
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Materialize frozen canonical references
         if: ${{ !inputs.runtime_lock_evidence }}
         env:
@@ -189,6 +188,8 @@ jobs:
           test -x "$PWD/ffprobe"
           echo "ENCODINGDB_FFMPEG_PATH=$PWD/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$PWD/ffprobe" >> "$GITHUB_ENV"
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Generate proposed macos runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -205,9 +206,6 @@ jobs:
           path: proposed-runtime-macos.json
           retention-days: 90
           if-no-files-found: error
-      - name: Install canonical-suite validation dependencies
-        if: ${{ !inputs.runtime_lock_evidence }}
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Materialize frozen canonical references
         if: ${{ !inputs.runtime_lock_evidence }}
         env:
@@ -263,6 +261,8 @@ jobs:
           if (-not (Test-Path -LiteralPath $ffprobe)) { throw "ffprobe.exe missing from bundle" }
           "ENCODINGDB_FFMPEG_PATH=$ffmpeg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ENCODINGDB_FFPROBE_PATH=$ffprobe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Generate proposed windows runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -279,9 +279,6 @@ jobs:
           path: proposed-runtime-windows.json
           retention-days: 90
           if-no-files-found: error
-      - name: Install canonical-suite validation dependencies
-        if: ${{ !inputs.runtime_lock_evidence }}
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
       - name: Materialize frozen canonical references
         if: ${{ !inputs.runtime_lock_evidence }}
         env:
