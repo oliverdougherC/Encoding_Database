@@ -245,6 +245,9 @@ class SuiteFinalizerTests(unittest.TestCase):
                         canonical_dir.mkdir(parents=True, exist_ok=True)
                         for clip in manifest_payload["clips"]:
                             shutil.copy2(source_paths[str(clip["id"])], canonical_dir / str(clip["fileName"]))
+                        (suite_root / "notices").mkdir()
+                        for clip in manifest_payload["clips"]:
+                            (suite_root / "notices" / f"{clip['id']}.txt").write_text("Test fixture attribution and license")
                         suite.write_suite_pack_metadata(str(suite_root))
                     with open(staging_root_path / "client" / "suite-pack.json", "r", encoding="utf-8") as handle:
                         pack_manifest_payload = json.load(handle)

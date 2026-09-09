@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
-## [Unreleased]
+## [1.2.0-beta.1] - 2026-09-09
+
+Candidate preparation for deployment review; not a production release.
 
 ### Added
 

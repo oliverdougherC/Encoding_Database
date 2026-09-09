@@ -89,6 +89,10 @@ Ensure-Exists -Path $guiEntrypoint -Description "GUI PyInstaller entrypoint"
 Ensure-Exists -Path $consoleEntrypoint -Description "Console PyInstaller entrypoint"
 Ensure-Exists -Path $buildRequirements -Description "pinned build requirements"
 
+if ($env:ENCODINGDB_BUILD_ONLY -ne "1" -and $env:ENCODINGDB_REGISTER_RUNTIME -eq "1") {
+    Fail "Candidate builds must verify the reviewed runtime lock; runtime registration is development-only"
+}
+
 Write-Log "Preparing build directories..."
 if (Test-Path -LiteralPath $buildRoot) { Remove-Item -LiteralPath $buildRoot -Recurse -Force }
 if (Test-Path -LiteralPath $legacyDistDir) { Remove-Item -LiteralPath $legacyDistDir -Recurse -Force }

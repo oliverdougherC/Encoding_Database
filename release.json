@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "projectVersion": null,
-  "releaseDate": null,
+  "projectVersion": "1.2.0-beta.1",
+  "releaseDate": "2026-09-09",
   "benchmarkProtocolVersion": "7.0",
   "plFormulaVersion": "7.0",
   "suiteVersion": "encodingdb-test-suite-v1",

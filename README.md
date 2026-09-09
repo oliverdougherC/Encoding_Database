@@ -333,23 +333,28 @@ Packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<pla
 
 ## Production deployment
 
-1. Configure env files from `env.example` and `server/env.example`.
-2. One-command deploy (pull `main`, build, migrate, and start all services):
+Follow [Final Release Handoff](docs/FINAL_RELEASE_HANDOFF.md) for candidate
+validation, human review, protected beta-to-main merge, main-bound release
+artifacts, backup, deployment, production acceptance, and the evidence epoch.
+The beta-readiness assignment stops at deployment review.
+
+After separate production approval, configure env files from `env.example` and
+`server/env.example`, complete the required backup, and deploy from a clean
+checkout of the exact reviewed main SHA:
 
 ```bash
-./deploy.sh
+./deploy.sh --skip-pull
 ```
 
-PL v7 production activation, env validation, named-volume backup/restore, and
-pre-V7 migration rehearsal are documented in
-`docs/PL_V7_PRODUCTION_ACTIVATION.md`.
+Verify and record the full checkout SHA before and after deployment.
+`--skip-pull` prevents an automatic update; it does not verify the reviewed SHA
+or a clean worktree. The default `./deploy.sh` fetches and pulls latest `main`,
+which may have advanced since review. Do not substitute an unreviewed branch tip.
 
-3. Manual compose alternative:
-
-```bash
-./scripts/generate-dev-cert.sh
-docker compose -f docker-compose.prod.yml up -d --build
-```
+Production env validation, named-volume backup/restore, pre-V7 migration
+rehearsal, and the later PL activation procedure are documented in
+`docs/PL_V7_PRODUCTION_ACTIVATION.md`. PL calibration remains post-release;
+valid V7 evidence can be collected while public PL is explicitly unavailable.
 
 Security note: for hardened public deployment, set `INGEST_MODE=signed`, a strong `INGEST_HMAC_SECRET`, and an explicit `TRUST_PROXY` value in `.env` that matches your reverse-proxy topology.
 

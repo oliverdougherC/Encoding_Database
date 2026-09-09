@@ -132,5 +132,141 @@ class SuiteV1Tests(unittest.TestCase):
         self.assertFalse(suite.has_general_pl_coverage(prepared[:-1]))
 
 
+
+class SuiteDistributionFailureTests(unittest.TestCase):
+    def _metadata(self, data):
+        import hashlib
+        return {"distribution": {"byteSize": len(data), "sha256": hashlib.sha256(data).hexdigest()}}
+
+    def test_missing_and_corrupt_archive_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "pack"
+            self.assertFalse(suite._verify_suite_pack_file(str(path), self._metadata(b"good")).ok)
+            path.write_bytes(b"evil")
+            self.assertFalse(suite._verify_suite_pack_file(str(path), self._metadata(b"good")).ok)
+
+    def test_interrupted_download_resumes_without_exposing_partial_destination(self):
+        data = b"firstsecond"
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory) / "pack"
+            def interrupted(**kwargs):
+                yield b"first"
+                raise ConnectionError("interrupted")
+            first = mock.Mock(status_code=200)
+            first.iter_content.side_effect = interrupted
+            second = mock.Mock(status_code=206)
+            second.iter_content.return_value = [b"second"]
+            requests = mock.Mock()
+            requests.get.side_effect = [first, second]
+            with mock.patch.object(suite, "_load_requests", return_value=requests):
+                with self.assertRaises(ConnectionError):
+                    suite._download_suite_pack("https://example.org/pack", str(destination), self._metadata(data))
+                self.assertFalse(destination.exists())
+                suite._download_suite_pack("https://example.org/pack", str(destination), self._metadata(data))
+            self.assertEqual(destination.read_bytes(), data)
+            self.assertEqual(requests.get.call_args.kwargs["headers"], {"Range": "bytes=5-"})
+            self.assertFalse(Path(str(destination) + ".part").exists())
+
+    def test_unsafe_archive_never_materializes(self):
+        import io
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "bad.tar.gz"
+            with tarfile.open(path, "w:gz") as archive:
+                entry = tarfile.TarInfo("../escaped")
+                entry.size = 1
+                archive.addfile(entry, io.BytesIO(b"x"))
+            with self.assertRaisesRegex(RuntimeError, "unsafe"):
+                suite._extract_suite_pack(str(path), {"suiteFingerprint": "test"}, directory)
+            self.assertFalse((Path(directory) / ".suite-pack/test").exists())
+            self.assertFalse((Path(directory) / ".suite-pack/escaped").exists())
+
+    def test_frozen_notices_required_and_inventory_bound(self):
+        import json
+        manifest = suite.load_default_suite_manifest()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "finalization-status.json").write_text(json.dumps({"isFrozen": True}))
+            with self.assertRaisesRegex(RuntimeError, "notice"):
+                suite._suite_notice_entries(manifest, directory)
+            (root / "notices").mkdir()
+            for clip in manifest.clips:
+                (root / "notices" / f"{clip.clip_id}.txt").write_text("Attribution and license")
+            entries = suite._suite_notice_entries(manifest, directory)
+            self.assertEqual(len(entries), 7)
+            with self.assertRaisesRegex(RuntimeError, "frozen"):
+                suite.write_manifest(str(root / "manifest.json"))
+
+    def test_notice_tampering_rejected_and_valid_extraction_reused(self):
+        import json
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / "source"
+            root.mkdir()
+            payload = json.loads(Path(suite.get_manifest_path()).read_text())
+            (root / "manifest.json").write_text(json.dumps(payload))
+            (root / "finalization-status.json").write_text(json.dumps({"isFrozen": True}))
+            (root / "notices").mkdir()
+            (root / "canonical").mkdir()
+            for clip in payload["clips"]:
+                (root / "notices" / f"{clip['id']}.txt").write_text("Fixture license notice")
+                (root / "canonical" / clip["fileName"]).write_bytes(b"fixture")
+            metadata = suite.build_suite_pack_metadata(str(root))
+            archive = Path(directory) / "suite.tar.gz"
+            suite.build_suite_pack_archive(str(root), str(archive))
+            with mock.patch.object(suite, "verify_suite_clip", return_value=suite.ClipVerificationResult(True, "fixture media verification", {})):
+                canonical = Path(suite._extract_suite_pack(str(archive), metadata, directory))
+                with mock.patch.object(tarfile, "open", side_effect=AssertionError("must reuse verified cache")):
+                    self.assertEqual(suite._extract_suite_pack(str(archive), metadata, directory), str(canonical))
+                notice = next((canonical.parent / "notices").iterdir())
+                notice.write_text("corrupt")
+                with self.assertRaisesRegex(RuntimeError, "notice hash mismatch"):
+                    suite._verify_extracted_suite_pack(str(canonical.parent), metadata)
+                suite._extract_suite_pack(str(archive), metadata, directory)
+                self.assertEqual(notice.read_text(), "Fixture license notice")
+
+    def test_materializer_installs_both_trees_and_rejects_metadata_mismatch(self):
+        import json
+        import shutil
+        from scripts import materialize_final_suite
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory)
+            roots = [repo / "client/resources/test_suite_v1", repo / "server/resources/test_suite_v1"]
+            extracted = repo / "extracted"
+            extracted.mkdir()
+            (extracted / "canonical").mkdir()
+            (extracted / "canonical/clip.mkv").write_bytes(b"verified fixture")
+            (extracted / "notices").mkdir()
+            (extracted / "notices/clip.txt").write_text("Attribution")
+            metadata = {"suiteFingerprint": "fixture"}
+            for name, data in (("manifest.json", {}), ("suite-lock.json", {}), ("finalization-status.json", {"isFrozen": True})):
+                (extracted / name).write_text(json.dumps(data))
+            for root in roots:
+                root.mkdir(parents=True)
+                for name in ("manifest.json", "suite-lock.json", "finalization-status.json"):
+                    shutil.copyfile(extracted / name, root / name)
+                (root / "suite-pack.json").write_text(json.dumps(metadata))
+            with mock.patch.object(suite, "_ensure_suite_pack_available", return_value="verified-pack"), mock.patch.object(suite, "_extract_suite_pack", return_value=str(extracted / "canonical")):
+                materialize_final_suite.materialize(repo)
+                materialize_final_suite.materialize(repo)
+                for root in roots:
+                    self.assertEqual((root / "canonical/clip.mkv").read_bytes(), b"verified fixture")
+                    self.assertEqual((root / "notices/clip.txt").read_text(), "Attribution")
+                original_replace = materialize_final_suite.os.replace
+                calls = []
+                def fail_during_install(source, destination):
+                    calls.append(str(source))
+                    if len(calls) == 3:
+                        raise OSError("simulated installation interruption")
+                    return original_replace(source, destination)
+                with mock.patch.object(materialize_final_suite.os, "replace", side_effect=fail_during_install):
+                    with self.assertRaisesRegex(OSError, "interruption"):
+                        materialize_final_suite.materialize(repo)
+                for root in roots:
+                    self.assertEqual((root / "canonical/clip.mkv").read_bytes(), b"verified fixture")
+                    self.assertEqual((root / "notices/clip.txt").read_text(), "Attribution")
+                (roots[1] / "suite-pack.json").write_text("{}")
+                with self.assertRaisesRegex(RuntimeError, "metadata differs"):
+                    materialize_final_suite.materialize(repo)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -531,6 +531,10 @@ def stage_outputs(
             staged_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source_path, staged_path)
             replacements.append((staged_path, canonical_dir / str(clip["fileName"])))
+        notices_dir = staging_root / tree_label / "notices"
+        if notices_dir.exists():
+            for notice in sorted(notices_dir.iterdir()):
+                replacements.append((notice, manifest_out.parent / "notices" / notice.name))
     return replacements
 
 
@@ -576,6 +580,7 @@ def commit_replacements(replacements: Sequence[Tuple[Path, Path]]) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Freeze a reviewed EncodingDB Test Suite v1 manifest without transcoding originals.")
     parser.add_argument("--review-json", required=True)
+    parser.add_argument("--notices-dir", default=None, help="Per-clip attribution/license .txt notices; defaults to notices/ beside review JSON.")
     parser.add_argument("--source-dir", default=None, help="Directory containing the reviewed seven-file source set. Used when clips omit localPath.")
     parser.add_argument("--client-manifest-out", default=str(default_output_paths()["client_manifest_out"]))
     parser.add_argument("--server-manifest-out", default=str(default_output_paths()["server_manifest_out"]))
@@ -597,6 +602,7 @@ def main() -> int:
     if args.print_review_hash:
         print(build_review_hash(review))
         return 0
+    notices_dir = Path(args.notices_dir).resolve() if args.notices_dir else review_path.parent / "notices"
     source_dir = Path(args.source_dir).resolve() if args.source_dir else None
     source_paths = source_clip_paths(review, review_path.parent, source_dir)
     manifest_payload = build_suite_payload(review, int(args.manifest_version), source_paths)
@@ -626,6 +632,7 @@ def main() -> int:
             for clip in manifest_payload["clips"]:
                 source_path = source_paths[str(clip["id"])]
                 shutil.copy2(source_path, canonical_dir / str(clip["fileName"]))
+            shutil.copytree(notices_dir, staging_root_path / tree_label / "notices")
             suite.write_suite_pack_metadata(str(staging_root_path / tree_label))
         with open(staging_root_path / "client" / "suite-pack.json", "r", encoding="utf-8") as handle:
             pack_manifest_payload = json.load(handle)

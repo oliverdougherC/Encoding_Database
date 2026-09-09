@@ -55,6 +55,10 @@ if [[ ! -f "$CLIENT_DIR/resources/test_suite_v1/suite-pack.json" ]]; then
   die "Missing $CLIENT_DIR/resources/test_suite_v1/suite-pack.json"
 fi
 
+if [[ "${ENCODINGDB_BUILD_ONLY:-0}" != "1" && "${ENCODINGDB_REGISTER_RUNTIME:-0}" == "1" ]]; then
+  die "Candidate builds must verify the reviewed runtime lock; runtime registration is development-only"
+fi
+
 log "Preparing output directory..."
 rm -rf "$BUILD_ROOT"
 rm -f "$OUTPUT_PATH"
