@@ -75,7 +75,7 @@ async function main(argv) {
       while (true) {
         const current = await prisma.benchmarkRun.findMany(query);
         if (current.length >= 14 && current.every(r => r.qualityAnalyses.length && r.qualityAnalyses.every(a => a.status === 'COMPLETE'))) return current;
-        requireValue(!current.some(r => r.qualityAnalyses.some(a => ['FAILED', 'REJECTED', 'INVALID'].includes(a.status))), 'Authoritative analysis failed');
+        requireValue(!current.some(r => r.qualityAnalyses.some(a => ['FAILED', 'REJECTED', 'INVALID', 'SUSPECT'].includes(a.status))), 'Authoritative analysis failed or requires metric review; flagged evidence is not accepted certification');
         requireValue(Date.now() < deadline, 'Timed out awaiting complete authoritative analyses');
         await new Promise(resolve => setTimeout(resolve, 2000));
       }

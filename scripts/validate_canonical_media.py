@@ -7,6 +7,12 @@ from fractions import Fraction
 from pathlib import Path
 import subprocess
 import time
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+from client.ffmpeg import canonical_quality_filter
 
 
 def digest(path):
@@ -103,13 +109,13 @@ def validate(path, args):
         encoded = probe(target, args.ffprobe, out / f'{label}.probe.log')
         check_media(encoded, count, actual_codec)
         metric_path = (out / f'{label}.vmaf.json').resolve()
-        filtergraph = f'[0:v]setpts=PTS-STARTPTS[d];[1:v]setpts=PTS-STARTPTS[r];[d][r]libvmaf=model=path={args.model}:n_threads=2:log_fmt=json:log_path={metric_path}'
+        filtergraph = canonical_quality_filter(data['streams'][0]['avg_frame_rate'], f'libvmaf=model=path={args.model}:n_threads=1:log_fmt=json:log_path={metric_path}')
         run([args.ffmpeg, '-hide_banner', '-i', target, '-i', path, '-lavfi', filtergraph,
              '-f', 'null', '-'], out / f'{label}.vmaf.log')
         metrics = json.loads(metric_path.read_text())
         assert len(metrics['frames']) == count, 'VMAF alignment/frame coverage mismatch'
         run([args.ffmpeg, '-hide_banner', '-i', target, '-i', path,
-             '-lavfi', '[0:v]setpts=PTS-STARTPTS[d];[1:v]setpts=PTS-STARTPTS[r];[d][r]xpsnr',
+             '-lavfi', canonical_quality_filter(data['streams'][0]['avg_frame_rate'], 'xpsnr'),
              '-f', 'null', '-'], out / f'{label}.xpsnr.log')
         packets, _ = run([args.ffprobe, '-v', 'error', '-select_streams', 'v:0', '-show_packets',
                           '-show_entries', 'packet=size', '-of', 'json', target], out / f'{label}.packets.log')

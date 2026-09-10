@@ -8,7 +8,7 @@ import test from 'node:test';
 
 const source = await readFile(new URL('../../scripts/certify-beta-corpus.sh', import.meta.url), 'utf8');
 const loop = source.slice(source.indexOf('PROCESSED_CLIPS=0'), source.indexOf("rg -q 'Queued payload for retry'"));
-async function runFixture(ids, rootSpool = false) {
+async function runFixture(ids, rootSpool = false, crf = '24') {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'beta-shell-unit-'));
   try {
     await mkdir(path.join(dir, 'queue', 'protocol-attempts'), { recursive: true });
@@ -23,7 +23,7 @@ if IFS= read -r unexpected; then
   printf '%s\\n' "$unexpected" >> "$RUN_DIR/consumed-stdin.txt"
 fi
 `, { mode: 0o755 });
-    const result = spawnSync('bash', ['-c', `set -euo pipefail\n${loop}`], { env: { ...process.env, RUN_DIR: dir, CLIENT: client, FAULT_PROXY_PORT: '1' }, encoding: 'utf8' });
+    const result = spawnSync('bash', ['-c', `set -euo pipefail\n${loop}`], { env: { ...process.env, RUN_DIR: dir, CLIENT: client, FAULT_PROXY_PORT: '1', SOFTWARE_CRF: crf }, encoding: 'utf8' });
     const calls = await readFile(path.join(dir, 'calls.txt'), 'utf8').catch(() => '');
     const consumed = await readFile(path.join(dir, 'consumed-stdin.txt'), 'utf8').catch(() => '');
     return { ...result, calls: calls.trim().split('\n').filter(Boolean), consumed };
@@ -39,6 +39,12 @@ test('all seven invocations submit explicitly, cannot consume clip-list stdin, a
     assert.match(call, /(?:^| )--submit(?: |$)/);
     assert.ok(call.includes(`--v7-suite-clip ${ids[index]} `));
   });
+});
+test('the predeclared native rate point is passed unchanged to every clip', async () => {
+  const result = await runFixture(ids, false, '12');
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.calls.length, 7);
+  assert.ok(result.calls.every(call => call.includes('--crf 12 ')));
 });
 test('pending root submission JSON still fails certification', async () => {
   const result = await runFixture(ids, true);

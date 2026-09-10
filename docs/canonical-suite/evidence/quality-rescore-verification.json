@@ -1,0 +1,591 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-10T01:50:19.783958+00:00",
+  "passed": true,
+  "pointCount": 56,
+  "clipCount": 7,
+  "checks": [
+    "actual encoded SHA-256 and byte size unchanged",
+    "all original encoding/rate/packet-bitrate/timing fields preserved",
+    "exact declared VMAF frame coverage (192 animation frames; 240 for each other clip)",
+    "corrected VMAF/XPSNR/SSIM/PSNR executed logs retained",
+    "old unaligned metrics archived diagnostic-invalid",
+    "existing 14 committed report files updated without review-flag changes"
+  ],
+  "clientServerAgreement": {
+    "vmaf": {
+      "vmaf": 97.552275,
+      "vmafMean": 97.552275,
+      "vmafP5": 93.42453185,
+      "metricModelId": "vmaf-v1-sdr-1080p",
+      "vmafFrameCount": 240
+    },
+    "ssim": 0.983381,
+    "psnr": 44.734273,
+    "serverVmafMean": 97.552275,
+    "agreementWithin": 1e-06,
+    "strictExitAndFrameCountValidated": true
+  },
+  "points": [
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "94f7af9bfe38c7c21e23719c9f3ba509b14c6e7c63b5a65e824966574f3bdaf1",
+      "byteSize": 15621192,
+      "frameCount": 192,
+      "vmafMean": 91.252572,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "b00dd836c522cd0def229cc8f55f29a4f78c9f1ed7a27eed2fd8652d07597857",
+      "byteSize": 5152630,
+      "frameCount": 192,
+      "vmafMean": 75.540069,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "a4fb5fa187506be443ad816c5287cadda204a5b9d012a3bf05c8d3e4b8876a15",
+      "byteSize": 1380090,
+      "frameCount": 192,
+      "vmafMean": 44.950527,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "01bbe44af9d05e616a244e451a611c2156620acf131ab2fb6c3c06060dc646ee",
+      "byteSize": 3888869,
+      "frameCount": 192,
+      "vmafMean": 71.400506,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "6c2eb64fb938da6c93ecdf33129e2fc95a9969134ebe0a839599cb71e34581cd",
+      "byteSize": 6220403,
+      "frameCount": 192,
+      "vmafMean": 82.249652,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "58bce8a5108c5c70e3405ac3040d3a95fdd283ab078871adc0e5d9f2f9e355dc",
+      "byteSize": 2592997,
+      "frameCount": 192,
+      "vmafMean": 58.86431,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "a83e58a04650ee85d83d4f8f4346da34c3dfe293504146e01267a06275bef14d",
+      "byteSize": 10435876,
+      "frameCount": 240,
+      "vmafMean": 99.290464,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "54486ec84a1f82994119dbdfe5dbc4d294dd08f4e3eafdecead5090ee0f121af",
+      "byteSize": 4348090,
+      "frameCount": 240,
+      "vmafMean": 93.716171,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "1677940617c93096adec2bd28c8a7166f89187053fde9ce6ef18ebdda9481473",
+      "byteSize": 2133685,
+      "frameCount": 240,
+      "vmafMean": 79.282854,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "bc18a4ac9a82fedc5f00b10821843152c5149b96782319888724874d2ae47c1e",
+      "byteSize": 2748088,
+      "frameCount": 240,
+      "vmafMean": 92.658389,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "d6cf711fb0ad341e01be5a4206d5df4bd18bd1aae9780039834df8d0fe9de9f5",
+      "byteSize": 4278674,
+      "frameCount": 240,
+      "vmafMean": 97.188254,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "c778e3cde2d66f0abd919c82a39db0c5cb9fb9a885b030ca0214ab879a285db7",
+      "byteSize": 3149212,
+      "frameCount": 240,
+      "vmafMean": 88.40314,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "95770dc65ee2f049ae3d1cb4297aa233eb0c91d3696c11d5d987b30ad92351de",
+      "byteSize": 29112783,
+      "frameCount": 240,
+      "vmafMean": 84.897646,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "395d0d6a213de07773f39c9374eca3b6cccf90c55aa8e8e968fa0e240e13f34b",
+      "byteSize": 1502206,
+      "frameCount": 240,
+      "vmafMean": 62.18743,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "ade463f8bac973789bd11993d7649e57a974cb00184640c6ca3b4c7d24216793",
+      "byteSize": 227356,
+      "frameCount": 240,
+      "vmafMean": 48.193659,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "893262d0fcb7e52f3e93604528b57fd86a4759de864c70f689c089f3e96d2bd5",
+      "byteSize": 980601,
+      "frameCount": 240,
+      "vmafMean": 61.865421,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "900685271ee070dd3255ab8bf17a0b1cbd0d3ebc3229bd52ff88606b420880e1",
+      "byteSize": 2076950,
+      "frameCount": 240,
+      "vmafMean": 67.578387,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "f6aa4d0d06825ab6fe0e49d612a76f2a47faf4158739450ec44b39637c2f7ac9",
+      "byteSize": 3174116,
+      "frameCount": 240,
+      "vmafMean": 64.613726,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "365a0b1271da1b1af57b127f11d1a5e575beec5742ab326df46bca6772fba332",
+      "byteSize": 33912643,
+      "frameCount": 240,
+      "vmafMean": 94.944966,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "ba4f3ecf3ba18859ab2bc0acf765a08bc1de0adb055769faefa881d7ae51371e",
+      "byteSize": 2740168,
+      "frameCount": 240,
+      "vmafMean": 83.932883,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "0b5e608be65aa6ba331840e9f7f933785688515ecb2675fee5f0565233139391",
+      "byteSize": 920004,
+      "frameCount": 240,
+      "vmafMean": 69.290535,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "af570752b386d9221eee656e60eb2f45f06d6479a3efeb3eb5fa0594b23bef4a",
+      "byteSize": 1677437,
+      "frameCount": 240,
+      "vmafMean": 84.234004,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "05650aa7e03362d7d3c23349789c22128ac55ec31a4ecc8698c6be5405c714ce",
+      "byteSize": 3579026,
+      "frameCount": 240,
+      "vmafMean": 87.695884,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "131a9a4e7e0e9e9a72225c2fe9da2c26a42ded4bec382d7042754611d73ac890",
+      "byteSize": 3178857,
+      "frameCount": 240,
+      "vmafMean": 80.727249,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "5039028fec799295f8212480c01a609a5bdc4cb0db5b201a1c4086e0857c1d16",
+      "byteSize": 15287011,
+      "frameCount": 240,
+      "vmafMean": 96.220962,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "8a1942b43c553866653854cd1c93878d5ec79dd676e70cf46ed6de45ef261959",
+      "byteSize": 3385985,
+      "frameCount": 240,
+      "vmafMean": 87.420013,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "27341fb761471a1acd7055451541ba35551d6194ddd3c5d411e6fceb80709a87",
+      "byteSize": 987123,
+      "frameCount": 240,
+      "vmafMean": 68.980183,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "af4c638e4f791f8d33f60df2475c5826e6c210850759dddeb7b68b59c2018547",
+      "byteSize": 3041265,
+      "frameCount": 240,
+      "vmafMean": 87.757364,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "79a2a9b0fe68c554a99dc2c48d2a5e916e10459af31f385cbfbeb95acff4ecf0",
+      "byteSize": 6120613,
+      "frameCount": 240,
+      "vmafMean": 93.629824,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "5436fe0eb1a979f3919822ec83f4d5be0677db3a4db93be8ea17df83014fb784",
+      "byteSize": 3277790,
+      "frameCount": 240,
+      "vmafMean": 78.555486,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "a067dc450908fa46173bc19d18ee65d73cfb9e9359d656608811a6015b881256",
+      "byteSize": 278906,
+      "frameCount": 240,
+      "vmafMean": 98.16051,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "7b0c2ac9d470999039d6d858a838379016c2515bd1fdeb24646d261fa8ba8136",
+      "byteSize": 188855,
+      "frameCount": 240,
+      "vmafMean": 94.496445,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "5122fe4e8896b4c7d8cb9393f86dc3a86e8dab21b580c1c6bf4ce7bade6062b3",
+      "byteSize": 126130,
+      "frameCount": 240,
+      "vmafMean": 84.386112,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "3a9239815886bf81fd1c4642da4842442866605d50b3423b292c925a656ebf88",
+      "byteSize": 329499,
+      "frameCount": 240,
+      "vmafMean": 94.607579,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "605556daf35cd094f4217e636dc76cebc20f3d9431e96c821fba78ea9cae6e41",
+      "byteSize": 360805,
+      "frameCount": 240,
+      "vmafMean": 99.564041,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "bfb8c6850115da61cea6d2f2d40739fd02d635f80176efd16027f009464b8a21",
+      "byteSize": 2250598,
+      "frameCount": 240,
+      "vmafMean": 97.017536,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "sha256": "540d1768843ab6d4ed062e56db1c9d4de20cf6cf15a544a248ecbb312fc5c60d",
+      "byteSize": 5924108,
+      "frameCount": 240,
+      "vmafMean": 95.25714,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "sha256": "a71f3b5fa25a77529f1b7fac98f8444a0a53f1094cb2f89ac3614fe609ba86e3",
+      "byteSize": 1387317,
+      "frameCount": 240,
+      "vmafMean": 88.551612,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "sha256": "463d64957b28f823ea56c299b3774d5b3ffee86e5b0c3cf5cb7e1f94223acb6c",
+      "byteSize": 548818,
+      "frameCount": 240,
+      "vmafMean": 74.134471,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "sha256": "4fa4899b6928e1809d2ef556f7b3112242dd743d309c55142c996f387f410438",
+      "byteSize": 1145030,
+      "frameCount": 240,
+      "vmafMean": 89.217162,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "sha256": "6a6fdbac5ae8272ab1ff1289d434274a485841ad4a89643a74f0eff88594a6b9",
+      "byteSize": 2072923,
+      "frameCount": 240,
+      "vmafMean": 93.017681,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "sha256": "914c645acd814541d370968b6deb9c08733b578fedb7b7a74c4860239de6ff0c",
+      "byteSize": 3239408,
+      "frameCount": 240,
+      "vmafMean": 87.808948,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "7b7a218d697beed3e8399bfa0311aafae70ca692cda740ac1bdcc75f8cef233c",
+      "byteSize": 4574647,
+      "frameCount": 192,
+      "vmafMean": 80.736712,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "animation-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "10a23568fd43c3c0edb382a69e66093432d74b2fae9d09b5c819567fe85a66b9",
+      "byteSize": 10872599,
+      "frameCount": 192,
+      "vmafMean": 83.791765,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "999171a17733ee17f442e3021ec3eae64f33cb564b3b16bc16b225c1f57f66d1",
+      "byteSize": 3350335,
+      "frameCount": 240,
+      "vmafMean": 96.97557,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "428235641db321afe3f882903da52aaff977fcf841b21f037df3e6b5bafe2403",
+      "byteSize": 6650925,
+      "frameCount": 240,
+      "vmafMean": 97.483987,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "577434a4a131b7d0ae5b95129e0d6d974c768380d8cede42bd71a62ab8017d24",
+      "byteSize": 1082933,
+      "frameCount": 240,
+      "vmafMean": 63.568196,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "db16db96700827da4a9ccf49e7ced63f677c1abd6f63df683dc145579dab079d",
+      "byteSize": 6732919,
+      "frameCount": 240,
+      "vmafMean": 70.735114,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "06956530cc1a3d8ac71a6c5589ef5145db4386fda6fa7bad9a35343585200acc",
+      "byteSize": 1687911,
+      "frameCount": 240,
+      "vmafMean": 85.112537,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "fd58bc1a81000769c74707f32abfb52e5d97127e1612e39f1f8843958f17d908",
+      "byteSize": 10673856,
+      "frameCount": 240,
+      "vmafMean": 88.956365,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "bd487cf20bb446e416d9fb3771bcf316fb35ca2c7b6d395a8f3efff29e108809",
+      "byteSize": 4993703,
+      "frameCount": 240,
+      "vmafMean": 93.566849,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "d0a86b1856dedcb872a246b658db7a96764aab2696673abe112e23b05a37e401",
+      "byteSize": 9889051,
+      "frameCount": 240,
+      "vmafMean": 93.292138,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "0bdd813fdc467366da5d84efd0e39a4d0f676d636db407a22a47547f76329ad7",
+      "byteSize": 168014,
+      "frameCount": 240,
+      "vmafMean": 99.712473,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "c65d383a808d07b3cf54b3d5a321d2d2202148a41cecfe4c9b50debc92ccb663",
+      "byteSize": 687307,
+      "frameCount": 240,
+      "vmafMean": 97.62708,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "sha256": "84589b4e943a69d47ab5e853606770c302fff901d8c0f3e00d83e602d221dc99",
+      "byteSize": 1517193,
+      "frameCount": 240,
+      "vmafMean": 93.211998,
+      "encodingFieldsPreserved": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "sha256": "fdec90b174662a311c0b7aba081eb882a13cff0ced72b3f989167d9dca0a09e6",
+      "byteSize": 3733463,
+      "frameCount": 240,
+      "vmafMean": 92.693214,
+      "encodingFieldsPreserved": true
+    }
+  ]
+}

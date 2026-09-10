@@ -25,7 +25,15 @@
       "videoBitrateBps": 8346091.2,
       "elapsedSeconds": 3.799770957964938,
       "encodeFps": 63.16170175913392,
-      "vmafMean": 66.431861
+      "vmafMean": 99.290464,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/libx264-20.corrected-metrics.log"
     },
     {
       "encoder": "libx264",
@@ -38,7 +46,15 @@
       "videoBitrateBps": 3475929.6,
       "elapsedSeconds": 3.2649028330342844,
       "encodeFps": 73.50907891398181,
-      "vmafMean": 62.222424
+      "vmafMean": 93.716171,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/libx264-28.corrected-metrics.log"
     },
     {
       "encoder": "libx264",
@@ -51,7 +67,15 @@
       "videoBitrateBps": 1704431.2,
       "elapsedSeconds": 2.734607624995988,
       "encodeFps": 87.76396211516894,
-      "vmafMean": 52.190948
+      "vmafMean": 79.282854,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/libx264-36.corrected-metrics.log"
     },
     {
       "encoder": "libx265",
@@ -64,7 +88,15 @@
       "videoBitrateBps": 2193584.0,
       "elapsedSeconds": 8.36241462500766,
       "encodeFps": 28.699844573872728,
-      "vmafMean": 61.345558
+      "vmafMean": 92.658389,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/libx265-28.corrected-metrics.log"
     },
     {
       "encoder": "libsvtav1",
@@ -77,7 +109,15 @@
       "videoBitrateBps": 3421225.6,
       "elapsedSeconds": 1.9781225830083713,
       "encodeFps": 121.32716246280494,
-      "vmafMean": 64.709395
+      "vmafMean": 97.188254,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/libsvtav1-32.corrected-metrics.log"
     },
     {
       "encoder": "h264_videotoolbox",
@@ -90,7 +130,15 @@
       "videoBitrateBps": 2517809.6,
       "elapsedSeconds": 1.7126415830571204,
       "encodeFps": 140.13439961652236,
-      "vmafMean": 58.581479
+      "vmafMean": 88.40314,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/athletic-action-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
     }
   ]
 }

@@ -86,6 +86,19 @@ Reports identify the exact runtime used. SVT-AV1 was exercised with the recorded
 Homebrew runtime; it is not falsely claimed to be in the macOS Evermeet bundle.
 Full reports and playable encoded previews are staged with the candidate.
 
+Quality comparison normalizes both streams to the reference cadence with a common
+frame clock before comparing matching decoded frames. VMAF uses the authoritative
+10-bit analysis convention and one metric thread; XPSNR/SSIM/PSNR retain native
+pixel format after cadence normalization. This does not change the 8-bit reference
+media. Each client VMAF invocation writes and reads its own temporary JSON file.
+The earlier timestamp-unaligned metric reports are **diagnostic-invalid**, retained
+under `diagnostic-wrong-alignment/`; they are not evidence of low encoding quality.
+`scripts/rescore_canonical_media.py` recomputes metrics on the exact retained
+encodes, preserving hashes, bytes, packet bitrates and original encoding timing.
+Client debug P5 retains its existing interpolated percentile, whereas authoritative
+server P5 uses nearest-rank lower-tail selection. Their means and frame coverage
+agree; client P5 is not promoted as the authoritative server quantile.
+
 Visual review is Codex inspection of sampled temporal contact sheets and full
 resolution frames, not Oliver's approval or a claimed human playback review.
 The action clip is an athletic-action/VFX proxy, not footage of a sporting
