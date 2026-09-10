@@ -10,3 +10,7 @@ docs/canonical-suite/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-a
 scripts/canonical-screen/fonts/OFL.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 client/resources/test_suite_v1/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 server/resources/test_suite_v1/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+
+# VMAF models are pinned by byte hash; Windows must preserve LF bytes.
+client/resources/vmaf/*.json text eol=lf
+server/resources/vmaf/*.json text eol=lf
