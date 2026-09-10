@@ -8,8 +8,12 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from client.ffmpeg import canonical_quality_filter
 
 
 def sha256(path):
@@ -69,13 +73,14 @@ def main():
         return result.stdout
     ffmpeg = str(Path(args.ffmpeg).resolve()) if Path(args.ffmpeg).exists() else args.ffmpeg
     ffprobe = str(Path(args.ffprobe).resolve()) if Path(args.ffprobe).exists() else args.ffprobe
-    probe = json.loads(run([ffprobe, '-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_entries', 'stream=nb_read_frames', '-of', 'json', str(reference)], 'reference-probe'))
+    probe = json.loads(run([ffprobe, '-v', 'error', '-select_streams', 'v:0', '-count_frames', '-show_entries', 'stream=nb_read_frames,avg_frame_rate', '-of', 'json', str(reference)], 'reference-probe'))
     expected = int(probe['streams'][0]['nb_read_frames'])
     run([ffmpeg, '-hide_banner', '-y', '-i', str(reference), '-map', '0:v:0', '-an', '-c:v', 'libx264', '-preset', 'fast', '-crf', '24', 'encoded.mp4'], 'encode')
-    run([ffmpeg, '-hide_banner', '-i', 'encoded.mp4', '-i', str(reference), '-lavfi', '[0:v]setpts=PTS-STARTPTS[d];[1:v]setpts=PTS-STARTPTS[r];[d][r]libvmaf=model=path=model.json:n_threads=2:log_fmt=json:log_path=metrics.json', '-f', 'null', '-'], 'model')
+    graph = canonical_quality_filter(probe['streams'][0]['avg_frame_rate'], 'libvmaf=model=path=model.json:n_threads=1:log_fmt=json:log_path=metrics.json')
+    run([ffmpeg, '-hide_banner', '-i', 'encoded.mp4', '-i', str(reference), '-lavfi', graph, '-f', 'null', '-'], 'model')
     metrics = json.loads((output / 'metrics.json').read_text())
     mean = validate_metrics(metrics, expected)
-    report = {'status': 'passed', 'referenceSha256': sha256(reference), 'modelSha256': model_manifest['sha256'], 'encodedSha256': sha256(output / 'encoded.mp4'), 'frameCount': expected, 'vmafMean': mean, 'frozenQuickReference': args.reference is None}
+    report = {'status': 'passed', 'referenceSha256': sha256(reference), 'modelSha256': model_manifest['sha256'], 'encodedSha256': sha256(output / 'encoded.mp4'), 'frameCount': expected, 'vmafMean': mean, 'frozenQuickReference': args.reference is None, 'filterGraph': graph}
     (output / 'result.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
 

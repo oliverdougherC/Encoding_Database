@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "referenceSha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+  "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+  "encodedSha256": "2db5a05dfd31a2ed0e5de866fb91175b8ea98f46bd217cf680b34373bdd6c10c",
+  "frameCount": 240,
+  "vmafMean": 97.552275,
+  "frozenQuickReference": true,
+  "filterGraph": "[0:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[distorted];[1:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[reference];[distorted][reference]libvmaf=model=path=model.json:n_threads=1:log_fmt=json:log_path=metrics.json"
+}
