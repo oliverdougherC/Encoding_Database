@@ -58,7 +58,7 @@ jobs:
         with:
           python-version: "3.11"
       - name: Install canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Materialize frozen canonical references
         run: python scripts/materialize_final_suite.py
       - name: Test
@@ -92,7 +92,7 @@ jobs:
         working-directory: client
         run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
       - name: Install canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Materialize frozen canonical references
         run: python scripts/materialize_final_suite.py
       - name: Client tests
@@ -123,7 +123,7 @@ jobs:
           echo "ENCODINGDB_FFMPEG_PATH=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
       - name: Install runtime and canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Generate proposed linux runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -194,7 +194,7 @@ jobs:
           echo "ENCODINGDB_FFMPEG_PATH=$PWD/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$PWD/ffprobe" >> "$GITHUB_ENV"
       - name: Install runtime and canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Generate proposed macos runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -272,7 +272,7 @@ jobs:
           "ENCODINGDB_FFMPEG_PATH=$ffmpeg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "ENCODINGDB_FFPROBE_PATH=$ffprobe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Install runtime and canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Generate proposed windows runtime lock for review
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
         shell: bash
@@ -391,7 +391,7 @@ jobs:
           echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
           echo "$bundle_dir/bin" >> "$GITHUB_PATH"
       - name: Install canonical-suite validation dependencies
-        run: python -m pip install --disable-pip-version-check requests==2.32.5 psutil==7.2.2
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Materialize frozen canonical references
         run: python scripts/materialize_final_suite.py
       - name: Run end-to-end smoke harness

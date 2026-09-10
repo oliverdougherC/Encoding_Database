@@ -1,0 +1,20 @@
+{
+  "frontend": {
+    "auditPolicy": "npm audit --audit-level=high",
+    "exitCode": 0,
+    "residual": "Two moderate Vitest development-tool findings; major upgrade required, high/critical gate unchanged",
+    "lintTypecheck": "passed",
+    "tests": 37,
+    "build": "passed"
+  },
+  "server": {
+    "audit": "zero vulnerabilities including dev dependencies",
+    "tests": 160,
+    "prismaSchemaAndConfig": "passed"
+  },
+  "client": {
+    "pipAudit": "zero vulnerabilities",
+    "requestsVersion": "2.33.0",
+    "networkArtifactRegressionTests": 6
+  }
+}
