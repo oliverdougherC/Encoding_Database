@@ -19,7 +19,7 @@ while [[ $# -gt 0 ]]; do
 done
 : "${DATABASE_URL:?DATABASE_URL required}"
 : "${ARTIFACT_STORAGE_ROOT:?ARTIFACT_STORAGE_ROOT must expose actual retained server files}"
-[[ -z "${PL_V7_REFERENCE_BITRATES_JSON:-}" && -z "${PL_V7_REFERENCE_CONTEXT_VERSION:-}" && "${ALLOW_TEST_ONLY_REFERENCE_CONTEXTS:-0}" != 1 ]] || { echo 'PL reference configuration must be blank and test-only contexts disabled' >&2; exit 2; }
+[[ -z "${PL_V7_REFERENCE_BITRATES_JSON:-}" && -z "${PL_V7_REFERENCE_CONTEXT_VERSION:-}" && -z "${PL_V7_REFERENCE_CONTEXT_PATH:-}" && "${ALLOW_TEST_ONLY_REFERENCE_CONTEXTS:-0}" != 1 ]] || { echo 'PL reference configuration must be blank and test-only contexts disabled' >&2; exit 2; }
 [[ -x "$CLIENT_BINARY" && -f "$SUITE_PACK" ]] || { echo 'Packaged binary and actual suite pack required' >&2; exit 2; }
 [[ -z "$(git -C "$ROOT_DIR" status --porcelain --untracked-files=all | sed '/^.. \.omx\//d')" ]] || { echo 'A clean committed candidate is required' >&2; exit 2; }
 COMMIT="$(git -C "$ROOT_DIR" rev-parse HEAD)"
@@ -64,7 +64,7 @@ import hashlib,json,pathlib,subprocess,sys
 out,root,binary,manifest,started=sys.argv[1:]
 def identity(p):
  p=pathlib.Path(p); return {'path':str(p),'sha256':hashlib.file_digest(p.open('rb'),'sha256').hexdigest(),'byteSize':p.stat().st_size}
-data={'evidenceVersion':'encodingdb-unscored-beta/v1','commit':subprocess.check_output(['git','-C',root,'rev-parse','HEAD'],text=True).strip(),'branch':subprocess.check_output(['git','-C',root,'branch','--show-current'],text=True).strip(),'startedAt':started,'packagedClient':identity(binary),'suitePack':identity(pathlib.Path(binary).parent/'encodingdb-test-suite-v1.tar.gz'),'manifest':identity(manifest),'initialCache':'empty newly created directory','acquisition':'adjacent exact suite pack','plConfiguration':{'PL_V7_REFERENCE_BITRATES_JSON':'','PL_V7_REFERENCE_CONTEXT_VERSION':'','ALLOW_TEST_ONLY_REFERENCE_CONTEXTS':'0'}}
+data={'evidenceVersion':'encodingdb-unscored-beta/v1','commit':subprocess.check_output(['git','-C',root,'rev-parse','HEAD'],text=True).strip(),'branch':subprocess.check_output(['git','-C',root,'branch','--show-current'],text=True).strip(),'startedAt':started,'packagedClient':identity(binary),'suitePack':identity(pathlib.Path(binary).parent/'encodingdb-test-suite-v1.tar.gz'),'manifest':identity(manifest),'initialCache':'empty newly created directory','acquisition':'adjacent exact suite pack','plConfiguration':{'PL_V7_REFERENCE_BITRATES_JSON':'','PL_V7_REFERENCE_CONTEXT_VERSION':'','PL_V7_REFERENCE_CONTEXT_PATH':'','ALLOW_TEST_ONLY_REFERENCE_CONTEXTS':'0'}}
 pathlib.Path(out,'execution.json').write_text(json.dumps(data,indent=2)+'\n')
 PY
 node "$ROOT_DIR/server/scripts/verify-beta-corpus.mjs" --since "$STARTED_AT" --server-url "$SERVER_URL" --frontend-url "$FRONTEND_URL" --manifest "$MANIFEST" --fault-evidence "$FAULT_EVIDENCE" --storage-root "$ARTIFACT_STORAGE_ROOT" --output "$RUN_DIR/authority-chain.json"

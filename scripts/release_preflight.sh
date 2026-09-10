@@ -52,7 +52,7 @@ run_shell() {
   log "RUN $*"
   (
     cd "$ROOT_DIR"
-    bash -lc "$*"
+    bash -c "$*"
   )
 }
 

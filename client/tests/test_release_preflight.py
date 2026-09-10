@@ -10,6 +10,40 @@ from scripts import release_manifest_lib
 
 
 class ReleasePreflightTests(unittest.TestCase):
+    def test_shell_gate_helpers_preserve_explicit_runtime_path(self) -> None:
+        import re
+        import shlex
+        root = release_manifest_lib.ROOT_DIR
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            runtime = temporary / "runtime"
+            runtime.mkdir()
+            python = runtime / "python3"
+            python.write_text("#!/bin/sh\nprintf 'selected-runtime\\n'\n")
+            python.chmod(0o755)
+            for relative, function in (("scripts/release_preflight.sh", "run_shell"), ("scripts/test.sh", "run_step")):
+                with self.subTest(script=relative):
+                    source = (root / relative).read_text()
+                    helper = re.search(rf"^{function}\(\) \{{.*?^\}}", source, re.M | re.S)
+                    self.assertIsNotNone(helper)
+                    output = temporary / f"{function}.txt"
+                    command = f"python3 > {shlex.quote(str(output))}"
+                    invocation = f"{function} {shlex.quote(command)}" if function == "run_shell" else f"{function} runtime-check {shlex.quote(command)}"
+                    harness = "\n".join([
+                        f"ROOT_DIR={shlex.quote(str(temporary))}",
+                        f"RUN_DIR={shlex.quote(str(temporary))}",
+                        "STEP_NAMES=()",
+                        "log() { :; }",
+                        "slugify() { printf runtime; }",
+                        "issue_scan() { :; }",
+                        "record_step() { :; }",
+                        helper.group(0),
+                        invocation,
+                    ])
+                    result = subprocess.run([shutil.which("bash"), "-c", harness], env={**os.environ, "PATH": str(runtime) + os.pathsep + os.environ["PATH"]}, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(output.read_text(), "selected-runtime\n")
+
     def test_external_preflight_dependencies_are_clean_checkout_safe(self) -> None:
         root = release_manifest_lib.ROOT_DIR
         preflight = (root / "scripts" / "release_preflight.sh").read_text(encoding="utf-8")
@@ -20,12 +54,20 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertIn("host_db_ready=0", rehearsal)
         self.assertIn("psql \"$DATABASE_URL\" -v ON_ERROR_STOP=1 -c 'SELECT 1'", rehearsal)
 
-    def test_release_json_uses_canonical_suite_identity_before_freeze(self) -> None:
+    def test_release_json_declares_coherent_frozen_beta_candidate(self) -> None:
         payload = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text(encoding="utf-8"))
 
         self.assertEqual(payload["suiteVersion"], "encodingdb-test-suite-v1")
-        self.assertIsNone(payload["projectVersion"])
-        self.assertIsNone(payload["releaseDate"])
+        self.assertEqual(payload["projectVersion"], "1.2.0-beta.1")
+        self.assertEqual(payload["releaseDate"], "2026-09-09")
+        for tree in ("client", "server"):
+            root = release_manifest_lib.ROOT_DIR / tree / "resources/test_suite_v1"
+            status = json.loads((root / "finalization-status.json").read_text())
+            lock = json.loads((root / "suite-lock.json").read_text())
+            self.assertTrue(status["isFrozen"])
+            self.assertEqual(status["finalLockPath"], "suite-lock.json")
+            self.assertEqual(lock["suiteVersion"], payload["suiteVersion"])
+            self.assertEqual(status["suiteVersion"], payload["suiteVersion"])
 
     def test_preflight_reports_every_requested_gate_and_retains_logs(self) -> None:
         script_path = release_manifest_lib.ROOT_DIR / "scripts" / "release_preflight.sh"

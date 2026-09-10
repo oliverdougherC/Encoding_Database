@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "manifestSha256": "5560a660c9d8658766a7a8d6708fd1d6188f159e2e528a7bc1a897ba366e4a7e",
+  "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206",
+  "reviewedMetadataSha256": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206",
+  "clips": [
+    {
+      "id": "athletic-action-1080p24-final",
+      "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+      "byteSize": 139815565,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "natural-detail-1080p24-final",
+      "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+      "byteSize": 283872120,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "film-grain-1080p24-final",
+      "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+      "byteSize": 336898554,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "dark-gradients-1080p24-final",
+      "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+      "byteSize": 317829621,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "animation-1080p24-final",
+      "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+      "byteSize": 173819800,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 192,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "screen-text-1080p24-final",
+      "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+      "byteSize": 35313873,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    },
+    {
+      "id": "talking-head-1080p24-final",
+      "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+      "byteSize": 219125475,
+      "container": "matroska",
+      "videoCodec": "ffv1",
+      "frameCount": 240,
+      "frameRate": {
+        "numerator": 24,
+        "denominator": 1
+      },
+      "fieldOrder": "progressive",
+      "hdrMetadata": null
+    }
+  ],
+  "fingerprint": "41ae332c8e4ac7ae49c2a44917729c65d7a062710e4b44961b8125ffe7fb2660"
+}

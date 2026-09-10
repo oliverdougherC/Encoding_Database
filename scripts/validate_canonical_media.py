@@ -77,22 +77,29 @@ def validate(path, args):
               'frameCount': count, 'durationSeconds': count / 24, 'decodeSeconds': decode_seconds,
               'decodeRealtimeRatio': count / 24 / decode_seconds,
               'adjacentDuplicateFrames': duplicates, 'visualReview': 'PENDING', 'encodes': []}
-    cases = [('libx264', q, args.ffmpeg) for q in (20, 28, 36)]
-    cases += [('libx265', 28, args.ffmpeg)]
-    if args.svt_ffmpeg:
-        cases.append(('libsvtav1', 32, args.svt_ffmpeg))
-    if args.hardware:
-        cases.append((args.hardware, 2500, args.ffmpeg))
+    if args.extra_only:
+        cases = [('libaom-av1', 32, args.ffmpeg), ('libvpx-vp9', 32, args.ffmpeg)]
+    else:
+        cases = [('libx264', q, args.ffmpeg) for q in (20, 28, 36)]
+        cases += [('libx265', 28, args.ffmpeg)]
+        if args.svt_ffmpeg:
+            cases.append(('libsvtav1', 32, args.svt_ffmpeg))
+        if args.hardware:
+            cases.append((args.hardware, 2500, args.ffmpeg))
     for encoder, quality, binary in cases:
         label = f'{encoder}-{quality}'
         target = out / f'{label}.mp4'
         rate = ['-b:v', f'{quality}k'] if 'videotoolbox' in encoder else ['-crf', str(quality)]
         preset = [] if 'videotoolbox' in encoder else ['-preset', '8' if encoder == 'libsvtav1' else 'fast']
+        if encoder in ('libaom-av1', 'libvpx-vp9'):
+            preset = ['-cpu-used', '8', '-b:v', '0', '-row-mt', '1']
+            if encoder == 'libvpx-vp9':
+                preset += ['-deadline', 'realtime']
         _, elapsed = run([binary, '-y', '-hide_banner', '-i', path, '-map', '0:v:0', '-an',
                           '-c:v', encoder, *preset, *rate, '-pix_fmt', 'yuv420p',
                           '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
                           '-color_range', 'tv', '-video_track_timescale', '24000', target], out / f'{label}.encode.log')
-        actual_codec = 'h264' if encoder.startswith(('libx264', 'h264')) else 'hevc' if encoder.startswith(('libx265', 'hevc')) else 'av1'
+        actual_codec = 'h264' if encoder.startswith(('libx264', 'h264')) else 'hevc' if encoder.startswith(('libx265', 'hevc')) else 'vp9' if encoder == 'libvpx-vp9' else 'av1'
         encoded = probe(target, args.ffprobe, out / f'{label}.probe.log')
         check_media(encoded, count, actual_codec)
         metric_path = (out / f'{label}.vmaf.json').resolve()
@@ -112,7 +119,7 @@ def validate(path, args):
                                  'videoBytes': video_bytes, 'videoBitrateBps': video_bytes * 8 * 24 / count,
                                  'elapsedSeconds': elapsed, 'encodeFps': count / elapsed,
                                  'vmafMean': metrics['pooled_metrics']['vmaf']['mean']})
-        (out / 'results.json').write_text(json.dumps(report, indent=2) + '\n')
+        (out / ('results-extra.json' if args.extra_only else 'results.json')).write_text(json.dumps(report, indent=2) + '\n')
     return report
 
 
@@ -124,6 +131,7 @@ def main():
     p.add_argument('--ffprobe', type=Path, default=Path('client/bin/mac/ffprobe'))
     p.add_argument('--svt-ffmpeg', type=Path)
     p.add_argument('--hardware')
+    p.add_argument('--extra-only', action='store_true', help='Exercise the additional shipped AOM/VP9 paths separately.')
     p.add_argument('--model', type=Path, default=Path('client/resources/vmaf/vmaf_v1.0.16_3d0h.json'))
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)

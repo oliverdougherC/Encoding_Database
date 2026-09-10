@@ -34,6 +34,7 @@ import {
   parseAnalyticsFilters,
   resolveEncoderName,
 } from '../dist/analytics.js';
+import { loadAuthoritativeSuiteManifest } from '../dist/v7/suite.js';
 import { BoundedTtlCache } from '../dist/cache.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
@@ -85,14 +86,16 @@ test('GET /test-videos returns the seven-clip manifest-backed catalog', async (t
 
     assert.equal(data.some((v) => v && v.fileName === 'sample.mp4'), false);
 
-    const sports = data.find((v) => v && v.clipId === 'sports-action-960x540-24p');
-    assert.ok(sports, 'sports-action-960x540-24p should exist in catalog');
+    const manifest = loadAuthoritativeSuiteManifest();
+    const expectedSports = manifest.clips.find((clip) => clip.contentClass === 'high-motion-sports');
+    const sports = data.find((v) => v && v.clipId === expectedSports.id);
+    assert.ok(sports, `${expectedSports.id} should exist in catalog`);
     assert.equal(sports.suiteVersion, 'encodingdb-test-suite-v1');
     assert.equal(sports.contentClass, 'high-motion-sports');
-    assert.equal(sports.sha256, '8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a');
-    assert.equal(sports.sizeBytes, 3243818);
-    assert.equal(sports.source.license, 'CC0-1.0');
-    assert.equal(sports.acquisition.kind, 'generated');
+    assert.equal(sports.sha256, expectedSports.sha256);
+    assert.equal(sports.sizeBytes, expectedSports.byteSize);
+    assert.deepEqual(sports.source, expectedSports.source);
+    assert.deepEqual(sports.acquisition, expectedSports.acquisition);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -388,8 +391,12 @@ test('TEST_VIDEO_CATALOG has no placeholders', () => {
     assert.notEqual(row.fileName, 'sample.mp4');
     assert.ok(typeof row.sha256 === 'string' && !row.sha256.startsWith('placeholder_'));
     assert.ok(Number(row.sizeBytes) > 0);
-    assert.equal(row.source.license, 'CC0-1.0');
-    assert.equal(row.acquisition.kind, 'generated');
+    const expected = loadAuthoritativeSuiteManifest().clips.find((clip) => clip.id === row.clipId);
+    assert.ok(expected, 'Every public catalog row must identify a canonical clip');
+    assert.deepEqual(row.source, expected.source);
+    assert.equal(row.source.reviewed, true);
+    assert.equal(row.source.redistributionApproved, true);
+    assert.equal(row.acquisition.kind, 'retained-original');
   }
 });
 

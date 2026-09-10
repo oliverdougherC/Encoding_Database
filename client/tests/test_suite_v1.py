@@ -1,3 +1,6 @@
+import json
+import subprocess
+from contextlib import contextmanager
 import tempfile
 import tarfile
 import unittest
@@ -6,6 +9,29 @@ from pathlib import Path
 from unittest import mock
 
 from client import suite
+
+
+@contextmanager
+def small_media_fixture():
+    """Synthetic unit-test media only; never writes production suite resources."""
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        (root / "canonical").mkdir()
+        payload = suite._build_manifest_seed()
+        payload["defaultQuickClipId"] = payload["clips"][0]["id"]
+        prototype = root / "prototype.mkv"
+        subprocess.run(suite._generation_command("color=size=32x32:rate=24", str(prototype), 2), check=True)
+        for clip in payload["clips"]:
+            path = root / "canonical" / clip["fileName"]
+            path.write_bytes(prototype.read_bytes())
+            clip["sha256"] = suite._sha256_of_file(str(path))
+            clip["byteSize"] = path.stat().st_size
+            clip["media"].update(width=32, height=32, frameCount=2, duration={"numerator": 1, "denominator": 12})
+        (root / "manifest.json").write_text(json.dumps(payload))
+        (root / "finalization-status.json").write_text(json.dumps({"isFrozen": False, "distribution": "development-only"}))
+        suite.write_suite_pack_metadata(str(root))
+        with mock.patch.object(suite, "_manifest_resource_candidates", return_value=[str(root / "manifest.json")]):
+            yield root, suite.manifest_from_payload(payload)
 
 
 class SuiteV1Tests(unittest.TestCase):
@@ -18,11 +44,24 @@ class SuiteV1Tests(unittest.TestCase):
             set(suite.REQUIRED_CONTENT_CLASSES),
         )
 
-    def test_finalization_status_declares_development_only_unfrozen_suite(self) -> None:
+    def test_finalization_status_declares_frozen_reviewed_suite(self) -> None:
         status = suite.load_finalization_status()
-        self.assertEqual(status["distribution"], "development-only")
-        self.assertFalse(status["isFrozen"])
-        self.assertIsNone(status["finalLockPath"])
+        self.assertTrue(status["isFrozen"])
+        self.assertEqual(status["finalLockPath"], "suite-lock.json")
+        lock = suite.load_suite_lock()
+        self.assertEqual(lock["suiteVersion"], suite.SUITE_VERSION)
+        import hashlib
+        fingerprint = lock["fingerprint"]
+        unsigned = {key: value for key, value in lock.items() if key != "fingerprint"}
+        self.assertEqual(fingerprint, hashlib.sha256(json.dumps(unsigned, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest())
+        raw_manifest = json.loads(Path(suite.get_manifest_path()).read_text())
+        self.assertEqual(lock["manifestSha256"], hashlib.sha256(json.dumps(raw_manifest, sort_keys=True, separators=(",", ":"), ensure_ascii=True).encode()).hexdigest())
+        manifest = suite.load_default_suite_manifest()
+        for clip in manifest.clips:
+            self.assertEqual(clip.acquisition["kind"], "retained-original")
+            self.assertNotIn("ffmpegLavfi", clip.acquisition)
+            self.assertTrue(clip.provenance["reviewed"])
+            self.assertTrue(clip.provenance["redistributionApproved"])
 
     def test_verify_suite_clip_reports_missing_clip(self) -> None:
         manifest = suite.load_default_suite_manifest()
@@ -32,38 +71,41 @@ class SuiteV1Tests(unittest.TestCase):
         self.assertIn("not found", result.message)
 
     def test_verify_suite_clip_reports_hash_mismatch(self) -> None:
-        manifest = suite.load_default_suite_manifest()
-        clip = manifest.clips[0]
-        with tempfile.TemporaryDirectory() as cache_root:
-            prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
-            mismatched = replace(clip, sha256="0" * 64)
-            result = suite.verify_suite_clip(prepared.path, mismatched)
+        with small_media_fixture() as (fixture_root, manifest):
+            clip = manifest.clips[0]
+            with tempfile.TemporaryDirectory() as cache_root:
+                prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
+                mismatched = replace(clip, sha256="0" * 64)
+                result = suite.verify_suite_clip(prepared.path, mismatched)
 
-        self.assertFalse(result.ok)
-        self.assertIn("checksum mismatch", result.message)
+            self.assertFalse(result.ok)
+            self.assertIn("checksum mismatch", result.message)
+
 
     def test_verify_suite_clip_reports_metadata_mismatch(self) -> None:
-        manifest = suite.load_default_suite_manifest()
-        clip = manifest.clips[0]
-        with tempfile.TemporaryDirectory() as cache_root:
-            prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
-            mismatched = replace(clip, media=replace(clip.media, frame_count=clip.media.frame_count + 1))
-            result = suite.verify_suite_clip(prepared.path, mismatched)
+        with small_media_fixture() as (fixture_root, manifest):
+            clip = manifest.clips[0]
+            with tempfile.TemporaryDirectory() as cache_root:
+                prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
+                mismatched = replace(clip, media=replace(clip.media, frame_count=clip.media.frame_count + 1))
+                result = suite.verify_suite_clip(prepared.path, mismatched)
 
-        self.assertFalse(result.ok)
-        self.assertIn("frameCount mismatch", result.message)
+            self.assertFalse(result.ok)
+            self.assertIn("frameCount mismatch", result.message)
+
 
     def test_ensure_suite_clip_copies_and_verifies_frozen_packaged_clip(self) -> None:
-        manifest = suite.load_default_suite_manifest()
-        clip = suite.get_default_quick_clip(manifest)
-        with tempfile.TemporaryDirectory() as cache_root:
-            prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
-            verified = suite.verify_suite_clip(prepared.path, clip)
+        with small_media_fixture() as (fixture_root, manifest):
+            clip = suite.get_default_quick_clip(manifest)
+            with tempfile.TemporaryDirectory() as cache_root:
+                prepared = suite.ensure_suite_clip(clip, cache_root=cache_root)
+                verified = suite.verify_suite_clip(prepared.path, clip)
 
-        self.assertTrue(verified.ok)
-        self.assertEqual(prepared.suite_version, suite.SUITE_VERSION)
-        self.assertEqual(prepared.workload_id, clip.clip_id)
-        self.assertEqual(prepared.canonical_content_class, clip.canonical_content_class)
+            self.assertTrue(verified.ok)
+            self.assertEqual(prepared.suite_version, suite.SUITE_VERSION)
+            self.assertEqual(prepared.workload_id, clip.clip_id)
+            self.assertEqual(prepared.canonical_content_class, clip.canonical_content_class)
+
 
     def test_all_packaged_canonical_assets_match_the_frozen_manifest(self) -> None:
         manifest = suite.load_default_suite_manifest()
@@ -81,38 +123,41 @@ class SuiteV1Tests(unittest.TestCase):
         )
 
     def test_suite_pack_uses_platform_stable_stored_gzip(self) -> None:
-        source_suite_root = Path(suite.get_manifest_path()).parent
-        with tempfile.TemporaryDirectory() as temp_dir:
-            first = Path(temp_dir) / "first.tar.gz"
-            second = Path(temp_dir) / "second.tar.gz"
-            suite.build_suite_pack_archive(str(source_suite_root), str(first))
-            suite.build_suite_pack_archive(str(source_suite_root), str(second))
+        with small_media_fixture() as (fixture_root, manifest):
+            source_suite_root = Path(suite.get_manifest_path()).parent
+            with tempfile.TemporaryDirectory() as temp_dir:
+                first = Path(temp_dir) / "first.tar.gz"
+                second = Path(temp_dir) / "second.tar.gz"
+                suite.build_suite_pack_archive(str(source_suite_root), str(first))
+                suite.build_suite_pack_archive(str(source_suite_root), str(second))
 
-            self.assertEqual(first.read_bytes(), second.read_bytes())
-            # XFL=0 identifies stored/no-compression gzip output; OS=255 is portable.
-            self.assertEqual(first.read_bytes()[8:10], b"\x00\xff")
-            with tarfile.open(first, "r:gz") as archive:
-                self.assertIn("manifest.json", archive.getnames())
+                self.assertEqual(first.read_bytes(), second.read_bytes())
+                # XFL=0 identifies stored/no-compression gzip output; OS=255 is portable.
+                self.assertEqual(first.read_bytes()[8:10], b"\x00\xff")
+                with tarfile.open(first, "r:gz") as archive:
+                    self.assertIn("manifest.json", archive.getnames())
+
 
     def test_ensure_suite_clip_can_materialize_from_external_suite_pack_without_packaged_canonical_media(self) -> None:
-        manifest = suite.load_default_suite_manifest()
-        clip = manifest.clips[0]
-        source_suite_root = Path(suite.get_manifest_path()).parent
-        with tempfile.TemporaryDirectory() as temp_dir:
-            root = Path(temp_dir)
-            packaged_resources = root / "resources" / "test_suite_v1"
-            packaged_resources.mkdir(parents=True, exist_ok=True)
-            for name in ("manifest.json", "finalization-status.json", "suite-pack.json"):
-                (packaged_resources / name).write_bytes((source_suite_root / name).read_bytes())
-            pack_path = root / suite.DEFAULT_SUITE_PACK_FILE_NAME
-            suite.build_suite_pack_archive(str(source_suite_root), str(pack_path))
-            with mock.patch.object(suite, "_manifest_resource_candidates", return_value=[str(packaged_resources / "manifest.json")]), \
-                    mock.patch.dict("os.environ", {"ENCODINGDB_SUITE_PACK_PATH": str(pack_path)}, clear=False):
-                prepared = suite.ensure_suite_clip(clip, cache_root=str(root / "cache"))
+        with small_media_fixture() as (fixture_root, manifest):
+            clip = manifest.clips[0]
+            source_suite_root = Path(suite.get_manifest_path()).parent
+            with tempfile.TemporaryDirectory() as temp_dir:
+                root = Path(temp_dir)
+                packaged_resources = root / "resources" / "test_suite_v1"
+                packaged_resources.mkdir(parents=True, exist_ok=True)
+                for name in ("manifest.json", "finalization-status.json", "suite-pack.json"):
+                    (packaged_resources / name).write_bytes((source_suite_root / name).read_bytes())
+                pack_path = root / suite.DEFAULT_SUITE_PACK_FILE_NAME
+                suite.build_suite_pack_archive(str(source_suite_root), str(pack_path))
+                with mock.patch.object(suite, "_manifest_resource_candidates", return_value=[str(packaged_resources / "manifest.json")]), \
+                        mock.patch.dict("os.environ", {"ENCODINGDB_SUITE_PACK_PATH": str(pack_path)}, clear=False):
+                    prepared = suite.ensure_suite_clip(clip, cache_root=str(root / "cache"))
 
-            self.assertIn("/cache/canonical/", prepared.path.replace("\\", "/"))
-            self.assertTrue(Path(prepared.path).exists())
-            self.assertTrue(suite.verify_suite_clip(prepared.path, clip).ok)
+                self.assertIn("/cache/canonical/", prepared.path.replace("\\", "/"))
+                self.assertTrue(Path(prepared.path).exists())
+                self.assertTrue(suite.verify_suite_clip(prepared.path, clip).ok)
+
 
     def test_general_pl_coverage_requires_all_declared_classes(self) -> None:
         prepared = [

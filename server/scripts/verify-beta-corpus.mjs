@@ -6,10 +6,21 @@ import { pathToFileURL } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
+// Extracted from the assignment's starting commit, not from the final manifest.
+export const LEGACY_SUITE_REFERENCE = Object.freeze({
+  commit: '830e30375ec13d02ea00289c531e0e05e0d91b72',
+  manifestPath: 'client/resources/test_suite_v1/manifest.json',
+  manifestSha256: 'e6e6ac59af667bb027e621270618371a2ac8629a2e7ff678d85e7a607eb5013a',
+  suiteId: 'encodingdb-test-suite', suiteVersion: 'encodingdb-test-suite-v1',
+  clipKey: 'sports-action-960x540-24p',
+  sha256: '8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a',
+});
 const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
 export function validateBetaSnapshot(snapshot, manifest) {
   requireValue(manifest.clips?.length === 7 && new Set(manifest.clips.map(c => c.contentClass)).size === 7, 'Seven distinct canonical classes required');
-  requireValue(snapshot.plConfiguration?.testOnlyEnabled === false && snapshot.plConfiguration?.referenceBitrates === '' && snapshot.plConfiguration?.referenceVersion === '', 'PL must be explicitly unavailable');
+  requireValue(snapshot.plConfiguration?.testOnlyEnabled === false && snapshot.plConfiguration?.referenceBitrates === '' && snapshot.plConfiguration?.referenceVersion === '' && snapshot.plConfiguration?.referencePath === '', 'PL must be explicitly unavailable');
+  const legacy = snapshot.legacyRejection;
+  requireValue(legacy?.status === 404 && legacy?.response?.error === 'Canonical suite clip could not be resolved by clipKey or sha256' && legacy?.acceptedOldRunCount === 0 && legacy?.createdPayloadCount === 0 && legacy?.source?.commit === LEGACY_SUITE_REFERENCE.commit && legacy?.request?.testClip?.sha256 === LEGACY_SUITE_REFERENCE.sha256 && legacy?.request?.testClip?.clipKey === LEGACY_SUITE_REFERENCE.clipKey, 'Legacy submission lacks meaningful canonical rejection');
   const fault = snapshot.uploadInterruptionEvidence;
   const interrupted = fault?.uploadAttempts?.find(a => a.injected && a.status === 503);
   requireValue(fault?.injectedFailures === 1 && interrupted && snapshot.runs.some(r => r.id === interrupted.benchmarkRunId && r.status === 'ACCEPTED'), 'Interrupted upload did not recover the same run');
@@ -53,9 +64,10 @@ async function main(argv) {
     testOnlyEnabled: process.env.ALLOW_TEST_ONLY_REFERENCE_CONTEXTS === '1',
     referenceBitrates: process.env.PL_V7_REFERENCE_BITRATES_JSON || '',
     referenceVersion: process.env.PL_V7_REFERENCE_CONTEXT_VERSION || '',
+    referencePath: process.env.PL_V7_REFERENCE_CONTEXT_PATH || '',
   };
   const prisma = new PrismaClient();
-  const include = { testClip: true, recipe: true, artifacts: true, qualityAnalyses: true, derivedMembers: true };
+  const include = { benchmarkProtocol: true, environment: true, testClip: true, recipe: true, artifacts: true, qualityAnalyses: true, derivedMembers: true };
   try {
     const query = { where: { createdAt: { gte: new Date(args.since) }, workloadId: { in: manifest.clips.map(c => c.id) } }, include, orderBy: { createdAt: 'asc' } };
     async function waitForAnalyses() {
@@ -71,6 +83,28 @@ async function main(argv) {
     let runs = await waitForAnalyses();
     const first = runs.find(r => r.qualityAnalyses.some(a => a.status === 'COMPLETE'));
     requireValue(first, 'No completed analysis available');
+    const legacyCampaignId = `beta-rejected-legacy-${crypto.randomUUID()}`;
+    const legacyPayloadHash = hash(legacyCampaignId);
+    const encoded = first.artifacts.find(a => a.role === 'ENCODED');
+    const legacyRequest = {
+      benchmarkProtocol: Object.fromEntries(['protocolVersion', 'sourceSuiteVersion', 'minimumClientVersion', 'canonicalRecipeRules', 'canonicalOutputRules', 'metricWorkerVersion'].map(key => [key, first.benchmarkProtocol[key]])),
+      testClip: { suiteId: LEGACY_SUITE_REFERENCE.suiteId, suiteVersion: LEGACY_SUITE_REFERENCE.suiteVersion, clipKey: LEGACY_SUITE_REFERENCE.clipKey, sha256: LEGACY_SUITE_REFERENCE.sha256, workloadId: LEGACY_SUITE_REFERENCE.clipKey },
+      recipe: { fingerprint: first.recipe.fingerprint, canonicalJson: first.recipe.canonicalJson, identity: first.recipe.canonicalJson },
+      environment: { fingerprint: first.environment.fingerprint, canonicalJson: first.environment.canonicalJson, identity: first.environment.canonicalJson },
+      payloadHash: legacyPayloadHash, inputHash: LEGACY_SUITE_REFERENCE.sha256,
+      workloadId: LEGACY_SUITE_REFERENCE.clipKey, campaignId: legacyCampaignId,
+      repetitionGroupId: legacyCampaignId, repetitionIndex: 0,
+      encodeWallTimeMs: first.encodeWallTimeMs, encodeFps: first.encodeFps,
+      sourceFps: 24, sourceFrameCount: 72, encodedFrameCount: first.encodedFrameCount,
+      artifact: { role: 'ENCODED', sha256: encoded.sha256, byteSize: encoded.byteSize, mediaContainer: encoded.mediaContainer },
+    };
+    const legacyResponse = await fetch(`${args['server-url']}/v7/benchmark-runs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(legacyRequest), signal: AbortSignal.timeout(20000) });
+    const legacyRejection = {
+      source: LEGACY_SUITE_REFERENCE, request: legacyRequest, status: legacyResponse.status,
+      response: await legacyResponse.json(),
+      acceptedOldRunCount: await prisma.benchmarkRun.count({ where: { createdAt: { gte: new Date(args.since) }, status: 'ACCEPTED', OR: [{ workloadId: LEGACY_SUITE_REFERENCE.clipKey }, { inputHash: LEGACY_SUITE_REFERENCE.sha256 }] } }),
+      createdPayloadCount: await prisma.benchmarkRun.count({ where: { payloadHash: legacyPayloadHash } }),
+    };
     const prior = first.qualityAnalyses.find(a => a.status === 'COMPLETE');
     const request = { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ analysisWorkerVersion: `${prior.analysisWorkerVersion}-beta-reanalysis`, metricModelId: prior.metricModelId }), signal: AbortSignal.timeout(180000) };
     const url = `${args['server-url']}/v7/benchmark-runs/${first.id}/artifacts/ENCODED/reanalyze`;
@@ -102,7 +136,7 @@ async function main(argv) {
       }
     }
     const [serverRows, frontendRows, page] = await Promise.all([rows(args['server-url'], '/corpus'), rows(args['frontend-url'], '/api/corpus'), fetch(`${args['frontend-url']}/`)]);
-    const snapshot = { evidenceVersion: 'encodingdb-unscored-beta/v1', capturedAt: new Date().toISOString(), manifestSha256: hash(manifestBytes), plConfiguration, runs, reanalysis, uploadInterruptionEvidence: JSON.parse(await readFile(args['fault-evidence'], 'utf8')), serverRows, frontendRows, frontendPage: { ok: page.ok, status: page.status } };
+    const snapshot = { evidenceVersion: 'encodingdb-unscored-beta/v1', capturedAt: new Date().toISOString(), manifestSha256: hash(manifestBytes), plConfiguration, legacyRejection, runs, reanalysis, uploadInterruptionEvidence: JSON.parse(await readFile(args['fault-evidence'], 'utf8')), serverRows, frontendRows, frontendPage: { ok: page.ok, status: page.status } };
     validateBetaSnapshot(snapshot, manifest);
     await writeFile(args.output, JSON.stringify({ ...snapshot, passed: true }, null, 2) + '\n', { flag: 'wx' });
     console.log(`Unscored beta certification passed: ${args.output}`);

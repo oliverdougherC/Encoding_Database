@@ -146,6 +146,9 @@ jobs:
           FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
           FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
         run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
       - name: Run native Linux client build
         if: ${{ !inputs.runtime_lock_evidence }}
         run: bash scripts/build_linux_client.sh
@@ -158,8 +161,10 @@ jobs:
           retention-days: 90
           if-no-files-found: error
           compression-level: 0
+          include-hidden-files: true
           path: |
             encodingdb-client-linux*
+            .test-reports/runtime-model/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/
             client/resources/test_suite_v1/suite-lock.json
@@ -212,6 +217,9 @@ jobs:
           FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
           FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
         run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
       - name: Run native macOS client build
         if: ${{ !inputs.runtime_lock_evidence }}
         run: bash scripts/build_macos_client.sh
@@ -224,8 +232,10 @@ jobs:
           retention-days: 90
           if-no-files-found: error
           compression-level: 0
+          include-hidden-files: true
           path: |
             encodingdb-client-macos*
+            .test-reports/runtime-model/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/
             client/resources/test_suite_v1/suite-lock.json
@@ -285,6 +295,9 @@ jobs:
           FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
           FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
         run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
       - name: Run native Windows client build
         if: ${{ !inputs.runtime_lock_evidence }}
         shell: pwsh
@@ -298,8 +311,10 @@ jobs:
           retention-days: 90
           if-no-files-found: error
           compression-level: 0
+          include-hidden-files: true
           path: |
             encodingdb-client-windows*
+            .test-reports/runtime-model/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/
             client/resources/test_suite_v1/suite-lock.json
