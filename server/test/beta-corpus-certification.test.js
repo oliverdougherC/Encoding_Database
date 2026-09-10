@@ -1,6 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { validateBetaSnapshot, LEGACY_SUITE_REFERENCE } from '../scripts/verify-beta-corpus.mjs';
+import { validateBetaSnapshot, LEGACY_SUITE_REFERENCE, serializeEvidence } from '../scripts/verify-beta-corpus.mjs';
+test('evidence serialization preserves exact Prisma memory integers', () => {
+  const bytes = 2n ** 60n + 1n;
+  const result = JSON.parse(serializeEvidence({ environment: { physicalMemoryBytes: bytes }, score: null, samples: 2 }));
+  assert.equal(result.environment.physicalMemoryBytes, '1152921504606846977');
+  assert.equal(result.score, null);
+  assert.equal(result.samples, 2);
+});
 function fixture() {
   const clips = Array.from({ length: 7 }, (_, i) => ({ id: `real-${i}`, contentClass: `class-${i}`, sha256: 'a'.repeat(64), acquisition: { kind: 'retained-original' }, source: { reviewed: true, redistributionApproved: true }, media: { frameCount: 240 } }));
   const runs = clips.flatMap(c => [1, 2].map(n => ({ id: `${c.id}-${n}`, workloadId: c.id, repetitionIndex: n, status: 'ACCEPTED', testClip: { sha256: c.sha256, suiteVersion: 'v1', clipKey: c.id }, inputHash: c.sha256, derivedMembers: [], recipeId: 'recipe', environmentId: 'env', benchmarkProtocolId: 'protocol', artifacts: [{ id: `${c.id}-${n}-artifact`, role: 'ENCODED', storageState: 'RETAINED', sha256: 'b'.repeat(64), byteSize: 42, diskVerification: { sha256: 'b'.repeat(64), byteSize: 42 } }], qualityAnalyses: [{ id: `${c.id}-${n}-analysis`, artifactId: `${c.id}-${n}-artifact`, status: 'COMPLETE', analysisWorkerVersion: 'worker', analysisProvenance: { pipelineVersion: 'encodingdb-artifact-pipeline/v1', contractVersion: 'contract', modelSha256: 'c'.repeat(64), referencePath: '/reference' }, vmafDistribution: { frameCount: 240 }, vmafMean: 95, vmafP5: 91, videoBitrateBps: 2000 }] })));

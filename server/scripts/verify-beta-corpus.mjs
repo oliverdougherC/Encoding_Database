@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 import { PrismaClient } from '@prisma/client';
 
 const hash = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
+// Prisma's physical-memory BIGINT must remain exact in the evidence export.
+export const serializeEvidence = (value) => JSON.stringify(value, (_key, item) => typeof item === 'bigint' ? item.toString() : item, 2);
 // Extracted from the assignment's starting commit, not from the final manifest.
 export const LEGACY_SUITE_REFERENCE = Object.freeze({
   commit: '830e30375ec13d02ea00289c531e0e05e0d91b72',
@@ -138,7 +140,7 @@ async function main(argv) {
     const [serverRows, frontendRows, page] = await Promise.all([rows(args['server-url'], '/corpus'), rows(args['frontend-url'], '/api/corpus'), fetch(`${args['frontend-url']}/`)]);
     const snapshot = { evidenceVersion: 'encodingdb-unscored-beta/v1', capturedAt: new Date().toISOString(), manifestSha256: hash(manifestBytes), plConfiguration, legacyRejection, runs, reanalysis, uploadInterruptionEvidence: JSON.parse(await readFile(args['fault-evidence'], 'utf8')), serverRows, frontendRows, frontendPage: { ok: page.ok, status: page.status } };
     validateBetaSnapshot(snapshot, manifest);
-    await writeFile(args.output, JSON.stringify({ ...snapshot, passed: true }, null, 2) + '\n', { flag: 'wx' });
+    await writeFile(args.output, serializeEvidence({ ...snapshot, passed: true }) + '\n', { flag: 'wx' });
     console.log(`Unscored beta certification passed: ${args.output}`);
   } finally { await prisma.$disconnect(); }
 }
