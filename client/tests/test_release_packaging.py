@@ -182,8 +182,8 @@ class ReleasePackagingTests(unittest.TestCase):
             with manifest_path.open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
             self.assertEqual(manifest["platform"], "mac")
-            self.assertEqual(manifest["suite"]["distribution"], "development-only")
-            self.assertFalse(manifest["suite"]["isFrozen"])
+            self.assertEqual(manifest["suite"]["distribution"], "reviewed-final")
+            self.assertTrue(manifest["suite"]["isFrozen"])
             self.assertEqual(manifest["suite"]["distributionMode"], "external-suite-pack")
             self.assertEqual(manifest["suite"]["pack"]["fileName"], suite_pack_path.name)
             self.assertEqual(manifest["signing"]["status"], "unsigned")

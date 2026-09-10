@@ -1,0 +1,39 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/natural-detail-1080p24-final.mkv",
+  "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+  "byteSize": 283872120,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 1.1276333339628763,
+  "decodeRealtimeRatio": 8.868130888661028,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": "PENDING",
+  "encodes": [
+    {
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/natural-detail-1080p24-final/libaom-av1-32.mp4",
+      "sha256": "bd487cf20bb446e416d9fb3771bcf316fb35ca2c7b6d395a8f3efff29e108809",
+      "bytes": 4993703,
+      "videoBytes": 4991786,
+      "videoBitrateBps": 3993428.8,
+      "elapsedSeconds": 21.880908166989684,
+      "encodeFps": 10.96846612436647,
+      "vmafMean": 69.836568
+    },
+    {
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/natural-detail-1080p24-final/libvpx-vp9-32.mp4",
+      "sha256": "d0a86b1856dedcb872a246b658db7a96764aab2696673abe112e23b05a37e401",
+      "bytes": 9889051,
+      "videoBytes": 9887118,
+      "videoBitrateBps": 7909694.4,
+      "elapsedSeconds": 2.2648729579523206,
+      "encodeFps": 105.9662084609747,
+      "vmafMean": 69.542437
+    }
+  ]
+}

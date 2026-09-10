@@ -70,10 +70,10 @@ class MainRoutingTests(unittest.TestCase):
     def _quick_clip(self) -> PreparedSuiteClip:
         return PreparedSuiteClip(
             suite_version="encodingdb-test-suite-v1",
-            clip_id="sports-action-960x540-24p",
+            clip_id="athletic-action-1080p24-final",
             canonical_content_class="high-motion-sports",
             payload_content_class="action",
-            workload_id="sports-action-960x540-24p",
+            workload_id="athletic-action-1080p24-final",
             path="quick-clip.mkv",
             input_hash="a" * 64,
             file_name="quick-clip.mkv",
@@ -297,7 +297,7 @@ class MainRoutingTests(unittest.TestCase):
             argv = [
                 "prog",
                 "--v7-suite-clip",
-                "sports-action-960x540-24p",
+                "athletic-action-1080p24-final",
                 "--codec",
                 "libx264",
                 "--presets",
