@@ -1,0 +1,104 @@
+{
+  "passed": true,
+  "checkoutSource": "git archive 16151c3",
+  "startingCache": "new empty .build/clean-install-cache",
+  "packOverrides": "ENCODINGDB_SUITE_PACK_PATH and ENCODINGDB_SUITE_PACK_URL explicitly unset",
+  "route": "manifest public GitHub prerelease URL; no adjacent pack in clean checkout",
+  "distribution": {
+    "format": "tar.gz",
+    "fileName": "encodingdb-test-suite-v1.tar.gz",
+    "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+    "byteSize": 1506890018,
+    "downloadUrls": [
+      "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz"
+    ]
+  },
+  "materializerExitCode": 0,
+  "verifiedFiles": [
+    {
+      "tree": "client",
+      "clipId": "athletic-action-1080p24-final",
+      "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+      "byteSize": 139815565
+    },
+    {
+      "tree": "client",
+      "clipId": "natural-detail-1080p24-final",
+      "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+      "byteSize": 283872120
+    },
+    {
+      "tree": "client",
+      "clipId": "film-grain-1080p24-final",
+      "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+      "byteSize": 336898554
+    },
+    {
+      "tree": "client",
+      "clipId": "dark-gradients-1080p24-final",
+      "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+      "byteSize": 317829621
+    },
+    {
+      "tree": "client",
+      "clipId": "animation-1080p24-final",
+      "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+      "byteSize": 173819800
+    },
+    {
+      "tree": "client",
+      "clipId": "screen-text-1080p24-final",
+      "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+      "byteSize": 35313873
+    },
+    {
+      "tree": "client",
+      "clipId": "talking-head-1080p24-final",
+      "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+      "byteSize": 219125475
+    },
+    {
+      "tree": "server",
+      "clipId": "athletic-action-1080p24-final",
+      "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+      "byteSize": 139815565
+    },
+    {
+      "tree": "server",
+      "clipId": "natural-detail-1080p24-final",
+      "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+      "byteSize": 283872120
+    },
+    {
+      "tree": "server",
+      "clipId": "film-grain-1080p24-final",
+      "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+      "byteSize": 336898554
+    },
+    {
+      "tree": "server",
+      "clipId": "dark-gradients-1080p24-final",
+      "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+      "byteSize": 317829621
+    },
+    {
+      "tree": "server",
+      "clipId": "animation-1080p24-final",
+      "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+      "byteSize": 173819800
+    },
+    {
+      "tree": "server",
+      "clipId": "screen-text-1080p24-final",
+      "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+      "byteSize": 35313873
+    },
+    {
+      "tree": "server",
+      "clipId": "talking-head-1080p24-final",
+      "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+      "byteSize": 219125475
+    }
+  ],
+  "retention": "Test copies removed after verification; exact source checkout in Git and actual pack remains on verified public candidate prerelease."
+}

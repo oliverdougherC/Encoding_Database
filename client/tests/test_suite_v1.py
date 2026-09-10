@@ -247,6 +247,10 @@ class SuiteDistributionFailureTests(unittest.TestCase):
             root = Path(directory) / "source"
             root.mkdir()
             payload = json.loads(Path(suite.get_manifest_path()).read_text())
+            import hashlib
+            for clip in payload["clips"]:
+                clip["sha256"] = hashlib.sha256(b"fixture").hexdigest()
+                clip["byteSize"] = len(b"fixture")
             (root / "manifest.json").write_text(json.dumps(payload))
             (root / "finalization-status.json").write_text(json.dumps({"isFrozen": True}))
             (root / "notices").mkdir()
@@ -267,6 +271,62 @@ class SuiteDistributionFailureTests(unittest.TestCase):
                     suite._verify_extracted_suite_pack(str(canonical.parent), metadata)
                 suite._extract_suite_pack(str(archive), metadata, directory)
                 self.assertEqual(notice.read_text(), "Fixture license notice")
+
+    def test_cached_pack_checks_all_bytes_without_reprobing_and_repairs_corruption(self):
+        with small_media_fixture() as (root, manifest):
+            (root / "suite-lock.json").write_text('{}')
+            (root / "notices").mkdir()
+            (root / "notices/fixture.txt").write_text('Fixture notice')
+            suite.write_suite_pack_metadata(str(root))
+            metadata = suite.load_suite_pack_metadata(str(root / "suite-pack.json"))
+            archive = root / "fixture.tar.gz"
+            suite.build_suite_pack_archive(str(root), str(archive))
+            cache = root / "cache"
+            with mock.patch.object(suite, "_probe_clip", wraps=suite._probe_clip) as probe:
+                canonical = Path(suite._extract_suite_pack(str(archive), metadata, str(cache)))
+                self.assertEqual(probe.call_count, len(manifest.clips))
+            with mock.patch.object(suite, "_probe_clip", side_effect=AssertionError("identical cached bytes must not be re-probed")), mock.patch.object(suite, "_sha256_of_file", wraps=suite._sha256_of_file) as hashes:
+                suite._extract_suite_pack(str(archive), metadata, str(cache))
+                hashed_paths = {call.args[0] for call in hashes.call_args_list}
+                for clip in manifest.clips:
+                    self.assertIn(str(canonical / clip.file_name), hashed_paths)
+                self.assertIn(str(canonical.parent / "manifest.json"), hashed_paths)
+                self.assertIn(str(canonical.parent / "finalization-status.json"), hashed_paths)
+            damaged = canonical / manifest.clips[-1].file_name
+            data = damaged.read_bytes()
+            damaged.write_bytes(bytes([data[0] ^ 255]) + data[1:])
+            with mock.patch.object(suite, "_probe_clip", wraps=suite._probe_clip) as probe:
+                suite._extract_suite_pack(str(archive), metadata, str(cache))
+                self.assertEqual(probe.call_count, len(manifest.clips))
+            self.assertEqual(damaged.read_bytes(), data)
+            for name in ("manifest.json", "finalization-status.json", "suite-lock.json", "notices/fixture.txt"):
+                path = canonical.parent / name
+                original = path.read_bytes()
+                path.write_bytes(bytes([original[0] ^ 255]) + original[1:])
+                with mock.patch.object(suite, "_probe_clip", wraps=suite._probe_clip) as probe:
+                    suite._extract_suite_pack(str(archive), metadata, str(cache))
+                    self.assertEqual(probe.call_count, len(manifest.clips))
+                self.assertEqual(path.read_bytes(), original)
+            requested = manifest.clips[0]
+            invalid_contract = replace(requested, media=replace(requested.media, width=requested.media.width + 1))
+            result = suite.verify_suite_clip(str(canonical / requested.file_name), invalid_contract)
+            self.assertFalse(result.ok)
+            self.assertIn("width mismatch", result.message)
+            with mock.patch.dict("os.environ", {"ENCODINGDB_SUITE_PACK_PATH": str(archive)}, clear=False):
+                with self.assertRaisesRegex(RuntimeError, "width mismatch"):
+                    suite._materialize_clip_from_suite_pack(invalid_contract, metadata, str(cache))
+
+    def test_initial_extraction_rejects_wrong_media_contract_even_with_matching_hashes(self):
+        with small_media_fixture() as (root, manifest):
+            payload = json.loads((root / "manifest.json").read_text())
+            payload["clips"][0]["media"]["width"] += 1
+            (root / "manifest.json").write_text(json.dumps(payload))
+            metadata = suite.build_suite_pack_metadata(str(root))
+            archive = root / "invalid-contract.tar.gz"
+            suite.build_suite_pack_archive(str(root), str(archive))
+            with self.assertRaisesRegex(RuntimeError, "width mismatch"):
+                suite._extract_suite_pack(str(archive), metadata, str(root / "cache"))
+            self.assertFalse(Path(suite._suite_pack_extract_root(metadata, str(root / "cache"))).exists())
 
     def test_materializer_installs_both_trees_and_rejects_metadata_mismatch(self):
         import json
