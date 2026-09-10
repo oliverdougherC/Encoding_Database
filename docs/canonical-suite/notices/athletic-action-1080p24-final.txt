@@ -1,0 +1,11 @@
+Tears of Steel — athletic action
+Creator: Blender Foundation / Mango Open Movie Project
+Attribution: (CC) Blender Foundation | mango.blender.org
+Source: https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/
+Selected range: frames 11713–11952
+License: CC-BY-3.0; full text accompanies this file.
+Source excerpt SHA256: 2995a722dc8ff9ec32a262dd1679c5aca91655dbb7de61d2457164567c1c482b
+Final reference SHA256: 1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de
+Changes: Publisher 1920x800 RGB PNG display master treated as sRGB; explicit sRGB transfer to BT.709 limited conversion with error diffusion to 8-bit 4:2:0. Preserve all source pixels/aspect; 140-pixel bars top/bottom; no crop or stretch. Scope includes cinematic letterboxing, which reduces active pixels and must be considered when interpreting full-frame metrics.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 11713–11952; source excerpt SHA256 2995a722dc8ff9ec32a262dd1679c5aca91655dbb7de61d2457164567c1c482b. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-action-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

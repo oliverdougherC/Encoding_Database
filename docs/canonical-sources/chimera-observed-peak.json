@@ -1,0 +1,10 @@
+{
+  "sample_source": ".build/canonical-sources/chimera-natural/chimera-natural-source.mkv",
+  "source_frame": 360,
+  "minimum_RGB16_code": 0,
+  "maximum_RGB16_code": 59468,
+  "ST2084_maximum_component_nits": 4184.335508298138,
+  "interpretation": "Observed maximum RGB component in the first spatially normalized HDR frame, assuming official P3/PQ description; not mastering peak or maximum luminance of the whole source.",
+  "excerpt_frame_zero_based": 0,
+  "measurement_method": "Measured first normalized segment frame before lossless concatenation. The same RGB sample values are preserved in frame0 of the final source excerpt."
+}

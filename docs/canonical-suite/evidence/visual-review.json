@@ -1,0 +1,58 @@
+[
+  {
+    "clipId": "athletic-action-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Sustained camera motion, running/turning actor, occlusion and irregular VFX action. Accepted as disclosed athletic-action proxy, not sporting-event footage; motion frames retain varied edges and no visible normalization damage.",
+    "referenceSha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de"
+  },
+  {
+    "clipId": "natural-detail-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Hillside soil, rocks and vegetation occupy most of the frame during a camera pan and wider shot. Reviewed real PQ/P3 to SDR conversion retains highlight/shadow separation and natural texture; no metadata-only HDR relabeling. Not a pure wind-foliage scene.",
+    "referenceSha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225"
+  },
+  {
+    "clipId": "film-grain-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Producer-added grain remains clearly visible on wood, fabric and skin in full-resolution frame3 and changes across the sequence. No denoise; light-to-dark transition retained. Grain provenance is added Filmbox, not a film scan.",
+    "referenceSha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603"
+  },
+  {
+    "clipId": "dark-gradients-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Low-light stairs, blue-purple defocused gradients and silhouetted piano retain shadow structure. Full-resolution gradient frame shows continuous tone plus source grain, without crushing the whole image to black.",
+    "referenceSha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3"
+  },
+  {
+    "clipId": "animation-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Eight seconds chosen before the effects cut: broad smooth shaded skin, bright/dark cel edges, eyes and fine hair lines. Not the rejected lava sequence; shading/glow remain disclosed, not claimed perfectly flat backgrounds.",
+    "referenceSha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea"
+  },
+  {
+    "clipId": "screen-text-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Actual offline browser render shows readable code/table text, deterministic scroll/cursor motion and static navigation. Full-resolution prepared frame inspected; separate sRGB-to-BT709 conversion preserves text edges. Original authored workload, not lavfi.",
+    "referenceSha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c"
+  },
+  {
+    "clipId": "talking-head-1080p24-final",
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Sustained close dialogue retains faces, beard/hair, skin detail and mouth/hand movement throughout ten seconds, avoiding rejected cut-heavy range. Cinematic 1920x800 image preserved with letterbox bars.",
+    "referenceSha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3"
+  }
+]

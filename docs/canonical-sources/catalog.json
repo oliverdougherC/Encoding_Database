@@ -1,0 +1,149 @@
+{
+  "sol-levante": {
+    "class": "animation-flat-fields",
+    "creator": "Netflix, Inc. and Production I.G",
+    "source_page": "https://opencontent.netflix.com/",
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+    "license": "CC-BY-4.0",
+    "license_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/creative-commons-attribution-4-intl-public-license.txt",
+    "start_seconds": 90,
+    "duration_seconds": 10,
+    "native_frame_rate": "24/1",
+    "source_frame_range_zero_based": {
+      "start": 2160,
+      "end_exclusive": 2400
+    }
+  },
+  "nocturne": {
+    "class": "film-grain-noise",
+    "creator": "Netflix, Inc.",
+    "source_page": "https://opencontent.netflix.com/",
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+    "license": "CC-BY-4.0",
+    "license_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+    "readme_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/readme.txt",
+    "start_seconds": 90,
+    "duration_seconds": 10,
+    "native_frame_rate": "60/1",
+    "source_frame_range_zero_based": {
+      "start": 5400,
+      "end_exclusive": 6000
+    }
+  },
+  "tos-action": {
+    "kind": "png-sequence",
+    "class": "high-motion-sports",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 11713,
+    "frame_count": 240,
+    "start_seconds": 488,
+    "duration_seconds": 10
+  },
+  "tos-talking": {
+    "kind": "png-sequence",
+    "class": "talking-head",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 6961,
+    "frame_count": 240,
+    "start_seconds": 290,
+    "duration_seconds": 10
+  },
+  "tos-dark": {
+    "kind": "png-sequence",
+    "class": "dark-gradients-shadows",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 12721,
+    "frame_count": 240,
+    "start_seconds": 530,
+    "duration_seconds": 10
+  },
+  "tos-natural": {
+    "kind": "png-sequence",
+    "class": "fine-natural-detail",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 601,
+    "frame_count": 240,
+    "start_seconds": 25,
+    "duration_seconds": 10
+  },
+  "chimera-natural": {
+    "kind": "tiff-sequence",
+    "class": "fine-natural-detail",
+    "creator": "Netflix, Inc.",
+    "source_page": "https://opencontent.netflix.com/",
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/",
+    "filename_pattern": "Chimera_DCI4k2398p_HDR_P3PQ_%05d.tif",
+    "license": "CC-BY-4.0",
+    "license_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/creative-commons-attribution-4-intl-public-license.txt",
+    "start_frame": 360,
+    "frame_count": 240,
+    "frame_rate": "24000/1001",
+    "color_interpretation": "Graded HDR RGB TIFF, P3 D65 primaries and PQ transfer as documented by official title catalog and filename. Requires real tone mapping for SDR suite.",
+    "acquisition_filter": "scale=1920:1012:flags=lanczos,setsar=1"
+  },
+  "sol-levante-flat": {
+    "class": "animation-flat-fields",
+    "creator": "Netflix, Inc. and Production I.G",
+    "source_page": "https://opencontent.netflix.com/",
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+    "license": "CC-BY-4.0",
+    "license_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/creative-commons-attribution-4-intl-public-license.txt",
+    "start_seconds": 173,
+    "duration_seconds": 8,
+    "native_frame_rate": "24/1",
+    "source_frame_range_zero_based": {
+      "start": 4152,
+      "end_exclusive": 4344
+    }
+  },
+  "nocturne-dark": {
+    "class": "dark-gradients-shadows",
+    "creator": "Netflix, Inc.",
+    "source_page": "https://opencontent.netflix.com/",
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+    "license": "CC-BY-4.0",
+    "license_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+    "readme_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/readme.txt",
+    "start_seconds": 148,
+    "duration_seconds": 10,
+    "native_frame_rate": "60/1",
+    "source_frame_range_zero_based": {
+      "start": 8880,
+      "end_exclusive": 9480
+    }
+  },
+  "tos-dialog": {
+    "kind": "png-sequence",
+    "class": "talking-head",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 5761,
+    "frame_count": 240,
+    "start_seconds": 240,
+    "duration_seconds": 10
+  }
+}

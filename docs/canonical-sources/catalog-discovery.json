@@ -1,0 +1,77 @@
+[
+  {
+    "listing_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/?list-type=2&prefix=SolLevante%2Fsdr%2F&max-keys=100",
+    "retrieval_date": "2026-09-09",
+    "objects": [
+      {
+        "Key": "SolLevante/sdr/",
+        "LastModified": "2023-10-06T00:27:17.000Z",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "Size": "0",
+        "StorageClass": "STANDARD"
+      },
+      {
+        "Key": "SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+        "LastModified": "2023-10-06T17:40:31.000Z",
+        "ETag": "\"e3772443014ae23a966897df9a1bd878-940\"",
+        "Size": "16136968701",
+        "StorageClass": "STANDARD"
+      }
+    ]
+  },
+  {
+    "listing_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/?list-type=2&prefix=Nocturne%2Fnocturne_filmgrain%2F&max-keys=100",
+    "retrieval_date": "2026-09-09",
+    "objects": [
+      {
+        "Key": "Nocturne/nocturne_filmgrain/",
+        "LastModified": "2026-05-30T00:17:18.000Z",
+        "ETag": "\"d41d8cd98f00b204e9800998ecf8427e\"",
+        "ChecksumAlgorithm": "CRC64NVME",
+        "ChecksumType": "FULL_OBJECT",
+        "Size": "0",
+        "StorageClass": "STANDARD"
+      },
+      {
+        "Key": "Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_hdr.mov",
+        "LastModified": "2026-05-30T00:19:35.000Z",
+        "ETag": "\"f71d6d6826b6e1276dcf7f64a3fe0a7d-5542\"",
+        "ChecksumAlgorithm": "CRC32",
+        "ChecksumType": "COMPOSITE",
+        "Size": "92970200151",
+        "StorageClass": "STANDARD"
+      },
+      {
+        "Key": "Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+        "LastModified": "2026-05-30T00:32:20.000Z",
+        "ETag": "\"12c6511a001c286b1eb6a1cd2c9fcd22-5683\"",
+        "ChecksumAlgorithm": "CRC32",
+        "ChecksumType": "COMPOSITE",
+        "Size": "95342480296",
+        "StorageClass": "STANDARD"
+      },
+      {
+        "Key": "Nocturne/nocturne_filmgrain/readme.txt",
+        "LastModified": "2026-05-30T00:43:56.000Z",
+        "ETag": "\"37e938e5ebfb6dbb879a7e5b5894aed7\"",
+        "ChecksumAlgorithm": "CRC64NVME",
+        "ChecksumType": "FULL_OBJECT",
+        "Size": "1253",
+        "StorageClass": "STANDARD"
+      }
+    ]
+  },
+  {
+    "listing_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/?list-type=2&prefix=Chimera%2Ftif_DCI4k2398p%2FChimera_DCI4k2398p_HDR_P3PQ_00360.tif&max-keys=100",
+    "retrieval_date": "2026-09-09",
+    "objects": [
+      {
+        "Key": "Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_00360.tif",
+        "LastModified": "2017-07-14T20:29:12.000Z",
+        "ETag": "\"ec946a042fb3eac1f7d6aebef8390f25-7\"",
+        "Size": "53101658",
+        "StorageClass": "STANDARD"
+      }
+    ]
+  }
+]
