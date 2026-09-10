@@ -181,8 +181,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
           cd "$RUNNER_TEMP/ffmpeg-runtime"
           curl -L --fail --silent --show-error -o runtime.tar.gz \
-            https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-ce9d181444.tar.gz
-          echo "718e85b630bdcdb93f257a99ffcf6d57bf42645bd0f5bebffc1ac57e64236c64  runtime.tar.gz" | shasum -a 256 -c -
+            https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-c27482a18d7.tar.gz
+          echo "0b7534979f2f073d9eddae6f92def32fb6063c50bb4aced75f7e88ecf0611687  runtime.tar.gz" | shasum -a 256 -c -
           tar -xzf runtime.tar.gz
           test -x "$PWD/ffmpeg"
           test -x "$PWD/ffprobe"

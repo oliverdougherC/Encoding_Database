@@ -23,9 +23,12 @@ Tracked runtime metadata is updated intentionally with [scripts/register_ffmpeg_
 - Update one platform entry deliberately:
   - `python3 scripts/register_ffmpeg_runtime.py --update --platform <linux|mac|win> --ffmpeg-path <path> --ffprobe-path <path>`
 
-Builders normally refuse binaries that do not match the checked-in platform lock. For the one intentional registration build on a clean checkout, set `ENCODINGDB_REGISTER_RUNTIME=1`; the builder probes capabilities, writes that platform's exact identity into the lock, and then packages the filtered entry. Review and commit the lock change before release. Subsequent builds omit the flag and must match it exactly.
-
-CI and native build validation can point the builders at a temporary lock path with `ENCODINGDB_RUNTIME_LOCK_PATH=<path>`. That keeps cross-platform registration/build tests deterministic without mutating the checked-in manifest.
+Builders refuse binaries that do not match the checked-in platform lock. Candidate
+builds reject `ENCODINGDB_REGISTER_RUNTIME=1`; registration is permitted only with
+explicit development `ENCODINGDB_BUILD_ONLY=1`. The CI `runtime_lock_evidence`
+dispatch mode probes proposed locks and retains them separately, without building
+or certifying a candidate. Review and commit proposed entries before running
+normal locked candidate builds.
 
 Each builder creates an isolated virtual environment from the directly pinned `client/requirements-build.txt`, so a global or ambient PyInstaller version cannot change the release artifact.
 
@@ -35,19 +38,39 @@ Supported builder overrides:
 - `ENCODINGDB_FFMPEG_PATH`
 - `ENCODINGDB_FFPROBE_PATH`
 - `ENCODINGDB_RUNTIME_LOCK_PATH`
-- `ENCODINGDB_REGISTER_RUNTIME=1` (intentional first registration only)
+- `ENCODINGDB_REGISTER_RUNTIME=1` (intentional development registration with build-only mode)
 - `ENCODINGDB_BUILD_ONLY=1` (native CI validation before a project version is assigned; skips final release sidecars only)
 
 ## CI provisioning
 
 Runtime-lock-sensitive CI does not rely on ambient `apt`, `brew`, or `choco` FFmpeg packages, because those runner packages do not consistently expose the required `xpsnr` filter.
 
-- Linux and Windows CI use pinned BtbN FFmpeg 8.1 GPL archives with published SHA-256 verification before extraction.
-- macOS CI downloads the current Evermeet snapshot, verifies the detached GPG signatures with Evermeet's published signing key, and then uses that verified runtime for temporary-lock registration/build validation.
+- Linux and Windows use the immutable BtbN `autobuild-2026-09-09-14-51`
+  FFmpeg `n8.1.2-51-g7ba069f4f1` GPL archives, checked against pinned upstream
+  SHA256 digests. Platform identities were generated on native runners in
+  [CI run 34419226010](https://github.com/oliverdougherC/Encoding_Database/actions/runs/34419226010),
+  then reviewed into the committed lock. A proposed lock is not a packaged build.
+- macOS uses Evermeet `126386-gc27482a18d7`, containing libvmaf `3.2.0-13`.
+  Original ZIP signatures were verified against the provider's HTTPS-published
+  signing key (`20F6EA3E0CFD6B4C53447A73476C4B611A660874`). The exact binaries,
+  original signed ZIPs, GPL text, provenance, and actual model-execution evidence
+  are retained in the [candidate runtime archive](https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-c27482a18d7.tar.gz),
+  SHA256 `0b7534979f2f073d9eddae6f92def32fb6063c50bb4aced75f7e88ecf0611687`.
+  This is a nonproduction staging prerelease, not final application publication.
 
-Those CI jobs validate the build path with a controlled operator-supplied fixture. They do not rewrite the checked-in runtime lock unless a maintainer intentionally runs registration and commits the resulting lock change.
+Normal native CI materializes the frozen suite, verifies the committed runtime
+lock, builds the assigned candidate version, and retains binaries, suite pack,
+notices, and full sidecars for 90 days. The separate manual proposal mode cannot
+substitute for those candidate gates.
 
-Pre-freeze native CI sets `ENCODINGDB_BUILD_ONLY=1` so PyInstaller, runtime registration, suite-pack creation, and executable production are validated while `release.json.projectVersion` is intentionally null. Final release builds omit that flag and remain fail-closed until a project version is assigned, then emit the complete release sidecar set.
+A compiled `libvmaf` filter does not prove compatibility with the pinned model.
+The previous macOS `121420-gce9d181444` runtime failed to initialize the model's
+CAMBI feature extractor. The replacement executed the unchanged model
+`vmaf_v1.0.16_3d0h.json` against the actual 240-frame screen reference and its
+libx264 CRF20 encode: exit 0, all frames analyzed, VMAF mean 86.904001. The archive
+contains the exact command, JSON metrics and signature logs. This verifies that
+specific model/runtime execution; final seven-reference validation and packaged
+client/server acceptance remain separately required.
 
 ## Release sidecars
 
@@ -84,4 +107,4 @@ Smoke evidence is intentionally no-submit and uses isolated queue/cache director
 
 Windows GUI builds are packaged and hashed, but smoke coverage is honestly marked as skipped; the Windows console build is the smoke-tested executable.
 
-Native build validation is exercised in CI on Linux, macOS, and Windows by provisioning a verified FFmpeg bundle on the runner, registering that runtime into a temporary lock, and running the platform build script end-to-end.
+Native candidate validation runs on Linux, macOS, and Windows using the verified archive and committed runtime lock. Proposed runtime registration and candidate build evidence are retained separately.

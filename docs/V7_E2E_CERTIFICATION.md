@@ -63,3 +63,52 @@ retained with verified hashes, server VMAF distributions and canonical score
 inputs are complete, each run belongs to a derived PL result, and the frontend
 analytics response exactly matches the server response. A successful process
 exit alone is never treated as certification evidence.
+
+## Unscored canonical-suite beta candidate
+
+The separate `scripts/certify-beta-corpus.sh` gate verifies collection before PL
+calibration. The scored PLA-90 gate above remains unchanged. Run this candidate
+gate from a clean committed candidate branch; it records the exact SHA and does
+not require integration into `beta` first.
+
+Start an isolated migrated server and its real frontend with
+`PL_V7_REFERENCE_BITRATES_JSON` and `PL_V7_REFERENCE_CONTEXT_VERSION` blank and
+`ALLOW_TEST_ONLY_REFERENCE_CONTEXTS=0`. Use those settings in the certification
+shell too. The verifier records the shell configuration and independently
+requires zero derived memberships and unavailable public PL; retain the server
+launch configuration alongside deployment-review evidence to establish its
+actual environment. Never enable test contexts to make this gate pass.
+
+```bash
+export DATABASE_URL='postgresql://app:app@127.0.0.1:55432/benchmarks?schema=public'
+export ARTIFACT_STORAGE_ROOT='/absolute/path/to/server/retained-artifacts'
+export PL_V7_REFERENCE_BITRATES_JSON=''
+export PL_V7_REFERENCE_CONTEXT_VERSION=''
+export ALLOW_TEST_ONLY_REFERENCE_CONTEXTS=0
+scripts/certify-beta-corpus.sh --client ./encodingdb-client-macos \
+  --suite-pack ./encodingdb-test-suite-v1.tar.gz \
+  --server-url http://127.0.0.1:3001 --frontend-url http://127.0.0.1:3100
+```
+
+The binary must already be packaged from the committed candidate and the frozen
+suite. The gate copies it and the exact external pack to a fresh installation,
+starts with an empty cache, removes pack overrides, and invokes all seven IDs
+from the final manifest using libx264/fast/CRF 24. Each invocation executes the
+client's actual warmup/repetition protocol. A real proxy interrupts one upload;
+the client must recover and empty its retry queue. This is adjacent-pack clean
+installation evidence; network-only acquisition needs a separate executed check.
+
+The verifier reads the actual database and retained artifact files (mount the
+server storage into the verifier host when containerized). It requires repeated
+accepted runs for every final clip, exact input hashes and suite identities,
+retained bytes with matching SHA-256 and size, complete authoritative analyses
+and full VMAF frame distributions. It reanalyzes one retained artifact, repeats
+that request to check idempotence, and checks the retained analysis identity.
+Both `/corpus` and frontend `/api/corpus` must expose matching repeated rows with
+PL explicitly null and scoring status `UNSCORED_NO_PUBLIC_DERIVED_RESULT`.
+
+Evidence under `.test-reports/beta-corpus/<SHA>-<timestamp>/` includes the actual
+binary and pack, logs, fault ledger, execution identities, complete database and
+HTTP evidence, and recursive `SHA256SUMS`. Publish that directory or a durable
+archive and link it in the deployment review. Unit tests exercise verifier
+rejection behavior only; they never constitute real benchmark certification.
