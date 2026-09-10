@@ -48,15 +48,19 @@ for _ in $(seq 1 50); do
   sleep 0.1
 done
 curl -fsS "http://127.0.0.1:$FAULT_PROXY_PORT/health/ready" >/dev/null
+PROCESSED_CLIPS=0
 while IFS= read -r clip; do
+  [[ -n "$clip" ]] || { echo 'Empty canonical clip ID' >&2; exit 1; }
   echo "Certifying packaged client: $clip"
   env -u ENCODINGDB_SUITE_PACK_PATH -u ENCODINGDB_SUITE_PACK_URL \
     ENCODINGDB_SUITE_CACHE_DIR="$RUN_DIR/cache" \
-    "$CLIENT" --base-url "http://127.0.0.1:$FAULT_PROXY_PORT" --codec libx264 \
+    "$CLIENT" --submit --base-url "http://127.0.0.1:$FAULT_PROXY_PORT" --codec libx264 \
     --v7-suite-clip "$clip" --presets fast --crf 24 --retries 1 \
-    --queue-dir "$RUN_DIR/queue" >"$RUN_DIR/$clip-client.log" 2>&1
+    --queue-dir "$RUN_DIR/queue" </dev/null >"$RUN_DIR/$clip-client.log" 2>&1
+  PROCESSED_CLIPS=$((PROCESSED_CLIPS + 1))
 done <"$RUN_DIR/clip-ids.txt"
-[[ -z "$(find "$RUN_DIR/queue" -name '*.json' -type f -print)" ]] || { echo 'Unrecovered client queue' >&2; exit 1; }
+[[ "$PROCESSED_CLIPS" -eq 7 ]] || { echo "Expected seven processed canonical clips; got $PROCESSED_CLIPS" >&2; exit 1; }
+[[ -z "$(find "$RUN_DIR/queue" -maxdepth 1 -name '*.json' -type f -print)" ]] || { echo 'Unrecovered client queue' >&2; exit 1; }
 rg -q 'Queued payload for retry' "$RUN_DIR"/*-client.log
 rg -q 'Submitted 1 queued payload\(s\)' "$RUN_DIR"/*-client.log
 python3 - "$RUN_DIR" "$ROOT_DIR" "$CLIENT" "$MANIFEST" "$STARTED_AT" <<'PY'
