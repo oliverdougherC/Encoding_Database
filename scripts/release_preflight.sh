@@ -150,7 +150,7 @@ check_stack_smoke() {
 
 check_ops_hooks() {
   require_cmd bash
-  run_root bash -n scripts/generate-dev-cert.sh scripts/production_smoke.sh scripts/release_preflight.sh scripts/v7-backup.sh scripts/v7-restore-drill.sh scripts/v7-migration-rehearsal.sh scripts/certify-v7-e2e.sh deploy.sh
+  run_root bash -n scripts/generate-dev-cert.sh scripts/production_smoke.sh scripts/release_preflight.sh scripts/v7-backup.sh scripts/v7-restore-drill.sh scripts/v7-migration-rehearsal.sh scripts/certify-v7-e2e.sh scripts/prepare_production_suite.sh deploy.sh
 }
 
 check_migrations() {

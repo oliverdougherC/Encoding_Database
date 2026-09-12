@@ -18,6 +18,31 @@ permissions:
   contents: read
 
 jobs:
+  clean-production-deployment:
+    name: clean-production-deployment
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      # No media or suite setup here: the supported deploy entry point must
+      # acquire the public pack in the harness's new clone and empty cache.
+      - name: Exercise clean production preparation, rollout and failure isolation
+        run: python scripts/test_clean_deployment.py --output-dir .test-reports/clean-deployment
+      - name: Retain executed deployment regression logs and exact SHA
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-deployment-${{ github.sha }}
+          path: .test-reports/clean-deployment/
+          if-no-files-found: error
+          retention-days: 90
+
   frontend:
     name: frontend
     runs-on: ubuntu-latest

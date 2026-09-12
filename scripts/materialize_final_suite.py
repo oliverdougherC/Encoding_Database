@@ -13,7 +13,9 @@ if str(ROOT_DIR) not in sys.path:
 from client import suite
 
 
-def materialize(repo_root: Path, cache_dir=None, pack_path=None) -> None:
+def materialize(repo_root: Path, cache_dir=None, pack_path=None, pack_url=None) -> None:
+    if pack_path and pack_url:
+        raise ValueError("choose only pack_path or pack_url")
     roots = [repo_root / "client/resources/test_suite_v1", repo_root / "server/resources/test_suite_v1"]
     metadata = suite.load_suite_pack_metadata(str(roots[0] / "suite-pack.json"))
     for root in roots:
@@ -27,6 +29,11 @@ def materialize(repo_root: Path, cache_dir=None, pack_path=None) -> None:
         if not result.ok:
             raise RuntimeError(result.message)
         archive = str(pack_path)
+    elif pack_url:
+        # An explicitly selected deployment mirror is exclusive: never conceal
+        # its failure with a workstation copy or a different network source.
+        archive = suite._cache_suite_pack_path(metadata, cache_dir)
+        suite._download_suite_pack(pack_url, archive, metadata)
     else:
         archive = suite._ensure_suite_pack_available(metadata, cache_dir)
     extracted = Path(suite._extract_suite_pack(archive, metadata, cache_dir)).parent
@@ -63,9 +70,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", type=Path, default=ROOT_DIR)
     parser.add_argument("--cache-dir", default=None)
-    parser.add_argument("--pack-path", type=Path, default=None)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--pack-path", type=Path, default=None)
+    source.add_argument("--pack-url", default=None)
     args = parser.parse_args()
-    materialize(args.repo_root.resolve(), args.cache_dir, args.pack_path)
+    materialize(args.repo_root.resolve(), args.cache_dir, args.pack_path, args.pack_url)
     return 0
 
 

@@ -63,6 +63,15 @@ step 4. A procedure or passing beta check is not evidence of production completi
    SHA before and after deployment. The default `./deploy.sh` pulls the latest
    `main`; it must not silently advance beyond the reviewed commit. `--skip-pull`
    only prevents that pull; it does not itself verify cleanliness or approval.
+   The supported command provisions the isolated acquisition runtime, verifies
+   and materializes the pinned final suite, builds application images and pulls
+   service images before rollout. The host requires Git, Node.js 20+, Docker with
+   Compose v2, registry/suite access and sufficient cache/staging/image space;
+   it does not require a host Python/client or media runtime. To complete those
+   preparation checks without changing services first, use
+   `./deploy.sh --skip-pull --prepare-only`. See the README for verified offline
+   pack/mirror and cache controls. Preparation failure must be resolved before
+   rollout; never bypass the suite or Docker source/model checks.
 8. Run `scripts/production_smoke.sh` against the actual production API/frontend,
    then complete a real packaged-client V7 benchmark using the published client
    and suite pack. Verify retained upload bytes, authoritative analysis,

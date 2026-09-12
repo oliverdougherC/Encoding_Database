@@ -101,8 +101,12 @@ Deploy:
 ./deploy.sh
 ```
 
-`deploy.sh` now runs the same env validator before `docker compose up`, then
-checks all of the following after startup:
+`deploy.sh` runs the same env validator, materializes the verified frozen suite
+using its containerized Python/media runtime, and builds/pulls all required
+images before `docker compose up --no-build --pull never`. Preparation failures
+leave running services untouched. `--skip-pull --prepare-only` prepares an exact
+checkout without rollout; see the README for host requirements and cache/pack
+controls. It checks all of the following after startup:
 
 - direct DB connectivity from the production server container;
 - API `/health/live`, `/health/ready`, `/health/v7-evidence`;

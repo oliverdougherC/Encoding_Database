@@ -351,6 +351,34 @@ Verify and record the full checkout SHA before and after deployment.
 or a clean worktree. The default `./deploy.sh` fetches and pulls latest `main`,
 which may have advanced since review. Do not substitute an unreviewed branch tip.
 
+The deployment host needs Git, Node.js 20+, Docker with Compose v2, network
+access to the pinned image/package registries and suite download URL, and disk
+space for the 1.51 GB pack, verified cache, both resource trees, staging copies
+and application images. Python, its pinned acquisition dependencies, FFmpeg and
+ffprobe run in the isolated preparation image; no host Python/client installation
+is required. `deploy.sh` acquires the committed frozen pack, validates archive,
+clip, notice and tracked suite identities, materializes both trees, builds all
+application images (including the server's source/model/media checks), and pulls
+service images **before** starting or replacing any service. Preparation failures
+exit before rollout; rollout uses prepared images with builds and pulls disabled.
+
+`./deploy.sh --skip-pull --prepare-only` executes that preparation without starting
+services. For a direct Compose build, first run
+`bash scripts/prepare_production_suite.sh`; a bare clean-checkout server Docker
+build deliberately refuses missing references. The verified cache defaults to
+`.build/final-suite-cache`; `DEPLOY_SUITE_CACHE_DIR` selects another location.
+For offline pack delivery use `DEPLOY_SUITE_PACK_PATH`, or select an exclusive
+mirror with `DEPLOY_SUITE_PACK_URL`. These are mutually exclusive, must supply
+the exact pinned pack, and fail without silently falling back to another source.
+The offline option still needs the preparation/application images and their build
+dependencies locally available or reachable.
+
+Run `python3 scripts/test_clean_deployment.py` for the isolated clean-checkout
+regression. It uses a fresh clone and empty suite cache, invokes the supported
+deployment entry point, verifies all seven source hashes inside the image, and
+checks that missing, unreachable and corrupt packs cannot change running services.
+Its test volumes, network, ports and credentials are isolated from production.
+
 Production env validation, named-volume backup/restore, pre-V7 migration
 rehearsal, and the later PL activation procedure are documented in
 `docs/PL_V7_PRODUCTION_ACTIVATION.md`. PL calibration remains post-release;
