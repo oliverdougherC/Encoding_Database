@@ -16,10 +16,12 @@ from pathlib import Path
 import re
 import secrets
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
 PL_KEYS = ("PL_V7_REFERENCE_CONTEXT_PATH", "PL_V7_REFERENCE_CONTEXT_VERSION", "PL_V7_REFERENCE_BITRATES_JSON")
@@ -175,6 +177,7 @@ class Acceptance:
         self.summary["successfulStack"] = initial
         self.verify_image(initial["server"]["image"])
         self.verify_api()
+        self.verify_ingress()
         for case in ("missing-pack", "unavailable-pack", "corrupt-pack"):
             self.failure_case(case)
         self.prepare_only()
@@ -205,6 +208,21 @@ console.log(JSON.stringify({metadata:Object.fromEntries(['manifest.json','suite-
         require(next(item["body"] for item in results if item["path"] == "/health/v7-evidence")["status"] == "ok", "Evidence health is not ok")
         require(all(isinstance(item["body"], list) for item in results if item["path"] in ("/query?limit=1", "/test-videos", "/corpus?limit=1")), "API collection response shape regressed")
         self.summary["apiChecks"] = results
+
+    def verify_ingress(self):
+        _, address = self.run(self.compose("port", "nginx", "443"), "nginx-tls-port")
+        base = "https://" + address.strip()
+        context = ssl.create_default_context(cafile=str(self.checkout / "nginx/dev-certs/selfsigned.crt"))
+        results = []
+        for target in ("/corpus?limit=1", "/corpus/?limit=1", "/test-videos"):
+            with urllib.request.urlopen(base + target, context=context, timeout=20) as response:
+                body = json.load(response)
+                require(response.status == 200 and isinstance(body, list), "Public ingress must return the API collection")
+                if target == "/test-videos":
+                    require(len(body) == 7, "Public ingress catalog must expose all seven references")
+                results.append({"path": target, "status": response.status, "count": len(body), "tlsCertificateVerified": True})
+        self.summary["ingressChecks"] = results
+        (self.output / "nginx-tls-ingress.json").write_text(json.dumps(results, indent=2) + "\n")
 
     def failure_case(self, case):
         for tree in ("client", "server"):
