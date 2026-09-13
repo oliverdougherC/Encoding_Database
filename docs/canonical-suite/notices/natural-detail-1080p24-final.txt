@@ -1,0 +1,11 @@
+Chimera — natural hillside
+Creator: Netflix, Inc.
+Attribution: Netflix, Inc.
+Source: https://opencontent.netflix.com/
+Selected range: frames 360–599
+License: CC-BY-4.0; full text accompanies this file.
+Source excerpt SHA256: 79f35b35405c019c639e85b4b232ca04f780163f0f671ebcf55d281ea5a472c3
+Final reference SHA256: cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225
+Changes: P3-D65/PQ RGB16 display master converted through linear light at100nit reference white, BT.709 primaries, Hable tone map with fixed4000nit input peak, desaturation disabled, BT.709 limited8-bit4:2:0. 4096x2160 resized to1920x1012 with even-pixel rounding(<0.05% aspect change),34pixel bars preserve framing. 24000/1001 to24fps explicit frame selection, no interpolation. Peak is an explicit preparation choice pending visual acceptance, not claimed source metadata.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Netflix, Inc.; https://opencontent.netflix.com/; frames 360–599; source excerpt SHA256 79f35b35405c019c639e85b4b232ca04f780163f0f671ebcf55d281ea5a472c3. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/chimera-natural-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

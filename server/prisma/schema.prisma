@@ -14,120 +14,135 @@ datasource db {
 }
 
 model Benchmark {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Hardware info
-  cpuModel       String
-  gpuModel       String   @default("")
-  ramGB          Int
-  os             String
+  cpuModel String
+  gpuModel String @default("")
+  ramGB    Int
+  os       String
 
   // Test parameters
-  codec          String
-  preset         String
-  crf            Int      @default(24)
-  contentClass   String   @default("mixed")
-  resolution     String   @default("1080p")
-  passes         Int      @default(1)
+  codec        String
+  preset       String
+  crf          Int    @default(24)
+  contentClass String @default("mixed")
+  resolution   String @default("1080p")
+  passes       Int    @default(1)
 
   // Results
-  fps            Float
-  vmaf           Float?
-  ssim           Float?
-  psnr           Float?
-  fileSizeBytes  Int
+  fps                   Float
+  vmaf                  Float?
+  vmafP5                Float?
+  ssim                  Float?
+  psnr                  Float?
+  fileSizeBytes         Int
+  videoBitrateBps       Float?
+  sourceFps             Float?
+  sourceDurationSeconds Float?
 
-  notes          String?
+  notes String?
 
   // Hardware metrics (Sprint 6)
-  gpuUtilAvg      Float?
-  gpuPowerAvgW    Float?
-  gpuMemPeakMB    Float?
-  cpuUtilAvg      Float?
-  cpuUtilMax      Float?
-  peakMemoryMB    Float?
-  thermalThrottle Boolean?
+  gpuUtilAvg          Float?
+  gpuPowerAvgW        Float?
+  gpuMemPeakMB        Float?
+  cpuUtilAvg          Float?
+  cpuUtilMax          Float?
+  peakMemoryMB        Float?
+  thermalThrottle     Boolean?
   // Extended telemetry (Sprint 7)
-  gpuTempMaxC        Float?
-  cpuFreqAvgMHz      Float?
-  cpuTempMaxC        Float?
-  ffmpegCpuUtilAvg   Float?
-  ffmpegCpuUtilMax   Float?
-  ffmpegReadMB       Float?
-  ffmpegWriteMB      Float?
-  ffmpegCpuTimeS     Float?
+  gpuTempMaxC         Float?
+  cpuFreqAvgMHz       Float?
+  cpuTempMaxC         Float?
+  ffmpegCpuUtilAvg    Float?
+  ffmpegCpuUtilMax    Float?
+  ffmpegReadMB        Float?
+  ffmpegWriteMB       Float?
+  ffmpegCpuTimeS      Float?
   batteryPercentStart Float?
   batteryPercentEnd   Float?
   batteryPercentDrop  Float?
-  powerSource        String?
-  sampleCount        Float?
-  monitorDurationMs  Float?
-  cpuSampleCount     Float?
-  gpuSampleCount     Float?
-  ffmpegSampleCount  Float?
-  batterySampleCount Float?
+  powerSource         String?
+  sampleCount         Float?
+  monitorDurationMs   Float?
+  cpuSampleCount      Float?
+  gpuSampleCount      Float?
+  ffmpegSampleCount   Float?
+  batterySampleCount  Float?
 
   // Aggregation
-  samples        Int      @default(0)
-  vmafSamples    Int      @default(0)
-  fpsSum         Float    @default(0)
-  fileSizeSum    Float    @default(0)
-  vmafSum        Float    @default(0)
-  ssimSamples    Int      @default(0)
-  ssimSum        Float    @default(0)
-  psnrSamples    Int      @default(0)
-  psnrSum        Float    @default(0)
+  samples             Int   @default(0)
+  vmafSamples         Int   @default(0)
+  fpsSum              Float @default(0)
+  fileSizeSum         Float @default(0)
+  vmafSum             Float @default(0)
+  vmafP5Samples       Int   @default(0)
+  vmafP5Sum           Float @default(0)
+  videoBitrateSamples Int   @default(0)
+  videoBitrateSum     Float @default(0)
+  sourceFpsSamples    Int   @default(0)
+  sourceFpsSum        Float @default(0)
+  ssimSamples         Int   @default(0)
+  ssimSum             Float @default(0)
+  psnrSamples         Int   @default(0)
+  psnrSum             Float @default(0)
 
   // Hardware metrics aggregation (Sprint 6)
-  gpuUtilSamples  Int     @default(0)
-  gpuUtilSum      Float   @default(0)
-  gpuPowerSamples Int     @default(0)
-  gpuPowerSum     Float   @default(0)
-  cpuUtilSamples  Int     @default(0)
-  cpuUtilSum      Float   @default(0)
-  peakMemoryMax   Float?
+  gpuUtilSamples            Int    @default(0)
+  gpuUtilSum                Float  @default(0)
+  gpuPowerSamples           Int    @default(0)
+  gpuPowerSum               Float  @default(0)
+  cpuUtilSamples            Int    @default(0)
+  cpuUtilSum                Float  @default(0)
+  peakMemoryMax             Float?
   // Extended telemetry aggregation (Sprint 7)
-  cpuFreqSamples         Int   @default(0)
-  cpuFreqSum             Float @default(0)
-  ffmpegCpuUtilSamples   Int   @default(0)
-  ffmpegCpuUtilSum       Float @default(0)
-  ffmpegReadSamples      Int   @default(0)
-  ffmpegReadSum          Float @default(0)
-  ffmpegWriteSamples     Int   @default(0)
-  ffmpegWriteSum         Float @default(0)
-  ffmpegCpuTimeSamples   Int   @default(0)
-  ffmpegCpuTimeSum       Float @default(0)
-  batteryStartSamples    Int   @default(0)
-  batteryStartSum        Float @default(0)
-  batteryEndSamples      Int   @default(0)
-  batteryEndSum          Float @default(0)
-  batteryDropSamples     Int   @default(0)
-  batteryDropSum         Float @default(0)
-  sampleCountSamples     Int   @default(0)
-  sampleCountSum         Float @default(0)
-  monitorDurationSamples Int   @default(0)
-  monitorDurationSum     Float @default(0)
-  cpuSampleCountSamples     Int   @default(0)
-  cpuSampleCountSum         Float @default(0)
-  gpuSampleCountSamples     Int   @default(0)
-  gpuSampleCountSum         Float @default(0)
-  ffmpegSampleCountSamples  Int   @default(0)
-  ffmpegSampleCountSum      Float @default(0)
-  batterySampleCountSamples Int   @default(0)
-  batterySampleCountSum     Float @default(0)
+  cpuFreqSamples            Int    @default(0)
+  cpuFreqSum                Float  @default(0)
+  ffmpegCpuUtilSamples      Int    @default(0)
+  ffmpegCpuUtilSum          Float  @default(0)
+  ffmpegReadSamples         Int    @default(0)
+  ffmpegReadSum             Float  @default(0)
+  ffmpegWriteSamples        Int    @default(0)
+  ffmpegWriteSum            Float  @default(0)
+  ffmpegCpuTimeSamples      Int    @default(0)
+  ffmpegCpuTimeSum          Float  @default(0)
+  batteryStartSamples       Int    @default(0)
+  batteryStartSum           Float  @default(0)
+  batteryEndSamples         Int    @default(0)
+  batteryEndSum             Float  @default(0)
+  batteryDropSamples        Int    @default(0)
+  batteryDropSum            Float  @default(0)
+  sampleCountSamples        Int    @default(0)
+  sampleCountSum            Float  @default(0)
+  monitorDurationSamples    Int    @default(0)
+  monitorDurationSum        Float  @default(0)
+  cpuSampleCountSamples     Int    @default(0)
+  cpuSampleCountSum         Float  @default(0)
+  gpuSampleCountSamples     Int    @default(0)
+  gpuSampleCountSum         Float  @default(0)
+  ffmpegSampleCountSamples  Int    @default(0)
+  ffmpegSampleCountSum      Float  @default(0)
+  batterySampleCountSamples Int    @default(0)
+  batterySampleCountSum     Float  @default(0)
 
   // Submission metadata
-  status         String   @default("pending") // pending | accepted | rejected
-  ffmpegVersion  String?
-  encoderName    String?
-  clientVersion  String?
-  inputHash      String?
-  runMs          Int?
+  status                   String  @default("pending") // pending | accepted | rejected
+  ffmpegVersion            String?
+  encoderName              String?
+  clientVersion            String?
+  inputHash                String?
+  runMs                    Int?
+  scoreFormulaVersion      String?
+  benchmarkProtocolVersion String?
+  sourceSuiteVersion       String?
+  workloadId               String?
+  metricModelId            String?
 
   // Idempotency and deduplication
-  payloadHash    String?  @unique
+  payloadHash String? @unique
 
   @@index([createdAt])
   @@index([status])
@@ -137,83 +152,92 @@ model Benchmark {
   @@index([resolution])
   @@index([contentClass, resolution])
   @@index([inputHash])
+  @@index([workloadId])
   @@index([codec, preset])
   @@index([status, createdAt])
   @@index([cpuModel])
   @@index([gpuModel])
-  @@unique([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])
 }
 
 model Submission {
-  id             String   @id @default(cuid())
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Hardware info
-  cpuModel       String
-  gpuModel       String   @default("")
-  ramGB          Int
-  os             String
+  cpuModel String
+  gpuModel String @default("")
+  ramGB    Int
+  os       String
 
   // Test parameters
-  codec          String
-  preset         String
-  crf            Int      @default(24)
-  contentClass   String   @default("mixed")
-  resolution     String   @default("1080p")
-  passes         Int      @default(1)
+  codec        String
+  preset       String
+  crf          Int    @default(24)
+  contentClass String @default("mixed")
+  resolution   String @default("1080p")
+  passes       Int    @default(1)
 
   // Results
-  fps            Float
-  vmaf           Float?
-  ssim           Float?
-  psnr           Float?
-  fileSizeBytes  Int
-  notes          String?
+  fps                   Float
+  vmaf                  Float?
+  vmafP5                Float?
+  ssim                  Float?
+  psnr                  Float?
+  fileSizeBytes         Int
+  videoBitrateBps       Float?
+  sourceFps             Float?
+  sourceDurationSeconds Float?
+  notes                 String?
 
   // Hardware metrics (Sprint 6)
-  gpuUtilAvg      Float?
-  gpuPowerAvgW    Float?
-  gpuMemPeakMB    Float?
-  cpuUtilAvg      Float?
-  cpuUtilMax      Float?
-  peakMemoryMB    Float?
-  thermalThrottle Boolean?
+  gpuUtilAvg          Float?
+  gpuPowerAvgW        Float?
+  gpuMemPeakMB        Float?
+  cpuUtilAvg          Float?
+  cpuUtilMax          Float?
+  peakMemoryMB        Float?
+  thermalThrottle     Boolean?
   // Extended telemetry (Sprint 7)
-  gpuTempMaxC        Float?
-  cpuFreqAvgMHz      Float?
-  cpuTempMaxC        Float?
-  ffmpegCpuUtilAvg   Float?
-  ffmpegCpuUtilMax   Float?
-  ffmpegReadMB       Float?
-  ffmpegWriteMB      Float?
-  ffmpegCpuTimeS     Float?
+  gpuTempMaxC         Float?
+  cpuFreqAvgMHz       Float?
+  cpuTempMaxC         Float?
+  ffmpegCpuUtilAvg    Float?
+  ffmpegCpuUtilMax    Float?
+  ffmpegReadMB        Float?
+  ffmpegWriteMB       Float?
+  ffmpegCpuTimeS      Float?
   batteryPercentStart Float?
   batteryPercentEnd   Float?
   batteryPercentDrop  Float?
-  powerSource        String?
-  sampleCount        Int?
-  monitorDurationMs  Int?
-  cpuSampleCount     Int?
-  gpuSampleCount     Int?
-  ffmpegSampleCount  Int?
-  batterySampleCount Int?
-  telemetrySources   String?
-  telemetryMissing   String?
+  powerSource         String?
+  sampleCount         Int?
+  monitorDurationMs   Int?
+  cpuSampleCount      Int?
+  gpuSampleCount      Int?
+  ffmpegSampleCount   Int?
+  batterySampleCount  Int?
+  telemetrySources    String?
+  telemetryMissing    String?
 
   // Submission metadata
-  ffmpegVersion  String?
-  encoderName    String?
-  clientVersion  String?
-  inputHash      String?
-  runMs          Int?
+  ffmpegVersion            String?
+  encoderName              String?
+  clientVersion            String?
+  inputHash                String?
+  runMs                    Int?
+  scoreFormulaVersion      String?
+  benchmarkProtocolVersion String?
+  sourceSuiteVersion       String?
+  workloadId               String?
+  metricModelId            String?
 
   // Quality evaluation
-  status         String   @default("pending") // pending | accepted | rejected | suspect
-  qualityScore   Float?
+  status       String @default("pending") // pending | accepted | rejected | suspect
+  qualityScore Float?
 
   // Idempotency and deduplication
-  payloadHash    String?  @unique
+  payloadHash String? @unique
 
   @@index([createdAt])
   @@index([status])
@@ -221,6 +245,7 @@ model Submission {
   @@index([preset])
   @@index([contentClass])
   @@index([resolution])
+  @@index([workloadId])
   @@index([contentClass, resolution])
   @@index([codec, preset])
   @@index([cpuModel, gpuModel, ramGB, os, codec, preset, crf, contentClass, resolution, passes])
@@ -240,4 +265,419 @@ model TestVideo {
   @@index([contentClass])
   @@index([resolution])
   @@index([contentClass, resolution])
+}
+
+enum RateControlMode {
+  CRF
+  CQ
+  ICQ
+  CQP
+  QP
+  VBR
+  CBR
+  ABR
+  OTHER
+}
+
+enum BenchmarkProtocolState {
+  DRAFT
+  ACTIVE
+  RETIRED
+}
+
+enum BenchmarkRunStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  SUSPECT
+  INVALID
+}
+
+enum ArtifactRole {
+  ENCODED
+  METADATA
+  TELEMETRY
+  LOG
+  ANALYSIS_REPORT
+}
+
+enum ArtifactStorageState {
+  PENDING
+  UPLOADED
+  VERIFIED
+  RETAINED
+  REJECTED
+  DELETED
+}
+
+enum QualityAnalysisStatus {
+  PENDING
+  COMPLETE
+  SUSPECT
+  REJECTED
+  FAILED
+}
+
+enum DerivedResultKind {
+  CLIP
+  WORKLOAD
+  GENERAL
+}
+
+enum EvidenceTier {
+  PROVISIONAL
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model BenchmarkProtocol {
+  id                   String                 @id @default(cuid())
+  createdAt            DateTime               @default(now())
+  updatedAt            DateTime               @updatedAt
+  protocolVersion      String
+  sourceSuiteVersion   String
+  minimumClientVersion String
+  canonicalRecipeRules Json
+  canonicalOutputRules Json
+  metricWorkerVersion  String
+  state                BenchmarkProtocolState @default(ACTIVE)
+  activatedAt          DateTime?
+  retiredAt            DateTime?
+
+  benchmarkRuns BenchmarkRun[]
+  scoreContexts ScoreContext[]
+  derivedResults DerivedResult[]
+
+  @@unique([protocolVersion, sourceSuiteVersion, metricWorkerVersion])
+  @@index([state])
+}
+
+model TestClip {
+  id                      String   @id @default(cuid())
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  suiteId                 String
+  suiteVersion            String
+  manifestVersion         String
+  clipKey                 String
+  displayName             String
+  workloadId              String
+  contentClass            String
+  sourceProvenance        Json
+  sha256                  String   @unique
+  byteSize                Int
+  exactFrameCount         Int
+  exactDurationSeconds    Float
+  frameRateNumerator      Int
+  frameRateDenominator    Int
+  width                   Int
+  height                  Int
+  pixelFormat             String
+  bitDepth                Int
+  chromaSubsampling       String
+  colorPrimaries          String?
+  transferCharacteristics String?
+  matrixCoefficients      String?
+  colorRange              String?
+  scanType                String   @default("progressive")
+  hdrMetadata             Json?
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@unique([suiteId, suiteVersion, clipKey])
+  @@index([workloadId])
+  @@index([contentClass])
+}
+
+model Recipe {
+  id                         String          @id @default(cuid())
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+  fingerprint                String          @unique
+  canonicalJson              Json
+  codecFamily                String
+  encoderImplementation      String
+  encoderVersion             String?
+  preset                     String?
+  tune                       String?
+  profile                    String?
+  level                      String?
+  tier                       String?
+  pixelFormat                String
+  bitDepth                   Int
+  chromaSubsampling          String
+  containerFormat            String?
+  videoCodecTag              String?
+  requestedRateControlMode   RateControlMode
+  requestedQualityValue      Float?
+  requestedTargetBitrateKbps Int?
+  requestedMaxBitrateKbps    Int?
+  requestedBufferSizeKbits   Int?
+  requestedQmin              Int?
+  requestedQmax              Int?
+  effectiveRateControlMode   RateControlMode
+  effectiveQualityValue      Float?
+  effectiveTargetBitrateKbps Int?
+  effectiveMaxBitrateKbps    Int?
+  effectiveBufferSizeKbits   Int?
+  effectiveQmin              Int?
+  effectiveQmax              Int?
+  requestedRateControl       Json
+  effectiveRateControl       Json
+  requestedOutputSettings    Json?
+  effectiveOutputSettings    Json?
+  normalizedRequestedOptions Json?
+  normalizedEffectiveOptions Json?
+  gopSize                    Int?
+  keyframeInterval           Int?
+  bFrames                    Int?
+  frameReordering            Boolean?
+  lookahead                  Int?
+  filmGrainSynthesis         Json?
+  majorTools                 Json?
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@index([codecFamily, encoderImplementation, preset])
+}
+
+model Environment {
+  id                     String   @id @default(cuid())
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+  fingerprint            String   @unique
+  canonicalJson          Json
+  cpuModel               String
+  cpuArchitecture        String
+  physicalCoreCount      Int?
+  logicalThreadCount     Int?
+  physicalMemoryBytes    BigInt?
+  gpuModel               String?
+  selectedAcceleratorId  String?
+  selectedAccelerator    String?
+  driverVersion          String?
+  osName                 String
+  osVersion              String
+  ffmpegBuildFingerprint String
+  ffmpegVersion          String
+  encoderVersion         String?
+  clientVersion          String
+
+  benchmarkRuns BenchmarkRun[]
+  derivedResults DerivedResult[]
+
+  @@index([cpuModel])
+  @@index([gpuModel])
+}
+
+model BenchmarkRun {
+  id                      String             @id @default(cuid())
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  benchmarkProtocolId     String
+  testClipId              String
+  workloadId              String
+  recipeId                String
+  environmentId           String
+  payloadHash             String             @unique
+  inputHash               String?
+  campaignId              String?
+  repetitionGroupId       String?
+  repetitionIndex         Int?
+  encodeWallTimeMs        Int?
+  encodeFps               Float?
+  sourceFps               Float?
+  realTimeRatio           Float?
+  sourceFrameCount        Int?
+  encodedFrameCount       Int?
+  telemetry               Json?
+  telemetrySources        Json?
+  telemetryMissing        Json?
+  energyDomains           Json?
+  decodeBenchmark         Json?
+  preRunEnvironmentCheck  Json?
+  ffmpegProgressTelemetry Json?
+  clientQualityDebug      Json?
+  status                  BenchmarkRunStatus @default(PENDING)
+  statusReason            String?
+  decidedAt               DateTime?
+
+  benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip          @relation(fields: [testClipId], references: [id], onDelete: Restrict)
+  recipe            Recipe            @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment       @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  artifacts         Artifact[]
+  qualityAnalyses   QualityAnalysis[]
+  derivedMembers    DerivedResultMember[]
+
+  @@index([benchmarkProtocolId, workloadId, recipeId, environmentId, status])
+  @@index([repetitionGroupId])
+}
+
+model Artifact {
+  id           String               @id @default(cuid())
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  benchmarkRunId String
+  role         ArtifactRole
+  sha256       String?
+  byteSize     Int?
+  storageState ArtifactStorageState @default(PENDING)
+  storageProvider String?
+  storageBucket String?
+  storageKey   String?
+  storageUrl   String?
+  mediaContainer String?
+  stateReason  String?
+  stateDetails Json?
+  uploadedAt   DateTime?
+  verifiedAt   DateTime?
+  retainedAt   DateTime?
+  deletedAt    DateTime?
+
+  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  qualityAnalyses QualityAnalysis[]
+
+  @@unique([benchmarkRunId, role])
+  @@index([storageState])
+  @@index([sha256])
+}
+
+model QualityAnalysis {
+  id                      String                @id @default(cuid())
+  createdAt               DateTime              @default(now())
+  updatedAt               DateTime              @updatedAt
+  benchmarkRunId          String
+  artifactId              String?
+  status                  QualityAnalysisStatus @default(PENDING)
+  metricModelId           String
+  qualityContextId        String?
+  analysisWorkerVersion   String
+  analysisProvenance      Json
+  vmafMean                Float?
+  vmafMedian              Float?
+  vmafP1                  Float?
+  vmafP5                  Float?
+  vmafMin                 Float?
+  vmafMax                 Float?
+  vmafStdDev              Float?
+  vmafHarmonicMean        Float?
+  worstFrameIndex         Int?
+  worstFrameTimestampMs   Int?
+  belowThresholdFractions Json?
+  vmafDistribution        Json?
+  xpsnr                   Float?
+  ssim                    Float?
+  psnr                    Float?
+  videoBitrateBps         Float?
+  videoPayloadBytes       Int?
+  videoPacketCount        Int?
+  measuredDurationSeconds Float?
+  bitrateMethod           String?
+  containerBitrateBps     Float?
+  fileSizeBytes           Int?
+  attemptCount            Int                   @default(0)
+  maxAttempts             Int                   @default(3)
+  nextRetryAt             DateTime?
+  leaseToken              String?
+  leaseExpiresAt          DateTime?
+  startedAt               DateTime?
+  completedAt             DateTime?
+  lastError               String?
+  lastErrorAt             DateTime?
+
+  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  artifact     Artifact?     @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+  derivedMembers DerivedResultMember[]
+
+  @@unique([benchmarkRunId, metricModelId, analysisWorkerVersion])
+  @@index([status])
+  @@index([status, nextRetryAt, leaseExpiresAt])
+}
+
+model ScoreContext {
+  id                         String   @id @default(cuid())
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  benchmarkProtocolId        String
+  formulaVersion             String
+  contextVersion             String
+  workloadId                 String
+  qualityModelId             String
+  workloadReferenceBitrateBps Float
+  transformConstants         Json
+  referenceFrontier          Json?
+
+  benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  derivedResults    DerivedResult[]
+
+  @@unique([formulaVersion, contextVersion, workloadId, qualityModelId])
+  @@index([benchmarkProtocolId])
+}
+
+model DerivedResult {
+  id                    String            @id @default(cuid())
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  kind                  DerivedResultKind
+  scopeKey              String
+  benchmarkProtocolId   String
+  workloadId            String
+  testClipId            String?
+  recipeId              String
+  environmentId         String
+  scoreContextId        String
+  aggregatorVersion     String
+  acceptedRunCount      Int
+  suspectRunCount       Int               @default(0)
+  rejectedRunCount      Int               @default(0)
+  invalidRunCount       Int               @default(0)
+  repetitionCount       Int
+  centerEncodeFps       Float?
+  centerRealTimeRatio   Float?
+  centerVideoBitrateBps Float?
+  centerFileSizeBytes   Float?
+  centerVmafMean        Float?
+  centerVmafP5          Float?
+  plQuality             Float?
+  plBitrate             Float?
+  plSpeed               Float?
+  plTotal               Float?
+  confidenceLower       Float?
+  confidenceUpper       Float?
+  evidenceTier          EvidenceTier      @default(PROVISIONAL)
+  evidenceSummary       Json
+  confidenceIntervals   Json
+  dispersion            Json
+  recomputationSpec     Json
+
+  benchmarkProtocol BenchmarkProtocol  @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip?          @relation(fields: [testClipId], references: [id], onDelete: SetNull)
+  recipe            Recipe             @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment        @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  scoreContext      ScoreContext       @relation(fields: [scoreContextId], references: [id], onDelete: Restrict)
+  members           DerivedResultMember[]
+
+  @@unique([kind, benchmarkProtocolId, recipeId, environmentId, scoreContextId, scopeKey])
+  @@index([workloadId])
+  @@index([evidenceTier])
+}
+
+model DerivedResultMember {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  derivedResultId String
+  benchmarkRunId  String
+  qualityAnalysisId String
+
+  derivedResult DerivedResult @relation(fields: [derivedResultId], references: [id], onDelete: Cascade)
+  benchmarkRun  BenchmarkRun  @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  qualityAnalysis QualityAnalysis @relation(fields: [qualityAnalysisId], references: [id], onDelete: Restrict)
+
+  @@unique([derivedResultId, qualityAnalysisId])
+  @@index([benchmarkRunId])
+  @@index([qualityAnalysisId])
 }

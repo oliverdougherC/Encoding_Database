@@ -1,0 +1,92 @@
+{
+  "date": "2026-09-09",
+  "checks": [
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "tos-action"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/tos-action/tos-action-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "chimera-natural"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/chimera-natural/chimera-natural-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "nocturne"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/nocturne/nocturne-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "nocturne-dark"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/nocturne-dark/nocturne-dark-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "sol-levante-flat"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/sol-levante-flat/sol-levante-flat-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/acquire_canonical_sources.py",
+        "tos-dialog"
+      ],
+      "exit": 0,
+      "stdout": "Verified completed cache: /Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/tos-dialog/tos-dialog-source.mkv\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "ffprobe",
+        "-v",
+        "error",
+        "-count_frames",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "stream=width,height,nb_read_frames,r_frame_rate,pix_fmt:format=duration",
+        "-of",
+        "json",
+        ".build/canonical-sources/chimera-natural/chimera-natural-source.mkv"
+      ],
+      "exit": 0,
+      "observed": {
+        "width": 1920,
+        "height": 1012,
+        "pix_fmt": "gbrp16le",
+        "r_frame_rate": "24000/1001",
+        "nb_read_frames": 240,
+        "duration": "10.010000"
+      }
+    }
+  ],
+  "script_sha256": "880ffde7ff727b89e486f4bc8367b3fd86201ddbcd66a4ab09bef0c3c99bfad0",
+  "chimera_resume": "Completed source reacquired after capacity-triggered pause; first48frames reused from checked segments with explicit spatial normalization, remaining192frames fetched and prepared by resumed workflow.",
+  "limits": "Checks here cover source acquisition/cache/decode. Final reference validation, encodes, visual acceptance, pack and client/server E2E are separate."
+}

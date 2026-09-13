@@ -1,21 +1,60 @@
-name: Build & Lint
+name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - beta
   pull_request:
+  workflow_dispatch:
+    inputs:
+      runtime_lock_evidence:
+        description: "Generate proposed native runtime locks only; does not certify candidate builds"
+        type: boolean
+        default: false
+        required: true
+
+permissions:
+  contents: read
 
 jobs:
-  build-frontend:
+  clean-production-deployment:
+    name: clean-production-deployment
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      # No media or suite setup here: the supported deploy entry point must
+      # acquire the public pack in the harness's new clone and empty cache.
+      - name: Exercise clean production preparation, rollout and failure isolation
+        run: python scripts/test_clean_deployment.py --output-dir .test-reports/clean-deployment
+      - name: Retain executed deployment regression logs and exact SHA
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: clean-deployment-${{ github.sha }}
+          path: .test-reports/clean-deployment/
+          if-no-files-found: error
+          retention-days: 90
+
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Install
         working-directory: frontend
-        run: npm ci
+        run: npm ci --no-audit --no-fund
       - name: Lint
         working-directory: frontend
         run: npm run lint
@@ -24,47 +63,361 @@ jobs:
         run: npm test
       - name: Build
         working-directory: frontend
-        env:
-          ENABLE_QUERY_MOCK: "1"
         run: npm run build
 
-  build-server:
+  server:
+    name: server
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
+      - name: Install media probe runtime
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
       - name: Install
         working-directory: server
-        run: npm ci
+        run: npm ci --no-audit --no-fund
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Install canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Materialize frozen canonical references
+        run: python scripts/materialize_final_suite.py
       - name: Test
         working-directory: server
         run: npm test
 
-  build-client:
+  client:
+    name: client
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: Provision pinned FFmpeg runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
+          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
+          tar -xf ffmpeg-linux.tar.xz
+          bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
+          test -x "$bundle_dir/bin/ffmpeg"
+          test -x "$bundle_dir/bin/ffprobe"
+          echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
       - name: Install client test dependencies
         working-directory: client
         run: python -m pip install --disable-pip-version-check -r requirements-ci.txt
+      - name: Install canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Materialize frozen canonical references
+        run: python scripts/materialize_final_suite.py
       - name: Client tests
         working-directory: client
         run: python -m pytest -q
 
-  stack-smoke:
+  client-native-linux-build:
+    name: client-native-linux-build
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: Provision pinned FFmpeg runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
+          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
+          tar -xf ffmpeg-linux.tar.xz
+          bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
+          test -x "$bundle_dir/bin/ffmpeg"
+          test -x "$bundle_dir/bin/ffprobe"
+          echo "ENCODINGDB_FFMPEG_PATH=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "ENCODINGDB_FFPROBE_PATH=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Generate proposed linux runtime lock for review
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        shell: bash
+        run: |
+          python scripts/register_ffmpeg_runtime.py --platform linux \
+            --ffmpeg-path "$ENCODINGDB_FFMPEG_PATH" --ffprobe-path "$ENCODINGDB_FFPROBE_PATH" \
+            --lock-path proposed-runtime-linux.json --update \
+            --source "native-ci-proposal-${{ github.sha }}"
+      - name: Retain proposed linux runtime lock (not a candidate)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposed-runtime-linux-${{ github.sha }}
+          path: proposed-runtime-linux.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Materialize frozen canonical references
+        if: ${{ !inputs.runtime_lock_evidence }}
+        env:
+          FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
+          FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
+        run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
+      - name: Run native Linux client build
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: bash scripts/build_linux_client.sh
+
+      - name: Retain linux candidate binaries and verified sidecars
+        if: ${{ !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-linux-${{ github.sha }}
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
+          include-hidden-files: true
+          path: |
+            encodingdb-client-linux*
+            .test-reports/runtime-model/
+            encodingdb-test-suite-v1.tar.gz
+            client/resources/test_suite_v1/notices/
+            client/resources/test_suite_v1/suite-lock.json
+            client/resources/test_suite_v1/suite-pack.json
+            release.json
+
+  client-native-macos-build:
+    name: client-native-macos-build
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Provision archived lock-matched macOS FFmpeg runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o runtime.tar.gz \
+            https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-c27482a18d7.tar.gz
+          echo "0b7534979f2f073d9eddae6f92def32fb6063c50bb4aced75f7e88ecf0611687  runtime.tar.gz" | shasum -a 256 -c -
+          tar -xzf runtime.tar.gz
+          test -x "$PWD/ffmpeg"
+          test -x "$PWD/ffprobe"
+          echo "ENCODINGDB_FFMPEG_PATH=$PWD/ffmpeg" >> "$GITHUB_ENV"
+          echo "ENCODINGDB_FFPROBE_PATH=$PWD/ffprobe" >> "$GITHUB_ENV"
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Generate proposed macos runtime lock for review
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        shell: bash
+        run: |
+          python scripts/register_ffmpeg_runtime.py --platform mac \
+            --ffmpeg-path "$ENCODINGDB_FFMPEG_PATH" --ffprobe-path "$ENCODINGDB_FFPROBE_PATH" \
+            --lock-path proposed-runtime-macos.json --update \
+            --source "native-ci-proposal-${{ github.sha }}"
+      - name: Retain proposed macos runtime lock (not a candidate)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposed-runtime-macos-${{ github.sha }}
+          path: proposed-runtime-macos.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Materialize frozen canonical references
+        if: ${{ !inputs.runtime_lock_evidence }}
+        env:
+          FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
+          FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
+        run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
+      - name: Run native macOS client build
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: bash scripts/build_macos_client.sh
+
+      - name: Retain macos candidate binaries and verified sidecars
+        if: ${{ !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-macos-${{ github.sha }}
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
+          include-hidden-files: true
+          path: |
+            encodingdb-client-macos*
+            .test-reports/runtime-model/
+            encodingdb-test-suite-v1.tar.gz
+            client/resources/test_suite_v1/notices/
+            client/resources/test_suite_v1/suite-lock.json
+            client/resources/test_suite_v1/suite-pack.json
+            release.json
+
+  client-native-windows-build:
+    name: client-native-windows-build
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Provision pinned FFmpeg runtime
+        shell: pwsh
+        run: |
+          $runtimeDir = Join-Path $env:RUNNER_TEMP "ffmpeg-runtime"
+          New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
+          $archive = Join-Path $runtimeDir "ffmpeg-win.zip"
+          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1.zip" -OutFile $archive
+          $actualHash = (Get-FileHash -Algorithm SHA256 -Path $archive).Hash.ToLowerInvariant()
+          if ($actualHash -ne "4e40699fa864811312d6c1895ea4873beaf8475e1188563fee57fac860554601") {
+            throw "Unexpected FFmpeg archive hash: $actualHash"
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $runtimeDir -Force
+          $bundleDir = Get-ChildItem -LiteralPath $runtimeDir -Directory | Where-Object { $_.Name -like "ffmpeg-*" } | Select-Object -First 1
+          if (-not $bundleDir) { throw "Expanded FFmpeg bundle directory not found" }
+          $ffmpeg = Join-Path $bundleDir.FullName "bin\\ffmpeg.exe"
+          $ffprobe = Join-Path $bundleDir.FullName "bin\\ffprobe.exe"
+          if (-not (Test-Path -LiteralPath $ffmpeg)) { throw "ffmpeg.exe missing from bundle" }
+          if (-not (Test-Path -LiteralPath $ffprobe)) { throw "ffprobe.exe missing from bundle" }
+          "ENCODINGDB_FFMPEG_PATH=$ffmpeg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "ENCODINGDB_FFPROBE_PATH=$ffprobe" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Install runtime and canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Generate proposed windows runtime lock for review
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        shell: bash
+        run: |
+          python scripts/register_ffmpeg_runtime.py --platform win \
+            --ffmpeg-path "$ENCODINGDB_FFMPEG_PATH" --ffprobe-path "$ENCODINGDB_FFPROBE_PATH" \
+            --lock-path proposed-runtime-windows.json --update \
+            --source "native-ci-proposal-${{ github.sha }}"
+      - name: Retain proposed windows runtime lock (not a candidate)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: proposed-runtime-windows-${{ github.sha }}
+          path: proposed-runtime-windows.json
+          retention-days: 90
+          if-no-files-found: error
+      - name: Materialize frozen canonical references
+        if: ${{ !inputs.runtime_lock_evidence }}
+        env:
+          FFMPEG_EXE: ${{ env.ENCODINGDB_FFMPEG_PATH }}
+          FFPROBE_EXE: ${{ env.ENCODINGDB_FFPROBE_PATH }}
+        run: python scripts/materialize_final_suite.py
+      - name: Execute pinned model on frozen quick reference
+        if: ${{ !inputs.runtime_lock_evidence }}
+        run: python scripts/verify_runtime_model.py
+      - name: Run native Windows client build
+        if: ${{ !inputs.runtime_lock_evidence }}
+        shell: pwsh
+        run: ./scripts/build_windows_client.ps1
+
+      - name: Retain windows candidate binaries and verified sidecars
+        if: ${{ !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-windows-${{ github.sha }}
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
+          include-hidden-files: true
+          path: |
+            encodingdb-client-windows*
+            .test-reports/runtime-model/
+            encodingdb-test-suite-v1.tar.gz
+            client/resources/test_suite_v1/notices/
+            client/resources/test_suite_v1/suite-lock.json
+            client/resources/test_suite_v1/suite-pack.json
+            release.json
+
+  migration:
+    name: migration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: benchmarks
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U app -d benchmarks"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://app:app@127.0.0.1:5432/benchmarks?schema=public
+      PRISMA_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - name: Install
+        working-directory: server
+        run: npm ci --no-audit --no-fund
+      - name: Prisma generate
+        working-directory: server
+        run: npx prisma generate
+      - name: Prisma migrate deploy
+        working-directory: server
+        run: npx prisma migrate deploy
+      - name: Prisma migration status
+        working-directory: server
+        run: npx prisma migrate status
+      - name: Verify concurrent null-workload uniqueness
+        working-directory: server
+        run: node scripts/verify-legacy-null-workload-concurrency.mjs
+
+  stack-smoke:
+    name: stack-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Provision pinned FFmpeg runtime
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
+          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
+          tar -xf ffmpeg-linux.tar.xz
+          bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
+          test -x "$bundle_dir/bin/ffmpeg"
+          test -x "$bundle_dir/bin/ffprobe"
+          echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
+          echo "$bundle_dir/bin" >> "$GITHUB_PATH"
+      - name: Install canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Materialize frozen canonical references
+        run: python scripts/materialize_final_suite.py
       - name: Run end-to-end smoke harness
         run: bash scripts/test.sh

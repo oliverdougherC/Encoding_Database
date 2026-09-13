@@ -1,0 +1,55 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/dark-gradients-1080p24-final.mkv",
+  "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+  "byteSize": 317829621,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 1.1842267079628073,
+  "decodeRealtimeRatio": 8.444329056893782,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": "PENDING",
+  "encodes": [
+    {
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/dark-gradients-1080p24-final/libaom-av1-32.mp4",
+      "sha256": "577434a4a131b7d0ae5b95129e0d6d974c768380d8cede42bd71a62ab8017d24",
+      "bytes": 1082933,
+      "videoBytes": 1081096,
+      "videoBitrateBps": 864876.8,
+      "elapsedSeconds": 24.53866320900852,
+      "encodeFps": 9.780483881937478,
+      "vmafMean": 63.568196,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/dark-gradients-1080p24-final/libaom-av1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/dark-gradients-1080p24-final/libvpx-vp9-32.mp4",
+      "sha256": "db16db96700827da4a9ccf49e7ced63f677c1abd6f63df683dc145579dab079d",
+      "bytes": 6732919,
+      "videoBytes": 6731010,
+      "videoBitrateBps": 5384808.0,
+      "elapsedSeconds": 2.4726895830244757,
+      "encodeFps": 97.06030293800303,
+      "vmafMean": 70.735114,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/dark-gradients-1080p24-final/libvpx-vp9-32.corrected-metrics.log"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/screen-text-1080p24-final.mkv",
+  "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+  "byteSize": 35313873,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.1874731249990873,
+  "decodeRealtimeRatio": 53.34097887389824,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": "PENDING",
+  "encodes": [
+    {
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/screen-text-1080p24-final/libaom-av1-32.mp4",
+      "sha256": "0bdd813fdc467366da5d84efd0e39a4d0f676d636db407a22a47547f76329ad7",
+      "bytes": 168014,
+      "videoBytes": 166193,
+      "videoBitrateBps": 132954.4,
+      "elapsedSeconds": 9.374670042016078,
+      "encodeFps": 25.60090103698056,
+      "vmafMean": 99.712473,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/screen-text-1080p24-final/libaom-av1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/screen-text-1080p24-final/libvpx-vp9-32.mp4",
+      "sha256": "c65d383a808d07b3cf54b3d5a321d2d2202148a41cecfe4c9b50debc92ccb663",
+      "bytes": 687307,
+      "videoBytes": 685494,
+      "videoBitrateBps": 548395.2,
+      "elapsedSeconds": 0.6478002920048311,
+      "encodeFps": 370.48455050435535,
+      "vmafMean": 97.62708,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/screen-text-1080p24-final/libvpx-vp9-32.corrected-metrics.log"
+    }
+  ]
+}

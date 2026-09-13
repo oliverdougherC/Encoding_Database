@@ -5,7 +5,10 @@ import subprocess
 from typing import Optional, Dict, List, Tuple
 
 import psutil
-import cpuinfo  # type: ignore
+try:
+    import cpuinfo  # type: ignore
+except Exception:
+    cpuinfo = None  # type: ignore
 
 try:
     import GPUtil  # type: ignore
@@ -29,7 +32,7 @@ def _detect_gpu_vendors_from_name(name: str) -> List[str]:
 
 
 def detect_hardware() -> config.HardwareInfo:
-    cpu = cpuinfo.get_cpu_info()
+    cpu = cpuinfo.get_cpu_info() if cpuinfo is not None else {}
     cpu_model = cpu.get("brand_raw") or cpu.get("brand") or platform.processor() or "Unknown CPU"
 
     def normalize_apple_silicon_label(label: str) -> Optional[str]:
@@ -135,7 +138,8 @@ def detect_hardware() -> config.HardwareInfo:
     except Exception:
         gpu_model = None
 
-    ram_gb = int(round(psutil.virtual_memory().total / (1024 ** 3)))
+    physical_memory_bytes = int(psutil.virtual_memory().total)
+    ram_gb = int(round(physical_memory_bytes / (1024 ** 3)))
     os_name = f"{platform.system()} {platform.release()}"
     # Deduplicate vendors
     vset: Dict[str, bool] = {}
@@ -144,7 +148,7 @@ def detect_hardware() -> config.HardwareInfo:
         if v and not vset.get(v):
             vset[v] = True
             vlist.append(v)
-    return config.HardwareInfo(cpu_model, gpu_model, ram_gb, os_name, vlist)
+    return config.HardwareInfo(cpu_model, gpu_model, ram_gb, os_name, physical_memory_bytes, vlist)
 
 
 def get_physical_core_count() -> int:
@@ -186,7 +190,8 @@ def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> 
 def detect_virtualization(hardware: config.HardwareInfo) -> Tuple[bool, str]:
     hints: List[str] = []
     try:
-        info = cpuinfo.get_cpu_info() or {}
+        info = cpuinfo.get_cpu_info() if cpuinfo is not None else {}
+        info = info or {}
         flags = set(info.get('flags') or [])
         if 'hypervisor' in flags:
             hints.append('cpu_hypervisor_flag')

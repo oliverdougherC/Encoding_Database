@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "projectVersion": "1.2.0",
+  "releaseDate": "2026-09-13",
+  "benchmarkProtocolVersion": "7.0",
+  "plFormulaVersion": "7.0",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "clientImplementationVersion": "client/0.2.0"
+}

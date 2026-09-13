@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 1,
+  "runtimeId": "encodingdb-ffmpeg-runtime",
+  "source": "reviewed-native-bundles: mac=evermeet-126386-gc27482a18d7-signature-and-model-verified; linux,win=CI-34419226010-4bb9e2d6e2945fd26af6857349e5af3b7bbcc7f9",
+  "platforms": {
+    "mac": {
+      "ffmpeg": {
+        "relativePath": "bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "byteSize": 80962456,
+        "versionLine": "ffmpeg version N-126386-gc27482a18d7-tessus  https://evermeet.cx/ffmpeg/  Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildFingerprint": "55ade3890235192dfdbbefac1b87e26beb64565dd524090452717e34e29fc2e8"
+      },
+      "ffprobe": {
+        "relativePath": "bin/mac/ffprobe",
+        "sha256": "b91436b5f1fc451d216e0bae58494330062a9a6124f0ca93fd56b9f065e80055",
+        "byteSize": 80763824,
+        "versionLine": "ffprobe version N-126386-gc27482a18d7-tessus  https://evermeet.cx/ffmpeg/  Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildFingerprint": "4fa1cffc34caf13a9e5cc030894cfc7f46366fc2de5bb8110c52199bb41b5bb7"
+      },
+      "capabilities": {
+        "ffprobe": true,
+        "filters": [
+          "libvmaf",
+          "xpsnr"
+        ],
+        "requiredEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "optionalEncoders": [
+          "h264_videotoolbox",
+          "hevc_videotoolbox",
+          "libopenh264"
+        ],
+        "smokeTestEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "encoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ]
+      }
+    },
+    "linux": {
+      "ffmpeg": {
+        "relativePath": "bin/linux/ffmpeg",
+        "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+        "byteSize": 171156936,
+        "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildFingerprint": "a5fc1fc557ede4f0e9a25d559b4575497a203924ff549fc81be28f06c1e4301c"
+      },
+      "ffprobe": {
+        "relativePath": "bin/linux/ffprobe",
+        "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+        "byteSize": 170923400,
+        "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildFingerprint": "8c25df00aab8caad2c2ff8e584280d4d96ca9725e5671198dc6bd837aaf7478f"
+      },
+      "capabilities": {
+        "ffprobe": true,
+        "filters": [
+          "libvmaf",
+          "xpsnr"
+        ],
+        "requiredEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "optionalEncoders": [
+          "av1_nvenc",
+          "av1_qsv",
+          "av1_vaapi",
+          "h264_nvenc",
+          "h264_qsv",
+          "h264_v4l2m2m",
+          "h264_vaapi",
+          "hevc_nvenc",
+          "hevc_qsv",
+          "hevc_v4l2m2m",
+          "hevc_vaapi",
+          "libopenh264",
+          "vp9_qsv",
+          "vp9_vaapi"
+        ],
+        "smokeTestEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "encoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ]
+      }
+    },
+    "win": {
+      "ffmpeg": {
+        "relativePath": "bin\\win\\ffmpeg.exe",
+        "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+        "byteSize": 162800128,
+        "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildFingerprint": "9f370f6777633234c8b8fb331a6de63191717038c8af9d5faada990987f60ed1"
+      },
+      "ffprobe": {
+        "relativePath": "bin\\win\\ffprobe.exe",
+        "sha256": "70be4ea32723b313df89603ba7cfbd818862e8785c20eb9008c27ef161ae84c0",
+        "byteSize": 162594816,
+        "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildFingerprint": "ebb9edb3653a16a94d65b82565d9519ac5dbc7a1fda317791d5d3d73f8690e82"
+      },
+      "capabilities": {
+        "ffprobe": true,
+        "filters": [
+          "libvmaf",
+          "xpsnr"
+        ],
+        "requiredEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "optionalEncoders": [
+          "av1_amf",
+          "av1_nvenc",
+          "av1_qsv",
+          "h264_amf",
+          "h264_nvenc",
+          "h264_qsv",
+          "hevc_amf",
+          "hevc_nvenc",
+          "hevc_qsv",
+          "libopenh264",
+          "vp9_qsv"
+        ],
+        "smokeTestEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "encoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ]
+      }
+    }
+  }
+}

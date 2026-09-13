@@ -1,0 +1,19 @@
+Encoding Database
+Copyright 2026 Encoding Database contributors
+
+This repository is licensed under the Apache License, Version 2.0.
+
+Additional provenance and redistribution notices:
+
+- The final EncodingDB Test Suite v1 contains Netflix CC BY 4.0 and Blender
+  Foundation CC BY 3.0 excerpts, plus an original CC0 browser workload rendered
+  with an OFL font. Media retain their own licenses; Apache-2.0 does not replace
+  them. Per-asset rights/modifications accompany the external pack and
+  docs/canonical-suite/notices. Historical generated fixtures remain separate.
+- The bundled VMAF model JSON under `client/resources/vmaf/` and
+  `server/resources/vmaf/` is retained as an external model artifact with its
+  upstream provenance captured in repository manifests and Docker build pinning.
+- Production and release artifacts may embed third-party dependencies whose
+  license terms remain with their respective packages. Package-lock metadata and
+  upstream package manifests remain the authoritative source for dependency
+  license details.

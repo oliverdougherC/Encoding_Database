@@ -48,3 +48,40 @@ test('GET /submit with token header remains method-guarded (auth applies to POST
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test('public mode permits unsigned POSTs to reach payload validation', async (t) => {
+  if (!CAN_BIND_LOOPBACK) return t.skip('Loopback listen is unavailable in this runtime');
+  const { server, baseUrl } = await startServer();
+  try {
+    const res = await fetch(`${baseUrl}/submit`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{}',
+    });
+    assert.equal(res.status, 400);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('token is released after validation failure and can be retried', async (t) => {
+  if (!CAN_BIND_LOOPBACK) return t.skip('Loopback listen is unavailable in this runtime');
+  const { server, baseUrl } = await startServer();
+  try {
+    const tokenRes = await fetch(`${baseUrl}/submit-token`);
+    assert.equal(tokenRes.status, 200);
+    const { token } = await tokenRes.json();
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      const res = await fetch(`${baseUrl}/submit`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-ingest-token': token },
+        body: '{}',
+      });
+      assert.equal(res.status, 400);
+      const body = await res.json();
+      assert.notEqual(body.error, 'token_used');
+    }
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});

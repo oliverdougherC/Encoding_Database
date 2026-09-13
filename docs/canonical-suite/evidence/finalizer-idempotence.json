@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "method": "Executed existing finalizer twice against identical reviewed final inputs; all client/server metadata byte hashes unchanged",
+  "metadataSha256": {
+    "client/resources/test_suite_v1/suite-lock.json": "2389f33c9acae479196788037ef96765aae0197fde38c483c7cc370f912d15cb",
+    "client/resources/test_suite_v1/finalization-status.json": "684313262e7611eb0b800da4e596f3ee432260553930aec63065938549de3594",
+    "client/resources/test_suite_v1/suite-pack.json": "f877cf294d923c4e3a09e492dafd9e9109501c9706792ba67ecddabd730d34c5",
+    "client/resources/test_suite_v1/manifest.json": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76",
+    "server/resources/test_suite_v1/suite-lock.json": "2389f33c9acae479196788037ef96765aae0197fde38c483c7cc370f912d15cb",
+    "server/resources/test_suite_v1/finalization-status.json": "684313262e7611eb0b800da4e596f3ee432260553930aec63065938549de3594",
+    "server/resources/test_suite_v1/suite-pack.json": "f877cf294d923c4e3a09e492dafd9e9109501c9706792ba67ecddabd730d34c5",
+    "server/resources/test_suite_v1/manifest.json": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76"
+  }
+}

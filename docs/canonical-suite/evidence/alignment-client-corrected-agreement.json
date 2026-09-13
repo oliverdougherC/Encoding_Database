@@ -1,0 +1,14 @@
+{
+  "vmaf": {
+    "vmaf": 97.552275,
+    "vmafMean": 97.552275,
+    "vmafP5": 93.42453185,
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "vmafFrameCount": 240
+  },
+  "ssim": 0.983381,
+  "psnr": 44.734273,
+  "serverVmafMean": 97.552275,
+  "agreementWithin": 1e-06,
+  "strictExitAndFrameCountValidated": true
+}

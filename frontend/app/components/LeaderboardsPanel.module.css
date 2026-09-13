@@ -1,0 +1,102 @@
+.panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.header {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(16rem, 22rem);
+}
+
+.kicker {
+  margin: 0 0 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.75rem;
+}
+
+.copy {
+  margin: 0;
+}
+
+.banner,
+.modeCard {
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  border-radius: 1rem;
+  padding: 1rem;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+.banner {
+  display: grid;
+  gap: 0.35rem;
+  align-content: start;
+}
+
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.controls label { display: grid; gap: 0.3rem; font-size: 0.8rem; }
+.controls input, .controls select, .controls button { min-height: 2.5rem; padding: 0.45rem 0.6rem; }
+.controls .checkbox { grid-template-columns: auto 1fr; align-items: center; }
+.withheld { padding: 0.8rem 1rem; border-left: 0.25rem solid currentColor; }
+
+.modeLink,
+.modeActive {
+  border-radius: 999px;
+  padding: 0.5rem 0.8rem;
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+}
+
+.modeActive {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  font-weight: 700;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  text-align: left;
+  vertical-align: top;
+}
+
+.badge {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+  font-size: 0.75rem;
+}
+
+.dominated {
+  opacity: 0.72;
+}
+
+@media (max-width: 960px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+}

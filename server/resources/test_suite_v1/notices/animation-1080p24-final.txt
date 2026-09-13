@@ -1,0 +1,11 @@
+Sol Levante — cel-shaded face
+Creator: Netflix, Inc. and Production I.G
+Attribution: Netflix, Inc. and Production I.G
+Source: https://opencontent.netflix.com/
+Selected range: 173–181 seconds
+License: CC-BY-4.0; full text accompanies this file.
+Source excerpt SHA256: af62fe6fbbb2ffc89195e348274b793c5e0f6e6894ad2b2b24bf52a4dc631e1c
+Final reference SHA256: d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea
+Changes: Documented SDR BT.709 limited ProRes master downsampled 3840x2160 to1920x1080 Lanczos, 10-bit4:2:2 to8-bit4:2:0; no denoise.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Netflix, Inc. and Production I.G; https://opencontent.netflix.com/; 173–181 seconds; source excerpt SHA256 af62fe6fbbb2ffc89195e348274b793c5e0f6e6894ad2b2b24bf52a4dc631e1c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/sol-levante-flat-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

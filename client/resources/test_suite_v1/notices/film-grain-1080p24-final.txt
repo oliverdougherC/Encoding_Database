@@ -1,0 +1,11 @@
+Nocturne — added film grain
+Creator: Netflix, Inc.
+Attribution: Netflix, Inc.
+Source: https://opencontent.netflix.com/
+Selected range: 90–100 seconds
+License: CC-BY-4.0; full text accompanies this file.
+Source excerpt SHA256: ec4ec397e6495ef7054f5df93bc2e2a70f64d954186c1c6fc36bf654d73aab5c
+Final reference SHA256: 67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603
+Changes: Documented SDR BT.709 limited ProRes master downsampled 3840x2160 to1920x1080 Lanczos, 10-bit4:2:2 to8-bit4:2:0; no denoise. Native60fps reduced to24fps by explicit frame selection; no interpolation or temporal looping. Added-grain source retained.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Netflix, Inc.; https://opencontent.netflix.com/; 90–100 seconds; source excerpt SHA256 ec4ec397e6495ef7054f5df93bc2e2a70f64d954186c1c6fc36bf654d73aab5c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

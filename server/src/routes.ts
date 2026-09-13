@@ -8,18 +8,31 @@ import {
   addDerivedBenchmarkFields,
   aggregateEncoders,
   aggregateHardware,
-  aggregateLeaderboards,
   buildAnalyticsWhere,
   parseAnalyticsFilters,
 } from './analytics.js';
+import { buildDecisionPayload, type DecisionCandidate, type EvidenceTier } from './v7/decision.js';
+import {
+  buildPublicCorpusRows,
+  buildPublicCorpusOrderBy,
+  buildPublicCorpusWhere,
+  getPublicReferenceContextVersions,
+  sortPublicCorpusRows,
+} from './v7/corpus.js';
+import { buildPublicTestVideoCatalog } from './v7/suite.js';
+import { createArtifactPipelineRouter } from './v7/artifacts.js';
 
 const router = Router();
+router.use(createArtifactPipelineRouter());
 
 type BenchmarkRow = Awaited<ReturnType<typeof prisma.benchmark.findMany>>[number];
 type PrismaErrorLike = {
   code?: string;
   meta?: { target?: string[] | string };
 };
+type CanonicalLeaderboardRecord = Awaited<ReturnType<typeof loadCanonicalLeaderboardRecords>>[number];
+
+type SubmissionDisposition = 'pending' | 'accepted' | 'rejected' | 'suspect';
 
 // Public ingest: remove API key requirement; rely on rate limits, validation, and heuristics
 
@@ -39,15 +52,24 @@ const benchmarkSchema = z.object({
   passes: z.coerce.number().int().min(1).max(1).optional().nullable(),
   fps: z.coerce.number().nonnegative().max(5000),
   vmaf: z.coerce.number().min(0).max(100).optional().nullable(),
+  vmafP5: z.coerce.number().min(0).max(100).optional().nullable(),
   ssim: z.coerce.number().min(0).max(1).optional().nullable(),
   psnr: z.coerce.number().min(0).max(100).optional().nullable(),
   fileSizeBytes: z.coerce.number().int().nonnegative().max(1_000 * 1024 * 1024),
+  videoBitrateBps: z.coerce.number().positive().max(10_000_000_000).optional().nullable(),
+  sourceFps: z.coerce.number().positive().max(1000).optional().nullable(),
+  sourceDurationSeconds: z.coerce.number().positive().max(24 * 60 * 60).optional().nullable(),
   notes: z.string().max(4000).optional().nullable(),
   ffmpegVersion: z.string().max(200).optional().nullable(),
   encoderName: z.string().max(100).optional().nullable(),
   clientVersion: z.string().max(100).optional().nullable(),
   inputHash: z.string().length(64).regex(/^[0-9a-f]+$/).optional().nullable(),
   runMs: z.coerce.number().int().nonnegative().max(24 * 60 * 60 * 1000).optional().nullable(),
+  scoreFormulaVersion: z.literal('7.0').optional().nullable(),
+  benchmarkProtocolVersion: z.string().max(32).optional().nullable(),
+  sourceSuiteVersion: z.string().max(100).optional().nullable(),
+  workloadId: z.string().max(100).optional().nullable(),
+  metricModelId: z.string().max(200).optional().nullable(),
   // Hardware metrics (Sprint 6)
   gpuUtilAvg: z.coerce.number().min(0).max(100).optional().nullable(),
   gpuPowerAvgW: z.coerce.number().min(0).max(1000).optional().nullable(),
@@ -77,7 +99,18 @@ const benchmarkSchema = z.object({
   batterySampleCount: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
   telemetrySources: z.string().max(400).optional().nullable(),
   telemetryMissing: z.string().max(400).optional().nullable(),
-}).strict();
+}).strict().superRefine((data, ctx) => {
+  if (data.scoreFormulaVersion !== '7.0') return;
+  const required: Array<keyof typeof data> = [
+    'vmaf', 'vmafP5', 'videoBitrateBps', 'sourceFps', 'sourceDurationSeconds',
+    'benchmarkProtocolVersion', 'sourceSuiteVersion', 'workloadId', 'metricModelId',
+  ];
+  for (const field of required) {
+    if (data[field] == null || data[field] === '') {
+      ctx.addIssue({ code: 'custom', path: [field], message: `PL Score v7 requires ${field}` });
+    }
+  }
+});
 
 const CPU_FREQ_MIN_MHZ = 100;
 const CPU_FREQ_MAX_MHZ = 10_000;
@@ -130,15 +163,24 @@ export function buildSubmissionPayloadHash(data: BenchmarkSubmission): string {
     passes: 1,
     fps: Number(data.fps),
     vmaf: data.vmaf ?? null,
+    vmafP5: data.vmafP5 ?? null,
     ssim: data.ssim ?? null,
     psnr: data.psnr ?? null,
     fileSizeBytes: Number(data.fileSizeBytes),
+    videoBitrateBps: data.videoBitrateBps ?? null,
+    sourceFps: data.sourceFps ?? null,
+    sourceDurationSeconds: data.sourceDurationSeconds ?? null,
     notes: data.notes ?? null,
     ffmpegVersion: data.ffmpegVersion ?? null,
     encoderName: data.encoderName ?? null,
     clientVersion: data.clientVersion ?? null,
     inputHash: data.inputHash ?? null,
     runMs: data.runMs ?? null,
+    scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+    benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+    sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+    workloadId: data.workloadId ?? null,
+    metricModelId: data.metricModelId ?? null,
     gpuUtilAvg: data.gpuUtilAvg ?? null,
     gpuPowerAvgW: data.gpuPowerAvgW ?? null,
     gpuMemPeakMB: data.gpuMemPeakMB ?? null,
@@ -193,6 +235,167 @@ function isRetryableSubmitConflict(error: unknown): boolean {
 }
 
 const MAX_SUBMIT_TRANSACTION_RETRIES = 1;
+const CANONICAL_PL_SCORE_VERSION = '7.0';
+
+function asFiniteNumber(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function asObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
+function canonicalWorkloadIdForFilters(filters: ReturnType<typeof parseAnalyticsFilters>): string {
+  return filters.workloadId ?? `${filters.contentClass}-${filters.resolution}`;
+}
+
+async function loadCanonicalLeaderboardRecords(filters: ReturnType<typeof parseAnalyticsFilters>) {
+  const workloadId = canonicalWorkloadIdForFilters(filters);
+  return prisma.derivedResult.findMany({
+    where: {
+      kind: 'WORKLOAD',
+      workloadId,
+      acceptedRunCount: { gte: filters.minSamples },
+      scoreContext: {
+        formulaVersion: CANONICAL_PL_SCORE_VERSION,
+        workloadId,
+        benchmarkProtocol: {
+          state: 'ACTIVE',
+        },
+      },
+    },
+    include: {
+      environment: true,
+      recipe: true,
+      scoreContext: {
+        include: {
+          benchmarkProtocol: true,
+        },
+      },
+    },
+    orderBy: [
+      { recipe: { preset: 'asc' } },
+      { createdAt: 'asc' },
+    ],
+  });
+}
+
+function deriveNativeRateControl(row: CanonicalLeaderboardRecord): DecisionCandidate['rateControl'] {
+  const requestedMode = String(row.recipe.requestedRateControlMode);
+  const effectiveMode = String(row.recipe.effectiveRateControlMode);
+  const qualityValue = asFiniteNumber(row.recipe.effectiveQualityValue)
+    ?? asFiniteNumber(row.recipe.requestedQualityValue);
+  const targetBitrateKbps = row.recipe.effectiveTargetBitrateKbps
+    ?? row.recipe.requestedTargetBitrateKbps
+    ?? null;
+  const maxBitrateKbps = row.recipe.effectiveMaxBitrateKbps
+    ?? row.recipe.requestedMaxBitrateKbps
+    ?? null;
+  const bufferSizeKbits = row.recipe.effectiveBufferSizeKbits
+    ?? row.recipe.requestedBufferSizeKbits
+    ?? null;
+  const bitrateControlled = effectiveMode.includes('BITRATE') || effectiveMode === 'VBR' || effectiveMode === 'CBR';
+  const details = bitrateControlled && targetBitrateKbps != null
+    ? `${effectiveMode} ${targetBitrateKbps} kbps`
+    : qualityValue != null
+      ? `${effectiveMode} ${qualityValue}`
+      : targetBitrateKbps != null
+        ? `${effectiveMode} ${targetBitrateKbps} kbps`
+        : effectiveMode;
+  const limits = [
+    maxBitrateKbps != null ? `max ${maxBitrateKbps} kbps` : null,
+    bufferSizeKbits != null ? `buffer ${bufferSizeKbits} kbit` : null,
+  ].filter((value): value is string => value != null);
+  return {
+    requestedMode,
+    effectiveMode,
+    qualityValue,
+    targetBitrateKbps,
+    maxBitrateKbps,
+    bufferSizeKbits,
+    label: limits.length > 0 ? `${details} (${limits.join(', ')})` : details,
+  };
+}
+
+function deriveCanonicalSourceFps(row: CanonicalLeaderboardRecord): number | null {
+  const encodeFps = asFiniteNumber(row.centerEncodeFps);
+  const realtime = asFiniteNumber(row.centerRealTimeRatio);
+  if (encodeFps == null || realtime == null || realtime <= 0) return null;
+  return encodeFps / realtime;
+}
+
+function roundPhysicalMemoryBytesToGiB(value: bigint | number | null | undefined): number | null {
+  if (value == null) return null;
+  const bytes = typeof value === 'bigint' ? Number(value) : value;
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return Math.round(bytes / (1024 ** 3));
+}
+
+function deriveCanonicalContext(row: CanonicalLeaderboardRecord) {
+  const rawConstants = asObject(row.scoreContext.transformConstants);
+  const qualityExponent = asFiniteNumber(rawConstants?.qualityExponent) ?? 2.4;
+  const speedCurveRate = asFiniteNumber(rawConstants?.speedCurveRate) ?? 1.2;
+  const speedSaturationRealtime = asFiniteNumber(rawConstants?.speedSaturationRealtime) ?? 4;
+  return {
+    scoreContextId: row.scoreContext.id,
+    formulaVersion: row.scoreContext.formulaVersion,
+    benchmarkProtocolVersion: row.scoreContext.benchmarkProtocol.protocolVersion,
+    sourceSuiteVersion: row.scoreContext.benchmarkProtocol.sourceSuiteVersion,
+    qualityModelId: row.scoreContext.qualityModelId,
+    referenceContextVersion: row.scoreContext.contextVersion,
+    workloadReferenceBitrateBps: row.scoreContext.workloadReferenceBitrateBps,
+    qualityExponent,
+    speedCurveRate,
+    speedSaturationRealtime,
+  };
+}
+
+function decisionCandidateFromCanonicalDerivedResult(
+  row: CanonicalLeaderboardRecord,
+  filters: ReturnType<typeof parseAnalyticsFilters>,
+): DecisionCandidate {
+  const evidenceSummary = asObject(row.evidenceSummary);
+  const evidenceTier = String(row.evidenceTier) as EvidenceTier;
+  const context = deriveCanonicalContext(row);
+  return {
+    rowId: row.id,
+    encoderName: row.recipe.encoderImplementation,
+    codecFamily: row.recipe.codecFamily as DecisionCandidate['codecFamily'],
+    preset: row.recipe.preset ?? 'default',
+    rateControl: deriveNativeRateControl(row),
+    contentClass: filters.contentClass,
+    resolution: filters.resolution,
+    passes: filters.passes,
+    workloadId: row.workloadId,
+    hardwareContext: {
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      cpuModel: row.environment.cpuModel,
+      gpuModel: row.environment.gpuModel ?? '',
+      ramGB: roundPhysicalMemoryBytesToGiB(row.environment.physicalMemoryBytes),
+      os: `${row.environment.osName} ${row.environment.osVersion}`.trim(),
+    },
+    sampleCount: row.acceptedRunCount,
+    avgFps: row.centerEncodeFps ?? 0,
+    avgVmaf: row.centerVmafMean,
+    avgVmafP5: row.centerVmafP5,
+    avgVideoBitrateBps: row.centerVideoBitrateBps,
+    avgSourceFps: deriveCanonicalSourceFps(row),
+    plScore: row.plTotal,
+    canonical: {
+      quality: row.plQuality,
+      bitrate: row.plBitrate,
+      speed: row.plSpeed,
+    },
+    context,
+    confidenceLower: row.confidenceLower,
+    confidenceUpper: row.confidenceUpper,
+    evidenceTier,
+    eligibleForDefaultRecommendation: evidenceSummary?.eligibleForDefaultRecommendation === true,
+  };
+}
 
 export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<T>): Promise<T> {
   let attemptsRemaining = MAX_SUBMIT_TRANSACTION_RETRIES;
@@ -208,6 +411,16 @@ export async function runSubmitTransactionWithRetry<T>(operation: () => Promise<
       throw error;
     }
   }
+}
+
+export function determineSubmissionStatus(input: {
+  plausible: boolean;
+  canonicalInput: boolean;
+  maxAbsoluteZScore: number;
+}): SubmissionDisposition {
+  if (!input.plausible || input.maxAbsoluteZScore > 6) return 'rejected';
+  if (input.maxAbsoluteZScore > 3) return 'suspect';
+  return input.canonicalInput ? 'accepted' : 'pending';
 }
 
 const TELEMETRY_NOTE_REGEX = /telemetry=(\{[\s\S]*?\})(?:;|$)/;
@@ -328,6 +541,39 @@ const CANONICAL_INPUT_HASHES = new Set<string>([
   '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8',
 ]);
 
+type AggregateKeySource = Pick<
+  Prisma.SubmissionGetPayload<Record<string, never>>,
+  'cpuModel' | 'gpuModel' | 'ramGB' | 'os' | 'codec' | 'preset' | 'crf' | 'contentClass' | 'resolution' | 'passes' | 'workloadId'
+>;
+
+export function benchmarkWhereFromSubmission(submission: AggregateKeySource): Prisma.BenchmarkWhereInput {
+  return {
+    cpuModel: submission.cpuModel,
+    gpuModel: submission.gpuModel,
+    ramGB: submission.ramGB,
+    os: submission.os,
+    codec: submission.codec,
+    preset: submission.preset,
+    crf: submission.crf,
+    contentClass: submission.contentClass,
+    resolution: submission.resolution,
+    passes: submission.passes,
+    workloadId: submission.workloadId ?? null,
+  };
+}
+
+async function findBenchmarkForPayloadHash(payloadHash: string): Promise<BenchmarkRow | null> {
+  // Submission is the immutable idempotency record. Benchmark.payloadHash only identifies
+  // the first payload that created an aggregate and cannot resolve later retries.
+  const submission = await prisma.submission.findUnique({ where: { payloadHash } });
+  if (submission) {
+    return prisma.benchmark.findFirst({ where: benchmarkWhereFromSubmission(submission) });
+  }
+
+  // Preserve idempotency for records written before Submission became authoritative.
+  return prisma.benchmark.findUnique({ where: { payloadHash } });
+}
+
 // Method guard for /submit (reject non-POST) - must be registered before the POST handler
 router.all('/submit', (req, res, next) => {
   if (req.method === 'POST') {
@@ -358,7 +604,7 @@ router.post('/submit', async (req, res) => {
 
   try {
     // Fast path: if the exact same payload was already counted, return existing (idempotency)
-    const existingByHash = await prisma.benchmark.findUnique({ where: { payloadHash } }).catch((err: unknown) => {
+    const existingByHash = await findBenchmarkForPayloadHash(payloadHash).catch((err: unknown) => {
       logError('findUnique by payloadHash', err);
       return null;
     });
@@ -388,6 +634,7 @@ router.post('/submit', async (req, res) => {
       contentClass: contentClassValue,
       resolution: resolutionValue,
       passes: passesValue,
+      workloadId: data.workloadId ?? null,
     };
 
     // Compute robust Z-scores via PostgreSQL (S-06): median + MAD in a single query
@@ -415,6 +662,7 @@ router.post('/submit', async (req, res) => {
             AND "contentClass" = ${key.contentClass}
             AND "resolution" = ${key.resolution}
             AND "passes" = ${key.passes}
+            AND "workloadId" IS NOT DISTINCT FROM ${key.workloadId}
           ORDER BY "createdAt" DESC
           LIMIT 200
         )
@@ -466,10 +714,12 @@ router.post('/submit', async (req, res) => {
 
     // Penalize extreme deviations; also check impossible combos
     const impossible = !(isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
-    const extreme = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ)) > 6; // conservative threshold
-    const suspect = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ)) > 3;  // softer threshold
-    const baselineOk = inputHashOk || (isCodecOk && isPresetOk && isFpsOk && isSizeOk && namesOk);
-    const status: 'pending' | 'accepted' | 'rejected' | 'suspect' = impossible ? 'rejected' : (extreme ? 'rejected' : (suspect ? 'suspect' : (baselineOk ? 'accepted' : 'pending')));
+    const maxAbsoluteZScore = Math.max(Math.abs(fpsZ), Math.abs(sizeZ), Math.abs(vmafZ), Math.abs(ssimZ), Math.abs(psnrZ));
+    const status = determineSubmissionStatus({
+      plausible: !impossible,
+      canonicalInput: inputHashOk,
+      maxAbsoluteZScore,
+    });
     const qualityScore = (() => {
       // Score 0..100 combining normalized robust Z deviations
       const clamp = (x: number) => Math.max(0, Math.min(100, x));
@@ -500,15 +750,24 @@ router.post('/submit', async (req, res) => {
           passes: passesValue,
           fps: Number(data.fps),
           vmaf: data.vmaf == null ? null : Number(data.vmaf),
+          vmafP5: data.vmafP5 == null ? null : Number(data.vmafP5),
           ssim: data.ssim == null ? null : Number(data.ssim),
           psnr: data.psnr == null ? null : Number(data.psnr),
           fileSizeBytes: Number(data.fileSizeBytes),
+          videoBitrateBps: data.videoBitrateBps == null ? null : Number(data.videoBitrateBps),
+          sourceFps: data.sourceFps == null ? null : Number(data.sourceFps),
+          sourceDurationSeconds: data.sourceDurationSeconds == null ? null : Number(data.sourceDurationSeconds),
           notes: data.notes || null,
           ffmpegVersion: data.ffmpegVersion || null,
           encoderName: data.encoderName || null,
           clientVersion: data.clientVersion || null,
           inputHash: data.inputHash || null,
           runMs: data.runMs != null ? Number(data.runMs) : null,
+          scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+          benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+          sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+          workloadId: data.workloadId ?? null,
+          metricModelId: data.metricModelId ?? null,
           gpuUtilAvg: data.gpuUtilAvg != null ? Number(data.gpuUtilAvg) : null,
           gpuPowerAvgW: data.gpuPowerAvgW != null ? Number(data.gpuPowerAvgW) : null,
           gpuMemPeakMB: data.gpuMemPeakMB != null ? Number(data.gpuMemPeakMB) : null,
@@ -551,11 +810,17 @@ router.post('/submit', async (req, res) => {
         // For new benchmarks, only count as sample if accepted
         const initialSamples = status === 'accepted' ? 1 : 0;
         const initialVmafSamples = (status === 'accepted' && data.vmaf != null) ? 1 : 0;
+        const initialVmafP5Samples = (status === 'accepted' && data.vmafP5 != null) ? 1 : 0;
+        const initialVideoBitrateSamples = (status === 'accepted' && data.videoBitrateBps != null) ? 1 : 0;
+        const initialSourceFpsSamples = (status === 'accepted' && data.sourceFps != null) ? 1 : 0;
         const initialSsimSamples = (status === 'accepted' && data.ssim != null) ? 1 : 0;
         const initialPsnrSamples = (status === 'accepted' && data.psnr != null) ? 1 : 0;
         const initialFpsSum = status === 'accepted' ? Number(data.fps) : 0;
         const initialFileSizeSum = status === 'accepted' ? Number(data.fileSizeBytes) : 0;
         const initialVmafSum = (status === 'accepted' && data.vmaf != null) ? Number(data.vmaf) : 0;
+        const initialVmafP5Sum = (status === 'accepted' && data.vmafP5 != null) ? Number(data.vmafP5) : 0;
+        const initialVideoBitrateSum = (status === 'accepted' && data.videoBitrateBps != null) ? Number(data.videoBitrateBps) : 0;
+        const initialSourceFpsSum = (status === 'accepted' && data.sourceFps != null) ? Number(data.sourceFps) : 0;
         const initialSsimSum = (status === 'accepted' && data.ssim != null) ? Number(data.ssim) : 0;
         const initialPsnrSum = (status === 'accepted' && data.psnr != null) ? Number(data.psnr) : 0;
         const initialGpuUtilSamples = (status === 'accepted' && data.gpuUtilAvg != null) ? 1 : 0;
@@ -607,9 +872,13 @@ router.post('/submit', async (req, res) => {
             passes: key.passes,
             fps: data.fps,
             vmaf: data.vmaf ?? null,
+            vmafP5: data.vmafP5 ?? null,
             ssim: data.ssim ?? null,
             psnr: data.psnr ?? null,
             fileSizeBytes: data.fileSizeBytes,
+            videoBitrateBps: data.videoBitrateBps ?? null,
+            sourceFps: data.sourceFps ?? null,
+            sourceDurationSeconds: data.sourceDurationSeconds ?? null,
           notes: data.notes || null,
           gpuUtilAvg: data.gpuUtilAvg != null ? Number(data.gpuUtilAvg) : null,
           gpuPowerAvgW: data.gpuPowerAvgW != null ? Number(data.gpuPowerAvgW) : null,
@@ -642,6 +911,11 @@ router.post('/submit', async (req, res) => {
           clientVersion: data.clientVersion || null,
             inputHash: data.inputHash || null,
             runMs: data.runMs != null ? Number(data.runMs) : null,
+            scoreFormulaVersion: data.scoreFormulaVersion ?? null,
+            benchmarkProtocolVersion: data.benchmarkProtocolVersion ?? null,
+            sourceSuiteVersion: data.sourceSuiteVersion ?? null,
+            workloadId: data.workloadId ?? null,
+            metricModelId: data.metricModelId ?? null,
             payloadHash,
             samples: initialSamples,
             vmafSamples: initialVmafSamples,
@@ -650,6 +924,12 @@ router.post('/submit', async (req, res) => {
             fpsSum: initialFpsSum,
             fileSizeSum: initialFileSizeSum,
             vmafSum: initialVmafSum,
+            vmafP5Samples: initialVmafP5Samples,
+            vmafP5Sum: initialVmafP5Sum,
+            videoBitrateSamples: initialVideoBitrateSamples,
+            videoBitrateSum: initialVideoBitrateSum,
+            sourceFpsSamples: initialSourceFpsSamples,
+            sourceFpsSum: initialSourceFpsSum,
             ssimSum: initialSsimSum,
             psnrSum: initialPsnrSum,
             gpuUtilSamples: initialGpuUtilSamples,
@@ -706,6 +986,12 @@ router.post('/submit', async (req, res) => {
       const sizeVal = Number(data.fileSizeBytes);
       const hasVmaf = data.vmaf != null;
       const vmafVal = hasVmaf ? Number(data.vmaf) : 0;
+      const hasVmafP5 = data.vmafP5 != null;
+      const vmafP5Val = hasVmafP5 ? Number(data.vmafP5) : 0;
+      const hasVideoBitrate = data.videoBitrateBps != null;
+      const videoBitrateVal = hasVideoBitrate ? Number(data.videoBitrateBps) : 0;
+      const hasSourceFps = data.sourceFps != null;
+      const sourceFpsVal = hasSourceFps ? Number(data.sourceFps) : 0;
       const hasSsim = data.ssim != null;
       const ssimVal = hasSsim ? Number(data.ssim) : 0;
       const hasPsnr = data.psnr != null;
@@ -762,6 +1048,12 @@ router.post('/submit', async (req, res) => {
             "fileSizeSum" = "fileSizeSum" + ${sizeVal}::double precision,
             "vmafSamples" = "vmafSamples" + ${hasVmaf ? 1 : 0},
             "vmafSum" = "vmafSum" + ${vmafVal}::double precision,
+            "vmafP5Samples" = "vmafP5Samples" + ${hasVmafP5 ? 1 : 0},
+            "vmafP5Sum" = "vmafP5Sum" + ${vmafP5Val}::double precision,
+            "videoBitrateSamples" = "videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0},
+            "videoBitrateSum" = "videoBitrateSum" + ${videoBitrateVal}::double precision,
+            "sourceFpsSamples" = "sourceFpsSamples" + ${hasSourceFps ? 1 : 0},
+            "sourceFpsSum" = "sourceFpsSum" + ${sourceFpsVal}::double precision,
             "ssimSamples" = "ssimSamples" + ${hasSsim ? 1 : 0},
             "ssimSum" = "ssimSum" + ${ssimVal}::double precision,
             "psnrSamples" = "psnrSamples" + ${hasPsnr ? 1 : 0},
@@ -812,6 +1104,26 @@ router.post('/submit', async (req, res) => {
               THEN ("vmafSum" + ${vmafVal}::double precision) / ("vmafSamples" + ${hasVmaf ? 1 : 0})
               ELSE "vmaf"
             END,
+            "vmafP5" = CASE
+              WHEN "vmafP5Samples" + ${hasVmafP5 ? 1 : 0} > 0
+              THEN ("vmafP5Sum" + ${vmafP5Val}::double precision) / ("vmafP5Samples" + ${hasVmafP5 ? 1 : 0})
+              ELSE "vmafP5"
+            END,
+            "videoBitrateBps" = CASE
+              WHEN "videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0} > 0
+              THEN ("videoBitrateSum" + ${videoBitrateVal}::double precision) / ("videoBitrateSamples" + ${hasVideoBitrate ? 1 : 0})
+              ELSE "videoBitrateBps"
+            END,
+            "sourceFps" = CASE
+              WHEN "sourceFpsSamples" + ${hasSourceFps ? 1 : 0} > 0
+              THEN ("sourceFpsSum" + ${sourceFpsVal}::double precision) / ("sourceFpsSamples" + ${hasSourceFps ? 1 : 0})
+              ELSE "sourceFps"
+            END,
+            "scoreFormulaVersion" = COALESCE(${data.scoreFormulaVersion ?? null}, "scoreFormulaVersion"),
+            "benchmarkProtocolVersion" = COALESCE(${data.benchmarkProtocolVersion ?? null}, "benchmarkProtocolVersion"),
+            "sourceSuiteVersion" = COALESCE(${data.sourceSuiteVersion ?? null}, "sourceSuiteVersion"),
+            "workloadId" = COALESCE(${data.workloadId ?? null}, "workloadId"),
+            "metricModelId" = COALESCE(${data.metricModelId ?? null}, "metricModelId"),
             "ssim" = CASE
               WHEN "ssimSamples" + ${hasSsim ? 1 : 0} > 0
               THEN ("ssimSum" + ${ssimVal}::double precision) / ("ssimSamples" + ${hasSsim ? 1 : 0})
@@ -945,7 +1257,7 @@ router.post('/submit', async (req, res) => {
     if (errCode === 'P2002') {
       // Unique constraint violation: return the existing row idempotently
       try {
-        const existing = await prisma.benchmark.findUnique({ where: { payloadHash } });
+        const existing = await findBenchmarkForPayloadHash(payloadHash);
         if (existing) return res.status(200).json(existing);
       } catch (findErr) {
         logError('findExistingAfterP2002', findErr);
@@ -996,12 +1308,12 @@ function invalidateRouteCaches(): void {
 }
 
 // Whitelist of allowed sort fields to prevent injection
-const SORT_WHITELIST = new Set([
+export const SORT_WHITELIST = new Set([
   'createdAt', 'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'codec', 'cpuModel',
   'gpuModel', 'preset', 'crf',
   'gpuUtilAvg', 'gpuPowerAvgW', 'cpuUtilAvg',
   'gpuTempMaxC', 'cpuTempMaxC', 'ffmpegCpuUtilAvg',
-  'batteryPercentDrop', 'sampleCount', 'monitorDurationMs',
+  'batteryPercentDrop', 'samples', 'sampleCount', 'monitorDurationMs',
   'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
 ]);
 
@@ -1029,15 +1341,6 @@ export function parseTakeParam(raw: string | undefined): number {
 
 export function parseSkipParam(raw: string | undefined): number | undefined {
   return parsePositiveInt(raw);
-}
-
-function booleanParam(query: Record<string, string | undefined>, key: string): boolean | undefined {
-  const raw = query[key];
-  if (!raw) return undefined;
-  const v = raw.trim().toLowerCase();
-  if (v === '1' || v === 'true' || v === 'yes') return true;
-  if (v === '0' || v === 'false' || v === 'no') return false;
-  return undefined;
 }
 
 function applyRangeFilter(
@@ -1070,92 +1373,125 @@ export function getQueryCacheSize(): number {
   return queryCache.size();
 }
 
-function buildEncoderTypeFilter(kind: 'hardware' | 'software'): Prisma.BenchmarkWhereInput {
-  const hardwareMatchers: Prisma.BenchmarkWhereInput[] = [
-    { codec: { endsWith: '_videotoolbox' } },
-    { codec: { endsWith: '_nvenc' } },
-    { codec: { endsWith: '_qsv' } },
-    { codec: { endsWith: '_amf' } },
-    { codec: { endsWith: '_vaapi' } },
-  ];
+export function buildEncoderTypeFilter(kind: 'hardware' | 'software'): Prisma.BenchmarkWhereInput {
+  const suffixes = ['_videotoolbox', '_nvenc', '_qsv', '_amf', '_vaapi', '_v4l2m2m', '_omx'];
+  const hardwareMatchers: Prisma.BenchmarkWhereInput[] = suffixes.flatMap((suffix) => [
+    { codec: { endsWith: suffix } },
+    { encoderName: { endsWith: suffix } },
+  ]);
   if (kind === 'hardware') {
     return { OR: hardwareMatchers };
   }
   return { NOT: { OR: hardwareMatchers } };
 }
 
+export function buildGlobalSearchFilter(search: string): Prisma.BenchmarkWhereInput {
+  const normalized = search.trim();
+  if (!normalized) return {};
+  const textMatch = { contains: normalized, mode: 'insensitive' as const };
+  const matches: Prisma.BenchmarkWhereInput[] = [
+    { cpuModel: textMatch },
+    { gpuModel: textMatch },
+    { os: textMatch },
+    { encoderName: textMatch },
+    { codec: textMatch },
+    { preset: textMatch },
+    { ffmpegVersion: textMatch },
+    { contentClass: textMatch },
+    { resolution: textMatch },
+  ];
+  const numericSearch = Number(normalized);
+  if (Number.isFinite(numericSearch)) {
+    matches.push(
+      { fps: numericSearch },
+      { vmaf: numericSearch },
+      { ssim: numericSearch },
+      { psnr: numericSearch },
+      { gpuPowerAvgW: numericSearch },
+    );
+    if (Number.isSafeInteger(numericSearch)) {
+      matches.push(
+        { ramGB: numericSearch },
+        { crf: numericSearch },
+        { fileSizeBytes: numericSearch },
+        { samples: numericSearch },
+      );
+    }
+  }
+  return { OR: matches };
+}
+
+export function buildWorkbenchWhere(query: Record<string, string | undefined>): Prisma.BenchmarkWhereInput {
+  const where: Prisma.BenchmarkWhereInput = { status: 'accepted' };
+  if (query.passes === '1') where.passes = 1;
+  if (query.codec) where.codec = query.codec;
+  if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
+  if (query.preset) where.preset = { contains: query.preset, mode: 'insensitive' };
+  if (query.crf && /^\d+$/.test(query.crf)) where.crf = Number(query.crf);
+  if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
+  if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
+  if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
+    where.contentClass = query.contentClass;
+  }
+  if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
+    where.resolution = query.resolution;
+  }
+  if (query.encoderType === 'hardware' || query.encoderType === 'software') {
+    where.AND = [buildEncoderTypeFilter(query.encoderType)];
+  }
+  const globalSearch = query.search?.trim();
+  if (globalSearch) {
+    where.AND = [
+      ...(Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : []),
+      buildGlobalSearchFilter(globalSearch),
+    ];
+  }
+
+  applyRangeFilter(where, query, 'fps');
+  applyRangeFilter(where, query, 'vmaf');
+  applyRangeFilter(where, query, 'ssim');
+  applyRangeFilter(where, query, 'psnr');
+  applyRangeFilter(where, query, 'fileSizeBytes', { integer: true });
+  applyRangeFilter(where, query, 'runMs', { integer: true });
+  applyRangeFilter(where, query, 'gpuUtilAvg');
+  applyRangeFilter(where, query, 'gpuPowerAvgW');
+  applyRangeFilter(where, query, 'gpuMemPeakMB');
+  applyRangeFilter(where, query, 'cpuUtilAvg');
+  applyRangeFilter(where, query, 'cpuUtilMax');
+  applyRangeFilter(where, query, 'peakMemoryMB');
+  applyRangeFilter(where, query, 'gpuTempMaxC');
+  applyRangeFilter(where, query, 'cpuFreqAvgMHz');
+  applyRangeFilter(where, query, 'cpuTempMaxC');
+  applyRangeFilter(where, query, 'ffmpegCpuUtilAvg');
+  applyRangeFilter(where, query, 'ffmpegCpuUtilMax');
+  applyRangeFilter(where, query, 'ffmpegReadMB');
+  applyRangeFilter(where, query, 'ffmpegWriteMB');
+  applyRangeFilter(where, query, 'ffmpegCpuTimeS');
+  applyRangeFilter(where, query, 'batteryPercentStart');
+  applyRangeFilter(where, query, 'batteryPercentEnd');
+  applyRangeFilter(where, query, 'batteryPercentDrop');
+  applyRangeFilter(where, query, 'sampleCount');
+  applyRangeFilter(where, query, 'monitorDurationMs');
+  applyRangeFilter(where, query, 'cpuSampleCount');
+  applyRangeFilter(where, query, 'gpuSampleCount');
+  applyRangeFilter(where, query, 'ffmpegSampleCount');
+  applyRangeFilter(where, query, 'batterySampleCount');
+  return where;
+}
+
 router.get('/query', async (req, res) => {
   try {
     const query = req.query as Record<string, string | undefined>;
+    if (query.powerSource != null || query.thermalThrottle != null) {
+      return res.status(400).json({
+        error: 'powerSource and thermalThrottle filters are unavailable for aggregated results',
+        details: 'These values vary by submission and cannot truthfully filter a mixed aggregate.',
+      });
+    }
     const take = parseTakeParam(query.limit);
     const skip = parseSkipParam(query.skip);
 
-    const where: Prisma.BenchmarkWhereInput = { status: 'accepted' };
-    if (query.passes) {
-      const p = Number(query.passes);
-      if (p === 1) where.passes = 1;
-    }
-    // Sprint 4: additional filters
-    if (query.codec) where.codec = query.codec;
-    if (query.codecSearch) where.codec = { contains: query.codecSearch, mode: 'insensitive' };
-    if (query.preset) where.preset = { contains: query.preset, mode: 'insensitive' };
-    if (query.crf && /^\d+$/.test(query.crf)) where.crf = Number(query.crf);
-    if (query.cpu) where.cpuModel = { contains: query.cpu, mode: 'insensitive' };
-    if (query.gpu) where.gpuModel = { contains: query.gpu, mode: 'insensitive' };
-    if (query.contentClass && VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])) {
-      where.contentClass = query.contentClass;
-    }
-    if (query.resolution && VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])) {
-      where.resolution = query.resolution;
-    }
-    if (query.powerSource === 'ac' || query.powerSource === 'battery') {
-      where.powerSource = query.powerSource;
-    }
-    const throttle = booleanParam(query, 'thermalThrottle');
-    if (throttle != null) {
-      where.thermalThrottle = throttle;
-    }
-    if (query.encoderType === 'hardware' || query.encoderType === 'software') {
-      const encoderTypeFilter = buildEncoderTypeFilter(query.encoderType);
-      if (where.AND) {
-        const existing = Array.isArray(where.AND) ? where.AND : [where.AND];
-        where.AND = [...existing, encoderTypeFilter];
-      } else {
-        where.AND = [encoderTypeFilter];
-      }
-    }
-
-    // Numeric range filters (query by appending Min/Max suffixes)
-    applyRangeFilter(where, query, 'fps');
-    applyRangeFilter(where, query, 'vmaf');
-    applyRangeFilter(where, query, 'ssim');
-    applyRangeFilter(where, query, 'psnr');
-    applyRangeFilter(where, query, 'fileSizeBytes', { integer: true });
-    applyRangeFilter(where, query, 'runMs', { integer: true });
-
-    applyRangeFilter(where, query, 'gpuUtilAvg');
-    applyRangeFilter(where, query, 'gpuPowerAvgW');
-    applyRangeFilter(where, query, 'gpuMemPeakMB');
-    applyRangeFilter(where, query, 'cpuUtilAvg');
-    applyRangeFilter(where, query, 'cpuUtilMax');
-    applyRangeFilter(where, query, 'peakMemoryMB');
-    applyRangeFilter(where, query, 'gpuTempMaxC');
-    applyRangeFilter(where, query, 'cpuFreqAvgMHz');
-    applyRangeFilter(where, query, 'cpuTempMaxC');
-    applyRangeFilter(where, query, 'ffmpegCpuUtilAvg');
-    applyRangeFilter(where, query, 'ffmpegCpuUtilMax');
-    applyRangeFilter(where, query, 'ffmpegReadMB');
-    applyRangeFilter(where, query, 'ffmpegWriteMB');
-    applyRangeFilter(where, query, 'ffmpegCpuTimeS');
-    applyRangeFilter(where, query, 'batteryPercentStart');
-    applyRangeFilter(where, query, 'batteryPercentEnd');
-    applyRangeFilter(where, query, 'batteryPercentDrop');
-    applyRangeFilter(where, query, 'sampleCount');
-    applyRangeFilter(where, query, 'monitorDurationMs');
-    applyRangeFilter(where, query, 'cpuSampleCount');
-    applyRangeFilter(where, query, 'gpuSampleCount');
-    applyRangeFilter(where, query, 'ffmpegSampleCount');
-    applyRangeFilter(where, query, 'batterySampleCount');
+    const where = buildWorkbenchWhere(query);
 
     // Build orderBy with whitelist validation
     let orderBy: Record<string, string> = { createdAt: 'desc' };
@@ -1200,6 +1536,69 @@ router.get('/query', async (req, res) => {
   }
 });
 
+router.get('/corpus', async (req, res) => {
+  try {
+    const query = req.query as Record<string, string | undefined>;
+    const take = parseTakeParam(query.limit);
+    const skip = parseSkipParam(query.skip);
+    const where = buildPublicCorpusWhere(query);
+    const order = buildPublicCorpusOrderBy(query.sort, query.dir === 'asc' ? 'asc' : 'desc');
+    const wantTotal = query.total === '1';
+    const cacheKey = JSON.stringify({ path: 'corpus', take, skip, where, order, wantTotal });
+    const cached = analyticsCache.get(cacheKey) as { rows: ReturnType<typeof buildPublicCorpusRows>; totalCount: number | null } | undefined;
+    if (cached) {
+      if (wantTotal && cached.totalCount != null) {
+        res.setHeader('X-Total-Count', String(cached.totalCount));
+      }
+      return res.json(cached.rows);
+    }
+
+    const publicReferenceContextVersions = getPublicReferenceContextVersions();
+    const directRuns = await prisma.benchmarkRun.findMany({
+      where,
+      include: {
+        benchmarkProtocol: true,
+        recipe: true,
+        environment: true,
+        artifacts: true,
+        qualityAnalyses: true,
+      },
+    });
+    const groupedRows = buildPublicCorpusRows({
+      runs: directRuns,
+      derivedResults: publicReferenceContextVersions.size === 0
+        ? []
+        : await prisma.derivedResult.findMany({
+          where: {
+            kind: 'WORKLOAD',
+            benchmarkProtocol: { state: 'ACTIVE' },
+            scoreContext: {
+              contextVersion: { in: [...publicReferenceContextVersions] },
+            },
+          },
+          include: {
+            benchmarkProtocol: true,
+            recipe: true,
+            environment: true,
+            scoreContext: true,
+          },
+        }),
+      publicReferenceContextVersions,
+    });
+    const sortedRows = sortPublicCorpusRows(groupedRows, order);
+    const totalCount = groupedRows.length;
+    const rows = sortedRows.slice(skip ?? 0, (skip ?? 0) + take);
+    analyticsCache.set(cacheKey, { rows, totalCount: wantTotal ? totalCount : null });
+    if (totalCount != null) {
+      res.setHeader('X-Total-Count', String(totalCount));
+    }
+    res.json(rows);
+  } catch (err) {
+    logError('GET /corpus', err);
+    res.status(500).json({ error: 'Failed to fetch public V7 corpus' });
+  }
+});
+
 router.get('/analytics/leaderboards', async (req, res) => {
   try {
     const query = req.query as Record<string, string | undefined>;
@@ -1208,8 +1607,69 @@ router.get('/analytics/leaderboards', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateLeaderboards(rows, filters.minSamples);
+    const canonicalRows = await loadCanonicalLeaderboardRecords(filters);
+    const canonicalCandidates = canonicalRows.map((row) => decisionCandidateFromCanonicalDerivedResult(row, filters));
+    const hasExactEnvironment = Boolean(filters.environmentId || filters.environmentFingerprint);
+    const hasExactContext = Boolean(filters.scoreContextId);
+    const environmentCandidates = hasExactEnvironment ? canonicalCandidates.filter((row) => (
+      (!filters.environmentId || row.hardwareContext.environmentId === filters.environmentId)
+      && (!filters.environmentFingerprint || row.hardwareContext.environmentFingerprint === filters.environmentFingerprint)
+    )) : [];
+    const scopedCandidates = hasExactContext ? environmentCandidates.filter((row) => (
+      row.context.scoreContextId === filters.scoreContextId
+    )) : [];
+    // Native rate-control settings are part of each immutable Recipe identity.
+    // Never compare or filter heterogeneous encoder families through a generic
+    // cross-encoder CRF axis.
+    const focusedRows = scopedCandidates;
+    const customWeights = {
+      ...(filters.customQualityWeight != null ? { quality: filters.customQualityWeight } : {}),
+      ...(filters.customBitrateWeight != null ? { bitrate: filters.customBitrateWeight } : {}),
+      ...(filters.customSpeedWeight != null ? { speed: filters.customSpeedWeight } : {}),
+    };
+    const payload = buildDecisionPayload(
+      focusedRows,
+      {
+        selectedMode: filters.fitMode,
+        selectedEnvironmentId: filters.environmentId,
+        selectedEnvironmentFingerprint: filters.environmentFingerprint,
+        selectedScoreContextId: filters.scoreContextId,
+        customProfile: {
+          weights: customWeights,
+          constraints: {
+            minimumQuality: filters.minimumQuality,
+            minimumRealtimeRatio: filters.minimumRealtimeRatio,
+            maximumBitrateBps: filters.maximumBitrateBps,
+            compatibleCodecFamilies: filters.compatibleCodecFamilies,
+            requireRecommendationEligibility: filters.requireRecommendationEligibility,
+          },
+        },
+      },
+      scopedCandidates,
+    );
+    payload.environmentScope.available = Array.from(new Map(canonicalCandidates.map((candidate) => {
+      const environment = candidate.hardwareContext;
+      const label = `${environment.cpuModel} / ${environment.gpuModel.trim() || 'CPU-only'} / ${environment.os}`;
+      return [environment.environmentFingerprint || environment.environmentId, { ...environment, label }];
+    })).values()).sort((left, right) => left.label.localeCompare(right.label));
+    payload.contextScope.available = Array.from(new Map(canonicalCandidates.map((candidate) => {
+      const context = candidate.context;
+      const label = [context.referenceContextVersion, context.qualityModelId, `formula ${context.formulaVersion ?? 'unknown'}`, `protocol ${context.benchmarkProtocolVersion ?? 'unknown'}`]
+        .filter(Boolean).join(' / ');
+      return [context.scoreContextId, { ...context, label }];
+    })).values()).sort((left, right) => left.label.localeCompare(right.label));
+    if (!hasExactEnvironment || !hasExactContext) {
+      payload.rows = [];
+      payload.recommendation = {
+        rowId: null,
+        label: null,
+        reason: !hasExactEnvironment
+          ? 'Select one exact benchmark environment before ranking or requesting a recommendation.'
+          : 'Select one immutable score context before ranking or requesting a recommendation.',
+      };
+      payload.environmentScope.exact = hasExactEnvironment;
+      payload.contextScope.exact = hasExactContext;
+    }
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1226,8 +1686,32 @@ router.get('/analytics/hardware', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateHardware(rows, filters.minSamples);
+    const rows = await loadCanonicalLeaderboardRecords(filters);
+    const scoped = rows.filter((row) => (
+      (filters.environmentId || filters.environmentFingerprint)
+      && (!filters.environmentId || row.environment.id === filters.environmentId)
+      && (!filters.environmentFingerprint || row.environment.fingerprint === filters.environmentFingerprint)
+    ));
+    const payload = scoped.map((row) => ({
+      cpuModel: row.environment.cpuModel,
+      gpuModel: row.environment.gpuModel ?? '',
+      encoderName: row.recipe.encoderImplementation,
+      codecFamily: row.recipe.codecFamily,
+      preset: row.recipe.preset ?? 'default',
+      rateControl: deriveNativeRateControl(row),
+      contentClass: filters.contentClass,
+      resolution: filters.resolution,
+      passes: filters.passes,
+      sampleCount: row.acceptedRunCount,
+      avgFps: row.centerEncodeFps ?? 0,
+      avgVmaf: row.centerVmafMean,
+      avgPowerW: null,
+      fpsPerWatt: null,
+      score: row.plTotal ?? 0,
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      evidenceTier: row.evidenceTier,
+    })).sort((left, right) => right.score - left.score);
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1244,8 +1728,31 @@ router.get('/analytics/encoders', async (req, res) => {
     const cached = analyticsCache.get(cacheKey);
     if (cached) return res.json(cached);
 
-    const rows = await prisma.benchmark.findMany({ where: buildAnalyticsWhere(filters) });
-    const payload = aggregateEncoders(rows, filters.minSamples);
+    const rows = await loadCanonicalLeaderboardRecords(filters);
+    const scoped = rows.filter((row) => (
+      (filters.environmentId || filters.environmentFingerprint)
+      && (!filters.environmentId || row.environment.id === filters.environmentId)
+      && (!filters.environmentFingerprint || row.environment.fingerprint === filters.environmentFingerprint)
+    ));
+    const payload = scoped.map((row) => ({
+      encoderName: row.recipe.encoderImplementation,
+      codecFamily: row.recipe.codecFamily,
+      preset: row.recipe.preset ?? 'default',
+      rateControl: deriveNativeRateControl(row),
+      contentClass: filters.contentClass,
+      resolution: filters.resolution,
+      passes: filters.passes,
+      sampleCount: row.acceptedRunCount,
+      avgFps: row.centerEncodeFps ?? 0,
+      avgVmaf: row.centerVmafMean,
+      avgSsim: null,
+      avgPsnr: null,
+      avgSizeBytes: Math.round(row.centerFileSizeBytes ?? 0),
+      environmentId: row.environment.id,
+      environmentFingerprint: row.environment.fingerprint,
+      plScore: row.plTotal,
+      evidenceTier: row.evidenceTier,
+    })).sort((left, right) => left.encoderName.localeCompare(right.encoderName) || left.preset.localeCompare(right.preset));
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
@@ -1254,18 +1761,10 @@ router.get('/analytics/encoders', async (req, res) => {
   }
 });
 
-// Test video catalog (Sprint 5)
-export const TEST_VIDEO_CATALOG = [
-  { name: 'sample.mp4', duration: 20.0, sha256: '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8', sizeBytes: 66045059 },
-];
+export const TEST_VIDEO_CATALOG = buildPublicTestVideoCatalog();
 
 router.get('/test-videos', (_req, res) => {
-  const baseUrl = 'https://github.com/oliverdougherC/Encoding_Database/releases/download/test-clips-v1';
-  const catalog = TEST_VIDEO_CATALOG.map(v => ({
-    ...v,
-    downloadUrl: `${baseUrl}/${v.name}`,
-  }));
-  res.json(catalog);
+  res.json(TEST_VIDEO_CATALOG);
 });
 
 export default router;

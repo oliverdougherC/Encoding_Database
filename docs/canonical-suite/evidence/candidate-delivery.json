@@ -1,0 +1,55 @@
+{
+  "artifacts": [
+    {
+      "fileName": "beta-retained-certificate-d554d04.tar.gz",
+      "byteSize": 579129021,
+      "sha256": "815ee1ea795b7986b12aad75d5394d02c246a92117a5cef443be4d894265d5e7",
+      "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-retained-certificate-d554d04.tar.gz",
+      "contains": "Accepted certificate/raw IDs/logs/UI; paired database+encoded-artifact backup with successful isolated restore; preserved CRF24 review cases and failed dry-run logs. Duplicate install/cache bytes are separately retained in the pinned suite/client artifacts.",
+      "accessVerification": {
+        "checkedAt": "2026-09-10T03:04:29.301184+00:00",
+        "anonymousRangeStatus": 206,
+        "githubSizeAndSha256Matched": true
+      }
+    },
+    {
+      "fileName": "canonical-validation-d554d04.tar.gz",
+      "byteSize": 1274938615,
+      "sha256": "31bc3dc9a7af41d170e50eda58f1cc5be87e14f16cd839194e27b05781055ece",
+      "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/canonical-validation-d554d04.tar.gz",
+      "accessVerification": {
+        "checkedAt": "2026-09-10T03:04:29.674413+00:00",
+        "anonymousRangeStatus": 206,
+        "githubSizeAndSha256Matched": true
+      }
+    },
+    {
+      "fileName": "encodingdb-macos-d554d04.tar.gz",
+      "sha256": "1317f23400e2f602c20a0f101722026af8fedca823d88d572c72985b365f51d4",
+      "byteSize": 68073674,
+      "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-d554d04.tar.gz",
+      "binary": {
+        "fileName": "encodingdb-client-macos",
+        "sha256": "d90fd7ca6ba72509b4a456171bf24780b155a9ba085503ab455b407805503560",
+        "byteSize": 68565024
+      },
+      "buildSourceCommit": "d554d045ca141ab7c0a282649f5ebef4d674d7bf",
+      "accessVerification": {
+        "checkedAt": "2026-09-10T03:04:29.925006+00:00",
+        "anonymousRangeStatus": 206,
+        "githubSizeAndSha256Matched": true
+      }
+    },
+    {
+      "fileName": "beta-engineering-evidence-192f81f.tar.gz",
+      "byteSize": 114715,
+      "sha256": "d3ea0f5b00b17f360230b0f21e3e31ad351613bbd1aa745103eba3891d2035a3",
+      "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-engineering-evidence-192f81f.tar.gz",
+      "accessVerification": {
+        "checkedAt": "2026-09-10T03:08:06.413184+00:00",
+        "anonymousFullDownloadSha256Matched": true,
+        "githubSizeAndSha256Matched": true
+      }
+    }
+  ]
+}

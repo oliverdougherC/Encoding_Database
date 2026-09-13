@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "pl-reference-sweep-v1",
+  "sweepVersion": "test-only.synthetic.encodingdb-controlled-reference-sweep-v1",
+  "contextVersion": "test-only.synthetic.pl-v7-reference-context-2026a",
+  "formulaVersion": "7.0",
+  "benchmarkProtocolVersion": "EDB-2026.1",
+  "sourceSuiteVersion": "encodingdb-test-suite-v1",
+  "qualityModelId": "vmaf-v1-sdr-sd",
+  "targetMetric": "vmafMean",
+  "targetMetricValue": 90,
+  "bitrateInterpolation": "log-linear",
+  "qualityExponent": 2.4,
+  "speedCurveRate": 1.2,
+  "speedSaturationRealtime": 4,
+  "requiredWorkloads": [
+    { "workloadId": "sports-action-960x540-24p", "contentClass": "high-motion-sports" },
+    { "workloadId": "natural-detail-960x540-24p", "contentClass": "fine-natural-detail" },
+    { "workloadId": "grain-noise-960x540-24p", "contentClass": "film-grain-noise" },
+    { "workloadId": "dark-gradients-960x540-24p", "contentClass": "dark-gradients-shadows" },
+    { "workloadId": "animation-960x540-24p", "contentClass": "animation-flat-fields" },
+    { "workloadId": "screen-text-960x540-24p", "contentClass": "screen-text" },
+    { "workloadId": "talking-head-960x540-24p", "contentClass": "talking-head" }
+  ],
+  "requiredContentClasses": [
+    "high-motion-sports",
+    "fine-natural-detail",
+    "film-grain-noise",
+    "dark-gradients-shadows",
+    "animation-flat-fields",
+    "screen-text",
+    "talking-head"
+  ],
+  "samples": [
+    { "sampleId": "anim-h264-20", "workloadId": "animation-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 1100000, "vmafMean": 85.0 },
+    { "sampleId": "anim-hevc-24", "workloadId": "animation-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 1500000, "vmafMean": 89.0 },
+    { "sampleId": "anim-av1-28", "workloadId": "animation-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 1750000, "vmafMean": 92.0 },
+    { "sampleId": "anim-vp9-24", "workloadId": "animation-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 1900000, "vmafMean": 91.0 },
+
+    { "sampleId": "dark-h264-22", "workloadId": "dark-gradients-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 900000, "vmafMean": 82.0 },
+    { "sampleId": "dark-hevc-26", "workloadId": "dark-gradients-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 1300000, "vmafMean": 88.7 },
+    { "sampleId": "dark-av1-30", "workloadId": "dark-gradients-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 1500000, "vmafMean": 91.3 },
+    { "sampleId": "dark-vp9-26", "workloadId": "dark-gradients-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 1700000, "vmafMean": 90.5 },
+
+    { "sampleId": "grain-h264-18", "workloadId": "grain-noise-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 4200000, "vmafMean": 83.0 },
+    { "sampleId": "grain-hevc-22", "workloadId": "grain-noise-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 5800000, "vmafMean": 88.0 },
+    { "sampleId": "grain-av1-26", "workloadId": "grain-noise-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 7000000, "vmafMean": 91.2 },
+    { "sampleId": "grain-vp9-22", "workloadId": "grain-noise-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 7600000, "vmafMean": 90.4 },
+
+    { "sampleId": "natural-h264-18", "workloadId": "natural-detail-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 2800000, "vmafMean": 84.0 },
+    { "sampleId": "natural-hevc-22", "workloadId": "natural-detail-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 3600000, "vmafMean": 88.5 },
+    { "sampleId": "natural-av1-26", "workloadId": "natural-detail-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 4300000, "vmafMean": 92.0 },
+    { "sampleId": "natural-vp9-22", "workloadId": "natural-detail-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 4700000, "vmafMean": 90.5 },
+
+    { "sampleId": "screen-h264-18", "workloadId": "screen-text-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 1400000, "vmafMean": 84.0 },
+    { "sampleId": "screen-hevc-22", "workloadId": "screen-text-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 1900000, "vmafMean": 88.8 },
+    { "sampleId": "screen-av1-26", "workloadId": "screen-text-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 2250000, "vmafMean": 91.4 },
+    { "sampleId": "screen-vp9-22", "workloadId": "screen-text-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 2500000, "vmafMean": 90.8 },
+
+    { "sampleId": "sports-h264-18", "workloadId": "sports-action-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 2000000, "vmafMean": 82.0 },
+    { "sampleId": "sports-hevc-22", "workloadId": "sports-action-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 2600000, "vmafMean": 88.5 },
+    { "sampleId": "sports-av1-26", "workloadId": "sports-action-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 3000000, "vmafMean": 91.5 },
+    { "sampleId": "sports-vp9-22", "workloadId": "sports-action-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 3400000, "vmafMean": 90.5 },
+
+    { "sampleId": "talk-h264-20", "workloadId": "talking-head-960x540-24p", "codecFamily": "h264", "encoderImplementation": "libx264", "videoBitrateBps": 800000, "vmafMean": 84.5 },
+    { "sampleId": "talk-hevc-24", "workloadId": "talking-head-960x540-24p", "codecFamily": "hevc", "encoderImplementation": "libx265", "videoBitrateBps": 1000000, "vmafMean": 89.2 },
+    { "sampleId": "talk-av1-28", "workloadId": "talking-head-960x540-24p", "codecFamily": "av1", "encoderImplementation": "libsvtav1", "videoBitrateBps": 1200000, "vmafMean": 92.1 },
+    { "sampleId": "talk-vp9-24", "workloadId": "talking-head-960x540-24p", "codecFamily": "vp9", "encoderImplementation": "libvpx-vp9", "videoBitrateBps": 1300000, "vmafMean": 91.0 }
+  ]
+}

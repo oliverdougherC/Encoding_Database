@@ -1,0 +1,310 @@
+{
+  "passed": true,
+  "clientBuildSourceCommit": "d554d045ca141ab7c0a282649f5ebef4d674d7bf",
+  "executionCheckoutCommit": "a307fef77b06b1a13e273ca105d98f113a83b681",
+  "binary": {
+    "fileName": "encodingdb-macos-d554d04.tar.gz",
+    "sha256": "1317f23400e2f602c20a0f101722026af8fedca823d88d572c72985b365f51d4",
+    "byteSize": 68073674,
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-d554d04.tar.gz",
+    "binary": {
+      "fileName": "encodingdb-client-macos",
+      "sha256": "d90fd7ca6ba72509b4a456171bf24780b155a9ba085503ab455b407805503560",
+      "byteSize": 68565024
+    },
+    "buildSourceCommit": "d554d045ca141ab7c0a282649f5ebef4d674d7bf"
+  },
+  "runCount": 16,
+  "retainedArtifactCount": 16,
+  "completeAnalysisCount": 17,
+  "corpusRows": 7,
+  "plConfiguration": {
+    "testOnlyEnabled": false,
+    "referenceBitrates": "",
+    "referenceVersion": "",
+    "referencePath": ""
+  },
+  "allPublicPlTotalsNull": true,
+  "reanalysis": {
+    "status": 202,
+    "benchmarkRunId": "cmtuw0snc0005pr0orqi48emx",
+    "qualityAnalysisId": "cmtuwrv10002jpr0or4c6z5kd",
+    "idempotent": true
+  },
+  "legacyRejection": {
+    "source": {
+      "commit": "830e30375ec13d02ea00289c531e0e05e0d91b72",
+      "manifestPath": "client/resources/test_suite_v1/manifest.json",
+      "manifestSha256": "e6e6ac59af667bb027e621270618371a2ac8629a2e7ff678d85e7a607eb5013a",
+      "suiteId": "encodingdb-test-suite",
+      "suiteVersion": "encodingdb-test-suite-v1",
+      "clipKey": "sports-action-960x540-24p",
+      "sha256": "8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a"
+    },
+    "status": 404,
+    "response": {
+      "error": "Canonical suite clip could not be resolved by clipKey or sha256"
+    },
+    "acceptedOldRunCount": 0,
+    "createdPayloadCount": 0
+  },
+  "interruption": {
+    "evidenceVersion": "encodingdb-upload-interruption/v1",
+    "upstream": "http://127.0.0.1:3202/",
+    "injectedFailures": 1,
+    "uploadAttempts": [
+      {
+        "sequence": 1,
+        "benchmarkRunId": "cmtuw0snc0005pr0orqi48emx",
+        "artifactId": "cmtuw0snc0006pr0ol4z5darc",
+        "injected": true,
+        "status": 503,
+        "byteSize": 32489227,
+        "at": "2026-09-10T02:07:48.028Z"
+      },
+      {
+        "sequence": 2,
+        "benchmarkRunId": "cmtuw0sq50008pr0o9qyq8geu",
+        "artifactId": "cmtuw0sq50009pr0o056bn6tz",
+        "injected": false,
+        "status": 202,
+        "byteSize": 32489227,
+        "at": "2026-09-10T02:07:55.686Z"
+      },
+      {
+        "sequence": 3,
+        "benchmarkRunId": "cmtuw4t51000gpr0o9vf0wqdf",
+        "artifactId": "cmtuw4t51000hpr0opzco8cgj",
+        "injected": false,
+        "status": 202,
+        "byteSize": 75118674,
+        "at": "2026-09-10T02:11:06.000Z"
+      },
+      {
+        "sequence": 4,
+        "benchmarkRunId": "cmtuwa558000rpr0oz071b4r4",
+        "artifactId": "cmtuwa558000spr0old5vr5y7",
+        "injected": false,
+        "status": 202,
+        "byteSize": 164024251,
+        "at": "2026-09-10T02:15:15.078Z"
+      },
+      {
+        "sequence": 5,
+        "benchmarkRunId": "cmtuwfmqr0012pr0om9yopg84",
+        "artifactId": "cmtuwfmqr0013pr0osd5idzy4",
+        "injected": false,
+        "status": 202,
+        "byteSize": 156633128,
+        "at": "2026-09-10T02:19:35.751Z"
+      },
+      {
+        "sequence": 6,
+        "benchmarkRunId": "cmtuwjc27001dpr0o780dcoq8",
+        "artifactId": "cmtuwjc27001epr0omyhwf6c8",
+        "injected": false,
+        "status": 202,
+        "byteSize": 52297792,
+        "at": "2026-09-10T02:22:22.355Z"
+      },
+      {
+        "sequence": 7,
+        "benchmarkRunId": "cmtuwkuk2001opr0o2u3n6bu8",
+        "artifactId": "cmtuwkuk2001ppr0ovfefvz43",
+        "injected": false,
+        "status": 202,
+        "byteSize": 412314,
+        "at": "2026-09-10T02:23:23.941Z"
+      },
+      {
+        "sequence": 8,
+        "benchmarkRunId": "cmtuwqaoi001zpr0o8zj70bpk",
+        "artifactId": "cmtuwqaoi0020pr0oh87tmuc7",
+        "injected": false,
+        "status": 202,
+        "byteSize": 56567635,
+        "at": "2026-09-10T02:27:47.247Z"
+      }
+    ]
+  },
+  "runs": [
+    {
+      "runId": "cmtuw0snc0005pr0orqi48emx",
+      "clipId": "athletic-action-1080p24-final",
+      "artifactId": "cmtuw0snc0006pr0ol4z5darc",
+      "artifactSha256": "2ff36e02eb1f2e1d2bb816692aabf579ab03055571d5dc77f438a2bdc5873135",
+      "artifactBytes": 32489227,
+      "analysisIds": [
+        "cmtuw0ymv000dpr0oon641wcm",
+        "cmtuwrv10002jpr0or4c6z5kd"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuw0sq50008pr0o9qyq8geu",
+      "clipId": "athletic-action-1080p24-final",
+      "artifactId": "cmtuw0sq50009pr0o056bn6tz",
+      "artifactSha256": "2ff36e02eb1f2e1d2bb816692aabf579ab03055571d5dc77f438a2bdc5873135",
+      "artifactBytes": 32489227,
+      "analysisIds": [
+        "cmtuw0yl7000bpr0oxxlpxffn"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuw4t51000gpr0o9vf0wqdf",
+      "clipId": "natural-detail-1080p24-final",
+      "artifactId": "cmtuw4t51000hpr0opzco8cgj",
+      "artifactSha256": "081bc9e60ad8db6d63687dbde1f013050527c3af9ea2e94bb4584d1497378ce3",
+      "artifactBytes": 75118674,
+      "analysisIds": [
+        "cmtuw51fo000jpr0o9mhixco3"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuw51lg000lpr0og6jaody3",
+      "clipId": "natural-detail-1080p24-final",
+      "artifactId": "cmtuw51lg000mpr0ol0n8e6l6",
+      "artifactSha256": "081bc9e60ad8db6d63687dbde1f013050527c3af9ea2e94bb4584d1497378ce3",
+      "artifactBytes": 75118674,
+      "analysisIds": [
+        "cmtuw51m9000opr0o5w5eqzer"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwa558000rpr0oz071b4r4",
+      "clipId": "film-grain-1080p24-final",
+      "artifactId": "cmtuwa558000spr0old5vr5y7",
+      "artifactSha256": "e81ebff51096f2d1bedaee39c375a653f78723bab68becbc6f4435c9350c3e1e",
+      "artifactBytes": 164024251,
+      "analysisIds": [
+        "cmtuwadmf000upr0oaiupepke"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwadzw000wpr0os0qiwt3z",
+      "clipId": "film-grain-1080p24-final",
+      "artifactId": "cmtuwadzw000xpr0oxc464u6c",
+      "artifactSha256": "e81ebff51096f2d1bedaee39c375a653f78723bab68becbc6f4435c9350c3e1e",
+      "artifactBytes": 164024251,
+      "analysisIds": [
+        "cmtuwae0j000zpr0o6z9a36el"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwfmqr0012pr0om9yopg84",
+      "clipId": "dark-gradients-1080p24-final",
+      "artifactId": "cmtuwfmqr0013pr0osd5idzy4",
+      "artifactSha256": "3361c1ab0bd366d141fb25ce17301d5d5612e4bf4562399f010819aa3a524c5a",
+      "artifactBytes": 156633128,
+      "analysisIds": [
+        "cmtuwfyrf0015pr0ojwwwyb72"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwfz4k0017pr0oqkd5ts9r",
+      "clipId": "dark-gradients-1080p24-final",
+      "artifactId": "cmtuwfz4k0018pr0o8sgt1hbr",
+      "artifactSha256": "3361c1ab0bd366d141fb25ce17301d5d5612e4bf4562399f010819aa3a524c5a",
+      "artifactBytes": 156633128,
+      "analysisIds": [
+        "cmtuwfz58001apr0ov3ng3o3n"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwjc27001dpr0o780dcoq8",
+      "clipId": "animation-1080p24-final",
+      "artifactId": "cmtuwjc27001epr0omyhwf6c8",
+      "artifactSha256": "13f7eebbf107cdc3b17cfed4bb511ab289d226633df725316d4b01349bfc16e0",
+      "artifactBytes": 52297792,
+      "analysisIds": [
+        "cmtuwjjba001gpr0om2nb8dnj"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwjjea001ipr0oc77qczi1",
+      "clipId": "animation-1080p24-final",
+      "artifactId": "cmtuwjjea001jpr0oapqblnff",
+      "artifactSha256": "13f7eebbf107cdc3b17cfed4bb511ab289d226633df725316d4b01349bfc16e0",
+      "artifactBytes": 52297792,
+      "analysisIds": [
+        "cmtuwjjes001lpr0oxv34iwhk"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwkuk2001opr0o2u3n6bu8",
+      "clipId": "screen-text-1080p24-final",
+      "artifactId": "cmtuwkuk2001ppr0ovfefvz43",
+      "artifactSha256": "4b1debd4c750da25754378d6a1185d5626762bd09f1721eac4bdaa6b53d7841b",
+      "artifactBytes": 412314,
+      "analysisIds": [
+        "cmtuwkuu7001rpr0oelmnv24x"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwkuuy001tpr0oo2fbtwrz",
+      "clipId": "screen-text-1080p24-final",
+      "artifactId": "cmtuwkuuy001upr0ork1wawiz",
+      "artifactSha256": "4b1debd4c750da25754378d6a1185d5626762bd09f1721eac4bdaa6b53d7841b",
+      "artifactBytes": 412314,
+      "analysisIds": [
+        "cmtuwkuvj001wpr0oaehlmas0"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwqaoi001zpr0o8zj70bpk",
+      "clipId": "talking-head-1080p24-final",
+      "artifactId": "cmtuwqaoi0020pr0oh87tmuc7",
+      "artifactSha256": "5c45d9e59a18cc55ec0809be05e38b363ddd5cd25126bcc07603ba94b26fd7c1",
+      "artifactBytes": 56567635,
+      "analysisIds": [
+        "cmtuwqi070022pr0ob1yctg3f"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwqi6e0024pr0oedwsr6vb",
+      "clipId": "talking-head-1080p24-final",
+      "artifactId": "cmtuwqi6e0025pr0ovy8bc7yz",
+      "artifactSha256": "5c45d9e59a18cc55ec0809be05e38b363ddd5cd25126bcc07603ba94b26fd7c1",
+      "artifactBytes": 56567635,
+      "analysisIds": [
+        "cmtuwqi720027pr0oynrp6uak"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwqida0029pr0owfrvrls6",
+      "clipId": "talking-head-1080p24-final",
+      "artifactId": "cmtuwqida002apr0ocmgqcjby",
+      "artifactSha256": "5c45d9e59a18cc55ec0809be05e38b363ddd5cd25126bcc07603ba94b26fd7c1",
+      "artifactBytes": 56567635,
+      "analysisIds": [
+        "cmtuwqie1002cpr0ozpuxm9rw"
+      ],
+      "clientServerVmafMeanAgreement": true
+    },
+    {
+      "runId": "cmtuwqihb002epr0ol0iq0o1e",
+      "clipId": "talking-head-1080p24-final",
+      "artifactId": "cmtuwqihb002fpr0on8iqjg7d",
+      "artifactSha256": "5c45d9e59a18cc55ec0809be05e38b363ddd5cd25126bcc07603ba94b26fd7c1",
+      "artifactBytes": 56567635,
+      "analysisIds": [
+        "cmtuwqihy002hpr0o3d8w5ap9"
+      ],
+      "clientServerVmafMeanAgreement": true
+    }
+  ],
+  "originalChecksumVerification": "all original execution files independently verified before deduplicating cache/install copies"
+}

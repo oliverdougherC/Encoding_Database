@@ -4,16 +4,26 @@ import net from 'node:net';
 import express from 'express';
 import routes, {
   buildSubmissionPayloadHash,
+  benchmarkWhereFromSubmission,
+  buildEncoderTypeFilter,
+  buildGlobalSearchFilter,
+  buildWorkbenchWhere,
   DEFAULT_QUERY_LIMIT,
   TEST_VIDEO_CATALOG,
   getQueryCacheSize,
   normalizeCpuFreqMHz,
+  determineSubmissionStatus,
   parseTelemetryFromNotes,
   parseTelemetryMetaFromNotes,
   parseSkipParam,
   parseTakeParam,
   runSubmitTransactionWithRetry,
+  SORT_WHITELIST,
 } from '../dist/routes.js';
+import {
+  buildPublicCorpusOrderBy,
+  buildPublicCorpusWhere,
+} from '../dist/v7/corpus.js';
 import { prisma } from '../dist/db.js';
 import {
   aggregateEncoders,
@@ -24,9 +34,13 @@ import {
   parseAnalyticsFilters,
   resolveEncoderName,
 } from '../dist/analytics.js';
+import { loadAuthoritativeSuiteManifest } from '../dist/v7/suite.js';
 import { BoundedTtlCache } from '../dist/cache.js';
 
 process.env.DATABASE_URL ||= 'postgresql://app:app@localhost:5432/benchmarks?schema=public';
+
+const GIB = 1024n * 1024n * 1024n;
+const SIXTY_FOUR_GIB = 64n * GIB;
 
 const CAN_BIND_LOOPBACK = await new Promise((resolve) => {
   const probe = net.createServer();
@@ -57,7 +71,7 @@ after(async () => {
   await prisma.$disconnect().catch(() => {});
 });
 
-test('GET /test-videos returns a catalog with downloadUrl', async (t) => {
+test('GET /test-videos returns the seven-clip manifest-backed catalog', async (t) => {
   if (!CAN_BIND_LOOPBACK) {
     t.skip('Loopback listen is unavailable in this runtime');
     return;
@@ -68,18 +82,20 @@ test('GET /test-videos returns a catalog with downloadUrl', async (t) => {
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.ok(Array.isArray(data));
-    assert.ok(data.length >= 1);
+    assert.equal(data.length, 7);
 
-    const sample = data.find((v) => v && v.name === 'sample.mp4');
-    assert.ok(sample, 'sample.mp4 should exist in catalog');
-    assert.equal(
-      sample.sha256,
-      '53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8',
-    );
-    assert.equal(
-      sample.downloadUrl,
-      'https://github.com/oliverdougherC/Encoding_Database/releases/download/test-clips-v1/sample.mp4',
-    );
+    assert.equal(data.some((v) => v && v.fileName === 'sample.mp4'), false);
+
+    const manifest = loadAuthoritativeSuiteManifest();
+    const expectedSports = manifest.clips.find((clip) => clip.contentClass === 'high-motion-sports');
+    const sports = data.find((v) => v && v.clipId === expectedSports.id);
+    assert.ok(sports, `${expectedSports.id} should exist in catalog`);
+    assert.equal(sports.suiteVersion, 'encodingdb-test-suite-v1');
+    assert.equal(sports.contentClass, 'high-motion-sports');
+    assert.equal(sports.sha256, expectedSports.sha256);
+    assert.equal(sports.sizeBytes, expectedSports.byteSize);
+    assert.deepEqual(sports.source, expectedSports.source);
+    assert.deepEqual(sports.acquisition, expectedSports.acquisition);
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -118,6 +134,109 @@ test('Method guard: POST /query is 405 with Allow=GET, HEAD', async (t) => {
     assert.equal(res.headers.get('allow'), 'GET, HEAD');
     const body = await res.json();
     assert.equal(body.error, 'Method Not Allowed');
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('buildPublicCorpusWhere scopes direct V7 evidence filters', async () => {
+  const where = buildPublicCorpusWhere({
+    cpu: 'Ryzen',
+    gpu: 'RTX',
+    search: 'nvenc',
+    preset: 'p6',
+    encoderType: 'hardware',
+  });
+
+  assert.deepEqual(where.status, { in: ['ACCEPTED', 'SUSPECT'] });
+  assert.equal(where.benchmarkProtocol.state, 'ACTIVE');
+  assert.equal(where.artifacts.some.role, 'ENCODED');
+  assert.ok(Array.isArray(where.AND));
+  assert.equal(where.AND.length, 5);
+});
+
+test('buildPublicCorpusOrderBy supports V7 public sort keys only', () => {
+  assert.deepEqual(buildPublicCorpusOrderBy('samples', 'asc'), { sortKey: 'samples', dir: 'asc' });
+  assert.deepEqual(buildPublicCorpusOrderBy('sampleCount', 'asc'), { sortKey: 'createdAt', dir: 'asc' });
+});
+
+test('GET /corpus returns unscored rows from direct retained evidence when no ScoreContext or DerivedResult exists', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+
+  const originalBenchmarkRunFindMany = prisma.benchmarkRun.findMany;
+  const originalDerivedFindMany = prisma.derivedResult.findMany;
+  prisma.benchmarkRun.findMany = async () => [
+    makeBenchmarkRunRow(),
+    makeBenchmarkRunRow({
+      id: 'benchmark-run-2',
+      createdAt: new Date('2026-08-12T00:01:00.000Z'),
+      updatedAt: new Date('2026-08-12T00:01:00.000Z'),
+      payloadHash: 'payload-hash-2',
+      repetitionGroupId: 'repeat-b',
+      repetitionIndex: 1,
+      campaignId: 'campaign-b',
+      encodeFps: 100,
+      artifacts: [{
+        ...makeBenchmarkRunRow().artifacts[0],
+        id: 'artifact-2',
+        benchmarkRunId: 'benchmark-run-2',
+      }],
+      qualityAnalyses: [{
+        ...makeBenchmarkRunRow().qualityAnalyses[0],
+        id: 'analysis-2',
+        benchmarkRunId: 'benchmark-run-2',
+        artifactId: 'artifact-2',
+        vmafMean: 94,
+        vmafP5: 92,
+        videoBitrateBps: 4_200_000,
+      }],
+    }),
+  ];
+  prisma.derivedResult.findMany = async () => [];
+  t.after(() => {
+    prisma.benchmarkRun.findMany = originalBenchmarkRunFindMany;
+    prisma.derivedResult.findMany = originalDerivedFindMany;
+  });
+
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/corpus?total=1&limit=10`);
+    assert.equal(res.status, 200);
+    assert.equal(res.headers.get('x-total-count'), '1');
+    const data = await res.json();
+    assert.equal(data.length, 1);
+    assert.equal(data[0].encoderName, 'libx265');
+    assert.equal(data[0].samples, 2);
+    assert.equal(data[0].ramGB, 64);
+    assert.equal(data[0].sampleCounts.accepted, 2);
+    assert.equal(data[0].sampleCounts.repetitions, 2);
+    assert.equal(data[0].status.scoring, 'UNSCORED_NO_PUBLIC_DERIVED_RESULT');
+    assert.equal(data[0].pl.total, null);
+    assert.equal(data[0].versions.scoreContextId, null);
+    assert.equal(data[0].bitrate.workloadReferenceBitrateBps, null);
+    assert.equal(data[0].confidence.available, false);
+    assert.equal(data[0].environment.physicalMemoryBytes, Number(SIXTY_FOUR_GIB));
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /query rejects categorical telemetry filters on mixed aggregates', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+  const { server, baseUrl } = await startTestServer();
+  try {
+    for (const params of ['powerSource=ac', 'thermalThrottle=false']) {
+      const res = await fetch(`${baseUrl}/query?${params}`);
+      assert.equal(res.status, 400);
+      const body = await res.json();
+      assert.match(body.error, /unavailable for aggregated results/);
+    }
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
@@ -186,6 +305,7 @@ test('buildSubmissionPayloadHash changes when telemetry changes', () => {
     contentClass: 'mixed',
     resolution: '1080p',
     passes: 1,
+    workloadId: null,
     fps: 120.5,
     vmaf: 95.3,
     ssim: 0.98,
@@ -261,11 +381,22 @@ test('DEFAULT_QUERY_LIMIT is sane', () => {
   assert.ok(DEFAULT_QUERY_LIMIT <= 500);
 });
 
+test('aggregate sample count is an allowed workbench sort', () => {
+  assert.ok(SORT_WHITELIST.has('samples'));
+});
+
 test('TEST_VIDEO_CATALOG has no placeholders', () => {
-  assert.ok(TEST_VIDEO_CATALOG.length >= 1);
+  assert.equal(TEST_VIDEO_CATALOG.length, 7);
   for (const row of TEST_VIDEO_CATALOG) {
+    assert.notEqual(row.fileName, 'sample.mp4');
     assert.ok(typeof row.sha256 === 'string' && !row.sha256.startsWith('placeholder_'));
     assert.ok(Number(row.sizeBytes) > 0);
+    const expected = loadAuthoritativeSuiteManifest().clips.find((clip) => clip.id === row.clipId);
+    assert.ok(expected, 'Every public catalog row must identify a canonical clip');
+    assert.deepEqual(row.source, expected.source);
+    assert.equal(row.source.reviewed, true);
+    assert.equal(row.source.redistributionApproved, true);
+    assert.equal(row.acquisition.kind, 'retained-original');
   }
 });
 
@@ -347,6 +478,48 @@ test('runSubmitTransactionWithRetry does not retry payloadHash conflicts', async
   assert.equal(attempts, 1);
 });
 
+test('only canonical, plausible submissions can be accepted', () => {
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: true, maxAbsoluteZScore: 0 }), 'accepted');
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: false, maxAbsoluteZScore: 0 }), 'pending');
+  assert.equal(determineSubmissionStatus({ plausible: true, canonicalInput: true, maxAbsoluteZScore: 4 }), 'suspect');
+  assert.equal(determineSubmissionStatus({ plausible: false, canonicalInput: true, maxAbsoluteZScore: 0 }), 'rejected');
+});
+
+test('idempotent retry lookup derives the aggregate key from Submission', () => {
+  const source = {
+    cpuModel: 'Ryzen 9 7950X', gpuModel: 'RTX 4090', ramGB: 64, os: 'Linux',
+    codec: 'h264_nvenc', preset: 'p6', crf: 0, contentClass: 'gaming', resolution: '4k', passes: 1, workloadId: null,
+  };
+  assert.deepEqual(benchmarkWhereFromSubmission(source), source);
+});
+
+test('global workbench search spans advertised text and numeric result fields', () => {
+  const text = buildGlobalSearchFilter('RTX 4090');
+  assert.ok(text.OR.some((entry) => entry.cpuModel?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.gpuModel?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.encoderName?.contains === 'RTX 4090'));
+  assert.ok(text.OR.some((entry) => entry.preset?.contains === 'RTX 4090'));
+
+  const numeric = buildGlobalSearchFilter('24');
+  assert.ok(numeric.OR.some((entry) => entry.crf === 24));
+  assert.ok(numeric.OR.some((entry) => entry.fps === 24));
+  assert.ok(numeric.OR.some((entry) => entry.samples === 24));
+});
+
+test('workbench CPU and GPU filters remain server-side alongside global search', () => {
+  const where = buildWorkbenchWhere({ cpu: 'Ryzen', gpu: '4090', search: 'nvenc' });
+  assert.deepEqual(where.cpuModel, { contains: 'Ryzen', mode: 'insensitive' });
+  assert.deepEqual(where.gpuModel, { contains: '4090', mode: 'insensitive' });
+  assert.ok(where.AND.some((entry) => Array.isArray(entry.OR)));
+});
+
+test('hardware encoder classification includes Linux and Raspberry Pi suffixes', () => {
+  const filter = buildEncoderTypeFilter('hardware');
+  const suffixes = filter.OR.flatMap((entry) => [entry.codec?.endsWith, entry.encoderName?.endsWith]).filter(Boolean);
+  assert.ok(suffixes.includes('_v4l2m2m'));
+  assert.ok(suffixes.includes('_omx'));
+});
+
 function makeBenchmarkRow(overrides = {}) {
   return {
     id: 'bench-1',
@@ -364,9 +537,13 @@ function makeBenchmarkRow(overrides = {}) {
     passes: 1,
     fps: 120,
     vmaf: 95,
+    vmafP5: null,
     ssim: 0.98,
     psnr: 41,
     fileSizeBytes: 80_000_000,
+    videoBitrateBps: null,
+    sourceFps: null,
+    sourceDurationSeconds: null,
     notes: null,
     gpuUtilAvg: null,
     gpuPowerAvgW: 200,
@@ -398,6 +575,12 @@ function makeBenchmarkRow(overrides = {}) {
     fpsSum: 360,
     fileSizeSum: 240_000_000,
     vmafSum: 285,
+    vmafP5Samples: 0,
+    vmafP5Sum: 0,
+    videoBitrateSamples: 0,
+    videoBitrateSum: 0,
+    sourceFpsSamples: 0,
+    sourceFpsSum: 0,
     ssimSamples: 3,
     ssimSum: 2.94,
     psnrSamples: 3,
@@ -443,7 +626,265 @@ function makeBenchmarkRow(overrides = {}) {
     clientVersion: null,
     inputHash: null,
     runMs: null,
+    scoreFormulaVersion: null,
+    benchmarkProtocolVersion: null,
+    sourceSuiteVersion: null,
+    workloadId: null,
+    metricModelId: null,
     payloadHash: null,
+    ...overrides,
+  };
+}
+
+function makeDerivedResultRow(overrides = {}) {
+  return {
+    id: 'derived-1',
+    createdAt: new Date('2026-08-12T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+    kind: 'WORKLOAD',
+    scopeKey: 'workload:mixed-1080p',
+    benchmarkProtocolId: 'protocol-1',
+    workloadId: 'mixed-1080p',
+    testClipId: null,
+    recipeId: 'recipe-1',
+    environmentId: 'environment-1',
+    scoreContextId: 'score-context-1',
+    aggregatorVersion: 'derived-result-aggregation/v1',
+    acceptedRunCount: 4,
+    suspectRunCount: 0,
+    rejectedRunCount: 0,
+    invalidRunCount: 0,
+    repetitionCount: 4,
+    centerEncodeFps: 120,
+    centerRealTimeRatio: 4,
+    centerVideoBitrateBps: 4_500_000,
+    centerFileSizeBytes: 80_000_000,
+    centerVmafMean: 95,
+    centerVmafP5: 93,
+    plQuality: 0.85,
+    plBitrate: 0.52,
+    plSpeed: 0.97,
+    plTotal: 77.7,
+    confidenceLower: 74.1,
+    confidenceUpper: 79.9,
+    evidenceTier: 'MEDIUM',
+    evidenceSummary: { eligibleForDefaultRecommendation: true },
+    confidenceIntervals: {},
+    dispersion: {},
+    recomputationSpec: {},
+    recipe: {
+      id: 'recipe-1',
+      fingerprint: 'recipe-fingerprint',
+      canonicalJson: {},
+      codecFamily: 'hevc',
+      encoderImplementation: 'libx265',
+      preset: 'slow',
+      requestedRateControlMode: 'CONSTANT_QUALITY',
+      effectiveRateControlMode: 'CONSTANT_QUALITY',
+      requestedQualityValue: 24,
+      effectiveQualityValue: 24,
+    },
+    environment: {
+      id: 'environment-1',
+      fingerprint: 'environment-fingerprint',
+      canonicalJson: {},
+      cpuModel: 'AMD Ryzen 9 9950X',
+      gpuModel: 'NVIDIA RTX 5090',
+      physicalCoreCount: 16,
+      logicalThreadCount: 32,
+      physicalMemoryBytes: SIXTY_FOUR_GIB,
+      osName: 'Linux',
+      osVersion: '6.10',
+      ffmpegVersion: '7.1',
+    },
+    scoreContext: {
+      id: 'score-context-1',
+      formulaVersion: '7.0',
+      contextVersion: 'reference-frontier-v1',
+      workloadId: 'mixed-1080p',
+      qualityModelId: 'vmaf-v1',
+      workloadReferenceBitrateBps: 5_000_000,
+      transformConstants: {
+        qualityExponent: 2.4,
+        speedCurveRate: 1.2,
+        speedSaturationRealtime: 4,
+      },
+      benchmarkProtocol: {
+        id: 'protocol-1',
+        protocolVersion: 'benchmark-protocol-v1',
+        sourceSuiteVersion: 'encodingdb-test-suite-v1',
+        state: 'ACTIVE',
+      },
+    },
+    ...overrides,
+  };
+}
+
+function makeBenchmarkRunRow(overrides = {}) {
+  return {
+    id: 'benchmark-run-1',
+    createdAt: new Date('2026-08-12T00:00:00.000Z'),
+    updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+    benchmarkProtocolId: 'protocol-1',
+    testClipId: 'clip-1',
+    workloadId: 'mixed-1080p',
+    recipeId: 'recipe-1',
+    environmentId: 'environment-1',
+    payloadHash: 'payload-hash-1',
+    inputHash: null,
+    campaignId: 'campaign-a',
+    repetitionGroupId: 'repeat-a',
+    repetitionIndex: 0,
+    encodeWallTimeMs: 10_000,
+    encodeFps: 120,
+    sourceFps: 30,
+    realTimeRatio: 4,
+    sourceFrameCount: 300,
+    encodedFrameCount: 300,
+    telemetry: null,
+    telemetrySources: null,
+    telemetryMissing: null,
+    energyDomains: null,
+    decodeBenchmark: null,
+    preRunEnvironmentCheck: null,
+    ffmpegProgressTelemetry: null,
+    clientQualityDebug: null,
+    status: 'ACCEPTED',
+    statusReason: null,
+    benchmarkProtocol: {
+      id: 'protocol-1',
+      protocolVersion: 'benchmark-protocol-v1',
+      sourceSuiteVersion: 'encodingdb-test-suite-v1',
+      minimumClientVersion: 'client/0.2.0',
+      metricWorkerVersion: 'authoritative-analysis/v1',
+      canonicalRecipeRules: {},
+      canonicalOutputRules: {},
+      state: 'ACTIVE',
+    },
+    recipe: {
+      id: 'recipe-1',
+      fingerprint: 'recipe-fingerprint',
+      canonicalJson: {},
+      codecFamily: 'hevc',
+      encoderImplementation: 'libx265',
+      encoderVersion: '7.1',
+      preset: 'slow',
+      tune: null,
+      profile: 'main',
+      level: '5.1',
+      tier: null,
+      pixelFormat: 'yuv420p10le',
+      bitDepth: 10,
+      chromaSubsampling: '4:2:0',
+      containerFormat: 'mp4',
+      videoCodecTag: null,
+      requestedRateControlMode: 'CONSTANT_QUALITY',
+      requestedQualityValue: 24,
+      requestedTargetBitrateKbps: null,
+      requestedMaxBitrateKbps: null,
+      requestedBufferSizeKbits: null,
+      requestedQmin: null,
+      requestedQmax: null,
+      effectiveRateControlMode: 'CONSTANT_QUALITY',
+      effectiveQualityValue: 24,
+      effectiveTargetBitrateKbps: null,
+      effectiveMaxBitrateKbps: null,
+      effectiveBufferSizeKbits: null,
+      effectiveQmin: null,
+      effectiveQmax: null,
+      requestedRateControl: {},
+      effectiveRateControl: {},
+      requestedOutputSettings: null,
+      effectiveOutputSettings: null,
+      normalizedRequestedOptions: null,
+      normalizedEffectiveOptions: null,
+      gopSize: null,
+      keyframeInterval: null,
+      bFrames: null,
+      frameReordering: null,
+      lookahead: null,
+      filmGrainSynthesis: null,
+      majorTools: null,
+    },
+    environment: {
+      id: 'environment-1',
+      fingerprint: 'environment-fingerprint',
+      canonicalJson: {},
+      cpuModel: 'AMD Ryzen 9 9950X',
+      cpuArchitecture: 'x86_64',
+      physicalCoreCount: 16,
+      logicalThreadCount: 32,
+      physicalMemoryBytes: SIXTY_FOUR_GIB,
+      gpuModel: 'NVIDIA RTX 5090',
+      selectedAcceleratorId: null,
+      selectedAccelerator: 'cuda',
+      driverVersion: '555.12',
+      osName: 'Linux',
+      osVersion: '6.10',
+      ffmpegBuildFingerprint: 'ffmpeg-build-fingerprint',
+      ffmpegVersion: '7.1',
+      encoderVersion: '7.1',
+      clientVersion: 'client/0.2.0',
+    },
+    artifacts: [
+      {
+        id: 'artifact-1',
+        createdAt: new Date('2026-08-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+        benchmarkRunId: 'benchmark-run-1',
+        role: 'ENCODED',
+        sha256: 'a'.repeat(64),
+        byteSize: 80_000_000,
+        storageState: 'RETAINED',
+        storageProvider: 'local',
+        storageBucket: 'bucket',
+        storageKey: 'artifact-1',
+        storageUrl: null,
+        mediaContainer: 'mp4',
+        stateReason: null,
+        stateDetails: null,
+        uploadedAt: new Date('2026-08-12T00:00:00.000Z'),
+        verifiedAt: new Date('2026-08-12T00:00:00.000Z'),
+        retainedAt: new Date('2026-08-12T00:00:00.000Z'),
+        deletedAt: null,
+      },
+    ],
+    qualityAnalyses: [
+      {
+        id: 'analysis-1',
+        createdAt: new Date('2026-08-12T00:00:00.000Z'),
+        updatedAt: new Date('2026-08-12T00:00:00.000Z'),
+        benchmarkRunId: 'benchmark-run-1',
+        artifactId: 'artifact-1',
+        status: 'COMPLETE',
+        metricModelId: 'vmaf-v1-sdr-sd',
+        qualityContextId: null,
+        analysisWorkerVersion: 'authoritative-analysis/v1',
+        analysisProvenance: {},
+        vmafMean: 95,
+        vmafMedian: 95,
+        vmafP1: 90,
+        vmafP5: 93,
+        vmafMin: 88,
+        vmafMax: 98,
+        vmafStdDev: 2,
+        vmafHarmonicMean: 94,
+        worstFrameIndex: 1,
+        worstFrameTimestampMs: 100,
+        belowThresholdFractions: null,
+        vmafDistribution: null,
+        xpsnr: null,
+        ssim: null,
+        psnr: null,
+        videoBitrateBps: 4_500_000,
+        videoPayloadBytes: 79_500_000,
+        videoPacketCount: 1_000,
+        measuredDurationSeconds: 10,
+        bitrateMethod: 'payload',
+        containerBitrateBps: 4_700_000,
+        fileSizeBytes: 80_000_000,
+      },
+    ],
     ...overrides,
   };
 }
@@ -451,11 +892,24 @@ function makeBenchmarkRow(overrides = {}) {
 test('parseAnalyticsFilters defaults to the canonical comparison slice', () => {
   const filters = parseAnalyticsFilters({});
   assert.deepEqual(filters, {
+    workloadId: null,
     contentClass: 'mixed',
     resolution: '1080p',
     crf: 24,
     passes: 1,
     minSamples: 3,
+    fitMode: 'balanced',
+    customQualityWeight: null,
+    customBitrateWeight: null,
+    customSpeedWeight: null,
+    minimumQuality: null,
+    minimumRealtimeRatio: null,
+    maximumBitrateBps: null,
+    compatibleCodecFamilies: null,
+    requireRecommendationEligibility: false,
+    environmentId: null,
+    environmentFingerprint: null,
+    scoreContextId: null,
   });
   assert.deepEqual(buildAnalyticsWhere(filters), {
     status: 'accepted',
@@ -464,6 +918,210 @@ test('parseAnalyticsFilters defaults to the canonical comparison slice', () => {
     crf: 24,
     passes: 1,
   });
+});
+
+test('parseAnalyticsFilters preserves lossless CRF 0', () => {
+  assert.equal(parseAnalyticsFilters({ crf: '0' }).crf, 0);
+});
+
+test('GET /analytics/leaderboards uses canonical derived results and an exact immutable Environment scope', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+
+  const originalDerivedFindMany = prisma.derivedResult.findMany;
+  const originalBenchmarkFindMany = prisma.benchmark.findMany;
+  let benchmarkCalls = 0;
+
+  const canonicalRows = [
+    makeDerivedResultRow(),
+    makeDerivedResultRow({
+      id: 'derived-2',
+      recipeId: 'recipe-2',
+      scoreContextId: 'score-context-1',
+      centerEncodeFps: 90,
+      centerRealTimeRatio: 3,
+      centerVideoBitrateBps: 5_100_000,
+      centerVmafMean: 96,
+      centerVmafP5: 94.5,
+      plQuality: 0.9,
+      plBitrate: 0.49,
+      plSpeed: 0.92,
+      plTotal: 78.9,
+      environmentId: 'environment-2',
+      environment: {
+        id: 'environment-2',
+        fingerprint: 'environment-fingerprint-2',
+        canonicalJson: {},
+        cpuModel: 'AMD Ryzen 9 9950X',
+        gpuModel: 'NVIDIA RTX 5090',
+        physicalCoreCount: 16,
+        logicalThreadCount: 32,
+        physicalMemoryBytes: SIXTY_FOUR_GIB,
+        osName: 'Linux',
+        osVersion: '6.10',
+        ffmpegVersion: '7.1',
+      },
+      recipe: {
+        id: 'recipe-2',
+        fingerprint: 'recipe-fingerprint-2',
+        canonicalJson: {},
+        codecFamily: 'hevc',
+        encoderImplementation: 'hevc_videotoolbox',
+        preset: 'medium',
+        requestedRateControlMode: 'TARGET_BITRATE',
+        effectiveRateControlMode: 'TARGET_BITRATE',
+        requestedTargetBitrateKbps: 5_000,
+        effectiveTargetBitrateKbps: 5_000,
+        requestedQualityValue: 24,
+        effectiveQualityValue: 24,
+      },
+      scoreContext: {
+        id: 'score-context-1',
+        formulaVersion: '7.0',
+        contextVersion: 'reference-frontier-v1',
+        workloadId: 'mixed-1080p',
+        qualityModelId: 'vmaf-v1',
+        workloadReferenceBitrateBps: 5_000_000,
+        transformConstants: {
+          qualityExponent: 2.4,
+          speedCurveRate: 1.2,
+          speedSaturationRealtime: 4,
+        },
+        benchmarkProtocol: {
+          id: 'protocol-1',
+          protocolVersion: 'benchmark-protocol-v1',
+          sourceSuiteVersion: 'encodingdb-test-suite-v1',
+          state: 'ACTIVE',
+        },
+      },
+    }),
+  ];
+  prisma.derivedResult.findMany = async () => canonicalRows;
+  prisma.benchmark.findMany = async () => {
+    benchmarkCalls += 1;
+    return [makeBenchmarkRow({ encoderName: 'legacy_benchmark_only' })];
+  };
+  t.after(() => {
+    prisma.derivedResult.findMany = originalDerivedFindMany;
+    prisma.benchmark.findMany = originalBenchmarkFindMany;
+  });
+
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2&scoreContextId=score-context-1`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(benchmarkCalls, 0);
+    assert.equal(data.rows.length, 1);
+    assert.equal(data.rows[0].encoderName, 'hevc_videotoolbox');
+    assert.deepEqual(data.rows[0].rateControl, {
+      requestedMode: 'TARGET_BITRATE',
+      effectiveMode: 'TARGET_BITRATE',
+      qualityValue: 24,
+      targetBitrateKbps: 5_000,
+      maxBitrateKbps: null,
+      bufferSizeKbits: null,
+      label: 'TARGET_BITRATE 5000 kbps',
+    });
+    assert.deepEqual(data.rows[0].hardwareContext, {
+      environmentId: 'environment-2',
+      environmentFingerprint: 'environment-fingerprint-2',
+      cpuModel: 'AMD Ryzen 9 9950X',
+      gpuModel: 'NVIDIA RTX 5090',
+      ramGB: 64,
+      os: 'Linux 6.10',
+    });
+    assert.equal(data.environmentScope.exact, true);
+    assert.equal(data.contextScope.exact, true);
+    assert.equal(data.contextScope.selectedScoreContextId, 'score-context-1');
+    assert.equal(data.rows.every((row) => row.encoderName !== 'legacy_benchmark_only'), true);
+
+    canonicalRows.push(makeDerivedResultRow({
+      id: 'derived-unrelated-faster',
+      environmentId: 'environment-unrelated',
+      centerEncodeFps: 10_000,
+      centerRealTimeRatio: 300,
+      plTotal: 99.9,
+      environment: {
+        ...makeDerivedResultRow().environment,
+        id: 'environment-unrelated',
+        fingerprint: 'environment-fingerprint-unrelated',
+        cpuModel: 'Unrelated faster CPU',
+      },
+    }));
+    canonicalRows.push(makeDerivedResultRow({
+      id: 'derived-future-context',
+      environmentId: 'environment-2',
+      scoreContextId: 'score-context-future',
+      plTotal: 99.8,
+      environment: canonicalRows[1].environment,
+      scoreContext: {
+        ...canonicalRows[1].scoreContext,
+        id: 'score-context-future',
+        contextVersion: 'reference-frontier-future',
+      },
+    }));
+    const invariantRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&crf=24&environmentId=environment-2&environmentFingerprint=environment-fingerprint-2&scoreContextId=score-context-1`);
+    assert.equal(invariantRes.status, 200);
+    const invariant = await invariantRes.json();
+    assert.equal(invariant.recommendation.rowId, data.recommendation.rowId);
+    assert.deepEqual(invariant.rows.map((row) => row.rowId), data.rows.map((row) => row.rowId));
+    assert.deepEqual(invariant.rows.map((row) => row.plScore), data.rows.map((row) => row.plScore));
+
+    const constrainedRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&environmentId=environment-2&scoreContextId=score-context-1&fitMode=quality&minimumQuality=99`);
+    assert.equal(constrainedRes.status, 200);
+    const constrained = await constrainedRes.json();
+    assert.equal(constrained.rows[0].plScore, data.rows[0].plScore);
+    assert.equal(constrained.rows[0].context.scoreContextId, 'score-context-1');
+
+    const ambiguousContextRes = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=action&resolution=720p&environmentId=environment-2`);
+    assert.equal(ambiguousContextRes.status, 200);
+    const ambiguousContext = await ambiguousContextRes.json();
+    assert.equal(ambiguousContext.rows.length, 0);
+    assert.equal(ambiguousContext.contextScope.exact, false);
+    assert.deepEqual(ambiguousContext.contextScope.available.map((context) => context.scoreContextId).sort(), [
+      'score-context-1',
+      'score-context-future',
+    ]);
+    assert.match(ambiguousContext.recommendation.reason, /immutable score context/);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('GET /analytics/leaderboards returns an empty canonical payload when only legacy benchmark rows exist', async (t) => {
+  if (!CAN_BIND_LOOPBACK) {
+    t.skip('Loopback listen is unavailable in this runtime');
+    return;
+  }
+
+  const originalDerivedFindMany = prisma.derivedResult.findMany;
+  const originalBenchmarkFindMany = prisma.benchmark.findMany;
+  let benchmarkCalls = 0;
+
+  prisma.derivedResult.findMany = async () => [];
+  prisma.benchmark.findMany = async () => {
+    benchmarkCalls += 1;
+    return [makeBenchmarkRow({ encoderName: 'legacy_only' })];
+  };
+  t.after(() => {
+    prisma.derivedResult.findMany = originalDerivedFindMany;
+    prisma.benchmark.findMany = originalBenchmarkFindMany;
+  });
+
+  const { server, baseUrl } = await startTestServer();
+  try {
+    const res = await fetch(`${baseUrl}/analytics/leaderboards?contentClass=mixed&resolution=1080p&crf=24`);
+    assert.equal(res.status, 200);
+    const data = await res.json();
+    assert.equal(benchmarkCalls, 0);
+    assert.deepEqual(data.rows, []);
+    assert.equal(data.recommendation.rowId, null);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });
 
 test('aggregateLeaderboards keeps distinct workload slices separate and enforces minSamples', () => {
@@ -478,6 +1136,102 @@ test('aggregateLeaderboards keeps distinct workload slices separate and enforces
   assert.equal(result[0].resolution, '720p');
   assert.equal(result[1].resolution, '1080p');
   assert.ok(result.every((row) => row.sampleCount >= 3));
+});
+
+test('aggregateLeaderboards computes filter-invariant PL v7 only from complete versioned evidence', () => {
+  const priorRefs = process.env.PL_V7_REFERENCE_BITRATES_JSON;
+  const priorVersion = process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+  process.env.PL_V7_REFERENCE_BITRATES_JSON = JSON.stringify({ 'sports-1080p': 4_000_000 });
+  process.env.PL_V7_REFERENCE_CONTEXT_VERSION = 'test-reference-v1';
+  try {
+    const scored = makeBenchmarkRow({
+      id: 'pl7', workloadId: 'sports-1080p', samples: 3, fpsSum: 180,
+      vmafSum: 282, vmafSamples: 3, vmafP5Sum: 264, vmafP5Samples: 3,
+      videoBitrateSum: 12_000_000, videoBitrateSamples: 3,
+      sourceFpsSum: 90, sourceFpsSamples: 3,
+    });
+    const unrelated = makeBenchmarkRow({ id: 'unrelated', encoderName: 'libx264', preset: 'slow', samples: 3 });
+    const alone = aggregateLeaderboards([scored], 3).find((row) => row.encoderName === 'h264_nvenc');
+    const withCandidate = aggregateLeaderboards([scored, unrelated], 3).find((row) => row.encoderName === 'h264_nvenc');
+    assert.ok(alone.plScore != null);
+    assert.equal(withCandidate.plScore, alone.plScore);
+    assert.equal(alone.plScoreVersion, '7.0');
+    assert.deepEqual(alone.hardwareContext, {
+      cpuModel: 'Intel Core i7-14700K',
+      gpuModel: 'NVIDIA RTX 4070',
+      ramGB: 32,
+      os: 'Windows 11',
+    });
+    assert.equal(alone.plScoreContext.referenceContextVersion, 'test-reference-v1');
+    assert.ok(alone.plScoreComponents.quality > 0);
+  } finally {
+    if (priorRefs == null) delete process.env.PL_V7_REFERENCE_BITRATES_JSON;
+    else process.env.PL_V7_REFERENCE_BITRATES_JSON = priorRefs;
+    if (priorVersion == null) delete process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+    else process.env.PL_V7_REFERENCE_CONTEXT_VERSION = priorVersion;
+  }
+});
+
+test('aggregateLeaderboards keeps hardware-scoped PL rows separate for identical encoder/workload slices', () => {
+  const priorRefs = process.env.PL_V7_REFERENCE_BITRATES_JSON;
+  const priorVersion = process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+  process.env.PL_V7_REFERENCE_BITRATES_JSON = JSON.stringify({ 'sports-1080p': 4_000_000 });
+  process.env.PL_V7_REFERENCE_CONTEXT_VERSION = 'test-reference-v1';
+  try {
+    const baseline = makeBenchmarkRow({
+      id: 'pl7-hw-a',
+      workloadId: 'sports-1080p',
+      samples: 3,
+      fpsSum: 180,
+      vmafSum: 282,
+      vmafSamples: 3,
+      vmafP5Sum: 264,
+      vmafP5Samples: 3,
+      videoBitrateSum: 12_000_000,
+      videoBitrateSamples: 3,
+      sourceFpsSum: 90,
+      sourceFpsSamples: 3,
+    });
+    const otherHardware = makeBenchmarkRow({
+      id: 'pl7-hw-b',
+      workloadId: 'sports-1080p',
+      cpuModel: 'AMD Ryzen 9 9950X',
+      gpuModel: 'NVIDIA RTX 5090',
+      ramGB: 64,
+      os: 'Linux',
+      samples: 3,
+      fpsSum: 420,
+      vmafSum: 291,
+      vmafSamples: 3,
+      vmafP5Sum: 279,
+      vmafP5Samples: 3,
+      videoBitrateSum: 9_000_000,
+      videoBitrateSamples: 3,
+      sourceFpsSum: 90,
+      sourceFpsSamples: 3,
+    });
+
+    const rows = aggregateLeaderboards([baseline, otherHardware], 3).filter((row) => row.encoderName === 'h264_nvenc');
+    assert.equal(rows.length, 2);
+
+    const baselineRow = rows.find((row) => row.hardwareContext.cpuModel === 'Intel Core i7-14700K');
+    const otherHardwareRow = rows.find((row) => row.hardwareContext.cpuModel === 'AMD Ryzen 9 9950X');
+    const isolatedBaseline = aggregateLeaderboards([baseline], 3).find((row) => row.encoderName === 'h264_nvenc');
+
+    assert.ok(baselineRow);
+    assert.ok(otherHardwareRow);
+    assert.ok(isolatedBaseline);
+    assert.equal(baselineRow.sampleCount, isolatedBaseline.sampleCount);
+    assert.equal(baselineRow.avgFps, isolatedBaseline.avgFps);
+    assert.equal(baselineRow.avgVideoBitrateBps, isolatedBaseline.avgVideoBitrateBps);
+    assert.equal(baselineRow.plScore, isolatedBaseline.plScore);
+    assert.notEqual(otherHardwareRow.plScore, baselineRow.plScore);
+  } finally {
+    if (priorRefs == null) delete process.env.PL_V7_REFERENCE_BITRATES_JSON;
+    else process.env.PL_V7_REFERENCE_BITRATES_JSON = priorRefs;
+    if (priorVersion == null) delete process.env.PL_V7_REFERENCE_CONTEXT_VERSION;
+    else process.env.PL_V7_REFERENCE_CONTEXT_VERSION = priorVersion;
+  }
 });
 
 test('aggregateHardware computes stable weighted averages within a fixed slice', () => {

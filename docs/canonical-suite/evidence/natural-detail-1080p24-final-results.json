@@ -1,0 +1,144 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/natural-detail-1080p24-final.mkv",
+  "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+  "byteSize": 283872120,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.9964892080170102,
+  "decodeRealtimeRatio": 10.035231610686242,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": {
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Hillside soil, rocks and vegetation occupy most of the frame during a camera pan and wider shot. Reviewed real PQ/P3 to SDR conversion retains highlight/shadow separation and natural texture; no metadata-only HDR relabeling. Not a pure wind-foliage scene."
+  },
+  "encodes": [
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-20.mp4",
+      "sha256": "5039028fec799295f8212480c01a609a5bdc4cb0db5b201a1c4086e0857c1d16",
+      "bytes": 15287011,
+      "videoBytes": 15283185,
+      "videoBitrateBps": 12226548.0,
+      "elapsedSeconds": 3.5534786250209436,
+      "encodeFps": 67.53945227363947,
+      "vmafMean": 96.220962,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-20.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-28.mp4",
+      "sha256": "8a1942b43c553866653854cd1c93878d5ec79dd676e70cf46ed6de45ef261959",
+      "bytes": 3385985,
+      "videoBytes": 3382315,
+      "videoBitrateBps": 2705852.0,
+      "elapsedSeconds": 2.6935673750122078,
+      "encodeFps": 89.1011682968993,
+      "vmafMean": 87.420013,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-36.mp4",
+      "sha256": "27341fb761471a1acd7055451541ba35551d6194ddd3c5d411e6fceb80709a87",
+      "bytes": 987123,
+      "videoBytes": 983501,
+      "videoBitrateBps": 786800.8,
+      "elapsedSeconds": 2.336016750021372,
+      "encodeFps": 102.73898934920062,
+      "vmafMean": 68.980183,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx264-36.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx265-28.mp4",
+      "sha256": "af4c638e4f791f8d33f60df2475c5826e6c210850759dddeb7b68b59c2018547",
+      "bytes": 3041265,
+      "videoBytes": 3035149,
+      "videoBitrateBps": 2428119.2,
+      "elapsedSeconds": 6.915863208007067,
+      "encodeFps": 34.70282635465261,
+      "vmafMean": 87.757364,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libx265-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "runtime": "/opt/homebrew/bin/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libsvtav1-32.mp4",
+      "sha256": "79a2a9b0fe68c554a99dc2c48d2a5e916e10459af31f385cbfbeb95acff4ecf0",
+      "bytes": 6120613,
+      "videoBytes": 6118439,
+      "videoBitrateBps": 4894751.2,
+      "elapsedSeconds": 1.9730316249770112,
+      "encodeFps": 121.64021952906931,
+      "vmafMean": 93.629824,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/libsvtav1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/h264_videotoolbox-2500.mp4",
+      "sha256": "5436fe0eb1a979f3919822ec83f4d5be0677db3a4db93be8ea17df83014fb784",
+      "bytes": 3277790,
+      "videoBytes": 3275840,
+      "videoBitrateBps": 2620672.0,
+      "elapsedSeconds": 1.4941577090066858,
+      "encodeFps": 160.62561438681846,
+      "vmafMean": 78.555486,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/natural-detail-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
+    }
+  ]
+}

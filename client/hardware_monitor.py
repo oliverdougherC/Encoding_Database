@@ -18,11 +18,12 @@ import subprocess
 import threading
 import time
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 import psutil
 
 from .config import normalize_cpu_freq_mhz
+from .energy import EnergyCollector
 
 try:
     import pynvml  # type: ignore
@@ -201,6 +202,7 @@ class HardwareMetrics:
     battery_sample_count: Optional[int] = None
     telemetry_sources: Optional[str] = None
     telemetry_missing: Optional[str] = None
+    energy_domains: Optional[List[Dict[str, Any]]] = None
 
 
 @dataclass
@@ -284,6 +286,8 @@ class HardwareMonitor:
         self._allow_gpu_collection = self._should_collect_gpu()
         self._nvml_device_indexes: Optional[List[int]] = None
         self._elevated = _is_elevated()
+        self._energy_collector: Optional[EnergyCollector] = None
+        self._energy_domains: List[Dict[str, Any]] = []
 
     def start(self) -> None:
         self._stop_event.clear()
@@ -306,6 +310,12 @@ class HardwareMonitor:
         self._ffmpeg_cpu_time_start = self._read_ffmpeg_cpu_time()
         self._ffmpeg_cpu_time_end = None
         self._nvml_device_indexes = self._select_nvml_device_indexes()
+        self._energy_collector = EnergyCollector(
+            collect_nvml=self._gpu_vendor == "nvidia" or bool(self._nvml_device_indexes),
+            nvml_device_indexes=self._nvml_device_indexes,
+            collect_powercap=platform.system() == "Linux",
+        )
+        self._energy_collector.start()
 
         try:
             psutil.cpu_percent(interval=None)
@@ -332,6 +342,7 @@ class HardwareMonitor:
         self._ffmpeg_io_end = self._read_ffmpeg_io_totals()
         self._ffmpeg_cpu_time_end = self._read_ffmpeg_cpu_time()
         self._capture_battery_snapshot(is_end=True)
+        self._energy_domains = self._energy_collector.stop() if self._energy_collector is not None else []
         return self._aggregate()
 
     def _build_collectors(self) -> None:
@@ -709,6 +720,15 @@ class HardwareMonitor:
             m.monitor_duration_ms = int(round((self._end_mono - self._start_mono) * 1000.0))
 
         m.thermal_throttle = self._detect_throttle(gpu, cpu)
+        if self._energy_domains:
+            m.energy_domains = [dict(item) for item in self._energy_domains]
+            for item in self._energy_domains:
+                source = str(item.get("source") or "").strip()
+                state = str(item.get("counterState") or "").strip().lower()
+                if source and state not in {"unsupported", "missing", "reset"}:
+                    self._record_source(f"energy_{source}")
+                elif source and state:
+                    self._record_missing(f"energy_{source}_{state}")
 
         if m.cpu_sample_count == 0:
             self._record_missing("cpu_unavailable")

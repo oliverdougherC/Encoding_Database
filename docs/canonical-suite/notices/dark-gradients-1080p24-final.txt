@@ -1,0 +1,11 @@
+Nocturne — dark interior gradients
+Creator: Netflix, Inc.
+Attribution: Netflix, Inc.
+Source: https://opencontent.netflix.com/
+Selected range: 148–158 seconds
+License: CC-BY-4.0; full text accompanies this file.
+Source excerpt SHA256: d19cb34070490e37a75ba71415e5f13536b291e3c1a71655df7051cb43cad88c
+Final reference SHA256: 3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3
+Changes: Documented SDR BT.709 limited ProRes master downsampled 3840x2160 to1920x1080 Lanczos, 10-bit4:2:2 to8-bit4:2:0; no denoise. Native60fps reduced to24fps by explicit frame selection; no interpolation or temporal looping. Added-grain source retained.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Netflix, Inc.; https://opencontent.netflix.com/; 148–158 seconds; source excerpt SHA256 d19cb34070490e37a75ba71415e5f13536b291e3c1a71655df7051cb43cad88c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-dark-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

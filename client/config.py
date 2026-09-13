@@ -6,7 +6,7 @@ import tempfile
 import threading
 import math
 from dataclasses import dataclass, field
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 
 # Thread lock for global state accessed during parallel operations
 _GLOBAL_STATE_LOCK = threading.Lock()
@@ -31,35 +31,36 @@ import psutil
 
 # Fixed backend endpoint for submissions
 BACKEND_BASE_URL = "https://encodingdb.platinumlabs.dev"
+PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
+CLIENT_APP_DIR_NAME = "EncodingDB"
+
+
+def default_client_state_dir() -> str:
+    home = os.path.expanduser("~")
+    system_name = platform.system().lower()
+    if system_name.startswith("darwin"):
+        return os.path.join(home, "Library", "Application Support", CLIENT_APP_DIR_NAME)
+    if system_name.startswith("windows"):
+        base = os.environ.get("LOCALAPPDATA") or os.path.join(home, "AppData", "Local")
+        return os.path.join(base, CLIENT_APP_DIR_NAME)
+    base = os.environ.get("XDG_STATE_HOME") or os.path.join(home, ".local", "state")
+    return os.path.join(base, CLIENT_APP_DIR_NAME)
+
+
+def default_queue_dir() -> str:
+    return os.path.join(default_client_state_dir(), "queue")
+
+
 ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
 ENV_API_KEY = os.environ.get("API_KEY", "")
 ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
 ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
-ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", os.path.join(tempfile.gettempdir(), "encodingdb-queue"))
-PRESETS_CONFIG_PATH = os.path.join(os.path.dirname(__file__), "presets.json")
+ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", default_queue_dir())
 
-# Integrity reference for bundled sample.mp4 (do not change without updating both values)
-SAMPLE_VIDEO_SHA256 = "53a87df054e65d284bc808b8f73e62e938b815cb6aeec8379f904ad6d792aab8"
-SAMPLE_VIDEO_SIZE_BYTES = 66045059
-
-_ALLOWED_PAYLOAD_KEYS: Tuple[str, ...] = (
-    'cpuModel', 'gpuModel', 'ramGB', 'os',
-    'codec', 'preset', 'crf', 'passes',
-    'fps', 'vmaf', 'ssim', 'psnr', 'fileSizeBytes', 'notes',
-    'ffmpegVersion', 'encoderName', 'clientVersion', 'inputHash', 'runMs',
-    'gpuUtilAvg', 'gpuPowerAvgW', 'gpuMemPeakMB',
-    'cpuUtilAvg', 'cpuUtilMax', 'peakMemoryMB', 'thermalThrottle',
-    # Extended telemetry (Sprint 7)
-    'gpuTempMaxC', 'cpuFreqAvgMHz', 'cpuTempMaxC',
-    'ffmpegCpuUtilAvg', 'ffmpegCpuUtilMax',
-    'ffmpegReadMB', 'ffmpegWriteMB', 'ffmpegCpuTimeS',
-    'batteryPercentStart', 'batteryPercentEnd', 'batteryPercentDrop',
-    'powerSource', 'sampleCount', 'monitorDurationMs',
-    'cpuSampleCount', 'gpuSampleCount', 'ffmpegSampleCount', 'batterySampleCount',
-    'telemetrySources', 'telemetryMissing',
-)
+SCORE_FORMULA_VERSION = "7.0"
+BENCHMARK_PROTOCOL_VERSION = "7.0"
 
 # Batch aggregation for Small/Full multi-run flows
 _BATCH_ACTIVE: bool = False
@@ -77,6 +78,8 @@ _FFMPEG_EXE: Optional[str] = None
 _FFPROBE_EXE: Optional[str] = None
 # Print FFmpeg detected banner only once per session
 _FFMPEG_DETECTED_PRINTED: bool = False
+# Print pinned VMAF model resolution only once per session
+_VMAF_MODEL_DETECTED_PRINTED: bool = False
 # Cache for probing hardware encoder usability so we do not repeatedly run ffmpeg
 _ENCODER_USABLE_CACHE: Dict[str, bool] = {}
 
@@ -87,6 +90,7 @@ class HardwareInfo:
     gpuModel: Optional[str]
     ramGB: int
     os: str
+    physicalMemoryBytes: Optional[int] = None
     gpuVendors: List[str] = field(default_factory=list)
 
 
@@ -251,23 +255,8 @@ def normalize_cpu_freq_mhz(raw_value: Any, *, reference_mhz: Optional[float] = N
 
 
 def sanitize_payload_for_server(payload: Dict[str, Any]) -> Dict[str, Any]:
-    """Return a copy of payload containing only fields accepted by the server schema."""
-    try:
-        clean: Dict[str, Any] = {}
-        for k in _ALLOWED_PAYLOAD_KEYS:
-            if k in payload:
-                clean[k] = payload[k]
-        # Deployment policy: CRF-only single-pass benchmarking.
-        clean['passes'] = 1
-        if 'cpuFreqAvgMHz' in clean:
-            normalized = normalize_cpu_freq_mhz(clean.get('cpuFreqAvgMHz'))
-            if normalized is None:
-                clean.pop('cpuFreqAvgMHz', None)
-            else:
-                clean['cpuFreqAvgMHz'] = round(normalized, 2)
-        return clean
-    except Exception:
-        return dict(payload)
+    """Preserve complete evidence; the server owns schema validation."""
+    return dict(payload)
 
 
 # --- Queue directory validation ---

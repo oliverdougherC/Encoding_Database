@@ -1,5 +1,6 @@
 import type { Benchmark } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
+import { computePlScoreV7, parseWorkloadReferenceContexts, PL_SCORE_V7_VERSION } from './plScore.js';
 
 export const DEFAULT_ANALYTICS_FILTERS = {
   contentClass: 'mixed',
@@ -15,11 +16,24 @@ const VALID_RESOLUTIONS = ['480p', '720p', '1080p', '1440p', '4k'] as const;
 export type CodecFamily = 'h264' | 'hevc' | 'av1' | 'vp9' | 'other';
 
 export type AnalyticsFilters = {
+  workloadId: string | null;
   contentClass: string;
   resolution: string;
   crf: number;
   passes: 1;
   minSamples: number;
+  fitMode: 'balanced' | 'quality' | 'storage' | 'realtime' | 'custom';
+  customQualityWeight: number | null;
+  customBitrateWeight: number | null;
+  customSpeedWeight: number | null;
+  minimumQuality: number | null;
+  minimumRealtimeRatio: number | null;
+  maximumBitrateBps: number | null;
+  compatibleCodecFamilies: CodecFamily[] | null;
+  requireRecommendationEligibility: boolean;
+  environmentId: string | null;
+  environmentFingerprint: string | null;
+  scoreContextId: string | null;
 };
 
 export type LeaderboardAnalyticsRow = {
@@ -30,16 +44,44 @@ export type LeaderboardAnalyticsRow = {
   contentClass: string;
   resolution: string;
   passes: number;
+  rowId: string;
+  hardwareContext: {
+    cpuModel: string;
+    gpuModel: string;
+    ramGB: number;
+    os: string;
+  };
   sampleCount: number;
   avgFps: number;
   avgVmaf: number | null;
+  avgVmafP5: number | null;
   avgSsim: number | null;
   avgPsnr: number | null;
   avgSizeBytes: number;
+  avgVideoBitrateBps: number | null;
+  avgSourceFps: number | null;
   avgPowerW: number | null;
   fpsPerWatt: number | null;
   qualityPerWatt: number | null;
-  plScore: number;
+  plScore: number | null;
+  plScoreVersion: typeof PL_SCORE_V7_VERSION;
+  plScoreComponents: { quality: number; bitrate: number; speed: number } | null;
+  plScoreWorkloadId: string;
+  scoreFormulaVersion: string | null;
+  benchmarkProtocolVersion: string | null;
+  sourceSuiteVersion: string | null;
+  qualityModelId: string | null;
+  plScoreContext: {
+    formulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
+    referenceContextVersion: string;
+    workloadReferenceBitrateBps: number;
+    qualityExponent: 2.4;
+    speedCurveRate: 1.2;
+    speedSaturationRealtime: 4;
+  } | null;
 };
 
 export type HardwareAnalyticsRow = {
@@ -82,6 +124,12 @@ type AggregatedMetrics = {
   sizeSum: number;
   vmafSum: number;
   vmafSamples: number;
+  vmafP5Sum: number;
+  vmafP5Samples: number;
+  videoBitrateSum: number;
+  videoBitrateSamples: number;
+  sourceFpsSum: number;
+  sourceFpsSamples: number;
   ssimSum: number;
   ssimSamples: number;
   psnrSum: number;
@@ -94,35 +142,14 @@ type AggregatedMetrics = {
   thermalThrottle: boolean;
 };
 
-type ScoreRow = {
-  fps: number;
-  fileSizeBytes: number;
-  vmaf: number | null;
-  ssim: number | null;
-  psnr: number | null;
-  gpuPowerAvgW: number | null;
-  cpuUtilAvg: number | null;
-  cpuUtilMax: number | null;
-  peakMemoryMB: number | null;
-  thermalThrottle: boolean | null;
-  fpsPerWatt?: number | null;
-  qualityPerWatt?: number | null;
+type GroupAccumulator<Key extends Record<string, string | number | null>> = Key & AggregatedMetrics;
+
+type HardwareScope = {
+  cpuModel: string;
+  gpuModel: string;
+  ramGB: number;
+  os: string;
 };
-
-type ScoreRange = { min: number; max: number };
-
-type PlScoreContext = {
-  sizeBaseline: number;
-  relSizeRange: ScoreRange;
-  fpsRange: ScoreRange;
-  fpsPerWattRange: ScoreRange;
-  qualityPerWattRange: ScoreRange;
-  powerRange: ScoreRange;
-  cpuSpreadRange: ScoreRange;
-  peakMemoryRange: ScoreRange;
-};
-
-type GroupAccumulator<Key extends Record<string, string | number>> = Key & AggregatedMetrics;
 
 function asPositiveInt(raw: string | undefined, fallback: number): number {
   if (!raw) return fallback;
@@ -132,6 +159,34 @@ function asPositiveInt(raw: string | undefined, fallback: number): number {
   return parsed;
 }
 
+function asNonNegativeInt(raw: string | undefined, fallback: number): number {
+  if (!raw) return fallback;
+  if (!/^\d+$/.test(raw.trim())) return fallback;
+  const parsed = Number(raw);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) return fallback;
+  return parsed;
+}
+
+function asOptionalFinite(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseFitMode(raw: string | undefined): AnalyticsFilters['fitMode'] {
+  if (raw === 'quality' || raw === 'storage' || raw === 'realtime' || raw === 'custom') return raw;
+  return 'balanced';
+}
+
+function parseCodecFamilyList(raw: string | undefined): CodecFamily[] | null {
+  if (!raw) return null;
+  const values = raw.split(',').map((value) => value.trim()).filter(Boolean);
+  const valid = values.filter((value): value is CodecFamily => (
+    value === 'h264' || value === 'hevc' || value === 'av1' || value === 'vp9' || value === 'other'
+  ));
+  return valid.length > 0 ? Array.from(new Set(valid)) : null;
+}
+
 export function parseAnalyticsFilters(query: Record<string, string | undefined>): AnalyticsFilters {
   const contentClass = VALID_CONTENT_CLASSES.includes(query.contentClass as typeof VALID_CONTENT_CLASSES[number])
     ? String(query.contentClass)
@@ -139,10 +194,30 @@ export function parseAnalyticsFilters(query: Record<string, string | undefined>)
   const resolution = VALID_RESOLUTIONS.includes(query.resolution as typeof VALID_RESOLUTIONS[number])
     ? String(query.resolution)
     : DEFAULT_ANALYTICS_FILTERS.resolution;
-  const crf = asPositiveInt(query.crf, DEFAULT_ANALYTICS_FILTERS.crf);
+  const crf = asNonNegativeInt(query.crf, DEFAULT_ANALYTICS_FILTERS.crf);
   const passes = query.passes === '1' ? 1 : DEFAULT_ANALYTICS_FILTERS.passes;
   const minSamples = asPositiveInt(query.minSamples, DEFAULT_ANALYTICS_FILTERS.minSamples);
-  return { contentClass, resolution, crf, passes, minSamples };
+  const maximumBitrateMbps = asOptionalFinite(query.maximumBitrateMbps);
+  return {
+    workloadId: query.workloadId?.trim() || null,
+    contentClass,
+    resolution,
+    crf,
+    passes,
+    minSamples,
+    fitMode: parseFitMode(query.fitMode),
+    customQualityWeight: asOptionalFinite(query.customQualityWeight),
+    customBitrateWeight: asOptionalFinite(query.customBitrateWeight),
+    customSpeedWeight: asOptionalFinite(query.customSpeedWeight),
+    minimumQuality: asOptionalFinite(query.minimumQuality),
+    minimumRealtimeRatio: asOptionalFinite(query.minimumRealtimeRatio),
+    maximumBitrateBps: maximumBitrateMbps == null ? null : maximumBitrateMbps * 1_000_000,
+    compatibleCodecFamilies: parseCodecFamilyList(query.compatibleCodecFamilies),
+    requireRecommendationEligibility: query.requireRecommendationEligibility === '1',
+    environmentId: query.environmentId?.trim() || null,
+    environmentFingerprint: query.environmentFingerprint?.trim() || null,
+    scoreContextId: query.scoreContextId?.trim() || null,
+  };
 }
 
 export function buildAnalyticsWhere(filters: AnalyticsFilters): Prisma.BenchmarkWhereInput {
@@ -151,6 +226,15 @@ export function buildAnalyticsWhere(filters: AnalyticsFilters): Prisma.Benchmark
     contentClass: filters.contentClass,
     resolution: filters.resolution,
     crf: filters.crf,
+    passes: filters.passes,
+  };
+}
+
+export function buildLeaderboardCurveWhere(filters: AnalyticsFilters): Prisma.BenchmarkWhereInput {
+  return {
+    status: 'accepted',
+    contentClass: filters.contentClass,
+    resolution: filters.resolution,
     passes: filters.passes,
   };
 }
@@ -169,182 +253,6 @@ export function deriveCodecFamily(value: string | null | undefined): CodecFamily
   return 'other';
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0;
-  if (sorted.length === 1) return sorted[0] ?? 0;
-  const pos = clamp(p, 0, 1) * (sorted.length - 1);
-  const lo = Math.floor(pos);
-  const hi = Math.ceil(pos);
-  if (lo === hi) return sorted[lo] ?? 0;
-  const t = pos - lo;
-  return (sorted[lo] ?? 0) * (1 - t) + (sorted[hi] ?? 0) * t;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 1;
-  return percentile([...values].sort((a, b) => a - b), 0.5);
-}
-
-function robustRange(values: number[], fallbackMin: number, fallbackMax: number): ScoreRange {
-  if (values.length === 0) return { min: fallbackMin, max: fallbackMax };
-  const sorted = [...values].sort((a, b) => a - b);
-  const minQ = percentile(sorted, 0.05);
-  const maxQ = percentile(sorted, 0.95);
-  if (maxQ > minQ) return { min: minQ, max: maxQ };
-  const min = sorted[0] ?? fallbackMin;
-  const max = sorted[sorted.length - 1] ?? fallbackMax;
-  if (max > min) return { min, max };
-  return { min: Math.min(min, fallbackMin), max: Math.max(max, fallbackMax) };
-}
-
-function normalizeLinear(value: number, range: ScoreRange): number {
-  if (!(range.max > range.min)) return 1;
-  return clamp((value - range.min) / (range.max - range.min), 0, 1);
-}
-
-function normalizeLog(value: number, range: ScoreRange): number {
-  if (!(range.max > range.min) || range.min <= 0 || value <= 0) return 1;
-  const lv = Math.log(value);
-  const lmin = Math.log(range.min);
-  const lmax = Math.log(range.max);
-  if (!(lmax > lmin)) return 1;
-  return clamp((lv - lmin) / (lmax - lmin), 0, 1);
-}
-
-function vmafScore(vmaf: number | null): number | null {
-  if (typeof vmaf !== 'number') return null;
-  const v = clamp(vmaf, 0, 100);
-  if (v >= 92) return 70 + 30 * Math.pow((v - 92) / 8, 0.58);
-  return 70 * Math.pow(v / 92, 3.2);
-}
-
-function ssimScore(ssim: number | null): number | null {
-  if (typeof ssim !== 'number') return null;
-  const mapped = clamp((ssim - 0.75) / 0.25, 0, 1) * 100;
-  if (mapped >= 90) return 65 + 35 * Math.pow((mapped - 90) / 10, 0.55);
-  return 65 * Math.pow(mapped / 90, 3.0);
-}
-
-function psnrScore(psnr: number | null): number | null {
-  if (typeof psnr !== 'number') return null;
-  const mapped = clamp((psnr - 24) / 28, 0, 1) * 100;
-  if (mapped >= 85) return 80 + 20 * Math.sqrt((mapped - 85) / 15);
-  return mapped * 0.94;
-}
-
-function resolveFpsPerWatt(row: ScoreRow): number | null {
-  if (typeof row.fpsPerWatt === 'number' && row.fpsPerWatt > 0) return row.fpsPerWatt;
-  if (row.fps > 0 && row.gpuPowerAvgW != null && row.gpuPowerAvgW > 0) {
-    return row.fps / row.gpuPowerAvgW;
-  }
-  return null;
-}
-
-function resolveQualityPerWatt(row: ScoreRow): number | null {
-  if (typeof row.qualityPerWatt === 'number' && row.qualityPerWatt > 0) return row.qualityPerWatt;
-  if (row.vmaf != null && row.vmaf > 0 && row.gpuPowerAvgW != null && row.gpuPowerAvgW > 0) {
-    return row.vmaf / row.gpuPowerAvgW;
-  }
-  return null;
-}
-
-function weightedAverage(parts: Array<{ value: number | null; weight: number }>, fallback: number): number {
-  let num = 0;
-  let den = 0;
-  for (const part of parts) {
-    if (part.value == null || !Number.isFinite(part.value) || !(part.weight > 0)) continue;
-    num += part.value * part.weight;
-    den += part.weight;
-  }
-  if (!(den > 0)) return fallback;
-  return num / den;
-}
-
-function resolveCpuSpread(row: ScoreRow): number | null {
-  if (row.cpuUtilAvg == null || row.cpuUtilMax == null) return null;
-  return Math.max(0, row.cpuUtilMax - row.cpuUtilAvg);
-}
-
-function createPlScoreContext(rows: ScoreRow[]): PlScoreContext {
-  const fileSizes = rows.map((row) => row.fileSizeBytes).filter((value) => value > 0);
-  const sizeBaseline = Math.max(1, median(fileSizes));
-  const relSizes = rows
-    .map((row) => row.fileSizeBytes > 0 ? row.fileSizeBytes / sizeBaseline : null)
-    .filter((value): value is number => value != null && value > 0);
-  const fpsValues = rows.map((row) => row.fps).filter((value) => value > 0);
-  const fpsPerWattValues = rows
-    .map(resolveFpsPerWatt)
-    .filter((value): value is number => value != null && value > 0);
-  const qualityPerWattValues = rows
-    .map(resolveQualityPerWatt)
-    .filter((value): value is number => value != null && value > 0);
-  const powerValues = rows
-    .map((row) => row.gpuPowerAvgW)
-    .filter((value): value is number => value != null && value > 0);
-  const cpuSpreadValues = rows
-    .map(resolveCpuSpread)
-    .filter((value): value is number => value != null && Number.isFinite(value));
-  const peakMemoryValues = rows
-    .map((row) => row.peakMemoryMB)
-    .filter((value): value is number => value != null && value > 0);
-  return {
-    sizeBaseline,
-    relSizeRange: robustRange(relSizes, 0.6, 1.8),
-    fpsRange: robustRange(fpsValues, 8, 220),
-    fpsPerWattRange: robustRange(fpsPerWattValues, 0.1, 2.8),
-    qualityPerWattRange: robustRange(qualityPerWattValues, 0.1, 1.2),
-    powerRange: robustRange(powerValues, 35, 320),
-    cpuSpreadRange: robustRange(cpuSpreadValues, 1, 35),
-    peakMemoryRange: robustRange(peakMemoryValues, 700, 16_000),
-  };
-}
-
-function computePlScore(row: ScoreRow, context: PlScoreContext): number {
-  const qualityParts = [
-    { value: vmafScore(row.vmaf), weight: 0.55 },
-    { value: ssimScore(row.ssim), weight: 0.30 },
-    { value: psnrScore(row.psnr), weight: 0.15 },
-  ];
-  const rawQuality = weightedAverage(qualityParts, 60);
-  const confidence = clamp(
-    qualityParts.filter((part) => part.value != null).reduce((sum, part) => sum + part.weight, 0),
-    0,
-    1,
-  );
-  const quality = clamp(rawQuality * (0.88 + 0.12 * confidence), 0, 100);
-  const relSize = row.fileSizeBytes > 0 ? row.fileSizeBytes / context.sizeBaseline : context.relSizeRange.max;
-  const size = clamp(100 * (1 - normalizeLog(relSize, context.relSizeRange)), 0, 100);
-  const speed = clamp(100 * normalizeLog(Math.max(0.001, row.fps), context.fpsRange), 0, 100);
-  const fpsPerWatt = resolveFpsPerWatt(row);
-  const qualityPerWatt = resolveQualityPerWatt(row);
-  const powerScore = row.gpuPowerAvgW != null && row.gpuPowerAvgW > 0
-    ? clamp(100 * (1 - normalizeLog(row.gpuPowerAvgW, context.powerRange)), 0, 100)
-    : null;
-  const efficiency = clamp(weightedAverage([
-    { value: fpsPerWatt == null ? null : 100 * normalizeLog(fpsPerWatt, context.fpsPerWattRange), weight: 0.40 },
-    { value: qualityPerWatt == null ? null : 100 * normalizeLog(qualityPerWatt, context.qualityPerWattRange), weight: 0.30 },
-    { value: powerScore, weight: 0.20 },
-  ], 50), 0, 100);
-  const cpuSpread = resolveCpuSpread(row);
-  const cpuSpreadScore = cpuSpread == null ? null : clamp(100 * (1 - normalizeLinear(cpuSpread, context.cpuSpreadRange)), 0, 100);
-  const memoryScore = row.peakMemoryMB != null && row.peakMemoryMB > 0
-    ? clamp(100 * (1 - normalizeLog(row.peakMemoryMB, context.peakMemoryRange)), 0, 100)
-    : null;
-  let reliability = weightedAverage([
-    { value: cpuSpreadScore, weight: 0.45 },
-    { value: memoryScore, weight: 0.30 },
-  ], 68);
-  if (row.thermalThrottle === true) reliability -= 22;
-  reliability = clamp(reliability, 0, 100);
-  const core = clamp((quality + size + speed) / 3, 0, 100);
-  const confidenceAdj = (confidence - 0.7) * 6;
-  return clamp(core * 0.78 + efficiency * 0.14 + reliability * 0.08 + confidenceAdj, 0, 100);
-}
-
 function initMetrics(): AggregatedMetrics {
   return {
     sampleCount: 0,
@@ -352,6 +260,12 @@ function initMetrics(): AggregatedMetrics {
     sizeSum: 0,
     vmafSum: 0,
     vmafSamples: 0,
+    vmafP5Sum: 0,
+    vmafP5Samples: 0,
+    videoBitrateSum: 0,
+    videoBitrateSamples: 0,
+    sourceFpsSum: 0,
+    sourceFpsSamples: 0,
     ssimSum: 0,
     ssimSamples: 0,
     psnrSum: 0,
@@ -371,6 +285,12 @@ function accumulateMetrics(target: AggregatedMetrics, row: Benchmark): void {
   target.sizeSum += row.fileSizeSum;
   target.vmafSum += row.vmafSum;
   target.vmafSamples += row.vmafSamples;
+  target.vmafP5Sum += row.vmafP5Sum ?? 0;
+  target.vmafP5Samples += row.vmafP5Samples ?? 0;
+  target.videoBitrateSum += row.videoBitrateSum ?? 0;
+  target.videoBitrateSamples += row.videoBitrateSamples ?? 0;
+  target.sourceFpsSum += row.sourceFpsSum ?? 0;
+  target.sourceFpsSamples += row.sourceFpsSamples ?? 0;
   target.ssimSum += row.ssimSum;
   target.ssimSamples += row.ssimSamples;
   target.psnrSum += row.psnrSum;
@@ -399,8 +319,18 @@ function finalizeSize(sum: number, count: number): number {
   return Math.round(sum / count);
 }
 
+function resolveHardwareScope(row: Pick<Benchmark, 'cpuModel' | 'gpuModel' | 'ramGB' | 'os'>): HardwareScope {
+  return {
+    cpuModel: row.cpuModel,
+    gpuModel: row.gpuModel,
+    ramGB: row.ramGB,
+    os: row.os,
+  };
+}
+
 export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): LeaderboardAnalyticsRow[] {
   const grouped = new Map<string, GroupAccumulator<{
+    rowId: string;
     encoderName: string;
     codecFamily: CodecFamily;
     preset: string;
@@ -408,19 +338,57 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
     contentClass: string;
     resolution: string;
     passes: number;
+    workloadId: string;
+    cpuModel: string;
+    gpuModel: string;
+    ramGB: number;
+    os: string;
+    scoreFormulaVersion: string | null;
+    benchmarkProtocolVersion: string | null;
+    sourceSuiteVersion: string | null;
+    qualityModelId: string | null;
   }>>();
 
   for (const row of rows) {
     const encoderName = resolveEncoderName(row);
-    const key = [
+    const hardwareScope = resolveHardwareScope(row);
+    const rowId = [
+      hardwareScope.cpuModel,
+      hardwareScope.gpuModel,
+      hardwareScope.ramGB,
+      hardwareScope.os,
       encoderName,
       row.preset,
       row.crf,
       row.contentClass,
       row.resolution,
       row.passes,
+      row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      row.scoreFormulaVersion ?? '',
+      row.benchmarkProtocolVersion ?? '',
+      row.sourceSuiteVersion ?? '',
+      row.metricModelId ?? '',
+    ].join('\u241F');
+    const key = [
+      rowId,
+      hardwareScope.cpuModel,
+      hardwareScope.gpuModel,
+      hardwareScope.ramGB,
+      hardwareScope.os,
+      encoderName,
+      row.preset,
+      row.crf,
+      row.contentClass,
+      row.resolution,
+      row.passes,
+      row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      row.scoreFormulaVersion ?? '',
+      row.benchmarkProtocolVersion ?? '',
+      row.sourceSuiteVersion ?? '',
+      row.metricModelId ?? '',
     ].join('\u241F');
     const existing = grouped.get(key) ?? {
+      rowId,
       encoderName,
       codecFamily: deriveCodecFamily(encoderName),
       preset: row.preset,
@@ -428,6 +396,12 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       contentClass: row.contentClass,
       resolution: row.resolution,
       passes: row.passes,
+      workloadId: row.workloadId ?? `${row.contentClass}-${row.resolution}`,
+      ...hardwareScope,
+      scoreFormulaVersion: row.scoreFormulaVersion ?? null,
+      benchmarkProtocolVersion: row.benchmarkProtocolVersion ?? null,
+      sourceSuiteVersion: row.sourceSuiteVersion ?? null,
+      qualityModelId: row.metricModelId ?? null,
       ...initMetrics(),
     };
     accumulateMetrics(existing, row);
@@ -437,6 +411,7 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
   const items = Array.from(grouped.values())
     .filter((entry) => entry.sampleCount >= minSamples)
     .map((entry) => ({
+      rowId: entry.rowId,
       encoderName: entry.encoderName,
       codecFamily: entry.codecFamily,
       preset: entry.preset,
@@ -444,16 +419,33 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       contentClass: entry.contentClass,
       resolution: entry.resolution,
       passes: entry.passes,
+      hardwareContext: {
+        cpuModel: entry.cpuModel,
+        gpuModel: entry.gpuModel,
+        ramGB: entry.ramGB,
+        os: entry.os,
+      },
       sampleCount: entry.sampleCount,
       avgFps: Number((entry.fpsSum / entry.sampleCount).toFixed(4)),
       avgVmaf: finalizeAverage(entry.vmafSum, entry.vmafSamples),
+      avgVmafP5: finalizeAverage(entry.vmafP5Sum, entry.vmafP5Samples),
       avgSsim: finalizeAverage(entry.ssimSum, entry.ssimSamples),
       avgPsnr: finalizeAverage(entry.psnrSum, entry.psnrSamples),
       avgSizeBytes: finalizeSize(entry.sizeSum, entry.sampleCount),
+      avgVideoBitrateBps: finalizeAverage(entry.videoBitrateSum, entry.videoBitrateSamples),
+      avgSourceFps: finalizeAverage(entry.sourceFpsSum, entry.sourceFpsSamples),
       avgPowerW: finalizeAverage(entry.powerSum, entry.powerSamples),
       fpsPerWatt: null as number | null,
       qualityPerWatt: null as number | null,
-      plScore: 0,
+      plScore: null as number | null,
+      plScoreVersion: PL_SCORE_V7_VERSION,
+      plScoreComponents: null as { quality: number; bitrate: number; speed: number } | null,
+      plScoreWorkloadId: entry.workloadId,
+      scoreFormulaVersion: entry.scoreFormulaVersion,
+      benchmarkProtocolVersion: entry.benchmarkProtocolVersion,
+      sourceSuiteVersion: entry.sourceSuiteVersion,
+      qualityModelId: entry.qualityModelId,
+      plScoreContext: null as LeaderboardAnalyticsRow['plScoreContext'],
     }));
 
   for (const item of items) {
@@ -463,39 +455,35 @@ export function aggregateLeaderboards(rows: Benchmark[], minSamples: number): Le
       : null;
   }
 
-  const context = createPlScoreContext(items.map((item) => ({
-    fps: item.avgFps,
-    fileSizeBytes: item.avgSizeBytes,
-    vmaf: item.avgVmaf,
-    ssim: item.avgSsim,
-    psnr: item.avgPsnr,
-    gpuPowerAvgW: item.avgPowerW,
-    cpuUtilAvg: null,
-    cpuUtilMax: null,
-    peakMemoryMB: null,
-    thermalThrottle: false,
-    fpsPerWatt: item.fpsPerWatt,
-    qualityPerWatt: item.qualityPerWatt,
-  })));
-
+  const workloadReferences = parseWorkloadReferenceContexts(process.env.PL_V7_REFERENCE_BITRATES_JSON);
+  const referenceContextVersion = process.env.PL_V7_REFERENCE_CONTEXT_VERSION?.trim() || null;
   for (const item of items) {
-    item.plScore = Number(computePlScore({
-      fps: item.avgFps,
-      fileSizeBytes: item.avgSizeBytes,
-      vmaf: item.avgVmaf,
-      ssim: item.avgSsim,
-      psnr: item.avgPsnr,
-      gpuPowerAvgW: item.avgPowerW,
-      cpuUtilAvg: null,
-      cpuUtilMax: null,
-      peakMemoryMB: null,
-      thermalThrottle: false,
-      fpsPerWatt: item.fpsPerWatt,
-      qualityPerWatt: item.qualityPerWatt,
-    }, context).toFixed(4));
+    const referenceBitrate = workloadReferences.get(item.plScoreWorkloadId);
+    const score = referenceBitrate == null || referenceContextVersion == null ? null : computePlScoreV7({
+      vmafMean: item.avgVmaf,
+      vmafP5: item.avgVmafP5,
+      videoBitrateBps: item.avgVideoBitrateBps,
+      encodeFps: item.avgFps,
+      sourceFps: item.avgSourceFps,
+    }, { workloadId: item.plScoreWorkloadId, workloadReferenceBitrateBps: referenceBitrate });
+    if (score) {
+      item.plScore = Number(score.total.toFixed(4));
+      item.plScoreComponents = { quality: score.quality, bitrate: score.bitrate, speed: score.speed };
+      item.plScoreContext = {
+        formulaVersion: item.scoreFormulaVersion,
+        benchmarkProtocolVersion: item.benchmarkProtocolVersion,
+        sourceSuiteVersion: item.sourceSuiteVersion,
+        qualityModelId: item.qualityModelId,
+        referenceContextVersion: referenceContextVersion!,
+        workloadReferenceBitrateBps: referenceBitrate!,
+        qualityExponent: 2.4,
+        speedCurveRate: 1.2,
+        speedSaturationRealtime: 4,
+      };
+    }
   }
 
-  return items.sort((a, b) => b.plScore - a.plScore || b.avgFps - a.avgFps);
+  return items.sort((a, b) => (b.plScore ?? -1) - (a.plScore ?? -1) || b.avgFps - a.avgFps);
 }
 
 export function aggregateHardware(rows: Benchmark[], minSamples: number): HardwareAnalyticsRow[] {

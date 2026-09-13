@@ -1,0 +1,7 @@
+{
+  "status": "NOT_ACCEPTED",
+  "reason": "Existing metric disagreement gate flagged film-grain,dark-gradients,talking-head at CRF24; all rows,files and flags preserved in isolated original stack. These are not accepted-path certification.",
+  "serverThresholdsChanged": false,
+  "manualApprovalInvented": false,
+  "next": "Evaluate predeclared CRF12/8 grid and certify one coherent native point with all existing gates intact."
+}

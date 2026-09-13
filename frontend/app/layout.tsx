@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import "katex/dist/katex.min.css";
 import "./globals.css";
 import AppShell from "./components/AppShell";
 
 export const metadata: Metadata = {
-  title: "Encoding Benchmarks",
-  description: "Community-Submitted Encoding Benchmarks",
+  title: "EncodingDB",
+  description: "Community-submitted FFmpeg performance, quality, and efficiency data.",
 };
 
 export default function RootLayout({

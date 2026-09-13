@@ -1,0 +1,386 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "suiteReview": {
+    "reviewed": false,
+    "reviewHash": "",
+    "reviewer": "",
+    "redistributionApproved": false,
+    "distributionLicense": "",
+    "notes": "Populate this file with reviewed provenance, license, and expected-media metadata before freezing a final suite. Compute reviewHash with: python3 scripts/finalize_test_suite_v1.py --review-json /path/to/this-file.json --print-review-hash"
+  },
+  "clips": [
+    {
+      "id": "sports-action-960x540-24p",
+      "fileName": "sports-action-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "high-motion-sports",
+      "payloadContentClass": "action",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "natural-detail-960x540-24p",
+      "fileName": "natural-detail-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "fine-natural-detail",
+      "payloadContentClass": "nature",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "grain-noise-960x540-24p",
+      "fileName": "grain-noise-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "film-grain-noise",
+      "payloadContentClass": "gaming",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "dark-gradients-960x540-24p",
+      "fileName": "dark-gradients-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "dark-gradients-shadows",
+      "payloadContentClass": "mixed",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "animation-960x540-24p",
+      "fileName": "animation-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "animation-flat-fields",
+      "payloadContentClass": "animation",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "screen-text-960x540-24p",
+      "fileName": "screen-text-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "screen-text",
+      "payloadContentClass": "screen",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "talking-head-960x540-24p",
+      "fileName": "talking-head-960x540-24p.mkv",
+      "localPath": "",
+      "displayName": "",
+      "contentClass": "talking-head",
+      "payloadContentClass": "talkingHead",
+      "description": "",
+      "source": {
+        "kind": "",
+        "provenance": "",
+        "license": "",
+        "reviewed": false,
+        "redistributionApproved": false
+      },
+      "expectedMedia": {
+        "allowedContainers": [
+          ""
+        ],
+        "allowedVideoCodecs": [
+          ""
+        ],
+        "width": 0,
+        "height": 0,
+        "frameRate": {
+          "numerator": 0,
+          "denominator": 0
+        },
+        "fieldOrder": "",
+        "pixelFormat": "",
+        "bitDepth": 0,
+        "chromaSubsampling": "",
+        "colorPrimaries": "",
+        "colorTransfer": "",
+        "colorMatrix": "",
+        "colorRange": "",
+        "hdrMetadata": null,
+        "frameCount": {
+          "min": 0,
+          "max": 0
+        },
+        "duration": {
+          "min": {
+            "numerator": 0,
+            "denominator": 0
+          },
+          "max": {
+            "numerator": 0,
+            "denominator": 0
+          }
+        }
+      }
+    }
+  ]
+}

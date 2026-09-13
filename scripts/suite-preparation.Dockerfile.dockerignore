@@ -1,0 +1,9 @@
+**
+!client/
+!client/__init__.py
+!client/config.py
+!client/suite.py
+!scripts/
+!scripts/materialize_final_suite.py
+!scripts/requirements-suite-preparation.txt
+!scripts/suite-preparation.Dockerfile

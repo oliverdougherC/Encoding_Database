@@ -1,0 +1,1729 @@
+{
+  "source": {
+    "kind": "png-sequence",
+    "class": "fine-natural-detail",
+    "creator": "Blender Foundation / Mango Open Movie Project",
+    "source_page": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+    "checksums_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "license": "CC-BY-3.0",
+    "license_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "start_frame": 601,
+    "frame_count": 240,
+    "start_seconds": 25,
+    "duration_seconds": 10
+  },
+  "retrieved_utc": "2026-09-09T23:56:16Z",
+  "original_frames": [
+    {
+      "original_filename": "graded_edit_final_00601.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00601.png",
+      "bytes": 2484420,
+      "sha256": "cafe96b506913e071f1c7b401c0cb6dc707fd32cf433ef52aed4411a64efc05c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00602.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00602.png",
+      "bytes": 2484516,
+      "sha256": "9e8dfd0f9be6b7aead9d309c5f0e0abafc5081cf667314ce4518690ea52db542",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00603.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00603.png",
+      "bytes": 2484139,
+      "sha256": "94c6738bd6c40c2cd908e17a88acc9bb383b5870b909dd838cb47fec47eeb1e3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00604.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00604.png",
+      "bytes": 2482855,
+      "sha256": "22566e6bab80574dbd3ede0dac31bc0ed1ee39fb65d15bb72bd5f0561e4c4360",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00605.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00605.png",
+      "bytes": 2481262,
+      "sha256": "b799f7ef4e5d000da35f81babb6722bc9133579f84b9b3363e016b6615e85990",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00606.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00606.png",
+      "bytes": 2480336,
+      "sha256": "82764c27f050a7489cd2b8c1099898cc82ee53a5c182accdaf9a922de28927af",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00607.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00607.png",
+      "bytes": 2478240,
+      "sha256": "91c3259206274013984bba53d0d3c310f850c4b76670d9bfea8ddc2a60c9a2af",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00608.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00608.png",
+      "bytes": 2478958,
+      "sha256": "6bd5e4900978fd34a46dce1b93b33335fd2a4a4025ee1059864c14ba73fda68f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00609.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00609.png",
+      "bytes": 2477120,
+      "sha256": "7a7cb92ad6f1e5e8fd766723d6cef2523113bace331b1772e2da7f0dab9026f1",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00610.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00610.png",
+      "bytes": 2475558,
+      "sha256": "d8798ffd915760ae5cc54cb376f3e0526f25629e594687aebc74a32e481263c1",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00611.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00611.png",
+      "bytes": 2475212,
+      "sha256": "9302934c2e880033332e46681f3e197d706a4c396ad67dc8d79429927c09c2b2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00612.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00612.png",
+      "bytes": 2475464,
+      "sha256": "56ef288941508fed1c726b96497925b4159ab51f90946677e2ee497c86252535",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00613.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00613.png",
+      "bytes": 2477759,
+      "sha256": "039aa5e1a29b6642a161ba4376889e946cd7f810b95cba81f609628e0d1a2ad2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00614.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00614.png",
+      "bytes": 2479145,
+      "sha256": "2b3154e1269c8b172f18891d8e0d9bc6986b44fca80453b9a54857ae7dea53a5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00615.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00615.png",
+      "bytes": 2478703,
+      "sha256": "bc1cd5da4571e4ec5ea99aff1df64c9d69b11322d25045cdfbfe6e72f9339c55",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00616.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00616.png",
+      "bytes": 2480055,
+      "sha256": "e79f3215b30a4bc742644f6c4cd404651e56739ad1f56f6bb46671b794656461",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00617.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00617.png",
+      "bytes": 2481487,
+      "sha256": "6dd95dbaa49de7134d6b04990548ebbe7fb13dd43b66100409d54149fd9f31fb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00618.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00618.png",
+      "bytes": 2481783,
+      "sha256": "0ecf4a9036ec915b1397a4d3d326ca1faea9f5639a5dcae8906724f6e2f416e3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00619.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00619.png",
+      "bytes": 2482448,
+      "sha256": "ace827a05e318338cfe6705cfd8800b983d9a9031bfd2c5bb0b64a664eb3040a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00620.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00620.png",
+      "bytes": 2480867,
+      "sha256": "ddfb928dc2242ceb10dad3bf4080091f5fdf6da0d464d708de70b5b2981f52fe",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00621.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00621.png",
+      "bytes": 2481228,
+      "sha256": "02827c501509a1e1ead9689f5410eee6c601c5b8e0cd81bf722694cd8ae26520",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00622.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00622.png",
+      "bytes": 2482044,
+      "sha256": "30c316b5bb798e2dfab78289fab7d0682f4657fcef470e7a95a114d7f0dc4639",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00623.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00623.png",
+      "bytes": 2480818,
+      "sha256": "a29133d90f05b9802cbd8fcb01d24edc5e2dd273125ad015be5144bee8fd17ed",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00624.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00624.png",
+      "bytes": 2480740,
+      "sha256": "1594822985fc34e53a431698b040e02252f452e2b2fc27181a2fab4036e360b2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00625.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00625.png",
+      "bytes": 2481523,
+      "sha256": "3ce6096ada5d3e065afd9388d3345d02bb68b3ba81001ca5c5335c9aba6f0adc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00626.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00626.png",
+      "bytes": 2481029,
+      "sha256": "fbc9d2a14c8f165da826c48f38eddf6eb638cdaa9643f1e431879b323235b2df",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00627.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00627.png",
+      "bytes": 2480475,
+      "sha256": "e35aafc26bae80fd533bbae63cc766ec2b0dcd6ca83eb1d0da1bde306e4e5e2f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00628.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00628.png",
+      "bytes": 2481633,
+      "sha256": "ed2c3ab2753bad3dac1231b59bff919275d9dbb95ede162bb8f831daef1e00b6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00629.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00629.png",
+      "bytes": 2481011,
+      "sha256": "31c27174659fd0cdae27652de8a6b55fb6d49c85566d29c827c9cfcf01dae66a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00630.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00630.png",
+      "bytes": 2480902,
+      "sha256": "033d7a966d8e3986af7bd64d2286368d63240a78740a13164c6d8e399883ccbd",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00631.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00631.png",
+      "bytes": 2479636,
+      "sha256": "091a9c5099385f09c683923760728905271896d79ab0d70cc1cf4d5d11d9e289",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00632.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00632.png",
+      "bytes": 2479610,
+      "sha256": "1a6e4b90c6ccc765c92ff1b8052371a402127bb82405f87bd89ada1f99d5278f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00633.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00633.png",
+      "bytes": 2479735,
+      "sha256": "3b73aff8f395d61038260b28586d8481cf437e2aed3ae2fd368ca3fba9684375",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00634.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00634.png",
+      "bytes": 2481563,
+      "sha256": "8874cab8b0f95800acf9771d5ff560815767fbb03d714993afc87a42069a2a52",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00635.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00635.png",
+      "bytes": 2480985,
+      "sha256": "6d25cc8eb72e775031f29073b3816a9d80bf40c343859805f8465b9c05d0032f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00636.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00636.png",
+      "bytes": 2480359,
+      "sha256": "2e567498db22f7fa1fa90dd378d0d83d33ce178636f58cf1312f6b2ece98070b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00637.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00637.png",
+      "bytes": 2479108,
+      "sha256": "32fcb3d6239c344e3dfb38bea6fd15fef06da5588f194330ce14b70c8de32dbb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00638.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00638.png",
+      "bytes": 2479792,
+      "sha256": "71e0128d8f23cf04f0a216ea735e712eaf22d2b6530683961fac706cfdf2eea2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00639.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00639.png",
+      "bytes": 2479067,
+      "sha256": "91ca73b34d1ba7eaee53f7936a87fe2da4b2b0fab3e1b991cf154fe2bb1a24e3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00640.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00640.png",
+      "bytes": 2475751,
+      "sha256": "2d82cdd2adf008c0a37b09df4195ef393271d772338e29ac4cd6362ebfb82954",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00641.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00641.png",
+      "bytes": 2474035,
+      "sha256": "ba922d64d53c3062a057fd47eea9f253d6e0d8a458e3d2838a7db5ba4d5021a0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00642.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00642.png",
+      "bytes": 2473528,
+      "sha256": "4121deebb901a9276af89e4993177dbe1d744043a72c224431ea5f0e5a7a4ca8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00643.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00643.png",
+      "bytes": 2473611,
+      "sha256": "e2eb3793897b2215669048723b121244f831f972a51854b4dca518f5ffe86572",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00644.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00644.png",
+      "bytes": 2474380,
+      "sha256": "fb3bd9b4e8c75288ef0f3c0f8c4b88b267914ac5222327657fbd7f1d9d852c4b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00645.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00645.png",
+      "bytes": 2474762,
+      "sha256": "fb600bf534bcfe733070cb5592299c5f6f3bbd705cdc98b18dc90e3e181d2d9e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00646.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00646.png",
+      "bytes": 2475453,
+      "sha256": "17ee077b5ee51bf4482e05909ddfefcd68f2342e56fc7c132ec1207e5f8752e0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00647.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00647.png",
+      "bytes": 2477087,
+      "sha256": "50e2eef3b9955dd85616fd2fe568c1836f5ae8d112141e2f5f9d85e11c67e274",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00648.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00648.png",
+      "bytes": 2475559,
+      "sha256": "afbe8bdc59ae021170d07304f1ee9a2f5bb55509c09d1af7fcce86e723704f4b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00649.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00649.png",
+      "bytes": 2475519,
+      "sha256": "804e044c4fa0e7b27ea09cd3a24661d1bf2f7880cc4d363fcef1cd22115bf98c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00650.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00650.png",
+      "bytes": 2475487,
+      "sha256": "50193c20918f2df26ca3924f28b11915963c16320ff198e781315c9713af423f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00651.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00651.png",
+      "bytes": 2475302,
+      "sha256": "d72cfae95b11c6aaa2fca5843369dfd56415a7fba5079ee4c0fb2d1c74a62aaa",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00652.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00652.png",
+      "bytes": 2474722,
+      "sha256": "baf62279f550a1ceb758928447e713fda390fc3ad27d898509b7783284495f2c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00653.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00653.png",
+      "bytes": 2474223,
+      "sha256": "d9e5375af0a32938ece5d9045349c68422e141b5ab644fae3fcfd04944b1c70c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00654.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00654.png",
+      "bytes": 2475605,
+      "sha256": "c59101c754ae27af30c175caf8f4d061393f89c87bde69f65aa801f7017a5754",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00655.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00655.png",
+      "bytes": 2476166,
+      "sha256": "0f34324275fd34d42adf4229a8e98f620a0da3de63dbe230cd05010b66146294",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00656.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00656.png",
+      "bytes": 2475530,
+      "sha256": "2cba8b89f58c0f2fdbddf9c15eb9753caddf313e46cfbd128ca23bf08bd6738d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00657.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00657.png",
+      "bytes": 2476131,
+      "sha256": "f4b13bc002c489bcce10961c4cce8b8dcde738d7f3f6486abddd1383416b40f9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00658.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00658.png",
+      "bytes": 2478710,
+      "sha256": "efc004bb0f713c91b01895e4bc9e43854d62a826bc69e3f2fe67db0481830df5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00659.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00659.png",
+      "bytes": 2477181,
+      "sha256": "e2eb0a9c44b3db09a11cd26b2d88b1a7281339fffb2b1b5dd6d7e350d9a8d7a5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00660.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00660.png",
+      "bytes": 2477198,
+      "sha256": "441c8b878cf1314cf93310ab87c484e8abf2a08776f5ef14114db6dd056b75ea",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00661.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00661.png",
+      "bytes": 2477394,
+      "sha256": "9494e3937691e240c7976a1b279b26874cad64efdc4e7853951f6ea84ae51a56",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00662.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00662.png",
+      "bytes": 2478394,
+      "sha256": "391f7ae056214cf2f237820bd72efe4519f9546f03cfecf896e0a3389ed56537",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00663.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00663.png",
+      "bytes": 2480338,
+      "sha256": "dd74d17ebf8cdec37cfd09808cfa56467b0b4c27eacc64c68c3dd2056af82ab8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00664.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00664.png",
+      "bytes": 2479939,
+      "sha256": "1c0f1850d3bb94aa4a3e362978e575e66b30f81309259c3b7eb1cc77a587a198",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00665.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00665.png",
+      "bytes": 2481268,
+      "sha256": "39864e22e121e9c0a497ebf167b9cba2c6255a062f227852ff059604e47d7f9d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00666.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00666.png",
+      "bytes": 2484215,
+      "sha256": "20ba0ae4c918d77044e942db1cc3e2b07e38d1be4b32dbd540bebe57f9471d63",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00667.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00667.png",
+      "bytes": 2484613,
+      "sha256": "8b2b01f454f20a4686a5b2bab2696d698cae17d83e0e48c1b5ba398c866eeb6c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00668.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00668.png",
+      "bytes": 2488024,
+      "sha256": "dbad5cd07f1521448ae4569fda398d87ad2da805938e54c75ab02bfd24db7952",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00669.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00669.png",
+      "bytes": 2488295,
+      "sha256": "afa922d915a26519fe902fb1c9d5f54e33cbd1b024f057d24ce74c6865207f65",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00670.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00670.png",
+      "bytes": 2487873,
+      "sha256": "3d845411100f9189942cbefc9e0d3ddef6e9a23cf8baf69b874f01124938544c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00671.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00671.png",
+      "bytes": 2488608,
+      "sha256": "6240cc33f8c81f4170fa467de170fa45bd7371af5a91fa5596f9e9da2bea95ad",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00672.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00672.png",
+      "bytes": 2490345,
+      "sha256": "cc1f1a3a056331c93bbb725e35c43f64db5f7b35f7525bd61a73a808860ca11f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00673.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00673.png",
+      "bytes": 2491800,
+      "sha256": "04b38f82ebbc3e81092d027c56b097982e65361bf353ac6cdfb090af72b3db68",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00674.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00674.png",
+      "bytes": 2494320,
+      "sha256": "370f2e42d6acba050b01659c40e759688c99f49647c3aaa211f3da534e2a8227",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00675.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00675.png",
+      "bytes": 2497615,
+      "sha256": "a88645e856d7cd37bf19e026b2a41d906b67a4734d4f15e2e679e0a45d1bba63",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00676.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00676.png",
+      "bytes": 2499277,
+      "sha256": "2e3fcafd5b67a22f617a7a8f273c9488b97e417e3d278f6a8f41375a00e615b8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00677.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00677.png",
+      "bytes": 2500602,
+      "sha256": "a4aeecd79b3724e185d2c4b3be8ae553202bb6f76af5df3114c7ef5ac1902e2e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00678.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00678.png",
+      "bytes": 2499664,
+      "sha256": "a57fab9f40d4633d49b5a11f9b0aa4899f24a4176e682ea2e76bb28bc7cbe13e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00679.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00679.png",
+      "bytes": 2501893,
+      "sha256": "be1cc835ee46f4e150d1d1da7083a5d37bc51446f94cccd38fd4b6136523e4b7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00680.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00680.png",
+      "bytes": 2506795,
+      "sha256": "99e071a68595849dc01a205665e18b41a5d8e98eeb96da09082eda2c740dc6e6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00681.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00681.png",
+      "bytes": 2508071,
+      "sha256": "76b514745e19ccb244a40a77c16d93768ef861127db516d282205c98c45206e8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00682.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00682.png",
+      "bytes": 2508145,
+      "sha256": "c996f2ad8a4a2699fb08fbee2535569f9f214193fd4e0db976b8edf577173356",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00683.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00683.png",
+      "bytes": 2508213,
+      "sha256": "5e9959eaa96899f19ef8a4058b02a23569e6d76d4e08453a22230efe8612cbe7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00684.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00684.png",
+      "bytes": 2520503,
+      "sha256": "845f8247c5fc254f9f4f9e3109fa9844f97971b3e9c1bd6b52a4440185a839a6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00685.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00685.png",
+      "bytes": 2532343,
+      "sha256": "f5f6aa223e0782ffcbc4cc3e4f61550d49c1f340173f54ae966d5f0eb33eff07",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00686.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00686.png",
+      "bytes": 2530226,
+      "sha256": "5b83bf94348fafedec3492d77ffeccfce1d8feb127f0aacc758ce4ff29dcb29d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00687.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00687.png",
+      "bytes": 2526538,
+      "sha256": "12b2a3a34aa67c60e660ddeaeded223e491c49401f246ad3cc59023f7053baff",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00688.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00688.png",
+      "bytes": 2523356,
+      "sha256": "5ef67b3e33279ae4d835525d643241314e80a89be39ee9674125c178f4702b5d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00689.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00689.png",
+      "bytes": 2519950,
+      "sha256": "106887c4022dfbfa9e80d6b59de7a50fba0712a57f48d3424365fa704c567357",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00690.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00690.png",
+      "bytes": 2518472,
+      "sha256": "3906e92a1e81abb84514291cbbfada5b928d9687611774465573ce062091fcd6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00691.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00691.png",
+      "bytes": 2516969,
+      "sha256": "4cbe36e5e598ec42ff760c8065fe1b82b1e679981a7b971025de10783fb21c5e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00692.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00692.png",
+      "bytes": 2516988,
+      "sha256": "f7e717f676a666a0378fb71e53c84b3b117a3872bef6e64680cb434f749b596c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00693.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00693.png",
+      "bytes": 2515538,
+      "sha256": "b3c7e212d04c7b29a964736e93619f44f5e0dbe233e54d24f2c1cce0a263f3d4",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00694.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00694.png",
+      "bytes": 2513748,
+      "sha256": "9cd40eaf336f0e6fdfdcf3ae8ddc6824f25fe1d5b0909292d78e4b1d43473ff6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00695.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00695.png",
+      "bytes": 2515184,
+      "sha256": "aeac73c1e94ccc84af47dd3da0c23c064a4eef8bf6a4562d3ca50f41d2fc7215",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00696.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00696.png",
+      "bytes": 2515333,
+      "sha256": "dd561a31d43db79d54343898bd3d82bc803f6129a6a672c7b7c559543ffb098b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00697.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00697.png",
+      "bytes": 2518681,
+      "sha256": "ac8d95b59418f797c97ec4ca93ee0bca4bf705d90d18b6249a6a89191595436f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00698.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00698.png",
+      "bytes": 2519077,
+      "sha256": "6c1849dda60ef07cb265e3769f8455982045e454c63c23550a9ad73e75f3c8c1",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00699.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00699.png",
+      "bytes": 2520409,
+      "sha256": "e22d9c404083ae3637ab20f5a6ac71bf47880e7945090592c03b4e442ed96c3c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00700.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00700.png",
+      "bytes": 2521066,
+      "sha256": "5b3038a48f0e6425f93572b827c5dff7caf032d7b95eda81b40e040b3f50e35e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00701.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00701.png",
+      "bytes": 2520816,
+      "sha256": "6cd59482e9190998d493c50b3aa55ad26bc5dd4ead04cd68a733c617da781e93",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00702.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00702.png",
+      "bytes": 2522209,
+      "sha256": "06149091661f6d45a47e8348bf4682084a220c4e7c25416d3d6db2e13c026f96",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00703.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00703.png",
+      "bytes": 2524988,
+      "sha256": "39d489eee716aba828a70a1c9c796943a8fbaaa7fb5ef906394b37f9c273ac34",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00704.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00704.png",
+      "bytes": 2522876,
+      "sha256": "0c852609c092b67eb32882336299bb5246cd82a94c6add4214dc53720b16125d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00705.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00705.png",
+      "bytes": 2521247,
+      "sha256": "41453afa98c9bf2a9f8e94576008764c23172fff94d5f28d2380bb71750cadfb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00706.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00706.png",
+      "bytes": 2518678,
+      "sha256": "b4dd7d072613558648b15958b05e44b5ab2df333f186ebe1b9ee5a0a5d4a0a4b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00707.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00707.png",
+      "bytes": 2517584,
+      "sha256": "1cc04a0b186b2604a6660ecea558e7f1568c200a531fdf20788a0e187a394f40",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00708.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00708.png",
+      "bytes": 2519377,
+      "sha256": "51df124153b362cfbae4cab9d1b37232dc58464d255dfbc0a799b949b9da5d76",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00709.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00709.png",
+      "bytes": 2519566,
+      "sha256": "e99c5bfae6697a9e2dc5956112501ac3bd47a83be8da4d6740f6757e5943399f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00710.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00710.png",
+      "bytes": 2519753,
+      "sha256": "49d995a6b45be5b7625d9a6bdfc843161f6358b0764d7abea5457ef09c756da0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00711.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00711.png",
+      "bytes": 2522395,
+      "sha256": "ab333714a29b822dea71e268954523f82926cf54b70f29d9ff22f4a829a8d7d3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00712.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00712.png",
+      "bytes": 2521719,
+      "sha256": "d307d095a118b1eec419e78e0ccda8cc0bce2974b840003d2a7bfebab1e37357",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00713.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00713.png",
+      "bytes": 2522334,
+      "sha256": "692e5605ddc95ec26577e17f7be66448951830287d819132c95b2d95063e3c71",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00714.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00714.png",
+      "bytes": 2524711,
+      "sha256": "f7ab4fa77f563a0d4e40d338cb3155fa4bf3543e7d85d126bc4d3f875f7dfee6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00715.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00715.png",
+      "bytes": 2525729,
+      "sha256": "aa0851a9c3be0c980237ce131884738a17cf4b511c190c900b333dcfd328bf00",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00716.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00716.png",
+      "bytes": 2527090,
+      "sha256": "6347b82186e959d82a44e7f41ef47bb94147b02628d17bf072e8190c899a8f6b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00717.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00717.png",
+      "bytes": 2528575,
+      "sha256": "100c1bb9914c6cf0523bc41f81e3afe8165cead3355318e5db4634a75f2ef24b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00718.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00718.png",
+      "bytes": 2530143,
+      "sha256": "a3085832b3f33a3b3e00c6980fbc7fd65985b34876d4a0255e25287fd2ea2492",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00719.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00719.png",
+      "bytes": 2532076,
+      "sha256": "f90dd839a6ad6341d3ed8da8e5646ea1591524869ef3ce8a0344e69ed153afdf",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00720.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00720.png",
+      "bytes": 2533673,
+      "sha256": "5dfb96e2ce78755e9766af33a76e935fd37a5e9d43b3712349e705fa64ec77e3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00721.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00721.png",
+      "bytes": 2540507,
+      "sha256": "5a5a6d702a253985dd3c7889bcbf82afccf11fc492bfbf09c21711e113cba6a1",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00722.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00722.png",
+      "bytes": 2545239,
+      "sha256": "e9460b9ec0e8a96aada4083ff1752d46a9d7523249496d520cf070f4e8f6dad2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00723.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00723.png",
+      "bytes": 2547260,
+      "sha256": "476731d59c175150d54a91ec0c45928239f3aa78847fa2fd017e20fdb7248005",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00724.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00724.png",
+      "bytes": 2547916,
+      "sha256": "9d4022c09a7b9e2cf47ddb9fead371ca34c249ce32e64cc90d0c2b36e6c541c3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00725.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00725.png",
+      "bytes": 2547352,
+      "sha256": "899e5f2c04a24ecb6a55dc3dda598fbc3e9ec94a6a22d6676b91ab4ab6bf07c0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00726.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00726.png",
+      "bytes": 2545877,
+      "sha256": "8d4c2d0ff9fcd32c82635b99d307232231b9b9a7e9d250a46f8a199b5ebb499a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00727.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00727.png",
+      "bytes": 2545959,
+      "sha256": "5cd06f0214d4c8cc1b1a56ca051e52658af84e68b1427eb73a8629f8eacea5f4",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00728.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00728.png",
+      "bytes": 2548942,
+      "sha256": "380b0dccaf8e60e77b413999a30a9423234d14f4701e635a6fff3b38e51303f5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00729.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00729.png",
+      "bytes": 2549236,
+      "sha256": "673b554299c3d7a7ede265e5b33501ee1d9d449097b5de2520300abd82228cae",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00730.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00730.png",
+      "bytes": 2553288,
+      "sha256": "b892ace782808a78e4ba339a6768a204b836a9ff317ed24b69e9fd414af69e29",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00731.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00731.png",
+      "bytes": 2557314,
+      "sha256": "a259a0253ace68f605e9c85597a83c522eab0f83177b8648543239cb548780cd",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00732.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00732.png",
+      "bytes": 2559041,
+      "sha256": "97328c0c73639f4a4d876cab6e65502731c5f00a6c65ef1fe683b4080d95bb35",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00733.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00733.png",
+      "bytes": 2557284,
+      "sha256": "acab308f2a5038a5fd4dfe9dce6465adcd5fc5b94606c71ac46c8f074ecb8a6f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00734.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00734.png",
+      "bytes": 2556491,
+      "sha256": "a27d7978185e2ef8c32e819c6b8b37c57e8574fc06cfc1cd3346b4698eda15dc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00735.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00735.png",
+      "bytes": 2554864,
+      "sha256": "a73a236092a6ea685fa48971d91443019c57dd71b03f2eba9f9e627cdf1a2c88",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00736.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00736.png",
+      "bytes": 2552607,
+      "sha256": "b46872c11cb37fc00d38c7a6ef264b3b6b60331c0f56b395efc378639b4785c9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00737.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00737.png",
+      "bytes": 2550317,
+      "sha256": "e26729a31f325f8428830bbe9616705478cb7c2c179452e17aef9dba31dbb94a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00738.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00738.png",
+      "bytes": 2550890,
+      "sha256": "fedc189e9669c8edc34d417617c829a59dda49bc58755c7f1a146568cff3c3a5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00739.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00739.png",
+      "bytes": 2549018,
+      "sha256": "6d9fc89aa8881391176fb351e150f76f9b76d7d515bc70492bbf9b5e55a2defc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00740.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00740.png",
+      "bytes": 2545080,
+      "sha256": "691e0aff64ccc9e19d12c0d7a5ce5c4ac09b36cabe17df0c51c1d410e6126b5a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00741.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00741.png",
+      "bytes": 2543095,
+      "sha256": "b4e708fb09cb89eb3f49a2871d4950ea840f6908fb0800005e5b86181b12b7cf",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00742.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00742.png",
+      "bytes": 2543002,
+      "sha256": "afda0e333cc7f12d07ef83ffb3280d79afd1aa6170d9803bc34fe03e66220e5b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00743.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00743.png",
+      "bytes": 2542827,
+      "sha256": "7f7af5a5669915e6cf5a4e45ae6e0a610f3d4fb407d46f5fc79e0c6058bdff0a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00744.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00744.png",
+      "bytes": 2539788,
+      "sha256": "6383ed6308382a441a0a344c5754f44f35bc03ad84bcc589978506d149652f69",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00745.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00745.png",
+      "bytes": 2539029,
+      "sha256": "6ed5217cfd9d19e5ab29acd0a9bfe35518a7d16c1b13016b82cc15cb33c5286f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00746.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00746.png",
+      "bytes": 2537446,
+      "sha256": "42ff4d61bf68622c957b4edc15119d20fa6b2a26938a22d35756c4719c871eae",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00747.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00747.png",
+      "bytes": 2533740,
+      "sha256": "6d89296c4867100cec4828277ad90ab318745de39a14d655d53fa516b52ed45d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00748.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00748.png",
+      "bytes": 2533712,
+      "sha256": "30fa1b7f0693ba826254db65ccf8af40ee02e66af1bdf70526653e8b0c881214",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00749.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00749.png",
+      "bytes": 2532923,
+      "sha256": "52ab1397177897b3f9218ef0d961a431682aa0f24e75cddfeea890cf394f68b4",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00750.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00750.png",
+      "bytes": 2532564,
+      "sha256": "21e74f34033ade69136d2b56c9a75e522b8c0a155cb5ef10bb44c32269abceae",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00751.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00751.png",
+      "bytes": 2532575,
+      "sha256": "e2e0ddd58250bee6a9d5352630df985dd6c7f4c34d68c6ec96940832b50212f4",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00752.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00752.png",
+      "bytes": 2533557,
+      "sha256": "ff705e451fdb428b739f2e2ebaab628437a1822947ca5a879edbdc4ffbd18f31",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00753.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00753.png",
+      "bytes": 2533546,
+      "sha256": "d7a30c0b2395cb0e24673e6a57cfbfdf69882d71de69223ef6efa7ba19274309",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00754.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00754.png",
+      "bytes": 2532719,
+      "sha256": "9b5f269f57444224e0a2fd2b33531987fb0273901dd9fd51c99859501f6ac671",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00755.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00755.png",
+      "bytes": 2530033,
+      "sha256": "6f60c733221e3e6461c2bcf610d2329f27403644d162f0e0522bf3017b58ffbb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00756.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00756.png",
+      "bytes": 2530542,
+      "sha256": "913ec7a758cbf9fac31ed997ef8874c5f4a7180f5c8f280c0968c21b31b1a5ac",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00757.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00757.png",
+      "bytes": 2528819,
+      "sha256": "135a9a23b15beacef8797f5872f1a12bb47e98e191d4e1d3a10573e6ed9f0e5d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00758.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00758.png",
+      "bytes": 2529197,
+      "sha256": "57970a09d595633a2a9c7c3feed23e14f03f693813e189d737998854e2140fcb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00759.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00759.png",
+      "bytes": 2530477,
+      "sha256": "c65454365d771185e32faa674bd49bdf3d11537412393315c58949589a41dce0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00760.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00760.png",
+      "bytes": 2530426,
+      "sha256": "152da35bb3970603895a3d8e8683917110de0835e2e1164e1fce6ef9c2017835",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00761.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00761.png",
+      "bytes": 2531727,
+      "sha256": "edcb5545afe4c93f2d530a664660ad0a514b7d8bc5b577a76a4dcd080736eb5f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00762.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00762.png",
+      "bytes": 2531213,
+      "sha256": "1d7831b403f47a0f4c57116c8f2eec9b1f1a85bdd6478042f258a2edd3e8afc9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00763.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00763.png",
+      "bytes": 2529618,
+      "sha256": "b2485f55903c163a2d1d6c47fc8a8971369a09fb97c8525acfcd1e9a0b10d812",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00764.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00764.png",
+      "bytes": 2527984,
+      "sha256": "e560e8afe13347f0ec5b0902592bf53139a10c5268ff995e9ad5e1bc756ff41f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00765.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00765.png",
+      "bytes": 2526406,
+      "sha256": "f7c6bd114660bfa0f4f9b656b5e0aa181d6b16dcf473a676ac98ab94cd09eba2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00766.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00766.png",
+      "bytes": 2525863,
+      "sha256": "c221cdce3a86445ee645ba24ecf934e2c585dbc2a43e99f870592a72fbd623f9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00767.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00767.png",
+      "bytes": 2525967,
+      "sha256": "8699a330e821f104db1a5377876e68534cff3bd4150764198deeb49baf650c53",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00768.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00768.png",
+      "bytes": 2526624,
+      "sha256": "2388808a77987304aba00eec1f1f5ba7d7f5e3a889494fff4e89b72661f5e0c0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00769.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00769.png",
+      "bytes": 2525138,
+      "sha256": "9cf01ffd637c3b1c94add88978412c2641bde421e86beaa06f22de6411601435",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00770.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00770.png",
+      "bytes": 2525063,
+      "sha256": "e1dba58e6cdc04fa78ca4135a0e42835a9e4d3a97fd0542a0567aa41ba639cd6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00771.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00771.png",
+      "bytes": 2525152,
+      "sha256": "02f0259afbb3754fb91fdd9d30a79b2d4fb9d0d48fde9bee55195de5ee97cb46",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00772.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00772.png",
+      "bytes": 2525754,
+      "sha256": "5328bfa3ae52efea8220e409f4c872c8beb98f2f129a757fada2d0ddd205f0a5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00773.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00773.png",
+      "bytes": 2522936,
+      "sha256": "db83ccd18347ef30eae5225028682386e46d2c8c9a488da739bba451b8d013cc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00774.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00774.png",
+      "bytes": 2523013,
+      "sha256": "0945399220fccd993464351ccc26dfed5c9f8bed7df036c99df2eabba6c1834a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00775.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00775.png",
+      "bytes": 2521729,
+      "sha256": "96544a6357e6c02472592480078cff29afbdd70444894053691abdf4f6e80b0b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00776.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00776.png",
+      "bytes": 2517591,
+      "sha256": "321e9f82a298b01b8e630f2d9580f7e387ae0074f738ae1637bc41a8843f7fe0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00777.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00777.png",
+      "bytes": 2514709,
+      "sha256": "0bd4d480a33117e567fdc5252c854d5466a048fafa7ca2586abe5de7c8b3e316",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00778.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00778.png",
+      "bytes": 2516362,
+      "sha256": "78f1e2cc6a016d90d7ad5f773fdd336551e212867fae130072ce03e107248ca8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00779.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00779.png",
+      "bytes": 2515499,
+      "sha256": "8aefdc9ba055ac2177a5a579697c4a63b6691f0613b777e1a6c03f4a3c982bae",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00780.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00780.png",
+      "bytes": 2513451,
+      "sha256": "72f9a7c0e5ec394f851751bc538525a225443cf40b34aafb72e05f016cb00dcc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00781.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00781.png",
+      "bytes": 2516142,
+      "sha256": "c0e16e2052ee4cacec646e476bee640debc973ff8b9bed7516eb343c71d9f3b2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00782.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00782.png",
+      "bytes": 2515105,
+      "sha256": "ef5003ec14edae79c996019dfa735944ee04aa2b8d97e3233594abf4b36e16f7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00783.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00783.png",
+      "bytes": 2515062,
+      "sha256": "a0142901baadd6ee4fc7b6d405acf7526075739c19b0585244c490ccdca453f0",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00784.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00784.png",
+      "bytes": 2512088,
+      "sha256": "4587cab38225a008fc6f5a2c3dc0324fa463d2c69861ea91ab0286802f432e71",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00785.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00785.png",
+      "bytes": 2510352,
+      "sha256": "11edcfa1ddd87dc3878eee772b03a190d96c077180eb5b01ac03f4aff6783ab9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00786.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00786.png",
+      "bytes": 2508640,
+      "sha256": "1b8cc066163ca6a70e0fe05fa8da061a557a50279a4294f0b8ee6259cef4343b",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00787.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00787.png",
+      "bytes": 2507671,
+      "sha256": "27f881e165d8f24706d3032b2879b1688cace326486d2034c45486e2ddedeaa7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00788.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00788.png",
+      "bytes": 2507346,
+      "sha256": "ef16edd4aaac5e991731df67a71c644e01bbbaf3bfb285f04ce8449b79e0ce28",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00789.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00789.png",
+      "bytes": 2509961,
+      "sha256": "ea42218fb3141eff5aed0968b096c21837279f8f66547b309851fac7aa354e8f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00790.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00790.png",
+      "bytes": 2511892,
+      "sha256": "f12b2f8e5204eda178e8855d3b8a61faa77f5c987b0100e733cb43e385b01dfe",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00791.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00791.png",
+      "bytes": 2513967,
+      "sha256": "3ea27dfbecbdd7f4d0f623b6404c0ecaa538a09a002cc03761070d57d8fd8ed9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00792.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00792.png",
+      "bytes": 2514868,
+      "sha256": "73262d18bef829cd493e16fa22749ca771715fd07f890089af7d940d04555214",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00793.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00793.png",
+      "bytes": 2515626,
+      "sha256": "95d3bb2e8e5679e1ef730afff9f147d87bf1db7370bdc78521f59c5769469aaf",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00794.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00794.png",
+      "bytes": 2514995,
+      "sha256": "9877a8660cf7b94f0de71e29fbc579cb4484670b71b9f8c42662df65618554f5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00795.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00795.png",
+      "bytes": 2513345,
+      "sha256": "94c56f562c4e4d37e7e827dc5a1f7a1bd28dcadbc4d0c281af0192d4024ab850",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00796.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00796.png",
+      "bytes": 2512242,
+      "sha256": "dca5a84a9227edf7138845f10e9a19652445e0c06f210c7016f9813f0e0a5404",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00797.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00797.png",
+      "bytes": 2513410,
+      "sha256": "64fc5dcafc4b06f4c33718d458aacb679e9de7e19640a17cc9c453edd32b7528",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00798.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00798.png",
+      "bytes": 2513459,
+      "sha256": "36e466e984f8fc5578d7ce709b3c006af08eda106bf7fa633a8d124105c7386d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00799.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00799.png",
+      "bytes": 2514426,
+      "sha256": "e64d41f7b228abb071e470b7fcf151c23f36d57a6fad06a26e77dae6f696d455",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00800.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00800.png",
+      "bytes": 2517882,
+      "sha256": "3eeefe23913d3fe9cd94a59bbc796c5c49f83268af6558f144a089271dbf2c26",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00801.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00801.png",
+      "bytes": 2519570,
+      "sha256": "8b111466def831c4378d7ca4f05b2f6e7622ae175d786459d9ad6a53cfc0918f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00802.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00802.png",
+      "bytes": 2520653,
+      "sha256": "a95bd693532c5ab2e490426f162276147361f58651fba07c4070399b85464f65",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00803.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00803.png",
+      "bytes": 2520826,
+      "sha256": "b89fcca2b21b54a45ba99fb558d388028e1bca8492fbf70fb13e8f41b87de4c5",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00804.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00804.png",
+      "bytes": 2517233,
+      "sha256": "03839dfd2a628910df5d144972e308caf6e5e61e3571076f0b5edc5790312d3f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00805.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00805.png",
+      "bytes": 2514441,
+      "sha256": "bd740a61d5f5ea02cade3bf06c100a7e094d7bd3bc091419d699b2b11424b1e9",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00806.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00806.png",
+      "bytes": 2512697,
+      "sha256": "65dba3ce51e21008e9cb7d659a43882330da8d1dc8dc109e92eaf509dcac7866",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00807.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00807.png",
+      "bytes": 2512355,
+      "sha256": "64542789865f7634ee83e597a1d372071ffaa929ce9c05bc3f56cd6275126ea8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00808.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00808.png",
+      "bytes": 2512397,
+      "sha256": "ea0dd557f4f6d4cc1c2dc9c2fa22be2d590011b0a25ffaaa43eb64569fef6bdb",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00809.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00809.png",
+      "bytes": 2510688,
+      "sha256": "1146ddf8b634fff5530c980944746f22d175c0bae9e10f55ec123382484ab6ed",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00810.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00810.png",
+      "bytes": 2509545,
+      "sha256": "ffae811304140c97fda783670d96ce059f6ada582aa1699ec2cc6923e98b6415",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00811.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00811.png",
+      "bytes": 2509140,
+      "sha256": "88ef080b1bd8f5eac812e3f7aa4da453b518bbddb01b0ebe06d6b691529e3873",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00812.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00812.png",
+      "bytes": 2509329,
+      "sha256": "680ff1f563376ffaf8dd4678d5e09e4b4a55a3f87ca33a98239d52cc70dd3d4a",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00813.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00813.png",
+      "bytes": 2513301,
+      "sha256": "42b9007eb9b24117adabcd2a70feec44abe084a031b4263d3ed0762ea2cbe8ec",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00814.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00814.png",
+      "bytes": 2515360,
+      "sha256": "7ef12b8976181b7bbaa9cc1dd96c427742a42f7ae666744aa192540633f77684",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00815.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00815.png",
+      "bytes": 2516107,
+      "sha256": "1ecadb84d96547ce3599a1c8269a0f34f5c0e4002299260231ee919678bf9c6f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00816.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00816.png",
+      "bytes": 2515579,
+      "sha256": "6a2e6c718890177b223b116ea2e465fb4f5426b81ad508ba560626776632e2e3",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00817.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00817.png",
+      "bytes": 2516907,
+      "sha256": "b7d9373225142e631aa9b32969d57c55f6859c2401d6c0e206a244df256a63b7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00818.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00818.png",
+      "bytes": 2518893,
+      "sha256": "449342684ccd39f86997e40c4311a0b8d9f1f835898baa9c80909b91bf7eb378",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00819.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00819.png",
+      "bytes": 2517678,
+      "sha256": "cb68e5fa100ff38be6108e9ae9d1981258f07bb112c91d571156a90a91f71df8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00820.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00820.png",
+      "bytes": 2519505,
+      "sha256": "c3b7a9dc59436ac2a50b46a5d613498dde41d7d6b81199d86281a432dd478fc8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00821.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00821.png",
+      "bytes": 2518602,
+      "sha256": "56c325f6dcab8bc4437fa25600fd34ed144bae31816ede81ac53d83628666fdc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00822.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00822.png",
+      "bytes": 2519277,
+      "sha256": "693b79ce656d54e4e6c776c57ef45e79c495e8adc376c3b908acb51756d1c0f2",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00823.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00823.png",
+      "bytes": 2520064,
+      "sha256": "95938067bfe30c2ae078514ab014df6b7e17dd3c1fb4f91c30e2a1ccb34aa3a8",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00824.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00824.png",
+      "bytes": 2521551,
+      "sha256": "15ee6b5bfe347de7b0703862325c058d66425983658fc8fd0a602f0b6763c8d6",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00825.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00825.png",
+      "bytes": 2521846,
+      "sha256": "660b2476b4bdc6351262c4dac2a407a6b3f28f1760d4dc9d948773cf0740d924",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00826.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00826.png",
+      "bytes": 2521419,
+      "sha256": "9d8f79c49c719fc2685a1cd0236e13a2c9e165ae9524050205718a334fabfa32",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00827.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00827.png",
+      "bytes": 2522711,
+      "sha256": "40e9b62e7bf52f02d26c0ea8e36980df676920b21913c26eeb842fd26f11a43e",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00828.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00828.png",
+      "bytes": 2523598,
+      "sha256": "20fd8189c64acd46b54bc6cbeba196f50af7ad15b602447783411c2eff7ea36d",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00829.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00829.png",
+      "bytes": 2523786,
+      "sha256": "d63a2d64bb03a910d9bf90a191fdf413c2cabb53a77c6bb30ee0e7f62f5c1d12",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00830.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00830.png",
+      "bytes": 2522742,
+      "sha256": "45d72ac65188f380b4cae910205d82145f5b3fb3756cf418f1c4491398e53266",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00831.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00831.png",
+      "bytes": 2523231,
+      "sha256": "2e8d8f617eb3b53f9b4bc41e6486b1f02641f66bf7f1ed2e9dda6826a43ee299",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00832.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00832.png",
+      "bytes": 2523873,
+      "sha256": "2c468b8fb3d8d8be448773a427163cd068ef2ebfd6cb8267d506d82016643488",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00833.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00833.png",
+      "bytes": 2524203,
+      "sha256": "c042eaca8751b58733f6f2bac6885b2f21bb00d7748e482b172f603247e01464",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00834.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00834.png",
+      "bytes": 2523129,
+      "sha256": "1bc498c0fd71a984e7f40d48f6b4b0eb356fa03d104f0ae62b32430078360fe7",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00835.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00835.png",
+      "bytes": 2523985,
+      "sha256": "c1f49778008d11c2306bdfbb89c78dc5bf1b2cf823a0b5536c9d2ab82c7a7b0c",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00836.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00836.png",
+      "bytes": 2523676,
+      "sha256": "e7851183e771e102a6dd9c90f9def0893022fdbb81a1145527f64b612f3510bc",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00837.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00837.png",
+      "bytes": 2523988,
+      "sha256": "534b155d50ddd56e4600ada8463ffa9c0a4c94188c344d10e31639da73f3ca55",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00838.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00838.png",
+      "bytes": 2523231,
+      "sha256": "574b23c3db973d682ab50e83e4df623c679d274446f31184a04e49a366934d2f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00839.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00839.png",
+      "bytes": 2522348,
+      "sha256": "c4de7aa74458f1322bdc706fef99ca487f572b321f7ba0c9b37fe0541702845f",
+      "published_sha256_verified": true
+    },
+    {
+      "original_filename": "graded_edit_final_00840.png",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/graded_edit_final_00840.png",
+      "bytes": 2519829,
+      "sha256": "42be38fc44e35de17144d846a10253d488513363418376d9278f04768562a848",
+      "published_sha256_verified": true
+    }
+  ],
+  "partial_download": false,
+  "whole_movie_downloaded": false,
+  "excerpt_path": ".build/canonical-sources/tos-natural/tos-natural-source.mkv",
+  "excerpt_sha256": "15195c24cddd0c383446a77338e189989e3ecec2bf59b1123fee73be542c2d86",
+  "excerpt_bytes": 485609390,
+  "ffmpeg_sha256": "681435111386b2f967d2ae6bb8ed04ea31b813066898824c6c817656a9710af6",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+    "-hide_banner",
+    "-nostdin",
+    "-y",
+    "-framerate",
+    "24",
+    "-start_number",
+    "601",
+    "-i",
+    "/Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/tos-natural/original-frames/graded_edit_final_%05d.png",
+    "-frames:v",
+    "240",
+    "-c:v",
+    "ffv1",
+    "-level",
+    "3",
+    "-pix_fmt",
+    "gbrp",
+    "/Users/ofhd/Developer/Encoding_Database/.build/canonical-sources/tos-natural/tos-natural-source.mkv"
+  ],
+  "transformation": "Original RGB PNG pixels stored losslessly as FFV1 gbrp; no resizing, color conversion, or frame rate change.",
+  "complete_decode_exit": 0,
+  "complete_decode_stderr": ""
+}

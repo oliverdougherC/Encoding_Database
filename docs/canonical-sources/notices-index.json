@@ -1,0 +1,79 @@
+[
+  {
+    "file": "docs/canonical-sources/notices/BarScene-xiph.txt",
+    "source_url": "https://media.xiph.org/video/derf/Chimera/Netflix_BarScene_Copyright.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 599,
+    "sha256": "f2d43f95d528c524b4f79be99a9c63ece33b87a6364627d48b2328f062eda514"
+  },
+  {
+    "file": "docs/canonical-sources/notices/BoxingPractice-xiph.txt",
+    "source_url": "https://media.xiph.org/video/derf/ElFuente/Netflix_BoxingPractice_Copyright.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 604,
+    "sha256": "2984e9249284d4ef6dfc1102fac680463768938b557862fe1a03ceda2248268b"
+  },
+  {
+    "file": "docs/canonical-sources/notices/Narrator-xiph.txt",
+    "source_url": "https://media.xiph.org/video/derf/ElFuente/Netflix_Narrator_Copyright.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 597,
+    "sha256": "5d839cfcdc5a805e5d34160078f06f70ce97681be5b652e077addc5bfd6e202c"
+  },
+  {
+    "file": "docs/canonical-sources/notices/WindAndNature-xiph.txt",
+    "source_url": "https://media.xiph.org/video/derf/Chimera/Netflix_WindAndNature_Copyright.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 605,
+    "sha256": "4f3c44e73e4d8d158f0b419c2577a77cc9d739a58d70ce4c41e85aa456b3cd5a"
+  },
+  {
+    "file": "docs/canonical-sources/notices/nocturne-license_url.txt",
+    "source_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 105020,
+    "sha256": "7d3512159f970cdcf296e8404be05947228d0bfaf72801cb5b3077f4330f71f9"
+  },
+  {
+    "file": "docs/canonical-sources/notices/nocturne-readme_url.txt",
+    "source_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/readme.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 1253,
+    "sha256": "cbd946dc283a8ebb5243e4dd879b710b40d5dcccbdc7697518c2c553d0a89bf4"
+  },
+  {
+    "file": "docs/canonical-sources/notices/sol-levante-license_url.txt",
+    "source_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/creative-commons-attribution-4-intl-public-license.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 105020,
+    "sha256": "7d3512159f970cdcf296e8404be05947228d0bfaf72801cb5b3077f4330f71f9"
+  },
+  {
+    "file": "docs/canonical-sources/notices/tears-of-steel-SHA256SUMS.txt",
+    "source_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/SHA256SUMS.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 1656359,
+    "sha256": "ac1491373e20a7d0961a6e3d379fa88c2159cc38ff6c0830c9a95dbd00503630"
+  },
+  {
+    "file": "docs/canonical-sources/notices/tears-of-steel-lossless.txt",
+    "source_url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 986,
+    "sha256": "db08615c7a1fbf4af24918c613a9ad6e8251e99f185cf75393806b107421631a"
+  },
+  {
+    "file": "docs/canonical-sources/notices/chimera-license_url.txt",
+    "source_url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/creative-commons-attribution-4-intl-public-license.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 105020,
+    "sha256": "7d3512159f970cdcf296e8404be05947228d0bfaf72801cb5b3077f4330f71f9"
+  },
+  {
+    "file": "docs/canonical-sources/notices/CC-BY-3.0.txt",
+    "source_url": "https://creativecommons.org/licenses/by/3.0/legalcode.txt",
+    "retrieval_date": "2026-09-09",
+    "bytes": 19467,
+    "sha256": "e6bc9e9c474700b708f568bac9e5a8a9bcb2b1dad53442f5ba449fcb848b8e76"
+  }
+]

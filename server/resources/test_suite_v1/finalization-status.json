@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "distribution": "reviewed-final",
+  "isFrozen": true,
+  "finalLockPath": "suite-lock.json",
+  "reason": "Final suite lock exists and was produced from reviewed provenance/license metadata."
+}

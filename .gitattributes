@@ -1,3 +1,16 @@
 # Normalize line endings: use LF for shell scripts so Git Bash/MSYS2 works
 *.sh text eol=lf
 
+# Suite fingerprints include these bytes; keep deterministic checkouts on Windows.
+client/resources/test_suite_v1/*.json text eol=lf
+server/resources/test_suite_v1/*.json text eol=lf
+# Preserve exact publisher license/notice bytes, including original CRLF/spacing.
+docs/canonical-sources/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+docs/canonical-suite/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+scripts/canonical-screen/fonts/OFL.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+client/resources/test_suite_v1/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+server/resources/test_suite_v1/notices/* -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+
+# VMAF models are pinned by byte hash; Windows must preserve LF bytes.
+client/resources/vmaf/*.json text eol=lf
+server/resources/vmaf/*.json text eol=lf

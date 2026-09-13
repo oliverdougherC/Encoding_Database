@@ -1,0 +1,81 @@
+name: Release Preflight
+
+on:
+  push:
+    branches:
+      - beta
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "20"
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+      - name: Provision pinned media probe runtime
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends openssl ripgrep
+          mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          cd "$RUNNER_TEMP/ffmpeg-runtime"
+          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
+            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
+          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
+          tar -xf ffmpeg-linux.tar.xz
+          bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
+          test -x "$bundle_dir/bin/ffmpeg"
+          test -x "$bundle_dir/bin/ffprobe"
+          echo "FFMPEG_EXE=$bundle_dir/bin/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$bundle_dir/bin/ffprobe" >> "$GITHUB_ENV"
+          echo "$bundle_dir/bin" >> "$GITHUB_PATH"
+      - name: Install canonical-suite validation dependencies
+        run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
+      - name: Materialize frozen canonical references
+        run: python scripts/materialize_final_suite.py
+      - name: Generate ignored dev TLS cert
+        run: bash scripts/generate-dev-cert.sh
+      - name: Run release preflight
+        run: |
+          checks=(hygiene metadata frontend server client stack-smoke migrations production-compose suite-contract ops-hooks final-suite)
+          bash scripts/release_preflight.sh "${checks[@]}"
+      - name: Retain executed release gate logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preflight-logs-${{ github.sha }}
+          path: |
+            /tmp/encodingdb-release-preflight.*/*.log
+            .test-reports/**/*.log
+          if-no-files-found: error
+          retention-days: 90
+
+  release-sentinel:
+    name: Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)
+    if: ${{ github.event_name != 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Surface the intentional final-suite blocker
+        run: |
+          set +e
+          output="$(bash scripts/release_preflight.sh final-suite 2>&1)"
+          status=$?
+          set -e
+          printf '%s\n' "$output"
+          if [ "$status" -eq 0 ]; then
+            echo "Final suite is frozen; the expected pre-freeze sentinel is cleared."
+            exit 0
+          fi
+          grep -Fxq 'FAIL FINAL_TEST_SUITE_NOT_FROZEN' <<<"$output"

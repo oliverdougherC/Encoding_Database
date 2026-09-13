@@ -1,0 +1,144 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/film-grain-1080p24-final.mkv",
+  "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+  "byteSize": 336898554,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.9593429169617593,
+  "decodeRealtimeRatio": 10.423801357360324,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": {
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Producer-added grain remains clearly visible on wood, fabric and skin in full-resolution frame3 and changes across the sequence. No denoise; light-to-dark transition retained. Grain provenance is added Filmbox, not a film scan."
+  },
+  "encodes": [
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-20.mp4",
+      "sha256": "365a0b1271da1b1af57b127f11d1a5e575beec5742ab326df46bca6772fba332",
+      "bytes": 33912643,
+      "videoBytes": 33909433,
+      "videoBitrateBps": 27127546.4,
+      "elapsedSeconds": 7.070730959007051,
+      "encodeFps": 33.94274246770428,
+      "vmafMean": 94.944966,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-20.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-28.mp4",
+      "sha256": "ba4f3ecf3ba18859ab2bc0acf765a08bc1de0adb055769faefa881d7ae51371e",
+      "bytes": 2740168,
+      "videoBytes": 2737194,
+      "videoBitrateBps": 2189755.2,
+      "elapsedSeconds": 3.284416041977238,
+      "encodeFps": 73.07235043691925,
+      "vmafMean": 83.932883,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-36.mp4",
+      "sha256": "0b5e608be65aa6ba331840e9f7f933785688515ecb2675fee5f0565233139391",
+      "bytes": 920004,
+      "videoBytes": 917062,
+      "videoBitrateBps": 733649.6,
+      "elapsedSeconds": 3.056547334010247,
+      "encodeFps": 78.51996837396119,
+      "vmafMean": 69.290535,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx264-36.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx265-28.mp4",
+      "sha256": "af570752b386d9221eee656e60eb2f45f06d6479a3efeb3eb5fa0594b23bef4a",
+      "bytes": 1677437,
+      "videoBytes": 1671349,
+      "videoBitrateBps": 1337079.2,
+      "elapsedSeconds": 8.006474249996245,
+      "encodeFps": 29.975741194710338,
+      "vmafMean": 84.234004,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libx265-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "runtime": "/opt/homebrew/bin/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libsvtav1-32.mp4",
+      "sha256": "05650aa7e03362d7d3c23349789c22128ac55ec31a4ecc8698c6be5405c714ce",
+      "bytes": 3579026,
+      "videoBytes": 3576900,
+      "videoBitrateBps": 2861520.0,
+      "elapsedSeconds": 2.12140379101038,
+      "encodeFps": 113.1326346342075,
+      "vmafMean": 87.695884,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/libsvtav1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/film-grain-1080p24-final/h264_videotoolbox-2500.mp4",
+      "sha256": "131a9a4e7e0e9e9a72225c2fe9da2c26a42ded4bec382d7042754611d73ac890",
+      "bytes": 3178857,
+      "videoBytes": 3176907,
+      "videoBitrateBps": 2541525.6,
+      "elapsedSeconds": 1.7359422500012442,
+      "encodeFps": 138.253447083178,
+      "vmafMean": 80.727249,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/film-grain-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
+    }
+  ]
+}

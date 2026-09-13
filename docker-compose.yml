@@ -19,11 +19,16 @@ services:
     environment:
       DATABASE_URL: postgresql://app:app@db:5432/benchmarks?schema=public
       PORT: 3001
+      ARTIFACT_STORAGE_ROOT: /app/artifacts
+      ARTIFACT_UPLOAD_SECRET: ${ARTIFACT_UPLOAD_SECRET:-encodingdb-local-v7-artifact-secret}
     command: sh -c "npx prisma migrate deploy && node dist/index.js"
     depends_on:
       db:
         condition: service_healthy
     ports:
       - '3001:3001'
+    volumes:
+      - artifact_data:/app/artifacts
 volumes:
   db_data:
+  artifact_data:

@@ -1,0 +1,11 @@
+Tears of Steel — close dialogue
+Creator: Blender Foundation / Mango Open Movie Project
+Attribution: (CC) Blender Foundation | mango.blender.org
+Source: https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/
+Selected range: frames 5761–6000
+License: CC-BY-3.0; full text accompanies this file.
+Source excerpt SHA256: a1cd976db82df225a386baa38bba5c3071bdf40e18585a39028b4e7d8f02d3ea
+Final reference SHA256: ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3
+Changes: Publisher 1920x800 RGB PNG display master treated as sRGB; explicit sRGB transfer to BT.709 limited conversion with error diffusion to 8-bit 4:2:0. Preserve all source pixels/aspect; 140-pixel bars top/bottom; no crop or stretch. Scope includes cinematic letterboxing, which reduces active pixels and must be considered when interpreting full-frame metrics.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 5761–6000; source excerpt SHA256 a1cd976db82df225a386baa38bba5c3071bdf40e18585a39028b4e7d8f02d3ea. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-dialog-acquisition.json. Prepared by scripts/prepare_canonical_references.py.

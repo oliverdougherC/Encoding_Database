@@ -1,8 +1,10 @@
 .toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
+  justify-content:center;
+  width:36px;
+  gap: 0;
+  padding: 0;
   font-size: 12px;
   line-height: 1;
 }
@@ -11,8 +13,4 @@
   font-size: 15px;
 }
 
-.label {
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-family: "Rajdhani", "Bahnschrift", sans-serif;
-}
+.label { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }

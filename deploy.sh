@@ -13,13 +13,15 @@ COMPOSE_FILE="${DEPLOY_COMPOSE_FILE:-docker-compose.prod.yml}"
 SERVICE_TIMEOUT_SECONDS="${DEPLOY_SERVICE_TIMEOUT_SECONDS:-240}"
 API_TIMEOUT_SECONDS="${DEPLOY_API_TIMEOUT_SECONDS:-240}"
 SKIP_PULL=0
+PREPARE_ONLY=0
 
 usage() {
   cat <<'EOF'
-Usage: ./deploy.sh [--skip-pull] [--help]
+Usage: ./deploy.sh [--skip-pull] [--prepare-only] [--help]
 
 Options:
   --skip-pull  Skip git fetch/pull and deploy current local checkout.
+  --prepare-only  Verify the suite and build/pull all images without rollout.
   --help       Show this help text.
 
 Environment overrides:
@@ -28,6 +30,12 @@ Environment overrides:
   DEPLOY_COMPOSE_FILE=docker-compose.prod.yml
   DEPLOY_SERVICE_TIMEOUT_SECONDS=240
   DEPLOY_API_TIMEOUT_SECONDS=240
+  DEPLOY_SUITE_CACHE_DIR=.build/final-suite-cache
+  DEPLOY_SUITE_PACK_PATH=/absolute/path/to/verified-pack.tar.gz (optional)
+  DEPLOY_SUITE_PACK_URL=https://mirror/pack.tar.gz (optional, exclusive mirror)
+
+Requires Git, Node.js 20+, and Docker with Compose v2. Suite Python packages
+and FFmpeg/ffprobe are provisioned in an isolated preparation image.
 EOF
 }
 
@@ -35,6 +43,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --skip-pull)
       SKIP_PULL=1
+      shift
+      ;;
+    --prepare-only)
+      PREPARE_ONLY=1
       shift
       ;;
     --help|-h)
@@ -133,12 +145,33 @@ wait_for_api_ready() {
   return 1
 }
 
+compose_exec_node() {
+  local service="$1"
+  local script="$2"
+  docker compose -f "$COMPOSE_FILE" exec -T "$service" node -e "$script"
+}
+
+run_preflight_validation() {
+  log "Validating production env contract..."
+  local args=(--env-file "$ROOT_DIR/.env")
+  if [[ -n "$reference_context_path" ]]; then
+    args+=(--reference-context "$reference_context_path")
+  fi
+  node "$ROOT_DIR/scripts/validate-production-env.mjs" "${args[@]}"
+
+  log "Validating compose configuration..."
+  docker compose -f "$COMPOSE_FILE" config -q
+}
+
 cd "$ROOT_DIR"
 
 require_cmd git
 require_cmd docker
+require_cmd node
 
-[[ -d ".git" ]] || die "Not a git repository: $ROOT_DIR"
+git rev-parse --is-inside-work-tree >/dev/null 2>&1 || die "Not a git repository: $ROOT_DIR"
+node -e 'if (Number(process.versions.node.split(".")[0]) < 20) process.exit(1)' || die "Node.js 20+ is required."
+docker compose version >/dev/null || die "Docker Compose v2 is required."
 [[ -f "$COMPOSE_FILE" ]] || die "Compose file not found: $COMPOSE_FILE"
 [[ -f ".env" ]] || die "Missing .env in $ROOT_DIR. Create it from env.example before deployment."
 
@@ -153,6 +186,15 @@ if [[ "$normalized_ingest_mode" == "signed" ]]; then
   ingest_secret="$(read_env_value "INGEST_HMAC_SECRET")"
   [[ -n "$ingest_secret" ]] || die "INGEST_MODE=signed requires INGEST_HMAC_SECRET in .env."
 fi
+
+reference_context_path="$(read_env_value "PL_V7_REFERENCE_CONTEXT_PATH")"
+if [[ -z "$reference_context_path" ]]; then
+  log "PL_V7_REFERENCE_CONTEXT_PATH is unset; authoritative evidence will remain browseable and canonical PL will stay unavailable."
+elif [[ ! -f "$reference_context_path" ]]; then
+  die "PL_V7_REFERENCE_CONTEXT_PATH does not exist: $reference_context_path"
+fi
+
+run_preflight_validation
 
 if [[ "$SKIP_PULL" -eq 0 ]]; then
   ensure_clean_worktree
@@ -174,11 +216,23 @@ if [[ "$SKIP_PULL" -eq 0 ]]; then
   git pull --ff-only "$REMOTE" "$BRANCH"
 fi
 
-log "Validating compose configuration..."
-docker compose -f "$COMPOSE_FILE" config -q
+run_preflight_validation
 
-log "Building and starting production stack..."
-docker compose -f "$COMPOSE_FILE" up -d --build --remove-orphans
+log "Preparing verified final suite before building or changing services..."
+bash "$ROOT_DIR/scripts/prepare_production_suite.sh"
+
+log "Building all application images before rollout..."
+docker compose -f "$COMPOSE_FILE" build
+log "Acquiring service images before rollout..."
+docker compose -f "$COMPOSE_FILE" pull --ignore-buildable
+
+if [[ "$PREPARE_ONLY" -eq 1 ]]; then
+  log "Preparation complete at commit $(git rev-parse HEAD); no services changed."
+  exit 0
+fi
+
+log "Preparation complete; starting production stack from prepared images..."
+docker compose -f "$COMPOSE_FILE" up -d --no-build --pull never --remove-orphans
 
 log "Waiting for services to become healthy..."
 services="$(docker compose -f "$COMPOSE_FILE" config --services)"
@@ -188,6 +242,18 @@ done
 
 if echo "$services" | grep -qx "server"; then
   wait_for_api_ready "$API_TIMEOUT_SECONDS" || die "API readiness failed."
+  log "Running post-deploy smoke checks..."
+  compose_exec_node server 'const {PrismaClient}=require("@prisma/client"); const prisma=new PrismaClient(); prisma.$queryRawUnsafe("SELECT 1").then(async()=>{await prisma.$disconnect();}).catch(async(error)=>{console.error(error); try{await prisma.$disconnect();}catch{} process.exit(1);});' \
+    || die "Database query smoke failed."
+  compose_exec_node server 'const http=require("http"); const checks=["/health/live","/health/ready","/health/v7-evidence","/query?limit=1","/test-videos","/corpus?limit=1"]; let index=0; const next=()=>{ const target=checks[index++]; if(!target) return process.exit(0); http.get({host:"127.0.0.1",port:3001,path:target},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200) process.exit(1); try { const parsed=JSON.parse(body); if((target==="/query?limit=1" || target==="/corpus?limit=1" || target==="/test-videos") && !Array.isArray(parsed)) process.exit(1); if(target==="/health/v7-evidence" && (!parsed || parsed.status!=="ok")) process.exit(1); } catch (error) { if(target.startsWith("/health/")) process.exit(1); } next(); }); }).on("error",()=>process.exit(1)); }; next();' \
+    || die "Server endpoint smoke failed."
+fi
+
+if echo "$services" | grep -qx "frontend"; then
+  compose_exec_node frontend 'const http=require("http"); http.get({host:"127.0.0.1",port:3000,path:"/"},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200 || !/<title>EncodingDB<\/title>/.test(body) || !/V7 public corpus/.test(body)) process.exit(1); process.exit(0); }); }).on("error",()=>process.exit(1));' \
+    || die "Frontend homepage smoke failed."
+  compose_exec_node frontend 'const http=require("http"); http.get({host:"127.0.0.1",port:3000,path:"/api/corpus?limit=1"},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200) process.exit(1); const parsed=JSON.parse(body); if(!Array.isArray(parsed)) process.exit(1); process.exit(0); }); }).on("error",()=>process.exit(1));' \
+    || die "Frontend corpus proxy smoke failed."
 fi
 
 commit="$(git rev-parse --short HEAD)"

@@ -1,0 +1,121 @@
+[
+  {
+    "name": "nocturne-source.mkv",
+    "bytes": 1432026855,
+    "sha256": "ec4ec397e6495ef7054f5df93bc2e2a70f64d954186c1c6fc36bf654d73aab5c",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/nocturne-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "nocturne",
+    "selection_status": "current candidate"
+  },
+  {
+    "name": "sol-levante-source.mkv",
+    "bytes": 858079616,
+    "sha256": "c85bb8790cc983aeaba2fce8a61c282cf79780abba8905bb29fb155596ff6353",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/sol-levante-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "sol-levante",
+    "selection_status": "superseded exploratory source"
+  },
+  {
+    "name": "tos-action-source.mkv",
+    "bytes": 292423228,
+    "sha256": "2995a722dc8ff9ec32a262dd1679c5aca91655dbb7de61d2457164567c1c482b",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/tos-action-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "tos-action",
+    "selection_status": "current candidate"
+  },
+  {
+    "name": "tos-dark-source.mkv",
+    "bytes": 353897763,
+    "sha256": "9e818bd865ebb4c32889cbeca1c2a43a4c8bc3ba3a4c2e4c21b635150322588f",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/tos-dark-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "tos-dark",
+    "selection_status": "superseded exploratory source"
+  },
+  {
+    "name": "tos-talking-source.mkv",
+    "bytes": 373767145,
+    "sha256": "2e360fe96b7c21ce4d92baaa98b04b8db5f50544d9ae2e47550ab190fdfcb1af",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/tos-talking-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "tos-talking",
+    "selection_status": "superseded exploratory source"
+  },
+  {
+    "name": "sol-levante-flat-source.mkv",
+    "bytes": 697445268,
+    "sha256": "af62fe6fbbb2ffc89195e348274b793c5e0f6e6894ad2b2b24bf52a4dc631e1c",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/sol-levante-flat-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "sol-levante-flat",
+    "selection_status": "current candidate"
+  },
+  {
+    "name": "tos-dialog-source.mkv",
+    "bytes": 507590813,
+    "sha256": "a1cd976db82df225a386baa38bba5c3071bdf40e18585a39028b4e7d8f02d3ea",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/tos-dialog-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "tos-dialog",
+    "selection_status": "current candidate"
+  },
+  {
+    "name": "canonical-source-notices-20260909.zip",
+    "bytes": 44849,
+    "sha256": "d010884e373f67f6aaad513e8c9138702dbfe1a85e3d1a0ba804761ac51c25fb",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/canonical-source-notices-20260909.zip",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "selection_status": "source attribution companion"
+  },
+  {
+    "name": "chimera-natural-source.mkv",
+    "bytes": 1970241625,
+    "sha256": "79f35b35405c019c639e85b4b232ca04f780163f0f671ebcf55d281ea5a472c3",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/chimera-natural-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "chimera-natural",
+    "selection_status": "current candidate"
+  },
+  {
+    "name": "nocturne-dark-source.mkv",
+    "bytes": 1426413368,
+    "sha256": "d19cb34070490e37a75ba71415e5f13536b291e3c1a71655df7051cb43cad88c",
+    "url": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/nocturne-dark-source.mkv",
+    "github_api_digest_matches_local": true,
+    "anonymous_download_status": 206,
+    "anonymous_download_first_byte_observed": true,
+    "retention": "Nonproduction GitHub prerelease asset; retained until explicitly removed by maintainers. No automatic expiry configured.",
+    "source_id": "nocturne-dark",
+    "selection_status": "current candidate"
+  }
+]

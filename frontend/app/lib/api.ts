@@ -2,7 +2,7 @@ import type {
   Benchmark,
   EncoderAnalyticsRow,
   HardwareAnalyticsRow,
-  LeaderboardAnalyticsRow,
+  LeaderboardAnalyticsResponse,
 } from "./types";
 import { WORKBENCH_PAGE_SIZE, type AnalyticsSearchState, type WorkbenchSearchState } from "./queryState";
 import {
@@ -30,6 +30,15 @@ function toSearchString(params?: URLSearchParams | Record<string, string | numbe
     search.set(key, String(value));
   }
   return search.toString();
+}
+
+function toNullableRecord(params: Record<string, string | number | boolean | null | undefined>): Record<string, string | number | undefined> {
+  const normalized: Record<string, string | number | undefined> = {};
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === false) continue;
+    normalized[key] = value === true ? "1" : value;
+  }
+  return normalized;
 }
 
 export function resolveAppOrigin(): string {
@@ -60,6 +69,13 @@ function mockEnabled(): boolean {
 function readMock<T>(endpointPath: string, params?: URLSearchParams | Record<string, string | number | undefined>): { data: T; totalCount: number | null } | null {
   if (!mockEnabled()) return null;
   if (endpointPath === "/query") {
+    const search = params instanceof URLSearchParams ? params : new URLSearchParams(toSearchString(params));
+    const limit = Number(search.get("limit") || WORKBENCH_PAGE_SIZE);
+    const skip = Number(search.get("skip") || 0);
+    const rows = MOCK_QUERY_ROWS.slice(Math.max(0, skip), Math.max(0, skip) + Math.max(1, limit));
+    return { data: rows as T, totalCount: MOCK_QUERY_ROWS.length };
+  }
+  if (endpointPath === "/corpus") {
     const search = params instanceof URLSearchParams ? params : new URLSearchParams(toSearchString(params));
     const limit = Number(search.get("limit") || WORKBENCH_PAGE_SIZE);
     const skip = Number(search.get("skip") || 0);
@@ -110,13 +126,13 @@ async function fetchJson<T>(
 }
 
 export async function fetchWorkbenchPage(state: WorkbenchSearchState): Promise<{ rows: Benchmark[]; totalCount: number }> {
-  const { data, totalCount } = await fetchJson<Benchmark[]>("/query", {
+  const { data, totalCount } = await fetchJson<Benchmark[]>("/corpus", {
     limit: WORKBENCH_PAGE_SIZE,
     skip: (state.page - 1) * WORKBENCH_PAGE_SIZE,
     total: 1,
     cpu: state.cpu || undefined,
     gpu: state.gpu || undefined,
-    codecSearch: state.codec || undefined,
+    search: state.search || undefined,
     preset: state.preset || undefined,
     sort: state.sort || undefined,
     dir: state.sort ? state.dir : undefined,
@@ -125,17 +141,17 @@ export async function fetchWorkbenchPage(state: WorkbenchSearchState): Promise<{
   return { rows: data, totalCount: totalCount ?? data.length };
 }
 
-export async function fetchLeaderboards(filters: AnalyticsSearchState): Promise<LeaderboardAnalyticsRow[]> {
-  const { data } = await fetchJson<LeaderboardAnalyticsRow[]>("/analytics/leaderboards", filters);
+export async function fetchLeaderboards(filters: AnalyticsSearchState): Promise<LeaderboardAnalyticsResponse> {
+  const { data } = await fetchJson<LeaderboardAnalyticsResponse>("/analytics/leaderboards", toNullableRecord(filters));
   return data;
 }
 
 export async function fetchHardwareAnalytics(filters: AnalyticsSearchState): Promise<HardwareAnalyticsRow[]> {
-  const { data } = await fetchJson<HardwareAnalyticsRow[]>("/analytics/hardware", filters);
+  const { data } = await fetchJson<HardwareAnalyticsRow[]>("/analytics/hardware", toNullableRecord(filters));
   return data;
 }
 
 export async function fetchEncoderAnalytics(filters: AnalyticsSearchState): Promise<EncoderAnalyticsRow[]> {
-  const { data } = await fetchJson<EncoderAnalyticsRow[]>("/analytics/encoders", filters);
+  const { data } = await fetchJson<EncoderAnalyticsRow[]>("/analytics/encoders", toNullableRecord(filters));
   return data;
 }
