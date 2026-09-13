@@ -1,0 +1,47 @@
+{
+  "image": "sha256:57221cc9b7f3ad156a6ea93552150683529b36127cfe70a367e89537c9c38fb4",
+  "inputSha256": [
+    "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8  /app/artifacts/objects/36/361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+    "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3  /app/resources/test_suite_v1/canonical/talking-head-1080p24-final.mkv"
+  ],
+  "rootCause": "FFmpeg 7.1.1 setpts sets frame_rate={1,0}; XPSNR unconditionally divides frame_rate.num/frame_rate.den; arithmetic SIGFPE.",
+  "baseline": {
+    "exitCode": 136,
+    "oomKilled": false,
+    "evidence": "xpsnr-diagnostic-20260913T033552Z/baseline.json"
+  },
+  "threadVariant": {
+    "filter_complex_threads": 4,
+    "exitCode": 136,
+    "oomKilled": false,
+    "evidence": "xpsnr-diagnostic-20260913T033552Z/filter-threads-4.json"
+  },
+  "normalizationFix": {
+    "change": "append fps=24 after setpts to each chain",
+    "exitCode": 0,
+    "frames": 240,
+    "xpsnrY": 34.1143,
+    "xpsnrU": 37.8932,
+    "xpsnrV": 39.7836,
+    "observedPeakMemoryBytes": 373477376,
+    "evidence": "xpsnr-diagnostic-20260913T033736Z/restored-fps.json"
+  },
+  "pixelEquivalence": {
+    "encoded": {
+      "beforeFrames": 240,
+      "afterFrames": 240,
+      "orderedPixelHashesIdentical": true
+    },
+    "reference": {
+      "beforeFrames": 240,
+      "afterFrames": 240,
+      "orderedPixelHashesIdentical": true
+    }
+  },
+  "sourceReferences": [
+    "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n7.1.1/libavfilter/setpts.c",
+    "https://raw.githubusercontent.com/FFmpeg/FFmpeg/n7.1.1/libavfilter/vf_xpsnr.c"
+  ],
+  "productionMutated": false,
+  "diagnosticContainersCleaned": true
+}
