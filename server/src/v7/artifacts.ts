@@ -1347,6 +1347,16 @@ async function runFfmpegQualityFilter(args: string[]): Promise<string> {
   return stderr;
 }
 
+export function buildDiagnosticFilterInputs(frameRate: number): string {
+  if (!Number.isFinite(frameRate) || frameRate <= 0) {
+    throw new Error('Diagnostic frame rate must be a finite positive number');
+  }
+  // FFmpeg 7.1 setpts clears frame-rate metadata to 1/0; XPSNR divides by that
+  // denominator. Restore the source cadence after normalizing timestamps.
+  const normalization = `fps=${frameRate},settb=AVTB,setpts=N/(${frameRate}*TB),fps=${frameRate}`;
+  return `[0:v]${normalization}[distorted];[1:v]${normalization}[reference]`;
+}
+
 export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
   private readonly vmafModelPath: string;
 
@@ -1375,7 +1385,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         dynamicRange: 'sdr' as const,
       };
       const plan = resolveQualityAnalysisExecutionPlan(source, this.vmafModelPath, vmafLogPath);
-      const diagnosticInputs = `[0:v]fps=${source.frameRate},settb=AVTB,setpts=N/(${source.frameRate}*TB)[distorted];[1:v]fps=${source.frameRate},settb=AVTB,setpts=N/(${source.frameRate}*TB)[reference]`;
+      const diagnosticInputs = buildDiagnosticFilterInputs(source.frameRate);
       await execFileAsync('ffmpeg', [
         '-hide_banner',
         '-loglevel', 'error',

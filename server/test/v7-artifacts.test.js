@@ -10,6 +10,7 @@ import path from 'node:path';
 
 import {
   ArtifactPipelineService,
+  buildDiagnosticFilterInputs,
   createArtifactPipelineRouter,
   inferBitDepth,
   inferMediaContainerFromFormatName,
@@ -40,6 +41,23 @@ const PRIMARY_QUALITY_PLAN = resolveQualityAnalysisExecutionPlan({
   frameRate: PRIMARY_CLIP.media.frameRate.numerator / PRIMARY_CLIP.media.frameRate.denominator,
   dynamicRange: 'sdr',
 }, 'unit-test-model.json');
+
+test('diagnostic filter inputs restore source cadence after timestamp normalization for both streams', () => {
+  for (const frameRate of [24, 60, 30000 / 1001]) {
+    const chains = buildDiagnosticFilterInputs(frameRate).split(';');
+    assert.equal(chains.length, 2);
+    for (const [index, label] of ['distorted', 'reference'].entries()) {
+      assert.ok(chains[index].startsWith(`[${index}:v]fps=${frameRate},`));
+      assert.ok(chains[index].endsWith(`setpts=N/(${frameRate}*TB),fps=${frameRate}[${label}]`));
+    }
+  }
+});
+
+test('diagnostic filter inputs reject invalid source cadence before constructing an FFmpeg graph', () => {
+  for (const frameRate of [0, -24, NaN, Infinity, -Infinity]) {
+    assert.throws(() => buildDiagnosticFilterInputs(frameRate), /finite positive number/);
+  }
+});
 
 test('ffprobe MOV-family aliases normalize to the canonical MP4 container', () => {
   assert.equal(inferMediaContainerFromFormatName('mov,mp4,m4a,3gp,3g2,mj2'), 'mp4');

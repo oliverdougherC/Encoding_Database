@@ -80,6 +80,8 @@ COPY prisma ./prisma
 
 # The model identity is part of the public PL-v7 evidence contract. Refuse to
 # publish an image containing a different file under the canonical name.
+# The final XPSNR probe uses the analyzer's compiled normalization helper so
+# timestamp/frame-rate regressions fail this image gate as well as real runs.
 RUN echo "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app/resources/vmaf/vmaf_v1.0.16_3d0h.json" \
     | sha256sum -c - \
     && test -f /app/resources/test_suite_v1/manifest.json \
@@ -92,10 +94,7 @@ RUN echo "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app
       -f null - \
     && test -s /tmp/vmaf-preflight.json \
     && grep -q '"vmaf"' /tmp/vmaf-preflight.json \
-    && ffmpeg -hide_banner -loglevel error \
-      -f lavfi -i testsrc2=size=64x64:rate=1:duration=1 \
-      -f lavfi -i testsrc2=size=64x64:rate=1:duration=1 \
-      -lavfi "[0:v][1:v]xpsnr" -f null -
+    && node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { buildDiagnosticFilterInputs } from "./dist/v7/artifacts.js"; execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-lavfi", `${buildDiagnosticFilterInputs(1)};[distorted][reference]xpsnr`, "-f", "null", "-"], { stdio: "inherit" });'
 
 EXPOSE 3001
 
