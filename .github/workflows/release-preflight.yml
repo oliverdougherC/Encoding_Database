@@ -50,6 +50,16 @@ jobs:
         run: |
           checks=(hygiene metadata frontend server client stack-smoke migrations production-compose suite-contract ops-hooks final-suite)
           bash scripts/release_preflight.sh "${checks[@]}"
+      - name: Retain executed release gate logs
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-preflight-logs-${{ github.sha }}
+          path: |
+            /tmp/encodingdb-release-preflight.*/*.log
+            .test-reports/**/*.log
+          if-no-files-found: error
+          retention-days: 90
 
   release-sentinel:
     name: Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)

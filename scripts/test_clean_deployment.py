@@ -23,6 +23,7 @@ import time
 
 ROOT = Path(__file__).resolve().parents[1]
 PL_KEYS = ("PL_V7_REFERENCE_CONTEXT_PATH", "PL_V7_REFERENCE_CONTEXT_VERSION", "PL_V7_REFERENCE_BITRATES_JSON")
+ROLLOUT_MARKER = "[deploy] Preparation complete; starting production stack from prepared images..."
 
 
 def require(condition, message):
@@ -146,6 +147,13 @@ class Acceptance:
         self.run(["git", "checkout", "--detach", self.args.ref], "checkout")
         _, sha = self.run(["git", "rev-parse", "HEAD"], "tested-sha")
         self.summary["testedSha"] = sha.strip()
+        # Bind expectations to immutable Git objects before preparation; do not
+        # trust files the deployment being tested could have changed.
+        self.tracked_suite = {}
+        for name in ("manifest.json", "suite-pack.json", "suite-lock.json", "finalization-status.json"):
+            self.tracked_suite[name] = subprocess.check_output(
+                ["git", "show", f"{sha.strip()}:server/resources/test_suite_v1/{name}"],
+                cwd=self.checkout, env=self.env)
         _, status = self.run(["git", "status", "--porcelain", "--untracked-files=all"], "initial-git-status")
         require(not status.strip(), "Checkout is not pristine")
         values = build_test_environment((self.checkout / "env.example").read_text(), self.project)
@@ -169,6 +177,7 @@ class Acceptance:
         self.verify_api()
         for case in ("missing-pack", "unavailable-pack", "corrupt-pack"):
             self.failure_case(case)
+        self.prepare_only()
         self.summary["status"] = "passed"
 
     def verify_image(self, image_id):
@@ -179,14 +188,13 @@ const manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json')));
 console.log(JSON.stringify({metadata:Object.fromEntries(['manifest.json','suite-lock.json','finalization-status.json','suite-pack.json'].map(n=>[n,hash(path.join(root,n))])),sources:manifest.clips.map(c=>({clipId:c.id,fileName:c.fileName,...hash(path.join(root,'canonical',c.fileName))}))}));'''
         _, raw = self.run(["docker", "run", "--rm", "--network", "none", "--entrypoint", "node", image_id, "-e", script], "server-image-seven-hashes")
         evidence = json.loads(raw)
-        root = self.checkout / "server/resources/test_suite_v1"
-        manifest = json.loads((root / "manifest.json").read_text())
-        metadata = json.loads((root / "suite-pack.json").read_text())
+        manifest = json.loads(self.tracked_suite["manifest.json"])
+        metadata = json.loads(self.tracked_suite["suite-pack.json"])
         require(len(manifest["clips"]) == 7 and len(evidence["sources"]) == 7, "Expected exactly seven canonical sources")
         expected = [{"clipId": clip["id"], "fileName": clip["fileName"], "sha256": clip["sha256"], "byteSize": clip["byteSize"]} for clip in manifest["clips"]]
         require(evidence["sources"] == expected == metadata["contents"]["canonical"], "Image sources disagree with committed manifest/pack identities")
         for name, identity in evidence["metadata"].items():
-            data = (root / name).read_bytes()
+            data = self.tracked_suite[name]
             require(identity == {"sha256": hashlib.sha256(data).hexdigest(), "byteSize": len(data)}, f"Image metadata differs from tested checkout: {name}")
         self.summary["serverImage"] = {"id": image_id, "verification": "independent docker run, network disabled, no bind mounts", "suiteFingerprint": metadata["suiteFingerprint"], **evidence}
 
@@ -227,13 +235,31 @@ console.log(JSON.stringify({metadata:Object.fromEntries(['manifest.json','suite-
         events = [json.loads(line) for line in raw.splitlines() if line.strip()]
         rollout_actions = {"create", "destroy", "start", "stop", "kill", "die", "restart", "pause", "unpause", "rename", "update"}
         lifecycle = [event for event in events if event.get("Action", event.get("status")) in rollout_actions]
-        evidence = {"case": case, "initialInputs": inputs, "exitCode": code, "expectedDiagnostic": reason, "diagnosticMatched": bool(re.search(reason, output)), "containersUnchanged": before == after, "lifecycleEvents": lifecycle, "log": case + ".log"}
+        evidence = {"case": case, "initialInputs": inputs, "exitCode": code, "expectedDiagnostic": reason, "diagnosticMatched": bool(re.search(reason, output)), "rolloutReached": ROLLOUT_MARKER in output, "containersUnchanged": before == after, "lifecycleEvents": lifecycle, "log": case + ".log"}
         self.summary["failureCases"].append(evidence)
         self.write_summary()
         require(code != 0, f"{case} unexpectedly succeeded")
         require(evidence["diagnosticMatched"], f"{case} did not fail for the expected acquisition/integrity reason")
+        require(not evidence["rolloutReached"], f"{case} reached rollout")
         require(before == after and not lifecycle, f"{case} touched the running isolated stack before preparation completed")
         require(all(not (self.checkout / tree / "resources/test_suite_v1/canonical").exists() for tree in ("client", "server")), f"{case} installed unverified sources")
+
+    def prepare_only(self):
+        self.run(self.compose("logs", "--no-color", "--tail", "150"), "before-prepare-only-stack-logs")
+        self.run(self.compose("down", "--volumes", "--remove-orphans"), "before-prepare-only-down")
+        _, before = self.run(self.compose("ps", "-aq"), "prepare-only-before")
+        require(not before.strip(), "Isolated services remain before prepare-only")
+        _, output = self.run(["bash", "deploy.sh", "--skip-pull", "--prepare-only"], "prepare-only")
+        _, after = self.run(self.compose("ps", "-aq"), "prepare-only-after")
+        require(not after.strip() and ROLLOUT_MARKER not in output, "prepare-only started services")
+        require("Preparation complete at commit " + self.summary["testedSha"] in output, "prepare-only did not complete")
+        clips = json.loads(self.tracked_suite["manifest.json"])["clips"]
+        for tree in ("client", "server"):
+            for clip in clips:
+                data = (self.checkout / tree / "resources/test_suite_v1/canonical" / clip["fileName"]).read_bytes()
+                require(len(data) == clip["byteSize"] and hashlib.sha256(data).hexdigest() == clip["sha256"], "prepare-only source mismatch")
+        self.summary["prepareOnly"] = {"passed": True, "servicesCreated": False, "verifiedFiles": 14,
+                                       "cache": "reused verified default cache after failure cases; no second download"}
 
     def cleanup(self):
         if self.compose_ready:
