@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+import re
 from pathlib import Path
 from unittest import mock
 
@@ -25,10 +26,18 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertNotIn('ENCODINGDB_BUILD_ONLY: "1"', workflow)
         self.assertNotIn('ENCODINGDB_REGISTER_RUNTIME: "1"', workflow)
         self.assertIn("runtime_lock_evidence:", workflow)
-        self.assertEqual(workflow.count("retention-days: 90"), 6)
         for platform in ("linux", "macos", "windows"):
-            self.assertIn(f"candidate-{platform}-${{{{ github.sha }}}}", workflow)
-            self.assertIn(f"proposed-runtime-{platform}-${{{{ github.sha }}}}", workflow)
+            job = re.search(
+                rf"^  client-native-{platform}-build:\n(.*?)(?=^  [\w-]+:|\Z)",
+                workflow, re.MULTILINE | re.DOTALL,
+            )
+            self.assertIsNotNone(job)
+            native_workflow = job.group(1)
+            # Retain both native artifacts for every platform; unrelated
+            # regression-log uploads must not change this packaging contract.
+            self.assertEqual(native_workflow.count("retention-days: 90"), 2)
+            self.assertIn(f"candidate-{platform}-${{{{ github.sha }}}}", native_workflow)
+            self.assertIn(f"proposed-runtime-{platform}-${{{{ github.sha }}}}", native_workflow)
         self.assertIn("if: ${{ !inputs.runtime_lock_evidence }}", workflow)
         self.assertNotIn("${{ runner.temp }}", workflow)
         self.assertNotIn("| head -n 1", workflow)
