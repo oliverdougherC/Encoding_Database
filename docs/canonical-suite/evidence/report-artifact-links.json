@@ -356,5 +356,210 @@
     "checked_at": "2026-09-13T00:03:50.268863+00:00",
     "checked_url": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/822d08e0f23fcf694d3018e96892aa48a1f1b3f2/docs/canonical-suite/evidence/report-artifact-links.json",
     "http_status": 200
+  },
+  "post_repair_check": {
+    "checkedAt": "2026-09-13T00:16:39.808031+00:00",
+    "reviewHead": "a5e72f24166922b7975b55f1e1fcd892d08da035",
+    "checks": [
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/pull/12",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/pull/12",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/deployment-repair.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/deployment-repair.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/deployment-repair-logs.tar.gz",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/deployment-repair-logs.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143625",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143625",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143627",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143627",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143639",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143639",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/README.md",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/README.md",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-sources/selected-source-inventory.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-sources/selected-source-inventory.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/notices/",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/tree/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/notices/",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/tree/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-sources/staged-source-artifacts.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-sources/staged-source-artifacts.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/finalizer-idempotence.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/finalizer-idempotence.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/clean-checkout-acquisition.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/clean-checkout-acquisition.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/acquisition-recovery.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/acquisition-recovery.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919675",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919675",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919644",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919644",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919705",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34430919705",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/candidate-ci.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/candidate-ci.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/dependency-verification.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/dependency-verification.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/tag/encodingdb-beta-review-assets-20260909",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/tag/encodingdb-beta-review-assets-20260909",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/report-artifact-links.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/report-artifact-links.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/candidate-delivery.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/candidate-delivery.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/native-candidate-artifacts.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/native-candidate-artifacts.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-retained-certificate-d554d04.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-retained-certificate-d554d04.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/canonical-validation-d554d04.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/canonical-validation-d554d04.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-d554d04.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-d554d04.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-engineering-evidence-192f81f.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/beta-engineering-evidence-192f81f.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-linux-candidate-ci34430919675-2d3ed7d4d167.tar.gz",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-linux-candidate-ci34430919675-2d3ed7d4d167.tar.gz",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-windows-candidate-ci34430919675-2d3ed7d4d167.zip",
+        "checkedUrl": "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-windows-candidate-ci34430919675-2d3ed7d4d167.zip",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "canonical-suite/evidence/packaged-client-summary.json",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/canonical-suite/evidence/packaged-client-summary.json",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "CERTIFICATION_RATE_SANITY.md",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/CERTIFICATION_RATE_SANITY.md",
+        "httpStatus": 200,
+        "exitCode": 0
+      },
+      {
+        "reportTarget": "FINAL_RELEASE_HANDOFF.md",
+        "checkedUrl": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/a5e72f24166922b7975b55f1e1fcd892d08da035/docs/FINAL_RELEASE_HANDOFF.md",
+        "httpStatus": 200,
+        "exitCode": 0
+      }
+    ],
+    "logArchiveDownload": "The published repair log archive was also downloaded anonymously and matched fd6cf8d810ca7ebd33dcd326d737ef942765ba5916d25fc0186d131c3f7232f4."
   }
 }
