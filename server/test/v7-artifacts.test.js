@@ -27,12 +27,19 @@ import {
   buildEnvironmentFingerprint,
   buildRecipeFingerprint,
 } from '../dist/v7/persistence.js';
+import { resolveQualityAnalysisExecutionPlan } from '../dist/qualityAnalysis.js';
 import { loadAuthoritativeSuiteManifest } from '../dist/v7/suite.js';
 
 const ARTIFACT_BYTES = Buffer.from('artifact-data');
 const ARTIFACT_SHA256 = '682709f36991fd3910d7343e6264dd5510bf02005fa6503a4878ff17530751d8';
 const SUITE_MANIFEST = loadAuthoritativeSuiteManifest();
 const PRIMARY_CLIP = SUITE_MANIFEST.clips[0];
+const PRIMARY_QUALITY_PLAN = resolveQualityAnalysisExecutionPlan({
+  width: PRIMARY_CLIP.media.width,
+  height: PRIMARY_CLIP.media.height,
+  frameRate: PRIMARY_CLIP.media.frameRate.numerator / PRIMARY_CLIP.media.frameRate.denominator,
+  dynamicRange: 'sdr',
+}, 'unit-test-model.json');
 
 test('ffprobe MOV-family aliases normalize to the canonical MP4 container', () => {
   assert.equal(inferMediaContainerFromFormatName('mov,mp4,m4a,3gp,3g2,mj2'), 'mp4');
@@ -564,8 +571,8 @@ class FakeAnalyzer {
     const vmafMean = version === 'worker-v2' ? 97.25 : 95.25;
     const vmafP5 = version === 'worker-v2' ? 92.25 : 90.25;
     return {
-      metricModelId: 'vmaf-v1-sdr-sd',
-      qualityContextId: 'vmaf-v1-sdr-sd-yuv420p10le',
+      metricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
+      qualityContextId: PRIMARY_QUALITY_PLAN.qualityContextId,
       analysisWorkerVersion: version,
       analysisStatus: 'COMPLETE',
       analysisProvenance: {
@@ -807,7 +814,7 @@ function buildRunBody(fixtures, overrides = {}) {
     },
     payloadHash: overrides.payloadHash || 'a'.repeat(64),
 	    workloadId: fixtures.clip.workloadId,
-    expectedMetricModelId: 'vmaf-v1-sdr-sd',
+    expectedMetricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
     inputHash: 'b'.repeat(64),
     encodeWallTimeMs: 10_000,
     encodeFps: 120,
@@ -1368,7 +1375,7 @@ test('retained artifacts can be reanalyzed with a newer worker version while sam
   const idempotentBundle = await harness.service.queueAuthoritativeAnalysis(
     run.bundle.run.id,
     DEFAULT_ANALYZER_VERSION,
-    'vmaf-v1-sdr-sd',
+    PRIMARY_QUALITY_PLAN.metricModelId,
   );
   assert.equal(idempotentBundle.qualityAnalyses.length, 1);
   assert.equal(harness.analyzer.calls.length, 1);
@@ -1376,7 +1383,7 @@ test('retained artifacts can be reanalyzed with a newer worker version while sam
   await harness.service.queueAuthoritativeAnalysis(
     run.bundle.run.id,
     'worker-v2',
-    'vmaf-v1-sdr-sd',
+    PRIMARY_QUALITY_PLAN.metricModelId,
   );
   const upgradedBundle = await waitForBundleAnalysisState(
     harness.service,
@@ -1444,7 +1451,7 @@ test('startup reconciliation resumes durable pending authoritative analysis', as
   await harness.persistence.ensureQualityAnalysisQueued({
     benchmarkRunId: uploaded.run.id,
     artifactId: uploaded.artifact.id,
-    metricModelId: 'vmaf-v1-sdr-sd',
+    metricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
     analysisWorkerVersion: 'worker-v1',
     maxAttempts: 3,
   });
@@ -1499,7 +1506,7 @@ test('authoritative worker concurrency is bounded by configuration', async (t) =
     await harness.persistence.ensureQualityAnalysisQueued({
       benchmarkRunId: uploaded.run.id,
       artifactId: uploaded.artifact.id,
-      metricModelId: 'vmaf-v1-sdr-sd',
+      metricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
       analysisWorkerVersion: 'worker-v1',
       maxAttempts: 3,
     });

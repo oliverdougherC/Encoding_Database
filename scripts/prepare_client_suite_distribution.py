@@ -45,6 +45,8 @@ def prepare_distribution(
     for name in ("manifest.json", "finalization-status.json", "suite-pack.json", "suite-lock.json"):
         copy_if_exists(source_suite_dir / name, staged_resource_dir / name)
 
+    if (source_suite_dir / "notices").exists():
+        shutil.copytree(source_suite_dir / "notices", staged_resource_dir / "notices")
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build the external EncodingDB suite pack and stage client suite resources without embedded canonical media.")

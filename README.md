@@ -333,23 +333,56 @@ Packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<pla
 
 ## Production deployment
 
-1. Configure env files from `env.example` and `server/env.example`.
-2. One-command deploy (pull `main`, build, migrate, and start all services):
+Follow [Final Release Handoff](docs/FINAL_RELEASE_HANDOFF.md) for candidate
+validation, human review, protected beta-to-main merge, main-bound release
+artifacts, backup, deployment, production acceptance, and the evidence epoch.
+The beta-readiness assignment stops at deployment review.
+
+After separate production approval, configure env files from `env.example` and
+`server/env.example`, complete the required backup, and deploy from a clean
+checkout of the exact reviewed main SHA:
 
 ```bash
-./deploy.sh
+./deploy.sh --skip-pull
 ```
 
-PL v7 production activation, env validation, named-volume backup/restore, and
-pre-V7 migration rehearsal are documented in
-`docs/PL_V7_PRODUCTION_ACTIVATION.md`.
+Verify and record the full checkout SHA before and after deployment.
+`--skip-pull` prevents an automatic update; it does not verify the reviewed SHA
+or a clean worktree. The default `./deploy.sh` fetches and pulls latest `main`,
+which may have advanced since review. Do not substitute an unreviewed branch tip.
 
-3. Manual compose alternative:
+The deployment host needs Git, Node.js 20+, Docker with Compose v2, network
+access to the pinned image/package registries and suite download URL, and disk
+space for the 1.51 GB pack, verified cache, both resource trees, staging copies
+and application images. Python, its pinned acquisition dependencies, FFmpeg and
+ffprobe run in the isolated preparation image; no host Python/client installation
+is required. `deploy.sh` acquires the committed frozen pack, validates archive,
+clip, notice and tracked suite identities, materializes both trees, builds all
+application images (including the server's source/model/media checks), and pulls
+service images **before** starting or replacing any service. Preparation failures
+exit before rollout; rollout uses prepared images with builds and pulls disabled.
 
-```bash
-./scripts/generate-dev-cert.sh
-docker compose -f docker-compose.prod.yml up -d --build
-```
+`./deploy.sh --skip-pull --prepare-only` executes that preparation without starting
+services. For a direct Compose build, first run
+`bash scripts/prepare_production_suite.sh`; a bare clean-checkout server Docker
+build deliberately refuses missing references. The verified cache defaults to
+`.build/final-suite-cache`; `DEPLOY_SUITE_CACHE_DIR` selects another location.
+For offline pack delivery use `DEPLOY_SUITE_PACK_PATH`, or select an exclusive
+mirror with `DEPLOY_SUITE_PACK_URL`. These are mutually exclusive, must supply
+the exact pinned pack, and fail without silently falling back to another source.
+The offline option still needs the preparation/application images and their build
+dependencies locally available or reachable.
+
+Run `python3 scripts/test_clean_deployment.py` for the isolated clean-checkout
+regression. It uses a fresh clone and empty suite cache, invokes the supported
+deployment entry point, verifies all seven source hashes inside the image, and
+checks that missing, unreachable and corrupt packs cannot change running services.
+Its test volumes, network, ports and credentials are isolated from production.
+
+Production env validation, named-volume backup/restore, pre-V7 migration
+rehearsal, and the later PL activation procedure are documented in
+`docs/PL_V7_PRODUCTION_ACTIVATION.md`. PL calibration remains post-release;
+valid V7 evidence can be collected while public PL is explicitly unavailable.
 
 Security note: for hardened public deployment, set `INGEST_MODE=signed`, a strong `INGEST_HMAC_SECRET`, and an explicit `TRUST_PROXY` value in `.env` that matches your reverse-proxy topology.
 

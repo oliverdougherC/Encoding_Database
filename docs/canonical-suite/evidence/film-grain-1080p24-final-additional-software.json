@@ -1,0 +1,55 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/film-grain-1080p24-final.mkv",
+  "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+  "byteSize": 336898554,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 1.1414725829963572,
+  "decodeRealtimeRatio": 8.760613394454094,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": "PENDING",
+  "encodes": [
+    {
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/film-grain-1080p24-final/libaom-av1-32.mp4",
+      "sha256": "06956530cc1a3d8ac71a6c5589ef5145db4386fda6fa7bad9a35343585200acc",
+      "bytes": 1687911,
+      "videoBytes": 1686074,
+      "videoBitrateBps": 1348859.2,
+      "elapsedSeconds": 30.548695541976485,
+      "encodeFps": 7.856309270889153,
+      "vmafMean": 85.112537,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/film-grain-1080p24-final/libaom-av1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/film-grain-1080p24-final/libvpx-vp9-32.mp4",
+      "sha256": "fd58bc1a81000769c74707f32abfb52e5d97127e1612e39f1f8843958f17d908",
+      "bytes": 10673856,
+      "videoBytes": 10671895,
+      "videoBitrateBps": 8537516.0,
+      "elapsedSeconds": 2.581671708030626,
+      "encodeFps": 92.96302053179292,
+      "vmafMean": 88.956365,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/film-grain-1080p24-final/libvpx-vp9-32.corrected-metrics.log"
+    }
+  ]
+}

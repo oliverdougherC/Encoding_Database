@@ -148,7 +148,7 @@ run_step() {
   } > "$log"
 
   local rc=0
-  bash -lc "cd \"$ROOT_DIR\" && $command" >> "$log" 2>&1 || rc=$?
+  bash -c "cd \"$ROOT_DIR\" && $command" >> "$log" 2>&1 || rc=$?
   issue_scan "$log" "$issues"
 
   local note=""

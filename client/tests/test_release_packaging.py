@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 import unittest
+import re
 from pathlib import Path
 from unittest import mock
 
@@ -22,7 +23,22 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertIn("release_manifest_lib.py", text)
 
         workflow = (root / ".github/workflows/build.yml").read_text(encoding="utf-8")
-        self.assertEqual(workflow.count('ENCODINGDB_BUILD_ONLY: "1"'), 3)
+        self.assertNotIn('ENCODINGDB_BUILD_ONLY: "1"', workflow)
+        self.assertNotIn('ENCODINGDB_REGISTER_RUNTIME: "1"', workflow)
+        self.assertIn("runtime_lock_evidence:", workflow)
+        for platform in ("linux", "macos", "windows"):
+            job = re.search(
+                rf"^  client-native-{platform}-build:\n(.*?)(?=^  [\w-]+:|\Z)",
+                workflow, re.MULTILINE | re.DOTALL,
+            )
+            self.assertIsNotNone(job)
+            native_workflow = job.group(1)
+            # Retain both native artifacts for every platform; unrelated
+            # regression-log uploads must not change this packaging contract.
+            self.assertEqual(native_workflow.count("retention-days: 90"), 2)
+            self.assertIn(f"candidate-{platform}-${{{{ github.sha }}}}", native_workflow)
+            self.assertIn(f"proposed-runtime-{platform}-${{{{ github.sha }}}}", native_workflow)
+        self.assertIn("if: ${{ !inputs.runtime_lock_evidence }}", workflow)
         self.assertNotIn("${{ runner.temp }}", workflow)
         self.assertNotIn("| head -n 1", workflow)
         self.assertEqual(workflow.count("find \"$PWD\" -mindepth 1 -maxdepth 1"), 3)
@@ -68,10 +84,16 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn('"--add-data", "$clientDir\\presets.json;."', windows)
         self.assertIn('"--add-data", "$clientDir\\resources\\vmaf;resources/vmaf"', windows)
 
-    def test_project_version_remains_explicitly_unassigned_before_release(self) -> None:
+    def test_candidate_version_is_assigned_and_missing_version_is_rejected(self) -> None:
+        metadata = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text())
+        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+-beta\.\d+$")
+        import datetime
+        datetime.date.fromisoformat(metadata["releaseDate"])
         with mock.patch.dict(os.environ, {}, clear=True):
-            with self.assertRaisesRegex(RuntimeError, "Project release version is unassigned"):
-                release_manifest_lib.detect_project_version()
+            self.assertEqual(release_manifest_lib.detect_project_version(), metadata["projectVersion"])
+            with mock.patch.object(release_manifest_lib, "read_text", return_value='{"projectVersion": null}'):
+                with self.assertRaisesRegex(RuntimeError, "Project release version is unassigned"):
+                    release_manifest_lib.detect_project_version()
 
     def test_read_client_minimum_version_is_coherent(self) -> None:
         self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.2.0")
@@ -169,8 +191,8 @@ class ReleasePackagingTests(unittest.TestCase):
             with manifest_path.open("r", encoding="utf-8") as handle:
                 manifest = json.load(handle)
             self.assertEqual(manifest["platform"], "mac")
-            self.assertEqual(manifest["suite"]["distribution"], "development-only")
-            self.assertFalse(manifest["suite"]["isFrozen"])
+            self.assertEqual(manifest["suite"]["distribution"], "reviewed-final")
+            self.assertTrue(manifest["suite"]["isFrozen"])
             self.assertEqual(manifest["suite"]["distributionMode"], "external-suite-pack")
             self.assertEqual(manifest["suite"]["pack"]["fileName"], suite_pack_path.name)
             self.assertEqual(manifest["signing"]["status"], "unsigned")

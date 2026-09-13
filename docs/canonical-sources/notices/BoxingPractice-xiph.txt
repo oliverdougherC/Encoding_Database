@@ -1,0 +1,16 @@
+Digital Video Sequence "Boxing Practice"
+Copyright (C)  NETFLIX INC.  2015 
+
+4096x2160p, 10-bit, YCbCr 4:2:0, BT.709, 59.94 fps, 254 frames 
+
+COPYRIGHT AND LICENSE INFORMATION
+December, 2015
+
+NETFLIX INC.
+100 Winchester Circle, Los Gatos, CA 95032, USA
+
+The video sequence provided above and all intellectual property rights therein 
+remain the property of Netflix Inc. This video sequence is licensed under the 
+Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International 
+License. To view a copy of this license, visit 
+http://creativecommons.org/licenses/by-nc-nd/4.0/ 

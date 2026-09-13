@@ -1,0 +1,144 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/dark-gradients-1080p24-final.mkv",
+  "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+  "byteSize": 317829621,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.9998986250138842,
+  "decodeRealtimeRatio": 10.001013852640456,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": {
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Low-light stairs, blue-purple defocused gradients and silhouetted piano retain shadow structure. Full-resolution gradient frame shows continuous tone plus source grain, without crushing the whole image to black."
+  },
+  "encodes": [
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-20.mp4",
+      "sha256": "95770dc65ee2f049ae3d1cb4297aa233eb0c91d3696c11d5d987b30ad92351de",
+      "bytes": 29112783,
+      "videoBytes": 29110309,
+      "videoBitrateBps": 23288247.2,
+      "elapsedSeconds": 6.032619416015223,
+      "encodeFps": 39.783713085372995,
+      "vmafMean": 84.897646,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-20.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-28.mp4",
+      "sha256": "395d0d6a213de07773f39c9374eca3b6cccf90c55aa8e8e968fa0e240e13f34b",
+      "bytes": 1502206,
+      "videoBytes": 1499916,
+      "videoBitrateBps": 1199932.8,
+      "elapsedSeconds": 3.286508166056592,
+      "encodeFps": 73.02583406873765,
+      "vmafMean": 62.18743,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-36.mp4",
+      "sha256": "ade463f8bac973789bd11993d7649e57a974cb00184640c6ca3b4c7d24216793",
+      "bytes": 227356,
+      "videoBytes": 225082,
+      "videoBitrateBps": 180065.6,
+      "elapsedSeconds": 2.9066514169680886,
+      "encodeFps": 82.56924053533142,
+      "vmafMean": 48.193659,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx264-36.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx265-28.mp4",
+      "sha256": "893262d0fcb7e52f3e93604528b57fd86a4759de864c70f689c089f3e96d2bd5",
+      "bytes": 980601,
+      "videoBytes": 974545,
+      "videoBitrateBps": 779636.0,
+      "elapsedSeconds": 7.088543541962281,
+      "encodeFps": 33.85744879456044,
+      "vmafMean": 61.865421,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libx265-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "runtime": "/opt/homebrew/bin/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libsvtav1-32.mp4",
+      "sha256": "900685271ee070dd3255ab8bf17a0b1cbd0d3ebc3229bd52ff88606b420880e1",
+      "bytes": 2076950,
+      "videoBytes": 2074840,
+      "videoBitrateBps": 1659872.0,
+      "elapsedSeconds": 1.8883339169551618,
+      "encodeFps": 127.09616548485623,
+      "vmafMean": 67.578387,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/libsvtav1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/h264_videotoolbox-2500.mp4",
+      "sha256": "f6aa4d0d06825ab6fe0e49d612a76f2a47faf4158739450ec44b39637c2f7ac9",
+      "bytes": 3174116,
+      "videoBytes": 3172166,
+      "videoBitrateBps": 2537732.8,
+      "elapsedSeconds": 1.2856504580122419,
+      "encodeFps": 186.67593396347138,
+      "vmafMean": 64.613726,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/dark-gradients-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
+    }
+  ]
+}

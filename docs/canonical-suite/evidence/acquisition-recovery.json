@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+  "archiveSha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+  "archiveByteSize": 1506890018,
+  "elapsedSeconds": 122.092,
+  "cachedValidationSeconds": 0.662,
+  "priorFullProbeCachedValidationSeconds": 57.477,
+  "transportScope": "Loopback fault injection with actual pinned candidate pack; public remote clean acquisition is separately certified.",
+  "validation": "Actual archive hashes, notice hashes, per-clip hashes and ffprobe media contracts; no mocks or synthetic media.",
+  "maximumAdditionalMediaStorageBytes": 3013780036,
+  "executionLog": ".build/acquisition-certification-hash-cache/execution.jsonl",
+  "events": [
+    {
+      "check": "pinned_source_archive_verified",
+      "timestamp": "2026-09-10T00:41:37.253595+00:00",
+      "elapsedSeconds": 0.651,
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "byteSize": 1506890018
+    },
+    {
+      "check": "truncated_archive_rejected",
+      "timestamp": "2026-09-10T00:41:37.254930+00:00",
+      "elapsedSeconds": 0.651,
+      "reason": "suite pack size mismatch",
+      "byteSize": 1048576
+    },
+    {
+      "check": "same_size_corrupt_archive_rejected",
+      "timestamp": "2026-09-10T00:41:37.923837+00:00",
+      "elapsedSeconds": 1.32,
+      "reason": "suite pack checksum mismatch",
+      "byteSize": 1506890018,
+      "construction": "sparse corrupt archive; full checksum executed"
+    },
+    {
+      "check": "interrupted_extraction_rejected",
+      "timestamp": "2026-09-10T00:41:37.926681+00:00",
+      "elapsedSeconds": 1.323,
+      "errorType": "EOFError",
+      "error": "Compressed file ended before the end-of-stream marker was reached"
+    },
+    {
+      "check": "failed_extraction_is_atomic",
+      "timestamp": "2026-09-10T00:41:37.927030+00:00",
+      "elapsedSeconds": 1.324,
+      "publishedCacheExists": false,
+      "stagingDirectoriesRemain": false
+    },
+    {
+      "check": "network_interruption_detected",
+      "timestamp": "2026-09-10T00:41:38.062960+00:00",
+      "elapsedSeconds": 1.459,
+      "errorType": "ChunkedEncodingError",
+      "error": "('Connection broken: IncompleteRead(4194304 bytes read, 1502695714 more expected)', IncompleteRead(4194304 bytes read, 1502695714 more expected))"
+    },
+    {
+      "check": "partial_download_retained_without_publication",
+      "timestamp": "2026-09-10T00:41:38.063103+00:00",
+      "elapsedSeconds": 1.46,
+      "partialBytes": 4194304,
+      "destinationExists": false
+    },
+    {
+      "check": "range_resume_completed_and_verified",
+      "timestamp": "2026-09-10T00:41:39.569518+00:00",
+      "elapsedSeconds": 2.966,
+      "requests": [
+        {
+          "range": null,
+          "offset": 0,
+          "interrupted": true,
+          "bytesSent": 4194304
+        },
+        {
+          "range": "bytes=4194304-",
+          "offset": 4194304,
+          "interrupted": false,
+          "bytesSent": 1502695714
+        }
+      ],
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "byteSize": 1506890018,
+      "partialExists": false
+    },
+    {
+      "check": "actual_media_extraction_verified",
+      "timestamp": "2026-09-10T00:42:41.793281+00:00",
+      "elapsedSeconds": 65.19,
+      "clips": [
+        {
+          "clipId": "athletic-action-1080p24-final",
+          "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+          "byteSize": 139815565
+        },
+        {
+          "clipId": "natural-detail-1080p24-final",
+          "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+          "byteSize": 283872120
+        },
+        {
+          "clipId": "film-grain-1080p24-final",
+          "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+          "byteSize": 336898554
+        },
+        {
+          "clipId": "dark-gradients-1080p24-final",
+          "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+          "byteSize": 317829621
+        },
+        {
+          "clipId": "animation-1080p24-final",
+          "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+          "byteSize": 173819800
+        },
+        {
+          "clipId": "screen-text-1080p24-final",
+          "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+          "byteSize": 35313873
+        },
+        {
+          "clipId": "talking-head-1080p24-final",
+          "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+          "byteSize": 219125475
+        }
+      ],
+      "noticesVerified": true,
+      "clipTechnicalContractsVerified": true
+    },
+    {
+      "check": "cache_reuse_without_archive_verified",
+      "timestamp": "2026-09-10T00:42:42.491324+00:00",
+      "elapsedSeconds": 65.888,
+      "durationSeconds": 0.662,
+      "archiveExists": false,
+      "allClipBytesReverified": true,
+      "initialTechnicalValidationBoundByExactHashes": true
+    },
+    {
+      "check": "tampered_cached_clip_rejected",
+      "timestamp": "2026-09-10T00:42:42.545821+00:00",
+      "elapsedSeconds": 65.942,
+      "clipId": "athletic-action-1080p24-final",
+      "reason": "athletic-action-1080p24-final.mkv checksum mismatch",
+      "fileSizeUnchanged": true
+    },
+    {
+      "check": "automatic_cache_repair_verified",
+      "timestamp": "2026-09-10T00:43:38.694947+00:00",
+      "elapsedSeconds": 122.091,
+      "clipId": "athletic-action-1080p24-final",
+      "restoredSha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+      "allClipTechnicalContractsReverified": true,
+      "source": "verified original candidate archive"
+    }
+  ]
+}

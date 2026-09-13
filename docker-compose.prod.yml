@@ -96,7 +96,10 @@ services:
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
       - ${NGINX_CERTS_DIR:-./nginx/dev-certs}:/etc/nginx/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/health >/dev/null || exit 1"]
+      # Probe the IPv4 listener over TLS and trust the actual mounted serving
+      # certificate for this loopback check (also works with isolated dev TLS).
+      # External production smoke still verifies the public hostname/trust chain.
+      test: ["CMD-SHELL", "SSL_CERT_FILE=/etc/nginx/certs/selfsigned.crt wget -qO- https://127.0.0.1/health >/dev/null || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3

@@ -21,15 +21,17 @@ class EncodingRegressionTests(unittest.TestCase):
         self.assertEqual(client_main.CLIENT_VERSION, "client/0.2.0")
 
     def test_vmaf_passes_distorted_input_before_reference(self) -> None:
-        completed = mock.Mock(stdout='{"VMAF_score": 88.5}')
+        completed = mock.Mock(returncode=0, stdout=ffmpeg.json.dumps({'frames': [{'metrics': {'vmaf': 88.5}}] * 240}))
         with mock.patch.object(ffmpeg, "_vmaf_filter_candidates", return_value=[{
             "filter": "libvmaf=model='path=/tmp/test-vmaf.json':log_fmt=json:log_path=-",
             "metricModelId": "vmaf-v1-sdr-1080p",
         }]), \
+                mock.patch.object(ffmpeg, "probe_video_stream_metrics", return_value={"sourceFps": 24, "sourceFrameCount": 240}), \
                 mock.patch.object(ffmpeg.subprocess, "run", return_value=completed) as run_mock:
             score = ffmpeg.compute_vmaf("reference.mp4", "distorted.mp4")
 
         self.assertEqual(score, 88.5)
+        self.assertEqual(run_mock.call_args.kwargs["stderr"], ffmpeg.subprocess.PIPE)
         cmd = run_mock.call_args.args[0]
         input_positions = [i for i, value in enumerate(cmd) if value == "-i"]
         self.assertEqual(cmd[input_positions[0] + 1], "distorted.mp4")
@@ -307,11 +309,12 @@ class EncodingRegressionTests(unittest.TestCase):
             ],
             "pooled_metrics": {"vmaf": {"mean": 95.0}},
         }
-        completed = mock.Mock(stdout=f"log noise\n{ffmpeg.json.dumps(vmaf_json)}\n")
+        completed = mock.Mock(returncode=0, stdout=f"log noise\n{ffmpeg.json.dumps(vmaf_json)}\n")
         with mock.patch.object(ffmpeg, "_vmaf_filter_candidates", return_value=[{
             "filter": "libvmaf=model='path=/tmp/vmaf_v1.json':log_fmt=json:log_path=-",
             "metricModelId": "vmaf-v1-sdr-1080p",
         }]), \
+                mock.patch.object(ffmpeg, "probe_video_stream_metrics", return_value={"sourceFps": 24, "sourceFrameCount": 3}), \
                 mock.patch.object(ffmpeg.subprocess, "run", return_value=completed):
             metrics = ffmpeg.compute_vmaf_metrics("reference.mp4", "distorted.mp4")
 

@@ -1,0 +1,1220 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-09-13T00:07:02.856123Z",
+  "project": "encodingdb-acceptance-576f93ec9d15",
+  "status": "passed",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "clone",
+        "--no-local",
+        "/Users/ofhd/Developer/Encoding_Database",
+        "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/encodingdb-acceptance-576f93ec9d15-lz8sxjjk/checkout"
+      ],
+      "log": "clone.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:02.856292Z",
+      "finishedAt": "2026-09-13T00:07:04.135879Z"
+    },
+    {
+      "argv": [
+        "git",
+        "checkout",
+        "--detach",
+        "HEAD"
+      ],
+      "log": "checkout.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:04.136235Z",
+      "finishedAt": "2026-09-13T00:07:04.184626Z"
+    },
+    {
+      "argv": [
+        "git",
+        "rev-parse",
+        "HEAD"
+      ],
+      "log": "tested-sha.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:04.184938Z",
+      "finishedAt": "2026-09-13T00:07:04.191281Z"
+    },
+    {
+      "argv": [
+        "git",
+        "status",
+        "--porcelain",
+        "--untracked-files=all"
+      ],
+      "log": "initial-git-status.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:04.222082Z",
+      "finishedAt": "2026-09-13T00:07:04.267454Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "scripts/generate-dev-cert.sh"
+      ],
+      "log": "generate-test-tls.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:04.267978Z",
+      "finishedAt": "2026-09-13T00:07:04.331087Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "deploy.sh",
+        "--skip-pull"
+      ],
+      "log": "deploy-public-empty-cache.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:07:04.506020Z",
+      "finishedAt": "2026-09-13T00:09:13.778906Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "successful-stack-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:13.779691Z",
+      "finishedAt": "2026-09-13T00:09:13.840842Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "successful-stack-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:13.841296Z",
+      "finishedAt": "2026-09-13T00:09:13.860883Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "run",
+        "--rm",
+        "--network",
+        "none",
+        "--entrypoint",
+        "node",
+        "sha256:2b418e34f19f6993dbd4a71fea58ea65be4302e0ba5e20f7c0b71714ea4e2e9c",
+        "-e",
+        "const fs=require('fs'),crypto=require('crypto'),path=require('path');\nconst root='/app/resources/test_suite_v1';\nconst hash=p=>{const bytes=fs.readFileSync(p);return {sha256:crypto.createHash('sha256').update(bytes).digest('hex'),byteSize:bytes.length}};\nconst manifest=JSON.parse(fs.readFileSync(path.join(root,'manifest.json')));\nconsole.log(JSON.stringify({metadata:Object.fromEntries(['manifest.json','suite-lock.json','finalization-status.json','suite-pack.json'].map(n=>[n,hash(path.join(root,n))])),sources:manifest.clips.map(c=>({clipId:c.id,fileName:c.fileName,...hash(path.join(root,'canonical',c.fileName))}))}));"
+      ],
+      "log": "server-image-seven-hashes.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:13.861642Z",
+      "finishedAt": "2026-09-13T00:09:15.699669Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "exec",
+        "-T",
+        "server",
+        "node",
+        "-e",
+        "(async()=>{const http=require('http');const results=[];for(const target of ['/health/live','/health/ready','/health/v7-evidence','/query?limit=1','/test-videos','/corpus?limit=1']){const result=await new Promise((resolve,reject)=>{http.get('http://127.0.0.1:3001'+target,r=>{let body='';r.on('data',c=>body+=c);r.on('end',()=>resolve({path:target,status:r.statusCode,body:JSON.parse(body)}))}).on('error',reject)});if(result.status!==200)throw Error(target+' failed');results.push(result)}console.log(JSON.stringify(results))})().catch(e=>{console.error(e);process.exit(1)})"
+      ],
+      "log": "api-smoke.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:15.700743Z",
+      "finishedAt": "2026-09-13T00:09:15.836451Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "missing-pack-before-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:15.837925Z",
+      "finishedAt": "2026-09-13T00:09:15.902901Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "missing-pack-before-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:15.903430Z",
+      "finishedAt": "2026-09-13T00:09:15.925427Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "deploy.sh",
+        "--skip-pull"
+      ],
+      "log": "missing-pack.log",
+      "exitCode": 1,
+      "startedAt": "2026-09-13T00:09:15.926471Z",
+      "finishedAt": "2026-09-13T00:09:16.176118Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "missing-pack-after-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:16.176742Z",
+      "finishedAt": "2026-09-13T00:09:16.237788Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "missing-pack-after-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:16.238352Z",
+      "finishedAt": "2026-09-13T00:09:16.259389Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "events",
+        "--since",
+        "2026-09-13T00:09:15.926463Z",
+        "--until",
+        "2026-09-13T00:09:16.176732Z",
+        "--filter",
+        "label=com.docker.compose.project=encodingdb-acceptance-576f93ec9d15",
+        "--filter",
+        "type=container",
+        "--format",
+        "{{json .}}"
+      ],
+      "log": "missing-pack-events.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:16.260231Z",
+      "finishedAt": "2026-09-13T00:09:16.279876Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "unavailable-pack-before-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:16.280945Z",
+      "finishedAt": "2026-09-13T00:09:16.340952Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "unavailable-pack-before-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:16.341457Z",
+      "finishedAt": "2026-09-13T00:09:16.361631Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "deploy.sh",
+        "--skip-pull"
+      ],
+      "log": "unavailable-pack.log",
+      "exitCode": 1,
+      "startedAt": "2026-09-13T00:09:16.362681Z",
+      "finishedAt": "2026-09-13T00:09:17.717946Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "unavailable-pack-after-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:17.719086Z",
+      "finishedAt": "2026-09-13T00:09:17.783015Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "unavailable-pack-after-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:17.783543Z",
+      "finishedAt": "2026-09-13T00:09:17.806355Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "events",
+        "--since",
+        "2026-09-13T00:09:16.362674Z",
+        "--until",
+        "2026-09-13T00:09:17.719070Z",
+        "--filter",
+        "label=com.docker.compose.project=encodingdb-acceptance-576f93ec9d15",
+        "--filter",
+        "type=container",
+        "--format",
+        "{{json .}}"
+      ],
+      "log": "unavailable-pack-events.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:17.807281Z",
+      "finishedAt": "2026-09-13T00:09:17.822041Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "corrupt-pack-before-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:17.823135Z",
+      "finishedAt": "2026-09-13T00:09:17.882166Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "corrupt-pack-before-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:17.882729Z",
+      "finishedAt": "2026-09-13T00:09:17.902284Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "deploy.sh",
+        "--skip-pull"
+      ],
+      "log": "corrupt-pack.log",
+      "exitCode": 1,
+      "startedAt": "2026-09-13T00:09:17.903348Z",
+      "finishedAt": "2026-09-13T00:09:20.360057Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "corrupt-pack-after-ids.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:20.360735Z",
+      "finishedAt": "2026-09-13T00:09:20.453925Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "inspect",
+        "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+        "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+        "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+        "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031"
+      ],
+      "log": "corrupt-pack-after-inspect.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:20.454664Z",
+      "finishedAt": "2026-09-13T00:09:20.474836Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "events",
+        "--since",
+        "2026-09-13T00:09:17.903342Z",
+        "--until",
+        "2026-09-13T00:09:20.360724Z",
+        "--filter",
+        "label=com.docker.compose.project=encodingdb-acceptance-576f93ec9d15",
+        "--filter",
+        "type=container",
+        "--format",
+        "{{json .}}"
+      ],
+      "log": "corrupt-pack-events.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:20.475858Z",
+      "finishedAt": "2026-09-13T00:09:20.491181Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "logs",
+        "--no-color",
+        "--tail",
+        "150"
+      ],
+      "log": "before-prepare-only-stack-logs.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:20.492327Z",
+      "finishedAt": "2026-09-13T00:09:20.555104Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "down",
+        "--volumes",
+        "--remove-orphans"
+      ],
+      "log": "before-prepare-only-down.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:20.555596Z",
+      "finishedAt": "2026-09-13T00:09:24.538873Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "prepare-only-before.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:24.539515Z",
+      "finishedAt": "2026-09-13T00:09:24.588308Z"
+    },
+    {
+      "argv": [
+        "bash",
+        "deploy.sh",
+        "--skip-pull",
+        "--prepare-only"
+      ],
+      "log": "prepare-only.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:24.588847Z",
+      "finishedAt": "2026-09-13T00:09:35.394350Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "ps",
+        "-aq"
+      ],
+      "log": "prepare-only-after.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:35.395596Z",
+      "finishedAt": "2026-09-13T00:09:35.453258Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "logs",
+        "--no-color",
+        "--tail",
+        "150"
+      ],
+      "log": "stack-logs.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:37.339649Z",
+      "finishedAt": "2026-09-13T00:09:37.409358Z"
+    },
+    {
+      "argv": [
+        "docker",
+        "compose",
+        "-p",
+        "encodingdb-acceptance-576f93ec9d15",
+        "-f",
+        "acceptance.compose.json",
+        "down",
+        "--volumes",
+        "--remove-orphans"
+      ],
+      "log": "isolated-stack-cleanup.log",
+      "exitCode": 0,
+      "startedAt": "2026-09-13T00:09:37.410035Z",
+      "finishedAt": "2026-09-13T00:09:37.483167Z"
+    }
+  ],
+  "failureCases": [
+    {
+      "case": "missing-pack",
+      "initialInputs": {
+        "canonicalDirectoriesAbsent": true,
+        "cacheEmpty": true,
+        "adjacentPackAbsent": true
+      },
+      "exitCode": 1,
+      "expectedDiagnostic": "(?i)(suite pack not found|suite pack.*(?:does not exist|missing)|(?:does not exist|not found).*missing-suite)",
+      "diagnosticMatched": true,
+      "rolloutReached": false,
+      "containersUnchanged": true,
+      "lifecycleEvents": [],
+      "log": "missing-pack.log"
+    },
+    {
+      "case": "unavailable-pack",
+      "initialInputs": {
+        "canonicalDirectoriesAbsent": true,
+        "cacheEmpty": true,
+        "adjacentPackAbsent": true
+      },
+      "exitCode": 1,
+      "expectedDiagnostic": "(?i)(connection.*refused|failed to establish|unable to acquire|failed to download|could not.*download)",
+      "diagnosticMatched": true,
+      "rolloutReached": false,
+      "containersUnchanged": true,
+      "lifecycleEvents": [],
+      "log": "unavailable-pack.log"
+    },
+    {
+      "case": "corrupt-pack",
+      "initialInputs": {
+        "canonicalDirectoriesAbsent": true,
+        "cacheEmpty": true,
+        "adjacentPackAbsent": true
+      },
+      "exitCode": 1,
+      "expectedDiagnostic": "suite pack checksum mismatch",
+      "diagnosticMatched": true,
+      "rolloutReached": false,
+      "containersUnchanged": true,
+      "lifecycleEvents": [],
+      "log": "corrupt-pack.log"
+    }
+  ],
+  "testedSha": "694f494600c9b1d1731493fd0d2ec0aab56b86b3",
+  "isolation": {
+    "productionCompose": "docker-compose.prod.yml",
+    "volumes": {
+      "artifact_data": "encodingdb-acceptance-576f93ec9d15_artifact_data",
+      "db_data": "encodingdb-acceptance-576f93ec9d15_db_data"
+    },
+    "networks": {
+      "app": "encodingdb-acceptance-576f93ec9d15_app"
+    },
+    "nginxPorts": [
+      {
+        "mode": "ingress",
+        "target": 443,
+        "published": "0",
+        "protocol": "tcp",
+        "host_ip": "127.0.0.1"
+      },
+      {
+        "mode": "ingress",
+        "target": 80,
+        "published": "0",
+        "protocol": "tcp",
+        "host_ip": "127.0.0.1"
+      }
+    ],
+    "configurationChanges": [
+      "unique project, volume and network names",
+      "ephemeral ports bound to 127.0.0.1"
+    ],
+    "testEnvSource": "env.example with disposable test secrets and HTTPS loopback URLs"
+  },
+  "initialInputs": {
+    "canonicalDirectoriesAbsent": true,
+    "cacheEmpty": true,
+    "adjacentPackAbsent": true
+  },
+  "plConfiguration": {
+    "PL_V7_REFERENCE_CONTEXT_PATH": "",
+    "PL_V7_REFERENCE_CONTEXT_VERSION": "",
+    "PL_V7_REFERENCE_BITRATES_JSON": "",
+    "ALLOW_TEST_ONLY_REFERENCE_CONTEXTS": "0"
+  },
+  "successfulStack": {
+    "db": {
+      "id": "1d739bcbf705f220fd2dc6552f7a7ba5496c510790be1ad8c58f089bbc0f2891",
+      "image": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+      "startedAt": "2026-09-13T00:08:50.092872512Z",
+      "status": "running",
+      "health": "healthy",
+      "restartCount": 0
+    },
+    "frontend": {
+      "id": "23161910330ae0397c3c1c5249769eb79e38f7d7b86c0587ee458329e5a2a77f",
+      "image": "sha256:7ba2d504dcbc75d40ace72d29788d164b3d6c6a1b66e7e6959b7c6e90a2e91bc",
+      "startedAt": "2026-09-13T00:08:55.763020625Z",
+      "status": "running",
+      "health": "healthy",
+      "restartCount": 0
+    },
+    "nginx": {
+      "id": "2ca0c772569d2dc8d2251345d4a7275e1399ef4f62a6aa7cc2afa296c18fb352",
+      "image": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "startedAt": "2026-09-13T00:09:06.347621297Z",
+      "status": "running",
+      "health": "healthy",
+      "restartCount": 0
+    },
+    "server": {
+      "id": "ac2e0dcf8b2948d00f53d4f65ef0158b4a023989ba0912188ce22b9ecb65a031",
+      "image": "sha256:2b418e34f19f6993dbd4a71fea58ea65be4302e0ba5e20f7c0b71714ea4e2e9c",
+      "startedAt": "2026-09-13T00:08:55.69646925Z",
+      "status": "running",
+      "health": "healthy",
+      "restartCount": 0
+    }
+  },
+  "serverImage": {
+    "id": "sha256:2b418e34f19f6993dbd4a71fea58ea65be4302e0ba5e20f7c0b71714ea4e2e9c",
+    "verification": "independent docker run, network disabled, no bind mounts",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "metadata": {
+      "manifest.json": {
+        "sha256": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76",
+        "byteSize": 15791
+      },
+      "suite-lock.json": {
+        "sha256": "2389f33c9acae479196788037ef96765aae0197fde38c483c7cc370f912d15cb",
+        "byteSize": 3230
+      },
+      "finalization-status.json": {
+        "sha256": "684313262e7611eb0b800da4e596f3ee432260553930aec63065938549de3594",
+        "byteSize": 302
+      },
+      "suite-pack.json": {
+        "sha256": "606d1fc188fa0af69ad9e08dcbd6fcbb82f7684eae898e9a197d0c1522f255fa",
+        "byteSize": 4807
+      }
+    },
+    "sources": [
+      {
+        "clipId": "athletic-action-1080p24-final",
+        "fileName": "athletic-action-1080p24-final.mkv",
+        "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+        "byteSize": 139815565
+      },
+      {
+        "clipId": "natural-detail-1080p24-final",
+        "fileName": "natural-detail-1080p24-final.mkv",
+        "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+        "byteSize": 283872120
+      },
+      {
+        "clipId": "film-grain-1080p24-final",
+        "fileName": "film-grain-1080p24-final.mkv",
+        "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+        "byteSize": 336898554
+      },
+      {
+        "clipId": "dark-gradients-1080p24-final",
+        "fileName": "dark-gradients-1080p24-final.mkv",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "byteSize": 317829621
+      },
+      {
+        "clipId": "animation-1080p24-final",
+        "fileName": "animation-1080p24-final.mkv",
+        "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+        "byteSize": 173819800
+      },
+      {
+        "clipId": "screen-text-1080p24-final",
+        "fileName": "screen-text-1080p24-final.mkv",
+        "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+        "byteSize": 35313873
+      },
+      {
+        "clipId": "talking-head-1080p24-final",
+        "fileName": "talking-head-1080p24-final.mkv",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "byteSize": 219125475
+      }
+    ]
+  },
+  "apiChecks": [
+    {
+      "path": "/health/live",
+      "status": 200,
+      "body": {
+        "status": "ok"
+      }
+    },
+    {
+      "path": "/health/ready",
+      "status": 200,
+      "body": {
+        "status": "ok"
+      }
+    },
+    {
+      "path": "/health/v7-evidence",
+      "status": 200,
+      "body": {
+        "status": "ok",
+        "reasons": [],
+        "capturedAt": "2026-09-13T00:09:15.814Z",
+        "thresholds": {
+          "pendingUploadSeconds": 900,
+          "pendingAnalysisSeconds": 1800,
+          "orphanStagingSeconds": 3600,
+          "storageQuotaBytes": null,
+          "storageReserveBytes": 536870912
+        },
+        "artifacts": {
+          "byState": {},
+          "pendingOldestSeconds": null,
+          "missingRetainedObjects": 0
+        },
+        "analyses": {
+          "byStatus": {},
+          "pendingOldestSeconds": null,
+          "completedLatencySeconds": {
+            "sampleCount": 0,
+            "p50": null,
+            "p95": null
+          }
+        },
+        "storage": {
+          "rootAvailable": true,
+          "trackedBytes": 0,
+          "quotaBytes": null,
+          "availableBytes": 859889958912,
+          "freeBytes": 909638230016
+        },
+        "staging": {
+          "entryCount": 0,
+          "staleEntryCount": 0,
+          "oldestSeconds": null
+        },
+        "derivations": {
+          "unresolvedSelectedAnalyses": 0
+        }
+      }
+    },
+    {
+      "path": "/query?limit=1",
+      "status": 200,
+      "body": []
+    },
+    {
+      "path": "/test-videos",
+      "status": 200,
+      "body": [
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "athletic-action-1080p24-final",
+          "workloadId": "athletic-action-1080p24-final",
+          "displayName": "Tears of Steel \u2014 athletic action",
+          "contentClass": "high-motion-sports",
+          "payloadContentClass": "action",
+          "description": "Sustained camera motion, running/turning actor, occlusion and irregular VFX action. Accepted as disclosed athletic-action proxy, not sporting-event footage; motion frames retain varied edges and no visible normalization damage.",
+          "fileName": "athletic-action-1080p24-final.mkv",
+          "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+          "sizeBytes": 139815565,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 11713\u201311952; source excerpt SHA256 2995a722dc8ff9ec32a262dd1679c5aca91655dbb7de61d2457164567c1c482b. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-action-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-3.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/athletic-action-1080p24-final.mkv",
+            "originalFileName": "athletic-action-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "natural-detail-1080p24-final",
+          "workloadId": "natural-detail-1080p24-final",
+          "displayName": "Chimera \u2014 natural hillside",
+          "contentClass": "fine-natural-detail",
+          "payloadContentClass": "nature",
+          "description": "Hillside soil, rocks and vegetation occupy most of the frame during a camera pan and wider shot. Reviewed real PQ/P3 to SDR conversion retains highlight/shadow separation and natural texture; no metadata-only HDR relabeling. Not a pure wind-foliage scene.",
+          "fileName": "natural-detail-1080p24-final.mkv",
+          "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+          "sizeBytes": 283872120,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; frames 360\u2013599; source excerpt SHA256 79f35b35405c019c639e85b4b232ca04f780163f0f671ebcf55d281ea5a472c3. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/chimera-natural-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-4.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/natural-detail-1080p24-final.mkv",
+            "originalFileName": "natural-detail-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "film-grain-1080p24-final",
+          "workloadId": "film-grain-1080p24-final",
+          "displayName": "Nocturne \u2014 added film grain",
+          "contentClass": "film-grain-noise",
+          "payloadContentClass": "gaming",
+          "description": "Producer-added grain remains clearly visible on wood, fabric and skin in full-resolution frame3 and changes across the sequence. No denoise; light-to-dark transition retained. Grain provenance is added Filmbox, not a film scan.",
+          "fileName": "film-grain-1080p24-final.mkv",
+          "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+          "sizeBytes": 336898554,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; 90\u2013100 seconds; source excerpt SHA256 ec4ec397e6495ef7054f5df93bc2e2a70f64d954186c1c6fc36bf654d73aab5c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-4.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/film-grain-1080p24-final.mkv",
+            "originalFileName": "film-grain-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "dark-gradients-1080p24-final",
+          "workloadId": "dark-gradients-1080p24-final",
+          "displayName": "Nocturne \u2014 dark interior gradients",
+          "contentClass": "dark-gradients-shadows",
+          "payloadContentClass": "mixed",
+          "description": "Low-light stairs, blue-purple defocused gradients and silhouetted piano retain shadow structure. Full-resolution gradient frame shows continuous tone plus source grain, without crushing the whole image to black.",
+          "fileName": "dark-gradients-1080p24-final.mkv",
+          "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+          "sizeBytes": 317829621,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; 148\u2013158 seconds; source excerpt SHA256 d19cb34070490e37a75ba71415e5f13536b291e3c1a71655df7051cb43cad88c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-dark-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-4.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/dark-gradients-1080p24-final.mkv",
+            "originalFileName": "dark-gradients-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "animation-1080p24-final",
+          "workloadId": "animation-1080p24-final",
+          "displayName": "Sol Levante \u2014 cel-shaded face",
+          "contentClass": "animation-flat-fields",
+          "payloadContentClass": "animation",
+          "description": "Eight seconds chosen before the effects cut: broad smooth shaded skin, bright/dark cel edges, eyes and fine hair lines. Not the rejected lava sequence; shading/glow remain disclosed, not claimed perfectly flat backgrounds.",
+          "fileName": "animation-1080p24-final.mkv",
+          "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+          "sizeBytes": 173819800,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Netflix, Inc. and Production I.G; https://opencontent.netflix.com/; 173\u2013181 seconds; source excerpt SHA256 af62fe6fbbb2ffc89195e348274b793c5e0f6e6894ad2b2b24bf52a4dc631e1c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/sol-levante-flat-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-4.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/animation-1080p24-final.mkv",
+            "originalFileName": "animation-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 192,
+            "duration": {
+              "numerator": 8,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "screen-text-1080p24-final",
+          "workloadId": "screen-text-1080p24-final",
+          "displayName": "Atlas \u2014 authored screen workflow",
+          "contentClass": "screen-text",
+          "payloadContentClass": "screen",
+          "description": "Actual offline browser render shows readable code/table text, deterministic scroll/cursor motion and static navigation. Full-resolution prepared frame inspected; separate sRGB-to-BT709 conversion preserves text edges. Original authored workload, not lavfi.",
+          "fileName": "screen-text-1080p24-final.mkv",
+          "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+          "sizeBytes": 35313873,
+          "source": {
+            "kind": "project-authored-screen",
+            "provenance": "Original offline browser workflow, pinned Chromium/Playwright/font and lossless PNG timing. See docs/canonical-suite/evidence/screen-capture.json and scripts/canonical-screen/README.md.",
+            "license": "CC0-1.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/screen-text-1080p24-final.mkv",
+            "originalFileName": "screen-text-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        },
+        {
+          "suiteId": "encodingdb-test-suite",
+          "suiteVersion": "encodingdb-test-suite-v1",
+          "manifestVersion": 2,
+          "clipId": "talking-head-1080p24-final",
+          "workloadId": "talking-head-1080p24-final",
+          "displayName": "Tears of Steel \u2014 close dialogue",
+          "contentClass": "talking-head",
+          "payloadContentClass": "talkingHead",
+          "description": "Sustained close dialogue retains faces, beard/hair, skin detail and mouth/hand movement throughout ten seconds, avoiding rejected cut-heavy range. Cinematic 1920x800 image preserved with letterbox bars.",
+          "fileName": "talking-head-1080p24-final.mkv",
+          "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+          "sizeBytes": 219125475,
+          "source": {
+            "kind": "licensed-master-excerpt",
+            "provenance": "Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 5761\u20136000; source excerpt SHA256 a1cd976db82df225a386baa38bba5c3071bdf40e18585a39028b4e7d8f02d3ea. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-dialog-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+            "license": "CC-BY-3.0",
+            "reviewed": true,
+            "redistributionApproved": true,
+            "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+          },
+          "acquisition": {
+            "kind": "retained-original",
+            "container": "matroska",
+            "videoCodec": "ffv1",
+            "packagedRelativePath": "canonical/talking-head-1080p24-final.mkv",
+            "originalFileName": "talking-head-1080p24-final.mkv"
+          },
+          "media": {
+            "frameCount": 240,
+            "duration": {
+              "numerator": 10,
+              "denominator": 1
+            },
+            "frameRate": {
+              "numerator": 24,
+              "denominator": 1
+            },
+            "width": 1920,
+            "height": 1080,
+            "pixelFormat": "yuv420p",
+            "bitDepth": 8,
+            "chromaSubsampling": "4:2:0",
+            "colorPrimaries": "bt709",
+            "colorTransfer": "bt709",
+            "colorMatrix": "bt709",
+            "colorRange": "tv",
+            "fieldOrder": "progressive",
+            "hdrMetadata": null
+          }
+        }
+      ]
+    },
+    {
+      "path": "/corpus?limit=1",
+      "status": 200,
+      "body": []
+    }
+  ],
+  "prepareOnly": {
+    "passed": true,
+    "servicesCreated": false,
+    "verifiedFiles": 14,
+    "cache": "reused verified default cache after failure cases; no second download"
+  },
+  "cleanupSucceeded": true,
+  "finishedAt": "2026-09-13T00:09:37.513669Z",
+  "scope": {
+    "claim": "Fresh-checkout production preparation and isolated rollout regression; not a new packaged-client collection certification.",
+    "integration": "pending",
+    "integratedBetaSha": null,
+    "betaShaAtVerification": "830e30375ec13d02ea00289c531e0e05e0d91b72",
+    "productionChanged": false,
+    "calibrationActivated": false,
+    "dockerBuildCache": "Existing image/build layers were reusable locally; canonical directories, adjacent packs and the suite cache were absent in the new clone. CI uses a fresh runner."
+  },
+  "logArchive": "deployment-repair-logs.tar.gz",
+  "executedEnvironment": {
+    "os": "Darwin arm64",
+    "node": "v22.23.0",
+    "python": "Python 3.14.6",
+    "docker": "29.7.2",
+    "compose": "5.3.1"
+  },
+  "historicalFailures": [
+    {
+      "testedSha": "3749b922c85e48793bf7e122f4a5a80f52c86eda",
+      "outcome": "Failed nginx readiness after successful image preparation; retained diagnostics prove IPv4/TLS correction."
+    },
+    {
+      "testedSha": "822d08e0f23fcf694d3018e96892aa48a1f1b3f2",
+      "outcome": "All four services healthy; failed stale frontend product-name smoke assertion. Excluded from acceptance."
+    }
+  ],
+  "ci": {
+    "implementationHead": "694f494600c9b1d1731493fd0d2ec0aab56b86b3",
+    "applicationRun": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143625",
+    "releasePreflightRun": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143627",
+    "dependencyAuditsRun": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34727143639",
+    "note": "Run links identify this implementation head. Final review-head check results and CI checkout SHAs are recorded on PR #12 after completion; no future result is asserted here."
+  },
+  "logArchiveSha256": "fd6cf8d810ca7ebd33dcd326d737ef942765ba5916d25fc0186d131c3f7232f4",
+  "logArchiveBytes": 51328,
+  "localReleaseGates": {
+    "testedSha": "694f494600c9b1d1731493fd0d2ec0aab56b86b3",
+    "exitCode": 0,
+    "passed": [
+      "hygiene",
+      "metadata",
+      "production-compose",
+      "suite-contract",
+      "ops-hooks",
+      "final-suite"
+    ],
+    "logs": "release-gates-694f494/ in the log archive"
+  },
+  "regressionSafetyTests": {
+    "testedSha": "694f494600c9b1d1731493fd0d2ec0aab56b86b3",
+    "passed": 4,
+    "exitCode": 0,
+    "log": "repair-safety-tests-694f494.log in the log archive"
+  }
+}

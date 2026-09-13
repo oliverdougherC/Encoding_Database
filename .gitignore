@@ -68,6 +68,13 @@ frontend/.cache/
 *.tsbuildinfo
 /encodingdb-client-macos
 /encodingdb-client-windows.exe
+/encodingdb-client-linux
+/encodingdb-test-suite-v1.tar.gz
+/encodingdb-client-*.runtime-lock.json
+/encodingdb-client-*.release-manifest.json
+/encodingdb-client-*.signing.json
+/encodingdb-client-*.smoke.json
+/encodingdb-client-*.SHA256SUMS
 
 # Prisma
 server/prisma/dev.db*
@@ -128,6 +135,9 @@ nginx/dev-certs/
 .omx/state/
 .omx/tmux-hook.json
 sample.mp4
+# Final canonical media is distributed in the immutable, hash-pinned external pack.
+client/resources/test_suite_v1/canonical/
+server/resources/test_suite_v1/canonical/
 IMPROVEMENTS.md
 OPTIMIZATIONS.md
 BUG_FIXES.md

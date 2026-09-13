@@ -1,0 +1,183 @@
+Browser tab: 1, Title: "EncodingDB", URL: "http://127.0.0.1:3203/".
+1 AXWebArea EncodingDB, URL: 127.0.0.1:3203/
+	2 container
+		3 link Description: EncodingDB home, Value: 127.0.0.1:3203/
+		4 container Primary navigation
+			5 link Description: Browse, Value: 127.0.0.1:3203/
+			6 link Description: Hardware, Value: 127.0.0.1:3203/hardware
+			7 link Description: Encoders, Value: 127.0.0.1:3203/encoders
+			8 link Description: Methodology, Value: 127.0.0.1:3203/methodology
+		9 link Description: GitHub, Value: github.com/oliverdougherC/Encoding_Database
+		10 button Switch to light mode
+		11 link Description: Run a benchmark, Value: 127.0.0.1:3203/run
+	12 container
+		13 text V7 PUBLIC CORPUS
+		14 heading Brevity is the soul of wit., Value: 1
+			15 text Brevity is the soul of wit.
+		16 text Browse V7 workload results backed by retained evidence, clear hardware context, and canonical recipes. Public PL stays blank until a production reference context is published.
+		17 button Search hardware, encoder, codec, preset, or result… /
+			18 text Search hardware, encoder, codec, preset, or result…
+			19 text /
+		20 text 7
+		21 text  V7 aggregates
+		22 text 1
+		23 text  environments on this page
+		24 text 1
+		25 text  encoders on this page
+		26 container
+			27 text CORPUS STATUS 7 accepted V7 workload aggregates available to inspect 1 environments shown 1 encoders shown 1 codec families 60s data refresh
+			28 text Transparent by design.
+			29 text  Legacy `/query` aggregates remain separate; this surface is V7-only.
+		30 container results
+			31 heading Browse corpus, Value: 2
+				32 text Browse corpus
+			33 text Open a row to inspect immutable recipe and environment identity, evidence tier, bitrate, confidence, and version lineage.
+		34 container Benchmark results
+			35 container
+				36 text Search V7 public corpus
+				37 text field (settable) Search V7 public corpus, ID: benchmark-search
+			38 pop up button (collapsed, settable) Description: Hardware vendor, Value: All encoders, Secondary Actions: Expand
+				39 menu
+					40 (selected) All encoders
+					41 Hardware encoders
+					42 Software encoders
+			43 text field (settable) Filter CPU
+			44 text field (settable) Filter GPU
+			45 text field (settable) Filter preset
+			46 button My Hardware
+			47 button Clear filters
+			48 text 7  V7 workload aggregates Choose up to 4 recipe or environment identities to compare
+			49 container
+				50 button Hardware
+				51 button Encoder
+				52 button Configuration
+				53 button FPS
+				54 button VMAF
+				55 button Bitrate
+				56 button Evidence
+				57 button Samples
+				58 text Details
+				59 table
+					60 container
+						61 row
+							62 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::talking-head-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							63 text Apple M4 Pro
+							64 text Apple M4 Pro
+							65 text libx264
+							66 container
+								67 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							68 text fast
+							69 container
+								70 text CRF 12  ·  talking-head-1080p24-final
+							71 text 14.89 98.9 45.25 Mbps
+							72 text PROVISIONAL
+							73 container
+								74 text PL unavailable  ·  No public interval
+							75 text 4
+							76 button View
+						77 row
+							78 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::screen-text-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							79 text Apple M4 Pro
+							80 text Apple M4 Pro
+							81 text libx264
+							82 container
+								83 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							84 text fast
+							85 container
+								86 text CRF 12  ·  screen-text-1080p24-final
+							87 text 196.39 99.8 0.33 Mbps
+							88 text PROVISIONAL
+							89 container
+								90 text PL unavailable  ·  No public interval
+							91 text 2
+							92 button View
+						93 row
+							94 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::animation-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							95 text Apple M4 Pro
+							96 text Apple M4 Pro
+							97 text libx264
+							98 container
+								99 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							100 text fast
+							101 container
+								102 text CRF 12  ·  animation-1080p24-final
+							103 text 20.21 98.0 52.29 Mbps
+							104 text PROVISIONAL
+							105 container
+								106 text PL unavailable  ·  No public interval
+							107 text 2
+							108 button View
+						109 row
+							110 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::dark-gradients-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							111 text Apple M4 Pro
+							112 text Apple M4 Pro
+							113 text libx264
+							114 container
+								115 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							116 text fast
+							117 container
+								118 text CRF 12  ·  dark-gradients-1080p24-final
+							119 text 12.00 96.9 125.30 Mbps
+							120 text PROVISIONAL
+							121 container
+								122 text PL unavailable  ·  No public interval
+							123 text 2
+							124 button View
+						125 row
+							126 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::film-grain-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							127 text Apple M4 Pro
+							128 text Apple M4 Pro
+							129 text libx264
+							130 container
+								131 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							132 text fast
+							133 container
+								134 text CRF 12  ·  film-grain-1080p24-final
+							135 text 12.08 99.7 131.22 Mbps
+							136 text PROVISIONAL
+							137 container
+								138 text PL unavailable  ·  No public interval
+							139 text 2
+							140 button View
+						141 row
+							142 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::natural-detail-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							143 text Apple M4 Pro
+							144 text Apple M4 Pro
+							145 text libx264
+							146 container
+								147 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							148 text fast
+							149 container
+								150 text CRF 12  ·  natural-detail-1080p24-final
+							151 text 20.93 99.2 60.09 Mbps
+							152 text PROVISIONAL
+							153 container
+								154 text PL unavailable  ·  No public interval
+							155 text 2
+							156 button View
+						157 row
+							158 checkbox (settable, integer) Value: 0, Description: Select cmtuw0sms0000pr0omt8bhqg1::athletic-action-1080p24-final::cmtuw0sn30002pr0o8o5ibj56::cmtuw0sn70003pr0oq61cj406::vmaf-v1-sdr-1080p for comparison
+							159 text Apple M4 Pro
+							160 text Apple M4 Pro
+							161 text libx264
+							162 container
+								163 text H264  ·  ffmpeg version N-126386-gc27482a18d7-tessus https://evermeet.cx/ffmpeg/ Copyright (c) 2000-2026 the FFmpeg developers
+							164 text fast
+							165 container
+								166 text CRF 12  ·  athletic-action-1080p24-final
+							167 text 33.65 100.0 25.99 Mbps
+							168 text PROVISIONAL
+							169 container
+								170 text PL unavailable  ·  No public interval
+							171 text 2
+							172 button View
+			173 text Page  1  of  1
+			174 button (disabled) Previous
+			175 button (disabled) Next
+		176 text About this V7 surface
+		177 text Each row is a retained V7 workload aggregate. Test-only reference contexts never surface as public PL, and submission-specific notes or personal media are never attributed to a corpus row.
+		178 link Description: Read methodology, Value: 127.0.0.1:3203/methodology?
+	179 container
+		180 text EncodingDB · public, reproducible encoding data Measurements are observations, not recommendations.
+
+The focused UI element is 1 AXWebArea EncodingDB, URL: 127.0.0.1:3203/

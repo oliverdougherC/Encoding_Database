@@ -1,0 +1,144 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/talking-head-1080p24-final.mkv",
+  "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+  "byteSize": 219125475,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.8576937910402194,
+  "decodeRealtimeRatio": 11.659172660993503,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": {
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Sustained close dialogue retains faces, beard/hair, skin detail and mouth/hand movement throughout ten seconds, avoiding rejected cut-heavy range. Cinematic 1920x800 image preserved with letterbox bars."
+  },
+  "encodes": [
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-20.mp4",
+      "sha256": "540d1768843ab6d4ed062e56db1c9d4de20cf6cf15a544a248ecbb312fc5c60d",
+      "bytes": 5924108,
+      "videoBytes": 5920270,
+      "videoBitrateBps": 4736216.0,
+      "elapsedSeconds": 2.89936600002693,
+      "encodeFps": 82.7767173919301,
+      "vmafMean": 95.25714,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-20.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-28.mp4",
+      "sha256": "a71f3b5fa25a77529f1b7fac98f8444a0a53f1094cb2f89ac3614fe609ba86e3",
+      "bytes": 1387317,
+      "videoBytes": 1383531,
+      "videoBitrateBps": 1106824.8,
+      "elapsedSeconds": 2.27163199998904,
+      "encodeFps": 105.65091528960585,
+      "vmafMean": 88.551612,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-36.mp4",
+      "sha256": "463d64957b28f823ea56c299b3774d5b3ffee86e5b0c3cf5cb7e1f94223acb6c",
+      "bytes": 548818,
+      "videoBytes": 545048,
+      "videoBitrateBps": 436038.4,
+      "elapsedSeconds": 2.099545707984362,
+      "encodeFps": 114.3104430102684,
+      "vmafMean": 74.134471,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx264-36.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx265-28.mp4",
+      "sha256": "4fa4899b6928e1809d2ef556f7b3112242dd743d309c55142c996f387f410438",
+      "bytes": 1145030,
+      "videoBytes": 1138958,
+      "videoBitrateBps": 911166.4,
+      "elapsedSeconds": 5.951843291986734,
+      "encodeFps": 40.32364231147081,
+      "vmafMean": 89.217162,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libx265-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "runtime": "/opt/homebrew/bin/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libsvtav1-32.mp4",
+      "sha256": "6a6fdbac5ae8272ab1ff1289d434274a485841ad4a89643a74f0eff88594a6b9",
+      "bytes": 2072923,
+      "videoBytes": 2070813,
+      "videoBitrateBps": 1656650.4,
+      "elapsedSeconds": 1.716298166953493,
+      "encodeFps": 139.8358424084382,
+      "vmafMean": 93.017681,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/libsvtav1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/talking-head-1080p24-final/h264_videotoolbox-2500.mp4",
+      "sha256": "914c645acd814541d370968b6deb9c08733b578fedb7b7a74c4860239de6ff0c",
+      "bytes": 3239408,
+      "videoBytes": 3237458,
+      "videoBitrateBps": 2589966.4,
+      "elapsedSeconds": 1.2758806659840047,
+      "encodeFps": 188.10536627647966,
+      "vmafMean": 87.808948,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/talking-head-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
+    }
+  ]
+}

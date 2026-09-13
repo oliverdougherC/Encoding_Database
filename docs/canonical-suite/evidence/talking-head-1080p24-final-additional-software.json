@@ -1,0 +1,55 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/talking-head-1080p24-final.mkv",
+  "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+  "byteSize": 219125475,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.9723530409974046,
+  "decodeRealtimeRatio": 10.284330462670598,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": "PENDING",
+  "encodes": [
+    {
+      "encoder": "libaom-av1",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/talking-head-1080p24-final/libaom-av1-32.mp4",
+      "sha256": "84589b4e943a69d47ab5e853606770c302fff901d8c0f3e00d83e602d221dc99",
+      "bytes": 1517193,
+      "videoBytes": 1515356,
+      "videoBitrateBps": 1212284.8,
+      "elapsedSeconds": 17.877241167007014,
+      "encodeFps": 13.424890214208622,
+      "vmafMean": 93.211998,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/talking-head-1080p24-final/libaom-av1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "libvpx-vp9",
+      "nativeRateValue": 32,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-extra/talking-head-1080p24-final/libvpx-vp9-32.mp4",
+      "sha256": "fdec90b174662a311c0b7aba081eb882a13cff0ced72b3f989167d9dca0a09e6",
+      "bytes": 3733463,
+      "videoBytes": 3731602,
+      "videoBitrateBps": 2985281.6,
+      "elapsedSeconds": 1.7534726670128293,
+      "encodeFps": 136.87125240957295,
+      "vmafMean": 92.693214,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-extra/talking-head-1080p24-final/libvpx-vp9-32.corrected-metrics.log"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+[
+  {
+    "label": "retained-raw",
+    "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/beta-stack/artifacts/objects/7d/7d69218b2165239a4926295e1acd1e6e502fa139af9fb9ffd1bc00aafff62875",
+    "reference": "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+    "command": [
+      "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/.build/beta-stack/artifacts/objects/7d/7d69218b2165239a4926295e1acd1e6e502fa139af9fb9ffd1bc00aafff62875",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+      "-lavfi",
+      "libvmaf=model='path=/Users/ofhd/Developer/Encoding_Database/client/resources/vmaf/vmaf_v1.0.16_3d0h.json':n_threads=1:log_fmt=json:log_path=/Users/ofhd/Developer/Encoding_Database/.build/metric-alignment-diagnostic/retained-raw.json",
+      "-f",
+      "null",
+      "-"
+    ],
+    "frameCount": 240,
+    "vmafMean": 64.872349
+  },
+  {
+    "label": "retained-canonical",
+    "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/beta-stack/artifacts/objects/7d/7d69218b2165239a4926295e1acd1e6e502fa139af9fb9ffd1bc00aafff62875",
+    "reference": "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+    "command": [
+      "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/.build/beta-stack/artifacts/objects/7d/7d69218b2165239a4926295e1acd1e6e502fa139af9fb9ffd1bc00aafff62875",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+      "-lavfi",
+      "[0:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[d];[1:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[r];[d][r]libvmaf=model='path=/Users/ofhd/Developer/Encoding_Database/client/resources/vmaf/vmaf_v1.0.16_3d0h.json':n_threads=1:log_fmt=json:log_path=/Users/ofhd/Developer/Encoding_Database/.build/metric-alignment-diagnostic/retained-canonical.json",
+      "-f",
+      "null",
+      "-"
+    ],
+    "frameCount": 240,
+    "vmafMean": 97.552275
+  },
+  {
+    "label": "standalone20-canonical",
+    "artifact": "/Users/ofhd/Developer/Encoding_Database/.test-reports/canonical-final-r2/athletic-action-1080p24-final/libx264-20.mp4",
+    "reference": "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+    "command": [
+      "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+      "-nostdin",
+      "-hide_banner",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/.test-reports/canonical-final-r2/athletic-action-1080p24-final/libx264-20.mp4",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/server/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv",
+      "-lavfi",
+      "[0:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[d];[1:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[r];[d][r]libvmaf=model='path=/Users/ofhd/Developer/Encoding_Database/client/resources/vmaf/vmaf_v1.0.16_3d0h.json':n_threads=1:log_fmt=json:log_path=/Users/ofhd/Developer/Encoding_Database/.build/metric-alignment-diagnostic/standalone20-canonical.json",
+      "-f",
+      "null",
+      "-"
+    ],
+    "frameCount": 240,
+    "vmafMean": 99.290464
+  }
+]

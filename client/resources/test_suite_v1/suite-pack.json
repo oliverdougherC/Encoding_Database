@@ -2,68 +2,130 @@
   "schemaVersion": 1,
   "suiteId": "encodingdb-test-suite",
   "suiteVersion": "encodingdb-test-suite-v1",
-  "manifestVersion": 1,
-  "suiteFingerprint": "0c8b3fecc4e1e0ecb62b237fe0b97d3174280a0153df6029e515b53dce3448fb",
+  "manifestVersion": 2,
+  "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
   "distributionMode": "external-suite-pack",
   "distribution": {
     "format": "tar.gz",
     "fileName": "encodingdb-test-suite-v1.tar.gz",
-    "sha256": "e695bbe8a6fd2bb051ea6d08a2b9998b2ed3f061cf7c2905e60e6e8566b39fce",
-    "byteSize": 56314078,
-    "downloadUrls": []
+    "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+    "byteSize": 1506890018,
+    "downloadUrls": [
+      "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz"
+    ]
   },
   "contents": {
     "manifest": {
-      "sha256": "e6e6ac59af667bb027e621270618371a2ac8629a2e7ff678d85e7a607eb5013a",
-      "byteSize": 13278
+      "sha256": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76",
+      "byteSize": 15791
     },
     "finalizationStatus": {
-      "sha256": "ad24bb42d067a7cfb2c69466045c3233ebfdbff6292ecc979d5862a40ce895c3",
-      "byteSize": 341
+      "sha256": "684313262e7611eb0b800da4e596f3ee432260553930aec63065938549de3594",
+      "byteSize": 302
     },
-    "suiteLock": null,
+    "suiteLock": {
+      "sha256": "2389f33c9acae479196788037ef96765aae0197fde38c483c7cc370f912d15cb",
+      "byteSize": 3230
+    },
     "canonical": [
       {
-        "clipId": "sports-action-960x540-24p",
-        "fileName": "sports-action-960x540-24p.mkv",
-        "sha256": "8dff09e5120e42c478ef02501ff75d7ae7e94a509b651a2a9506c03ff512876a",
-        "byteSize": 3243818
+        "clipId": "athletic-action-1080p24-final",
+        "fileName": "athletic-action-1080p24-final.mkv",
+        "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+        "byteSize": 139815565
       },
       {
-        "clipId": "natural-detail-960x540-24p",
-        "fileName": "natural-detail-960x540-24p.mkv",
-        "sha256": "5af2b9497236bf06ceb9119b5aab0e5d3d4fa60b3e2e8a3610e88857bb5366f4",
-        "byteSize": 9140428
+        "clipId": "natural-detail-1080p24-final",
+        "fileName": "natural-detail-1080p24-final.mkv",
+        "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+        "byteSize": 283872120
       },
       {
-        "clipId": "grain-noise-960x540-24p",
-        "fileName": "grain-noise-960x540-24p.mkv",
-        "sha256": "f6056ba8b0bd4c78552b517d49d54bf142f1eeb473f6d5acdebda1b509a1ea48",
-        "byteSize": 40486681
+        "clipId": "film-grain-1080p24-final",
+        "fileName": "film-grain-1080p24-final.mkv",
+        "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+        "byteSize": 336898554
       },
       {
-        "clipId": "dark-gradients-960x540-24p",
-        "fileName": "dark-gradients-960x540-24p.mkv",
-        "sha256": "6659e4e2332a24a9ca6b0947c153ec75698a501ebe5fd9cccac1e85431ff11df",
-        "byteSize": 1155412
+        "clipId": "dark-gradients-1080p24-final",
+        "fileName": "dark-gradients-1080p24-final.mkv",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "byteSize": 317829621
       },
       {
-        "clipId": "animation-960x540-24p",
-        "fileName": "animation-960x540-24p.mkv",
-        "sha256": "488c9428690e590377265516e7c7f7be97c1428e30be6681afb4a63fe4297cd4",
-        "byteSize": 595940
+        "clipId": "animation-1080p24-final",
+        "fileName": "animation-1080p24-final.mkv",
+        "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+        "byteSize": 173819800
       },
       {
-        "clipId": "screen-text-960x540-24p",
-        "fileName": "screen-text-960x540-24p.mkv",
-        "sha256": "f65c1bc4421c7f6fb03edf9e1949574b434c5bcd072e77016ef4ab362bf4743b",
-        "byteSize": 1057353
+        "clipId": "screen-text-1080p24-final",
+        "fileName": "screen-text-1080p24-final.mkv",
+        "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+        "byteSize": 35313873
       },
       {
-        "clipId": "talking-head-960x540-24p",
-        "fileName": "talking-head-960x540-24p.mkv",
-        "sha256": "dbc92d9910207f7ef30669ae5251110afb541f3fb2d343d2dcc6cbe9bd178faa",
-        "byteSize": 600620
+        "clipId": "talking-head-1080p24-final",
+        "fileName": "talking-head-1080p24-final.mkv",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "byteSize": 219125475
+      }
+    ],
+    "notices": [
+      {
+        "fileName": "notices/CC-BY-3.0.txt",
+        "sha256": "e6bc9e9c474700b708f568bac9e5a8a9bcb2b1dad53442f5ba449fcb848b8e76",
+        "byteSize": 19467
+      },
+      {
+        "fileName": "notices/CC-BY-4.0.txt",
+        "sha256": "9ba9550ad48438d0836ddab3da480b3b69ffa0aac7b7878b5a0039e7ab429411",
+        "byteSize": 18657
+      },
+      {
+        "fileName": "notices/CC0-1.0.txt",
+        "sha256": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+        "byteSize": 7048
+      },
+      {
+        "fileName": "notices/IBM-Plex-Mono-OFL.txt",
+        "sha256": "7e6b2818edbd8f6a01ae80641cc8f16a51080d08fb4e532be3a0b6f74adb07da",
+        "byteSize": 4456
+      },
+      {
+        "fileName": "notices/animation-1080p24-final.txt",
+        "sha256": "74d6dce61b31a0039262021ae5bdda18d9e8ab61825000f442afa86d143b9ea9",
+        "byteSize": 1110
+      },
+      {
+        "fileName": "notices/athletic-action-1080p24-final.txt",
+        "sha256": "b7c8d6954e9a5ead857aa2b31a1a31a9ba24951fae0cbb924827463fb2870338",
+        "byteSize": 1435
+      },
+      {
+        "fileName": "notices/dark-gradients-1080p24-final.txt",
+        "sha256": "decd3e519d768ec76400ac6de3a7445c68b0df26e9b29adab55fb5847e634c4e",
+        "byteSize": 1179
+      },
+      {
+        "fileName": "notices/film-grain-1080p24-final.txt",
+        "sha256": "046f2cb4547c0223dd072b5109e03394d80418fa915f909fbe4d24a9006ee49c",
+        "byteSize": 1165
+      },
+      {
+        "fileName": "notices/natural-detail-1080p24-final.txt",
+        "sha256": "d353a009802973bbfb8910c7440440c3ae59d981b0f9c306515c2d10c671de66",
+        "byteSize": 1388
+      },
+      {
+        "fileName": "notices/screen-text-1080p24-final.txt",
+        "sha256": "b8e04df7bb96a8f23cde80b4b52a551b05313242623924f5dafba930cc834092",
+        "byteSize": 1016
+      },
+      {
+        "fileName": "notices/talking-head-1080p24-final.txt",
+        "sha256": "63fb7ce61b5ebcdc4aabd02c5075094ef2ebd9ecec6dff6d4a1d12987dc8c143",
+        "byteSize": 1430
       }
     ]
   }

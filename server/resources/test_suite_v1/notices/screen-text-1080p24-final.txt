@@ -1,0 +1,11 @@
+Atlas — authored screen workflow
+Creator: EncodingDB contributors (Codex-authored original Atlas workload)
+Attribution: EncodingDB contributors (Codex-authored original Atlas workload)
+Source: scripts/canonical-screen/README.md
+Selected range: 240 PNG frames 0–239 at24fps
+License: CC0-1.0; full text accompanies this file.
+Source excerpt SHA256: 40766b9dc1a4eab062d8c15328b6f9acae9cbaae7281cc818f5b1e708a0b622c
+Final reference SHA256: 3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c
+Changes: Already converted from sRGB browser PNGs to BT.709 limited using the pinned capture preparation; no rescaling.
+No audio is distributed. Reference and retained encoded derivatives must retain attribution, license and change notices. No endorsement is implied. Source portrait/privacy/trademark rights are not waived.
+Original offline browser workflow, pinned Chromium/Playwright/font and lossless PNG timing. See docs/canonical-suite/evidence/screen-capture.json and scripts/canonical-screen/README.md.

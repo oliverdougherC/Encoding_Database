@@ -2339,10 +2339,13 @@ def run_with_args(
             use_token=use_token,
         )
         _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
+    elapsed_sec = max(0.0, time.perf_counter() - benchmark_start_ts)
     if show_end_screen and not config._BATCH_ACTIVE:
         _clear_screen()
-        elapsed_sec = max(0.0, time.time() - benchmark_start_ts)
-        print_end_screen(completed_count, elapsed_sec)
+        if args.no_submit:
+            print_info(f"Benchmark complete. Completed {completed_count} encodes in {elapsed_sec:.1f}s. Dry-run: no data submitted.")
+        else:
+            print_end_screen(submitted_count, elapsed_sec)
         try:
             if os.name == 'nt' and (bool(getattr(args, 'pause_on_exit', False)) or bool(getattr(sys, 'frozen', False))):
                 input("Press Enter to exit...")
@@ -2354,7 +2357,7 @@ def run_with_args(
         scope="single",
         completed=completed_count,
         total=len(combos),
-        elapsedSeconds=max(0.0, time.perf_counter() - benchmark_start_ts),
+        elapsedSeconds=elapsed_sec,
     )
     return 0
 

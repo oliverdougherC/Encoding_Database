@@ -1,0 +1,56 @@
+<!doctype html><meta charset="utf-8"><title>Atlas / Dataset review</title>
+<style>
+@font-face{font-family:Plex;src:url(fonts/IBMPlexMono-Regular.ttf)}*{box-sizing:border-box}html,body{margin:0;width:1920px;height:1080px;overflow:hidden;background:#f5f6f8;color:#202936;font-family:Plex;font-size:17px;font-synthesis:none}header{height:76px;background:#172333;color:white;display:flex;align-items:center;padding:0 36px;gap:65px}header b{font-size:25px}header span{color:#b9c7d7}aside{position:absolute;top:76px;bottom:0;width:255px;border-right:1px solid #ccd3dd;background:#fff;padding:35px 25px}aside div{padding:17px 12px;margin:5px 0}aside .active{background:#e4edfa;color:#1755a2;border-radius:7px}main{margin-left:255px;padding:30px 35px}h1{font-size:30px;margin:0 0 12px}p{line-height:1.6;color:#576477}.bar{display:flex;justify-content:space-between;align-items:center}.button{background:#245daa;color:#fff;padding:14px 21px;border-radius:6px}.summary{display:flex;gap:20px;margin:24px 0}.card{background:#fff;border:1px solid #d3dae2;border-radius:7px;padding:18px 24px;flex:1}.card strong{display:block;font-size:27px;margin:8px 0}.label{color:#5c6878;font-size:14px}.cols{display:grid;grid-template-columns:1.06fr 1fr;gap:24px}.panel{background:#fff;border:1px solid #cdd6e1;border-radius:8px;overflow:hidden}.title{height:55px;padding:17px 22px;border-bottom:1px solid #d8dfe7;font-size:16px;background:#fafbfc}.scroll{height:505px;overflow:hidden}pre{font-size:16px;line-height:29px;margin:0;padding:20px 22px;color:#263e55;white-space:pre}.line{display:block}.num{display:inline-block;width:38px;color:#8995a2}.keyword{color:#9b298e}.string{color:#227249}table{border-collapse:collapse;width:100%;font-size:14px}th{color:#536373;background:#f4f7fa;text-align:left}td,th{padding:15px 16px;border-bottom:1px solid #e0e5eb}.selected{background:#dfedff}.ok{color:#23714b}footer{position:absolute;bottom:0;left:255px;right:0;height:42px;border-top:1px solid #c9d2dd;background:#fff;padding:10px 35px;font-size:13px;color:#526074}.cursor{position:absolute;width:25px;height:31px;z-index:20;filter:drop-shadow(1px 2px 1px #777)}.tag{color:#175f48;background:#e8f5ec;border-radius:4px;padding:4px 8px;font-size:13px}
+</style>
+<header><b>ATLAS</b><span>Workspace / Research / Datasets</span><span style="margin-left:auto">Local workspace · Offline</span></header>
+<aside><div class="label">WORKSPACE</div><div>Overview</div><div class="active">Dataset review</div><div>Transformations</div><div>Run history</div><div>Documentation</div><div style="margin-top:420px;font-size:13px;color:#6a7584">Atlas demo project<br><br>Original screen workload</div></aside>
+<main><div class="bar"><div><h1>Station observations</h1><p style="margin:0">Review the daily aggregation before exporting the research table.</p></div><div class="button">Export table ↗</div></div>
+<div class="summary"><div class="card"><span class="label">OBSERVATIONS</span><strong>12,480</strong><span class="tag">Schema verified</span></div><div class="card"><span class="label">STATIONS</span><strong>24</strong><span class="label">Coastal monitoring network</span></div><div class="card"><span class="label">TIME RANGE</span><strong>30 days</strong><span class="label">01 Jun — 30 Jun 2026</span></div></div>
+<div class="cols"><section class="panel"><div class="title">transform.py <span style="float:right;color:#687587">Python · UTF-8</span></div><div class="scroll" id="codeScroll"><pre id="code"></pre></div></section><section class="panel"><div class="title">Preview: daily_observations <span style="float:right;color:#687587">24 rows</span></div><div class="scroll" id="tableScroll"><table><thead><tr><th>Station</th><th>Temp °C</th><th>Samples</th><th>Status</th></tr></thead><tbody id="rows"></tbody></table></div></section></div>
+<p style="font-size:14px">Quality notes: missing measurements remain null. Daily means require at least 18 valid samples.</p></main>
+<footer><span>Local preview · No network requests</span><span style="float:right" id="status">Ready · Review transform</span></footer>
+<svg class="cursor" id="cursor" viewBox="0 0 25 31"><path d="M2 1 L2 26 L8 20 L13 30 L18 27 L13 17 L23 17 Z" fill="white" stroke="#182330" stroke-width="1.8"/></svg>
+<script>
+const source=`# Daily observation preparation
+from collections import defaultdict
+from statistics import mean
+
+MIN_VALID_SAMPLES = 18
+UNITS = "degrees Celsius"
+
+def aggregate_daily(observations):
+    """Preserve missing values explicitly."""
+    groups = defaultdict(list)
+    for row in observations:
+        key = (row.station, row.date)
+        if row.temperature is not None:
+            groups[key].append(row.temperature)
+
+    result = []
+    for (station, date), values in groups.items():
+        sufficient = len(values) >= MIN_VALID_SAMPLES
+        result.append({
+            "station": station,
+            "date": date.isoformat(),
+            "samples": len(values),
+            "temperature": mean(values) if sufficient else None,
+            "status": "valid" if sufficient else "review",
+        })
+    return sorted(result, key=lambda row: row["station"])
+
+# Run a local preview before export.
+observations = load_local_table("stations.csv")
+daily = aggregate_daily(observations)
+validate_schema(daily)
+write_table(daily, "daily_observations.csv")
+
+# The sample dataset is authored for this workload.
+# It contains no personal or external source data.
+# Nulls are never silently converted to zero.
+# Export keeps the original station identifiers.
+`;
+source.split('\n').forEach((s,i)=>{const l=document.createElement('span');l.className='line';const n=document.createElement('span');n.className='num';n.textContent=String(i+1).padStart(2,'0');l.append(n,document.createTextNode(s));document.querySelector('#code').append(l)});
+const names=['Alder Bay','Beacon Point','Cedar Inlet','Drift Cove','Elm Harbor','Fern Reach','Granite Pier','Heron Beach','Iris Sound','Juniper Key','Kelp Ridge','Laurel Shoal','Maple Basin','North Landing','Oak Estuary','Pine Channel','Quartz Head','Reed Haven','Spruce Cape','Tern Island','Upper Narrows','Vale Mouth','Willow Shelf','Yarrow Bluff'];
+names.forEach((n,i)=>{const row=document.createElement('tr');row.innerHTML=`<td>${String(i+1).padStart(2,'0')} ${n}</td><td>${(14.2+(i*7%37)/10).toFixed(1)}</td><td>${i===17?16:24}</td><td class="ok">${i===17?'Review':'Valid'}</td>`;document.querySelector('#rows').append(row)});
+window.renderFrame=(f)=>{const t=f/24;document.querySelector('#codeScroll').scrollTop=Math.round(Math.max(0,Math.min(1,(t-2)/3))*310);document.querySelector('#tableScroll').scrollTop=Math.round(Math.max(0,Math.min(1,(t-5)/3))*540);const x=t<5?650+180*Math.sin(t/5*Math.PI):1390+110*Math.sin((t-5)/5*Math.PI);const y=t<5?470+t*27:510+(t-5)*28;document.querySelector('#cursor').style.transform=`translate(${Math.round(x)}px,${Math.round(y)}px)`;document.querySelector('#cursor').style.top='0';document.querySelector('#cursor').style.left='0';document.querySelectorAll('tbody tr').forEach((r,i)=>r.classList.toggle('selected',t>=8&&i===17));document.querySelector('#status').textContent=t<5?'Ready · Review transform':t<8?'Ready · Inspect observations':'Ready · Row 18 requires review';};renderFrame(0);
+</script>

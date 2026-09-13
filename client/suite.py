@@ -578,6 +578,9 @@ def build_manifest_data() -> Dict[str, Any]:
 
 
 def write_manifest(path: str) -> None:
+    status_path = os.path.join(os.path.dirname(path), "finalization-status.json")
+    if os.path.exists(status_path) and load_finalization_status(status_path).get("isFrozen"):
+        raise RuntimeError("cannot regenerate synthetic media for a frozen suite")
     payload = build_manifest_data()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as handle:
@@ -624,6 +627,24 @@ def _sha256_text(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+def _suite_notice_entries(manifest: SuiteManifest, suite_root: str) -> List[Tuple[str, str]]:
+    notices_root = os.path.join(suite_root, "notices")
+    status = load_finalization_status(os.path.join(suite_root, "finalization-status.json"))
+    if status.get("isFrozen"):
+        for clip in manifest.clips:
+            path = os.path.join(notices_root, f"{clip.clip_id}.txt")
+            if not os.path.isfile(path) or os.path.getsize(path) == 0:
+                raise RuntimeError(f"frozen suite is missing attribution/license notice for {clip.clip_id}")
+    entries = []
+    if os.path.isdir(notices_root):
+        for name in sorted(os.listdir(notices_root)):
+            path = os.path.join(notices_root, name)
+            if os.path.islink(path) or not os.path.isfile(path):
+                raise RuntimeError("suite notices must be regular files")
+            entries.append((f"notices/{name}", path))
+    return entries
+
+
 def _suite_pack_source_entries(manifest: SuiteManifest, suite_root: str) -> List[Tuple[str, str]]:
     entries: List[Tuple[str, str]] = [
         ("manifest.json", os.path.join(suite_root, "manifest.json")),
@@ -634,6 +655,7 @@ def _suite_pack_source_entries(manifest: SuiteManifest, suite_root: str) -> List
         entries.append(("suite-lock.json", lock_path))
     for clip in manifest.clips:
         entries.append((f"canonical/{clip.file_name}", os.path.join(suite_root, "canonical", clip.file_name)))
+    entries.extend(_suite_notice_entries(manifest, suite_root))
     return entries
 
 
@@ -669,6 +691,12 @@ def _build_suite_pack_inventory(manifest: SuiteManifest, suite_root: str) -> Dic
             "sha256": _sha256_of_file(lock_path),
             "byteSize": os.path.getsize(lock_path),
         }
+    notices = _suite_notice_entries(manifest, suite_root)
+    if notices:
+        inventory["notices"] = [
+            {"fileName": name, "sha256": _sha256_of_file(path), "byteSize": os.path.getsize(path)}
+            for name, path in notices
+        ]
     return inventory
 
 
@@ -854,7 +882,7 @@ def _verify_suite_pack_file(path: str, metadata: Mapping[str, Any]) -> ClipVerif
     return ClipVerificationResult(True, "ok", {"path": path})
 
 
-def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any]) -> None:
+def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any], *, verify_media: bool = True) -> None:
     contents = dict(metadata.get("contents") or {})
     required_files = (
         ("manifest", "manifest.json"),
@@ -865,7 +893,7 @@ def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any])
         absolute_path = os.path.join(extract_root, relative_name)
         if not os.path.exists(absolute_path):
             raise RuntimeError(f"extracted suite pack is missing {relative_name}")
-        if _sha256_of_file(absolute_path) != str(payload.get("sha256") or "").lower():
+        if os.path.getsize(absolute_path) != int(payload.get("byteSize") or 0) or _sha256_of_file(absolute_path) != str(payload.get("sha256") or "").lower():
             raise RuntimeError(f"extracted suite pack {relative_name} hash mismatch")
     lock_payload = contents.get("suiteLock")
     lock_path = os.path.join(extract_root, "suite-lock.json")
@@ -875,21 +903,43 @@ def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any])
     else:
         if not os.path.exists(lock_path):
             raise RuntimeError("extracted suite pack is missing suite-lock.json")
-        if _sha256_of_file(lock_path) != str(dict(lock_payload).get("sha256") or "").lower():
+        if os.path.getsize(lock_path) != int(dict(lock_payload).get("byteSize") or 0) or _sha256_of_file(lock_path) != str(dict(lock_payload).get("sha256") or "").lower():
             raise RuntimeError("extracted suite pack suite-lock.json hash mismatch")
     with open(os.path.join(extract_root, "manifest.json"), "r", encoding="utf-8") as handle:
         manifest = manifest_from_payload(json.load(handle))
+    expected_notices = {}
+    for notice in contents.get("notices") or []:
+        name = str(notice["fileName"])
+        if not name.startswith("notices/") or "/" in name[len("notices/"):] or ".." in name:
+            raise RuntimeError("invalid suite notice path")
+        expected_notices[name] = notice
+    actual_notices = dict(_suite_notice_entries(manifest, extract_root))
+    if set(actual_notices) != set(expected_notices):
+        raise RuntimeError("extracted suite pack notices inventory mismatch")
+    for name, path in actual_notices.items():
+        notice = expected_notices[name]
+        if os.path.getsize(path) != notice["byteSize"] or _sha256_of_file(path) != notice["sha256"]:
+            raise RuntimeError(f"extracted suite pack notice hash mismatch: {name}")
     for clip in manifest.clips:
-        result = verify_suite_clip(os.path.join(extract_root, "canonical", clip.file_name), clip)
-        if not result.ok:
-            raise RuntimeError(f"extracted suite pack verification failed for {clip.clip_id}: {result.message}")
+        path = os.path.join(extract_root, "canonical", clip.file_name)
+        if verify_media:
+            result = verify_suite_clip(path, clip)
+            if not result.ok:
+                raise RuntimeError(f"extracted suite pack verification failed for {clip.clip_id}: {result.message}")
+        else:
+            # Published caches already passed full media validation. Exact hashes
+            # bind those validated bytes; each requested clip is probed again at use.
+            if not os.path.isfile(path) or os.path.getsize(path) != clip.byte_size:
+                raise RuntimeError(f"extracted suite pack size mismatch for {clip.clip_id}")
+            if _sha256_of_file(path) != clip.sha256:
+                raise RuntimeError(f"extracted suite pack checksum mismatch for {clip.clip_id}")
 
 
 def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
     target_root = _suite_pack_extract_root(metadata, cache_root)
     canonical_root = os.path.join(target_root, "canonical")
     try:
-        _verify_extracted_suite_pack(target_root, metadata)
+        _verify_extracted_suite_pack(target_root, metadata, verify_media=False)
         return canonical_root
     except Exception:
         pass
@@ -898,6 +948,10 @@ def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root:
     staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=parent_dir)
     try:
         with tarfile.open(pack_path, "r:gz") as archive:
+            for member in archive.getmembers():
+                parts = member.name.split("/")
+                if not member.isfile() or member.name.startswith("/") or any(part in ("", ".", "..") for part in parts) or "\\" in member.name:
+                    raise RuntimeError("suite pack contains an unsafe archive member")
             archive.extractall(staging_root)
         _verify_extracted_suite_pack(staging_root, metadata)
         shutil.rmtree(target_root, ignore_errors=True)

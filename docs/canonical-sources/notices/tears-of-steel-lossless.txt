@@ -1,0 +1,31 @@
+This is a lossless copy of the short film "Tears of Steel".
+
+This directory contains a set of 1920x800 8-bit png files
+at 24 frames per second from the original render of the
+film released 2012 September 26.
+
+"Tears of Steel", code-named "mango" during development,
+was a Blender Open Movie Project. It developed a open vfx
+pipeline for compositing computer generated elements with
+live action video.
+
+See http://mango.blender.org/ for more information.
+
+
+All of the files may be redistributed under the
+Creative Commons Attribution 3.0 license.
+http://creativecommons.org/licenses/by/3.0/
+
+The attribution is:
+
+  (CC) Blender Foundation | mango.blender.org
+
+Excluded from the Creative Commons license is: all logos
+(including Blender logo, Mango logo, Creative Commons logo,
+sponsor logos) and associated trademarks.
+
+The actors retain their Personal Image (Portrait) and Privacy Rights.
+
+For questions about licensing rights of Mango content you can email
+foundation at blender.org.
+

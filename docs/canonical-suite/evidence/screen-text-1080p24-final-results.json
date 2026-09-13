@@ -1,0 +1,144 @@
+{
+  "reference": "/Users/ofhd/Developer/Encoding_Database/.build/canonical-prepared/screen-text-1080p24-final.mkv",
+  "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+  "byteSize": 35313873,
+  "frameCount": 240,
+  "durationSeconds": 10.0,
+  "decodeSeconds": 0.30847754201386124,
+  "decodeRealtimeRatio": 32.417270750785015,
+  "adjacentDuplicateFrames": 0,
+  "visualReview": {
+    "reviewer": "Codex (AI-assisted inspection)",
+    "method": "Temporal contact sheet plus full-resolution detail frame; no claimed human playback review",
+    "decision": "accepted candidate with documented scope limits",
+    "reason": "Actual offline browser render shows readable code/table text, deterministic scroll/cursor motion and static navigation. Full-resolution prepared frame inspected; separate sRGB-to-BT709 conversion preserves text edges. Original authored workload, not lavfi."
+  },
+  "encodes": [
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 20,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-20.mp4",
+      "sha256": "a067dc450908fa46173bc19d18ee65d73cfb9e9359d656608811a6015b881256",
+      "bytes": 278906,
+      "videoBytes": 275872,
+      "videoBitrateBps": 220697.6,
+      "elapsedSeconds": 0.8324013749952428,
+      "encodeFps": 288.32244540846847,
+      "vmafMean": 98.16051,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-20.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-28.mp4",
+      "sha256": "7b0c2ac9d470999039d6d858a838379016c2515bd1fdeb24646d261fa8ba8136",
+      "bytes": 188855,
+      "videoBytes": 185821,
+      "videoBitrateBps": 148656.8,
+      "elapsedSeconds": 0.7596302500460297,
+      "encodeFps": 315.94318418132667,
+      "vmafMean": 94.496445,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx264",
+      "nativeRateValue": 36,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-36.mp4",
+      "sha256": "5122fe4e8896b4c7d8cb9393f86dc3a86e8dab21b580c1c6bf4ce7bade6062b3",
+      "bytes": 126130,
+      "videoBytes": 123096,
+      "videoBitrateBps": 98476.8,
+      "elapsedSeconds": 0.7651659999974072,
+      "encodeFps": 313.65742858518706,
+      "vmafMean": 84.386112,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx264-36.corrected-metrics.log"
+    },
+    {
+      "encoder": "libx265",
+      "nativeRateValue": 28,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx265-28.mp4",
+      "sha256": "3a9239815886bf81fd1c4642da4842442866605d50b3423b292c925a656ebf88",
+      "bytes": 329499,
+      "videoBytes": 323443,
+      "videoBitrateBps": 258754.4,
+      "elapsedSeconds": 3.4276452909689397,
+      "encodeFps": 70.0189137517657,
+      "vmafMean": 94.607579,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libx265-28.corrected-metrics.log"
+    },
+    {
+      "encoder": "libsvtav1",
+      "nativeRateValue": 32,
+      "runtime": "/opt/homebrew/bin/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libsvtav1-32.mp4",
+      "sha256": "605556daf35cd094f4217e636dc76cebc20f3d9431e96c821fba78ea9cae6e41",
+      "bytes": 360805,
+      "videoBytes": 358727,
+      "videoBitrateBps": 286981.6,
+      "elapsedSeconds": 0.9560747080249712,
+      "encodeFps": 251.02640827701046,
+      "vmafMean": 99.564041,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/libsvtav1-32.corrected-metrics.log"
+    },
+    {
+      "encoder": "h264_videotoolbox",
+      "nativeRateValue": 2500,
+      "runtime": "client/bin/mac/ffmpeg",
+      "file": ".test-reports/canonical-final-r2/screen-text-1080p24-final/h264_videotoolbox-2500.mp4",
+      "sha256": "bfb8c6850115da61cea6d2f2d40739fd02d635f80176efd16027f009464b8a21",
+      "bytes": 2250598,
+      "videoBytes": 2248664,
+      "videoBitrateBps": 1798931.2,
+      "elapsedSeconds": 1.6969353330205195,
+      "encodeFps": 141.4314354412101,
+      "vmafMean": 97.017536,
+      "qualityAnalysisContext": "libvmaf-json-distorted-first-yuv420p10le-single-thread",
+      "qualityRuntime": {
+        "path": "/Users/ofhd/Developer/Encoding_Database/client/bin/mac/ffmpeg",
+        "sha256": "11e22f179237b2b03888f789c5bf43e8a52d2e2636394498ab28b825a923fdfe",
+        "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+      },
+      "qualityFrameCount": 240,
+      "qualityMetricsLog": ".test-reports/canonical-final-r2/screen-text-1080p24-final/h264_videotoolbox-2500.corrected-metrics.log"
+    }
+  ]
+}

@@ -559,22 +559,64 @@ def _vmaf_filter_candidates() -> List[Dict[str, str]]:
     }]
 
 
+def canonical_quality_filter(frame_rate: Any, metric_filter: str) -> str:
+    """Match the authoritative worker's CFR alignment and analysis pixel format."""
+    rate = _parse_ratio(str(frame_rate))
+    if rate is None or not math.isfinite(rate) or rate <= 0:
+        raise ValueError("Quality comparison requires a positive reference frame rate")
+    cadence = f"{rate:.9f}".rstrip("0").rstrip(".")
+    normalized = f"fps={cadence},settb=AVTB,setpts=N/({cadence}*TB)"
+    if metric_filter.startswith("libvmaf="):
+        normalized += ",format=pix_fmts=yuv420p10le"
+    return f"[0:v]{normalized}[distorted];[1:v]{normalized}[reference];[distorted][reference]{metric_filter}"
+
+
+def _reference_quality_filter(input_path: str, encoded_path: str, metric_filter: str) -> str:
+    reference = probe_video_stream_metrics(input_path)
+    encoded = probe_video_stream_metrics(encoded_path)
+    rate = reference.get("sourceFps")
+    encoded_rate = encoded.get("sourceFps")
+    frame_count = reference.get("sourceFrameCount")
+    if not frame_count or frame_count != encoded.get("sourceFrameCount"):
+        raise ValueError("Quality comparison requires matching decoded frame counts")
+    if rate is None or encoded_rate is None or not math.isclose(rate, encoded_rate, rel_tol=1e-9):
+        raise ValueError("Quality comparison requires matching source cadence")
+    return canonical_quality_filter(rate, metric_filter)
+
+
 def compute_vmaf_metrics(input_path: str, encoded_path: str) -> Dict[str, Any]:
     for candidate in _vmaf_filter_candidates():
-        cmd = [
-            config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
-            "-i", encoded_path,
-            "-i", input_path,
-            "-lavfi", candidate["filter"],
-            "-f", "null", "-",
-        ]
-        try:
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        except Exception:
-            continue
-        parsed = _parse_vmaf_report(proc.stdout or "", model_id=candidate["metricModelId"])
-        if parsed:
-            return parsed
+        with tempfile.TemporaryDirectory(prefix="encodingdb-vmaf-") as directory:
+            log_path = os.path.join(directory, "vmaf.json")
+            # libvmaf treats '-' as a filename, unlike FFmpeg's stdout sink.
+            metric_filter = re.sub(r":log_path=[^:]*", "", candidate["filter"])
+            metric_filter += f":log_path='{_escape_ffmpeg_filter_path(log_path)}':n_threads=1"
+            try:
+                graph = _reference_quality_filter(input_path, encoded_path, metric_filter)
+                expected_frames = probe_video_stream_metrics(input_path)["sourceFrameCount"]
+            except (ValueError, TypeError):
+                return {}
+            cmd = [
+                config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
+                "-i", encoded_path,
+                "-i", input_path,
+                "-lavfi", graph,
+                "-f", "null", "-",
+            ]
+            try:
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                if proc.returncode != 0:
+                    continue
+                if os.path.isfile(log_path):
+                    with open(log_path, encoding="utf-8") as handle:
+                        report = handle.read()
+                else:
+                    report = proc.stdout or ""
+            except Exception:
+                continue
+            parsed = _parse_vmaf_report(report, model_id=candidate["metricModelId"])
+            if parsed and parsed.get("vmafFrameCount") == expected_frames:
+                return parsed
     return {}
 
 
@@ -585,11 +627,15 @@ def compute_vmaf(input_path: str, encoded_path: str) -> Optional[float]:
 
 
 def compute_ssim(input_path: str, encoded_path: str) -> Optional[float]:
+    try:
+        graph = _reference_quality_filter(input_path, encoded_path, "ssim")
+    except (ValueError, TypeError):
+        return None
     cmd = [
         config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
-        "-i", input_path,
         "-i", encoded_path,
-        "-lavfi", "ssim",
+        "-i", input_path,
+        "-lavfi", graph,
         "-f", "null", "-",
     ]
     try:
@@ -604,11 +650,15 @@ def compute_ssim(input_path: str, encoded_path: str) -> Optional[float]:
 
 
 def compute_psnr(input_path: str, encoded_path: str) -> Optional[float]:
+    try:
+        graph = _reference_quality_filter(input_path, encoded_path, "psnr")
+    except (ValueError, TypeError):
+        return None
     cmd = [
         config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "info",
-        "-i", input_path,
         "-i", encoded_path,
-        "-lavfi", "psnr",
+        "-i", input_path,
+        "-lavfi", graph,
         "-f", "null", "-",
     ]
     try:
@@ -993,6 +1043,7 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
     result: Dict[str, Any] = {
         "sourceFps": None,
         "sourceDurationSeconds": None,
+        "sourceFrameCount": None,
         "videoBitrateBps": None,
         "videoPayloadBytes": None,
         "containerBytes": None,
@@ -1013,9 +1064,9 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
     }
     cmd = [
         config.ffprobe_exe(),
-        "-v", "error",
+        "-v", "error", "-count_frames",
         "-select_streams", "v:0",
-        "-show_entries", "stream=avg_frame_rate,time_base,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
+        "-show_entries", "stream=nb_read_frames,avg_frame_rate,time_base,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
         "-of", "json",
         path,
     ]
@@ -1028,6 +1079,7 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
                 stream = streams[0] if isinstance(streams[0], dict) else {}
                 if isinstance(stream, dict):
                     result["sourceFps"] = _parse_ratio(stream.get("avg_frame_rate"))
+                    result["sourceFrameCount"] = _safe_int(stream.get("nb_read_frames"))
                     raw_time_base = str(stream.get("time_base") or "").strip()
                     if raw_time_base:
                         result["timeBase"] = raw_time_base
