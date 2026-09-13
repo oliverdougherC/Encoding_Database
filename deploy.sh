@@ -250,7 +250,7 @@ if echo "$services" | grep -qx "server"; then
 fi
 
 if echo "$services" | grep -qx "frontend"; then
-  compose_exec_node frontend 'const http=require("http"); http.get({host:"127.0.0.1",port:3000,path:"/"},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200 || !/Encoding Database/i.test(body)) process.exit(1); process.exit(0); }); }).on("error",()=>process.exit(1));' \
+  compose_exec_node frontend 'const http=require("http"); http.get({host:"127.0.0.1",port:3000,path:"/"},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200 || !/<title>EncodingDB<\/title>/.test(body) || !/V7 public corpus/.test(body)) process.exit(1); process.exit(0); }); }).on("error",()=>process.exit(1));' \
     || die "Frontend homepage smoke failed."
   compose_exec_node frontend 'const http=require("http"); http.get({host:"127.0.0.1",port:3000,path:"/api/corpus?limit=1"},(res)=>{ let body=""; res.setEncoding("utf8"); res.on("data",(chunk)=>body+=chunk); res.on("end",()=>{ if(res.statusCode!==200) process.exit(1); const parsed=JSON.parse(body); if(!Array.isArray(parsed)) process.exit(1); process.exit(0); }); }).on("error",()=>process.exit(1));' \
     || die "Frontend corpus proxy smoke failed."

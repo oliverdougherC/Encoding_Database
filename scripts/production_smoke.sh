@@ -90,7 +90,8 @@ if [[ -n "$APP_URL" ]]; then
   app_base="${APP_URL%/}"
   log "Checking frontend at $app_base"
   homepage="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/")"
-  grep -qi "Encoding Database" <<<"$homepage" || die "frontend homepage did not contain Encoding Database"
+  grep -q '<title>EncodingDB</title>' <<<"$homepage" || die "frontend homepage did not contain the EncodingDB title"
+  grep -q 'V7 public corpus' <<<"$homepage" || die "frontend homepage did not contain the V7 public corpus"
   fetch_status "$app_base/api/corpus?limit=5" | assert_json_array
   methodology="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/methodology")"
   grep -qi "methodology" <<<"$methodology" || die "frontend methodology page did not contain methodology"

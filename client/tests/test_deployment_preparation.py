@@ -3,6 +3,8 @@ import copy
 from pathlib import Path
 import subprocess
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 
 from scripts.test_clean_deployment import isolated_config, build_test_environment
 
@@ -63,6 +65,42 @@ class DeploymentIsolationTests(unittest.TestCase):
         self.assertTrue(all(not values[key] for key in ('PL_V7_REFERENCE_CONTEXT_PATH', 'PL_V7_REFERENCE_CONTEXT_VERSION', 'PL_V7_REFERENCE_BITRATES_JSON')))
         self.assertEqual(values['ALLOW_TEST_ONLY_REFERENCE_CONTEXTS'], '0')
         self.assertEqual(values['ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH'], '1')
+
+    def test_production_smoke_requires_current_corpus_page_and_rejects_error_pages(self):
+        class Handler(BaseHTTPRequestHandler):
+            homepage = '<html><title>EncodingDB</title><h1>V7 public corpus</h1></html>'
+
+            def do_GET(self):
+                if self.path == '/':
+                    body = self.homepage
+                elif self.path == '/methodology':
+                    body = '<h1>Methodology</h1>'
+                elif self.path.startswith('/health/'):
+                    body = '{"status":"ok"}'
+                elif self.path == '/test-videos':
+                    body = '[{},{},{},{},{},{},{}]'
+                else:
+                    body = '[]'
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(body.encode())
+
+            def log_message(self, *args):
+                pass
+
+        with ThreadingHTTPServer(('127.0.0.1', 0), Handler) as server:
+            thread = Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            url = f'http://127.0.0.1:{server.server_port}'
+            try:
+                for homepage, expected in ((Handler.homepage, 0), ('<title>EncodingDB</title><p>Application error</p>', 1), ('<title>Other site</title><h1>V7 public corpus</h1>', 1)):
+                    with self.subTest(homepage=homepage):
+                        Handler.homepage = homepage
+                        result = subprocess.run(['bash', str(ROOT / 'scripts/production_smoke.sh'), '--api-base-url', url, '--app-url', url], capture_output=True, text=True)
+                        self.assertEqual(result.returncode, expected, result.stdout + result.stderr)
+            finally:
+                server.shutdown()
+                thread.join()
 
 
 if __name__ == '__main__':
