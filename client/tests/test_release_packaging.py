@@ -84,9 +84,9 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn('"--add-data", "$clientDir\\presets.json;."', windows)
         self.assertIn('"--add-data", "$clientDir\\resources\\vmaf;resources/vmaf"', windows)
 
-    def test_candidate_version_is_assigned_and_missing_version_is_rejected(self) -> None:
+    def test_release_version_is_assigned_and_missing_version_is_rejected(self) -> None:
         metadata = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text())
-        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+-beta\.\d+$")
+        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+(?:-beta\.\d+)?$")
         import datetime
         datetime.date.fromisoformat(metadata["releaseDate"])
         with mock.patch.dict(os.environ, {}, clear=True):
