@@ -352,7 +352,9 @@
   "new_evidence_link": {
     "report_target": "canonical-suite/evidence/report-artifact-links.json",
     "local_exists": true,
-    "publication_status": "New file in repair; immutable GitHub access must be checked after parent pushes the repair.",
-    "reason": "Cannot truthfully claim GitHub availability before this evidence is committed and pushed."
+    "publication_status": "Published; anonymous HEAD returned HTTP 200 at the repair implementation SHA.",
+    "checked_at": "2026-09-13T00:03:50.268863+00:00",
+    "checked_url": "https://raw.githubusercontent.com/oliverdougherC/Encoding_Database/822d08e0f23fcf694d3018e96892aa48a1f1b3f2/docs/canonical-suite/evidence/report-artifact-links.json",
+    "http_status": 200
   }
 }
