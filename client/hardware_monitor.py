@@ -15,11 +15,14 @@ import json
 import math
 import os
 import platform
+import plistlib
+import selectors
 import subprocess
 import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from xml.parsers.expat import ExpatError
 
 import psutil
 
@@ -119,6 +122,60 @@ def parse_powermetrics_output(text: str) -> Dict[str, float]:
     return out
 
 
+AGX_SYSTEM_GPU_SOURCE = "gpu_ioreg_agx_system_utilization_v1"
+_AGX_OUTPUT_LIMIT = 256 * 1024
+_AGX_COMMAND = ["/usr/sbin/ioreg", "-a", "-r", "-c", "AGXAccelerator", "-d", "1"]
+
+
+def _read_agx_ioreg() -> bytes:
+    """Bound both time and buffered bytes from this nonprivileged, leaf command."""
+    deadline = time.monotonic() + 1.0
+    chunks = bytearray()
+    with subprocess.Popen(_AGX_COMMAND, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as proc:
+        try:
+            with selectors.DefaultSelector() as selector:
+                selector.register(proc.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not selector.select(remaining):
+                        raise subprocess.TimeoutExpired(_AGX_COMMAND, 1.0)
+                    chunk = os.read(proc.stdout.fileno(), 8192)
+                    if not chunk:
+                        break
+                    chunks.extend(chunk)
+                    if len(chunks) > _AGX_OUTPUT_LIMIT:
+                        raise ValueError("AGX observation exceeds output budget")
+            if proc.wait(timeout=max(0.001, deadline - time.monotonic())) != 0:
+                raise ValueError("AGX observation command failed")
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+    return bytes(chunks)
+
+
+def parse_agx_system_utilization(raw: bytes, expected_model: Optional[str]) -> Optional[float]:
+    """Driver-reported system GPU load, not VideoToolbox media-engine occupancy."""
+    if not expected_model or expected_model == "unknown" or len(raw) > _AGX_OUTPUT_LIMIT:
+        return None
+    try:
+        rows = plistlib.loads(raw)
+    except (ValueError, TypeError, plistlib.InvalidFileException, ExpatError):
+        return None
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        return None
+    adapter = rows[0]
+    if not str(adapter.get("IOObjectClass", "")).startswith("AGXAccelerator"):
+        return None
+    if adapter.get("model") != expected_model:
+        return None
+    stats = adapter.get("PerformanceStatistics")
+    value = stats.get("Device Utilization %") if isinstance(stats, dict) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if 0 <= value <= 100 and math.isfinite(value) else None
+
+
 def parse_windows_gpu_counter_output(text: str) -> Dict[str, Optional[float]]:
     util_values: List[float] = []
     mem_values_mb: List[float] = []
@@ -201,6 +258,7 @@ class HardwareMetrics:
     thermal_throttle: Optional[bool] = None
     cpu_sample_count: Optional[int] = None
     gpu_sample_count: Optional[int] = None
+    gpu_util_sample_count: Optional[int] = None
     ffmpeg_sample_count: Optional[int] = None
     battery_sample_count: Optional[int] = None
     telemetry_sources: Optional[str] = None
@@ -285,6 +343,12 @@ class HardwareMonitor:
         self._cpu_freq_reference_mhz: Optional[float] = self._detect_cpu_freq_reference_mhz()
         self._collectors: List[_Collector] = []
         self._gpu_vendor = infer_gpu_vendor_for_encoder(encoder_name)
+        self._agx_expected_model: Optional[str] = None
+        if _DARWIN and self._gpu_vendor == "apple":
+            from .identity import selected_device
+            device = selected_device(encoder_name)
+            if device.get("deviceId") == "videotoolbox:system":
+                self._agx_expected_model = device.get("model")
         self._host_gpu_vendors = sorted({
             str(v).strip().lower()
             for v in (host_gpu_vendors or [])
@@ -359,6 +423,8 @@ class HardwareMonitor:
             self._collectors.append(_Collector("gpu_windows_counter", 2.0, self._sample_windows_gpu_counter))
         if _DARWIN:
             self._collectors.append(_Collector("powermetrics", 2.0, self._sample_powermetrics))
+            if self._gpu_vendor == "apple":
+                self._collectors.append(_Collector("agx_system_gpu", 0.5, self._sample_agx_system_gpu))
 
     def _sample_loop(self) -> None:
         # psutil keeps system CPU baselines by thread ID. A caller-thread prime
@@ -431,6 +497,9 @@ class HardwareMonitor:
         return None
 
     def _sample_gpu_fast(self) -> None:
+        # Apple system GPU observations belong to the attributed AGX collector.
+        if _DARWIN and self._gpu_vendor == "apple":
+            return
         if not self._allow_gpu_collection:
             return
         if self._sample_gpu_nvml():
@@ -546,6 +615,18 @@ class HardwareMonitor:
                 )
             )
         self._record_source("gpu_windows_counter")
+
+    def _sample_agx_system_gpu(self) -> None:
+        if not self._allow_gpu_collection or not self._agx_expected_model:
+            self._record_missing("gpu_ioreg_agx_unattributed")
+            return
+        utilization = parse_agx_system_utilization(_read_agx_ioreg(), self._agx_expected_model)
+        if utilization is None:
+            self._record_missing("gpu_ioreg_agx_unavailable")
+            return
+        with self._lock:
+            self._gpu_samples.append(_GpuSample(util_pct=utilization))
+        self._record_source(AGX_SYSTEM_GPU_SOURCE)
 
     def _sample_powermetrics(self) -> None:
         if not _DARWIN or not self._elevated:
@@ -698,8 +779,11 @@ class HardwareMonitor:
             battery = list(self._battery_samples)
             peak_mem = self._memory_peak_bytes
 
+        util_vals = [float(s.util_pct) for s in gpu
+                     if isinstance(s.util_pct, (int, float)) and not isinstance(s.util_pct, bool)
+                     and 0 <= s.util_pct <= 100 and math.isfinite(s.util_pct)]
+        m.gpu_util_sample_count = len(util_vals)
         if gpu:
-            util_vals = [float(s.util_pct) for s in gpu if s.util_pct is not None]
             if util_vals:
                 m.gpu_util_avg = sum(util_vals) / len(util_vals)
             power_vals = [float(s.power_w) for s in gpu if s.power_w is not None and s.power_w >= 0]
@@ -771,6 +855,8 @@ class HardwareMonitor:
             self._record_missing("ffmpeg_unavailable")
         if self._allow_gpu_collection and m.gpu_sample_count == 0:
             self._record_missing("gpu_unavailable")
+        if self._allow_gpu_collection and m.gpu_util_sample_count == 0:
+            self._record_missing("gpu_utilization_unavailable")
         if m.battery_sample_count == 0:
             self._record_missing("battery_unavailable")
         if m.cpu_temp_max_c is None:

@@ -1094,9 +1094,12 @@ def _capture_protocol_environment_snapshot(
         accelerator_is_hardware=is_hardware_encoder_name(encoder),
         gpu_load_trustworthy=(
             not is_hardware_encoder_name(encoder)
-            or (selected_device(encoder)["deviceId"] != "unknown" and int(environment_metrics.gpu_sample_count or 0) > 0)
+            or (selected_device(encoder)["deviceId"] != "unknown"
+                and int(environment_metrics.gpu_util_sample_count or 0) > 0
+                and _safe_float(environment_metrics.gpu_util_avg) is not None
+                and 0 <= environment_metrics.gpu_util_avg <= 100)
         ),
-        gpu_sample_count=int(environment_metrics.gpu_sample_count or 0),
+        gpu_sample_count=int(environment_metrics.gpu_util_sample_count or 0),
         telemetry_sources=",".join(sorted(sources)) or None,
         telemetry_missing=environment_metrics.telemetry_missing,
     )
