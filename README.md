@@ -7,43 +7,34 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 - A Node/Express + Prisma API that validates, scores, and aggregates submissions.
 - A Next.js frontend with comparison tools and leaderboards.
 
-The current beta tracks the upcoming V7 release, which moves the project beyond a simple benchmark script into a multi-component data platform with quality controls, ingest hardening, and hardware telemetry. Its final project release version and date remain intentionally unassigned in `release.json` until the official release is cut.
+## Current release status
 
-## Upcoming release changelog
+**1.3.0-rc.1 is an unpublished candidate. Collection readiness and validated PL are
+both BLOCKED pending the remaining empirical and release gates.** The current
+public download remains [1.2.0](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0).
+Candidate metadata is assigned in [release.json](release.json); it is not a claim
+that those candidate binaries have been published or certified.
 
-This beta documents work completed since the latest official release, `v1.1.0`, and reflects a major platform overhaul.
+The corrected candidate uses `client/0.3.0`, benchmark protocol `7.1`, and the
+`ffmpeg-process-v1` encode timer. It preserves the frozen seven-clip Test Suite v1
+and `vmaf-v1-sdr-1080p` model. The declared validation scope is 1920×1080, 24 fps,
+SDR BT.709; 4K, HDR and HFR transfer are outside this release's validated scope.
 
-### Client (Python benchmark runner)
+- Ordinary CLI, Single and GUI contribution use the authoritative artifact flow,
+  with bounded campaigns, checkpoints and independent upload resume.
+- Intake checks complete frame coverage and timing consistency; admission,
+  retries, leases and recomputation have PostgreSQL fault regressions.
+- Exact-analysis reviews, immutable score contexts, disjoint fitting/holdout
+  membership and hash-bound scoring/evidence policy remain release gates.
+- Public rows distinguish accepted/suspect measurements, byte integrity,
+  retention, PL availability and confidence. Sparse or incompatible rows remain
+  provisional or ineligible even after a future calibrated release.
 
-- Reworked benchmark execution to avoid double-encoding and measure speed/size/quality from one artifact.
-- Added SSIM and PSNR computation (alongside VMAF), including parallelized quality analysis.
-- Added native encoder rate-control handling (CRF, CQ/ICQ/QP, and bitrate modes) without treating their numeric controls as interchangeable.
-- Improved benchmark throughput with cached encoder discovery, FFmpeg progress parsing, and SHA256 caching.
-- Fixed progress accounting and baseline cache behavior (including TTL support).
-- Added hardware telemetry capture for GPU utilization/power, CPU utilization, memory peaks, and thermal throttling.
-
-### Server and data pipeline (Node/Express + Prisma)
-
-- Hardened ingest consistency with transactional aggregation, in-transaction audit inserts, and race-condition fixes.
-- Replaced fragile running averages with sum/count-based aggregates for safer recomputation and correction.
-- Expanded schema and validation for SSIM/PSNR and hardware telemetry metrics.
-- Added query-path optimizations: response caching, composite query indexing, and PostgreSQL-native stats helpers.
-- Improved ingest edge-case behavior (CORS for non-browser clients, proxy-aware rate-limit keying, bounded token store).
-
-### Frontend (Next.js analytics platform)
-
-- Overhauled large-dataset handling with virtualized benchmark tables, server-side filtering, and pagination.
-- Expanded analysis views with SSIM/PSNR histograms, SSIM vs VMAF scatter, and rate-distortion visualization.
-- Added/expanded comparison tooling, leaderboards, and encoder dashboard workflows.
-- Added hardware intelligence views: efficiency metrics, GPU utilization, power comparison, CPU heatmaps, and recommendations.
-- Replaced candidate-relative scoring with the fixed, versioned PL Score v7 Q/B/S utility and explicit evidence requirements.
-
-### Database and integrity model
-
-- Tightened schema integrity with non-null `crf` defaults and normalized `gpuModel` handling.
-- Standardized canonical input hash enforcement for reproducible benchmark comparisons.
-- Extended benchmark rows with telemetry and quality sample-count fields for higher confidence analysis.
-- Added immutable PL-v7 runs, artifacts, authoritative analyses, score contexts, and derived results.
+See [Final Release Handoff](docs/FINAL_RELEASE_HANDOFF.md) for executed evidence,
+platform limits, remaining approvals and the exact promotion procedure. The
+[integrated check receipt](docs/collection-readiness/integrated-4348ca8/receipt.json)
+records 219 server, 217 client and 56 frontend tests for its stated source snapshot. Canonical
+source acquisition, provenance and freeze are complete; no new filming is required.
 
 ## Why this project exists
 
@@ -86,8 +77,7 @@ Encoder performance claims are often hard to compare because workloads, settings
 
 ### Data collection policy
 
-No user-identifiable data is collected in benchmark telemetry payloads.  
-Only system and benchmark run information is collected for data accuracy, reproducibility, and fairness across hardware.
+Benchmark payloads contain hardware/software context and a persistent random installation pseudonym used to distinguish physical-source evidence from repeated campaigns. They do not contain names or email addresses. Environment fingerprints and ordinary request logs can still be identifying; publication is opt-in.
 
 Interactive client sessions ask once before the first publication and store that consent locally. Noninteractive CLI runs publish only when `--submit` is passed explicitly.
 
@@ -135,61 +125,61 @@ For authoritative V7 submissions, the client also uploads the encoded benchmark 
 - It improves outlier detection and submission confidence.
 - It supports hardware recommendation and reliability analysis.
 
-## Quick start: benchmark client (prebuilt)
+## Client downloads and candidate commands
 
-1. Download the latest client release from:
-   - [GitHub Releases](https://github.com/oliverdougherC/Encoding_Database/releases)
-2. Close heavy background apps for cleaner measurements.
-3. Run the binary:
-   - Windows (GUI-first): `encodingdb-client-windows.exe`
-   - Windows (console fallback/debug): `encodingdb-client-windows-console.exe`
-   - macOS: `./encodingdb-client-macos`
-4. On Windows, choose benchmark options in the GUI and start the run. On console builds/macOS, follow interactive prompts.
-5. Interactive runs ask once before first publication. Direct CLI runs stay local unless `--submit` is passed.
+Published **1.2.0 / client/0.2.0** downloads: [Windows GUI](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-windows.exe),
+[Windows console](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-windows-console.exe),
+[Linux](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-linux),
+and [macOS](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-macos).
+These historical builds do not implement the corrected campaign interface below
+and cannot establish the protocol 7.1 epoch. Their unsigned/notarization and
+translated-helper limits remain in the published release notes.
 
-## Client CLI options
+The candidate Mac runtime is native arm64, requires macOS **26.5 or newer** from
+its library load commands, and is ad-hoc signed, not Developer ID signed or
+notarized. Local package/model smoke is not seven-clip certification. Final native
+CI and runtime acceptance remain pending on Windows and Linux; Intel macOS is not
+certified by this candidate. See [native runtime evidence](docs/NATIVE_RUNTIME_20260914.md)
+and [Linux preparation](docs/native-linux/20260914-discovery/README.md).
 
-The client is menu-driven by default and also supports CLI flags:
-
-```bash
-python client/main.py \
-  --base-url https://encodingdb.platinumlabs.dev \
-  --codec libx264 \
-  --presets fast,medium \
-  --crf 24 \
-  --batch-size 0 \
-  --submit
-```
-
-Common flags:
-
-- `--submit`: publish results in noninteractive CLI mode.
-- `--no-submit`: run benchmark but do not upload.
-- `--use-token`: use short-lived ingest token flow when server supports it.
-- `--queue-dir`: directory for offline retry queue.
-- `--queue-status`: show pending/dead-letter queue counts and sizes, then exit.
-- `--queue-cleanup`: remove dead-letter files and orphaned managed artifacts without deleting pending queue entries.
-- `--pause-on-exit`: keep console open after run (useful on Windows).
-- `--menu`: force interactive menu mode even when single-run CLI flags are provided.
-- `--gui`: force Windows GUI mode.
-- `--cli`: force terminal mode (overrides auto-GUI on Windows packaged builds).
-
-Examples:
+From the corrected source checkout with client requirements installed and a
+compatible local staging server, run one clip without publication:
 
 ```bash
-python client/main.py --codec libx264 --presets fast --submit
-python client/main.py --codec libx264 --presets fast --no-submit
-python client/main.py --queue-status
-python client/main.py --queue-cleanup
+python -m client --base-url http://127.0.0.1:3001 --codec libx264 --presets fast --no-submit
 ```
+
+Use `--campaign full` for all seven clips with the same recipe. This is separate
+from the operator's much larger calibration matrix. The client prints a campaign
+ID and enforces attempt, duration and retained-storage budgets. Keep other demanding
+work off the measurement host; unsupported encoders fail without substitution.
+
+```bash
+python -m client --base-url http://127.0.0.1:3001 --codec libx264 --presets fast --campaign full --no-submit
+python -m client --base-url http://127.0.0.1:3001 --resume-campaign CAMPAIGN_ID --no-submit
+python -m client --base-url http://127.0.0.1:3001 --resume-campaign CAMPAIGN_ID --submit
+python -m client --base-url http://127.0.0.1:3001 --upload-only
+python -m client --queue-status
+```
+
+Publishing a completed campaign reuses retained measurements and artifacts; it does
+not repeat the encode. An upload receipt means analysis is pending, not acceptance.
+Offline/backpressured uploads remain queued. Acceptance, SUSPECT/review, rejection,
+cancellation and local completion are distinct outcomes. Change the destination to
+production only after the reviewed release and production gates are satisfied.
+
+Other useful flags: `--max-attempts`, `--max-duration-minutes`, `--max-storage-mb`,
+`--queue-dir`, `--local-metrics` (opt-in diagnostics), `--target-bitrate-kbps` for
+native bitrate modes, `--gui`, `--cli` and `--menu`. Use the current candidate's
+`python -m client --help`; do not apply these examples to the older downloads.
 
 ## Local development
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 20.9+ (CI uses Node 20)
 - Docker (for Postgres)
-- Python 3.10+
+- Python 3.11 (native CI baseline)
 
 ### Option A: one-command local stack
 
@@ -249,7 +239,7 @@ python main.py --no-submit
 
 ## API overview
 
-- `POST /submit`: submit one benchmark payload.
+- `POST /submit`: legacy diagnostic payload route; not canonical V7 contribution.
 - `GET /query`: fetch accepted aggregate benchmarks with filter/sort/range params.
 - `GET /test-videos`: list known benchmark clips.
 - `GET /submit-token`, `GET /submit/token`, `GET /health/token`: optional short-lived token issuance.
@@ -258,12 +248,15 @@ python main.py --no-submit
 - `POST /v7/benchmark-runs/:id/artifacts/ENCODED/upload-authorizations`: issue a short-lived, run-bound upload token.
 - `PUT /v7/artifact-uploads/:token`: stream and verify the encoded canonical-suite artifact.
 - `GET /v7/benchmark-runs/:id/artifacts/ENCODED/analysis-status`: inspect durable authoritative analysis state.
-- `GET /corpus`: browse direct accepted/suspect V7 evidence, with PL fields unavailable until production calibration exists.
+- `GET /corpus`: browse accepted/suspect V7 aggregates; PL remains unavailable without a validated production context.
+- `GET /corpus/:id`: inspect one exact public aggregate.
+- `GET /v7/compatibility`: check minimum client, protocol and timing boundary before measurement.
+- `POST /v7/operator/analyses/:id/reviews`: authenticated operator adjudication bound to an exact analysis/artifact; credentials are never distributed in clients.
 - `GET /health/v7-evidence`: machine-readable storage, queue, failed-analysis, and retained-object health.
 
 ## Ingest security modes
 
-Configured via environment:
+Legacy JSON ingest modes are configured via environment:
 
 - `public`: unsigned submissions accepted; token optional.
 - `signed`: HMAC signature required.
@@ -280,9 +273,10 @@ V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to si
 
 ## Version identities
 
-- Project release version/date: assigned only at release in `release.json`.
-- Client implementation/minimum version: `client/0.2.0`.
-- Benchmark protocol version: `7.0`.
+- Candidate project version/date: `1.3.0-rc.1` / `2026-09-14` in `release.json`; unpublished.
+- Published project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
+- Candidate client implementation/minimum version: `client/0.3.0`.
+- Candidate benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.
 - PL formula version: `7.0`.
 - Test-suite version: EncodingDB Test Suite v1 (`encodingdb-test-suite-v1`).
 
@@ -291,7 +285,8 @@ These identities are intentionally independent; the release manifest records eac
 ## Frontend pages
 
 - `/`: benchmark table with filters, compare panel, PL Score sorting.
-- `/analytics`: visual analytics (histograms, scatter, rate-distortion, content/resolution charts).
+- `/results/:id`: direct aggregate details, including measurement basis and retention.
+- `/run`: downloads and actual candidate contribution commands.
 - `/compare-encoders`: focused encoder comparison dashboard.
 - `/leaderboards`: top encoders by speed/quality/compression/PL Score.
 - `/hardware`: efficiency and hardware intelligence charts.
@@ -334,9 +329,11 @@ Packaging scripts expect platform FFmpeg/ffprobe binaries under `client/bin/<pla
 ## Production deployment
 
 Follow [Final Release Handoff](docs/FINAL_RELEASE_HANDOFF.md) for candidate
-validation, human review, protected beta-to-main merge, main-bound release
+validation, human review, protected current-main integration, native release
 artifacts, backup, deployment, production acceptance, and the evidence epoch.
-The beta-readiness assignment stops at deployment review.
+The older beta-only stopping point is historical; the current goal includes both
+dependable collection and empirically validated PL. Never promote an older beta
+over newer main.
 
 After separate production approval, configure env files from `env.example` and
 `server/env.example`, complete the required backup, and deploy from a clean
@@ -381,10 +378,16 @@ Its test volumes, network, ports and credentials are isolated from production.
 
 Production env validation, named-volume backup/restore, pre-V7 migration
 rehearsal, and the later PL activation procedure are documented in
-`docs/PL_V7_PRODUCTION_ACTIVATION.md`. PL calibration remains post-release;
-valid V7 evidence can be collected while public PL is explicitly unavailable.
+[PL production activation](docs/PL_V7_PRODUCTION_ACTIVATION.md). Collection can
+operate with PL unavailable after its own acceptance gate, but the full release
+objective and PLA-70 remain open until calibrated PL also passes. Genuine reviews,
+longer/disjoint holdouts and final production authority cannot be replaced by
+unit tests or a completed source-preparation document.
 
-Security note: for hardened public deployment, set `INGEST_MODE=signed`, a strong `INGEST_HMAC_SECRET`, and an explicit `TRUST_PROXY` value in `.env` that matches your reverse-proxy topology.
+Keep `ARTIFACT_UPLOAD_SECRET` and `V7_OPERATOR_TOKEN` on the server; ordinary
+contributors do not need operator accounts or credentials. Set `TRUST_PROXY` to
+match the actual reverse-proxy topology. Legacy JSON signing settings do not
+replace V7 artifact authorization.
 
 Release gate before promotion:
 
