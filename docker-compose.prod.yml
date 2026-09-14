@@ -117,9 +117,9 @@ services:
 
 volumes:
   db_data:
-    name: encodingdb_prod_db_data
+    name: ${DATABASE_VOLUME_NAME:-encodingdb_prod_db_data}
   artifact_data:
-    name: encodingdb_prod_artifact_data
+    name: ${ARTIFACT_VOLUME_NAME:-encodingdb_prod_artifact_data}
 
 networks:
   app:

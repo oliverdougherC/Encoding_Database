@@ -231,3 +231,37 @@ with zero dirty groups. See the [arrival report](evidence/metadata-arrivals-repo
 The correction preserves the original report and identifies the actual code
 imported when the long-running process started; a later git HEAD observed at
 report writing must not be treated as code that process executed.
+
+## P910 deployment prerequisites verified after the initial handoff
+
+[Targeted discovery](evidence/p910-alert-scheduler-discovery-20260914.json)
+confirmed that existing Prometheus has no alert rules or Alertmanager, and only
+four infrastructure scrape jobs. Grafana's actual read-only SQLite database has
+zero alert rules/legacy notifications; its one named receiver has no delivery
+configuration. No real EncodingDB recipient/channel has been established. Do not
+invent an alert destination or claim delivery from a health endpoint alone.
+Root crontab remains unreadable because noninteractive sudo requires a password;
+absence from visible user/system schedules cannot establish privileged absence.
+No access restriction was bypassed and no notification was sent.
+
+The current project is `encodingdb`, and its real database volume is
+`encodingdb_db_data`, **not** the repository default `encodingdb_prod_db_data`.
+Its artifact volume is `encodingdb_prod_artifact_data`. Promotion must explicitly
+set `COMPOSE_PROJECT_NAME=encodingdb`, `DATABASE_VOLUME_NAME=encodingdb_db_data`
+and `ARTIFACT_VOLUME_NAME=encodingdb_prod_artifact_data`. `deploy.sh` now checks
+existing project database/artifact mounts before preparation and again immediately
+before rollout, refusing any mismatched named volume or replacement bind mount.
+New isolated projects must select independent volume names.
+
+The current nginx container is `encodingdb-nginx`, on `encodingdb_app` and
+`npm_default`, publishing HTTP port 101. Neither API nor PostgreSQL is host
+published. Preserve this upstream proxy topology during promotion; blindly using
+the repository's direct 80/443 mapping would be a topology change.
+
+The prior task-local Node runtime remains at
+`/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/bin/node`
+(version 20.20.2). It is outside the default PATH. PostgreSQL dump/restore clients
+can run from pinned PostgreSQL 16 Docker images instead of global host installs.
+The production scheduler action still needs a tested concrete environment and
+approved destination/recipient; the next isolated P910 exercise must use the
+actual candidate DB/artifact topology before those commands are called ready.
