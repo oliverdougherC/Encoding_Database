@@ -160,3 +160,15 @@ Additional measured health evidence:
 - `health-disk-full-20260914.json` and `.log`: a real isolated 1 MiB Docker tmpfs
   filled until ENOSPC exposed zero available bytes and
   `storage_reserve_exhausted`. Metadata was stubbed for this filesystem fault.
+
+The candidate collector was also executed read-only against the actual P910
+Prisma database and object mount, streamed over `docker exec` stdin so no server
+files/configuration/data were changed. The old public health endpoint reported
+zero latency samples for its four SUSPECT analyses. The candidate reported all
+four with true upload-to-completion p50 **34.067 seconds** and p95 **4423.326
+seconds**, and checked all four objects. See
+`production-health-before-20260914.json` and
+`production-health-candidate-readonly-20260914.json`. This validates the query
+against production data; it does not claim the new monitoring endpoint is deployed.
+The inspected production container had one Node process, a 16 GiB memory limit,
+zero restarts and no current OOMKilled flag.

@@ -1,0 +1,78 @@
+{
+  "scope": "Read-only candidate health collector executed against existing P910 database/object mount; no code/config/data changes and no API deployment",
+  "existingServerCommit": "b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+  "collectorCommit": "5ab97b9",
+  "snapshot": {
+    "status": "ok",
+    "reasons": [],
+    "capturedAt": "2026-09-14T01:11:57.615Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 536870912
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 4,
+      "checkedThisCycle": 4,
+      "complete": true,
+      "cycleStartedAt": "2026-09-14T01:11:57.615Z",
+      "lastCompletedAt": "2026-09-14T01:11:57.615Z"
+    },
+    "capacity": {
+      "pendingUploads": 0,
+      "pendingAnalyses": 0,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 2,
+      "activeLeases": 0,
+      "expiredLeases": 0,
+      "retryDue": 0
+    },
+    "artifacts": {
+      "byState": {
+        "VERIFIED": 4
+      },
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 0
+    },
+    "analyses": {
+      "byStatus": {
+        "SUSPECT": 4
+      },
+      "pendingOldestSeconds": null,
+      "completedLatencySeconds": {
+        "sampleCount": 4,
+        "p50": 34.067,
+        "p95": 4423.326,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 10156608,
+      "quotaBytes": null,
+      "availableBytes": 255510134784,
+      "freeBytes": 281075937280
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T01:11:57.615Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    }
+  }
+}

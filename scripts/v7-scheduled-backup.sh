@@ -23,7 +23,7 @@ fd,name=tempfile.mkstemp(prefix='.last-backup-',dir=root)
 with os.fdopen(fd,'w') as f:json.dump(value,f,indent=2);f.write('\n')
 os.replace(name,os.path.join(root,'last-backup.json'))
 PY
-  return "$code"
+  exit "$code"
 }
 trap record_status EXIT
 if [[ -n "${V7_BACKUP_COMPOSE_FILE:-}" ]]; then
