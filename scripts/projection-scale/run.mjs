@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import http from 'node:http';
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, statfs } from 'node:fs/promises';
 import { execFile, execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
@@ -154,6 +154,7 @@ if (mode === 'rebuild-fixture') {
   server.listen(port, '127.0.0.1', () => console.log(JSON.stringify({ ready: true, port, pid: process.pid, syntheticOnly: true })));
   const close = () => server.close(async () => { await client.$disconnect(); process.exit(0); }); process.on('SIGTERM', close); process.on('SIGINT', close);
 } else if (mode === 'measure') {
+  const databaseStartBytes = Number((await client.$queryRawUnsafe('SELECT pg_database_size(current_database()) AS bytes'))[0].bytes);
   await client.$disconnect();
   const base = `http://127.0.0.1:${process.env.PROJECTION_SCALE_PORT ?? 55442}`;
   const durationMs = Number(process.env.PROJECTION_SCALE_DURATION_MS ?? 600000);
@@ -188,7 +189,8 @@ if (mode === 'rebuild-fixture') {
     const node = await (await fetch(base + '/memory')).json();
     const { stdout } = await execFileAsync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory.peak']);
     const [dbBytes, dbPeak] = stdout.trim().split(/\s+/).map(Number);
-    resources.push({ at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes, dbLifetimePeakBytes: dbPeak }); await sleep(5000);
+    const disk = await statfs('/System/Volumes/Data');
+    resources.push({ hostAvailableDiskBytes: disk.bavail * disk.bsize, at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes, dbLifetimePeakBytes: dbPeak }); await sleep(5000);
   } })();
   const writer = (async () => { for (let cycle = 0; cycle < 5; cycle++) {
     await sleep(cycle === 0 ? 30000 : 90000);
@@ -196,12 +198,13 @@ if (mode === 'rebuild-fixture') {
     catch (error) { failures.push({ writer: true, at: new Date(), error: String(error) }); }
   } })();
   await Promise.all([...Array.from({ length: 25 }, (_, index) => reader(index)), sampler, writer]);
+  const databaseEndBytes = Number((await client.$queryRawUnsafe('SELECT pg_database_size(current_database()) AS bytes'))[0].bytes);
   const finalCounts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
   try { assert.equal(finalCounts.runs, 100020); assert.equal(finalCounts.artifacts, 100020); assert.equal(finalCounts.analyses, 100020); assert.equal(finalCounts.derived, 981); assert.equal(finalCounts.members, 80020); }
   catch (error) { failures.push({ finalMembership: true, error: String(error) }); }
   await client.$disconnect();
   latencies.sort((a, b) => a - b); const quantile = p => latencies[Math.floor((latencies.length - 1) * p)];
-  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources, finalCounts };
+  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources, finalCounts, databaseStartBytes, databaseEndBytes, minimumHostAvailableDiskBytes: Math.min(...resources.map(r => r.hostAvailableDiskBytes)) };
   report.passed = failures.length === 0 && report.latencyMs.p95 <= 1000 && mutations.length === 5 && scoredRows > 0;
   await writeFile(`${output}/measurement.json`, JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, resources: undefined, mutations: mutations.length, failures: failures.slice(0, 5) }));
   process.exitCode = report.passed ? 0 : 1;
