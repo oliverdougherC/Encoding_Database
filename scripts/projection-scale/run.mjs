@@ -33,7 +33,7 @@ function rowsForGroup(env, group, times, kind = 'stable', retainedCount = times.
       encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: hash(id), encodeWallTimeMs: ms, encodeFps: 240000 / ms, sourceFps: 24, realTimeRatio: 10000 / ms, sourceFrameCount: 240, encodedFrameCount: 240,
       preRunEnvironmentCheck: { syntheticOnly: true, measurementGroup: summary, snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, overallValidity: { state: 'valid' } }, status: 'ACCEPTED',
       artifact: { id: `${runId}-artifact`, benchmarkRunId: runId, role: 'ENCODED', sha256: hash(runId), byteSize: 1250000, storageState: 'RETAINED', storageProvider: 'localfs', storageKey: `SYNTHETIC-NO-BYTES/${runId}`, storageUrl: `synthetic://${runId}` },
-      analysis: { id: `${runId}-analysis`, benchmarkRunId: runId, artifactId: `${runId}-artifact`, status: 'COMPLETE', metricModelId: model, analysisWorkerVersion: worker, analysisProvenance: { syntheticOnly: true, workerBuildFingerprint: hash(id) }, vmafMean: kind === 'stable' ? 90 + base % 10 / 10 : 70, vmafP5: kind === 'stable' ? 85 : 60, videoBitrateBps: 1000000, fileSizeBytes: 1250000 },
+      analysis: { id: hash(`${runId}-analysis`), benchmarkRunId: runId, artifactId: `${runId}-artifact`, status: 'COMPLETE', metricModelId: model, analysisWorkerVersion: worker, analysisProvenance: { syntheticOnly: true, workerBuildFingerprint: hash(id) }, vmafMean: kind === 'stable' ? 90 + base % 10 / 10 : 70, vmafP5: kind === 'stable' ? 85 : 60, videoBitrateBps: 1000000, fileSizeBytes: 1250000 },
     };
   });
 }
@@ -76,7 +76,16 @@ async function validateCohort(env, extraPairs = 0) {
   assert.equal(row.fps, persisted.centerEncodeFps);
   return { environmentId: env, rawAccepted: row.sampleCounts.accepted, sources: row.sampleCounts.independentSources, exactQualifiedMemberCount: persisted.members.length, memberHash: hash(persisted.members.map(m => m.benchmarkRunId).sort().join('\n')), centerBasis: row.status.centerBasis, fps: row.fps, pl: row.pl.total };
 }
-if (mode === 'seed') {
+if (mode === 'rebuild-fixture') {
+  await client.$executeRawUnsafe(`UPDATE "QualityAnalysis" SET id = encode(sha256(convert_to("benchmarkRunId" || '-analysis', 'UTF8')), 'hex') WHERE id LIKE 'SYNTHETIC-PROJECTION-ONLY%'`);
+  for (let index = 0; index <= 980; index++) { await rebuild(environmentId(index)); if (index % 25 === 0) console.log(JSON.stringify({ rebuiltCohorts: index + 1, at: new Date() })); }
+  await drain();
+  const checks = []; for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
+  const counts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
+  assert.equal(counts.runs, 100000); assert.equal(counts.members, 80000);
+  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), completed: new Date(), counts, checks, fixtureAdjustment: 'Alphanumeric SHA analysis IDs match CUID character ordering; initial hyphenated synthetic IDs exposed locale certificate mismatch separately reported.' }, null, 2));
+  await client.$disconnect();
+} else if (mode === 'seed') {
   assert.equal(await client.benchmarkRun.count(), 0, 'Seed requires empty isolated database');
   const started = new Date();
   await client.benchmarkProtocol.create({ data: { id, protocolVersion: '7.1', sourceSuiteVersion: id, minimumClientVersion: 'client/0.3.0', canonicalRecipeRules: CANONICAL_MEASUREMENT_RULES, canonicalOutputRules: {}, metricWorkerVersion: worker } });
