@@ -32,8 +32,8 @@ validated deployment topology must state its process count.
 Compose now makes service memory limits/reservations configurable. The server
 uses `SERVER_MEMORY_LIMIT=16G` by default because the actual P910 production
 container was inspected at 17179869184 bytes after historical 512 MiB/4 GiB OOMs.
-This is a reproducible historical deployment setting, **not** a measured seven-clip
-capacity claim. Set `SERVER_MEMORY_RESERVATION`, `DB_MEMORY_LIMIT`,
+That historical limit is now also exercised by the finite seven-clip Linux
+capacity trials below; it is not a sustained media-arrival claim. Set `SERVER_MEMORY_RESERVATION`, `DB_MEMORY_LIMIT`,
 `DB_MEMORY_RESERVATION`, `FRONTEND_MEMORY_LIMIT`, `FRONTEND_MEMORY_RESERVATION`,
 `NGINX_MEMORY_LIMIT` and `NGINX_MEMORY_RESERVATION` in the deployment environment
 as appropriate. Publish measured worker concurrency, seven-clip peak RSS,
@@ -409,3 +409,42 @@ capability only. It is not a measurement, a contribution, a quality calibration,
 or the final contributor acceptance: the later repetition-group gate correction
 still requires a rebuilt package/service and actual end-to-end evidence. Receipts
 and exact identities are in `evidence/p910-native-84/`.
+
+## Measured Linux analyzer envelope
+
+The exact source `84d4086` server image analyzed the same seven real prepared
+libx264/CRF23 artifacts at concurrency one and two in separate 16 GiB containers.
+Each run completed all 1,632 expected metric and diagnostic frames without errors;
+five clips were COMPLETE and film grain/dark gradients remained SUSPECT. These
+are native quality-analysis results, not contributor measurement acceptance.
+
+| Active analyzers | Seven-item batch drain | Kernel peak container memory | Node maximum RSS | Observed batch rate |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 618.071 s | 2,992,496,640 bytes | 115,617,792 bytes | 40.77 artifacts/hour |
+| 2 | 337.824 s | 3,226,791,936 bytes | 113,590,272 bytes | 74.60 artifacts/hour |
+
+Keep the production envelope at **two active analyzers / 16 GiB server limit**,
+with the separately tested 10 GiB retained-object admission quota. The kernel
+memory peak covers the analyzer container's native descendants and charged cache;
+Node RSS alone would substantially understate resource demand. This batch order
+is not every possible simultaneous content/codec combination. Do not reduce the
+16 GiB limit from this seven-item sample or advertise the extrapolated hourly rate
+as sustained admission capacity. Final HTTP upload/admission/DB queue-drain proof
+belongs to the packaged-client acceptance, and remains distinct from the earlier
+100k-row/25-browser metadata test.
+
+No other EncodingDB timing/build ran during these trials; unrelated existing
+Jellyfin, qBittorrent and cAdvisor services remained active. The shared measurement
+lock was released before validation timing resumed. Full per-frame analysis JSONs
+are archived in the release evidence directory and hash-bound by
+`evidence/p910-native-84/worker-summary.json`; individual trial reports accompany
+it. A future offline calibration phase may test eight analyzers / 32 GiB after
+all host timing, with fresh available-memory checks, real DB leases and full
+coverage verification. That is not a production envelope or a completed test.
+
+The corrected `e5e7835` client command builder also executed six-frame NVENC VBR
+probes at 4,000 and 8,000 kbps on device 0 with the locked runtime. Both exited 0,
+retained native `-rc vbr -b:v` controls, and encoded six frames. These finite
+capability checks do not establish the achieved bitrate or performance of the
+longer validation cells. The setup path assertion failure before encoding is
+retained in `nvenc-vbr-builder-e5e7835.json`.
