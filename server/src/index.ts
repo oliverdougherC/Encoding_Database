@@ -6,12 +6,15 @@ import compression from 'compression';
 import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
-import routes from './routes.js';
+import routes, { invalidateRouteCaches } from './routes.js';
 import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
 import { createV7EvidenceHealthMonitor, V7EvidenceHealthUnavailable } from './v7/operationalHealth.js';
-import { startArtifactPipelineBackgroundWork } from './v7/artifacts.js';
+import { startArtifactPipelineBackgroundWork, stopArtifactPipelineBackgroundWork } from './v7/artifacts.js';
+import { publicCorpusReadiness, startPublicCorpusRefreshLoop } from './v7/corpusQuery.js';
+import { createEvidenceReviewRouter } from './v7/reviews.js';
+import { requireOperator, operatorIdentity } from './v7/operatorAuth.js';
 
 export const app = express();
 
@@ -343,7 +346,8 @@ app.get('/health/live', (_req, res) => {
 app.get('/health/ready', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok' });
+    const corpus = await publicCorpusReadiness(prisma);
+    res.status(corpus.ready ? 200 : 503).json({ status: corpus.ready ? 'ok' : 'degraded', corpus });
   } catch {
     res.status(503).json({ status: 'degraded', error: 'db_unreachable' });
   }
@@ -382,6 +386,7 @@ app.get('/health/token', (req, res) => {
 });
 
 // Routes
+app.use(createEvidenceReviewRouter({ client: prisma, authorize: requireOperator, reviewerIdentity: operatorIdentity, afterReview: invalidateRouteCaches }));
 app.use(routes);
 
 // 404 handler
@@ -410,12 +415,14 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 
 const port = process.env.PORT || 3001;
 let server: ReturnType<typeof app.listen>;
+let stopCorpusRefresh: (() => void) | undefined;
 
 // Start server with explicit database connection
 async function startServer() {
   try {
     // Connect to database before accepting requests
     await connectDatabase();
+    stopCorpusRefresh = startPublicCorpusRefreshLoop(prisma);
     startArtifactPipelineBackgroundWork();
 
     server = app.listen(port, () => {
@@ -434,6 +441,8 @@ async function startServer() {
 // Graceful shutdown
 async function shutdown(signal: string) {
   console.log(`\n${signal} received. Shutting down...`);
+  stopCorpusRefresh?.();
+  stopArtifactPipelineBackgroundWork();
   if (server) {
     server.close(async () => {
       try {
