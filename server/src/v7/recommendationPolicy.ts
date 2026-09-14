@@ -21,6 +21,25 @@ interface ContextIdentity {
   transformConstants?: unknown; referenceFrontier?: unknown; workloadReferenceBitrateBps?: number;
   benchmarkProtocol?: { protocolVersion: string; sourceSuiteVersion: string };
 }
+/** Select only the explicitly deployed reviewed epoch; historical records are immutable snapshots. */
+export function loadActiveRecommendationContextIdentity(env: NodeJS.ProcessEnv = process.env): {
+  contextVersion: string; formulaVersion: string; qualityModelId: string;
+  benchmarkProtocolVersion: string; sourceSuiteVersion: string; hash: string;
+} | null {
+  if (!env.PL_V7_REFERENCE_CONTEXT_PATH) return null;
+  const context = JSON.parse(readFileSync(env.PL_V7_REFERENCE_CONTEXT_PATH, 'utf8'));
+  const { hash, ...payload } = context;
+  if (sha256Hex(canonicalJsonString(payload)) !== hash) throw new Error('Recommendation context hash mismatch');
+  if (context.activation?.stage !== 'PRODUCTION') return null;
+  if (context.provenance?.sourceMode !== 'retained-benchmark-evidence' || context.activation?.productionActivationAllowed !== true
+    || !/^[0-9a-f]{64}$/.test(context.activation?.calibrationReviewHash ?? '') || context.scoringBehaviorHash !== buildScoringBehaviorHash()
+    || ['contextVersion', 'formulaVersion', 'qualityModelId', 'benchmarkProtocolVersion', 'sourceSuiteVersion'].some(key => typeof context[key] !== 'string' || !context[key])) throw new Error('Active recommendation context is not a validated reviewed epoch');
+  const policy = normalizeEvidencePolicy(context.recommendationEvidencePolicy);
+  if (policy.policyStatus !== 'CALIBRATED' || sha256Hex(canonicalJsonString(policy as never)) !== context.recommendationEvidencePolicyHash) throw new Error('Active recommendation policy hash mismatch');
+  return { contextVersion: context.contextVersion, formulaVersion: context.formulaVersion, qualityModelId: context.qualityModelId,
+    benchmarkProtocolVersion: context.benchmarkProtocolVersion, sourceSuiteVersion: context.sourceSuiteVersion, hash };
+}
+
 /** Restarts reload the exact deployed artifact; never cache only by policy version. */
 export function loadRecommendationEvidencePolicyForContext(record: ContextIdentity, env: NodeJS.ProcessEnv = process.env): RecommendationEvidencePolicy {
   if (!env.PL_V7_REFERENCE_CONTEXT_PATH) return DEFAULT_RECOMMENDATION_EVIDENCE_POLICY;

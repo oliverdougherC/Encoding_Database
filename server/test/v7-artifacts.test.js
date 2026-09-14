@@ -831,6 +831,7 @@ function buildRunBody(fixtures, overrides = {}) {
       canonicalJson: JSON.parse(fixtures.environment.canonicalJson),
       identity: fixtures.environment.identity,
     },
+    preRunEnvironmentCheck: { overallValidity: { state: 'valid' }, environmentValidity: { state: 'valid' }, structuralValidity: { state: 'valid' } },
     payloadHash: overrides.payloadHash || 'a'.repeat(64),
 	    workloadId: fixtures.clip.workloadId,
     expectedMetricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
@@ -1674,7 +1675,7 @@ test('semantic bootstrap rejects non-canonical protocol drift and minimum-client
   assert.equal(versionResponse.status, 409);
 });
 
-test('default derived recompute callback persists workload derived results from authoritative analyses', async () => {
+test('default derived recompute callback leaves historical results untouched without explicit active context', async () => {
   const calls = [];
   const client = {
     benchmarkRun: {
@@ -1772,12 +1773,5 @@ test('default derived recompute callback persists workload derived results from 
     analysisWorkerVersion: 'worker-v1',
   });
 
-  assert.deepEqual(calls.map(([name]) => name), ['upsert', 'deleteMany', 'createMany']);
-  assert.equal(calls[0][1].create.workloadId, 'sports-action-960x540-24p');
-  assert.equal(calls[0][1].create.scoreContext.connect.id, 'score-1');
-  assert.deepEqual(calls[2][1].data, [{
-    derivedResultId: 'derived-1',
-    benchmarkRunId: 'run-1',
-    qualityAnalysisId: 'analysis-1',
-  }]);
+  assert.deepEqual(calls, []);
 });

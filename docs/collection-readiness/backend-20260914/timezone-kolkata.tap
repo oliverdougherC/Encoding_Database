@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: native process deadline, output budget and abort terminate owned process trees
+ok 1 - native process deadline, output budget and abort terminate owned process trees
+  ---
+  duration_ms: 520.422583
+  type: 'test'
+  ...
+# Subtest: real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+ok 2 - real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+  ---
+  duration_ms: 1256.785708
+  type: 'test'
+  ...
+# Subtest: VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+ok 3 - VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+  ---
+  duration_ms: 0.445333
+  type: 'test'
+  ...
+# Subtest: operator middleware denies anonymous and binds configured credentials
+ok 4 - operator middleware denies anonymous and binds configured credentials
+  ---
+  duration_ms: 32.919791
+  type: 'test'
+  ...
+# Subtest: PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+ok 5 - PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+  ---
+  duration_ms: 10083.134416
+  type: 'test'
+  ...
+# Subtest: installed worker provenance binds executed tool bytes and compiled closure across process starts
+ok 6 - installed worker provenance binds executed tool bytes and compiled closure across process starts
+  ---
+  duration_ms: 407.788167
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12004.734916

@@ -9,6 +9,9 @@ import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { runNativeProcess, stopNativeProcesses } from '../dist/v7/nativeProcess.js';
 import { requireOperator } from '../dist/v7/operatorAuth.js';
+import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } from '../dist/v7/aggregation.js';
+import { buildScoringBehaviorHash } from '../dist/v7/recommendationPolicy.js';
+import { canonicalJsonString, sha256Hex } from '../dist/v7/persistence.js';
 import { appendEvidenceReview } from '../dist/v7/reviews.js';
 import { buildRecipeFingerprint, buildEnvironmentFingerprint } from '../dist/v7/persistence.js';
 import { loadAuthoritativeSuiteManifest } from '../dist/v7/suite.js';
@@ -29,6 +32,7 @@ function requestBody(key = crypto.randomBytes(32).toString('hex'), bytes = Buffe
     testClip: { suiteId: manifest.suiteId, suiteVersion: manifest.suiteVersion, clipKey: clip.id, sha256: clip.sha256 },
     recipe: { fingerprint: buildRecipeFingerprint(recipe).fingerprint, identity: recipe },
     environment: { fingerprint: buildEnvironmentFingerprint(environment).fingerprint, identity: environment },
+    preRunEnvironmentCheck: { overallValidity: { state: 'valid' }, environmentValidity: { state: 'valid' }, structuralValidity: { state: 'valid' } },
     payloadHash: key, inputHash: clip.sha256, physicalSourceId: 'isolated-test-installation-0001', encodeTimerBoundary: 'ffmpeg-process-v1',
     sourceFrameCount: clip.media.frameCount, encodedFrameCount: clip.media.frameCount,
     sourceFps: 24, encodeWallTimeMs: 1000, encodeFps: clip.media.frameCount, realTimeRatio: clip.media.frameCount / 24,
@@ -104,10 +108,12 @@ test('operator middleware denies anonymous and binds configured credentials', as
   assert.equal((await fetch(url, { headers: { authorization: 'Bearer isolated-secret' } })).status, 200);
 });
 
-const databaseUrl = process.env.BACKEND_TEST_DATABASE_URL;
+const databaseUrl = process.env.BACKEND_TEST_DATABASE_URL ? new URL(process.env.BACKEND_TEST_DATABASE_URL) : null;
+if (databaseUrl && process.env.BACKEND_TEST_TIMEZONE) databaseUrl.searchParams.set('options', `-c timezone=${process.env.BACKEND_TEST_TIMEZONE}`);
 test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery', { skip: !databaseUrl }, async t => {
-  const client = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
-  const replica = new PrismaClient({ datasources: { db: { url: databaseUrl } } });
+  const client = new PrismaClient({ datasources: { db: { url: databaseUrl.toString() } } });
+  const replica = new PrismaClient({ datasources: { db: { url: databaseUrl.toString() } } });
+  if (process.env.BACKEND_TEST_TIMEZONE) assert.equal((await client.$queryRawUnsafe('SHOW TimeZone'))[0].TimeZone, process.env.BACKEND_TEST_TIMEZONE);
   const root = await mkdtemp(path.join(os.tmpdir(), 'pg-backend-'));
   let backgroundService;
   t.after(async () => { backgroundService?.stopBackgroundWork(); await client.$disconnect(); await replica.$disconnect(); await rm(root, { recursive: true, force: true }); });
@@ -127,6 +133,9 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal(same.filter(x => x.created).length, 1);
   await assert.rejects(service.createRun({ ...body, physicalSourceId: 'different-source-0001' }), /Idempotency key conflicts/);
   const first = same[0].bundle;
+  const created = await client.benchmarkRun.findUnique({ where: { id: first.run.id }, include: { artifacts: true } });
+  assert.ok(Math.abs(Date.now() - created.createdAt.getTime()) < 2000, 'run chronology is UTC in every session timezone');
+  assert.equal(created.artifacts[0].createdAt.getTime(), created.createdAt.getTime());
   const second = (await service.createRun(requestBody())).bundle;
   await assert.rejects(service.createRun(requestBody()), /backlog capacity/);
   const authorization = await service.authorizeUpload('test', first.run.id, 'ENCODED', { ...body.artifact, contentType: 'video/mp4' });
@@ -157,6 +166,9 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   await assert.rejects(service.authorizeUpload('test', second.run.id, 'ENCODED', { sha256: second.artifact.sha256, byteSize: second.artifact.byteSize }), /backlog capacity/);
   const queueInput = { benchmarkRunId: first.run.id, artifactId: first.artifact.id, metricModelId: 'vmaf-v1-sdr-1080p', analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, maxAttempts: 2, operatorAudit: { operator: 'TEST ONLY', reason: 'Preserve the original queue audit through completion' } };
   await persistence.ensureQualityAnalysisQueued(queueInput);
+  const queuedRow = await client.qualityAnalysis.findFirst({ where: { benchmarkRunId: first.run.id } });
+  assert.ok(Math.abs(Date.now() - queuedRow.createdAt.getTime()) < 2000, 'queue chronology is UTC in every session timezone');
+  assert.equal(queuedRow.createdAt.toISOString(), queuedRow.analysisProvenance.queuedAt);
   const owner = await persistence.claimNextQueuedQualityAnalysis({ leaseToken: 'owner-1', leaseExpiresAt: new Date(Date.now() + 5000), now: new Date() });
   assert.ok(owner);
   await Promise.all(Array.from({ length: 8 }, () => persistence.ensureQualityAnalysisQueued(queueInput)));
@@ -246,9 +258,23 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.ok(burst.filter(entry => entry.status === 'rejected').every(entry => /backlog capacity/.test(entry.reason.message)));
   const metrics = { vmafMean: 95, vmafP5: 90, videoBitrateBps: 1_000_000, fileSizeBytes: 10000 };
   await client.qualityAnalysis.updateMany({ where: { benchmarkRunId: slowRun.run.id }, data: metrics });
-  const oldAnalysis = await client.qualityAnalysis.create({ data: { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'historical-test-worker', analysisProvenance: {}, createdAt: new Date('2000-01-01'), completedAt: new Date('2000-01-01'), ...metrics, vmafMean: 100, vmafP5: 100 } });
+  const oldAnalysis = await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'historical-test-worker', analysisProvenance: {}, createdAt: new Date('2000-01-01'), completedAt: new Date('2000-01-01'), ...metrics, vmafMean: 100, vmafP5: 100 } });
   await appendEvidenceReview(client, oldAnalysis.id, 'SYNTHETIC TEST FIXTURE NOT HUMAN REVIEW', { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, artifactSha256: slowRun.artifact.sha256, metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'historical-test-worker', decision: 'EXPECTED', rationale: 'Synthetic old-analysis selection regression only', evidenceLinks: ['https://example.test/synthetic-fixture'], supersedesId: null });
   const context = await client.scoreContext.create({ data: { benchmarkProtocolId: slowRun.run.benchmarkProtocolId, formulaVersion: '7.0', contextVersion: `isolated-${crypto.randomUUID()}`, workloadId: slowRun.run.workloadId, qualityModelId: queueInput.metricModelId, workloadReferenceBitrateBps: 1_000_000, transformConstants: {} } });
+  const activeEnv = {};
+  async function deployContext(record) {
+    const policy = { ...DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, policyStatus: 'CALIBRATED', policyVersion: `SYNTHETIC-${record.contextVersion}` };
+    const payload = { contextVersion: record.contextVersion, formulaVersion: record.formulaVersion, qualityModelId: record.qualityModelId, benchmarkProtocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION, sourceSuiteVersion: manifest.suiteVersion,
+      transformConstants: record.transformConstants, scoringBehaviorHash: buildScoringBehaviorHash(), provenance: { sourceMode: 'retained-benchmark-evidence' }, activation: { stage: 'PRODUCTION', productionActivationAllowed: true, calibrationReviewHash: 'a'.repeat(64) },
+      recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: sha256Hex(canonicalJsonString(policy)), workloads: [{ workloadId: record.workloadId, workloadReferenceBitrateBps: record.workloadReferenceBitrateBps, referenceFrontier: [] }] };
+    const active = { ...payload, hash: sha256Hex(canonicalJsonString(payload)) };
+    const filename = path.join(root, `${record.contextVersion}.json`);
+    await writeFile(filename, JSON.stringify(active));
+    await client.scoreContext.update({ where: { id: record.id }, data: { referenceFrontier: { contextHash: active.hash, recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: active.recommendationEvidencePolicyHash, referenceFrontier: [] } } });
+    activeEnv.PL_V7_REFERENCE_CONTEXT_PATH = filename;
+    return active;
+  }
+  await deployContext(context);
   let releaseSnapshot, snapshotReady;
   const ready = new Promise(resolve => { snapshotReady = resolve; });
   const release = new Promise(resolve => { releaseSnapshot = resolve; });
@@ -265,14 +291,14 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
     } });
     return callback(proxy);
   }, options) };
-  const rebuild = createDefaultDerivedRecomputeCallback(wrappedClient);
+  const rebuild = createDefaultDerivedRecomputeCallback(wrappedClient, activeEnv);
   const rebuildPayload = { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION };
   const older = rebuild(rebuildPayload);
   await ready;
   const newRun = burst.find(entry => entry.status === 'fulfilled').value.bundle;
   await client.benchmarkRun.update({ where: { id: newRun.run.id }, data: { status: 'ACCEPTED' } });
   await client.artifact.update({ where: { id: newRun.artifact.id }, data: { storageState: 'RETAINED' } });
-  await client.qualityAnalysis.create({ data: { benchmarkRunId: newRun.run.id, artifactId: newRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, analysisProvenance: {}, ...metrics } });
+  await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: newRun.run.id, artifactId: newRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, analysisProvenance: {}, ...metrics } });
   const newer = rebuild(rebuildPayload);
   await new Promise(resolve => setTimeout(resolve, 40));
   assert.equal(snapshots, 1, 'second recomputation cannot read ahead of a locked snapshot');
@@ -282,10 +308,22 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal(aggregate.acceptedRunCount, 2);
   assert.equal(aggregate.centerVmafMean, 95, 'updating old evidence cannot resurrect its superseded analysis');
   assert.equal(aggregate.members.length, 2, 'newer complete member set wins after out-of-order scheduling');
-  const pendingReplacement = await client.qualityAnalysis.create({ data: { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'PENDING', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'replacement-test-worker', analysisProvenance: {} } });
+  const pendingReplacement = await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'PENDING', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'replacement-test-worker', analysisProvenance: {} } });
   await rebuild(rebuildPayload);
   assert.equal((await client.derivedResult.findUnique({ where: { id: aggregate.id } })).acceptedRunCount, 1, 'new pending analysis blocks reviewed older evidence');
   await client.qualityAnalysis.update({ where: { id: pendingReplacement.id }, data: { status: 'FAILED' } });
+  const historical = await client.derivedResult.findUnique({ where: { id: aggregate.id }, include: { members: { orderBy: { id: 'asc' } } } });
+  const contextB = await client.scoreContext.create({ data: { benchmarkProtocolId: context.benchmarkProtocolId, formulaVersion: context.formulaVersion, contextVersion: `B-${crypto.randomUUID()}`, workloadId: context.workloadId, qualityModelId: context.qualityModelId, workloadReferenceBitrateBps: context.workloadReferenceBitrateBps, transformConstants: context.transformConstants } });
+  await deployContext(contextB);
+  const newest = await client.qualityAnalysis.create({ data: { createdAt: new Date(), completedAt: new Date(), benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'B-test-worker', analysisProvenance: {}, ...metrics, vmafMean: 94 } });
+  await rebuild(rebuildPayload);
+  const activeResult = await client.derivedResult.findFirst({ where: { scoreContextId: contextB.id, kind: 'WORKLOAD' } });
+  assert.equal(activeResult.acceptedRunCount, 2, 'active B rebuilds even though historical A would fail the current policy loader');
+  await appendEvidenceReview(client, newest.id, 'SYNTHETIC TEST FIXTURE NOT HUMAN REVIEW', { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, artifactSha256: slowRun.artifact.sha256, metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'B-test-worker', decision: 'INVESTIGATE', rationale: 'Synthetic active-context review regression only', evidenceLinks: ['https://example.test/context-fixture'], supersedesId: null });
+  await persistence.retryDerivedRecomputes(createDefaultDerivedRecomputeCallback(replica, activeEnv));
+  assert.equal((await client.derivedResult.findUnique({ where: { id: activeResult.id } })).acceptedRunCount, 1);
+  assert.deepEqual(await client.derivedResult.findUnique({ where: { id: aggregate.id }, include: { members: { orderBy: { id: 'asc' } } } }), historical, 'historical A metrics, members and policy survive new B analysis, review and restart');
+
   await client.artifact.updateMany({ where: { storageState: 'PENDING' }, data: { reservationExpiresAt: new Date(0) } });
   const fractionalMs = 1990.073417;
   const fractionalBody = { ...requestBody(), encodeWallTimeMs: fractionalMs, encodeFps: clip.media.frameCount * 1000 / fractionalMs, realTimeRatio: clip.media.frameCount / 24 * 1000 / fractionalMs };

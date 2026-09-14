@@ -3,7 +3,8 @@ import crypto from 'node:crypto';
 import { Transform, Writable } from 'node:stream';
 import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
-import { loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
+import { loadActiveRecommendationContextIdentity, loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
+import { installedWorkerProvenance } from './workerProvenance.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -1380,6 +1381,26 @@ export function buildDiagnosticFilterInputs(frameRate: number): string {
   return `[0:v]${normalization}[distorted];[1:v]${normalization}[reference]`;
 }
 
+export function applyReportedMeasurementValidity(result: AuthoritativeAnalysisResult, reported: unknown): AuthoritativeAnalysisResult {
+  const check = asJsonObject(reported);
+  const states = Object.fromEntries(['overallValidity', 'environmentValidity', 'structuralValidity'].map(key => {
+    const value = asJsonObject(check?.[key]);
+    const state = typeof value?.state === 'string' ? value.state.toLowerCase() : 'unknown';
+    const reasons = Array.isArray(value?.reasons) ? value.reasons.map(reason => String(asJsonObject(reason)?.severity ?? '').toLowerCase()) : [];
+    return [key, state === 'invalid' || reasons.includes('invalid') ? 'invalid' : state === 'suspect' || reasons.includes('suspect') ? 'suspect' : state === 'valid' ? 'valid' : 'unknown'];
+  }));
+  const invalid = Object.values(states).includes('invalid');
+  const suspect = Object.values(states).some(state => state !== 'valid');
+  const reason = invalid ? 'Client reported invalid measurement or environment evidence' : suspect ? 'Client measurement/environment validity is suspect, missing or unknown' : null;
+  const runStatus = ['INVALID', 'REJECTED'].includes(result.runStatus) ? result.runStatus : invalid ? 'INVALID' : suspect ? 'SUSPECT' : result.runStatus;
+  return { ...result, runStatus,
+    runStatusReason: reason && !result.runStatusReason?.includes(reason) ? [result.runStatusReason, reason].filter(Boolean).join('; ') : result.runStatusReason,
+    artifactState: runStatus !== 'ACCEPTED' && result.artifactState === 'RETAINED' ? 'VERIFIED' : result.artifactState,
+    artifactStateReason: reason ?? result.artifactStateReason ?? null,
+    analysisProvenance: { ...result.analysisProvenance, reportedMeasurementValidity: { states, reported: reported ?? null, disposition: invalid ? 'INVALID' : suspect ? 'SUSPECT' : 'VALID', trust: 'Client self-report; valid is not remote attestation' } },
+  };
+}
+
 export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
   private readonly vmafModelPath: string;
 
@@ -1393,6 +1414,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
       if (await hashFile(input.artifactPath) !== input.bundle.artifact.sha256) throw new Error('Stored artifact sha256 no longer matches immutable identity');
     }
     if (sha256Hex(await readFile(this.vmafModelPath)) !== VMAF_MODEL_SHA256) throw new Error('Installed VMAF model hash does not match server identity');
+    const installedBuild = await installedWorkerProvenance();
     const probePayload = await probeMedia(input.artifactPath);
     const packetEvidence = await streamPacketEvidence(input.artifactPath);
     const ffmpegVersion = await readFfmpegVersion();
@@ -1481,13 +1503,14 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         ? Number(((fileStats.size * 8) / validation.durationSeconds).toFixed(6))
         : null;
       const suspicious = authoritative.metricDisagreement.flagged;
-      return {
+      return applyReportedMeasurementValidity({
         metricModelId: authoritative.metricModelId,
         qualityContextId: authoritative.qualityContextId,
         analysisWorkerVersion: authoritative.analysisWorkerVersion,
         analysisStatus: suspicious ? 'SUSPECT' : 'COMPLETE',
         analysisProvenance: {
           ...authoritative.analysisProvenance,
+          ...installedBuild,
           pipelineVersion: ARTIFACT_PIPELINE_VERSION,
           ffprobeValidatedAt: nowIso(),
           referencePath,
@@ -1522,7 +1545,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         artifactState: suspicious ? 'VERIFIED' : 'RETAINED',
         artifactStateReason: suspicious ? 'Awaiting manual review after analysis disagreement diagnostic' : null,
         artifactStateDetails: validation.stateDetails,
-      };
+      }, input.bundle.run.preRunEnvironmentCheck);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
@@ -2057,12 +2080,12 @@ export class ArtifactPipelineService {
     if (!artifactPath) {
       throw new HttpError(409, 'Artifact has not been uploaded to object storage');
     }
-    const result = await this.analyzer.analyze({
+    const result = applyReportedMeasurementValidity(await this.analyzer.analyze({
       bundle,
       artifactPath,
       requestedAnalysisWorkerVersion: analysis.analysisWorkerVersion,
       requestedMetricModelId: analysis.metricModelId,
-    });
+    }), bundle.run.preRunEnvironmentCheck);
     if (nativeProcessSignal.getStore()?.aborted) throw new Error('Analysis claim cancelled before completion');
     if (result.metricModelId !== analysis.metricModelId || result.analysisWorkerVersion !== analysis.analysisWorkerVersion) throw new Error('Analyzer returned incompatible authority identity');
     const saved = await this.persistence.saveAuthoritativeAnalysis({
@@ -2306,8 +2329,10 @@ function transformConstantsFromScoreContext(value: unknown): {
 }
 
 const REFERENCE_CONTEXT_DIRECTORY = new URL('../../config/reference-contexts/', import.meta.url);
-export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient) {
+export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient, env: NodeJS.ProcessEnv = process.env) {
   return async (payload: DerivedRecomputeHookPayload): Promise<void> => {
+    const active = loadActiveRecommendationContextIdentity(env);
+    if (!active || active.qualityModelId !== payload.metricModelId) return;
     await rootClient.$transaction(async (tx) => {
       await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', 714555);
       const client = tx as unknown as PrismaClient;
@@ -2320,13 +2345,16 @@ export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient) 
           environment: true,
         },
       });
-      if (!triggerRun) return;
+      if (!triggerRun || triggerRun.benchmarkProtocol.protocolVersion !== active.benchmarkProtocolVersion || triggerRun.benchmarkProtocol.sourceSuiteVersion !== active.sourceSuiteVersion) return;
 
       const scoreContexts = await client.scoreContext.findMany({
         where: {
           benchmarkProtocolId: triggerRun.benchmarkProtocolId,
           workloadId: triggerRun.workloadId,
           qualityModelId: payload.metricModelId,
+          contextVersion: active.contextVersion,
+          formulaVersion: active.formulaVersion,
+          referenceFrontier: { path: ['contextHash'], equals: active.hash },
         },
         orderBy: { updatedAt: 'desc' },
       });
@@ -2406,7 +2434,7 @@ export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient) 
             scoreFormulaVersion: '7.0',
             ...transform,
           },
-          evidencePolicy: loadRecommendationEvidencePolicyForContext({ ...scoreContext, benchmarkProtocol: triggerRun.benchmarkProtocol }),
+          evidencePolicy: loadRecommendationEvidencePolicyForContext({ ...scoreContext, benchmarkProtocol: triggerRun.benchmarkProtocol }, env),
           analyses: aggregateAnalyses,
         });
 
@@ -2808,13 +2836,13 @@ function normalizeStoredQualityAnalysisRow(analysis: any): StoredQualityAnalysis
 const CAPACITY_LOCK = 714552;
 async function lockCapacity(tx: any): Promise<void> { await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', CAPACITY_LOCK); }
 async function databaseNow(tx: any): Promise<Date> {
-  const rows = await tx.$queryRawUnsafe('SELECT clock_timestamp() AS now');
+  const rows = await tx.$queryRawUnsafe('SELECT (clock_timestamp() AT TIME ZONE \'UTC\') AS now');
   return rows[0].now;
 }
 async function lockOwnedAnalysis(tx: any, analysisId: string, token: string | null | undefined): Promise<any[]> {
   // A predicate on the locking SELECT itself can be evaluated before waiting.
   await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', analysisId);
-  const owned = await tx.$queryRawUnsafe('SELECT id, "analysisProvenance" FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > clock_timestamp()', analysisId, token ?? '');
+  const owned = await tx.$queryRawUnsafe('SELECT id, "analysisProvenance" FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > (clock_timestamp() AT TIME ZONE \'UTC\')', analysisId, token ?? '');
   if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
   return owned;
 }
@@ -3221,8 +3249,10 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           return { run: existing, created: false };
         }
         if (input.admission) await assertAdmission(tx, input.artifact.byteSize, input.admission);
+        const createdAt = await databaseNow(tx);
         const created = await tx.benchmarkRun.create({
           data: {
+            createdAt,
             benchmarkProtocolId: input.benchmarkProtocolId,
             testClipId: input.testClipId,
             workloadId: input.workloadId,
@@ -3252,8 +3282,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
             clientQualityDebug: input.clientQualityDebug as any,
             artifacts: {
               create: {
+                createdAt,
                 role: input.artifact.role,
-                reservationExpiresAt: new Date(Date.now() + (input.admission?.reservationMs ?? 86_400_000)),
+                reservationExpiresAt: new Date(createdAt.getTime() + (input.admission?.reservationMs ?? 86_400_000)),
                 sha256: input.artifact.sha256,
                 byteSize: input.artifact.byteSize,
                 mediaContainer: input.artifact.mediaContainer ?? null,
@@ -3378,7 +3409,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     async ensureQualityAnalysisQueued(input) {
       const run = await client.$transaction(async (tx) => {
         await lockCapacity(tx);
-        const now = new Date();
+        const now = await databaseNow(tx);
         const existing = await tx.qualityAnalysis.findUnique({
           where: {
             benchmarkRunId_metricModelId_analysisWorkerVersion: {
@@ -3395,6 +3426,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           if (await tx.qualityAnalysis.count({ where: { status: 'PENDING' } }) >= (input.maxPendingAnalyses ?? config.maxPendingAnalyses)) throw new HttpError(503, 'Authoritative analysis backlog limit exceeded');
           await tx.qualityAnalysis.create({
             data: {
+              createdAt: now,
               benchmarkRunId: input.benchmarkRunId,
               artifactId: input.artifactId,
               status: 'PENDING',
@@ -3452,7 +3484,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
       const extensionMs = Math.max(1, deadline.getTime() - Date.now());
       return await client.$transaction(async tx => {
         await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', analysisId);
-        const count = await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET "leaseExpiresAt" = clock_timestamp() + ($3 * interval \'1 millisecond\') WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > clock_timestamp()', analysisId, token, extensionMs);
+        const count = await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET "leaseExpiresAt" = (clock_timestamp() AT TIME ZONE \'UTC\') + ($3 * interval \'1 millisecond\') WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > (clock_timestamp() AT TIME ZONE \'UTC\')', analysisId, token, extensionMs);
         return count === 1;
       }, { timeout: 30_000, maxWait: 30_000 });
     },
