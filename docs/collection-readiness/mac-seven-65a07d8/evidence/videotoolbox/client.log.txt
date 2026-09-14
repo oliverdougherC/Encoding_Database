@@ -1,0 +1,28 @@
+Campaign campaign-28e2def1d446eab1: at most 35 encodes; resume with --resume-campaign campaign-28e2def1d446eab1
+Batch 1/1: 7 protocol recipe(s)
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Legacy submission advisory for h264_videotoolbox default: high_background_load:20.1%
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Legacy submission advisory for h264_videotoolbox default: high_background_load:21.1%
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Retaining suspect protocol evidence for h264_videotoolbox default: gpu-environment-unobserved
+Batch Summary
+  Planned Tasks: 35
+  Batches: 1
+  Completed Encodes: 14
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 1m 46s
+  Throughput: 476.4 encodes/hour

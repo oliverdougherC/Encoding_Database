@@ -1,0 +1,80 @@
+[
+  {
+    "source": ".build/native-seven-mac/receipt.json",
+    "copy": "evidence/receipt.json",
+    "byteSize": 2210,
+    "sha256": "34b2029f881f8599e633fa394afb39c087b8d7b9e7febd4b61a5eba52a968243"
+  },
+  {
+    "source": ".build/native-seven-mac/run.py",
+    "copy": "evidence/original-run.py",
+    "byteSize": 2871,
+    "sha256": "1734c405776b6d00fd0b2c99094ee3706615ff59bbca6364bb185ae7303be5f0"
+  },
+  {
+    "source": "client/resources/test_suite_v1/manifest.json",
+    "copy": "evidence/frozen-suite-manifest.json",
+    "byteSize": 15791,
+    "sha256": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76"
+  },
+  {
+    "source": ".build/native-seven-mac/software/client.log",
+    "copy": "evidence/software/client.log.txt",
+    "byteSize": 1636,
+    "sha256": "6bb3a532456c856e30dcaa65dec86f7d27efa31e1d0b5f9ed1d0a25a3a9e816f"
+  },
+  {
+    "source": ".build/native-seven-mac/software/embedded-runtime.json",
+    "copy": "evidence/software/embedded-runtime.json",
+    "byteSize": 15914,
+    "sha256": "3c342b08bf3ce2edb686ae10a760290422dfebd3c078b5dcd558e40ee4690529"
+  },
+  {
+    "source": ".build/native-seven-mac/software/queue/campaigns/campaign-8cf5cad6d31bff9f/manifest.json",
+    "copy": "evidence/software/manifest.json",
+    "byteSize": 16663,
+    "sha256": "e08e06e3b890bbbaf997c16e288e1a91219cdc050f7a74cb16f488601ae23c3f"
+  },
+  {
+    "source": ".build/native-seven-mac/software/queue/campaigns/campaign-8cf5cad6d31bff9f/campaign-complete.json",
+    "copy": "evidence/software/campaign-complete.json",
+    "byteSize": 70,
+    "sha256": "ac9f2576c1d3126a64ef80de9f497340d79043084e18300d4d6202b6ff801b5e"
+  },
+  {
+    "source": ".build/native-seven-mac/software/queue/protocol-attempts/campaign-8cf5cad6d31bff9f.json",
+    "copy": "evidence/software/protocol-attempts.json",
+    "byteSize": 318358,
+    "sha256": "acfa5cc963f6e60008d0980c78ba832fbe1741eccf1ef6dda8e2efc5f1a3a524"
+  },
+  {
+    "source": ".build/native-seven-mac/videotoolbox/client.log",
+    "copy": "evidence/videotoolbox/client.log.txt",
+    "byteSize": 1806,
+    "sha256": "8e75e483d6fcbacd9b4551341d80c502fa5709de9bc9d44b77978d448fe0eda3"
+  },
+  {
+    "source": ".build/native-seven-mac/videotoolbox/embedded-runtime.json",
+    "copy": "evidence/videotoolbox/embedded-runtime.json",
+    "byteSize": 15914,
+    "sha256": "8e1e51f323459b73c88c937ba3e2b4729137a9f0f94dce316f718d7a01312c35"
+  },
+  {
+    "source": ".build/native-seven-mac/videotoolbox/queue/campaigns/campaign-28e2def1d446eab1/manifest.json",
+    "copy": "evidence/videotoolbox/manifest.json",
+    "byteSize": 17068,
+    "sha256": "a2ec42f90670b4a90f2adffc3f4cf92050f2421f183768d81060fa3c23b5bb8f"
+  },
+  {
+    "source": ".build/native-seven-mac/videotoolbox/queue/campaigns/campaign-28e2def1d446eab1/campaign-complete.json",
+    "copy": "evidence/videotoolbox/campaign-complete.json",
+    "byteSize": 70,
+    "sha256": "4fb40bb3ad7e9aff92328f5d7d179167c84d9cf8282689b1f4fbd450b051617c"
+  },
+  {
+    "source": ".build/native-seven-mac/videotoolbox/queue/protocol-attempts/campaign-28e2def1d446eab1.json",
+    "copy": "evidence/videotoolbox/protocol-attempts.json",
+    "byteSize": 265808,
+    "sha256": "7208680a34baafddd0b63ab38fc90c2455d6f1004132d56e6c1eaa97d5696710"
+  }
+]

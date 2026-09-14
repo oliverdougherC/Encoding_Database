@@ -1,0 +1,30 @@
+Campaign campaign-8cf5cad6d31bff9f: at most 35 encodes; resume with --resume-campaign campaign-8cf5cad6d31bff9f
+Batch 1/1: 7 protocol recipe(s)
+Legacy submission advisory for libx264 fast: high_background_load:35.0%
+Retaining suspect protocol evidence for libx264 fast: background-cpu-suspect
+Legacy submission advisory for libx264 fast: high_background_load:24.4%
+Legacy submission advisory for libx264 fast: high_background_load:40.6%
+Retaining suspect protocol evidence for libx264 fast: background-cpu-suspect
+Legacy submission advisory for libx264 fast: high_background_load:34.3%
+Legacy submission advisory for libx264 fast: high_background_load:23.2%
+Legacy submission advisory for libx264 fast: high_background_load:26.4%
+Legacy submission advisory for libx264 fast: high_background_load:21.6%
+Legacy submission advisory for libx264 fast: high_background_load:27.6%
+Legacy submission advisory for libx264 fast: high_background_load:22.1%
+Legacy submission advisory for libx264 fast: high_background_load:33.8%
+Legacy submission advisory for libx264 fast: high_background_load:38.4%
+Retaining suspect protocol evidence for libx264 fast: background-cpu-suspect
+Legacy submission advisory for libx264 fast: high_background_load:22.1%
+Legacy submission advisory for libx264 fast: high_background_load:32.0%
+Legacy submission advisory for libx264 fast: high_background_load:45.2%
+Retaining suspect protocol evidence for libx264 fast: background-cpu-suspect
+Batch Summary
+  Planned Tasks: 35
+  Batches: 1
+  Completed Encodes: 20
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 2m 39s
+  Throughput: 453.2 encodes/hour
