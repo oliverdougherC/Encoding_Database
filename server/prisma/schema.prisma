@@ -345,8 +345,8 @@ model BenchmarkProtocol {
   activatedAt          DateTime?
   retiredAt            DateTime?
 
-  benchmarkRuns BenchmarkRun[]
-  scoreContexts ScoreContext[]
+  benchmarkRuns  BenchmarkRun[]
+  scoreContexts  ScoreContext[]
   derivedResults DerivedResult[]
 
   @@unique([protocolVersion, sourceSuiteVersion, metricWorkerVersion])
@@ -383,7 +383,7 @@ model TestClip {
   scanType                String   @default("progressive")
   hdrMetadata             Json?
 
-  benchmarkRuns BenchmarkRun[]
+  benchmarkRuns  BenchmarkRun[]
   derivedResults DerivedResult[]
 
   @@unique([suiteId, suiteVersion, clipKey])
@@ -438,7 +438,7 @@ model Recipe {
   filmGrainSynthesis         Json?
   majorTools                 Json?
 
-  benchmarkRuns BenchmarkRun[]
+  benchmarkRuns  BenchmarkRun[]
   derivedResults DerivedResult[]
 
   @@index([codecFamily, encoderImplementation, preset])
@@ -465,8 +465,12 @@ model Environment {
   ffmpegVersion          String
   encoderVersion         String?
   clientVersion          String
+  executionArchitecture  String?
+  translationMode        String?
+  runtimeIdentity        Json?
+  selectedDeviceEvidence Json?
 
-  benchmarkRuns BenchmarkRun[]
+  benchmarkRuns  BenchmarkRun[]
   derivedResults DerivedResult[]
 
   @@index([cpuModel])
@@ -483,6 +487,9 @@ model BenchmarkRun {
   recipeId                String
   environmentId           String
   payloadHash             String             @unique
+  immutablePayloadHash    String?
+  physicalSourceId        String?
+  encodeTimerBoundary     String?
   inputHash               String?
   campaignId              String?
   repetitionGroupId       String?
@@ -505,45 +512,53 @@ model BenchmarkRun {
   statusReason            String?
   decidedAt               DateTime?
 
-  benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
-  testClip          TestClip          @relation(fields: [testClipId], references: [id], onDelete: Restrict)
-  recipe            Recipe            @relation(fields: [recipeId], references: [id], onDelete: Restrict)
-  environment       Environment       @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  benchmarkProtocol BenchmarkProtocol     @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip              @relation(fields: [testClipId], references: [id], onDelete: Restrict)
+  recipe            Recipe                @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment           @relation(fields: [environmentId], references: [id], onDelete: Restrict)
   artifacts         Artifact[]
   qualityAnalyses   QualityAnalysis[]
   derivedMembers    DerivedResultMember[]
+  evidenceReviews   EvidenceReview[]
 
   @@index([benchmarkProtocolId, workloadId, recipeId, environmentId, status])
   @@index([repetitionGroupId])
 }
 
 model Artifact {
-  id           String               @id @default(cuid())
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
-  benchmarkRunId String
-  role         ArtifactRole
-  sha256       String?
-  byteSize     Int?
-  storageState ArtifactStorageState @default(PENDING)
-  storageProvider String?
-  storageBucket String?
-  storageKey   String?
-  storageUrl   String?
-  mediaContainer String?
-  stateReason  String?
-  stateDetails Json?
-  uploadedAt   DateTime?
-  verifiedAt   DateTime?
-  retainedAt   DateTime?
-  deletedAt    DateTime?
+  id                   String               @id @default(cuid())
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  benchmarkRunId       String
+  role                 ArtifactRole
+  sha256               String?
+  byteSize             Int?
+  storageState         ArtifactStorageState @default(PENDING)
+  storageProvider      String?
+  storageBucket        String?
+  storageKey           String?
+  storageUrl           String?
+  mediaContainer       String?
+  stateReason          String?
+  stateDetails         Json?
+  uploadedAt           DateTime?
+  verifiedAt           DateTime?
+  retainedAt           DateTime?
+  deletedAt            DateTime?
+  reservationExpiresAt DateTime?
+  uploadLeaseToken     String?
+  uploadLeaseExpiresAt DateTime?
 
-  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  benchmarkRun    BenchmarkRun      @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
   qualityAnalyses QualityAnalysis[]
+  evidenceReviews EvidenceReview[]
 
   @@unique([benchmarkRunId, role])
   @@index([storageState])
   @@index([sha256])
+  @@index([storageState, id])
+  @@index([storageState, reservationExpiresAt])
+  @@index([uploadLeaseExpiresAt])
 }
 
 model QualityAnalysis {
@@ -588,28 +603,64 @@ model QualityAnalysis {
   completedAt             DateTime?
   lastError               String?
   lastErrorAt             DateTime?
+  recomputePending        Boolean               @default(false)
+  recomputeLastError      String?
 
-  benchmarkRun BenchmarkRun @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
-  artifact     Artifact?     @relation(fields: [artifactId], references: [id], onDelete: SetNull)
-  derivedMembers DerivedResultMember[]
+  benchmarkRun    BenchmarkRun          @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  artifact        Artifact?             @relation(fields: [artifactId], references: [id], onDelete: SetNull)
+  derivedMembers  DerivedResultMember[]
+  evidenceReviews EvidenceReview[]
 
   @@unique([benchmarkRunId, metricModelId, analysisWorkerVersion])
   @@index([status])
   @@index([status, nextRetryAt, leaseExpiresAt])
+  @@index([status, completedAt])
+  @@index([recomputePending])
+}
+
+enum EvidenceReviewDecision {
+  EXPECTED
+  REJECT
+  INVESTIGATE
+  REVOKE
+}
+
+model EvidenceReview {
+  id                    String                 @id @default(cuid())
+  createdAt             DateTime               @default(now())
+  analysisId            String
+  benchmarkRunId        String
+  artifactId            String
+  artifactSha256        String
+  metricModelId         String
+  analysisWorkerVersion String
+  reviewerId            String
+  rationale             String
+  evidenceLinks         Json
+  decision              EvidenceReviewDecision
+  supersedesId          String?                @unique
+  analysis              QualityAnalysis        @relation(fields: [analysisId], references: [id], onDelete: Restrict)
+  benchmarkRun          BenchmarkRun           @relation(fields: [benchmarkRunId], references: [id], onDelete: Restrict)
+  artifact              Artifact               @relation(fields: [artifactId], references: [id], onDelete: Restrict)
+  supersedes            EvidenceReview?        @relation("ReviewSupersession", fields: [supersedesId], references: [id], onDelete: Restrict)
+  supersededBy          EvidenceReview?        @relation("ReviewSupersession")
+
+  @@index([analysisId, createdAt, id])
+  @@index([benchmarkRunId, createdAt])
 }
 
 model ScoreContext {
-  id                         String   @id @default(cuid())
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
-  benchmarkProtocolId        String
-  formulaVersion             String
-  contextVersion             String
-  workloadId                 String
-  qualityModelId             String
+  id                          String   @id @default(cuid())
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  benchmarkProtocolId         String
+  formulaVersion              String
+  contextVersion              String
+  workloadId                  String
+  qualityModelId              String
   workloadReferenceBitrateBps Float
-  transformConstants         Json
-  referenceFrontier          Json?
+  transformConstants          Json
+  referenceFrontier           Json?
 
   benchmarkProtocol BenchmarkProtocol @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
   derivedResults    DerivedResult[]
@@ -654,11 +705,11 @@ model DerivedResult {
   dispersion            Json
   recomputationSpec     Json
 
-  benchmarkProtocol BenchmarkProtocol  @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
-  testClip          TestClip?          @relation(fields: [testClipId], references: [id], onDelete: SetNull)
-  recipe            Recipe             @relation(fields: [recipeId], references: [id], onDelete: Restrict)
-  environment       Environment        @relation(fields: [environmentId], references: [id], onDelete: Restrict)
-  scoreContext      ScoreContext       @relation(fields: [scoreContextId], references: [id], onDelete: Restrict)
+  benchmarkProtocol BenchmarkProtocol     @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
+  testClip          TestClip?             @relation(fields: [testClipId], references: [id], onDelete: SetNull)
+  recipe            Recipe                @relation(fields: [recipeId], references: [id], onDelete: Restrict)
+  environment       Environment           @relation(fields: [environmentId], references: [id], onDelete: Restrict)
+  scoreContext      ScoreContext          @relation(fields: [scoreContextId], references: [id], onDelete: Restrict)
   members           DerivedResultMember[]
 
   @@unique([kind, benchmarkProtocolId, recipeId, environmentId, scoreContextId, scopeKey])
@@ -667,14 +718,14 @@ model DerivedResult {
 }
 
 model DerivedResultMember {
-  id              String   @id @default(cuid())
-  createdAt       DateTime @default(now())
-  derivedResultId String
-  benchmarkRunId  String
+  id                String   @id @default(cuid())
+  createdAt         DateTime @default(now())
+  derivedResultId   String
+  benchmarkRunId    String
   qualityAnalysisId String
 
-  derivedResult DerivedResult @relation(fields: [derivedResultId], references: [id], onDelete: Cascade)
-  benchmarkRun  BenchmarkRun  @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
+  derivedResult   DerivedResult   @relation(fields: [derivedResultId], references: [id], onDelete: Cascade)
+  benchmarkRun    BenchmarkRun    @relation(fields: [benchmarkRunId], references: [id], onDelete: Cascade)
   qualityAnalysis QualityAnalysis @relation(fields: [qualityAnalysisId], references: [id], onDelete: Restrict)
 
   @@unique([derivedResultId, qualityAnalysisId])
