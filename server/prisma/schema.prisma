@@ -523,6 +523,7 @@ model BenchmarkRun {
 
   @@index([benchmarkProtocolId, workloadId, recipeId, environmentId, status])
   @@index([repetitionGroupId])
+  @@index([physicalSourceId, campaignId, repetitionGroupId], map: "BenchmarkRun_measurement_group_idx")
 }
 
 model Artifact {
