@@ -193,8 +193,12 @@ if (mode === 'rebuild-fixture') {
     catch (error) { failures.push({ writer: true, at: new Date(), error: String(error) }); }
   } })();
   await Promise.all([...Array.from({ length: 25 }, (_, index) => reader(index)), sampler, writer]);
+  const finalCounts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
+  try { assert.equal(finalCounts.runs, 100020); assert.equal(finalCounts.artifacts, 100020); assert.equal(finalCounts.analyses, 100020); assert.equal(finalCounts.derived, 981); assert.equal(finalCounts.members, 80020); }
+  catch (error) { failures.push({ finalMembership: true, error: String(error) }); }
+  await client.$disconnect();
   latencies.sort((a, b) => a - b); const quantile = p => latencies[Math.floor((latencies.length - 1) * p)];
-  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources };
+  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources, finalCounts };
   report.passed = failures.length === 0 && report.latencyMs.p95 <= 1000 && mutations.length === 5 && scoredRows > 0;
   await writeFile(`${output}/measurement.json`, JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, resources: undefined, mutations: mutations.length, failures: failures.slice(0, 5) }));
   process.exitCode = report.passed ? 0 : 1;
