@@ -1,0 +1,37 @@
+[
+  {
+    "id": "athletic-action-1080p24-final",
+    "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+    "expected": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de"
+  },
+  {
+    "id": "natural-detail-1080p24-final",
+    "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+    "expected": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225"
+  },
+  {
+    "id": "film-grain-1080p24-final",
+    "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+    "expected": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603"
+  },
+  {
+    "id": "dark-gradients-1080p24-final",
+    "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+    "expected": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3"
+  },
+  {
+    "id": "animation-1080p24-final",
+    "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+    "expected": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea"
+  },
+  {
+    "id": "screen-text-1080p24-final",
+    "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+    "expected": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c"
+  },
+  {
+    "id": "talking-head-1080p24-final",
+    "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+    "expected": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3"
+  }
+]
