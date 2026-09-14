@@ -69,13 +69,31 @@ jobs:
     name: server
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: encodingdb_test
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: encodingdb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U encodingdb_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_test
+      BACKEND_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_backend
+      CALIBRATION_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration
+      CORPUS_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_corpus
+      REVIEW_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_review
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Install media probe runtime
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg postgresql-client
       - name: Install
         working-directory: server
         run: npm ci --no-audit --no-fund
@@ -86,6 +104,19 @@ jobs:
         run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Materialize frozen canonical references
         run: python scripts/materialize_final_suite.py
+      - name: Migrate isolated real PostgreSQL fault-test databases
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: |
+          set -euo pipefail
+          for database in encodingdb_test encodingdb_backend encodingdb_calibration encodingdb_corpus encodingdb_review; do
+            if [ "$database" != encodingdb_test ]; then
+              createdb -h 127.0.0.1 -U encodingdb_test "$database"
+            fi
+            DATABASE_URL="postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/$database" \
+              npx --prefix server prisma migrate deploy --schema server/prisma/schema.prisma
+          done
+          psql "$DATABASE_URL" -c "ALTER DATABASE encodingdb_backend SET timezone TO 'America/Los_Angeles'"
       - name: Test
         working-directory: server
         run: npm test

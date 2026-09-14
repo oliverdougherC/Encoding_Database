@@ -321,8 +321,8 @@ test('production activation doc and deployment wiring mention env validation, ac
   assert.match(deploy, /\/api\/corpus\?limit=1/);
   assert.match(deploy, /\/health\/v7-evidence/);
   assert.ok(deploy.indexOf('run_preflight_validation') < deploy.indexOf('git fetch --prune'));
-  assert.match(compose, /name: encodingdb_prod_db_data/);
-  assert.match(compose, /name: encodingdb_prod_artifact_data/);
+  assert.match(compose, /name: \$\{DATABASE_VOLUME_NAME:-encodingdb_prod_db_data\}/);
+  assert.match(compose, /name: \$\{ARTIFACT_VOLUME_NAME:-encodingdb_prod_artifact_data\}/);
   assert.match(rootEnv, /PL_V7_REFERENCE_CONTEXT_PATH=/);
   assert.match(rootEnv, /ARTIFACT_VOLUME_NAME=encodingdb_prod_artifact_data/);
   assert.match(serverEnv, /ALLOW_TEST_ONLY_REFERENCE_CONTEXTS=0/);
