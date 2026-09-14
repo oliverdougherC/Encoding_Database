@@ -5,7 +5,7 @@ import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
 import { loadActiveRecommendationContextIdentity, loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
 import { installedWorkerProvenance } from './workerProvenance.js';
-import { CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
+import { MEASUREMENT_GROUP_STATE_VERSION, CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -3534,8 +3534,8 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           JOIN LATERAL (SELECT a.id FROM "QualityAnalysis" a JOIN "BenchmarkRun" r ON r.id = a."benchmarkRunId"
             WHERE r."benchmarkProtocolId" = d."benchmarkProtocolId" AND r."workloadId" = d."workloadId" AND r."recipeId" = d."recipeId" AND r."environmentId" = d."environmentId" AND a."metricModelId" = c."qualityModelId"
             ORDER BY a."createdAt" DESC, a.id DESC LIMIT 1) representative ON true
-          WHERE dependency."invalidatedAt" IS NOT NULL AND d.kind = 'WORKLOAD' AND c."contextVersion" = $1 AND c."formulaVersion" = $2 AND c."qualityModelId" = $3 AND c."referenceFrontier"->>'contextHash' = $4
-          LIMIT 10`, active.contextVersion, active.formulaVersion, active.qualityModelId, active.hash);
+          WHERE (dependency."invalidatedAt" IS NOT NULL OR d."evidenceSummary"->'measurementGroupSnapshot'->>'version' IS DISTINCT FROM $5) AND d.kind = 'WORKLOAD' AND c."contextVersion" = $1 AND c."formulaVersion" = $2 AND c."qualityModelId" = $3 AND c."referenceFrontier"->>'contextHash' = $4
+          LIMIT 10`, active.contextVersion, active.formulaVersion, active.qualityModelId, active.hash, MEASUREMENT_GROUP_STATE_VERSION);
         const extra = await client.qualityAnalysis.findMany({ where: { id: { in: dirty.map(row => row.id).filter(id => !jobs.some(job => job.id === id)) } } });
         jobs.push(...extra.slice(0, 10 - jobs.length));
       }

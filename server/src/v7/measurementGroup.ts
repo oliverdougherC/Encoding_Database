@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { canonicalJsonString } from './persistence.js';
 import { applyEffectiveReview } from './reviews.js';
 
+export const MEASUREMENT_GROUP_STATE_VERSION = 'measurement-group-state/v3' as const;
 export const MEASUREMENT_GROUP_SCHEMA_VERSION = 'encodingdb-measurement-group/v1' as const;
 export const CANONICAL_MEASUREMENT_RULES = { minimumMeasuredRuns: 2, stabilityThresholdRatio: 0.03, maxAdaptiveRepeats: 2 } as const;
 const receiptSchema = z.object({
@@ -137,21 +138,22 @@ export function createMeasurementGroupVerifier(client: MeasurementGroupClient, i
   };
 }
 
-/** Freshness certificate for the inputs of the shared gate, not a second eligibility algorithm. */
+/** Hash every complete row before ordered aggregation, bounding the aggregate state to IDs/digests. */
 export function measurementGroupStateHashSql(scope: Prisma.Sql): Prisma.Sql {
-  return Prisma.sql`(SELECT encode(sha256(convert_to(coalesce(jsonb_agg(jsonb_build_array(
+  return Prisma.sql`(WITH row_state AS MATERIALIZED (SELECT r.id, encode(sha256(convert_to(jsonb_build_array(
     r.id, r."benchmarkProtocolId", r."testClipId", r."workloadId", r."recipeId", r."environmentId", r."physicalSourceId", r."campaignId", r."repetitionGroupId", r."repetitionIndex",
     r.status, r."encodeTimerBoundary", r."inputHash", r."encodeWallTimeMs", r."encodeFps", r."sourceFps", r."realTimeRatio", r."sourceFrameCount", r."encodedFrameCount", r."preRunEnvironmentCheck",
     b."protocolVersion", b."canonicalRecipeRules", c.sha256, c."exactFrameCount", c."exactDurationSeconds", c."frameRateNumerator", c."frameRateDenominator",
     a.id, a.status, a."metricModelId", a."analysisWorkerVersion", a."analysisProvenance"->'workerBuildFingerprint', a."vmafMean", a."vmafP5", a."videoBitrateBps", a."fileSizeBytes",
     f.id, f.role, f."benchmarkRunId", f.sha256, f."byteSize", f."storageState", f."storageProvider", f."storageKey", f."storageUrl",
     review.id, review.decision
-  ) ORDER BY r.id), '[]'::jsonb)::text, 'UTF8')), 'hex')
+  )::text, 'UTF8')), 'hex') AS hash
     FROM "BenchmarkRun" r JOIN "BenchmarkProtocol" b ON b.id = r."benchmarkProtocolId" JOIN "TestClip" c ON c.id = r."testClipId"
     LEFT JOIN LATERAL (SELECT a.* FROM "QualityAnalysis" a WHERE a."benchmarkRunId" = r.id ORDER BY a."createdAt" DESC, a.id DESC LIMIT 1) a ON true
     LEFT JOIN "Artifact" f ON f.id = a."artifactId"
     LEFT JOIN LATERAL (SELECT v.id, v.decision FROM "EvidenceReview" v WHERE v."analysisId" = a.id ORDER BY v."createdAt" DESC, v.id DESC LIMIT 1) review ON true
-    WHERE ${scope})`;
+    WHERE ${scope})
+    SELECT encode(sha256(convert_to(coalesce(jsonb_agg(jsonb_build_array(id, hash) ORDER BY id COLLATE "C"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM row_state)`;
 }
 export function measurementGroupScopeForMembers(runIds: readonly string[]): Prisma.Sql {
   return Prisma.sql`EXISTS (SELECT 1 FROM "BenchmarkRun" counted WHERE counted.id = ANY(${[...runIds]}::text[])

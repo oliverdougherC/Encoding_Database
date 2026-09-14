@@ -1,5 +1,5 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
-import { measurementGroupStateHashSql, measurementGroupScopeForDerived } from './measurementGroup.js';
+import { MEASUREMENT_GROUP_STATE_VERSION, measurementGroupStateHashSql, measurementGroupScopeForDerived } from './measurementGroup.js';
 import { DEFAULT_ANALYZER_VERSION } from './artifacts.js';
 import { buildPublicCorpusRows, getPublicReferenceContextVersions, type PublicCorpusRow } from './corpus.js';
 
@@ -68,7 +68,7 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
         WHERE d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."plTotal" IS NOT NULL
           AND d."benchmarkProtocolId" = grouped."benchmarkProtocolId" AND d."workloadId" = grouped."workloadId" AND d."recipeId" = grouped."recipeId" AND d."environmentId" = grouped."environmentId"
           AND c."qualityModelId" = grouped."metricModelId" AND c."contextVersion" = ANY(${[...contexts]}::text[])
-          AND (b."protocolVersion" <> '7.1' OR (d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v2'
+          AND (b."protocolVersion" <> '7.1' OR (d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = ${MEASUREMENT_GROUP_STATE_VERSION}
             AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = grouped.accepted
             AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = grouped."acceptedMembershipHash"
             AND EXISTS (SELECT 1 FROM "DerivedResultGroupDependency" dependency WHERE dependency."derivedResultId" = d.id)
@@ -77,8 +77,14 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
       ) candidate ON true
     ), page AS (
       SELECT * FROM candidates ORDER BY ${sort} ${direction} NULLS LAST, id ASC LIMIT ${pageSize} OFFSET ${offset}
+    ), certificates AS MATERIALIZED (
+      -- Fence expensive certificate evaluation against planner duplication into join filters.
+      SELECT page.*, CASE WHEN page."derivedId" IS NOT NULL
+        AND EXISTS (SELECT 1 FROM "DerivedResult" d WHERE d.id = page."derivedId" AND d."evidenceSummary" ? 'measurementGroupSnapshot')
+        THEN ${measurementGroupStateHashSql(measurementGroupScopeForDerived(Prisma.raw('page."derivedId"')))} END AS "groupStateHash"
+      FROM page
     ), hydrated AS (
-      SELECT page.*, d.id AS "verifiedDerivedId" FROM page LEFT JOIN LATERAL (
+      SELECT page.*, d.id AS "verifiedDerivedId" FROM certificates page LEFT JOIN LATERAL (
         SELECT d.id FROM "DerivedResult" d JOIN "ScoreContext" c ON c.id = d."scoreContextId" JOIN "BenchmarkProtocol" scoredProtocol ON scoredProtocol.id = d."benchmarkProtocolId"
         WHERE d.id = page."derivedId" AND d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."benchmarkProtocolId" = page."benchmarkProtocolId"
           AND d."workloadId" = page."workloadId" AND d."recipeId" = page."recipeId" AND d."environmentId" = page."environmentId"
@@ -89,13 +95,13 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
               AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page.accepted
               AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page."acceptedMembershipHash")
             OR (scoredProtocol."protocolVersion" = '7.1'
-              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v2'
+              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = ${MEASUREMENT_GROUP_STATE_VERSION}
               AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = page.accepted
               AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = page."acceptedMembershipHash"
               AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int > 0
               AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int
               AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId" COLLATE "C"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedMembershipHash'
-              AND ${measurementGroupStateHashSql(measurementGroupScopeForDerived(Prisma.raw('d.id')))} = d."evidenceSummary"->'measurementGroupSnapshot'->>'stateHash')
+              AND page."groupStateHash" = d."evidenceSummary"->'measurementGroupSnapshot'->>'stateHash')
           )
         ORDER BY d."createdAt" DESC, d.id DESC LIMIT 1
       ) d ON true

@@ -1,4 +1,4 @@
-import { createMeasurementGroupVerifier, measurementGroupStateHashSql, measurementGroupScopeForMembers, type MeasurementGroupEligibility } from './measurementGroup.js';
+import { MEASUREMENT_GROUP_STATE_VERSION, createMeasurementGroupVerifier, measurementGroupStateHashSql, measurementGroupScopeForMembers, type MeasurementGroupEligibility } from './measurementGroup.js';
 import {
   buildAggregationCompatibilityKey,
   buildDerivedResultRecomputationSpec,
@@ -1068,7 +1068,7 @@ export async function persistDerivedResultRecord(
       const [state] = await tx.$queryRaw<Array<{ hash: string; membership: string }>>(Prisma.sql`SELECT ${measurementGroupStateHashSql(measurementGroupScopeForMembers(members.map(member => member.benchmarkRunId)))} AS hash,
         (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(member_id ORDER BY member_id COLLATE "C"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM unnest(${members.map(member => member.qualityAnalysisId)}::text[]) AS member_id) AS membership`);
       derivedResult = { ...derivedResult, evidenceSummary: { ...derivedResult.evidenceSummary, measurementGroupSnapshot: {
-        version: 'measurement-group-state/v2', rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
+        version: MEASUREMENT_GROUP_STATE_VERSION, rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
         qualifiedCount: members.length, qualifiedMembershipHash: state!.membership, stateHash: state!.hash,
       } } };
     }

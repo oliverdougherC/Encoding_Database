@@ -321,6 +321,15 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   try {
     process.env.PL_V7_REFERENCE_CONTEXT_PATH = activeEnv.PL_V7_REFERENCE_CONTEXT_PATH;
     await replicaPersistence.retryDerivedRecomputes(async payload => { dependencyRebuilds++; await createDefaultDerivedRecomputeCallback(replica, activeEnv)(payload); });
+    const beforeUpgrade = await client.derivedResult.findUnique({ where: { id: aggregate.id }, include: { members: { orderBy: { qualityAnalysisId: 'asc' } } } });
+    await client.derivedResult.update({ where: { id: aggregate.id }, data: { evidenceSummary: { ...beforeUpgrade.evidenceSummary, measurementGroupSnapshot: { ...beforeUpgrade.evidenceSummary.measurementGroupSnapshot, version: 'measurement-group-state/v2' } } } });
+    assert.equal((await client.$queryRawUnsafe('SELECT count(*)::int AS count FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = $1 AND "invalidatedAt" IS NOT NULL', aggregate.id))[0].count, 0, 'format upgrade does not depend on source invalidation');
+    assert.equal(await client.qualityAnalysis.count({ where: { recomputePending: true } }), 0);
+    await replicaPersistence.retryDerivedRecomputes(createDefaultDerivedRecomputeCallback(replica, activeEnv));
+    const afterUpgrade = await client.derivedResult.findUnique({ where: { id: aggregate.id }, include: { members: { orderBy: { qualityAnalysisId: 'asc' } } } });
+    assert.equal(afterUpgrade.evidenceSummary.measurementGroupSnapshot.version, 'measurement-group-state/v3', 'restart upgrades active v2 certificates even with clean dependencies');
+    assert.equal(afterUpgrade.plTotal, beforeUpgrade.plTotal);
+    assert.deepEqual(afterUpgrade.members.map(m => [m.benchmarkRunId, m.qualityAnalysisId]), beforeUpgrade.members.map(m => [m.benchmarkRunId, m.qualityAnalysisId]), 'format upgrade revalidates the exact retained membership');
   } finally {
     if (previousContextPath === undefined) delete process.env.PL_V7_REFERENCE_CONTEXT_PATH;
     else process.env.PL_V7_REFERENCE_CONTEXT_PATH = previousContextPath;
