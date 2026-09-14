@@ -33,4 +33,12 @@ class NvencVbrTest(unittest.TestCase):
             rc = recipe.build_rate_control_config(encoder='h264_nvenc', mode=mode, quality_value=23)
             self.assertEqual(ffmpeg._build_rate_control_args(encoder='h264_nvenc', rate_control=rc), [flag, '23'])
 
+    def test_outside_supported_quality_range_is_rejected_instead_of_clamped(self):
+        for mode, flag in [('cq', '-cq'), ('qp', '-qp'), ('cqp', '-qp')]:
+            for value in (-1, 52, 100):
+                with self.assertRaises(ValueError):
+                    ffmpeg._build_rate_control_args(encoder='h264_nvenc', rate_control=recipe.RateControlConfig(mode=mode, qualityValue=value))
+            for value in (0, 51):
+                self.assertEqual(ffmpeg._build_rate_control_args(encoder='h264_nvenc', rate_control=recipe.RateControlConfig(mode=mode, qualityValue=value)), [flag, str(value)])
+
 if __name__ == '__main__': unittest.main()

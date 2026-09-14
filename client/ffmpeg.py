@@ -133,13 +133,13 @@ def _build_rate_control_args(
             if bufsize is not None:
                 args += ["-bufsize:v", f"{bufsize}k"]
         elif mode == "cq":
-            if quality is None:
-                raise ValueError(f"{enc} CQ mode requires qualityValue")
-            args += ["-cq", str(max(0, min(51, quality)))]
+            if quality is None or not 0 <= quality <= 51:
+                raise ValueError(f"{enc} canonical CQ mode requires qualityValue in 0..51")
+            args += ["-cq", str(quality)]
         elif mode in ("qp", "cqp"):
-            if quality is None:
-                raise ValueError(f"{enc} QP mode requires qualityValue")
-            args += ["-qp", str(max(0, min(51, quality)))]
+            if quality is None or not 0 <= quality <= 51:
+                raise ValueError(f"{enc} canonical QP mode requires qualityValue in 0..51")
+            args += ["-qp", str(quality)]
         else:
             raise ValueError(f"{enc} does not support canonical {mode} rate control")
     elif enc.endswith("_qsv"):
