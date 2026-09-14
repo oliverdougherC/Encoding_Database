@@ -15,7 +15,7 @@ import type {
   PrismaClient,
 } from '@prisma/client';
 
-export const DERIVED_RESULT_AGGREGATOR_VERSION = 'derived-result-aggregation/v2-cluster-bootstrap' as const;
+export const DERIVED_RESULT_AGGREGATOR_VERSION = 'derived-result-aggregation/v3-physical-source-bootstrap' as const;
 export const DEFAULT_BOOTSTRAP_ITERATIONS = 2000 as const;
 export const DEFAULT_BOOTSTRAP_CONFIDENCE_LEVEL = 0.95 as const;
 export const MIN_BOOTSTRAP_SAMPLE_SIZE = 2 as const;
@@ -80,6 +80,7 @@ export interface AggregateRunObservation {
   vmafP5: number | null;
   contributorKey?: string | null;
   machineKey?: string | null;
+  physicalSourceId?: string | null;
   campaignId?: string | null;
   repetitionGroupId?: string | null;
 }
@@ -203,6 +204,7 @@ export interface AggregateAnalysisRecord {
   vmafP5: number | null;
   contributorKey?: string | null;
   machineKey?: string | null;
+  physicalSourceId?: string | null;
   campaignId?: string | null;
   repetitionGroupId?: string | null;
 }
@@ -234,6 +236,7 @@ type CanonicalAcceptedRun = AggregateRunObservation & {
   benchmarkRunId: string;
   contributorKey: string | null;
   machineKey: string | null;
+  physicalSourceId: string | null;
   campaignId: string | null;
   repetitionGroupId: string | null;
 };
@@ -296,7 +299,7 @@ function ensureConfidenceLevel(value: number | undefined): number {
   return candidate;
 }
 
-function normalizeEvidencePolicy(policy: RecommendationEvidencePolicy): RecommendationEvidencePolicy {
+export function normalizeEvidencePolicy(policy: RecommendationEvidencePolicy): RecommendationEvidencePolicy {
   const normalized: RecommendationEvidencePolicy = {
     policyVersion: requireText(policy.policyVersion, 'policyVersion'),
     policyStatus: policy.policyStatus,
@@ -399,10 +402,10 @@ function createSeededPrng(seedMaterial: string): () => number {
 }
 
 function runIndependentSourceKey(run: CanonicalAcceptedRun): string {
-  // Repeats from one machine/campaign are a measurement cluster, not independent
-  // evidence. Missing provenance is deliberately grouped as unknown rather than
-  // promoted to one independent source per run.
-  return `${run.machineKey ?? 'unknown-machine'}::${run.campaignId ?? 'unknown-campaign'}`;
+  // Physical installations are the confidence clusters. Campaigns and environment
+  // fingerprints cannot establish independent machines. Unknown IDs share one
+  // cluster for centering, and contribute zero independent corroborating sources.
+  return run.physicalSourceId ?? 'unknown-physical-source';
 }
 
 function runRepetitionKey(run: CanonicalAcceptedRun): string {
@@ -432,6 +435,7 @@ function collapseIndependentClusters(
       vmafP5: median(stableNumericValues(members.map((run) => run.vmafP5))),
       contributorKey: null,
       machineKey: members[0]?.machineKey ?? null,
+      physicalSourceId: members[0]?.physicalSourceId ?? null,
       campaignId: members[0]?.campaignId ?? null,
       repetitionGroupId: clusterKey,
     }));
@@ -443,6 +447,7 @@ function canonicalizeRun(run: AggregateRunObservation): CanonicalAcceptedRun {
     benchmarkRunId: requireText(run.benchmarkRunId, 'benchmarkRunId'),
     contributorKey: run.contributorKey?.trim() || null,
     machineKey: run.machineKey?.trim() || null,
+    physicalSourceId: run.physicalSourceId?.trim() || null,
     campaignId: run.campaignId?.trim() || null,
     repetitionGroupId: run.repetitionGroupId?.trim() || null,
     encodeFps: normalizeFiniteNumber(run.encodeFps),
@@ -680,6 +685,7 @@ function buildAggregateRunObservation(
     vmafP5: record.vmafP5,
     contributorKey: record.contributorKey ?? null,
     machineKey: record.machineKey ?? null,
+    physicalSourceId: record.physicalSourceId ?? null,
     campaignId: record.campaignId ?? null,
     repetitionGroupId: record.repetitionGroupId ?? null,
   };
@@ -707,7 +713,7 @@ function buildBootstrapSnapshots(
   seed: string,
 ): NumericMetricSnapshot[] {
   // Confidence intervals estimate between-cluster uncertainty. A single
-  // machine/campaign cannot support that estimate, regardless of repeat count.
+  // physical source cannot support that estimate, regardless of repeat count.
   if (runs.length < 2 || iterations < 1) return [];
 
   const prng = createSeededPrng(seed);
@@ -823,8 +829,8 @@ export function rebuildDerivedResultAggregate(
 
   const acceptedRunIds = acceptedRuns.map((run) => run.benchmarkRunId);
   const repetitionCount = new Set(acceptedRuns.map(runRepetitionKey)).size;
-  const independentSourceCount = collapseIndependentClusters(acceptedRuns).length;
-  const machineCount = new Set(acceptedRuns.map((run) => run.machineKey ?? 'unknown-machine')).size;
+  const independentSourceCount = new Set(acceptedRuns.map((run) => run.physicalSourceId).filter(Boolean)).size;
+  const machineCount = independentSourceCount;
   const contributorCount = new Set(acceptedRuns.map((run) => run.contributorKey ?? 'unknown-contributor')).size;
   const evidenceTier = classifyEvidenceTier(
     policy,
@@ -990,6 +996,8 @@ function buildDerivedResultUpdateInput(
   derivedResult: DerivedResultPersistenceShape,
 ): Prisma.DerivedResultUpdateInput {
   return {
+    invalidatedAt: null,
+    invalidationReason: null,
     workloadId: derivedResult.workloadId,
     aggregatorVersion: derivedResult.aggregatorVersion,
     acceptedRunCount: derivedResult.acceptedRunCount,

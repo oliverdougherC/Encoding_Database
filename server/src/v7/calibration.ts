@@ -1,3 +1,5 @@
+import { buildScoringBehaviorHash } from './recommendationPolicy.js';
+import { normalizeEvidencePolicy, type RecommendationEvidencePolicy } from './aggregation.js';
 import { canonicalJsonString, sha256Hex } from './persistence.js';
 
 export const CALIBRATION_EVIDENCE_SCHEMA_VERSION = 'pl-v7-calibration-evidence/v1' as const;
@@ -29,6 +31,7 @@ export interface CalibrationEvidenceRecord {
   artifactStorageState: 'RETAINED' | 'VERIFIED';
   qualityAnalysisId: string;
   analysisWorkerVersion: string;
+  evidenceReviewId?: string | null;
   recipeFingerprint: string;
   environmentFingerprint: string;
   machineSourceId: string;
@@ -67,6 +70,11 @@ export interface HoldoutEvaluation {
   evaluationId: string;
   dimension: HoldoutDimension;
   evidenceIds: readonly string[];
+  fittingEvidenceIds: readonly string[];
+  frontierEvidenceIds: readonly string[];
+  fittedContextHash: string;
+  fittedContextArtifactPath?: string;
+  referenceWorkloadByEvidenceId?: Record<string, string>;
   scenario: CalibrationScenario;
   predictedTopEvidenceId: string;
   recommendationAccepted: boolean | null;
@@ -96,6 +104,9 @@ export interface CalibrationFreezeRecord {
   scoreContextArtifactPath: string;
   scoreContextHash: string;
   evidencePolicyVersion: string;
+  evidencePolicy: RecommendationEvidencePolicy;
+  evidencePolicyHash: string;
+  scoringBehaviorHash: string;
   qualityExponent: number;
   bitrateReferenceVmafAnchor: number;
   speedCurveRate: number;
@@ -168,7 +179,7 @@ function validSha256(value: string): boolean {
   return /^[0-9a-f]{64}$/.test(value);
 }
 
-function validReviewer(reviewer: KnowledgeableReviewer | null): boolean {
+export function validReviewer(reviewer: KnowledgeableReviewer | null): boolean {
   if (!reviewer) return false;
   return reviewer.reviewerId.trim().length > 0
     && reviewer.expertise.trim().length >= 12
@@ -186,7 +197,9 @@ function evidenceHashPayload(document: CalibrationEvidenceDocument): Omit<Calibr
 
 export function buildCalibrationReviewHash(document: CalibrationEvidenceDocument): string {
   const { freeze: _freeze, reviewHash: _reviewHash, evidenceHash: _evidenceHash, ...reviewPayload } = document;
-  return sha256Hex(canonicalJsonString(reviewPayload as never));
+  const reviewedParameters = document.freeze ? { scoringBehaviorHash: document.freeze.scoringBehaviorHash, evidencePolicy: document.freeze.evidencePolicy, qualityExponent: document.freeze.qualityExponent, bitrateReferenceVmafAnchor: document.freeze.bitrateReferenceVmafAnchor, speedCurveRate: document.freeze.speedCurveRate, speedSaturationRealtime: document.freeze.speedSaturationRealtime } : null;
+  // Preserve historical draft hashes; a COMPLETE review also binds applied policy/constants.
+  return sha256Hex(canonicalJsonString((document.status === 'COMPLETE' ? { ...reviewPayload, reviewedParameters } : reviewPayload) as never));
 }
 
 export function buildCalibrationEvidenceHash(document: CalibrationEvidenceDocument): string {
@@ -197,6 +210,13 @@ function addFinding(target: CalibrationFinding[], code: string, message: string)
   if (!target.some((finding) => finding.code === code && finding.message === message)) {
     target.push({ code, message });
   }
+}
+
+export function holdoutGroup(entry: CalibrationEvidenceRecord, dimension: HoldoutDimension): string {
+  if (dimension === 'HARDWARE_FAMILY') return entry.hardwareFamily;
+  if (dimension === 'ENCODER_FAMILY') return entry.encoderFamily;
+  if (dimension === 'CONTENT_CLASS') return entry.contentClass;
+  return `${entry.encoderImplementation}:${canonicalJsonString(entry.nativeRateControl as never)}`;
 }
 
 export function assessCalibrationEvidence(
@@ -286,13 +306,26 @@ export function assessCalibrationEvidence(
       && validReviewer(review.reviewer)
       && validRationale(review.rationale))
     .flatMap((review) => review.evidenceIds));
+  const fitting = corpus.filter((entry) => entry.partition === 'CALIBRATION');
+  if (!fitting.length) addFinding(errors, 'empty_fitting_corpus', 'At least one CALIBRATION row is required');
+  const blockedIds = new Set(sanityReviews.filter((review) => review.disposition === 'INVESTIGATE' || review.disposition === 'EXCLUDE').flatMap((review) => review.evidenceIds));
   const rateGroups = new Map<string, Set<string>>();
-  for (const evidence of corpus.filter((entry) => entry.runStatus === 'ACCEPTED'
-    || (entry.runStatus === 'SUSPECT' && reviewedExpectedSuspectEvidence.has(entry.evidenceId)))) {
+  for (const evidence of fitting.filter((entry) => !blockedIds.has(entry.evidenceId) && (entry.runStatus === 'ACCEPTED'
+    || (entry.runStatus === 'SUSPECT' && reviewedExpectedSuspectEvidence.has(entry.evidenceId))))) {
     const key = `${evidence.workloadId}\u241f${evidence.encoderImplementation}`;
     const fingerprints = rateGroups.get(key) ?? new Set<string>();
-    fingerprints.add(evidence.recipeFingerprint);
+    if (!evidence.nativeRateControl || !Object.keys(evidence.nativeRateControl).length) addFinding(errors, 'native_rate_control', `Evidence ${evidence.evidenceId} lacks native rate control`);
+    fingerprints.add(canonicalJsonString(evidence.nativeRateControl as never));
     rateGroups.set(key, fingerprints);
+  }
+  const presetGroups = new Map<string, Set<string>>();
+  for (const row of fitting.filter((entry) => !blockedIds.has(entry.evidenceId) && (entry.runStatus === 'ACCEPTED' || reviewedExpectedSuspectEvidence.has(entry.evidenceId)))) {
+    const key = `${row.workloadId}:${row.encoderImplementation}:${row.preset}`;
+    const values = presetGroups.get(key) ?? new Set<string>();
+    values.add(canonicalJsonString(row.nativeRateControl as never)); presetGroups.set(key, values);
+  }
+  for (const [key, points] of presetGroups) if (points.size < requirements.minimumRatePointsPerWorkloadImplementation) {
+    addFinding(errors, 'preset_rate_quality_coverage', `${key} lacks distinct native RC points within the same preset`);
   }
   const hardwareImplementations = normalizedUnique(corpus
     .filter((entry) => entry.hardwareFamily !== 'software')
@@ -354,6 +387,22 @@ export function assessCalibrationEvidence(
     if (!referenced.length || referenced.some((entry) => !entry || entry.partition !== 'HOLDOUT')) {
       addFinding(errors, 'holdout_partition', `${evaluation.evaluationId} must reference only known HOLDOUT evidence`);
     }
+    const fitIds = normalizedUnique(evaluation.fittingEvidenceIds ?? []);
+    const fit = fitIds.map((id) => evidenceById.get(id));
+    if (!fit.length || fit.some((entry) => !entry || entry.partition !== 'CALIBRATION')) {
+      addFinding(errors, 'holdout_fitting_set', `${evaluation.evaluationId} requires explicit known CALIBRATION fitting evidence`);
+    }
+    if (!validSha256(evaluation.fittedContextHash ?? '') || !(evaluation.frontierEvidenceIds?.length)
+      || evaluation.frontierEvidenceIds.some((id) => !fitIds.includes(id))) {
+      addFinding(errors, 'holdout_frontier', `${evaluation.evaluationId} must bind a fitted context and frontier belonging only to its fitting set`);
+    }
+    const fitGroups = new Set(fit.filter((entry): entry is CalibrationEvidenceRecord => Boolean(entry)).map((entry) => holdoutGroup(entry, evaluation.dimension)));
+    if (referenced.some((entry) => entry && fitGroups.has(holdoutGroup(entry, evaluation.dimension)))) {
+      addFinding(errors, 'holdout_group_leakage', `${evaluation.evaluationId} fitting and evaluation groups overlap for ${evaluation.dimension}`);
+    }
+    if ([...fitIds, ...evaluation.evidenceIds].some((id) => blockedIds.has(id))) {
+      addFinding(errors, 'blocked_holdout_evidence', `${evaluation.evaluationId} uses investigated or excluded evidence`);
+    }
     if (!evaluation.evidenceIds.includes(evaluation.predictedTopEvidenceId)) {
       addFinding(errors, 'holdout_prediction', `${evaluation.evaluationId} top prediction is outside its evidence set`);
     }
@@ -369,7 +418,9 @@ export function assessCalibrationEvidence(
   ]));
   for (const familyKey of requiredFamilyKeys) {
     const review = topReviews.find((entry) => entry.familyKey === familyKey);
-    if (!review || review.wouldChooseFirst !== true || !evidenceById.has(review.evidenceId)
+    const reviewed = review ? evidenceById.get(review.evidenceId) : null;
+    if (reviewed && familyKey !== `encoder:${reviewed.encoderImplementation}` && familyKey !== `hardware:${reviewed.hardwareFamily}`) addFinding(errors, 'top_result_family', `${familyKey} review references a different family`);
+    if (!review || review.wouldChooseFirst !== true || !evidenceById.has(review.evidenceId) || blockedIds.has(review.evidenceId)
       || !validReviewer(review.reviewer) || !validRationale(review.rationale)) {
       addFinding(errors, 'top_result_review', `Missing affirmative knowledgeable top-result review for ${familyKey}`);
     }
@@ -387,12 +438,18 @@ export function assessCalibrationEvidence(
     }
   }
   for (const review of sanityReviews) {
-    if (review.evidenceIds.some((id) => !evidenceById.has(id)) || review.disposition == null
+    if (!review.evidenceIds.length || review.evidenceIds.some((id) => !evidenceById.has(id)) || review.disposition == null
       || !validReviewer(review.reviewer) || !validRationale(review.rationale)) {
       addFinding(errors, 'metric_sanity_review', `${review.reviewId} is incomplete or references unknown evidence`);
     }
   }
 
+  for (const decision of decisions) {
+    if (decision.candidateEvidenceIds.some((id) => blockedIds.has(id))) addFinding(errors, 'blocked_golden_evidence', `${decision.comparisonId} uses investigated or excluded evidence`);
+  }
+  for (const review of sanityReviews.filter((entry) => entry.disposition === 'INVESTIGATE')) {
+    addFinding(errors, 'unresolved_investigation', `${review.reviewId} remains unresolved`);
+  }
   if (!document.freeze) {
     addFinding(errors, 'freeze_record', 'Production score-context and evidence-policy freeze record is missing');
   } else {
@@ -401,6 +458,14 @@ export function assessCalibrationEvidence(
       || !freeze.evidencePolicyVersion.trim() || !validRationale(freeze.calibrationRationale)
       || Number.isNaN(new Date(freeze.frozenAt).getTime())) {
       addFinding(errors, 'freeze_record', 'Production freeze record is incomplete or invalid');
+    }
+    if (freeze.scoringBehaviorHash !== buildScoringBehaviorHash()) addFinding(errors, 'scoring_behavior_hash', 'Review must bind the exact applied production scorer and PL Fit behavior');
+    try {
+      const policy = normalizeEvidencePolicy(freeze.evidencePolicy);
+      if (policy.policyStatus !== 'CALIBRATED' || policy.policyVersion !== freeze.evidencePolicyVersion
+        || sha256Hex(canonicalJsonString(policy as never)) !== freeze.evidencePolicyHash) throw new Error('Policy identity mismatch');
+    } catch {
+      addFinding(errors, 'freeze_evidence_policy', 'Freeze requires an exact hash-bound calibrated evidence policy');
     }
     for (const [field, value] of Object.entries({
       qualityExponent: freeze.qualityExponent,

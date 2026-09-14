@@ -373,7 +373,7 @@ test('retained evidence cannot be promoted with the checked-in incomplete PLA-87
   );
 });
 
-test('production promotion binds a complete calibration review hash and exact context hash', () => {
+test('legacy checkbox calibration with overlapping folds and unrelated frontier IDs is rejected', () => {
   const synthetic = loadReferenceContext(contextFixturePath);
   const context = buildReferenceContextFromRetainedEvidence({
     benchmarkProtocolId: 'proto-1',
@@ -391,13 +391,7 @@ test('production promotion binds a complete calibration review hash and exact co
     evidence: buildRetainedReferenceEvidenceFixture().map((entry) => ({ ...entry, benchmarkProtocolVersion: '7.0' })),
   });
   const calibration = buildCompleteCalibrationForContext(context);
-  const promoted = activateReferenceContextForProduction(context, calibration);
-
-  assert.equal(promoted.activation.stage, 'PRODUCTION');
-  assert.equal(promoted.activation.productionActivationAllowed, true);
-  assert.equal(promoted.activation.calibrationVersion, calibration.calibrationVersion);
-  assert.equal(promoted.activation.calibrationReviewHash, calibration.reviewHash);
-  assert.equal(promoted.hash, calibration.freeze.scoreContextHash);
+  assert.throws(() => activateReferenceContextForProduction(context, calibration), /not ready for production freeze/);
 });
 
 test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses', async () => {
@@ -428,14 +422,14 @@ test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus late
             sha256: 'b'.repeat(64),
           }],
           qualityAnalyses: [{
-            id: 'analysis-2',
+            id: 'analysis-2', artifactId: 'artifact-1', evidenceReviews: [],
             metricModelId: 'vmaf-v1-sdr-sd',
             status: 'COMPLETE',
             analysisWorkerVersion: 'worker-v2',
             videoBitrateBps: 2_700_000,
             vmafMean: 91.2,
           }, {
-            id: 'analysis-1',
+            id: 'analysis-1', artifactId: 'artifact-1', evidenceReviews: [],
             metricModelId: 'vmaf-v1-sdr-sd',
             status: 'COMPLETE',
             analysisWorkerVersion: 'worker-v1',

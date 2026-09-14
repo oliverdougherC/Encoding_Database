@@ -30,9 +30,12 @@ A production-ready document must contain all of the following:
 - the final checked-in production reference-context path/hash, calibrated
   evidence-policy version, transparent constants, and rationale.
 
-The review hash covers the retained corpus and all review/holdout decisions but
-not the final freeze record, so a candidate production context can bind that
-review hash without a circular digest. The canonical evidence hash then covers
+For COMPLETE evidence the review hash covers corpus, review/fold decisions,
+the exact evidence policy, transform constants and scoringBehaviorHash.
+The latter hashes the deployed scorer and PL Fit implementation, including fixed
+weights, quality-tail blend and constraints. Final context path/hash and freeze
+metadata are excluded to avoid a circular digest. Historical DRAFT hashes retain
+their original interpretation. The canonical evidence hash then covers
 the whole document except itself. Any edit after reviewer sign-off invalidates
 one or both hashes. A `DRAFT`
 document is never production-ready even if its other fields are complete.
@@ -51,7 +54,7 @@ npm run build
 cd ..
 DATABASE_URL='postgresql://…' node scripts/generate-calibration-evidence.mjs \
   --benchmark-protocol-id '<immutable protocol id>' \
-  --quality-model-id 'vmaf-v1-sdr-sd' \
+  --quality-model-id 'vmaf-v1-sdr-1080p' \
   --calibration-version '<version>' \
   --since '<pilot start ISO timestamp>' \
   --output '<new draft.json>'
@@ -79,7 +82,7 @@ DATABASE_URL='postgresql://…' node scripts/generate-reference-context.mjs \
   --benchmark-protocol-id '<immutable protocol id>' \
   --benchmark-protocol-version '7.0' \
   --source-suite-version 'encodingdb-test-suite-v1' \
-  --quality-model-id 'vmaf-v1-sdr-sd' \
+  --quality-model-id 'vmaf-v1-sdr-1080p' \
   --context-version '<frozen context version>' \
   --calibration-evidence 'server/config/calibration/<complete review>.json'
 ```
@@ -107,3 +110,59 @@ and object-storage volumes. Per-path certificates, retry recovery, and
 reanalysis evidence remain under `.test-reports/pl-v7-e2e/` on the evidence
 host. Do not delete those volumes or promote this draft as a production score
 context.
+
+## Corrected-protocol semantic gate (PLA-550/556/557)
+
+The first finite matrix is `server/config/calibration/final1080p-corrected-timing.matrix-v1.json`.
+Its 252 recipe/workload cells are PREDECLARED_UNEXECUTED, not measured calibration.
+Candidate hosts are Mac and P910; physical IDs remain null until real corrected
+runs identify them. Two sessions assess repeatability; only persistent physical
+source pseudonyms establish machine corroboration. Single-source hardware families
+remain provisional wherever the reviewed policy requires more sources.
+4K/HDR/HFR transfer is outside this proposed validated scope.
+
+Each fold names `fittingEvidenceIds`, `evidenceIds`, `frontierEvidenceIds`,
+`fittedContextHash` and `fittedContextArtifactPath`. Hardware/encoder/content/native-RC
+groups must be disjoint within the fold; four labels on one generic set cannot pass.
+The independently fitted context must contain exactly the declared measurements.
+Content transfer also predeclares `referenceWorkloadByEvidenceId`, selecting a
+fitting-only reference for unseen workloads. A held-out scene cannot fit its own
+frontier. Licensed-master source-frame ranges still require assignment and visual
+inspection before longer-scene collection; different hashes/crops do not prove
+scene independence.
+
+Reference generation requires `--calibration-evidence` and uses only its explicit
+CALIBRATION analysis IDs. It produces a provisional artifact; `--promote` requests
+fully validated promotion. Distinct native RC points must exist within each preset.
+Empty fitting sets/reviews, wrong-family top reviews, unresolved investigations,
+excluded frontier members and relabeled synthetic samples fail closed.
+
+Freeze records embed `evidencePolicy`, `evidencePolicyHash`, `scoringBehaviorHash`.
+Use `buildScoringBehaviorHash()` from compiled recommendationPolicy, calculate
+reviewHash, then `calculateProductionReferenceContextHash(context, version,
+reviewHash, freeze)`, then evidenceHash. Hash calculation never confers review.
+
+Both activation and reactivation require COMPLETE evidence and live PostgreSQL/
+artifact access. Verification compares actual analysis/run/artifact IDs, physical
+source, native RC, model/worker identity, current review head and measurements,
+then streams every retained object's size and SHA-256. Corrected scope requires
+protocol 7.1 and `ffmpeg-process-v1`. Operator adjudications apply only to their
+exact analysis. Production PL Fit ranking must reproduce every accepted golden
+choice and recorded holdout prediction using each independently fitted context.
+
+The same embedded policy drives activation, online/background rebuilds and reload
+after restart. Missing configuration remains PROVISIONAL_UNCALIBRATED; configured
+mismatch fails closed. Docker already copies JSON into `/app/config` and compiled
+code into `/app/dist`. Set `PL_V7_REFERENCE_CONTEXT_PATH` to its deployed path.
+
+Bounded software cell using the implemented client interface:
+
+```sh
+python -m client --codec libx264 --presets fast --crf 23 --v7-suite-clip athletic-action-1080p24-final --no-submit
+python -m client --resume-campaign '<completed campaign ID>' --submit
+```
+
+`--campaign full` replaces the clip selector to run the same recipe on all seven
+clips. `--upload-only` retries queued bytes. Hardware VBR uses
+`--target-bitrate-kbps`; implementations must be available exactly as named.
+Generators cannot fill review identities, preferences, approvals or measured data.

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import crypto from 'node:crypto';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,19 +28,6 @@ function jsonObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
-function machineSourceId(canonicalEnvironment) {
-  const environment = jsonObject(canonicalEnvironment);
-  const identity = {
-    cpuModel: environment.cpuModel ?? null,
-    cpuArchitecture: environment.cpuArchitecture ?? null,
-    gpuModel: environment.gpuModel ?? null,
-    osName: environment.osName ?? null,
-    osVersion: environment.osVersion ?? null,
-    physicalCoreCount: environment.physicalCoreCount ?? null,
-    logicalThreadCount: environment.logicalThreadCount ?? null,
-  };
-  return `machine:${crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex')}`;
-}
 
 function hardwareFamily(implementation) {
   const value = implementation.toLowerCase();
@@ -100,6 +86,7 @@ try {
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       },
       qualityAnalyses: {
+        include: { evidenceReviews: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } },
         where: { metricModelId: flags.get('--quality-model-id'), status: { in: ['COMPLETE', 'SUSPECT'] } },
         orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       },
@@ -109,8 +96,8 @@ try {
 
   const timestamps = [];
   const corpus = runs.map((run) => {
-    const artifact = run.artifacts[0];
     const analysis = run.qualityAnalyses[0];
+    const artifact = run.artifacts.find((item) => item.id === analysis?.artifactId);
     if (!artifact?.sha256 || !analysis) throw new Error(`Run ${run.id} lost required retained evidence during generation`);
     timestamps.push(analysis.updatedAt, artifact.updatedAt, run.updatedAt);
     const implementation = run.recipe.encoderImplementation;
@@ -127,9 +114,10 @@ try {
       artifactStorageState: artifact.storageState,
       qualityAnalysisId: analysis.id,
       analysisWorkerVersion: analysis.analysisWorkerVersion,
+      evidenceReviewId: analysis.evidenceReviews[0]?.id ?? null,
       recipeFingerprint: run.recipe.fingerprint,
       environmentFingerprint: run.environment.fingerprint,
-      machineSourceId: machineSourceId(run.environment.canonicalJson),
+      machineSourceId: run.physicalSourceId ?? '',
       workloadId: run.workloadId,
       contentClass: run.testClip.contentClass,
       encoderFamily: run.recipe.codecFamily,

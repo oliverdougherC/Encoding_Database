@@ -17,6 +17,7 @@ import {
   parseEnvText,
   validateProductionEnv,
 } from '../../scripts/validate-production-env.mjs';
+import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, rebuildDerivedResultAggregateFromAnalyses } from '../dist/v7/aggregation.js';
 import { parseReferenceContext } from '../dist/v7/referenceContext.js';
 
 const contextFixturePath = new URL('../config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json', import.meta.url);
@@ -35,6 +36,7 @@ function productionContextFixture() {
       calibrationReviewHash: 'a'.repeat(64),
     },
     hash: provisional.hash,
+    recommendationEvidencePolicy: DEFAULT_RECOMMENDATION_EVIDENCE_POLICY,
   };
 }
 
@@ -206,6 +208,8 @@ test('buildActivationPersistencePayloads uses exact analysis membership for work
 test('persistActivationState upserts score contexts and derived results idempotently', async () => {
   const stored = new Map();
   const modules = {
+    rebuildDerivedResultAggregateFromAnalyses,
+    async persistGeneralDerivedResultFromWorkloadEvidence() { return null; },
     async persistScoreContextsFromReferenceContext() {
       return [
         { id: 'score-workload', kind: 'WORKLOAD', workloadId: 'sports-action-960x540-24p' },
@@ -233,13 +237,12 @@ test('persistActivationState upserts score contexts and derived results idempote
   const second = await persistActivationState({}, input);
 
   assert.equal(first.scoreContexts.length, 2);
-  assert.equal(first.derivedResults.length, 2);
-  assert.equal(second.derivedResults.length, 2);
-  assert.equal(stored.size, 2);
+  assert.equal(first.derivedResults.length, 1);
+  assert.equal(second.derivedResults.length, 1);
+  assert.equal(stored.size, 1);
   assert.deepEqual(
     [...stored.values()].map((row) => row.members),
     [
-      [{ benchmarkRunId: 'run-workload-1', qualityAnalysisId: 'analysis-workload-1' }],
       [{ benchmarkRunId: 'run-workload-1', qualityAnalysisId: 'analysis-workload-1' }],
     ],
   );

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -72,7 +72,10 @@ async function loadModules() {
     import(path.join(serverRoot, 'dist', 'v7', 'calibration.js')),
     import(path.join(serverRoot, 'dist', 'v7', 'aggregation.js')),
   ]);
-  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule };
+  const reviews = await import(path.join(serverRoot, 'dist', 'v7', 'reviews.js'));
+  const ranking = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRanking.js'));
+  const retention = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRetention.js'));
+  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule, ...retention, ...reviews, ...ranking };
 }
 
 export async function loadProductionActivationPlan(options) {
@@ -96,17 +99,8 @@ export async function loadProductionActivationPlan(options) {
     calibration = parseCalibrationEvidence(readFileSync(calibrationPath, 'utf8'));
   }
 
-  if (context.activation?.stage !== 'PRODUCTION') {
-    if (!calibration) {
-      throw new Error('A complete --calibration-evidence document is required to activate a provisional reference context');
-    }
-    promotedContext = activateReferenceContextForProduction(context, calibration);
-  } else if (calibration) {
-    if (context.activation.calibrationVersion !== calibration.calibrationVersion
-      || context.activation.calibrationReviewHash !== calibration.reviewHash) {
-      throw new Error('Production reference context does not match the supplied calibration version/review hash');
-    }
-  }
+  if (!calibration) throw new Error('Complete --calibration-evidence is required for activation and reactivation');
+  promotedContext = activateReferenceContextForProduction(context, calibration);
 
   if (promotedContext.provenance?.sourceMode !== 'retained-benchmark-evidence') {
     throw new Error('Only retained authoritative evidence can be activated for production');
@@ -286,8 +280,26 @@ export async function persistActivationState(client, {
     scoreContexts,
   });
   const derivedResults = [];
-  for (const payload of payloads) {
-    const id = await modules.persistDerivedResultRecord(client, payload.derivedResult, payload.members);
+  // Workload activation uses the identical clustered scorer and evidence policy as
+  // online ingestion. General results are rebuilt from those persisted workloads.
+  for (const payload of payloads.filter((entry) => entry.kind === 'WORKLOAD')) {
+    const rows = evidence.filter((entry) => payload.members.some((member) => member.qualityAnalysisId === entry.qualityAnalysisId));
+    const first = rows[0];
+    const workload = promotedContext.workloads.find((entry) => entry.workloadId === payload.workloadId);
+    const aggregate = modules.rebuildDerivedResultAggregateFromAnalyses({
+      identity: {
+        kind: 'workload', benchmarkProtocolId, protocolVersion: promotedContext.benchmarkProtocolVersion,
+        sourceSuiteVersion: promotedContext.sourceSuiteVersion, workloadId: payload.workloadId, testClipId: first.testClipId,
+        recipeId: first.recipeId, recipeFingerprint: first.recipeFingerprint,
+        environmentId: first.environmentId, environmentFingerprint: first.environmentFingerprint,
+        scoreContextId: payload.derivedResult.scoreContextId, scoreContextVersion: promotedContext.contextVersion,
+        qualityModelId: promotedContext.qualityModelId, formulaVersion: promotedContext.formulaVersion,
+      },
+      scoreContext: { workloadId: payload.workloadId, workloadReferenceBitrateBps: workload.workloadReferenceBitrateBps, ...promotedContext.transformConstants },
+      evidencePolicy: promotedContext.recommendationEvidencePolicy,
+      analyses: rows,
+    });
+    const id = await modules.persistDerivedResultRecord(client, aggregate.derivedResult, payload.members);
     derivedResults.push({
       id,
       kind: payload.kind,
@@ -295,13 +307,20 @@ export async function persistActivationState(client, {
       memberCount: payload.members.length,
     });
   }
-  return {
-    scoreContexts,
-    derivedResults,
-  };
+  for (const pair of new Map(evidence.map((entry) => [`${entry.recipeId}:${entry.environmentId}`, entry])).values()) {
+    const id = await modules.persistGeneralDerivedResultFromWorkloadEvidence(client, {
+      benchmarkProtocolId, protocolVersion: promotedContext.benchmarkProtocolVersion,
+      sourceSuiteVersion: promotedContext.sourceSuiteVersion, formulaVersion: promotedContext.formulaVersion,
+      contextVersion: promotedContext.contextVersion, qualityModelId: promotedContext.qualityModelId,
+      recipeId: pair.recipeId, recipeFingerprint: pair.recipeFingerprint,
+      environmentId: pair.environmentId, environmentFingerprint: pair.environmentFingerprint,
+    });
+    if (id) derivedResults.push({ id, kind: 'GENERAL' });
+  }
+  return { scoreContexts, derivedResults };
 }
 
-async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext) {
+async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext, modules) {
   const analyses = await prisma.qualityAnalysis.findMany({
     where: {
       metricModelId: promotedContext.qualityModelId,
@@ -312,6 +331,7 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
       },
     },
     include: {
+      artifact: true, evidenceReviews: true,
       benchmarkRun: {
         include: {
           benchmarkProtocol: true,
@@ -324,7 +344,7 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
     orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
   });
 
-  return latestAnalysesByRun(analyses).map((analysis) => ({
+  return latestAnalysesByRun(analyses).filter((analysis) => modules.applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status, artifactState: analysis.artifact?.storageState ?? 'MISSING', analysisId: analysis.id, reviews: analysis.evidenceReviews }).eligible).map((analysis) => ({
     qualityAnalysisId: analysis.id,
     analysisWorkerVersion: analysis.analysisWorkerVersion,
     benchmarkRunId: analysis.benchmarkRunId,
@@ -337,9 +357,12 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
     recipeFingerprint: analysis.benchmarkRun.recipe.fingerprint,
     environmentId: analysis.benchmarkRun.environmentId,
     environmentFingerprint: analysis.benchmarkRun.environment.fingerprint,
+    physicalSourceId: analysis.benchmarkRun.physicalSourceId,
+    campaignId: analysis.benchmarkRun.campaignId,
+    repetitionGroupId: analysis.benchmarkRun.repetitionGroupId,
     qualityModelId: analysis.metricModelId,
-    benchmarkRunStatus: analysis.benchmarkRun.status,
-    qualityAnalysisStatus: analysis.status,
+    benchmarkRunStatus: 'ACCEPTED',
+    qualityAnalysisStatus: 'COMPLETE',
     encodeFps: analysis.benchmarkRun.encodeFps,
     sourceFps: analysis.benchmarkRun.sourceFps,
     realTimeRatio: analysis.benchmarkRun.realTimeRatio,
@@ -370,31 +393,42 @@ export async function runProductionActivation(options) {
       : referenceContextPath,
   );
 
+  // Reserve output paths before any database mutation. Retain prewritten artifacts
+  // after a transaction failure: reactivation is idempotent and their hashes identify
+  // exactly what was prepared, rather than leaving a committed DB with missing files.
+  const preparedOutputs = [];
+  if (options.apply === true) {
+    try {
+      for (const [target, contents] of [[options.promotedContextOutputPath, `${JSON.stringify(promotedContext, null, 2)}\n`], [options.envOutputPath, formatEnvBindings(envBindings)]]) {
+        if (!target) continue;
+        const outputPath = path.resolve(process.cwd(), target);
+        mkdirSync(path.dirname(outputPath), { recursive: true });
+        const fd = openSync(outputPath, 'wx'); closeSync(fd); preparedOutputs.push(outputPath);
+        writeFileSync(outputPath, contents);
+      }
+    } catch (error) { for (const output of preparedOutputs) unlinkSync(output); throw error; }
+  }
   try {
-    const evidence = await loadRecomputeInputs(prisma, options.benchmarkProtocolId, promotedContext);
-    const recomputed = recomputeReferenceScores(evidence, promotedContext);
-    const persisted = options.apply === true
-      ? await prisma.$transaction((tx) => persistActivationState(tx, {
-          modules,
-          benchmarkProtocolId: options.benchmarkProtocolId,
-          promotedContext,
-          evidence,
-          recomputed,
-        }))
-      : { scoreContexts: [], derivedResults: [] };
+    if (!calibration) throw new Error('Calibration evidence is mandatory');
+    const rankingVerification = modules.verifyCalibrationRanking(calibration, promotedContext);
+    const execute = async (client, apply) => {
+      if (apply) await client.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+      const retainedVerification = await modules.verifyCalibrationRetainedEvidence(client, calibration);
+      const evidence = await loadRecomputeInputs(client, options.benchmarkProtocolId, promotedContext, modules);
+      const recomputed = recomputeReferenceScores(evidence, promotedContext);
+      const persisted = apply ? await persistActivationState(client, { modules, benchmarkProtocolId: options.benchmarkProtocolId, promotedContext, evidence, recomputed }) : { scoreContexts: [], derivedResults: [] };
+      return { evidence, recomputed, persisted, retainedVerification };
+    };
+    const { evidence, recomputed, persisted, retainedVerification } = options.apply === true
+      ? await prisma.$transaction((tx) => execute(tx, true), { timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) })
+      : await execute(prisma, false);
 
-    if (options.apply === true && options.promotedContextOutputPath) {
-      const outputPath = path.resolve(process.cwd(), options.promotedContextOutputPath);
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, `${JSON.stringify(promotedContext, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-    }
-    if (options.apply === true && options.envOutputPath) {
-      const outputPath = path.resolve(process.cwd(), options.envOutputPath);
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, formatEnvBindings(envBindings), { encoding: 'utf8', flag: 'wx' });
-    }
 
     return {
+      retainedVerification,
+      rankingVerification,
+      evidencePolicyVersion: promotedContext.recommendationEvidencePolicy.policyVersion,
+      evidencePolicyHash: promotedContext.recommendationEvidencePolicyHash,
       mode: options.apply === true ? 'apply' : 'dry-run',
       benchmarkProtocolId: options.benchmarkProtocolId,
       contextVersion: promotedContext.contextVersion,
