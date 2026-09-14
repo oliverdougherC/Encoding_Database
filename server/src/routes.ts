@@ -6,9 +6,6 @@ import crypto from 'node:crypto';
 import { BoundedTtlCache } from './cache.js';
 import {
   addDerivedBenchmarkFields,
-  aggregateEncoders,
-  aggregateHardware,
-  buildAnalyticsWhere,
   parseAnalyticsFilters,
 } from './analytics.js';
 import { buildDecisionPayload, type DecisionCandidate, type EvidenceTier } from './v7/decision.js';

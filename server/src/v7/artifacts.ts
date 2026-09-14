@@ -8,7 +8,7 @@ import { installedWorkerProvenance } from './workerProvenance.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { access, copyFile, mkdir, mkdtemp, opendir, readFile, rename, rm, stat, statfs, writeFile } from 'node:fs/promises';
+import { access, copyFile, mkdir, mkdtemp, opendir, readFile, rename, rm, stat, statfs } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -76,7 +76,6 @@ export type BenchmarkRunStatusValue = 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'SUS
 export type QualityAnalysisStatusValue = 'PENDING' | 'COMPLETE' | 'SUSPECT' | 'REJECTED' | 'FAILED';
 
 type JsonObject = Record<string, unknown>;
-type JsonRecord = Record<string, unknown>;
 
 export interface StoredBenchmarkProtocol {
   id: string;
@@ -1249,21 +1248,6 @@ async function readFfmpegVersion(): Promise<string | null> {
   }
 }
 
-function resolveReferencePath(sourceProvenance: unknown): string {
-  const provenance = asJsonObject(sourceProvenance);
-  const candidates = [
-    provenance?.referencePath,
-    provenance?.localPath,
-    provenance?.canonicalPath,
-    provenance?.path,
-  ];
-  const value = candidates.find((candidate): candidate is string => typeof candidate === 'string' && candidate.trim().length > 0);
-  if (!value) {
-    throw new Error('Canonical source provenance does not provide a local reference path');
-  }
-  return value;
-}
-
 function flattenCliTokens(values: ReadonlyArray<string>): string[] {
   return values.flatMap((value) => value.split(' ').map((part) => part.trim()).filter(Boolean));
 }
@@ -2255,11 +2239,6 @@ export function validateCanonicalTiming(input: CreateRunRequestInput, clip: Stor
   }
 }
 
-function inferExistingMetricModelId(bundle: RunArtifactBundle): string | null {
-  const preferred = bundle.qualityAnalyses.find((analysis) => analysis.status !== 'PENDING');
-  return preferred?.metricModelId ?? bundle.qualityAnalyses[0]?.metricModelId ?? null;
-}
-
 function deriveMetricModelFallback(bundle: RunArtifactBundle): string {
   const source = {
     width: bundle.run.testClip.width,
@@ -2329,7 +2308,6 @@ function transformConstantsFromScoreContext(value: unknown): {
   };
 }
 
-const REFERENCE_CONTEXT_DIRECTORY = new URL('../../config/reference-contexts/', import.meta.url);
 export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient, env: NodeJS.ProcessEnv = process.env) {
   return async (payload: DerivedRecomputeHookPayload): Promise<void> => {
     const active = loadActiveRecommendationContextIdentity(env);
@@ -3532,7 +3510,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async markQualityAnalysisRetry(input) {
       const run = await client.$transaction(async (tx) => {
-        const owned = await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
+        await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3553,7 +3531,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async markQualityAnalysisFailed(input) {
       const run = await client.$transaction(async (tx) => {
-        const owned = await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
+        await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {

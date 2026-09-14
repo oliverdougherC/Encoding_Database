@@ -539,13 +539,6 @@ function hashContextPayload(value: Omit<ReferenceContext, 'hash'>): string {
   return sha256Hex(canonicalJsonString(toCanonicalJsonValue(value) as never));
 }
 
-function sourceIdHashFromEvidence(evidence: readonly ReferenceFrontierEvidence[]): string {
-  const ids = evidence
-    .map((entry) => entry.referenceId)
-    .sort(compareText);
-  return sha256Hex(canonicalJsonString(ids as never));
-}
-
 function buildUnavailableMetricInterval(confidenceLevel: number): Record<string, number | string | null> {
   return {
     lower: null,
