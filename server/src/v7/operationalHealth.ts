@@ -7,7 +7,7 @@ export type V7EvidenceHealthSnapshot = {
   capturedAt: string;
   freshness?: { cacheTtlSeconds: number; ageSeconds: number };
   integrityScan?: { batchSize: number; checkedThisBatch: number; checkedThisCycle: number; complete: boolean; cycleStartedAt: string; lastCompletedAt: string | null };
-  capacity?: { pendingUploads: number; pendingAnalyses: number; maxPendingUploads: number; maxPendingAnalyses: number; maxConcurrentUploads: number; maxConcurrentAnalyses: number; activeLeases: number; expiredLeases: number; retryDue: number };
+  capacity?: { reservedUploads?: number; unqueuedUploads?: number; analysisAdmissionUsed?: number; pendingUploads: number; pendingAnalyses: number; maxPendingUploads: number; maxPendingAnalyses: number; maxConcurrentUploads: number; maxConcurrentAnalyses: number; activeLeases: number; expiredLeases: number; retryDue: number };
   thresholds: {
     pendingUploadSeconds: number;
     pendingAnalysisSeconds: number;
@@ -24,6 +24,8 @@ export type V7EvidenceHealthSnapshot = {
   storage: {
     rootAvailable: boolean;
     trackedBytes: number;
+    reservedBytes?: number;
+    remainingQuotaBytes?: number | null;
     quotaBytes: number | null;
     availableBytes: number | null;
     freeBytes: number | null;
@@ -110,14 +112,17 @@ export function evaluateV7EvidenceHealth(snapshot: V7EvidenceHealthSnapshot) {
   if ((snapshot.analyses.pendingOldestSeconds ?? 0) >= snapshot.thresholds.pendingAnalysisSeconds) reasons.push('stale_pending_analyses');
   if ((snapshot.analyses.byStatus.FAILED ?? 0) > 0) reasons.push('failed_analyses');
   if (snapshot.artifacts.missingRetainedObjects > 0) reasons.push('missing_retained_objects');
-  if (snapshot.thresholds.storageQuotaBytes != null && snapshot.storage.trackedBytes > snapshot.thresholds.storageQuotaBytes) reasons.push('storage_quota_exceeded');
-  if (snapshot.storage.availableBytes != null && snapshot.storage.availableBytes < snapshot.thresholds.storageReserveBytes) reasons.push('storage_reserve_exhausted');
+  const reservedBytes = snapshot.storage.reservedBytes ?? 0;
+  const committedBytes = snapshot.storage.trackedBytes + reservedBytes;
+  if (snapshot.thresholds.storageQuotaBytes != null && committedBytes > snapshot.thresholds.storageQuotaBytes) reasons.push('storage_quota_exceeded');
+  else if (snapshot.thresholds.storageQuotaBytes != null && committedBytes === snapshot.thresholds.storageQuotaBytes) reasons.push('storage_quota_exhausted');
+  if (snapshot.storage.availableBytes != null && snapshot.storage.availableBytes - reservedBytes < snapshot.thresholds.storageReserveBytes) reasons.push('storage_reserve_exhausted');
   if (snapshot.staging.staleEntryCount > 0) reasons.push('orphan_staging_entries');
   if (snapshot.derivations.unresolvedSelectedAnalyses > 0) reasons.push('unresolved_derived_members');
   if (snapshot.staging.truncated) reasons.push('staging_scan_incomplete');
   if ((snapshot.capacity?.expiredLeases ?? 0) > 0) reasons.push('expired_analysis_leases');
-  if (snapshot.capacity && snapshot.capacity.pendingUploads >= snapshot.capacity.maxPendingUploads) reasons.push('pending_upload_capacity_exhausted');
-  if (snapshot.capacity && snapshot.capacity.pendingAnalyses >= snapshot.capacity.maxPendingAnalyses) reasons.push('pending_analysis_capacity_exhausted');
+  if (snapshot.capacity && (snapshot.capacity.reservedUploads ?? snapshot.capacity.pendingUploads) >= snapshot.capacity.maxPendingUploads) reasons.push('pending_upload_capacity_exhausted');
+  if (snapshot.capacity && (snapshot.capacity.analysisAdmissionUsed ?? snapshot.capacity.pendingAnalyses) >= snapshot.capacity.maxPendingAnalyses) reasons.push('pending_analysis_capacity_exhausted');
   return { status: reasons.length ? 'degraded' : 'ok', reasons, ...snapshot };
 }
 
@@ -151,7 +156,8 @@ export async function collectV7EvidenceHealth(prisma: any, options: V7HealthOpti
     storageQuotaBytes: options.storageQuotaBytes ?? null,
     storageReserveBytes: options.storageReserveBytes ?? 512 * 1024 * 1024,
   };
-  const [artifactCounts, analysisCounts, oldestPendingArtifact, oldestPendingAnalysis, retainedArtifacts, completedAnalyses, unresolvedMembers, staging, trackedBytes, storage, activeLeases, expiredLeases, retryDue, missingCompletionTimestamp] = await Promise.all([
+  const reserved = { storageState: 'PENDING', OR: [{ reservationExpiresAt: { gt: now } }, { uploadLeaseExpiresAt: { gt: now } }] };
+  const [artifactCounts, analysisCounts, oldestPendingArtifact, oldestPendingAnalysis, retainedArtifacts, completedAnalyses, unresolvedMembers, staging, trackedBytes, storage, activeLeases, expiredLeases, retryDue, missingCompletionTimestamp, reservedUploads, unqueuedUploads, reservedTotal] = await Promise.all([
     prisma.artifact.groupBy({ by: ['storageState'], _count: { _all: true } }),
     prisma.qualityAnalysis.groupBy({ by: ['status'], _count: { _all: true } }),
     prisma.artifact.findFirst({ where: { storageState: 'PENDING' }, orderBy: { createdAt: 'asc' }, select: { createdAt: true } }),
@@ -177,6 +183,9 @@ export async function collectV7EvidenceHealth(prisma: any, options: V7HealthOpti
     prisma.qualityAnalysis.count({ where: { status: 'PENDING', leaseExpiresAt: { lte: now } } }),
     prisma.qualityAnalysis.count({ where: { status: 'PENDING', nextRetryAt: { lte: now } } }),
     prisma.qualityAnalysis.count({ where: { status: { in: ['COMPLETE', 'SUSPECT', 'REJECTED', 'FAILED'] }, completedAt: null } }),
+    prisma.artifact.count({ where: reserved }),
+    prisma.artifact.count({ where: { storageState: 'UPLOADED', qualityAnalyses: { none: {} } } }),
+    prisma.artifact.aggregate({ where: reserved, _sum: { byteSize: true } }),
   ]);
   const latencies = completedAnalyses.flatMap((analysis: any) => {
     const uploadedAt = analysis.artifact?.uploadedAt;
@@ -196,7 +205,7 @@ export async function collectV7EvidenceHealth(prisma: any, options: V7HealthOpti
     capturedAt: now.toISOString(),
     thresholds,
     integrityScan,
-    capacity: { pendingUploads: artifactStates.PENDING ?? 0, pendingAnalyses: analysisStatuses.PENDING ?? 0, maxPendingUploads: options.maxPendingUploads ?? 500, maxPendingAnalyses: options.maxPendingAnalyses ?? 500, maxConcurrentUploads: options.maxConcurrentUploads ?? 4, maxConcurrentAnalyses: options.maxConcurrentAnalyses ?? 2, activeLeases, expiredLeases, retryDue },
+    capacity: { reservedUploads, unqueuedUploads, analysisAdmissionUsed: reservedUploads + unqueuedUploads + (analysisStatuses.PENDING ?? 0), pendingUploads: artifactStates.PENDING ?? 0, pendingAnalyses: analysisStatuses.PENDING ?? 0, maxPendingUploads: options.maxPendingUploads ?? 500, maxPendingAnalyses: options.maxPendingAnalyses ?? 500, maxConcurrentUploads: options.maxConcurrentUploads ?? 4, maxConcurrentAnalyses: options.maxConcurrentAnalyses ?? 2, activeLeases, expiredLeases, retryDue },
     artifacts: {
       byState: counts(artifactCounts, 'storageState'),
       pendingOldestSeconds: secondsSince(oldestPendingArtifact?.createdAt, now),
@@ -210,6 +219,8 @@ export async function collectV7EvidenceHealth(prisma: any, options: V7HealthOpti
     storage: {
       rootAvailable: storage.rootAvailable,
       trackedBytes: trackedBytes._sum.byteSize ?? 0,
+      reservedBytes: reservedTotal._sum.byteSize ?? 0,
+      remainingQuotaBytes: thresholds.storageQuotaBytes == null ? null : Math.max(0, thresholds.storageQuotaBytes - (trackedBytes._sum.byteSize ?? 0) - (reservedTotal._sum.byteSize ?? 0)),
       quotaBytes: thresholds.storageQuotaBytes,
       availableBytes: storage.availableBytes,
       freeBytes: storage.freeBytes,

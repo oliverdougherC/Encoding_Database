@@ -1,0 +1,94 @@
+{
+  "capturedAt": "2026-09-14T03:35:12.906Z",
+  "scope": "100k isolated synthetic metadata; missing objects expected; no media throughput claim",
+  "artifactCount": 100662,
+  "coldMilliseconds": 79.1405,
+  "burstMilliseconds": 35.851459000000006,
+  "warm1000Milliseconds": 0.6167910000000063,
+  "rssBytes": 83623936,
+  "cold": {
+    "status": "degraded",
+    "reasons": [
+      "stale_pending_analyses",
+      "missing_retained_objects"
+    ],
+    "capturedAt": "2026-09-14T03:35:12.790Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 536870912
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 256,
+      "checkedThisCycle": 256,
+      "complete": false,
+      "cycleStartedAt": "2026-09-14T03:35:12.790Z",
+      "lastCompletedAt": null
+    },
+    "capacity": {
+      "reservedUploads": 0,
+      "unqueuedUploads": 0,
+      "analysisAdmissionUsed": 2,
+      "pendingUploads": 0,
+      "pendingAnalyses": 2,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 2,
+      "activeLeases": 0,
+      "expiredLeases": 0,
+      "retryDue": 0
+    },
+    "artifacts": {
+      "byState": {
+        "VERIFIED": 20632,
+        "RETAINED": 80030
+      },
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 256
+    },
+    "analyses": {
+      "byStatus": {
+        "PENDING": 2,
+        "COMPLETE": 80638,
+        "SUSPECT": 20022
+      },
+      "pendingOldestSeconds": 22131309.79,
+      "completedLatencySeconds": {
+        "sampleCount": 602,
+        "p50": 0.002,
+        "p95": 0.005,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 149995779200,
+      "reservedBytes": 0,
+      "remainingQuotaBytes": null,
+      "quotaBytes": null,
+      "availableBytes": 15749287936,
+      "freeBytes": 15749287936
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T03:35:12.790Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    }
+  },
+  "burstSameSnapshot": true
+}

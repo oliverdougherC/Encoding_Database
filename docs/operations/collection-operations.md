@@ -333,3 +333,32 @@ only its marked entry from the current crontab. It does not install production
 jobs or restore a stale whole crontab over somebody else's changes. A regression
 covers concurrent and later unrelated edits. P910's user manager has no linger;
 a timer kept alive by SSH is scheduled capacity evidence, not unattended proof.
+
+## Full-size P910 storage proof
+
+The [corrected full-size receipt](evidence/p910-backup-scale/receipt.json) passes
+the unchanged 1200-second limits: **336.35 seconds backup, 372.94 seconds restore,
+73 seconds writer quiescence**. Forty independently generated 256 MiB random
+objects (10 GiB logical retained bytes) were restored with exact identities. The
+archive also included a 10 GiB staging mirror. No snapshot staging remained,
+and the real production container IDs/start times/restart counts stayed unchanged.
+The fixture has INVALID/FAILED synthetic rows, no public API, and no calibration
+or media-acceptance claim.
+
+Host command-tree maximum RSS was 28160 KiB. The two inventory helpers reported
+approximately 104–105 MB max RSS and 57–58 MB charged cgroup peaks; these are
+separate accounting measures. Docker helpers were capped at two CPUs/2 GiB.
+The original run is retained as **failed cleanup despite a zero reported exit**;
+its root-owned staging was repaired only within the task-owned copied snapshot.
+The corrected full-size rerun passed rather than hiding that failure.
+
+This capacity run used a transient systemd timer kept alive by SSH. It proves
+scheduled capacity/recovery, not unattended scheduling; the separate marked
+user-cron acceptance must establish that.
+
+Health now reports active reserved upload bytes/counts, uploaded-but-not-enqueued
+work and the combined analysis admission occupancy, matching authoritative
+backpressure. Exact quota exhaustion is explicit, including reservations even
+before bytes arrive. The updated collector stayed bounded on 100662 synthetic
+metadata rows: cold refresh 79.1 ms, 25 shared monitor calls 35.9 ms, and 1000
+cached calls 0.617 ms ([receipt](evidence/health-reservations-scale-20260914.json)).

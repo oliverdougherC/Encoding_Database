@@ -1,0 +1,30 @@
+{
+  "snapshotStagingLeftovers": [],
+  "archiveBytes": 21476659228,
+  "productionUnchanged": [
+    {
+      "name": "/encodingdb-server-1",
+      "sameContainerAndStart": true,
+      "restartCount": 0
+    },
+    {
+      "name": "/encodingdb-db-1",
+      "sameContainerAndStart": true,
+      "restartCount": 0
+    },
+    {
+      "name": "/encodingdb-frontend-1",
+      "sameContainerAndStart": true,
+      "restartCount": 0
+    },
+    {
+      "name": "/encodingdb-nginx",
+      "sameContainerAndStart": true,
+      "restartCount": 0
+    }
+  ],
+  "syntheticFixtureOnly": true,
+  "logicalRetainedBytes": 10737418240,
+  "additionalStagingMirrorBytes": 10737418240,
+  "scheduledVia": "SSH-held transient systemd timer; not unattended proof"
+}

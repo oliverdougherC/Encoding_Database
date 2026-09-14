@@ -1,0 +1,40 @@
+{
+  "status": "PASSED",
+  "helperSourceCommit": "a51fc39",
+  "runtimeImageSource": "730de3ccc6c20372fd582a9155588b41734b4600",
+  "scope": "isolated raw high-entropy backup capacity, not media or public/calibration evidence",
+  "retainedObjects": 40,
+  "logicalRetainedBytes": 10737418240,
+  "stagingMirrorBytes": 10737418240,
+  "backupSeconds": 336.348,
+  "restoreSeconds": 372.937,
+  "perPhaseDeadlineSeconds": 1200,
+  "writerQuiescenceSeconds": 73,
+  "archiveStreamSeconds": 98.41493211092893,
+  "hostCommandTreeMaxRssKiB": 28160,
+  "inventoryResources": [
+    {
+      "kind": "backup-inventory-resource-use",
+      "cgroupPeakMemoryBytes": 57843712,
+      "nodeMaxRssBytes": 104206336
+    },
+    {
+      "kind": "backup-inventory-resource-use",
+      "cgroupPeakMemoryBytes": 56782848,
+      "nodeMaxRssBytes": 105365504
+    }
+  ],
+  "helperLimits": {
+    "cpus": 2,
+    "memoryBytes": 2147483648
+  },
+  "snapshotCleanupVerified": true,
+  "unattendedSchedulerProven": false,
+  "initialRunVerdict": "FAILED_CLEANUP despite zero reported exit; raw logs preserved and corrected path rerun at same full size",
+  "rawLogSha256": {
+    "initial-compressed-run.log": "ae75d3313fb00e7b17961caa6dccd1d104009a4331c5e4edeafe8f234094732f",
+    "generator.log": "f0c3413e9fe0f8ec67d06015092d5621819ce8fd3b17532515d48edbfae315de",
+    "fixed-backup.log": "ce13358b20040debcdfe303035adcd5108b146f14ff910805a1d830b99b55085"
+  },
+  "logPresentation": "Trailing whitespace normalized in Git copies; original raw logs remain on P910 and are bound by these hashes."
+}

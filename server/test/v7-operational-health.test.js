@@ -71,6 +71,7 @@ function database(artifacts = []) {
       findFirst: async () => null,
       findMany: async (query) => { calls.push(query); return artifacts.filter((row) => !query.where.id || row.id > query.where.id.gt).slice(0, query.take); },
       aggregate: async () => ({ _sum: { byteSize: 0 } }),
+      count: async () => 0,
     },
     qualityAnalysis: {
       groupBy: async () => [{ status: 'SUSPECT', _count: { _all: 1 } }],
@@ -155,5 +156,21 @@ test('staging scans stop at their explicit bound; missing roots remain unavailab
     assert.ok(value.reasons.includes('staging_scan_incomplete'));
     const absent = await collectV7EvidenceHealth(database(), { storageRoot: path.join(root, 'absent') });
     assert.equal(absent.storage.rootAvailable, false);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+
+test('health exposes reservations which exhaust admission before an upload or analysis exists', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'health-reservations-'));
+  try {
+    const db = database();
+    db.artifact.count = async () => 1;
+    db.artifact.aggregate = async (query) => ({ _sum: { byteSize: query.where.storageState === 'PENDING' ? 900 : 100 } });
+    const value = await collectV7EvidenceHealth(db, { storageRoot: root, storageQuotaBytes: 1000, maxPendingAnalyses: 2 });
+    assert.equal(value.storage.reservedBytes, 900);
+    assert.equal(value.storage.remainingQuotaBytes, 0);
+    assert.equal(value.capacity.analysisAdmissionUsed, 2);
+    assert.ok(value.reasons.includes('storage_quota_exhausted'));
+    assert.ok(value.reasons.includes('pending_analysis_capacity_exhausted'));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
