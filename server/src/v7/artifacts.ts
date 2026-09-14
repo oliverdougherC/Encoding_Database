@@ -1,11 +1,13 @@
 import express, { Router } from 'express';
 import crypto from 'node:crypto';
-import { Transform } from 'node:stream';
+import { Transform, Writable } from 'node:stream';
 import { pipeline as pipelineAsync } from 'node:stream/promises';
-import { promisify } from 'node:util';
-import { execFile, spawn } from 'node:child_process';
-import { createWriteStream, readdirSync } from 'node:fs';
-import { access, copyFile, mkdir, mkdtemp, readFile, rename, rm, stat, statfs, writeFile } from 'node:fs/promises';
+import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
+import { loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
+import { applyEffectiveReview } from './reviews.js';
+import { requireOperator, operatorIdentity } from './operatorAuth.js';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { access, copyFile, mkdir, mkdtemp, opendir, readFile, rename, rm, stat, statfs, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,9 +18,9 @@ import {
   buildAuthoritativeQualityAnalysisRecord,
   resolveQualityAnalysisExecutionPlan,
   VMAF_MODEL_FILENAME,
+  VMAF_MODEL_SHA256,
 } from '../qualityAnalysis.js';
 import {
-  DEFAULT_RECOMMENDATION_EVIDENCE_POLICY,
   persistDerivedResultAggregate,
 } from './aggregation.js';
 import {
@@ -45,18 +47,16 @@ import {
   type EnergyDomainInput,
 } from './telemetry.js';
 import {
-  buildScoreContextSeedRecords,
-  loadReferenceContext,
   persistGeneralDerivedResultFromWorkloadEvidence,
-  type ReferenceContext,
 } from './referenceContext.js';
 
-const execFileAsync = promisify(execFile);
+const execFileAsync = runNativeProcess;
 
 export const ARTIFACT_PIPELINE_VERSION = 'encodingdb-artifact-pipeline/v1' as const;
-export const DEFAULT_ANALYZER_VERSION = 'authoritative-analysis/v1' as const;
-export const SERVER_CANONICAL_PROTOCOL_VERSION = '7.0' as const;
-export const SERVER_CANONICAL_MINIMUM_CLIENT_VERSION = 'client/0.2.0' as const;
+export const DEFAULT_ANALYZER_VERSION = 'authoritative-analysis/v2' as const;
+export const SERVER_CANONICAL_PROTOCOL_VERSION = '7.1' as const;
+export const SERVER_CANONICAL_MINIMUM_CLIENT_VERSION = 'client/0.3.0' as const;
+export const SERVER_ENCODE_TIMER_BOUNDARY = 'ffmpeg-process-v1' as const;
 export const SERVER_CANONICAL_RECIPE_RULES = {
   artifactUploadRequired: true,
   warmupRuns: 1,
@@ -146,6 +146,8 @@ export interface StoredBenchmarkRun {
   environmentId: string;
   payloadHash: string;
   inputHash: string | null;
+  physicalSourceId?: string | null;
+  encodeTimerBoundary?: string | null;
   campaignId: string | null;
   repetitionGroupId: string | null;
   repetitionIndex: number | null;
@@ -241,7 +243,12 @@ export interface RunArtifactBundle {
   qualityAnalyses: StoredQualityAnalysis[];
 }
 
+export interface AdmissionBudget {
+  maxPendingArtifacts: number; maxPendingAnalyses: number; storageQuotaBytes: number | null;
+  availableBytes: number | null; storageReserveBytes: number; reservationMs: number;
+}
 export interface CreateRunInput {
+  admission?: AdmissionBudget;
   benchmarkProtocolId: string;
   testClipId: string;
   workloadId: string;
@@ -249,6 +256,8 @@ export interface CreateRunInput {
   environmentId: string;
   payloadHash: string;
   inputHash?: string | null;
+  physicalSourceId?: string | null;
+  encodeTimerBoundary?: string | null;
   campaignId?: string | null;
   repetitionGroupId?: string | null;
   repetitionIndex?: number | null;
@@ -312,6 +321,8 @@ export interface CreateRunRequestInput {
   workloadId?: string | null;
   expectedMetricModelId?: string | null;
   inputHash?: string | null;
+  physicalSourceId?: string | null;
+  encodeTimerBoundary?: string | null;
   campaignId?: string | null;
   repetitionGroupId?: string | null;
   repetitionIndex?: number | null;
@@ -388,11 +399,15 @@ export interface ArtifactPipelinePersistence {
   upsertCanonicalTestClip(input: SuiteTestClipRecordInput): Promise<StoredTestClip>;
   resolveOrBootstrapRecipe(input: RecipeBootstrapInput): Promise<StoredRecipe>;
   resolveOrBootstrapEnvironment(input: EnvironmentBootstrapInput): Promise<StoredEnvironment>;
+  reserveUpload?(artifactId: string, budget: AdmissionBudget): Promise<void>;
+  claimUploadSlot?(artifactId: string, token: string, deadline: Date, maximum: number): Promise<boolean>;
+  releaseUploadSlot?(artifactId: string, token: string): Promise<void>;
   createOrFetchRun(input: CreateRunInput): Promise<{ bundle: RunArtifactBundle; created: boolean }>;
   getRunArtifact(benchmarkRunId: string, role: ArtifactRoleValue): Promise<RunArtifactBundle | null>;
   getArtifactBySha256(sha256: string): Promise<StoredArtifact | null>;
   markArtifactUploaded(input: {
     artifactId: string;
+    uploadLeaseToken?: string;
     sha256: string;
     byteSize: number;
     mediaContainer: string | null;
@@ -404,6 +419,7 @@ export interface ArtifactPipelinePersistence {
   }): Promise<RunArtifactBundle>;
   markArtifactState(input: {
     artifactId: string;
+    uploadLeaseToken?: string;
     storageState: ArtifactStorageStateValue;
     stateReason?: string | null;
     stateDetails?: JsonObject | null;
@@ -419,14 +435,21 @@ export interface ArtifactPipelinePersistence {
     metricModelId: string;
     analysisWorkerVersion: string;
     maxAttempts: number;
+    maxPendingAnalyses?: number;
+    operatorAudit?: { operator: string; reason: string };
   }): Promise<RunArtifactBundle>;
   claimNextQueuedQualityAnalysis(input: {
     leaseToken: string;
     leaseExpiresAt: Date;
     now: Date;
   }): Promise<{ bundle: RunArtifactBundle; analysis: StoredQualityAnalysis } | null>;
+  listUnanalyzedUploads?(): Promise<RunArtifactBundle[]>;
+  renewAnalysisLease?(analysisId: string, token: string, deadline: Date): Promise<boolean>;
+  retryDerivedRecomputes?(callback: (payload: DerivedRecomputeHookPayload) => Promise<void> | void): Promise<void>;
+  completeDerivedRecompute?(analysisId: string, observedUpdatedAt: Date, error?: string): Promise<void>;
   markQualityAnalysisRetry(input: {
     analysisId: string;
+    leaseToken?: string | null;
     artifactId: string;
     benchmarkRunId: string;
     nextRetryAt: Date;
@@ -434,6 +457,7 @@ export interface ArtifactPipelinePersistence {
   }): Promise<RunArtifactBundle>;
   markQualityAnalysisFailed(input: {
     analysisId: string;
+    leaseToken?: string | null;
     artifactId: string;
     benchmarkRunId: string;
     errorMessage: string;
@@ -445,6 +469,7 @@ export interface ArtifactPipelinePersistence {
     benchmarkRunId: string;
     artifactId: string;
     analysisId: string;
+    leaseToken?: string | null;
     result: AuthoritativeAnalysisResult;
   }): Promise<RunArtifactBundle>;
 }
@@ -542,6 +567,8 @@ const RUN_CREATE_SCHEMA = z.object({
   workloadId: z.string().min(1).max(200).optional().nullable(),
   expectedMetricModelId: z.string().min(1).max(200).optional().nullable(),
   inputHash: z.string().length(64).regex(/^[0-9a-f]+$/).optional().nullable(),
+  physicalSourceId: z.string().min(16).max(200),
+  encodeTimerBoundary: z.literal(SERVER_ENCODE_TIMER_BOUNDARY),
   campaignId: z.string().max(200).optional().nullable(),
   repetitionGroupId: z.string().max(200).optional().nullable(),
   repetitionIndex: z.number().int().min(0).optional().nullable(),
@@ -574,6 +601,7 @@ const UPLOAD_AUTH_SCHEMA = z.object({
 }).strict();
 
 const REANALYZE_SCHEMA = z.object({
+  reason: z.string().trim().min(8).max(2000),
   analysisWorkerVersion: z.string().min(1).max(200).optional().nullable(),
   metricModelId: z.string().min(1).max(200).optional().nullable(),
 }).strict();
@@ -787,6 +815,12 @@ function buildObjectKey(sha256: string): string {
   return path.join('objects', sha256.slice(0, 2), sha256);
 }
 
+async function hashFile(filePath: string): Promise<string> {
+  const hash = crypto.createHash('sha256');
+  for await (const chunk of createReadStream(filePath)) hash.update(chunk);
+  return hash.digest('hex');
+}
+
 async function ensureParentDir(filePath: string): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
 }
@@ -834,18 +868,11 @@ class LocalArtifactStorage {
     expectedSize: number;
     maxBytes: number;
     source: NodeJS.ReadableStream;
+    signal?: AbortSignal;
     validateStagedObject?: (filePath: string) => Promise<void>;
   }): Promise<StoredObjectReference> {
     const key = buildObjectKey(input.expectedSha256);
     const absolutePath = this.resolveAbsolutePath(key);
-    if (await this.hasObject(key, input.expectedSize)) {
-      return {
-        key,
-        absolutePath,
-        observedBytes: input.expectedSize,
-        deduplicated: true,
-      };
-    }
     await ensureParentDir(absolutePath);
     const stagingRoot = path.join(this.config.rootDir, '.staging');
     await mkdir(stagingRoot, { recursive: true });
@@ -872,7 +899,7 @@ class LocalArtifactStorage {
       },
     });
     try {
-      await pipelineAsync(input.source, validator, output);
+      await pipelineAsync(input.source, validator, output, { signal: input.signal });
       if (observedBytes !== input.expectedSize) {
         throw new HttpError(400, 'Artifact byte size does not match authorization');
       }
@@ -907,6 +934,12 @@ class LocalArtifactStorage {
       };
     } catch (error) {
       output.destroy();
+      // Keep hash-verified invalid media as evidence; incomplete transport staging is disposable.
+      if (observedBytes === input.expectedSize && error instanceof HttpError && error.message.includes('media contract')) {
+        const quarantine = path.join(this.config.rootDir, '.quarantine', input.expectedSha256);
+        await ensureParentDir(quarantine);
+        await rename(tempFile, quarantine);
+      }
       throw error;
     } finally {
       await rm(tempDir, { recursive: true, force: true });
@@ -918,6 +951,21 @@ class LocalArtifactStorage {
     const absolutePath = this.resolveAbsolutePath(key);
     if (!(await this.hasObject(key, expectedSize))) return null;
     return { key, absolutePath };
+  }
+
+  async cleanupAbandonedStaging(): Promise<void> {
+    const stagingRoot = path.join(this.config.rootDir, '.staging');
+    await mkdir(stagingRoot, { recursive: true });
+    const deadlineMs = Number(process.env.ARTIFACT_UPLOAD_DEADLINE_MS || 300_000) + Number(process.env.ARTIFACT_NATIVE_TIMEOUT_MS || 300_000);
+    const cutoff = Date.now() - Math.max(86_400_000, deadlineMs * 2);
+    let inspected = 0;
+    for await (const entry of await opendir(stagingRoot)) {
+      if (++inspected > 1000) break;
+      if (!entry.isDirectory() || !entry.name.startsWith('encodingdb-artifact-')) continue;
+      const directory = path.join(stagingRoot, entry.name);
+      try { if ((await stat(directory)).mtimeMs < cutoff) await rm(directory, { recursive: true, force: true }); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error; }
+    }
   }
 
   async inspectCapacity(): Promise<StorageCapacitySnapshot> {
@@ -1007,7 +1055,7 @@ function assertArtifactRole(input: string): asserts input is ArtifactRoleValue {
   }
 }
 
-function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonObject): {
+export function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonObject): {
   mediaContainer: string | null;
   durationSeconds: number;
   videoPacketBytesExpectedDurationSeconds: number;
@@ -1038,12 +1086,25 @@ function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonOb
     throw new Error(`Encoded dimensions ${width}x${height} do not match canonical clip ${bundle.run.testClip.width}x${bundle.run.testClip.height}`);
   }
 
-  const frameRate = parseRatio(String(video.avg_frame_rate ?? video.r_frame_rate ?? ''));
+  const cadenceParts = /^(\d+)\/(\d+)$/.exec(String(video.avg_frame_rate ?? ''));
+  if (!cadenceParts || BigInt(cadenceParts[2]!) === 0n || BigInt(cadenceParts[1]!) * BigInt(bundle.run.testClip.frameRateDenominator) !== BigInt(cadenceParts[2]!) * BigInt(bundle.run.testClip.frameRateNumerator)) throw new Error('Encoded frame rate rational does not match canonical cadence');
+  const frameRate = parseRatio(String(video.avg_frame_rate));
   const expectedFrameRate = bundle.run.testClip.frameRateNumerator / bundle.run.testClip.frameRateDenominator;
-  if (frameRate == null || !approxEqual(frameRate, expectedFrameRate, 0.01)) {
+  if (frameRate == null || !approxEqual(frameRate, expectedFrameRate, 1e-7)) {
     throw new Error(`Encoded frame rate ${frameRate ?? 'unknown'} does not match canonical clip ${expectedFrameRate}`);
   }
 
+  const expectedCount = bundle.run.testClip.exactFrameCount;
+  if (frames.length !== expectedCount) throw new Error(`Decoded frame count ${frames.length} does not match canonical ${expectedCount}`);
+  const frameInterval = 1 / expectedFrameRate;
+  for (const [index, frame] of frames.entries()) {
+    const timestamp = Number(frame.best_effort_timestamp_time ?? frame.pts_time);
+    if (!Number.isFinite(timestamp) || Math.abs(timestamp - index * frameInterval) > 0.0011) {
+      throw new Error(`Decoded frame ${index} timestamp ${timestamp} violates zero-origin constant cadence contract`);
+    }
+    if (Number(frame.interlaced_frame ?? 0) !== 0) throw new Error(`Decoded frame ${index} is interlaced`);
+    if (Number(frame.decode_error_flags ?? 0) !== 0) throw new Error(`Decoded frame ${index} reports errors`);
+  }
   const pixelFormat = String(video.pix_fmt ?? '');
   if (pixelFormat && pixelFormat.toLowerCase() !== bundle.run.recipe.pixelFormat.toLowerCase()) {
     throw new Error(`Encoded pixel format ${pixelFormat} does not match recipe ${bundle.run.recipe.pixelFormat}`);
@@ -1114,9 +1175,12 @@ function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonOb
     }
   }
 
-  const durationSeconds = Number(format?.duration ?? bundle.run.testClip.exactDurationSeconds);
+  const durationSeconds = Number(video.duration ?? format?.duration);
   if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
     throw new Error('Unable to determine encoded artifact duration');
+  }
+  if (Math.abs(durationSeconds - bundle.run.testClip.exactDurationSeconds) > 0.002) {
+    throw new Error(`Encoded duration ${durationSeconds} does not match canonical ${bundle.run.testClip.exactDurationSeconds}`);
   }
 
   return {
@@ -1154,61 +1218,23 @@ function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload: JsonOb
 }
 
 export async function streamPacketEvidence(filePath: string): Promise<{ bytes: number; packetCount: number }> {
-  return await new Promise<{ bytes: number; packetCount: number }>((resolve, reject) => {
-    const child = spawn('ffprobe', [
-      '-v', 'error',
-      '-select_streams', 'v:0',
-      '-show_entries', 'packet=size',
-      '-of', 'csv=p=0',
-      filePath,
-    ]);
-    let total = 0;
-    let packetCount = 0;
-    let pending = '';
-    let stderr = '';
-    child.stdout.setEncoding('utf8');
-    child.stdout.on('data', (chunk: string) => {
-      pending += chunk;
-      let newlineIndex = pending.indexOf('\n');
-      while (newlineIndex >= 0) {
-        const line = pending.slice(0, newlineIndex).trim();
-        if (line) {
-          total += Number(line);
-          packetCount += 1;
-        }
-        pending = pending.slice(newlineIndex + 1);
-        newlineIndex = pending.indexOf('\n');
-      }
-    });
-    child.stderr.setEncoding('utf8');
-    child.stderr.on('data', (chunk: string) => {
-      stderr += chunk;
-    });
-    child.once('error', reject);
-    child.once('close', (code) => {
-      const line = pending.trim();
-      if (line) {
-        total += Number(line);
-        packetCount += 1;
-      }
-      if (code !== 0) {
-        reject(new Error(stderr || `ffprobe packet scan failed with exit code ${code}`));
-        return;
-      }
-      resolve({ bytes: total, packetCount });
-    });
-  });
+  const { stdout } = await runNativeProcess('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'packet=size', '-of', 'csv=p=0', filePath], { timeoutMs: Number(process.env.ARTIFACT_PROBE_TIMEOUT_MS || 60_000) });
+  const sizes = stdout.trim().split(/\r?\n/).filter(Boolean).map(Number);
+  if (!sizes.length || sizes.some(size => !Number.isSafeInteger(size) || size <= 0)) throw new Error('Invalid video packet evidence');
+  return { bytes: sizes.reduce((a, b) => a + b, 0), packetCount: sizes.length };
 }
 
-async function probeMedia(filePath: string): Promise<JsonObject> {
-  const { stdout } = await execFileAsync('ffprobe', [
+export async function probeMedia(filePath: string): Promise<JsonObject> {
+  const { stdout, stderr } = await execFileAsync('ffprobe', [
     '-v', 'error',
     '-print_format', 'json',
     '-show_format',
     '-show_streams',
     '-show_frames',
+    '-show_entries', 'format:stream:frame=media_type,best_effort_timestamp_time,pts_time,key_frame,decode_error_flags,interlaced_frame',
     filePath,
-  ], { maxBuffer: 10 * 1024 * 1024 });
+  ], { maxBuffer: 10 * 1024 * 1024, timeoutMs: Number(process.env.ARTIFACT_PROBE_TIMEOUT_MS || 60_000) });
+  if (stderr.trim()) throw new Error(`Decoded media reported errors: ${stderr.slice(-4096)}`);
   return JSON.parse(stdout) as JsonObject;
 }
 
@@ -1247,8 +1273,7 @@ async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<s
     : `${testClip.workloadId}.mkv`;
   const packagedPath = fileURLToPath(new URL(`canonical/${packagedFileName}`, SUITE_V1_MANIFEST_PATH));
   if (await fileExists(packagedPath)) {
-    const packagedBytes = await readFile(packagedPath);
-    if (sha256Hex(packagedBytes) !== testClip.sha256 || packagedBytes.length !== testClip.byteSize) {
+    if ((await stat(packagedPath)).size !== testClip.byteSize || await hashFile(packagedPath) !== testClip.sha256) {
       throw new Error(`Packaged canonical reference ${path.basename(packagedPath)} failed manifest verification`);
     }
     return packagedPath;
@@ -1263,8 +1288,7 @@ async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<s
   for (const candidate of candidates) {
     if (typeof candidate !== 'string' || !candidate.trim()) continue;
     if (await fileExists(candidate)) {
-      const existingBytes = await readFile(candidate);
-      if (sha256Hex(existingBytes) === testClip.sha256) {
+      if ((await stat(candidate)).size === testClip.byteSize && await hashFile(candidate) === testClip.sha256) {
         return candidate;
       }
     }
@@ -1283,8 +1307,7 @@ async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<s
   await mkdir(outputDir, { recursive: true });
   const absolutePath = path.join(outputDir, `${testClip.sha256}-${fileName}`);
   if (await fileExists(absolutePath)) {
-    const cachedBytes = await readFile(absolutePath);
-    if (sha256Hex(cachedBytes) === testClip.sha256) {
+    if ((await stat(absolutePath)).size === testClip.byteSize && await hashFile(absolutePath) === testClip.sha256) {
       return absolutePath;
     }
   }
@@ -1318,13 +1341,13 @@ async function ensureCanonicalReferencePath(testClip: StoredTestClip): Promise<s
       tempPath,
     ];
     await execFileAsync('ffmpeg', ffmpegArgs, { maxBuffer: 10 * 1024 * 1024 });
-    const builtBytes = await readFile(tempPath);
-    const builtHash = sha256Hex(builtBytes);
+    const builtHash = await hashFile(tempPath);
     if (builtHash !== testClip.sha256) {
       throw new Error(`Generated canonical reference hash ${builtHash} did not match manifest ${testClip.sha256}`);
     }
-    if (builtBytes.length !== testClip.byteSize) {
-      throw new Error(`Generated canonical reference size ${builtBytes.length} did not match manifest ${testClip.byteSize}`);
+    const builtSize = (await stat(tempPath)).size;
+    if (builtSize !== testClip.byteSize) {
+      throw new Error(`Generated canonical reference size ${builtSize} did not match manifest ${testClip.byteSize}`);
     }
     const probe = await probeMedia(tempPath);
     const stream = Array.isArray(probe.streams) ? probe.streams.find((entry) => asJsonObject(entry)?.codec_type === 'video') : null;
@@ -1365,11 +1388,17 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
   }
 
   async analyze(input: AnalyzeArtifactInput): Promise<AuthoritativeAnalysisResult> {
+    if (input.bundle.artifact?.sha256) {
+      if ((await stat(input.artifactPath)).size !== input.bundle.artifact.byteSize) throw new Error('Stored artifact size no longer matches immutable identity');
+      if (await hashFile(input.artifactPath) !== input.bundle.artifact.sha256) throw new Error('Stored artifact sha256 no longer matches immutable identity');
+    }
+    if (sha256Hex(await readFile(this.vmafModelPath)) !== VMAF_MODEL_SHA256) throw new Error('Installed VMAF model hash does not match server identity');
     const probePayload = await probeMedia(input.artifactPath);
     const packetEvidence = await streamPacketEvidence(input.artifactPath);
     const ffmpegVersion = await readFfmpegVersion();
     const validation = validateProbeAgainstRun(input.bundle, probePayload);
     const referencePath = await ensureCanonicalReferencePath(input.bundle.run.testClip);
+    validateProbeAgainstRun({ ...input.bundle, run: { ...input.bundle.run, recipe: { ...input.bundle.run.recipe, pixelFormat: input.bundle.run.testClip.pixelFormat, bitDepth: input.bundle.run.testClip.bitDepth, chromaSubsampling: input.bundle.run.testClip.chromaSubsampling, containerFormat: null, codecFamily: 'ffv1', profile: null, level: null, videoCodecTag: null, bFrames: null, frameReordering: null, keyframeInterval: null, gopSize: null } } }, await probeMedia(referencePath));
     const referenceStats = await stat(referencePath);
     if (!referenceStats.isFile()) {
       throw new Error(`Canonical reference path ${referencePath} is not a file`);
@@ -1383,6 +1412,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         height: input.bundle.run.testClip.height,
         frameRate: input.bundle.run.testClip.frameRateNumerator / input.bundle.run.testClip.frameRateDenominator,
         dynamicRange: 'sdr' as const,
+        expectedFrameCount: input.bundle.run.testClip.exactFrameCount,
       };
       const plan = resolveQualityAnalysisExecutionPlan(source, this.vmafModelPath, vmafLogPath);
       const diagnosticInputs = buildDiagnosticFilterInputs(source.frameRate);
@@ -1396,12 +1426,13 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-f', 'null',
         '-',
       ], { maxBuffer: 10 * 1024 * 1024 });
+      if ((await stat(vmafLogPath)).size > 10 * 1024 * 1024) throw new Error('VMAF report exceeds output budget');
       const vmafReport = await readFile(vmafLogPath, 'utf8');
       const xpsnrReport = await runFfmpegQualityFilter([
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', `${diagnosticInputs};[distorted][reference]xpsnr`,
+        '-lavfi', `${diagnosticInputs};[distorted][reference]xpsnr=stats_file=${path.join(tempDir, 'xpsnr.log')}:shortest=1:repeatlast=0`,
         '-an',
         '-f', 'null',
         '-',
@@ -1410,7 +1441,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', `${diagnosticInputs};[distorted][reference]ssim`,
+        '-lavfi', `${diagnosticInputs};[distorted][reference]ssim=stats_file=${path.join(tempDir, 'ssim.log')}:shortest=1:repeatlast=0`,
         '-an',
         '-f', 'null',
         '-',
@@ -1419,16 +1450,22 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         '-hide_banner',
         '-i', input.artifactPath,
         '-i', referencePath,
-        '-lavfi', `${diagnosticInputs};[distorted][reference]psnr`,
+        '-lavfi', `${diagnosticInputs};[distorted][reference]psnr=stats_file=${path.join(tempDir, 'psnr.log')}:shortest=1:repeatlast=0`,
         '-an',
         '-f', 'null',
         '-',
       ]);
 
+      for (const metric of ['xpsnr', 'ssim', 'psnr']) {
+        const statsPath = path.join(tempDir, `${metric}.log`);
+        if ((await stat(statsPath)).size > 10 * 1024 * 1024) throw new Error(`${metric} frame report exceeds output budget`);
+        const frames = (await readFile(statsPath, 'utf8')).split(/\r?\n/).filter(line => /^n:\s*\d+/.test(line));
+        if (frames.length !== source.expectedFrameCount || frames.some((line, index) => Number(/^n:\s*(\d+)/.exec(line)?.[1]) !== index + 1)) throw new Error(`${metric} did not cover the complete canonical frame sequence`);
+      }
       const authoritative = buildAuthoritativeQualityAnalysisRecord({
         source,
         metricModelPath: this.vmafModelPath,
-        analysisWorkerVersion: input.requestedAnalysisWorkerVersion || input.bundle.run.benchmarkProtocol.metricWorkerVersion || this.analyzerVersion,
+        analysisWorkerVersion: this.analyzerVersion,
         vmafReport,
         xpsnrReport,
         ssimReport,
@@ -1445,15 +1482,17 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
         : null;
       const suspicious = authoritative.metricDisagreement.flagged;
       return {
-        metricModelId: input.requestedMetricModelId || authoritative.metricModelId,
+        metricModelId: authoritative.metricModelId,
         qualityContextId: authoritative.qualityContextId,
-        analysisWorkerVersion: input.requestedAnalysisWorkerVersion || authoritative.analysisWorkerVersion,
+        analysisWorkerVersion: authoritative.analysisWorkerVersion,
         analysisStatus: suspicious ? 'SUSPECT' : 'COMPLETE',
         analysisProvenance: {
           ...authoritative.analysisProvenance,
           pipelineVersion: ARTIFACT_PIPELINE_VERSION,
           ffprobeValidatedAt: nowIso(),
           referencePath,
+          timingTrustBoundary: 'Server verifies decoded pixels and internal consistency; anonymous hardware timing is not remotely attested',
+          diagnosticFrameCount: source.expectedFrameCount,
           packetByteMethod: 'ffprobe-video-packet-size-sum',
         },
         vmafMean: authoritative.vmafMean,
@@ -1534,6 +1573,7 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
       status: bundle.run.status,
       statusReason: bundle.run.statusReason,
       workloadId: bundle.run.workloadId,
+      encodeTimerBoundary: bundle.run.encodeTimerBoundary ?? null,
       clientQualityDebug: bundle.run.clientQualityDebug ?? null,
       energyDomains: bundle.run.energyDomains ?? null,
       decodeBenchmark: bundle.run.decodeBenchmark ?? null,
@@ -1603,6 +1643,7 @@ class AuthoritativeAnalysisCoordinator {
   private reserved = 0;
   private started = false;
   private draining = false;
+  private stopped = false;
   private drainRequested = false;
   private timer: NodeJS.Timeout | null = null;
 
@@ -1612,8 +1653,10 @@ class AuthoritativeAnalysisCoordinator {
     private readonly config: ArtifactPipelineConfig,
   ) {}
 
+  stop(): void { this.stopped = true; if (this.timer) clearInterval(this.timer); }
+
   start(): void {
-    if (this.started) return;
+    if (this.stopped || this.started) return;
     this.started = true;
     this.timer = setInterval(() => {
       this.requestDrain();
@@ -1628,6 +1671,7 @@ class AuthoritativeAnalysisCoordinator {
   }
 
   private requestDrain(): void {
+    if (this.stopped) return;
     this.drainRequested = true;
     if (this.draining) return;
     this.draining = true;
@@ -1640,6 +1684,8 @@ class AuthoritativeAnalysisCoordinator {
         this.drainRequested = false;
         await this.drainOnce();
       }
+    } catch (error) {
+      console.error('Artifact queue drain failed:', normalizeError(error));
     } finally {
       this.draining = false;
       if (this.drainRequested) {
@@ -1650,7 +1696,8 @@ class AuthoritativeAnalysisCoordinator {
   }
 
   private async drainOnce(): Promise<void> {
-    while (this.active + this.reserved < this.config.analysisMaxConcurrent) {
+    await this.service.retryDerivedRecomputes();
+    while (!this.stopped && this.active + this.reserved < this.config.analysisMaxConcurrent) {
       this.reserved += 1;
       const leaseToken = crypto.randomUUID();
       const now = new Date();
@@ -1671,34 +1718,34 @@ class AuthoritativeAnalysisCoordinator {
   }
 
   private async processClaim(claim: { bundle: RunArtifactBundle; analysis: StoredQualityAnalysis }): Promise<void> {
+    const abort = new AbortController();
+    let renewing = false;
+    const renew = setInterval(() => {
+      if (renewing || !this.persistence.renewAnalysisLease || !claim.analysis.leaseToken) return;
+      renewing = true;
+      void this.persistence.renewAnalysisLease(claim.analysis.id, claim.analysis.leaseToken, new Date(Date.now() + this.config.analysisLeaseMs))
+        .then(owned => { if (!owned) abort.abort(); }).catch(() => abort.abort()).finally(() => { renewing = false; });
+    }, Math.max(10, Math.floor(this.config.analysisLeaseMs / 3)));
+    renew.unref();
     try {
-      await this.service.processQueuedAnalysis(claim.bundle, claim.analysis);
+      await nativeProcessSignal.run(abort.signal, () => this.service.processQueuedAnalysis(claim.bundle, claim.analysis));
     } catch (error) {
-      // Claiming the durable lease increments attemptCount atomically. The
-      // claimed value therefore already includes the current execution.
-      const attemptsUsed = claim.analysis.attemptCount;
-      const errorMessage = normalizeError(error);
-      if (attemptsUsed >= claim.analysis.maxAttempts) {
-        await this.persistence.markQualityAnalysisFailed({
-          analysisId: claim.analysis.id,
-          artifactId: claim.bundle.artifact.id,
-          benchmarkRunId: claim.bundle.run.id,
-          errorMessage,
-        });
-        return;
+      const failure = { analysisId: claim.analysis.id, leaseToken: claim.analysis.leaseToken,
+        artifactId: claim.bundle.artifact.id, benchmarkRunId: claim.bundle.run.id, errorMessage: normalizeError(error) };
+      try {
+        if (claim.analysis.attemptCount >= claim.analysis.maxAttempts) await this.persistence.markQualityAnalysisFailed(failure);
+        else await this.persistence.markQualityAnalysisRetry({ ...failure, nextRetryAt: new Date(Date.now() + this.config.analysisRetryBackoffMs * 2 ** (claim.analysis.attemptCount - 1)) });
+      } catch (leaseError) {
+        console.error('Analysis claim no longer writable:', normalizeError(leaseError));
       }
-      await this.persistence.markQualityAnalysisRetry({
-        analysisId: claim.analysis.id,
-        artifactId: claim.bundle.artifact.id,
-        benchmarkRunId: claim.bundle.run.id,
-        nextRetryAt: new Date(Date.now() + this.config.analysisRetryBackoffMs * attemptsUsed),
-        errorMessage,
-      });
-    }
+    } finally { clearInterval(renew); }
   }
+
 }
 
 const BACKGROUND_ARTIFACT_SERVICES = new Set<ArtifactPipelineService>();
+
+export function stopArtifactPipelineBackgroundWork(): void { for (const service of BACKGROUND_ARTIFACT_SERVICES) service.stopBackgroundWork(); stopNativeProcesses(); }
 
 export function startArtifactPipelineBackgroundWork(): void {
   for (const service of BACKGROUND_ARTIFACT_SERVICES) {
@@ -1728,13 +1775,18 @@ export class ArtifactPipelineService {
     this.suiteManifest = suiteManifest;
   }
 
+  stopBackgroundWork(): void { this.coordinator.stop(); }
+
   startBackgroundWork(): void {
+    void this.storage.cleanupAbandonedStaging().catch(error => console.error('Staging cleanup failed:', normalizeError(error)));
     this.coordinator.start();
   }
 
   async createRun(input: CreateRunRequestInput): Promise<{ bundle: RunArtifactBundle; created: boolean }> {
+    if (input.artifact.role !== 'ENCODED') throw new HttpError(400, 'Canonical runs require an ENCODED artifact');
+    if (input.artifact.byteSize > this.config.maxArtifactBytes) throw new HttpError(413, 'Artifact exceeds maximum allowed size');
     const resolvedInput = await this.resolveCreateRunInput(input);
-    return await this.persistence.createOrFetchRun(resolvedInput);
+    return await this.persistence.createOrFetchRun({ ...resolvedInput, admission: await this.admissionBudget() });
   }
 
   async authorizeUpload(ip: string, benchmarkRunId: string, role: ArtifactRoleValue, body: z.infer<typeof UPLOAD_AUTH_SCHEMA>): Promise<JsonObject> {
@@ -1748,12 +1800,12 @@ export class ArtifactPipelineService {
     if (body.contentType && !this.config.allowedMimeTypes.has(body.contentType)) {
       throw new HttpError(415, 'Artifact content type is not allowed');
     }
-    if (bundle.artifact.storageState === 'RETAINED' || bundle.artifact.storageState === 'VERIFIED' || bundle.artifact.storageState === 'UPLOADED') {
+    if (bundle.artifact.storageState === 'RETAINED' || bundle.artifact.storageState === 'VERIFIED' || bundle.artifact.storageState === 'UPLOADED' || bundle.artifact.storageState === 'REJECTED') {
       if (bundle.artifact.sha256 === body.sha256 && bundle.artifact.byteSize === body.byteSize) {
         return {
           uploadRequired: false,
           reason: 'artifact-already-bound',
-          ...bundleToResponse(bundle),
+          ...bundleToResponse(bundle.artifact.storageState === 'UPLOADED' && this.config.autoAnalyzeOnUpload ? await this.queueAuthoritativeAnalysis(bundle, undefined, undefined) : bundle),
         };
       }
       throw new HttpError(409, 'Artifact is already bound to immutable run metadata');
@@ -1761,7 +1813,7 @@ export class ArtifactPipelineService {
     if (bundle.artifact.sha256 !== body.sha256 || bundle.artifact.byteSize !== body.byteSize) {
       throw new HttpError(409, 'Upload authorization must match immutable artifact metadata');
     }
-    await this.assertCapacityForUpload(body.byteSize);
+    await this.persistence.reserveUpload?.(bundle.artifact.id, await this.admissionBudget());
 
     const existingObject = await this.storage.linkExistingObject(body.sha256, body.byteSize);
     if (existingObject) {
@@ -1814,9 +1866,6 @@ export class ArtifactPipelineService {
     if (!this.uploadLimiter.check(ip)) {
       throw new HttpError(429, 'Artifact upload rate limit exceeded');
     }
-    if (this.activeUploads >= this.config.maxConcurrentUploads) {
-      throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
-    }
     const payload = verifyUploadToken(token, this.config.uploadTokenSecret);
     const exp = Number(payload.exp);
     if (!Number.isFinite(exp) || exp < Date.now()) {
@@ -1849,9 +1898,32 @@ export class ArtifactPipelineService {
     if (contentType && !this.config.allowedMimeTypes.has(contentType)) {
       throw new HttpError(415, 'Artifact content type is not allowed');
     }
-    await this.assertCapacityForUpload(byteSize);
+    if (bundle.artifact.sha256 !== sha256 || bundle.artifact.byteSize !== byteSize) throw new HttpError(409, 'Upload token conflicts with immutable artifact');
+    // Already published retries consume/verify the bounded body, but cannot mutate state or enqueue again.
+    const alreadyPublished = bundle.artifact.storageState !== 'PENDING';
+    if (!alreadyPublished) await this.persistence.reserveUpload?.(artifactId, await this.admissionBudget());
+    const uploadLeaseToken = crypto.randomUUID();
+    const uploadDeadlineMs = Number(process.env.ARTIFACT_UPLOAD_DEADLINE_MS || 300_000);
+    if (this.persistence.claimUploadSlot) {
+      if (!await this.persistence.claimUploadSlot(artifactId, uploadLeaseToken, new Date(Date.now() + uploadDeadlineMs), this.config.maxConcurrentUploads)) throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
+    } else if (this.activeUploads >= this.config.maxConcurrentUploads) throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
     this.activeUploads += 1;
+    const uploadAbort = new AbortController();
+    const uploadTimer = setTimeout(() => uploadAbort.abort(), uploadDeadlineMs);
+    uploadTimer.unref();
     try {
+      if (alreadyPublished) {
+        let observed = 0;
+        const hash = crypto.createHash('sha256');
+        await pipelineAsync(source, new Writable({ write(chunk, _encoding, callback) {
+          observed += chunk.length;
+          if (observed > byteSize) { callback(new HttpError(400, 'Artifact byte size exceeds authorization')); return; }
+          hash.update(chunk); callback();
+        } }), { signal: uploadAbort.signal });
+        if (observed !== byteSize || hash.digest('hex') !== sha256) throw new HttpError(400, 'Artifact sha256 or size does not match authorization');
+        const current = await this.requireBundle(benchmarkRunId, role);
+        return current.artifact.storageState === 'UPLOADED' && this.config.autoAnalyzeOnUpload ? await this.queueAuthoritativeAnalysis(current, undefined, undefined) : current;
+      }
       let stored: StoredObjectReference;
       try {
         stored = await this.storage.publishObjectStream({
@@ -1859,10 +1931,11 @@ export class ArtifactPipelineService {
           expectedSize: byteSize,
           maxBytes: this.config.maxArtifactBytes,
           source,
-          ...(this.config.validateMediaBeforePublish ? {
+          signal: uploadAbort.signal,
+          ...(this.config.validateMediaBeforePublish && !alreadyPublished ? {
             validateStagedObject: async (filePath: string) => {
               try {
-                validateProbeAgainstRun(bundle, await probeMedia(filePath));
+                validateProbeAgainstRun(bundle, await nativeProcessSignal.run(uploadAbort.signal, () => probeMedia(filePath)));
               } catch (error) {
                 throw new HttpError(400, `Artifact media contract validation failed: ${normalizeError(error)}`);
               }
@@ -1871,20 +1944,22 @@ export class ArtifactPipelineService {
         });
       } catch (error) {
         const message = normalizeError(error);
-        if (error instanceof HttpError && error.statusCode === 400) {
+        if (alreadyPublished) throw error;
+        if (error instanceof HttpError && error.statusCode === 400 && message.includes('media contract')) {
           await this.persistence.markArtifactState({
             artifactId,
-            storageState: 'REJECTED',
+            uploadLeaseToken,            storageState: 'REJECTED',
             stateReason: message,
             stateDetails: {
               failedAt: nowIso(),
               phase: 'upload',
+              quarantineKey: path.join('.quarantine', sha256),
             },
           });
         } else {
           await this.persistence.markArtifactState({
             artifactId,
-            storageState: 'PENDING',
+            uploadLeaseToken,            storageState: 'PENDING',
             stateReason: message,
             stateDetails: {
               failedAt: nowIso(),
@@ -1897,6 +1972,7 @@ export class ArtifactPipelineService {
       }
       const uploaded = await this.persistence.markArtifactUploaded({
         artifactId,
+        uploadLeaseToken,
         sha256,
         byteSize: stored.observedBytes,
         mediaContainer: bundle.artifact.mediaContainer,
@@ -1912,7 +1988,9 @@ export class ArtifactPipelineService {
       });
       return await this.config.autoAnalyzeOnUpload ? this.queueAuthoritativeAnalysis(uploaded, undefined, undefined) : uploaded;
     } finally {
+      clearTimeout(uploadTimer);
       this.activeUploads = Math.max(0, this.activeUploads - 1);
+      await this.persistence.releaseUploadSlot?.(artifactId, uploadLeaseToken);
     }
   }
 
@@ -1920,6 +1998,7 @@ export class ArtifactPipelineService {
     bundleOrRunId: RunArtifactBundle | string,
     requestedAnalysisWorkerVersion: string | null | undefined,
     requestedMetricModelId: string | null | undefined,
+    operatorAudit?: { operator: string; reason: string },
   ): Promise<RunArtifactBundle> {
     const bundle = typeof bundleOrRunId === 'string'
       ? await this.requireBundle(bundleOrRunId, 'ENCODED')
@@ -1928,8 +2007,9 @@ export class ArtifactPipelineService {
     if (!artifactPath) {
       throw new HttpError(409, 'Artifact has not been uploaded to object storage');
     }
-    const targetWorkerVersion = requestedAnalysisWorkerVersion || bundle.run.benchmarkProtocol.metricWorkerVersion || this.config.analyzerVersion;
-    const targetMetricModelId = requestedMetricModelId || inferExistingMetricModelId(bundle) || deriveMetricModelFallback(bundle);
+    const targetWorkerVersion = this.config.analyzerVersion;
+    const targetMetricModelId = deriveMetricModelFallback(bundle);
+    if ((requestedAnalysisWorkerVersion && requestedAnalysisWorkerVersion !== targetWorkerVersion) || (requestedMetricModelId && requestedMetricModelId !== targetMetricModelId)) throw new HttpError(409, 'Analysis identity must match installed server worker and model');
     const existing = await this.persistence.getQualityAnalysis(bundle.run.id, targetMetricModelId, targetWorkerVersion);
     if (existing && existing.status !== 'FAILED' && existing.status !== 'PENDING') {
       return bundle;
@@ -1940,9 +2020,21 @@ export class ArtifactPipelineService {
       metricModelId: targetMetricModelId,
       analysisWorkerVersion: targetWorkerVersion,
       maxAttempts: this.config.analysisMaxAttempts,
+      maxPendingAnalyses: this.config.maxPendingAnalyses,
+      ...(operatorAudit ? { operatorAudit } : {}),
     });
     this.coordinator.kick();
     return queued;
+  }
+
+  async retryDerivedRecomputes(): Promise<void> {
+    if (this.config.autoAnalyzeOnUpload && this.persistence.listUnanalyzedUploads) {
+      for (const bundle of await this.persistence.listUnanalyzedUploads()) {
+        try { await this.queueAuthoritativeAnalysis(bundle, undefined, undefined); }
+        catch (error) { if (error instanceof HttpError && error.statusCode === 503) break; throw error; }
+      }
+    }
+    if (this.onDerivedRecompute) await this.persistence.retryDerivedRecomputes?.(this.onDerivedRecompute);
   }
 
   async processQueuedAnalysis(bundle: RunArtifactBundle, analysis: StoredQualityAnalysis): Promise<RunArtifactBundle> {
@@ -1956,19 +2048,24 @@ export class ArtifactPipelineService {
       requestedAnalysisWorkerVersion: analysis.analysisWorkerVersion,
       requestedMetricModelId: analysis.metricModelId,
     });
+    if (result.metricModelId !== analysis.metricModelId || result.analysisWorkerVersion !== analysis.analysisWorkerVersion) throw new Error('Analyzer returned incompatible authority identity');
     const saved = await this.persistence.saveAuthoritativeAnalysis({
       benchmarkRunId: bundle.run.id,
       artifactId: bundle.artifact.id,
       analysisId: analysis.id,
+      leaseToken: analysis.leaseToken,
       result,
     });
     if (this.onDerivedRecompute) {
+      try {
       await this.onDerivedRecompute({
         benchmarkRunId: bundle.run.id,
         artifactId: bundle.artifact.id,
         metricModelId: result.metricModelId,
         analysisWorkerVersion: result.analysisWorkerVersion,
       });
+      await this.persistence.completeDerivedRecompute?.(analysis.id, saved.qualityAnalyses.find(a => a.id === analysis.id)!.updatedAt);
+      } catch (error) { await this.persistence.completeDerivedRecompute?.(analysis.id, saved.qualityAnalyses.find(a => a.id === analysis.id)!.updatedAt, normalizeError(error)); }
     }
     return saved;
   }
@@ -1985,25 +2082,11 @@ export class ArtifactPipelineService {
     return bundle;
   }
 
-  private async assertCapacityForUpload(requestedBytes: number): Promise<void> {
-    const [pendingArtifacts, pendingAnalyses, trackedBytes, disk] = await Promise.all([
-      this.persistence.countArtifactsByStates(['PENDING']),
-      this.persistence.countQualityAnalysesByStatuses(['PENDING']),
-      this.persistence.sumArtifactBytesByStates(['UPLOADED', 'VERIFIED', 'RETAINED']),
-      this.storage.inspectCapacity(),
-    ]);
-    if (pendingArtifacts >= this.config.maxPendingArtifacts) {
-      throw new HttpError(503, 'Artifact upload backlog limit exceeded');
-    }
-    if (pendingAnalyses >= this.config.maxPendingAnalyses) {
-      throw new HttpError(503, 'Authoritative analysis backlog limit exceeded');
-    }
-    if (this.config.storageQuotaBytes != null && trackedBytes + requestedBytes > this.config.storageQuotaBytes) {
-      throw new HttpError(507, 'Artifact storage quota exceeded');
-    }
-    if (disk.availableBytes != null && disk.availableBytes - requestedBytes < this.config.storageReserveBytes) {
-      throw new HttpError(507, 'Artifact storage free space is below reserve');
-    }
+  private async admissionBudget(): Promise<AdmissionBudget> {
+    const disk = await this.storage.inspectCapacity();
+    return { maxPendingArtifacts: this.config.maxPendingArtifacts, maxPendingAnalyses: this.config.maxPendingAnalyses,
+      storageQuotaBytes: this.config.storageQuotaBytes, storageReserveBytes: this.config.storageReserveBytes,
+      availableBytes: disk.availableBytes, reservationMs: Number(process.env.ARTIFACT_RESERVATION_MS || 86_400_000) };
   }
 
   private async resolveCreateRunInput(input: CreateRunRequestInput): Promise<CreateRunInput> {
@@ -2035,6 +2118,7 @@ export class ArtifactPipelineService {
     assertClientVersionMeetsMinimum(environment.clientVersion, benchmarkProtocol.minimumClientVersion);
     assertMetricModelCompatibility(input.expectedMetricModelId ?? null, testClip);
 
+    validateCanonicalTiming(input, testClip);
     let energyDomains: ReturnType<typeof normalizeEnergyDomains>;
     let decodeBenchmark: ReturnType<typeof normalizeDecodeBenchmark>;
     try {
@@ -2060,6 +2144,8 @@ export class ArtifactPipelineService {
       environmentId: environment.id,
       payloadHash: input.payloadHash,
       inputHash: input.inputHash ?? null,
+      physicalSourceId: input.physicalSourceId ?? null,
+      encodeTimerBoundary: input.encodeTimerBoundary ?? null,
       campaignId: input.campaignId ?? null,
       repetitionGroupId: input.repetitionGroupId ?? null,
       repetitionIndex: input.repetitionIndex ?? null,
@@ -2103,6 +2189,7 @@ export class ArtifactPipelineService {
     if (!resolved) {
       throw new HttpError(404, 'Canonical suite clip could not be resolved by clipKey or sha256');
     }
+    if (input.sha256 && resolved.sha256 !== input.sha256) throw new HttpError(409, 'Declared sha256 does not match canonical clip');
     if (byClipKey && bySha && byClipKey.id !== bySha.id) {
       throw new HttpError(409, 'clipKey and sha256 resolve to different canonical suite clips');
     }
@@ -2110,6 +2197,21 @@ export class ArtifactPipelineService {
       suiteVersion: this.suiteManifest.suiteVersion,
       entry: resolved,
     };
+  }
+}
+
+export function validateCanonicalTiming(input: CreateRunRequestInput, clip: StoredTestClip): void {
+  if (input.encodeTimerBoundary !== SERVER_ENCODE_TIMER_BOUNDARY) throw new HttpError(409, 'Corrected encode timer boundary is required');
+  if (!input.physicalSourceId || input.physicalSourceId.length < 16) throw new HttpError(400, 'Persistent physicalSourceId is required');
+  if (input.inputHash !== clip.sha256) throw new HttpError(409, 'inputHash does not match canonical source');
+  const fps = clip.frameRateNumerator / clip.frameRateDenominator;
+  if (input.sourceFrameCount !== clip.exactFrameCount || input.encodedFrameCount !== clip.exactFrameCount) throw new HttpError(400, 'Source and encoded frame counts must match complete canonical workload');
+  if (!Number.isFinite(input.sourceFps) || Math.abs(input.sourceFps! - fps) > 1e-7) throw new HttpError(400, 'sourceFps does not match canonical cadence');
+  if (!Number.isInteger(input.encodeWallTimeMs) || input.encodeWallTimeMs! < 1 || input.encodeWallTimeMs! > 86_400_000) throw new HttpError(400, 'encodeWallTimeMs must be within 1 ms and 24 hours');
+  const expectedFps = clip.exactFrameCount * 1000 / input.encodeWallTimeMs!;
+  const expectedRatio = clip.exactDurationSeconds * 1000 / input.encodeWallTimeMs!;
+  for (const [label, actual, expected] of [['encodeFps', input.encodeFps, expectedFps], ['realTimeRatio', input.realTimeRatio, expectedRatio]] as const) {
+    if (!Number.isFinite(actual) || actual! <= 0 || Math.abs(actual! - expected) > Math.max(0.001, expected * 0.002)) throw new HttpError(400, `${label} contradicts the canonical frame/time tuple`);
   }
 }
 
@@ -2139,6 +2241,7 @@ class HttpError extends Error {
 }
 
 function serializeError(error: unknown): { status: number; body: JsonObject } {
+  if (['P2024', 'P2028', 'P2034'].includes(String((error as { code?: unknown } | null)?.code ?? ''))) return { status: 503, body: { error: 'Database admission is busy; retry the identical request' } };
   if (error instanceof z.ZodError) {
     return {
       status: 400,
@@ -2187,179 +2290,130 @@ function transformConstantsFromScoreContext(value: unknown): {
 }
 
 const REFERENCE_CONTEXT_DIRECTORY = new URL('../../config/reference-contexts/', import.meta.url);
-let cachedReferenceContexts: readonly ReferenceContext[] | null = null;
-
-function loadFrozenReferenceContexts(): readonly ReferenceContext[] {
-  if (cachedReferenceContexts) return cachedReferenceContexts;
-  const directoryPath = fileURLToPath(REFERENCE_CONTEXT_DIRECTORY);
-  const files = readdirSync(directoryPath)
-    .filter((name) => name.endsWith('.context.json'))
-    .sort();
-  cachedReferenceContexts = files.map((name) => loadReferenceContext(path.join(directoryPath, name)));
-  return cachedReferenceContexts;
-}
-
-async function seedFrozenScoreContextsForProtocol(client: PrismaClient, benchmarkProtocolId: string, sourceSuiteVersion: string): Promise<void> {
-  const allowTestOnly = process.env.ALLOW_TEST_ONLY_REFERENCE_CONTEXTS === '1';
-  const contexts = loadFrozenReferenceContexts().filter((entry) => (
-    entry.sourceSuiteVersion === sourceSuiteVersion
-    && (entry.activation.productionActivationAllowed || allowTestOnly)
-  ));
-  for (const context of contexts) {
-    for (const workload of buildScoreContextSeedRecords(context, benchmarkProtocolId)) {
-      await client.scoreContext.upsert({
-        where: {
-          formulaVersion_contextVersion_workloadId_qualityModelId: {
-            formulaVersion: context.formulaVersion,
-            contextVersion: context.contextVersion,
-            workloadId: workload.workloadId,
-            qualityModelId: context.qualityModelId,
-          },
-        },
-        create: {
-          benchmarkProtocolId: workload.benchmarkProtocolId,
-          formulaVersion: workload.formulaVersion,
-          contextVersion: workload.contextVersion,
-          workloadId: workload.workloadId,
-          qualityModelId: workload.qualityModelId,
-          workloadReferenceBitrateBps: workload.workloadReferenceBitrateBps,
-          transformConstants: workload.transformConstants as any,
-          referenceFrontier: workload.referenceFrontier as any,
-        } as any,
-        update: {
-          benchmarkProtocolId,
-          workloadReferenceBitrateBps: workload.workloadReferenceBitrateBps,
-          transformConstants: workload.transformConstants as any,
-          referenceFrontier: workload.referenceFrontier as any,
-        } as any,
-      });
-    }
-  }
-}
-
-export function createDefaultDerivedRecomputeCallback(client: PrismaClient) {
+export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient) {
   return async (payload: DerivedRecomputeHookPayload): Promise<void> => {
-    const triggerRun = await client.benchmarkRun.findUnique({
-      where: { id: payload.benchmarkRunId },
-      include: {
-        benchmarkProtocol: true,
-        testClip: true,
-        recipe: true,
-        environment: true,
-      },
-    });
-    if (!triggerRun) return;
+    await rootClient.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', 714555);
+      const client = tx as unknown as PrismaClient;
+      const triggerRun = await client.benchmarkRun.findUnique({
+        where: { id: payload.benchmarkRunId },
+        include: {
+          benchmarkProtocol: true,
+          testClip: true,
+          recipe: true,
+          environment: true,
+        },
+      });
+      if (!triggerRun) return;
 
-    let scoreContexts = await client.scoreContext.findMany({
-      where: {
-        benchmarkProtocolId: triggerRun.benchmarkProtocolId,
-        workloadId: triggerRun.workloadId,
-        qualityModelId: payload.metricModelId,
-      },
-      orderBy: { updatedAt: 'desc' },
-    });
-    if (!scoreContexts.length) {
-      scoreContexts = await client.scoreContext.findMany({
+      const scoreContexts = await client.scoreContext.findMany({
         where: {
           benchmarkProtocolId: triggerRun.benchmarkProtocolId,
           workloadId: triggerRun.workloadId,
+          qualityModelId: payload.metricModelId,
         },
         orderBy: { updatedAt: 'desc' },
       });
-    }
-    if (!scoreContexts.length) return;
+      if (!scoreContexts.length) return;
 
-    const analyses = await client.qualityAnalysis.findMany({
-      where: {
-        metricModelId: payload.metricModelId,
-        benchmarkRun: {
-          benchmarkProtocolId: triggerRun.benchmarkProtocolId,
-          workloadId: triggerRun.workloadId,
-          recipeId: triggerRun.recipeId,
-          environmentId: triggerRun.environmentId,
+      const analyses = await client.qualityAnalysis.findMany({
+        where: {
+          metricModelId: payload.metricModelId,
+          benchmarkRun: {
+            benchmarkProtocolId: triggerRun.benchmarkProtocolId,
+            workloadId: triggerRun.workloadId,
+            recipeId: triggerRun.recipeId,
+            environmentId: triggerRun.environmentId,
+          },
         },
-      },
-      include: {
-        benchmarkRun: true,
-      },
-      orderBy: [
-        { updatedAt: 'desc' },
-      ],
-    });
+        include: {
+          benchmarkRun: true,
+          artifact: true,
+          evidenceReviews: true,
+        },
+        orderBy: [
+          { createdAt: 'desc' }, { id: 'desc' },
+        ],
+      });
 
-    const latestPerRun = new Map<string, typeof analyses[number]>();
-    for (const analysis of analyses) {
-      if (!latestPerRun.has(analysis.benchmarkRunId)) {
-        latestPerRun.set(analysis.benchmarkRunId, analysis);
+      const latestPerRun = new Map<string, typeof analyses[number]>();
+      for (const analysis of analyses) {
+        if (!latestPerRun.has(analysis.benchmarkRunId)) {
+          latestPerRun.set(analysis.benchmarkRunId, analysis);
+        }
       }
-    }
 
-    const aggregateAnalyses = [...latestPerRun.values()].map((analysis) => ({
-      qualityAnalysisId: analysis.id,
-      analysisWorkerVersion: analysis.analysisWorkerVersion,
-      benchmarkRunId: analysis.benchmarkRunId,
-      benchmarkRunStatus: analysis.benchmarkRun.status,
-      qualityAnalysisStatus: analysis.status,
-      encodeFps: analysis.benchmarkRun.encodeFps,
-      sourceFps: analysis.benchmarkRun.sourceFps,
-      videoBitrateBps: analysis.videoBitrateBps,
-      fileSizeBytes: analysis.fileSizeBytes,
-      vmafMean: analysis.vmafMean,
-      vmafP5: analysis.vmafP5,
-      repetitionGroupId: analysis.benchmarkRun.repetitionGroupId,
-      campaignId: analysis.benchmarkRun.campaignId,
-      machineKey: analysis.benchmarkRun.environmentId,
-      contributorKey: null,
-    }));
+      const aggregateAnalyses = [...latestPerRun.values()].map((analysis) => {
+        const effective = applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status,
+          artifactState: analysis.artifact?.storageState ?? 'PENDING', analysisId: analysis.id, reviews: analysis.evidenceReviews });
+        return ({
+        qualityAnalysisId: analysis.id,
+        analysisWorkerVersion: analysis.analysisWorkerVersion,
+        benchmarkRunId: analysis.benchmarkRunId,
+        benchmarkRunStatus: (effective.eligible ? effective.runStatus : (effective.runStatus === 'ACCEPTED' ? 'SUSPECT' : effective.runStatus)) as BenchmarkRunStatusValue,
+        qualityAnalysisStatus: effective.analysisStatus as QualityAnalysisStatusValue,
+        encodeFps: analysis.benchmarkRun.encodeFps,
+        sourceFps: analysis.benchmarkRun.sourceFps,
+        videoBitrateBps: analysis.videoBitrateBps,
+        fileSizeBytes: analysis.fileSizeBytes,
+        vmafMean: analysis.vmafMean,
+        vmafP5: analysis.vmafP5,
+        repetitionGroupId: analysis.benchmarkRun.repetitionGroupId,
+        campaignId: analysis.benchmarkRun.campaignId,
+        physicalSourceId: analysis.benchmarkRun.physicalSourceId ?? null,
+        machineKey: analysis.benchmarkRun.physicalSourceId ?? null,
+        contributorKey: null,
+      }); });
 
-    for (const scoreContext of scoreContexts) {
-      const transform = transformConstantsFromScoreContext(scoreContext.transformConstants);
-      await persistDerivedResultAggregate(client, {
-        identity: {
-          kind: 'workload',
+      for (const scoreContext of scoreContexts) {
+        const transform = transformConstantsFromScoreContext(scoreContext.transformConstants);
+        await persistDerivedResultAggregate(client, {
+          identity: {
+            kind: 'workload',
+            benchmarkProtocolId: triggerRun.benchmarkProtocolId,
+            protocolVersion: triggerRun.benchmarkProtocol.protocolVersion,
+            sourceSuiteVersion: triggerRun.benchmarkProtocol.sourceSuiteVersion,
+            workloadId: triggerRun.workloadId,
+            testClipId: triggerRun.testClipId,
+            recipeId: triggerRun.recipeId,
+            recipeFingerprint: triggerRun.recipe.fingerprint,
+            environmentId: triggerRun.environmentId,
+            environmentFingerprint: triggerRun.environment.fingerprint,
+            scoreContextId: scoreContext.id,
+            scoreContextVersion: scoreContext.contextVersion,
+            qualityModelId: scoreContext.qualityModelId,
+            formulaVersion: scoreContext.formulaVersion,
+          },
+          scoreContext: {
+            workloadId: scoreContext.workloadId,
+            workloadReferenceBitrateBps: scoreContext.workloadReferenceBitrateBps,
+            scoreFormulaVersion: '7.0',
+            ...transform,
+          },
+          evidencePolicy: loadRecommendationEvidencePolicyForContext({ ...scoreContext, benchmarkProtocol: triggerRun.benchmarkProtocol }),
+          analyses: aggregateAnalyses,
+        });
+
+        await persistGeneralDerivedResultFromWorkloadEvidence(client as unknown as Parameters<typeof persistGeneralDerivedResultFromWorkloadEvidence>[0], {
           benchmarkProtocolId: triggerRun.benchmarkProtocolId,
           protocolVersion: triggerRun.benchmarkProtocol.protocolVersion,
           sourceSuiteVersion: triggerRun.benchmarkProtocol.sourceSuiteVersion,
-          workloadId: triggerRun.workloadId,
-          testClipId: triggerRun.testClipId,
+          contextVersion: scoreContext.contextVersion,
+          formulaVersion: scoreContext.formulaVersion,
+          qualityModelId: scoreContext.qualityModelId,
           recipeId: triggerRun.recipeId,
           recipeFingerprint: triggerRun.recipe.fingerprint,
           environmentId: triggerRun.environmentId,
           environmentFingerprint: triggerRun.environment.fingerprint,
-          scoreContextId: scoreContext.id,
-          scoreContextVersion: scoreContext.contextVersion,
-          qualityModelId: scoreContext.qualityModelId,
-          formulaVersion: scoreContext.formulaVersion,
-        },
-        scoreContext: {
-          workloadId: scoreContext.workloadId,
-          workloadReferenceBitrateBps: scoreContext.workloadReferenceBitrateBps,
-          scoreFormulaVersion: '7.0',
-          ...transform,
-        },
-        evidencePolicy: DEFAULT_RECOMMENDATION_EVIDENCE_POLICY,
-        analyses: aggregateAnalyses,
-      });
-
-      await persistGeneralDerivedResultFromWorkloadEvidence(client as unknown as Parameters<typeof persistGeneralDerivedResultFromWorkloadEvidence>[0], {
-        benchmarkProtocolId: triggerRun.benchmarkProtocolId,
-        protocolVersion: triggerRun.benchmarkProtocol.protocolVersion,
-        sourceSuiteVersion: triggerRun.benchmarkProtocol.sourceSuiteVersion,
-        contextVersion: scoreContext.contextVersion,
-        formulaVersion: scoreContext.formulaVersion,
-        qualityModelId: scoreContext.qualityModelId,
-        recipeId: triggerRun.recipeId,
-        recipeFingerprint: triggerRun.recipe.fingerprint,
-        environmentId: triggerRun.environmentId,
-        environmentFingerprint: triggerRun.environment.fingerprint,
-      });
-    }
+        });
+      }
+    }, { timeout: 120_000, maxWait: 120_000 });
   };
 }
 
 export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = {}): Router {
   const config = mergeArtifactPipelineConfig(options.config);
-  const persistence = options.persistence ?? createPrismaArtifactPipelinePersistence(prisma);
+  const persistence = options.persistence ?? createPrismaArtifactPipelinePersistence(prisma, config);
   const analyzer = options.analyzer ?? new FfmpegArtifactAnalyzer(config.analyzerVersion);
   const suiteManifest = options.suiteManifest == null
     ? loadAuthoritativeSuiteManifest()
@@ -2368,6 +2422,8 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
   const service = new ArtifactPipelineService(persistence, analyzer, config, suiteManifest, onDerivedRecompute);
   BACKGROUND_ARTIFACT_SERVICES.add(service);
   const router = Router();
+
+  router.get('/v7/compatibility', (_req, res) => res.json({ protocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION, minimumClientVersion: SERVER_CANONICAL_MINIMUM_CLIENT_VERSION, encodeTimerBoundary: SERVER_ENCODE_TIMER_BOUNDARY }));
 
   router.post('/v7/benchmark-runs', async (req, res) => {
     try {
@@ -2387,6 +2443,8 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         workloadId: input.workloadId ?? null,
         expectedMetricModelId: input.expectedMetricModelId ?? null,
         inputHash: input.inputHash ?? null,
+        physicalSourceId: input.physicalSourceId ?? null,
+        encodeTimerBoundary: input.encodeTimerBoundary ?? null,
         campaignId: input.campaignId ?? null,
         repetitionGroupId: input.repetitionGroupId ?? null,
         repetitionIndex: input.repetitionIndex ?? null,
@@ -2418,6 +2476,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
       });
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       res.status(serialized.status).json(serialized.body);
     }
   });
@@ -2431,6 +2490,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
       res.json(response);
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       res.status(serialized.status).json(serialized.body);
     }
   });
@@ -2447,11 +2507,12 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
       sendJson(res, config.autoAnalyzeOnUpload ? 202 : 200, bundleToResponse(bundle), true);
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       sendJson(res, serialized.status, serialized.body, true);
     }
   });
 
-  router.post('/v7/benchmark-runs/:benchmarkRunId/artifacts/:role/reanalyze', async (req, res) => {
+  router.post('/v7/benchmark-runs/:benchmarkRunId/artifacts/:role/reanalyze', requireOperator, async (req, res) => {
     try {
       const role = String(req.params.role || '');
       assertArtifactRole(role);
@@ -2463,10 +2524,12 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         String(req.params.benchmarkRunId),
         payload.analysisWorkerVersion,
         payload.metricModelId,
+        { operator: operatorIdentity(req), reason: payload.reason },
       );
       res.status(202).json(bundleToResponse(bundle));
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       res.status(serialized.status).json(serialized.body);
     }
   });
@@ -2482,6 +2545,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
       res.json(bundleToResponse(bundle));
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       res.status(serialized.status).json(serialized.body);
     }
   });
@@ -2504,6 +2568,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
       });
     } catch (error) {
       const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
       res.status(serialized.status).json(serialized.body);
     }
   });
@@ -2526,6 +2591,8 @@ function normalizeBundle(rawRun: any, role: ArtifactRoleValue): RunArtifactBundl
       environmentId: rawRun.environmentId,
       payloadHash: rawRun.payloadHash,
       inputHash: rawRun.inputHash,
+      physicalSourceId: rawRun.physicalSourceId ?? null,
+      encodeTimerBoundary: rawRun.encodeTimerBoundary ?? null,
       campaignId: rawRun.campaignId,
       repetitionGroupId: rawRun.repetitionGroupId,
       repetitionIndex: rawRun.repetitionIndex,
@@ -2722,7 +2789,26 @@ function normalizeStoredQualityAnalysisRow(analysis: any): StoredQualityAnalysis
   };
 }
 
-export function createPrismaArtifactPipelinePersistence(client: PrismaClient): ArtifactPipelinePersistence {
+const CAPACITY_LOCK = 714552;
+async function lockCapacity(tx: any): Promise<void> { await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', CAPACITY_LOCK); }
+async function assertAdmission(tx: any, bytes: number, budget: AdmissionBudget, excludeId?: string): Promise<void> {
+  const now = new Date();
+  const reserved = { storageState: 'PENDING', OR: [{ reservationExpiresAt: { gt: now } }, { uploadLeaseExpiresAt: { gt: now } }], ...(excludeId ? { id: { not: excludeId } } : {}) };
+  const pending = await tx.artifact.count({ where: reserved });
+  const analyses = await tx.qualityAnalysis.count({ where: { status: 'PENDING' } });
+  const unqueued = await tx.artifact.count({ where: { storageState: 'UPLOADED', qualityAnalyses: { none: {} } } });
+  if (pending >= budget.maxPendingArtifacts || pending + analyses + unqueued >= budget.maxPendingAnalyses) throw new HttpError(503, 'Contribution backlog capacity reserved; retry later');
+  const reservedBytes = (await tx.artifact.aggregate({ where: reserved, _sum: { byteSize: true } }))._sum.byteSize ?? 0;
+  const publishedBytes = (await tx.artifact.aggregate({ where: { storageState: { in: ['UPLOADED', 'VERIFIED', 'RETAINED', 'REJECTED'] } }, _sum: { byteSize: true } }))._sum.byteSize ?? 0;
+  if (budget.storageQuotaBytes != null && publishedBytes + reservedBytes + bytes > budget.storageQuotaBytes) throw new HttpError(507, 'Artifact storage quota reserved');
+  if (budget.availableBytes == null || budget.availableBytes - reservedBytes - bytes < budget.storageReserveBytes) throw new HttpError(507, 'Artifact filesystem reserve unavailable');
+}
+function immutableRunHash(input: CreateRunInput): string {
+  const { admission: _admission, payloadHash: _key, ...immutable } = input;
+  return sha256Hex(Buffer.from(canonicalJsonString(JSON.parse(JSON.stringify(immutable)) as JsonValue)));
+}
+
+export function createPrismaArtifactPipelinePersistence(client: PrismaClient, config = mergeArtifactPipelineConfig(undefined)): ArtifactPipelinePersistence {
   return {
     async resolveOrBootstrapBenchmarkProtocol(input) {
       const activeProtocol = await client.benchmarkProtocol.findFirst({
@@ -2760,7 +2846,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
         if (canonicalJsonString(existing.canonicalOutputRules as JsonValue) !== canonicalOutputRules) {
           throw new HttpError(409, `Benchmark protocol ${input.protocolVersion} canonicalOutputRules do not match stored canonical value`);
         }
-        await seedFrozenScoreContextsForProtocol(client, existing.id, existing.sourceSuiteVersion);
+        // Score contexts are activated separately after review.
         return {
           id: existing.id,
           protocolVersion: existing.protocolVersion,
@@ -2772,8 +2858,10 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           state: existing.state,
         };
       }
-      const created = await client.benchmarkProtocol.create({
-        data: {
+      const created = await client.benchmarkProtocol.upsert({
+        where: { protocolVersion_sourceSuiteVersion_metricWorkerVersion: { protocolVersion: input.protocolVersion, sourceSuiteVersion: input.sourceSuiteVersion, metricWorkerVersion: input.metricWorkerVersion } },
+        update: {},
+        create: {
           protocolVersion: input.protocolVersion,
           sourceSuiteVersion: input.sourceSuiteVersion,
           minimumClientVersion: input.minimumClientVersion,
@@ -2783,8 +2871,11 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           state: 'ACTIVE',
           activatedAt: new Date(),
         } as any,
+      }).catch(async error => {
+        if (error?.code !== 'P2002') throw error;
+        return await client.benchmarkProtocol.findUniqueOrThrow({ where: { protocolVersion_sourceSuiteVersion_metricWorkerVersion: { protocolVersion: input.protocolVersion, sourceSuiteVersion: input.sourceSuiteVersion, metricWorkerVersion: input.metricWorkerVersion } } });
       });
-      await seedFrozenScoreContextsForProtocol(client, created.id, created.sourceSuiteVersion);
+      // Corrected protocols never inherit historical calibrated contexts.
       return {
         id: created.id,
         protocolVersion: created.protocolVersion,
@@ -2860,8 +2951,12 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           colorRange: existing.colorRange,
         };
       }
-      const clip = await client.testClip.create({
-        data: input as any,
+      const clip = await client.testClip.upsert({
+        where: { suiteId_suiteVersion_clipKey: { suiteId: input.suiteId, suiteVersion: input.suiteVersion, clipKey: input.clipKey } }, update: {},
+        create: input as any,
+      }).catch(async error => {
+        if (error?.code !== 'P2002') throw error;
+        return await client.testClip.findUniqueOrThrow({ where: { suiteId_suiteVersion_clipKey: { suiteId: input.suiteId, suiteVersion: input.suiteVersion, clipKey: input.clipKey } } });
       });
       return {
         id: clip.id,
@@ -2926,8 +3021,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
       }
 
       const normalized = fingerprintResult.normalized;
-      const created = await client.recipe.create({
-        data: {
+      const created = await client.recipe.upsert({
+        where: { fingerprint: input.fingerprint }, update: {},
+        create: {
           fingerprint: fingerprintResult.fingerprint,
           canonicalJson: JSON.parse(fingerprintResult.canonicalJson),
           codecFamily: normalized.codecFamily,
@@ -2971,6 +3067,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           filmGrainSynthesis: normalized.filmGrainSynthesis as any,
           majorTools: normalized.majorTools as any,
         } as any,
+      }).catch(async error => {
+        if (error?.code !== 'P2002') throw error;
+        return await client.recipe.findUniqueOrThrow({ where: { fingerprint: input.fingerprint } });
       });
       return {
         id: created.id,
@@ -3019,8 +3118,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
         };
       }
       const normalized = fingerprintResult.normalized;
-      const created = await client.environment.create({
-        data: {
+      const created = await client.environment.upsert({
+        where: { fingerprint: input.fingerprint }, update: {},
+        create: {
           fingerprint: fingerprintResult.fingerprint,
           canonicalJson: JSON.parse(fingerprintResult.canonicalJson),
           cpuModel: normalized.cpuModel,
@@ -3038,7 +3138,14 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           ffmpegVersion: normalized.ffmpegVersion,
           encoderVersion: normalized.encoderVersion,
           clientVersion: normalized.clientVersion,
+          executionArchitecture: normalized.executionArchitecture,
+          translationMode: normalized.translationMode,
+          runtimeIdentity: normalized.runtimeIdentity as any,
+          selectedDeviceEvidence: normalized.selectedDeviceEvidence as any,
         } as any,
+      }).catch(async error => {
+        if (error?.code !== 'P2002') throw error;
+        return await client.environment.findUniqueOrThrow({ where: { fingerprint: input.fingerprint } });
       });
       return {
         id: created.id,
@@ -3048,15 +3155,43 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
         ffmpegVersion: created.ffmpegVersion,
       };
     },
+    async reserveUpload(artifactId, budget) {
+      await client.$transaction(async tx => {
+        await lockCapacity(tx);
+        const artifact = await tx.artifact.findUniqueOrThrow({ where: { id: artifactId } });
+        if (artifact.storageState !== 'PENDING') return;
+        if ((artifact as any).reservationExpiresAt > new Date()) return;
+        await assertAdmission(tx, artifact.byteSize ?? 0, budget, artifactId);
+        await tx.artifact.update({ where: { id: artifactId }, data: { reservationExpiresAt: new Date(Date.now() + budget.reservationMs) } as any });
+      }, { timeout: 30_000, maxWait: 30_000 });
+    },
+    async claimUploadSlot(artifactId, token, deadline, maximum) {
+      return await client.$transaction(async tx => {
+        await lockCapacity(tx);
+        const now = new Date();
+        const active = await tx.artifact.count({ where: { uploadLeaseExpiresAt: { gt: now } } as any });
+        if (active >= maximum) return false;
+        const changed = await tx.artifact.updateMany({ where: { id: artifactId, OR: [{ uploadLeaseExpiresAt: null }, { uploadLeaseExpiresAt: { lte: now } }] } as any,
+          data: { uploadLeaseToken: token, uploadLeaseExpiresAt: deadline } as any });
+        return changed.count === 1;
+      }, { timeout: 30_000, maxWait: 30_000 });
+    },
+    async releaseUploadSlot(artifactId, token) {
+      await client.artifact.updateMany({ where: { id: artifactId, uploadLeaseToken: token } as any, data: { uploadLeaseToken: null, uploadLeaseExpiresAt: null } as any });
+    },
     async createOrFetchRun(input) {
       const result = await client.$transaction(async (tx) => {
+        await lockCapacity(tx);
+        const contentHash = immutableRunHash(input);
         const existing = await tx.benchmarkRun.findUnique({
           where: { payloadHash: input.payloadHash },
           include: PRISMA_RUN_INCLUDE,
         });
         if (existing) {
+          if ((existing as any).immutablePayloadHash !== contentHash) throw new HttpError(409, 'Idempotency key conflicts with immutable run contents');
           return { run: existing, created: false };
         }
+        if (input.admission) await assertAdmission(tx, input.artifact.byteSize, input.admission);
         const created = await tx.benchmarkRun.create({
           data: {
             benchmarkProtocolId: input.benchmarkProtocolId,
@@ -3065,7 +3200,10 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             recipeId: input.recipeId,
             environmentId: input.environmentId,
             payloadHash: input.payloadHash,
+            immutablePayloadHash: contentHash,
             inputHash: input.inputHash ?? null,
+            physicalSourceId: input.physicalSourceId ?? null,
+            encodeTimerBoundary: input.encodeTimerBoundary ?? null,
             campaignId: input.campaignId ?? null,
             repetitionGroupId: input.repetitionGroupId ?? null,
             repetitionIndex: input.repetitionIndex ?? null,
@@ -3086,6 +3224,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             artifacts: {
               create: {
                 role: input.artifact.role,
+                reservationExpiresAt: new Date(Date.now() + (input.admission?.reservationMs ?? 86_400_000)),
                 sha256: input.artifact.sha256,
                 byteSize: input.artifact.byteSize,
                 mediaContainer: input.artifact.mediaContainer ?? null,
@@ -3095,7 +3234,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           include: PRISMA_RUN_INCLUDE,
         });
         return { run: created, created: true };
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return { bundle: normalizeBundle(result.run, input.artifact.role), created: result.created };
     },
     async getRunArtifact(benchmarkRunId, role) {
@@ -3132,6 +3271,11 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
     },
     async markArtifactUploaded(input) {
       const run = await client.$transaction(async (tx) => {
+        await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', input.artifactId);
+        const bound = await tx.artifact.findUniqueOrThrow({ where: { id: input.artifactId } });
+        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > new Date()))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
+        if (bound.sha256 !== input.sha256 || bound.byteSize !== input.byteSize) throw new HttpError(409, 'Artifact contents conflict with immutable binding');
+        if (bound.storageState !== 'PENDING') return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: bound.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         const artifact = await tx.artifact.update({
           where: { id: input.artifactId },
           data: {
@@ -3139,6 +3283,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             byteSize: input.byteSize,
             mediaContainer: input.mediaContainer,
             storageState: 'UPLOADED',
+            reservationExpiresAt: null,
             storageProvider: input.storageProvider,
             storageBucket: input.storageBucket,
             storageKey: input.storageKey,
@@ -3152,11 +3297,15 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: artifact.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
     async markArtifactState(input) {
       const run = await client.$transaction(async (tx) => {
+        await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', input.artifactId);
+        const bound = await tx.artifact.findUniqueOrThrow({ where: { id: input.artifactId } });
+        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > new Date()))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
+        if (['PENDING', 'REJECTED'].includes(input.storageState) && bound.storageState !== 'PENDING') return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: bound.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         const artifact = await tx.artifact.update({
           where: { id: input.artifactId },
           data: {
@@ -3182,7 +3331,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: artifact.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
     async getQualityAnalysis(benchmarkRunId, metricModelId, analysisWorkerVersion) {
@@ -3199,6 +3348,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
     },
     async ensureQualityAnalysisQueued(input) {
       const run = await client.$transaction(async (tx) => {
+        await lockCapacity(tx);
         const now = new Date();
         const existing = await tx.qualityAnalysis.findUnique({
           where: {
@@ -3210,27 +3360,10 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           },
         });
         if (existing) {
-          if (!['FAILED', 'PENDING'].includes(existing.status)) {
-            return await tx.benchmarkRun.findUniqueOrThrow({
-              where: { id: input.benchmarkRunId },
-              include: PRISMA_RUN_INCLUDE,
-            });
-          }
-          await tx.qualityAnalysis.update({
-            where: { id: existing.id },
-            data: {
-              artifactId: input.artifactId,
-              status: 'PENDING',
-              maxAttempts: input.maxAttempts,
-              nextRetryAt: now,
-              leaseToken: null,
-              leaseExpiresAt: null,
-              completedAt: null,
-              lastError: null,
-              lastErrorAt: null,
-            } as any,
-          });
+          // A retry is a read of the same immutable identity, never a lease reset or poison-job reset.
+          return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: input.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         } else {
+          if (await tx.qualityAnalysis.count({ where: { status: 'PENDING' } }) >= (input.maxPendingAnalyses ?? config.maxPendingAnalyses)) throw new HttpError(503, 'Authoritative analysis backlog limit exceeded');
           await tx.qualityAnalysis.create({
             data: {
               benchmarkRunId: input.benchmarkRunId,
@@ -3241,6 +3374,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
               analysisProvenance: {
                 pipelineVersion: ARTIFACT_PIPELINE_VERSION,
                 queuedAt: now.toISOString(),
+                operatorAudit: input.operatorAudit ?? null,
               } as any,
               maxAttempts: input.maxAttempts,
               nextRetryAt: now,
@@ -3251,65 +3385,55 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: input.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
     async claimNextQueuedQualityAnalysis(input) {
-      const candidate = await client.qualityAnalysis.findFirst({
-        where: {
-          status: 'PENDING',
-          AND: [
-            {
-              OR: [
-                { nextRetryAt: null },
-                { nextRetryAt: { lte: input.now } },
-              ],
-            },
-            {
-              OR: [
-                { leaseExpiresAt: null },
-                { leaseExpiresAt: { lte: input.now } },
-              ],
-            },
-          ],
-        },
-        orderBy: [
-          { nextRetryAt: 'asc' },
-          { createdAt: 'asc' },
-        ],
-      });
-      if (!candidate) return null;
-      const claimed = await client.$transaction(async (tx) => {
-        const updated = await tx.qualityAnalysis.updateMany({
-          where: {
-            id: candidate.id,
-            status: 'PENDING',
-            OR: [
-              { leaseExpiresAt: null },
-              { leaseExpiresAt: { lte: input.now } },
-            ],
-          },
-          data: {
-            leaseToken: input.leaseToken,
-            leaseExpiresAt: input.leaseExpiresAt,
-            startedAt: input.now,
-            nextRetryAt: null,
-            attemptCount: { increment: 1 },
-          } as any,
-        });
-        if (updated.count !== 1) return null;
-        const run = await tx.benchmarkRun.findUniqueOrThrow({
-          where: { id: candidate.benchmarkRunId },
-          include: PRISMA_RUN_INCLUDE,
-        });
-        return normalizeBundle(run, 'ENCODED');
-      });
-      if (!claimed) return null;
-      const analysis = claimed.qualityAnalyses.find((entry) => entry.id === candidate.id);
-      return analysis ? { bundle: claimed, analysis } : null;
+      return await client.$transaction(async tx => {
+        await lockCapacity(tx);
+        // Dead workers cannot keep poison jobs alive forever.
+        await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET status = \'FAILED\', "completedAt" = $1, "lastError" = \'Analysis lease expired at retry limit\', "leaseToken" = NULL, "leaseExpiresAt" = NULL WHERE status = \'PENDING\' AND "leaseExpiresAt" <= $1 AND "attemptCount" >= "maxAttempts"', input.now);
+        await tx.$executeRawUnsafe('UPDATE "BenchmarkRun" r SET status = \'INVALID\', "statusReason" = \'Analysis retry limit exhausted after worker loss\', "decidedAt" = $1 WHERE r.status = \'PENDING\' AND EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status = \'FAILED\') AND NOT EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status IN (\'COMPLETE\', \'SUSPECT\', \'REJECTED\', \'PENDING\'))', input.now);
+        const active = await tx.qualityAnalysis.count({ where: { status: 'PENDING', leaseExpiresAt: { gt: input.now } } });
+        if (active >= config.analysisMaxConcurrent) return null;
+        const candidate = await tx.qualityAnalysis.findFirst({ where: { status: 'PENDING', AND: [
+          { OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: input.now } }] },
+          { OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lte: input.now } }] },
+        ] }, orderBy: [{ createdAt: 'asc' }] });
+        if (!candidate) return null;
+        await tx.qualityAnalysis.update({ where: { id: candidate.id }, data: { leaseToken: input.leaseToken,
+          leaseExpiresAt: input.leaseExpiresAt, startedAt: input.now, nextRetryAt: null, attemptCount: { increment: 1 } } });
+        const run = await tx.benchmarkRun.findUniqueOrThrow({ where: { id: candidate.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
+        const bundle = normalizeBundle(run, 'ENCODED');
+        return { bundle, analysis: bundle.qualityAnalyses.find(a => a.id === candidate.id)! };
+      }, { timeout: 30_000, maxWait: 30_000 });
+    },
+    async listUnanalyzedUploads() {
+      const rows = await client.benchmarkRun.findMany({ where: { benchmarkProtocol: { protocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION }, artifacts: { some: { role: 'ENCODED', storageState: 'UPLOADED', qualityAnalyses: { none: {} } } } }, include: PRISMA_RUN_INCLUDE, orderBy: { createdAt: 'asc' }, take: 10 });
+      return rows.map(row => normalizeBundle(row, 'ENCODED'));
+    },
+    async renewAnalysisLease(analysisId, token, deadline) {
+      const updated = await client.qualityAnalysis.updateMany({ where: { id: analysisId, status: 'PENDING', leaseToken: token, leaseExpiresAt: { gt: new Date() } }, data: { leaseExpiresAt: deadline } });
+      return updated.count === 1;
+    },
+    async completeDerivedRecompute(analysisId, observedUpdatedAt, error) {
+      await client.qualityAnalysis.updateMany({ where: { id: analysisId, updatedAt: observedUpdatedAt }, data: { recomputePending: Boolean(error), recomputeLastError: error ?? null } as any });
+    },
+    async retryDerivedRecomputes(callback) {
+      const jobs = await client.qualityAnalysis.findMany({ where: { recomputePending: true } as any, orderBy: { updatedAt: 'asc' }, take: 10 });
+      for (const job of jobs) {
+        try {
+          await callback({ benchmarkRunId: job.benchmarkRunId, artifactId: job.artifactId!, metricModelId: job.metricModelId, analysisWorkerVersion: job.analysisWorkerVersion });
+          await client.qualityAnalysis.updateMany({ where: { id: job.id, updatedAt: job.updatedAt }, data: { recomputePending: false, recomputeLastError: null } as any });
+        } catch (error) {
+          await client.qualityAnalysis.updateMany({ where: { id: job.id, updatedAt: job.updatedAt }, data: { recomputeLastError: normalizeError(error) } as any });
+        }
+      }
     },
     async markQualityAnalysisRetry(input) {
       const run = await client.$transaction(async (tx) => {
+        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
+        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3325,11 +3449,13 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: input.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
     async markQualityAnalysisFailed(input) {
       const run = await client.$transaction(async (tx) => {
+        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
+        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3362,7 +3488,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: input.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
     async countArtifactsByStates(states) {
@@ -3387,6 +3513,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
     },
     async saveAuthoritativeAnalysis(input) {
       const run = await client.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', 714555);
+        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id, "analysisProvenance" FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
+        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3395,7 +3524,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             metricModelId: input.result.metricModelId,
             qualityContextId: input.result.qualityContextId,
             analysisWorkerVersion: input.result.analysisWorkerVersion,
-            analysisProvenance: input.result.analysisProvenance as any,
+            analysisProvenance: { ...input.result.analysisProvenance, operatorAudit: asJsonObject(owned[0]?.analysisProvenance)?.operatorAudit ?? null, queuedAt: asJsonObject(owned[0]?.analysisProvenance)?.queuedAt ?? null } as any,
             vmafMean: input.result.vmafMean,
             vmafMedian: input.result.vmafMedian,
             vmafP1: input.result.vmafP1,
@@ -3418,6 +3547,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
             bitrateMethod: input.result.bitrateMethod,
             containerBitrateBps: input.result.containerBitrateBps,
             fileSizeBytes: input.result.fileSizeBytes,
+            recomputePending: true,
             nextRetryAt: null,
             leaseToken: null,
             leaseExpiresAt: null,
@@ -3448,7 +3578,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient): A
           where: { id: input.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
-      });
+      }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },
   };
