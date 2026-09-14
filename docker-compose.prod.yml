@@ -20,7 +20,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: ${DB_MEMORY_LIMIT:-512M}
+          memory: ${DB_MEMORY_LIMIT:-1G}
         reservations:
           memory: ${DB_MEMORY_RESERVATION:-256M}
 

@@ -1,0 +1,2299 @@
+{
+  "version": 1,
+  "probeSha256": "ad632e2d863089e22057d034d2c99fcb64e9231018db5165e072b504cd497ee7",
+  "startedAt": "2026-09-14T01:09:20.563623+00:00",
+  "fixture": "isolated encodingdb_corpus100020+ synthetic rows; corpus5bae5016da74f485e3018df23778238dbe49ecc5 migration20260914012000_corpus_groups; frontendddbca7c; no media throughput",
+  "concurrency": 25,
+  "requestedDurationSeconds": 600,
+  "p95BudgetMs": 1000.0,
+  "scope": "isolated read-only API/frontend load; no encode/upload claims",
+  "samples": [
+    {
+      "elapsedSeconds": 0.0014214170223567635,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "156.94%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.23%",
+          "MemUsage": "494.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "39.1MB / 132MB",
+          "PIDs": "48"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 147177472,
+        "38079": 197312512
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 6.061302042013267,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.52%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.43%",
+          "MemUsage": "509.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "45.5MB / 181MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 199655424,
+        "38079": 309526528
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 12.729111667023972,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.64%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.33%",
+          "MemUsage": "502.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "51.4MB / 226MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209027072,
+        "38079": 317521920
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 18.769797750021098,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "135.73%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.54%",
+          "MemUsage": "519.1MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "57.2MB / 270MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213991424,
+        "38079": 313311232
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 24.806641917006345,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "133.19%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.53%",
+          "MemUsage": "518.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "63.8MB / 321MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 223068160,
+        "38079": 314376192
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 31.740806750021875,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.20%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.33%",
+          "MemUsage": "502.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "69.5MB / 364MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 226508800,
+        "38079": 320110592
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 37.77788258402143,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.16%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.41%",
+          "MemUsage": "508.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "75.3MB / 409MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 227000320,
+        "38079": 316309504
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 43.80511112502427,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.56%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.83%",
+          "MemUsage": "541.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "81.5MB / 454MB",
+          "PIDs": "64"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 226426880,
+        "38079": 319455232
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 49.840104250004515,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "136.12%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.85%",
+          "MemUsage": "543.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "87.8MB / 500MB",
+          "PIDs": "64"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 227409920,
+        "38079": 316211200
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 55.87420991700492,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "119.58%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.48%",
+          "MemUsage": "514.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "94.7MB / 551MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 227524608,
+        "38079": 316833792
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 62.72727537501487,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "137.89%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.36%",
+          "MemUsage": "504.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "101MB / 596MB",
+          "PIDs": "51"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 228032512,
+        "38079": 317227008
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 68.76588170902687,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.50%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.45%",
+          "MemUsage": "512MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "106MB / 641MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 228753408,
+        "38079": 322191360
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 74.80261066701496,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "137.20%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.47%",
+          "MemUsage": "513.1MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "113MB / 693MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 229376000,
+        "38079": 317505536
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 81.75062100001378,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.55%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.87%",
+          "MemUsage": "545.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "119MB / 737MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 229752832,
+        "38079": 317685760
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 87.79472458400414,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "132.74%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.74%",
+          "MemUsage": "534.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "125MB / 783MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 207585280,
+        "38079": 236994560
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 93.82727775000967,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.13%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.55%",
+          "MemUsage": "519.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "131MB / 827MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 211402752,
+        "38079": 236994560
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 99.8607133750047,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "122.89%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.54%",
+          "MemUsage": "519MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "137MB / 873MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 206045184,
+        "38079": 226410496
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 105.89433741700486,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "121.90%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.56%",
+          "MemUsage": "520.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "143MB / 923MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209420288,
+        "38079": 232095744
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 112.76239454202005,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "131.81%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.68%",
+          "MemUsage": "529.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "149MB / 968MB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209338368,
+        "38079": 230506496
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 118.80011212502723,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "125.13%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.63%",
+          "MemUsage": "526.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "155MB / 1.01GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209846272,
+        "38079": 235651072
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 124.82942666701274,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.33%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.79%",
+          "MemUsage": "538.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "162MB / 1.06GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209567744,
+        "38079": 229130240
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 131.75076475000242,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.47%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.57%",
+          "MemUsage": "521.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "168MB / 1.11GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 210305024,
+        "38079": 236814336
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 137.7887620840047,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "135.10%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.94%",
+          "MemUsage": "551MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "173MB / 1.15GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 210436096,
+        "38079": 234291200
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 143.8206169590121,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "122.40%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.63%",
+          "MemUsage": "526.1MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "179MB / 1.2GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 210386944,
+        "38079": 241434624
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 149.85160770901712,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "134.23%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.60%",
+          "MemUsage": "523.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "185MB / 1.24GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209747968,
+        "38079": 232390656
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 155.88780525000766,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "129.90%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.71%",
+          "MemUsage": "532.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "192MB / 1.29GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 210485248,
+        "38079": 234356736
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 162.77301070900285,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.97%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.60%",
+          "MemUsage": "523.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "198MB / 1.34GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213204992,
+        "38079": 237486080
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 168.80684791700332,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "132.82%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.61%",
+          "MemUsage": "524.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "204MB / 1.38GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214548480,
+        "38079": 232685568
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 174.83610841701739,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.96%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.74%",
+          "MemUsage": "534.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "210MB / 1.44GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215121920,
+        "38079": 234815488
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 181.7532418750052,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "138.82%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.90%",
+          "MemUsage": "547.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "216MB / 1.48GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215220224,
+        "38079": 237305856
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 187.7930318340077,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.35%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.24%",
+          "MemUsage": "574.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "223MB / 1.53GB",
+          "PIDs": "65"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214876160,
+        "38079": 232816640
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 193.8224167090084,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "154.04%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.73%",
+          "MemUsage": "534.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "229MB / 1.57GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 212877312,
+        "38079": 232587264
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 199.86118470900692,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.90%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.60%",
+          "MemUsage": "523.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "235MB / 1.62GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213958656,
+        "38079": 234946560
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 205.89060750001227,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.49%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.65%",
+          "MemUsage": "527.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "242MB / 1.67GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213630976,
+        "38079": 230768640
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 212.7625484590244,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "133.19%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.63%",
+          "MemUsage": "526.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "248MB / 1.71GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213680128,
+        "38079": 232374272
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 218.7997103340167,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "132.98%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.69%",
+          "MemUsage": "530.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "253MB / 1.76GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214908928,
+        "38079": 233766912
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 224.83110216702335,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "129.95%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.63%",
+          "MemUsage": "526.1MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "260MB / 1.81GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214335488,
+        "38079": 249741312
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 231.77933683400624,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.20%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.63%",
+          "MemUsage": "526.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "266MB / 1.85GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215269376,
+        "38079": 252968960
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 237.80825212501804,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.06%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.70%",
+          "MemUsage": "531.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "272MB / 1.9GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215367680,
+        "38079": 254607360
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 243.84556737501407,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.28%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.77%",
+          "MemUsage": "536.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "278MB / 1.94GB",
+          "PIDs": "52"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215367680,
+        "38079": 259112960
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 249.8771264590032,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "123.16%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.76%",
+          "MemUsage": "536.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "284MB / 1.99GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213008384,
+        "38079": 257540096
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 255.91165279201232,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.58%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.89%",
+          "MemUsage": "546.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "291MB / 2.04GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 212598784,
+        "38079": 252100608
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 262.7756745420047,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "123.94%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.77%",
+          "MemUsage": "537.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "297MB / 2.08GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213630976,
+        "38079": 252706816
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 268.81293004201143,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "133.34%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.90%",
+          "MemUsage": "547.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "303MB / 2.13GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 212303872,
+        "38079": 250970112
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 274.83832070900826,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "140.46%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.97%",
+          "MemUsage": "553.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "309MB / 2.18GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213303296,
+        "38079": 252198912
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 281.84787162501016,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "128.33%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.29%",
+          "MemUsage": "578.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "316MB / 2.23GB",
+          "PIDs": "67"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213303296,
+        "38079": 255606784
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 287.87460079201264,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "166.98%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.83%",
+          "MemUsage": "621.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "322MB / 2.27GB",
+          "PIDs": "83"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213647360,
+        "38079": 253526016
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 293.90721216701786,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.79%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.77%",
+          "MemUsage": "537.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "328MB / 2.32GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213123072,
+        "38079": 257179648
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 299.950543709012,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "136.99%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.71%",
+          "MemUsage": "532.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "334MB / 2.36GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213762048,
+        "38079": 257490944
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 305.98018979202607,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.25%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.79%",
+          "MemUsage": "538.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "341MB / 2.41GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215302144,
+        "38079": 253706240
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 312.7734365000215,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.43%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.75%",
+          "MemUsage": "535.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "347MB / 2.46GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213614592,
+        "38079": 256950272
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 318.79958204200375,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "129.83%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.71%",
+          "MemUsage": "532.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "353MB / 2.5GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214106112,
+        "38079": 252100608
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 324.82839883401175,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.30%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.72%",
+          "MemUsage": "533.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "360MB / 2.56GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214286336,
+        "38079": 255295488
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 331.8057281670044,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "122.99%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.73%",
+          "MemUsage": "533.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "366MB / 2.6GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214941696,
+        "38079": 252821504
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 337.8429272090143,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "129.90%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.76%",
+          "MemUsage": "536.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "371MB / 2.65GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214220800,
+        "38079": 255672320
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 343.8783659590117,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.24%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.80%",
+          "MemUsage": "539.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "377MB / 2.69GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215089152,
+        "38079": 256933888
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 349.91603337501874,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "122.26%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.76%",
+          "MemUsage": "536.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "383MB / 2.74GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215351296,
+        "38079": 254443520
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 355.9479911250237,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "139.71%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.98%",
+          "MemUsage": "554.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "390MB / 2.79GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214925312,
+        "38079": 251936768
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 362.8411061670049,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.89%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "6.77%",
+          "MemUsage": "537.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "396MB / 2.83GB",
+          "PIDs": "54"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215252992,
+        "38079": 253755392
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 368.8778556670004,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "153.55%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.22%",
+          "MemUsage": "573.1MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "402MB / 2.87GB",
+          "PIDs": "62"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 209256448,
+        "38079": 211877888
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 374.93792287501856,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "137.60%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.11%",
+          "MemUsage": "564MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "407MB / 2.91GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 206880768,
+        "38079": 211337216
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 381.0036017920065,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "132.17%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.13%",
+          "MemUsage": "565.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "413MB / 2.95GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 207732736,
+        "38079": 209387520
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 387.03710045901244,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "120.94%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.13%",
+          "MemUsage": "565.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "420MB / 3GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 212369408,
+        "38079": 212844544
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 393.811799542018,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "131.07%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.20%",
+          "MemUsage": "571.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "425MB / 3.05GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213811200,
+        "38079": 210026496
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 399.8451231670042,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.01%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.16%",
+          "MemUsage": "567.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "431MB / 3.09GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213762048,
+        "38079": 209993728
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 405.8749280840275,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "125.43%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.67%",
+          "MemUsage": "609MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "438MB / 3.15GB",
+          "PIDs": "74"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 212860928,
+        "38079": 209141760
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 412.81042720901314,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.89%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.42%",
+          "MemUsage": "588.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "445MB / 3.19GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213024768,
+        "38079": 209567744
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 418.8456509170064,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "123.00%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.18%",
+          "MemUsage": "569.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "451MB / 3.23GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213630976,
+        "38079": 220381184
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 424.8784701670229,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.84%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.38%",
+          "MemUsage": "585.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "457MB / 3.29GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214417408,
+        "38079": 215449600
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 431.7950191250129,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "123.75%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.31%",
+          "MemUsage": "580.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "463MB / 3.33GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213975040,
+        "38079": 215384064
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 437.8223277500074,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "134.25%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.29%",
+          "MemUsage": "578.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "469MB / 3.38GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214188032,
+        "38079": 217235456
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 443.8537785420194,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.72%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.20%",
+          "MemUsage": "571MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "475MB / 3.42GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214843392,
+        "38079": 217104384
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 449.88554762501735,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.32%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.24%",
+          "MemUsage": "574.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "481MB / 3.47GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214614016,
+        "38079": 215416832
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 455.9160037920228,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.54%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.20%",
+          "MemUsage": "571.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "487MB / 3.52GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214810624,
+        "38079": 219185152
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 462.8035651250102,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "128.25%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.30%",
+          "MemUsage": "579.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "493MB / 3.56GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215171072,
+        "38079": 214532096
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 468.8430297920131,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "125.58%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.23%",
+          "MemUsage": "573.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "499MB / 3.61GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213008384,
+        "38079": 207618048
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 474.8729527090036,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "128.25%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.29%",
+          "MemUsage": "578.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "506MB / 3.66GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213286912,
+        "38079": 206159872
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 481.8214205840195,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "127.79%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.21%",
+          "MemUsage": "571.9MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "512MB / 3.7GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213680128,
+        "38079": 203931648
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 487.85046512502595,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "124.30%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.31%",
+          "MemUsage": "579.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "518MB / 3.75GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213516288,
+        "38079": 210649088
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 493.87907995900605,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "128.53%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.22%",
+          "MemUsage": "573.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "524MB / 3.79GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 213680128,
+        "38079": 207110144
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 499.9046054170176,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "126.83%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.35%",
+          "MemUsage": "583.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "530MB / 3.84GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214401024,
+        "38079": 207650816
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 505.93185354201705,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.15%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.28%",
+          "MemUsage": "577.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "536MB / 3.89GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214368256,
+        "38079": 207536128
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 512.7947969170054,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "134.49%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.45%",
+          "MemUsage": "591.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "542MB / 3.94GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 215072768,
+        "38079": 212942848
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 518.8382278339996,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "130.32%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.83%",
+          "MemUsage": "621.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "549MB / 3.98GB",
+          "PIDs": "74"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 214335488,
+        "38079": 210518016
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 524.866697917023,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 285GB",
+          "CPUPerc": "134.44%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.38%",
+          "MemUsage": "585.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "556MB / 4.04GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 196444160,
+        "38079": 193429504
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 531.8304219590209,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "128.87%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.22%",
+          "MemUsage": "572.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "562MB / 4.08GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 201048064,
+        "38079": 198180864
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 537.8699655420205,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "132.86%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.45%",
+          "MemUsage": "591.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "568MB / 4.13GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 202424320,
+        "38079": 199163904
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 543.8999170419993,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "127.10%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.24%",
+          "MemUsage": "574.2MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "574MB / 4.17GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 202899456,
+        "38079": 195526656
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 549.9272321670142,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "130.59%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.35%",
+          "MemUsage": "583.3MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "580MB / 4.22GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 203587584,
+        "38079": 200605696
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 555.9646076250065,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "125.88%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.24%",
+          "MemUsage": "574.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "586MB / 4.27GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 203685888,
+        "38079": 201048064
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 562.8215702920279,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "118.25%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.25%",
+          "MemUsage": "575.6MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "592MB / 4.31GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 203882496,
+        "38079": 201998336
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 568.8549418750044,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "128.74%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.47%",
+          "MemUsage": "592.7MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "598MB / 4.36GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 205537280,
+        "38079": 201113600
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 574.8859263750201,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "128.83%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.23%",
+          "MemUsage": "574MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "605MB / 4.41GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 203374592,
+        "38079": 200704000
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 581.8224519590149,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "155.56%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.25%",
+          "MemUsage": "575MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "611MB / 4.45GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 202424320,
+        "38079": 199573504
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 587.862069750001,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "124.47%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.34%",
+          "MemUsage": "582.4MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "617MB / 4.5GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 192118784,
+        "38079": 178847744
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 593.8934184170212,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "129.86%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.33%",
+          "MemUsage": "581.5MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "623MB / 4.54GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 201703424,
+        "38079": 181174272
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    },
+    {
+      "elapsedSeconds": 599.9279805840051,
+      "dockerExitCode": 0,
+      "docker": [
+        {
+          "BlockIO": "126MB / 286GB",
+          "CPUPerc": "2.24%",
+          "Container": "encodingdb-release-pg",
+          "ID": "98c8523cbb46",
+          "MemPerc": "7.27%",
+          "MemUsage": "576.8MiB / 7.749GiB",
+          "Name": "encodingdb-release-pg",
+          "NetIO": "628MB / 4.58GB",
+          "PIDs": "61"
+        }
+      ],
+      "processRssBytes": {
+        "36865": 203898880,
+        "38079": 189464576
+      },
+      "healthHttpStatus": 404,
+      "healthError": "HTTP Error 404: Not Found"
+    }
+  ],
+  "targets": {
+    "corpus": "http://127.0.0.1:3083/corpus?limit=25",
+    "catalog": "http://127.0.0.1:3083/test-videos",
+    "frontend": "http://127.0.0.1:3082/",
+    "frontend-corpus": "http://127.0.0.1:3082/api/corpus?limit=25"
+  },
+  "elapsedSeconds": 601.0083494590071,
+  "results": {
+    "corpus": {
+      "requests": 31188,
+      "errors": 0,
+      "bytes": 2097777727,
+      "lastError": null,
+      "latencySampleCount": 31188,
+      "p50Ms": 24.24366699415259,
+      "p95Ms": 32.284459011862054,
+      "maxMs": 437.54470799467526
+    },
+    "catalog": {
+      "requests": 31186,
+      "errors": 0,
+      "bytes": 383993218,
+      "lastError": null,
+      "latencySampleCount": 31186,
+      "p50Ms": 0.6349169998429716,
+      "p95Ms": 1.4016670174896717,
+      "maxMs": 44.691541988868266
+    },
+    "frontend": {
+      "requests": 31181,
+      "errors": 0,
+      "bytes": 5122951385,
+      "lastError": null,
+      "latencySampleCount": 31181,
+      "p50Ms": 7.34016700880602,
+      "p95Ms": 18.48766699549742,
+      "maxMs": 265.6950840028003
+    },
+    "frontend-corpus": {
+      "requests": 31182,
+      "errors": 0,
+      "bytes": 2097374364,
+      "lastError": null,
+      "latencySampleCount": 31182,
+      "p50Ms": 27.945917012402788,
+      "p95Ms": 38.00362499896437,
+      "maxMs": 477.9441250138916
+    }
+  },
+  "finishedAt": "2026-09-14T01:19:21.572116+00:00",
+  "status": "passed",
+  "healthAllOk": false,
+  "peakProcessRssBytes": {
+    "36865": 229752832,
+    "38079": 322191360
+  }
+}

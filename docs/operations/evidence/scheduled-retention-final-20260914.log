@@ -1,0 +1,27 @@
+Backup space preflight: artifactBytes=2539520, requiredBytes=1078820864, availableBytes=15632953344
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 backup created: /tmp/encodingdb-scheduled-backup-final/bundles/backup-20260914T011725Z-41661
+Backup supervisor: exit=0, elapsedSeconds=0.659
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 isolated restore drill passed
+Backup space preflight: artifactBytes=2539520, requiredBytes=1078820864, availableBytes=15580364800
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 backup created: /tmp/encodingdb-scheduled-backup-final/bundles/backup-20260914T011738Z-41780
+Backup supervisor: exit=0, elapsedSeconds=0.436
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 isolated restore drill passed
+Backup space preflight: artifactBytes=2539520, requiredBytes=1078820864, availableBytes=15502815232
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 backup created: /tmp/encodingdb-scheduled-backup-final/bundles/backup-20260914T011751Z-41983
+Backup supervisor: exit=0, elapsedSeconds=0.483
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 isolated restore drill passed

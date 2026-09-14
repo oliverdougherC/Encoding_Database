@@ -172,3 +172,50 @@ seconds**, and checked all four objects. See
 against production data; it does not claim the new monitoring endpoint is deployed.
 The inspected production container had one Node process, a 16 GiB memory limit,
 zero restarts and no current OOMKilled flag.
+
+
+The sustained isolated database sample exceeded the old 512 MiB database limit
+(621.5 MiB observed by 313 seconds), so the configurable database default is now
+1 GiB. This covers the observed metadata-serving footprint with headroom; the
+final receipt records the measured peak. The probe's shared PostgreSQL instance
+also hosted isolated acceptance fixtures, so this is a deployment budget decision
+from observed pressure, not a per-query allocation estimate.
+
+## Sustained metadata serving result
+
+The [601-second receipt](evidence/sustained-http-durable-20260914.json) and
+[compact summary](evidence/sustained-http-summary-20260914.json) record 25
+simulated browsers and **124737 requests with zero errors** against the actual
+corpus router and production-built frontend. The fixture had over 100000
+synthetic metadata rows, with a separate one-chain/second synthetic arrival
+stream during most of the run. All four routes passed the predeclared 1000 ms
+p95 budget:
+
+| Surface | Requests | p95 |
+| --- | ---: | ---: |
+| Corpus first page | 31188 | 32.28 ms |
+| Frontend corpus proxy | 31182 | 38.00 ms |
+| Frontend homepage | 31181 | 18.49 ms |
+| Seven-clip catalog | 31186 | 1.40 ms |
+
+Sampled peak RSS was 229752832 bytes for the API and 322191360 bytes for the
+frontend. Sampled database Docker memory peaked at 651689984 bytes (621.5 MiB).
+These are sampled observations, not OS lifetime high-water marks. The tested
+server/read-model source was `5bae5016da74f485e3018df23778238dbe49ecc5`, migration
+`20260914012000_corpus_groups`; frontend code was `ddbca7c`. Later final integrated
+source still requires its integrated checks.
+
+The standalone corpus-router staging process did not install the evidence health
+route, returning 404; `healthAllOk` is explicitly false. This passing result is
+for metadata/API/frontend serving, not production monitoring, 25 simultaneous
+uploads/encodes, full worker queue drain, or the final TLS/proxy/cgroup topology.
+The earlier uncached load is retained as an explicitly aborted attempt rather
+than being presented as a complete sustained run.
+
+Three further real scheduled backups and isolated restores ran during this read
+load, all passing, with exact two-artifact/one-selected-member restoration and
+retention keeping two completed bundles while preserving an unrelated directory.
+The job was unloaded afterward. See the
+[scheduled retention receipt](evidence/scheduled-retention-final-20260914.json)
+and [log](evidence/scheduled-retention-final-20260914.log). Production scheduling
+and alert routing remain uninstalled/unverified.
