@@ -108,6 +108,20 @@ class RuntimeLockTests(unittest.TestCase):
                     runtime_lock.verify_runtime_lock(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path, lock_path=str(lock_path))
                 runner.assert_not_called()
 
+    def test_executable_hash_is_verified_before_any_runtime_execution(self):
+        for label in ("ffmpeg", "ffprobe"):
+            with self.subTest(label=label), self._mock_runtime() as (root, ffmpeg_path, ffprobe_path, runner):
+                payload = runtime_lock.build_runtime_lock_payload(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path)
+                lock = root / "runtime-lock.json"
+                runtime_lock.write_runtime_lock(payload, str(lock))
+                target = Path(ffmpeg_path if label == "ffmpeg" else ffprobe_path)
+                original = target.read_bytes()
+                target.write_bytes(bytes([original[0] ^ 255]) + original[1:])
+                runner.reset_mock()
+                with self.assertRaisesRegex(runtime_lock.RuntimeLockError, "SHA-256 mismatch"):
+                    runtime_lock.verify_runtime_lock(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path, lock_path=str(lock))
+                runner.assert_not_called()
+
     def test_current_platform_runtime_can_be_registered_and_verified(self) -> None:
         platform_key, ffmpeg_path, ffprobe_path = self._runtime_paths()
         payload = runtime_lock.build_runtime_lock_payload(

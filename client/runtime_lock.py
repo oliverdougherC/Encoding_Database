@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import subprocess
+from .campaign import check_preparation_cancelled, run_measurement_process
 import sys
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
@@ -77,6 +78,7 @@ def _sha256_path(path: str) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            check_preparation_cancelled()
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -121,7 +123,7 @@ def runtime_capability_requirements(platform_key: Optional[str] = None) -> Dict[
 
 
 def _run_text(command: Sequence[str]) -> str:
-    proc = subprocess.run(
+    proc = run_measurement_process(
         list(command),
         check=False,
         stdout=subprocess.PIPE,
@@ -389,13 +391,17 @@ def _resolve_binary_path(
     return os.path.abspath(os.path.join(os.path.dirname(lock_path), relative_path))
 
 
-def _assert_binary_identity(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
+def _assert_binary_bytes(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
     if not os.path.exists(path):
         raise RuntimeLockError(f"{label} binary does not exist at {path}")
     if observed.get("sha256") != expected.get("sha256"):
         raise RuntimeLockError(f"{label} SHA-256 mismatch for {path}")
     if int(observed.get("byteSize") or 0) != int(expected.get("byteSize") or 0):
         raise RuntimeLockError(f"{label} byte size mismatch for {path}")
+
+
+def _assert_binary_identity(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
+    _assert_binary_bytes(label, path, expected, observed)
     if str(observed.get("versionLine") or "").strip() != str(expected.get("versionLine") or "").strip():
         raise RuntimeLockError(f"{label} version line mismatch for {path}")
     expected_build = str(expected.get("buildFingerprint") or "").strip()
@@ -456,6 +462,8 @@ def verify_runtime_lock(
 
     resolved_ffmpeg = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffmpeg_path, entry=expected_ffmpeg)
     resolved_ffprobe = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffprobe_path, entry=expected_ffprobe)
+    for label, path, expected in (("ffmpeg", resolved_ffmpeg, expected_ffmpeg), ("ffprobe", resolved_ffprobe, expected_ffprobe)):
+        _assert_binary_bytes(label, path, expected, {"sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
     _verify_dependencies(resolved_ffmpeg, platform_entry.get("runtimeDependencies"))
     default_requirements = runtime_capability_requirements(selected_platform)
     observed = probe_runtime_identity(

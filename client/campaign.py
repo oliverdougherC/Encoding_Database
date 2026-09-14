@@ -18,6 +18,52 @@ from .protocol import (ArtifactProbe, BenchmarkRunRecord, EncodeTiming, Environm
                        ScheduledRun, ValidityReason, ValidityResult)
 
 
+_PREPARATION = ContextVar("encodingdb_preparation", default=None)
+
+
+class PreparationScope:
+    """Cancellation and throttled progress, without a measurement deadline."""
+    def __init__(self, cancel_event=None, progress=None):
+        self.cancel_event = cancel_event
+        self.progress = progress
+        self.last_key = None
+        self.last_update = 0.0
+
+    def check(self):
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            raise KeyboardInterrupt
+
+    def report(self, stage, **details):
+        self.check()
+        now = time.monotonic()
+        key = (stage, details.get("path"), details.get("clipId"))
+        if self.progress and (key != self.last_key or now - self.last_update >= 1.0):
+            self.last_key, self.last_update = key, now
+            self.progress(stage, **details)
+        self.check()
+
+    @contextmanager
+    def activate(self):
+        token = _PREPARATION.set(self)
+        try:
+            self.check()
+            yield self
+        finally:
+            _PREPARATION.reset(token)
+
+
+def preparation_progress(stage, **details):
+    scope = _PREPARATION.get()
+    if scope is not None:
+        scope.report(stage, **details)
+
+
+def check_preparation_cancelled():
+    scope = _PREPARATION.get()
+    if scope is not None:
+        scope.check()
+
+
 _MEASUREMENT_BUDGET = ContextVar("encodingdb_measurement_budget", default=None)
 
 
@@ -60,6 +106,7 @@ class MeasurementBudget:
 
 
 def check_measurement_budget():
+    check_preparation_cancelled()
     budget = _MEASUREMENT_BUDGET.get()
     if budget is not None:
         budget.check()
@@ -71,27 +118,30 @@ def measurement_timeout(maximum):
 
 
 def run_measurement_process(*args, **kwargs):
-    """Keep validation tools inside the allowance and responsive to Stop/Close."""
+    """Own validation tools during preparation and the measured campaign allowance."""
     budget = _MEASUREMENT_BUDGET.get()
-    if budget is None:
+    if budget is None and _PREPARATION.get() is None:
         return subprocess.run(*args, **kwargs)
-    budget.check()
-    timeout = kwargs.pop("timeout", None) or 60
+    check_measurement_budget()
+    timeout = kwargs.pop("timeout", None)
+    if timeout is None and budget is not None:
+        timeout = 60
     check = kwargs.pop("check", False)
     command = args[0] if args else kwargs.get("args")
-    deadline = time.monotonic() + timeout
+    deadline = time.monotonic() + timeout if timeout is not None else None
     kwargs.setdefault("start_new_session", os.name != "nt")
     with subprocess.Popen(*args, **kwargs) as process:
         try:
             while True:
                 try:
-                    stdout, stderr = process.communicate(timeout=measurement_timeout(min(0.2, max(0.001, deadline - time.monotonic()))))
+                    poll_seconds = 0.2 if deadline is None else min(0.2, max(0.001, deadline - time.monotonic()))
+                    stdout, stderr = process.communicate(timeout=measurement_timeout(poll_seconds))
                     break
                 except subprocess.TimeoutExpired:
-                    budget.check()
-                    if time.monotonic() >= deadline:
+                    check_measurement_budget()
+                    if deadline is not None and time.monotonic() >= deadline:
                         raise subprocess.TimeoutExpired(command, timeout)
-            budget.check()
+            check_measurement_budget()
             if check and process.returncode:
                 raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
             return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)

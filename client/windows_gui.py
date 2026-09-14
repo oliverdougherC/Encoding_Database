@@ -64,6 +64,10 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         parser = client_main.build_arg_parser()
         return client_main.interactive_menu_flow(parser, base_args)
 
+    runtime_rc = client_main._preparation_runtime_integrity()
+    if runtime_rc:
+        messagebox.showerror("Runtime integrity", "Bundled runtime verification failed. See the diagnostic output.")
+        return runtime_rc
     encoders = list_all_available_encoders()
     try:
         initial_encoder, initial_preset, initial_quality = initial_gui_settings(base_args, encoders)
@@ -359,12 +363,21 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             if not self.running:
                 return
             self.cancel_event.set()
-            self.summary_var.set("Stopping owned encoder; retaining campaign...")
+            self.summary_var.set("Stopping owned work; retaining downloads and campaign...")
             self._append_log("Cancellation requested")
 
         def _handle_event(self, event: Dict[str, Any]) -> None:
             event_type = str(event.get("type") or "")
             if not event_type:
+                return
+
+            if event_type == "preparation_progress":
+                stage = str(event.get("stage") or "source")
+                self.stage_var.set(f"Preparing: {stage}")
+                label = event.get("clipId") or os.path.basename(str(event.get("path") or ""))
+                done, total = event.get("completedBytes"), event.get("totalBytes")
+                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                self.summary_var.set(f"Preparing {label}{amount}; Stop is available")
                 return
 
             if event_type == "run_start":

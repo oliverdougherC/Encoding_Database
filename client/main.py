@@ -1,4 +1,5 @@
 import argparse
+from functools import wraps
 import dataclasses
 import json
 import math
@@ -64,6 +65,7 @@ from .artifacts import (
 )
 from .network import fetch_baseline_rows, check_compatibility
 from .campaign import (CampaignJournal, atomic_json, physical_source_id, journal_path,
+    PreparationScope, preparation_progress, check_preparation_cancelled,
     MeasurementBudget, MeasurementBudgetExceeded, check_measurement_budget, measurement_timeout, run_measurement_process)
 from .identity import selected_device
 from .protocol import (
@@ -274,6 +276,54 @@ def _emit_event(event_sink: Optional[Callable[[Dict[str, Any]], None]], event_ty
         event_sink(event)
     except Exception:
         pass
+
+
+def _preparation_operation(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        sink = kwargs.get("event_sink")
+
+        def progress(stage, **details):
+            _emit_event(sink, "preparation_progress", scope="preparation", stage=stage, **details)
+            if sink is None:
+                label = details.get("clipId") or os.path.basename(str(details.get("path") or ""))
+                done, total = details.get("completedBytes"), details.get("totalBytes")
+                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                print_info(f"Preparing: {stage} {label}{amount}")
+
+        try:
+            with PreparationScope(kwargs.get("cancel_event"), progress).activate():
+                return function(*args, **kwargs)
+        except KeyboardInterrupt:
+            print_info("Preparation or collection interrupted; retained downloads and campaign records can be resumed.")
+            _emit_event(sink, "run_interrupted", scope="preparation")
+            return 130
+    return wrapped
+
+
+def _preparation_preflight(args, *, base_url=None):
+    check_preparation_cancelled()
+    if not getattr(args, "no_submit", False):
+        preparation_progress("compatibility")
+        try:
+            check_compatibility(base_url or args.base_url, CLIENT_VERSION)
+        except Exception as exc:
+            print(f"Compatibility check failed before preparation: {exc}. Use --no-submit for local collection.", file=sys.stderr)
+            return 5
+    return _preparation_runtime_integrity()
+
+
+def _preparation_runtime_integrity():
+    check_preparation_cancelled()
+    if bool(getattr(sys, "frozen", False)) or os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH"):
+        from .runtime_lock import verify_runtime_lock
+        preparation_progress("runtime")
+        try:
+            verify_runtime_lock(ffmpeg_path=config.ffmpeg_exe(), ffprobe_path=config.ffprobe_exe())
+        except Exception as exc:
+            print(f"Runtime integrity check failed before preparation: {exc}", file=sys.stderr)
+            return 2
+    return 0
 
 
 def _prepare_quick_suite_clip() -> PreparedSuiteClip:
@@ -1231,6 +1281,7 @@ def build_batch_tasks_for_mode(
     return tasks
 
 
+@_preparation_operation
 def run_benchmark_batch(
     *,
     hardware: HardwareInfo,
@@ -1244,23 +1295,13 @@ def run_benchmark_batch(
     if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
         print("--max-duration-minutes must be positive and finite", file=sys.stderr)
         return 4
-    if bool(getattr(sys, "frozen", False)) or os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH"):
-        from .runtime_lock import verify_runtime_lock
-        try:
-            verify_runtime_lock(ffmpeg_path=config.ffmpeg_exe(), ffprobe_path=config.ffprobe_exe())
-        except Exception as exc:
-            print(f"Runtime integrity check failed before encoding: {exc}", file=sys.stderr)
-            return 2
+    preflight_rc = _preparation_preflight(args, base_url=base_url)
+    if preflight_rc:
+        return preflight_rc
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
         return 2
-    if not getattr(args, "no_submit", False):
-        try:
-            check_compatibility(base_url, CLIENT_VERSION)
-        except Exception as exc:
-            print(f"Compatibility check failed before encoding: {exc}. Use --no-submit for local collection.", file=sys.stderr)
-            return 5
     if getattr(args, "local_metrics", False):
         quality_ok, quality_rc = _ensure_local_quality_stack(event_sink=event_sink, scope="batch")
         if not quality_ok:
@@ -2085,6 +2126,7 @@ def run_benchmark_batch(
     return 0
 
 
+@_preparation_operation
 def run_v7_suite_clip_mode(
     *,
     base_args: argparse.Namespace,
@@ -2093,6 +2135,9 @@ def run_v7_suite_clip_mode(
     interactive: bool = False,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
+    preflight_rc = _preparation_preflight(base_args)
+    if preflight_rc:
+        return preflight_rc
     clip_id = str(getattr(base_args, "v7_suite_clip", "") or "").strip()
     try:
         suite_clips = (_prepare_full_suite() if getattr(base_args, "campaign", "quick") == "full"
@@ -2164,6 +2209,28 @@ def run_v7_suite_clip_mode(
         event_sink=event_sink,
         cancel_event=cancel_event,
     )
+
+
+@_preparation_operation
+def _resume_campaign(args, *, event_sink=None, cancel_event=None):
+    args = _apply_submission_policy(args, interactive=False)
+    preflight_rc = _preparation_preflight(args)
+    if preflight_rc:
+        return preflight_rc
+    try:
+        root = journal_path(args.queue_dir, args.resume_campaign)
+        saved = json.loads((root / "manifest.json").read_text())
+        args.campaign_seed = saved["seed"]
+        tasks = [{"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
+                  "rateControl": task["rateControl"], "suiteClip": _prepare_named_suite_clip(task["clipId"])}
+                 for task in saved["tasks"]]
+        check_preparation_cancelled()
+        return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks,
+                                   event_sink=event_sink, cancel_event=cancel_event)
+    except Exception as exc:
+        print(f"Cannot resume campaign: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
+        return 6
 
 
 def run_with_args(args, *, event_sink=None, cancel_event=None, show_end_screen=True, interactive=True):
@@ -2512,6 +2579,7 @@ def build_single_effective_args(
     )
 
 
+@_preparation_operation
 def run_batch_mode(
     *,
     mode: str,
@@ -2522,6 +2590,9 @@ def run_batch_mode(
     interactive: bool = True,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
+    preflight_rc = _preparation_preflight(base_args)
+    if preflight_rc:
+        return preflight_rc
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     encoders = _filter_canonical_encoders(list_all_available_encoders())
     if not encoders:
@@ -2585,6 +2656,7 @@ def run_batch_mode(
         config._BATCH_ACTIVE = False
 
 
+@_preparation_operation
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
     try:
         import subprocess
@@ -2593,12 +2665,6 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             subprocess.run(["stty", "sane"], check=False)
     except Exception:
         pass
-    try:
-        _prepare_quick_suite_clip()
-    except Exception as exc:
-        print(f"EncodingDB Test Suite v1 is unavailable: {exc}", file=sys.stderr)
-        return 6
-    print_success("EncodingDB Test Suite v1 Verified")
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     estimates = build_mode_estimates(presets_cfg)
     s_minutes = estimates["smallMinutes"]
@@ -2617,6 +2683,10 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return 0
 
     if choice == 0:
+        base_args = _apply_submission_policy(base_args, interactive=True)
+        preflight_rc = _preparation_preflight(base_args)
+        if preflight_rc:
+            return preflight_rc
         all_encs = list_all_available_encoders()
         if not all_encs:
             print("No available encoders found in this ffmpeg build.", file=sys.stderr)
@@ -2789,19 +2859,7 @@ def main(argv: List[str]) -> int:
             print(f"Upload deferred: {exc}", file=sys.stderr)
             return 10
     if args.resume_campaign:
-        try:
-            root = journal_path(args.queue_dir, args.resume_campaign)
-            saved = json.loads((root / "manifest.json").read_text())
-            args.campaign_seed = saved["seed"]
-            tasks = [{"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
-                      "rateControl": task["rateControl"], "suiteClip": _prepare_named_suite_clip(task["clipId"])}
-                     for task in saved["tasks"]]
-            args = _apply_submission_policy(args, interactive=False)
-            return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks)
-        except Exception as exc:
-            print(f"Cannot resume campaign: {exc}", file=sys.stderr)
-            _debug_exception_traceback()
-            return 6
+        return _resume_campaign(args)
     if getattr(args, "v7_suite_clip", ""):
         return run_v7_suite_clip_mode(base_args=args, interactive=False)
     if args.menu:

@@ -98,6 +98,9 @@ class WindowsGuiTests(unittest.TestCase):
             self.assertEqual(gui.launch_windows_gui(self.args()), 0)
             app = bindings["<Alt-r>"].__self__
             self.assertEqual((app._selected_encoder(), app._selected_preset(), app.crf_var.get()), ("libx264", "fast", 0))
+            app._handle_event({"type": "preparation_progress", "stage": "probe", "path": "test.mkv"})
+            self.assertEqual(app.stage_var.get(), "Preparing: probe")
+            self.assertIn("Stop is available", app.summary_var.get())
             self.assertIn("Alt+R", app.start_btn.options["text"])
             self.assertIn("Alt+S", app.stop_btn.options["text"])
             root.geometry.assert_called_once_with("992x656+8+8")
@@ -110,7 +113,7 @@ class WindowsGuiTests(unittest.TestCase):
             self.assertEqual(app.start_btn.options["state"], "disabled")
             bindings["<Alt-s>"](None)
             self.assertTrue(app.cancel_event.is_set())
-            self.assertEqual(app.summary_var.get(), "Stopping owned encoder; retaining campaign...")
+            self.assertEqual(app.summary_var.get(), "Stopping owned work; retaining downloads and campaign...")
 
 
 if __name__ == "__main__":
