@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { Readable } from 'node:stream';
 import os from 'node:os';
 import path from 'node:path';
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { runNativeProcess } from '../dist/v7/nativeProcess.js';
+import { runNativeProcess, stopNativeProcesses } from '../dist/v7/nativeProcess.js';
 import { requireOperator } from '../dist/v7/operatorAuth.js';
 import { appendEvidenceReview } from '../dist/v7/reviews.js';
 import { buildRecipeFingerprint, buildEnvironmentFingerprint } from '../dist/v7/persistence.js';
@@ -135,6 +135,19 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   const slots = await Promise.all([first, second].map((bundle, index) => [persistence, replicaPersistence][index].claimUploadSlot(bundle.artifact.id, 'upload-owner', new Date(Date.now() + 5000), 1)));
   assert.equal(slots.filter(Boolean).length, 1);
   for (const bundle of [first, second]) await persistence.releaseUploadSlot(bundle.artifact.id, 'upload-owner');
+  let releaseCapacity, capacityLocked;
+  const capacityReady = new Promise(resolve => { capacityLocked = resolve; });
+  const capacityRelease = new Promise(resolve => { releaseCapacity = resolve; });
+  const heldCapacity = client.$transaction(async tx => { await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714552)'); capacityLocked(); await capacityRelease; });
+  await capacityReady;
+  const delayedSlot = replicaPersistence.claimUploadSlot(first.artifact.id, 'delayed-slot', new Date(Date.now() + 100), 1);
+  await new Promise(resolve => setTimeout(resolve, 180));
+  releaseCapacity(); await heldCapacity;
+  const grantedDeadline = await delayedSlot;
+  assert.ok(grantedDeadline instanceof Date && grantedDeadline.getTime() > Date.now(), 'slot deadline starts after lock acquisition');
+  assert.equal(await persistence.claimUploadSlot(second.artifact.id, 'second-slot', new Date(Date.now() + 100), 1), null, 'waiting cannot create two live slots');
+  await persistence.releaseUploadSlot(first.artifact.id, 'delayed-slot');
+
   await assert.rejects(service.acceptUploadStream('test', authorization.token, 'video/mp4', String(body.artifact.byteSize), Readable.from([Buffer.from('evil-video')])), /sha256/);
   assert.equal((await service.getBundle(first.run.id, 'ENCODED')).artifact.storageState, 'PENDING', 'transport corruption leaves the immutable reservation recoverable');
   await service.acceptUploadStream('test', authorization.token, 'video/mp4', String(body.artifact.byteSize), Readable.from([Buffer.from('test-video')]));
@@ -150,6 +163,27 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal((await client.qualityAnalysis.findUnique({ where: { id: owner.analysis.id } })).leaseToken, 'owner-1');
   assert.equal(await persistence.renewAnalysisLease(owner.analysis.id, 'wrong-owner', new Date(Date.now() + 5000)), false);
   assert.equal(await persistence.renewAnalysisLease(owner.analysis.id, 'owner-1', new Date(Date.now() + 5000)), true);
+  // Start each mutation while the lease is alive, block its row lock until after expiry.
+  for (const mutation of ['retry', 'failure', 'completion', 'renewal']) {
+    await client.qualityAnalysis.update({ where: { id: owner.analysis.id }, data: { leaseToken: 'owner-1', leaseExpiresAt: new Date(Date.now() + 150) } });
+    let releaseRow, rowLocked;
+    const rowReady = new Promise(resolve => { rowLocked = resolve; });
+    const rowRelease = new Promise(resolve => { releaseRow = resolve; });
+    const heldRow = client.$transaction(async tx => { await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', owner.analysis.id); rowLocked(); await rowRelease; });
+    await rowReady;
+    const identity = { ...queueInput, analysisId: owner.analysis.id, leaseToken: 'owner-1', errorMessage: 'expired while waiting', nextRetryAt: new Date() };
+    const operation = mutation === 'retry' ? persistence.markQualityAnalysisRetry(identity)
+      : mutation === 'failure' ? persistence.markQualityAnalysisFailed(identity)
+      : mutation === 'renewal' ? persistence.renewAnalysisLease(owner.analysis.id, 'owner-1', new Date(Date.now() + 5000))
+      : persistence.saveAuthoritativeAnalysis({ ...identity, result: {} });
+    const observed = operation.then(value => ({ value }), error => ({ error }));
+    await new Promise(resolve => setTimeout(resolve, 220));
+    releaseRow(); await heldRow;
+    const outcome = await observed;
+    if (mutation === 'renewal') assert.equal(outcome.value, false);
+    else assert.match(String(outcome.error), /ownership expired/, mutation);
+  }
+
   await client.qualityAnalysis.update({ where: { id: owner.analysis.id }, data: { leaseExpiresAt: new Date(0) } });
   const successor = await persistence.claimNextQueuedQualityAnalysis({ leaseToken: 'owner-2', leaseExpiresAt: new Date(Date.now() + 5000), now: new Date() });
   assert.equal(successor.analysis.id, owner.analysis.id);
@@ -253,6 +287,10 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal((await client.derivedResult.findUnique({ where: { id: aggregate.id } })).acceptedRunCount, 1, 'new pending analysis blocks reviewed older evidence');
   await client.qualityAnalysis.update({ where: { id: pendingReplacement.id }, data: { status: 'FAILED' } });
   await client.artifact.updateMany({ where: { storageState: 'PENDING' }, data: { reservationExpiresAt: new Date(0) } });
+  const fractionalMs = 1990.073417;
+  const fractionalBody = { ...requestBody(), encodeWallTimeMs: fractionalMs, encodeFps: clip.media.frameCount * 1000 / fractionalMs, realTimeRatio: clip.media.frameCount / 24 * 1000 / fractionalMs };
+  const fractionalRun = (await service.createRun(fractionalBody)).bundle;
+  assert.equal(fractionalRun.run.encodeWallTimeMs, fractionalMs, 'actual client fractional milliseconds survive intake and database roundtrip');
   const malformedFile = path.join(root, 'one-frame.mp4');
   await runNativeProcess('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=1920x1080:rate=24', '-frames:v', '1', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709', '-color_range', 'tv', malformedFile]);
   const malformedBytes = await readFile(malformedFile);
@@ -269,6 +307,44 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.match(rejected.qualityAnalyses[0].lastError, /frame count|frame rate|duration/);
   assert.equal((await readFile(rejected.artifact.storageUrl)).equals(malformedBytes), true, 'poison media remains available as exact evidence');
   actualWorker.stopBackgroundWork();
+  await client.artifact.updateMany({ where: { storageState: 'PENDING' }, data: { reservationExpiresAt: new Date(0) } });
+  let entered, resumePhase, phaseDone;
+  const phaseReady = new Promise(resolve => { entered = resolve; });
+  const phaseResume = new Promise(resolve => { resumePhase = resolve; });
+  const phaseFinished = new Promise(resolve => { phaseDone = resolve; });
+  const forbiddenOutput = path.join(root, 'post-shutdown-native-output');
+  const pausedWorker = new ArtifactPipelineService(persistence, { async analyze() {
+    entered(); await phaseResume;
+    try { await runNativeProcess(process.execPath, ['-e', `require('node:fs').writeFileSync(${JSON.stringify(forbiddenOutput)},'wrong')`]); return result; }
+    finally { phaseDone(); }
+  } }, { ...config, autoAnalyzeOnUpload: true }, manifest);
+  backgroundService = pausedWorker;
+  const pausedRun = (await pausedWorker.createRun(requestBody())).bundle;
+  await pausedWorker.authorizeUpload('test', pausedRun.run.id, 'ENCODED', { sha256: body.artifact.sha256, byteSize: body.artifact.byteSize });
+  await phaseReady;
+  pausedWorker.stopBackgroundWork(); stopNativeProcesses(); resumePhase();
+  await phaseFinished;
+  await new Promise(resolve => setTimeout(resolve, 80));
+  assert.equal(await stat(forbiddenOutput).catch(() => null), null, 'shutdown cancels native phases that have not spawned yet');
+  assert.notEqual((await pausedWorker.getBundle(pausedRun.run.id, 'ENCODED')).qualityAnalyses[0].status, 'COMPLETE');
+  let claimReady, releaseClaim;
+  const claimStarted = new Promise(resolve => { claimReady = resolve; });
+  const claimRelease = new Promise(resolve => { releaseClaim = resolve; });
+  const delayedPersistence = { ...persistence, async claimNextQueuedQualityAnalysis(input) {
+    const claimed = await persistence.claimNextQueuedQualityAnalysis(input);
+    if (claimed) { claimReady(); await claimRelease; }
+    return claimed;
+  } };
+  let launches = 0;
+  const stoppingWorker = new ArtifactPipelineService(delayedPersistence, { async analyze() { launches++; return result; } }, { ...config, autoAnalyzeOnUpload: true }, manifest);
+  backgroundService = stoppingWorker;
+  const stoppedRun = (await stoppingWorker.createRun(requestBody())).bundle;
+  await stoppingWorker.authorizeUpload('test', stoppedRun.run.id, 'ENCODED', { sha256: body.artifact.sha256, byteSize: body.artifact.byteSize });
+  await claimStarted;
+  stoppingWorker.stopBackgroundWork(); releaseClaim();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(launches, 0, 'an awaited claim cannot launch analysis after stop');
+
 
 
 

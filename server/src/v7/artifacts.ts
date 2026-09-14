@@ -400,7 +400,7 @@ export interface ArtifactPipelinePersistence {
   resolveOrBootstrapRecipe(input: RecipeBootstrapInput): Promise<StoredRecipe>;
   resolveOrBootstrapEnvironment(input: EnvironmentBootstrapInput): Promise<StoredEnvironment>;
   reserveUpload?(artifactId: string, budget: AdmissionBudget): Promise<void>;
-  claimUploadSlot?(artifactId: string, token: string, deadline: Date, maximum: number): Promise<boolean>;
+  claimUploadSlot?(artifactId: string, token: string, deadline: Date, maximum: number): Promise<Date | null>;
   releaseUploadSlot?(artifactId: string, token: string): Promise<void>;
   createOrFetchRun(input: CreateRunInput): Promise<{ bundle: RunArtifactBundle; created: boolean }>;
   getRunArtifact(benchmarkRunId: string, role: ArtifactRoleValue): Promise<RunArtifactBundle | null>;
@@ -572,7 +572,7 @@ const RUN_CREATE_SCHEMA = z.object({
   campaignId: z.string().max(200).optional().nullable(),
   repetitionGroupId: z.string().max(200).optional().nullable(),
   repetitionIndex: z.number().int().min(0).optional().nullable(),
-  encodeWallTimeMs: z.number().int().min(0).optional().nullable(),
+  encodeWallTimeMs: z.number().positive().max(86_400_000).optional().nullable(),
   encodeFps: z.number().positive().optional().nullable(),
   sourceFps: z.number().positive().optional().nullable(),
   realTimeRatio: z.number().positive().optional().nullable(),
@@ -1644,6 +1644,7 @@ class AuthoritativeAnalysisCoordinator {
   private started = false;
   private draining = false;
   private stopped = false;
+  private readonly claimControllers = new Set<AbortController>();
   private drainRequested = false;
   private timer: NodeJS.Timeout | null = null;
 
@@ -1653,7 +1654,7 @@ class AuthoritativeAnalysisCoordinator {
     private readonly config: ArtifactPipelineConfig,
   ) {}
 
-  stop(): void { this.stopped = true; if (this.timer) clearInterval(this.timer); }
+  stop(): void { this.stopped = true; if (this.timer) clearInterval(this.timer); for (const controller of this.claimControllers) controller.abort(); }
 
   start(): void {
     if (this.stopped || this.started) return;
@@ -1709,6 +1710,11 @@ class AuthoritativeAnalysisCoordinator {
         this.reserved = Math.max(0, this.reserved - 1);
       });
       if (!claim) break;
+      if (this.stopped) {
+        await this.persistence.markQualityAnalysisRetry({ analysisId: claim.analysis.id, leaseToken: claim.analysis.leaseToken,
+          artifactId: claim.bundle.artifact.id, benchmarkRunId: claim.bundle.run.id, nextRetryAt: new Date(), errorMessage: 'Worker stopped before analysis launch' });
+        break;
+      }
       this.active += 1;
       void this.processClaim(claim).finally(() => {
         this.active = Math.max(0, this.active - 1);
@@ -1719,6 +1725,8 @@ class AuthoritativeAnalysisCoordinator {
 
   private async processClaim(claim: { bundle: RunArtifactBundle; analysis: StoredQualityAnalysis }): Promise<void> {
     const abort = new AbortController();
+    this.claimControllers.add(abort);
+    if (this.stopped) abort.abort();
     let renewing = false;
     const renew = setInterval(() => {
       if (renewing || !this.persistence.renewAnalysisLease || !claim.analysis.leaseToken) return;
@@ -1728,7 +1736,10 @@ class AuthoritativeAnalysisCoordinator {
     }, Math.max(10, Math.floor(this.config.analysisLeaseMs / 3)));
     renew.unref();
     try {
-      await nativeProcessSignal.run(abort.signal, () => this.service.processQueuedAnalysis(claim.bundle, claim.analysis));
+      await nativeProcessSignal.run(abort.signal, () => {
+        if (abort.signal.aborted) throw new Error('Analysis cancelled on worker shutdown');
+        return this.service.processQueuedAnalysis(claim.bundle, claim.analysis);
+      });
     } catch (error) {
       const failure = { analysisId: claim.analysis.id, leaseToken: claim.analysis.leaseToken,
         artifactId: claim.bundle.artifact.id, benchmarkRunId: claim.bundle.run.id, errorMessage: normalizeError(error) };
@@ -1738,7 +1749,7 @@ class AuthoritativeAnalysisCoordinator {
       } catch (leaseError) {
         console.error('Analysis claim no longer writable:', normalizeError(leaseError));
       }
-    } finally { clearInterval(renew); }
+    } finally { clearInterval(renew); this.claimControllers.delete(abort); }
   }
 
 }
@@ -1904,12 +1915,16 @@ export class ArtifactPipelineService {
     if (!alreadyPublished) await this.persistence.reserveUpload?.(artifactId, await this.admissionBudget());
     const uploadLeaseToken = crypto.randomUUID();
     const uploadDeadlineMs = Number(process.env.ARTIFACT_UPLOAD_DEADLINE_MS || 300_000);
+    let remainingUploadMs = uploadDeadlineMs;
     if (this.persistence.claimUploadSlot) {
-      if (!await this.persistence.claimUploadSlot(artifactId, uploadLeaseToken, new Date(Date.now() + uploadDeadlineMs), this.config.maxConcurrentUploads)) throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
+      const deadline = await this.persistence.claimUploadSlot(artifactId, uploadLeaseToken, new Date(Date.now() + uploadDeadlineMs), this.config.maxConcurrentUploads);
+      if (!deadline) throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
+      remainingUploadMs = deadline.getTime() - Date.now();
+      if (remainingUploadMs <= 0) { await this.persistence.releaseUploadSlot?.(artifactId, uploadLeaseToken); throw new HttpError(503, 'Upload claim expired before body processing'); }
     } else if (this.activeUploads >= this.config.maxConcurrentUploads) throw new HttpError(503, 'Artifact upload concurrency limit exceeded');
     this.activeUploads += 1;
     const uploadAbort = new AbortController();
-    const uploadTimer = setTimeout(() => uploadAbort.abort(), uploadDeadlineMs);
+    const uploadTimer = setTimeout(() => uploadAbort.abort(), remainingUploadMs);
     uploadTimer.unref();
     try {
       if (alreadyPublished) {
@@ -2048,6 +2063,7 @@ export class ArtifactPipelineService {
       requestedAnalysisWorkerVersion: analysis.analysisWorkerVersion,
       requestedMetricModelId: analysis.metricModelId,
     });
+    if (nativeProcessSignal.getStore()?.aborted) throw new Error('Analysis claim cancelled before completion');
     if (result.metricModelId !== analysis.metricModelId || result.analysisWorkerVersion !== analysis.analysisWorkerVersion) throw new Error('Analyzer returned incompatible authority identity');
     const saved = await this.persistence.saveAuthoritativeAnalysis({
       benchmarkRunId: bundle.run.id,
@@ -2207,7 +2223,7 @@ export function validateCanonicalTiming(input: CreateRunRequestInput, clip: Stor
   const fps = clip.frameRateNumerator / clip.frameRateDenominator;
   if (input.sourceFrameCount !== clip.exactFrameCount || input.encodedFrameCount !== clip.exactFrameCount) throw new HttpError(400, 'Source and encoded frame counts must match complete canonical workload');
   if (!Number.isFinite(input.sourceFps) || Math.abs(input.sourceFps! - fps) > 1e-7) throw new HttpError(400, 'sourceFps does not match canonical cadence');
-  if (!Number.isInteger(input.encodeWallTimeMs) || input.encodeWallTimeMs! < 1 || input.encodeWallTimeMs! > 86_400_000) throw new HttpError(400, 'encodeWallTimeMs must be within 1 ms and 24 hours');
+  if (!Number.isFinite(input.encodeWallTimeMs) || input.encodeWallTimeMs! <= 0 || input.encodeWallTimeMs! > 86_400_000) throw new HttpError(400, 'encodeWallTimeMs must be positive finite milliseconds within 24 hours');
   const expectedFps = clip.exactFrameCount * 1000 / input.encodeWallTimeMs!;
   const expectedRatio = clip.exactDurationSeconds * 1000 / input.encodeWallTimeMs!;
   for (const [label, actual, expected] of [['encodeFps', input.encodeFps, expectedFps], ['realTimeRatio', input.realTimeRatio, expectedRatio]] as const) {
@@ -2791,8 +2807,19 @@ function normalizeStoredQualityAnalysisRow(analysis: any): StoredQualityAnalysis
 
 const CAPACITY_LOCK = 714552;
 async function lockCapacity(tx: any): Promise<void> { await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', CAPACITY_LOCK); }
+async function databaseNow(tx: any): Promise<Date> {
+  const rows = await tx.$queryRawUnsafe('SELECT clock_timestamp() AS now');
+  return rows[0].now;
+}
+async function lockOwnedAnalysis(tx: any, analysisId: string, token: string | null | undefined): Promise<any[]> {
+  // A predicate on the locking SELECT itself can be evaluated before waiting.
+  await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', analysisId);
+  const owned = await tx.$queryRawUnsafe('SELECT id, "analysisProvenance" FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > clock_timestamp()', analysisId, token ?? '');
+  if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
+  return owned;
+}
 async function assertAdmission(tx: any, bytes: number, budget: AdmissionBudget, excludeId?: string): Promise<void> {
-  const now = new Date();
+  const now = await databaseNow(tx);
   const reserved = { storageState: 'PENDING', OR: [{ reservationExpiresAt: { gt: now } }, { uploadLeaseExpiresAt: { gt: now } }], ...(excludeId ? { id: { not: excludeId } } : {}) };
   const pending = await tx.artifact.count({ where: reserved });
   const analyses = await tx.qualityAnalysis.count({ where: { status: 'PENDING' } });
@@ -3160,20 +3187,22 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
         await lockCapacity(tx);
         const artifact = await tx.artifact.findUniqueOrThrow({ where: { id: artifactId } });
         if (artifact.storageState !== 'PENDING') return;
-        if ((artifact as any).reservationExpiresAt > new Date()) return;
+        if ((artifact as any).reservationExpiresAt > await databaseNow(tx)) return;
         await assertAdmission(tx, artifact.byteSize ?? 0, budget, artifactId);
         await tx.artifact.update({ where: { id: artifactId }, data: { reservationExpiresAt: new Date(Date.now() + budget.reservationMs) } as any });
       }, { timeout: 30_000, maxWait: 30_000 });
     },
     async claimUploadSlot(artifactId, token, deadline, maximum) {
+      const durationMs = Math.max(1, deadline.getTime() - Date.now());
       return await client.$transaction(async tx => {
         await lockCapacity(tx);
-        const now = new Date();
+        await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', artifactId);
+        const now = await databaseNow(tx);
         const active = await tx.artifact.count({ where: { uploadLeaseExpiresAt: { gt: now } } as any });
-        if (active >= maximum) return false;
+        if (active >= maximum) return null;
         const changed = await tx.artifact.updateMany({ where: { id: artifactId, OR: [{ uploadLeaseExpiresAt: null }, { uploadLeaseExpiresAt: { lte: now } }] } as any,
-          data: { uploadLeaseToken: token, uploadLeaseExpiresAt: deadline } as any });
-        return changed.count === 1;
+          data: { uploadLeaseToken: token, uploadLeaseExpiresAt: new Date(now.getTime() + durationMs) } as any });
+        return changed.count === 1 ? new Date(now.getTime() + durationMs) : null;
       }, { timeout: 30_000, maxWait: 30_000 });
     },
     async releaseUploadSlot(artifactId, token) {
@@ -3273,7 +3302,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
       const run = await client.$transaction(async (tx) => {
         await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', input.artifactId);
         const bound = await tx.artifact.findUniqueOrThrow({ where: { id: input.artifactId } });
-        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > new Date()))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
+        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > await databaseNow(tx)))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
         if (bound.sha256 !== input.sha256 || bound.byteSize !== input.byteSize) throw new HttpError(409, 'Artifact contents conflict with immutable binding');
         if (bound.storageState !== 'PENDING') return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: bound.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         const artifact = await tx.artifact.update({
@@ -3304,7 +3333,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
       const run = await client.$transaction(async (tx) => {
         await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', input.artifactId);
         const bound = await tx.artifact.findUniqueOrThrow({ where: { id: input.artifactId } });
-        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > new Date()))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
+        if (input.uploadLeaseToken && ((bound as any).uploadLeaseToken !== input.uploadLeaseToken || !((bound as any).uploadLeaseExpiresAt > await databaseNow(tx)))) throw new HttpError(409, 'Upload lease ownership expired or superseded');
         if (['PENDING', 'REJECTED'].includes(input.storageState) && bound.storageState !== 'PENDING') return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: bound.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         const artifact = await tx.artifact.update({
           where: { id: input.artifactId },
@@ -3389,20 +3418,27 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
       return normalizeBundle(run, 'ENCODED');
     },
     async claimNextQueuedQualityAnalysis(input) {
+      const durationMs = input.leaseExpiresAt.getTime() - input.now.getTime();
       return await client.$transaction(async tx => {
         await lockCapacity(tx);
+        const now = await databaseNow(tx);
         // Dead workers cannot keep poison jobs alive forever.
-        await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET status = \'FAILED\', "completedAt" = $1, "lastError" = \'Analysis lease expired at retry limit\', "leaseToken" = NULL, "leaseExpiresAt" = NULL WHERE status = \'PENDING\' AND "leaseExpiresAt" <= $1 AND "attemptCount" >= "maxAttempts"', input.now);
-        await tx.$executeRawUnsafe('UPDATE "BenchmarkRun" r SET status = \'INVALID\', "statusReason" = \'Analysis retry limit exhausted after worker loss\', "decidedAt" = $1 WHERE r.status = \'PENDING\' AND EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status = \'FAILED\') AND NOT EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status IN (\'COMPLETE\', \'SUSPECT\', \'REJECTED\', \'PENDING\'))', input.now);
-        const active = await tx.qualityAnalysis.count({ where: { status: 'PENDING', leaseExpiresAt: { gt: input.now } } });
+        await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET status = \'FAILED\', "completedAt" = $1, "lastError" = \'Analysis lease expired at retry limit\', "leaseToken" = NULL, "leaseExpiresAt" = NULL WHERE status = \'PENDING\' AND "leaseExpiresAt" <= $1 AND "attemptCount" >= "maxAttempts"', now);
+        await tx.$executeRawUnsafe('UPDATE "BenchmarkRun" r SET status = \'INVALID\', "statusReason" = \'Analysis retry limit exhausted after worker loss\', "decidedAt" = $1 WHERE r.status = \'PENDING\' AND EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status = \'FAILED\') AND NOT EXISTS (SELECT 1 FROM "QualityAnalysis" q WHERE q."benchmarkRunId" = r.id AND q.status IN (\'COMPLETE\', \'SUSPECT\', \'REJECTED\', \'PENDING\'))', now);
+        const active = await tx.qualityAnalysis.count({ where: { status: 'PENDING', leaseExpiresAt: { gt: now } } });
         if (active >= config.analysisMaxConcurrent) return null;
         const candidate = await tx.qualityAnalysis.findFirst({ where: { status: 'PENDING', AND: [
-          { OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: input.now } }] },
-          { OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lte: input.now } }] },
+          { OR: [{ nextRetryAt: null }, { nextRetryAt: { lte: now } }] },
+          { OR: [{ leaseExpiresAt: null }, { leaseExpiresAt: { lte: now } }] },
         ] }, orderBy: [{ createdAt: 'asc' }] });
         if (!candidate) return null;
+        await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', candidate.id);
+        const grantTime = await databaseNow(tx);
+        const current = await tx.qualityAnalysis.findUniqueOrThrow({ where: { id: candidate.id } });
+        if (current.status !== 'PENDING' || (current.leaseExpiresAt && current.leaseExpiresAt > grantTime) || (current.nextRetryAt && current.nextRetryAt > grantTime)) return null;
+        const deadline = new Date(grantTime.getTime() + durationMs);
         await tx.qualityAnalysis.update({ where: { id: candidate.id }, data: { leaseToken: input.leaseToken,
-          leaseExpiresAt: input.leaseExpiresAt, startedAt: input.now, nextRetryAt: null, attemptCount: { increment: 1 } } });
+          leaseExpiresAt: deadline, startedAt: grantTime, nextRetryAt: null, attemptCount: { increment: 1 } } });
         const run = await tx.benchmarkRun.findUniqueOrThrow({ where: { id: candidate.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
         const bundle = normalizeBundle(run, 'ENCODED');
         return { bundle, analysis: bundle.qualityAnalyses.find(a => a.id === candidate.id)! };
@@ -3413,8 +3449,12 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
       return rows.map(row => normalizeBundle(row, 'ENCODED'));
     },
     async renewAnalysisLease(analysisId, token, deadline) {
-      const updated = await client.qualityAnalysis.updateMany({ where: { id: analysisId, status: 'PENDING', leaseToken: token, leaseExpiresAt: { gt: new Date() } }, data: { leaseExpiresAt: deadline } });
-      return updated.count === 1;
+      const extensionMs = Math.max(1, deadline.getTime() - Date.now());
+      return await client.$transaction(async tx => {
+        await tx.$queryRawUnsafe('SELECT id FROM "QualityAnalysis" WHERE id = $1 FOR UPDATE', analysisId);
+        const count = await tx.$executeRawUnsafe('UPDATE "QualityAnalysis" SET "leaseExpiresAt" = clock_timestamp() + ($3 * interval \'1 millisecond\') WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > clock_timestamp()', analysisId, token, extensionMs);
+        return count === 1;
+      }, { timeout: 30_000, maxWait: 30_000 });
     },
     async completeDerivedRecompute(analysisId, observedUpdatedAt, error) {
       await client.qualityAnalysis.updateMany({ where: { id: analysisId, updatedAt: observedUpdatedAt }, data: { recomputePending: Boolean(error), recomputeLastError: error ?? null } as any });
@@ -3432,8 +3472,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async markQualityAnalysisRetry(input) {
       const run = await client.$transaction(async (tx) => {
-        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
-        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
+        const owned = await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3454,8 +3493,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async markQualityAnalysisFailed(input) {
       const run = await client.$transaction(async (tx) => {
-        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
-        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
+        const owned = await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
@@ -3514,8 +3552,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     async saveAuthoritativeAnalysis(input) {
       const run = await client.$transaction(async (tx) => {
         await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock($1)', 714555);
-        const owned = await tx.$queryRawUnsafe<any[]>('SELECT id, "analysisProvenance" FROM "QualityAnalysis" WHERE id = $1 AND status = \'PENDING\' AND "leaseToken" = $2 AND "leaseExpiresAt" > NOW() FOR UPDATE', input.analysisId, input.leaseToken ?? '');
-        if (owned.length !== 1) throw new Error('Analysis lease ownership expired or superseded');
+        const owned = await lockOwnedAnalysis(tx, input.analysisId, input.leaseToken);
         await tx.qualityAnalysis.update({
           where: { id: input.analysisId },
           data: {
