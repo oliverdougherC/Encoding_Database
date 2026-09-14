@@ -5,6 +5,7 @@ import json
 import os
 import re
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
@@ -21,6 +22,42 @@ RELEASE_MANIFEST_SCHEMA_VERSION = 1
 SMOKE_SCHEMA_VERSION = 1
 SIGNING_SCHEMA_VERSION = 1
 SHA256SUMS_NAME = "SHA256SUMS"
+
+
+def executable_identity(path: Path) -> Dict[str, Any]:
+    """Inspect executable headers, independently of the build host architecture."""
+    with path.open('rb') as handle:
+        header = handle.read(4096)
+    architecture = None
+    minimum_os = None
+    binary_format = 'unknown'
+    if header[:4] == b'\xcf\xfa\xed\xfe' and len(header) >= 32:
+        binary_format = 'Mach-O'
+        cpu = struct.unpack_from('<I', header, 4)[0]
+        architecture = {0x0100000C: 'arm64', 0x01000007: 'x86_64'}.get(cpu)
+        ncmds = struct.unpack_from('<I', header, 16)[0]
+        offset = 32
+        for _ in range(ncmds):
+            if offset + 8 > len(header):
+                break
+            cmd, size = struct.unpack_from('<II', header, offset)
+            if size < 8 or offset + size > len(header):
+                break
+            if cmd == 0x32 and size >= 24:
+                value = struct.unpack_from('<I', header, offset + 12)[0]
+                minimum_os = f'{value >> 16}.{(value >> 8) & 255}.{value & 255}'
+            offset += size
+    elif header[:4] == b'\x7fELF' and len(header) >= 20:
+        binary_format = 'ELF'
+        endian = '<' if header[5] == 1 else '>'
+        machine = struct.unpack_from(endian + 'H', header, 18)[0]
+        architecture = {62: 'x86_64', 183: 'arm64', 3: 'x86'}.get(machine)
+    elif header[:2] == b'MZ' and len(header) >= 64:
+        offset = struct.unpack_from('<I', header, 60)[0]
+        if offset + 6 <= len(header) and header[offset:offset + 4] == b'PE\x00\x00':
+            binary_format = 'PE'
+            architecture = {0x8664: 'x86_64', 0xaa64: 'arm64', 0x14c: 'x86'}.get(struct.unpack_from('<H', header, offset + 4)[0])
+    return {'format': binary_format, 'architecture': architecture, 'minimumOsFromHeader': minimum_os}
 
 
 def canonical_json(value: Any) -> str:
@@ -225,6 +262,7 @@ def build_release_manifest(
             "sha256": artifact_sha,
             "byteSize": artifact_path.stat().st_size,
             "mode": stat.S_IMODE(artifact_path.stat().st_mode),
+            "executableIdentity": executable_identity(artifact_path),
         },
         "protocol": {
             "benchmarkProtocolVersion": config.BENCHMARK_PROTOCOL_VERSION,

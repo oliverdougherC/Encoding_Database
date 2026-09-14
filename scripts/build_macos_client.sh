@@ -90,6 +90,10 @@ FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH" \
   --pack-out "$SUITE_PACK_PATH"
 
 log "Running PyInstaller..."
+RUNTIME_LIBRARY_ARGS=()
+if [[ -d "$BUNDLE_DIR/lib" ]]; then
+  RUNTIME_LIBRARY_ARGS+=(--add-data "$BUNDLE_DIR/lib:bin/mac/lib")
+fi
 cd "$ROOT_DIR"
 "${PYI_CMD[@]}" \
   --clean \
@@ -101,6 +105,7 @@ cd "$ROOT_DIR"
   --paths "$ROOT_DIR" \
   --add-data "$FFMPEG_PATH:bin/mac" \
   --add-data "$FFPROBE_PATH:bin/mac" \
+  ${RUNTIME_LIBRARY_ARGS[@]+"${RUNTIME_LIBRARY_ARGS[@]}"} \
   --add-data "$CLIENT_DIR/presets.json:." \
   --add-data "$SUITE_RESOURCE_DIR:resources/test_suite_v1" \
   --add-data "$RUNTIME_RESOURCE_DIR:resources/runtime" \

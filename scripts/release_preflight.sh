@@ -95,10 +95,10 @@ payload = json.load(open(sys.argv[1], encoding="utf-8"))
 status = json.load(open(sys.argv[2], encoding="utf-8"))
 changelog = open(sys.argv[3], encoding="utf-8").read()
 expected = {
-    "benchmarkProtocolVersion": "7.0",
+    "benchmarkProtocolVersion": "7.1",
     "plFormulaVersion": "7.0",
     "suiteVersion": "encodingdb-test-suite-v1",
-    "clientImplementationVersion": "client/0.2.0",
+    "clientImplementationVersion": "client/0.3.0",
 }
 for key, value in expected.items():
     if payload.get(key) != value:
