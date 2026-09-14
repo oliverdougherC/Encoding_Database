@@ -54,9 +54,10 @@ const outputPath = path.resolve(process.cwd(), flags.get('--output'));
 const since = flags.get('--since') ? new Date(flags.get('--since')) : null;
 if (since && Number.isNaN(since.getTime())) throw new Error('--since must be an ISO-8601 timestamp');
 
-const [{ prisma }, calibration] = await Promise.all([
+const [{ prisma }, calibration, { loadMeasurementGroupEligibility }] = await Promise.all([
   import(path.join(serverRoot, 'dist', 'db.js')),
   import(path.join(serverRoot, 'dist', 'v7', 'calibration.js')),
+  import(path.join(serverRoot, 'dist', 'v7', 'measurementGroup.js')),
 ]);
 
 try {
@@ -98,7 +99,10 @@ try {
   });
 
   const timestamps = [];
+  const groupEligibility = new Map();
+  for (const run of runs) groupEligibility.set(run.id, await loadMeasurementGroupEligibility(prisma, run, { metricModelId: flags.get('--quality-model-id') }));
   const corpus = runs.flatMap((run) => {
+    if (!groupEligibility.get(run.id).eligible) return [];
     const analysis = run.qualityAnalyses[0];
     if (!analysis || !['COMPLETE', 'SUSPECT'].includes(analysis.status)) return [];
     const artifact = run.artifacts.find((item) => item.id === analysis?.artifactId);

@@ -5,6 +5,7 @@ import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { validationMeasurementGroup } from './validation-measurement-group.mjs';
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i], process.argv[i + 1]);
@@ -32,7 +33,8 @@ if (hash(source) !== receipt.sourceRegistrationHash || hash(receipt.source) !== 
 if (await hashFile(receipt.referencePath) !== source.sourceSha256 || (await stat(receipt.referencePath)).size !== source.byteSize) throw new Error('Registered reference bytes differ');
 const measured = receipt.campaign.recipeResults.flatMap(result => {
   if (!result.stability.stable || result.measuredRunsCounted < 2) throw new Error('Campaign timing is not stable enough for authoritative analysis');
-  return result.runs.filter(run => run.schedule.phase === 'measured' && run.overallValidity.state === 'valid');
+  const measurementGroup = validationMeasurementGroup(result);
+  return result.runs.filter(run => run.countedForStability === true).map(record => ({ record, measurementGroup }));
 });
 if (measured.length < 2) throw new Error('Two valid measured attempts are required');
 const db = new PrismaClient({ datasources: { db: { url } } });
@@ -55,7 +57,7 @@ try {
     gpuModel: receipt.hardware.gpuModel ?? null, osName: receipt.osName, osVersion: receipt.osVersion, ffmpegBuildFingerprint: receipt.runtime.ffmpeg.sha256,
     ffmpegVersion: receipt.ffmpegVersion, clientVersion: receipt.clientVersion, runtimeIdentity: receipt.runtime,
   }, update: {} });
-  for (const record of measured) {
+  for (const { record, measurementGroup } of measured) {
     const info = record.metadata.info;
     if (info.encodeTimerBoundary !== 'ffmpeg-process-v1' || await hashFile(info.artifactPath) !== info.artifactSha256) throw new Error('Measured artifact or corrected timer differs from journal');
     const recipeJson = JSON.parse(info.effectiveRecipeJson);
@@ -71,7 +73,7 @@ try {
     const measuredElapsed = (timing.end_monotonic_ns - timing.start_monotonic_ns) / 1e9;
     if (Math.abs(measuredElapsed - timing.elapsed_s) > 0.000001) throw new Error('Timing tuple differs from measured monotonic interval');
     artifacts.validateCanonicalTiming({ encodeTimerBoundary: info.encodeTimerBoundary, physicalSourceId: receipt.physicalSourceId, inputHash: source.sourceSha256, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count, sourceFps: timing.source_fps, encodeWallTimeMs: timing.elapsed_s * 1000, encodeFps: timing.encode_fps, realTimeRatio: timing.realtime_multiple }, clip);
-    const immutable = { schedule: record.schedule, timing, recipe: recipe.fingerprint, environment: environment.fingerprint, source: hash(source), physicalSourceId: receipt.physicalSourceId, artifact: info.artifactSha256 };
+    const immutable = { schedule: record.schedule, timing, measurementGroup, recipe: recipe.fingerprint, environment: environment.fingerprint, source: hash(source), physicalSourceId: receipt.physicalSourceId, artifact: info.artifactSha256 };
     const id = `validation_${hash(record.schedule)}`;
     const existing = await db.benchmarkRun.findUnique({ where: { id } });
     if (existing && existing.payloadHash !== hash(immutable)) throw new Error('Validation attempt ID was reused with different contents');
@@ -79,7 +81,7 @@ try {
       payloadHash: hash(immutable), immutablePayloadHash: hash(immutable), physicalSourceId: receipt.physicalSourceId, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: source.sourceSha256,
       campaignId: record.schedule.campaign_id, repetitionGroupId: `${record.schedule.campaign_id}:${record.schedule.recipe_id}`, repetitionIndex: record.schedule.repetition_index,
       encodeWallTimeMs: timing.elapsed_s * 1000, encodeFps: timing.encode_fps, sourceFps: timing.source_fps, realTimeRatio: timing.realtime_multiple, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count,
-      preRunEnvironmentCheck: { snapshot: record.environmentSnapshot, overallValidity: record.overallValidity, environmentValidity: record.environmentValidity, structuralValidity: record.structuralValidity }, clientQualityDebug: { validationOnly: true, rawJournalRecord: record }, status: 'PENDING' }, update: {} });
+      preRunEnvironmentCheck: { snapshot: record.environmentSnapshot, overallValidity: record.overallValidity, environmentValidity: record.environmentValidity, structuralValidity: record.structuralValidity, measurementGroup }, clientQualityDebug: { validationOnly: true, rawJournalRecord: record }, status: 'PENDING' }, update: {} });
     const key = path.join('objects', info.artifactSha256.slice(0, 2), info.artifactSha256); const destination = path.join(root, key);
     await mkdir(path.dirname(destination), { recursive: true });
     const temporary = `${destination}.${process.pid}.partial`; await copyFile(info.artifactPath, temporary);

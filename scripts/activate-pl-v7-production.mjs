@@ -75,7 +75,8 @@ async function loadModules() {
   const reviews = await import(path.join(serverRoot, 'dist', 'v7', 'reviews.js'));
   const ranking = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRanking.js'));
   const retention = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRetention.js'));
-  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule, ...retention, ...reviews, ...ranking };
+  const measurementGroup = await import(path.join(serverRoot, 'dist', 'v7', 'measurementGroup.js'));
+  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule, ...retention, ...reviews, ...ranking, ...measurementGroup };
 }
 
 export async function loadProductionActivationPlan(options) {
@@ -344,7 +345,11 @@ export async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedC
     orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 
-  return latestAnalysesByRun(analyses).filter((analysis) => modules.applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status, artifactState: analysis.artifact?.storageState ?? 'MISSING', analysisId: analysis.id, reviews: analysis.evidenceReviews }).eligible).map((analysis) => ({
+  const latest = latestAnalysesByRun(analyses);
+  const groups = new Map();
+  for (const analysis of latest) groups.set(analysis.id, await modules.loadMeasurementGroupEligibility(prisma, analysis.benchmarkRun, { metricModelId: promotedContext.qualityModelId }));
+  return latest.filter((analysis) => groups.get(analysis.id).eligible && modules.applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status, artifactState: analysis.artifact?.storageState ?? 'MISSING', analysisId: analysis.id, reviews: analysis.evidenceReviews }).eligible).map((analysis) => ({
+    measurementGroup: groups.get(analysis.id),
     qualityAnalysisId: analysis.id,
     analysisWorkerVersion: analysis.analysisWorkerVersion,
     benchmarkRunId: analysis.benchmarkRunId,
