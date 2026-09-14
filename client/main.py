@@ -319,6 +319,36 @@ def _load_suite_manifest_clip(prepared_clip: PreparedSuiteClip) -> Dict[str, Any
     raise RuntimeError(f"Suite clip {prepared_clip.clip_id} not found in manifest")
 
 
+def _completed_measurement_groups(campaign_result: Any) -> Dict[str, Dict[str, Any]]:
+    """Bind counted timing members only after execute_protocol_campaign returns.
+
+    The server recomputes stability and verifies retained membership; this receipt
+    deliberately makes no claim that the group is stable or eligible.
+    """
+    groups = {}
+    for recipe_result in campaign_result.recipe_results:
+        attempts = [
+            {"repetitionIndex": record.schedule.repetition_index,
+             "encodeWallTimeMs": record.timing.elapsed_s * 1000.0}
+            for record in recipe_result.runs
+            if record.schedule.phase == "measured"
+            and record.counted_for_stability and record.timing is not None
+        ]
+        attempts.sort(key=lambda attempt: attempt["repetitionIndex"])
+        # Incomplete/invalid groups remain visible as individual observations.
+        # They cannot acquire a group receipt by filling in invented repetitions.
+        if not 2 <= len(attempts) <= 4:
+            continue
+        groups[recipe_result.recipe_id] = {
+            "schemaVersion": "encodingdb-measurement-group/v1",
+            "campaignId": campaign_result.campaign_id,
+            "repetitionGroupId": f"{campaign_result.campaign_id}:{recipe_result.recipe_id}",
+            "completed": True,
+            "countedAttempts": attempts,
+        }
+    return groups
+
+
 def _build_authoritative_run_create_request(
     *,
     prepared_clip: PreparedSuiteClip,
@@ -333,6 +363,7 @@ def _build_authoritative_run_create_request(
     client_version: str,
     execution_identity_payload: Dict[str, Any],
     protocol_config: ProtocolConfig,
+    measurement_group: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     suite_clip = _load_suite_manifest_clip(prepared_clip)
     telemetry = {
@@ -494,6 +525,8 @@ def _build_authoritative_run_create_request(
             "mediaContainer": artifact_probe.get("containerFormat"),
         },
     }
+    if measurement_group is not None:
+        run_create["measurementGroup"] = measurement_group
     run_create["payloadHash"] = build_payload_hash(run_create)
     return run_create
 
@@ -1557,6 +1590,7 @@ def run_benchmark_batch(
                 path=attempt_evidence_path,
             )
 
+            measurement_groups = _completed_measurement_groups(campaign_result)
             measured_records: List[Tuple[RecipeSpec, Any]] = []
             for recipe_result in campaign_result.recipe_results:
                 recipe = recipe_by_id[recipe_result.recipe_id]
@@ -1879,6 +1913,7 @@ def run_benchmark_batch(
                             client_version=client_version,
                             execution_identity_payload=execution_identity_payload,
                             protocol_config=protocol_config,
+                            measurement_group=measurement_groups.get(recipe.recipe_id),
                         )
                         authoritative_submission = build_artifact_submission_payload(
                             artifact_path=str(info["artifactPath"]),
