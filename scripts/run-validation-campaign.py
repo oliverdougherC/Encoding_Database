@@ -50,7 +50,7 @@ def main():
     from client.hardware import detect_hardware
     from client.identity import runtime_identity, execution_provenance
     from client.main import CLIENT_VERSION, _capture_protocol_environment_snapshot, _probe_artifact_contract
-    from client.protocol import ProtocolConfig, StructuralExpectation, RecipeSpec, EncodeTiming, EncodeOutcome, ArtifactProbe, execute_protocol_campaign, generate_campaign_id
+    from client.protocol import ProtocolConfig, StructuralExpectation, RecipeSpec, EncodeTiming, EncodeOutcome, ArtifactProbe, EnvironmentSnapshot, execute_protocol_campaign, generate_campaign_id
     registry = json.loads(args.registry.read_text())
     claimed = registry.pop('registryHash')
     if canonical_hash(registry) != claimed: raise ValueError('Source registry hash mismatch')
@@ -87,12 +87,22 @@ def main():
         timing = EncodeTiming.from_measurement(start_monotonic_ns=info['encodeStartMonotonicNs'], end_monotonic_ns=info['encodeEndMonotonicNs'],
             source_frame_count=source['frameCount'], encoded_frame_count=probe.frame_count or 0, source_fps=24)
         return EncodeOutcome(timing, probe, artifact_path=info['artifactPath'], metadata={'info': info})
+    def sample_environment(schedule, recipe):
+        checkpoint = journal.root / f'environment-{schedule.execution_order:06d}.json'
+        process_receipt = journal.root / f'{schedule.execution_order:03d}-{schedule.phase}.mp4.process.json'
+        if checkpoint.exists() and process_receipt.exists():
+            saved = json.loads(checkpoint.read_text())
+            if saved['schedule'] != schedule.to_dict(): raise ValueError('Interrupted environment schedule changed')
+            return EnvironmentSnapshot(**saved['snapshot'])
+        snapshot = _capture_protocol_environment_snapshot(hardware=hardware, encoder=args.encoder)
+        atomic_json(checkpoint, {'schedule': schedule.to_dict(), 'snapshot': snapshot.to_dict()})
+        return snapshot
     try:
         with journal.measurement_lock():
             budget = MeasurementBudget(args.max_duration_minutes)
             with budget.activate():
                 campaign = execute_protocol_campaign(recipes=[spec], config=protocol, encode_runner=encode,
-                    environment_sampler=lambda schedule, recipe: _capture_protocol_environment_snapshot(hardware=hardware, encoder=args.encoder),
+                    environment_sampler=sample_environment,
                     seed=seed, record_sink=journal.save, resumed_records=journal.records)
     except MeasurementBudgetExceeded:
         paused = journal.root / 'validation-pause.json'
