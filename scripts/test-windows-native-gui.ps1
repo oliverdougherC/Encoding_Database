@@ -170,13 +170,14 @@ function Start-Owned([string]$Name, [bool]$Gui) {
     $script:currentPhase = $phase; $script:owned = @{}
     $exe = Join-Path $repo $(if ($Gui) {'encodingdb-client-windows.exe'} else {'encodingdb-client-windows-console.exe'})
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
-    $info.UseShellExecute=$false; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true; $info.WorkingDirectory=$state
+    $info.UseShellExecute=$false; $info.RedirectStandardOutput=$true; $info.RedirectStandardError=$true; $info.WorkingDirectory=$phasePath
     foreach ($key in @($info.EnvironmentVariables.Keys)) {
         if ($key -match '^(FFMPEG_EXE|FFPROBE_EXE|ENCODINGDB_(FFMPEG_PATH|FFPROBE_PATH|RUNTIME_.*|QUICK_CLIP_ID|SUITE_PACK_URL)|TCL_LIBRARY|TK_LIBRARY|PYTHONPATH|PYTHONHOME|LD_LIBRARY_PATH|DYLD_.*|V7_OPERATOR_.*)$') { [void]$info.EnvironmentVariables.Remove($key) }
     }
     $info.EnvironmentVariables['ENCODINGDB_RUNTIME_EVIDENCE_PATH'] = Join-Path $phasePath 'embedded-runtime.json'
     $info.EnvironmentVariables['ENCODINGDB_SUITE_CACHE_DIR'] = Join-Path $state 'suite-cache'
     $info.EnvironmentVariables['ENCODINGDB_SUITE_PACK_PATH'] = Join-Path $repo 'encodingdb-test-suite-v1.tar.gz'
+    $info.EnvironmentVariables['ENCODINGDB_STATE_DIR'] = Join-Path $outputRoot 'host-state'
     $info.EnvironmentVariables['LOCALAPPDATA'] = Join-Path $state 'localappdata'
     $info.EnvironmentVariables['TEMP'] = Join-Path $state 'tmp'; $info.EnvironmentVariables['TMP'] = Join-Path $state 'tmp'
     $arguments = @('--no-submit','--base-url','http://127.0.0.1:9','--codec','libx264','--presets','fast','--queue-dir',$phase.queue,'--max-duration-minutes',"$MeasurementMinutes",'--max-storage-mb','3072')

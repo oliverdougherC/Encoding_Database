@@ -35,7 +35,8 @@ class ReleasePackagingTests(unittest.TestCase):
             native_workflow = job.group(1)
             # Retain both native artifacts for every platform; unrelated
             # regression-log uploads must not change this packaging contract.
-            self.assertEqual(native_workflow.count("retention-days: 90"), 2)
+            for artifact in (f"proposed-runtime-{platform}", f"candidate-{platform}"):
+                self.assertRegex(native_workflow, rf"name: {artifact}-[^\n]+\n(?:(?!\s+- name:)[^\n]*\n)*?\s+retention-days: 90")
             self.assertIn(f"candidate-{platform}-${{{{ github.sha }}}}", native_workflow)
             self.assertIn(f"proposed-runtime-{platform}-${{{{ github.sha }}}}", native_workflow)
         self.assertIn("if: ${{ !inputs.runtime_lock_evidence }}", workflow)
