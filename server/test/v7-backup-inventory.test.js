@@ -19,3 +19,15 @@ test('legacy backups remain verifiable without pretending they covered the new c
   assert.deepEqual(current.publicCorpusGroups, []);
   verifyBackupInventory(current, { evidenceVersion: 'encodingdb-v7-backup-inventory/v1', artifacts: [], derivedMembers: [] });
 });
+
+import { parseEnvText, validateProductionEnv } from '../../scripts/validate-production-env.mjs';
+import { readFileSync } from 'node:fs';
+test('production cannot admit unlimited evidence or outgrow its protected backup envelope', () => {
+  const defaults = parseEnvText(readFileSync(new URL('../env.example', import.meta.url), 'utf8'));
+  const unlimited = validateProductionEnv({ env: { ...defaults, ARTIFACT_STORAGE_QUOTA_BYTES: '0' } });
+  assert.ok(unlimited.errors.includes('ARTIFACT_STORAGE_QUOTA_BYTES must be a positive number'));
+  const tooSmall = validateProductionEnv({ env: { ...defaults, V7_BACKUP_MAX_ARTIFACT_BYTES: String(10 * 1024 ** 3) } });
+  assert.ok(tooSmall.errors.some((reason) => reason.includes('staging/filesystem headroom')));
+  const protectedProfile = validateProductionEnv({ env: defaults });
+  assert.ok(!protectedProfile.errors.some((reason) => reason.includes('ARTIFACT_STORAGE_QUOTA_BYTES') || reason.includes('V7_BACKUP_MAX_ARTIFACT_BYTES')));
+});

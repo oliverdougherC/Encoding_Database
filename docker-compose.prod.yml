@@ -34,6 +34,7 @@ services:
       PORT: ${PORT:-3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-benchmarks}?schema=public}
       ARTIFACT_STORAGE_ROOT: /app/artifacts
+      ARTIFACT_STORAGE_QUOTA_BYTES: ${ARTIFACT_STORAGE_QUOTA_BYTES:-10737418240}
       ARTIFACT_UPLOAD_SECRET: ${ARTIFACT_UPLOAD_SECRET:?ARTIFACT_UPLOAD_SECRET is required}
     depends_on:
       db:

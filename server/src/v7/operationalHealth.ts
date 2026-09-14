@@ -167,7 +167,7 @@ export async function collectV7EvidenceHealth(prisma: any, options: V7HealthOpti
     inspectStaging(options.storageRoot, now, thresholds.orphanStagingSeconds),
     prisma.artifact.aggregate({
       where: {
-        storageState: { in: ['UPLOADED', 'VERIFIED', 'RETAINED'] },
+        storageState: { in: ['UPLOADED', 'VERIFIED', 'RETAINED', 'REJECTED'] },
         byteSize: { not: null },
       },
       _sum: { byteSize: true },

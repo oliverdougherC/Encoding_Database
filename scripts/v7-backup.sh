@@ -92,7 +92,8 @@ STAGING_DIR="$(mktemp -d "$OUTPUT_DIR/.staging.XXXXXX")"
 restart_quiesced_services() {
   if [[ -n "$COMPOSE_FILE" && ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
     echo "Restarting quiesced writer services: ${QUIESCED_RUNNING_SERVICES[*]}" >&2
-    docker compose -f "$COMPOSE_FILE" up -d "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
+    docker compose -f "$COMPOSE_FILE" up -d --wait --wait-timeout "${V7_BACKUP_WRITER_RECOVERY_TIMEOUT_SECONDS:-300}" "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
+    echo "Writer quiescence duration seconds: $(( $(date +%s) - QUIESCE_STARTED_SECONDS ))" >&2
   fi
 }
 
@@ -117,7 +118,7 @@ LOCK_OWNED=1
 # Reject a backup that cannot fit before interrupting writers. Size includes all
 # objects, not just retained rows; pending uploads are part of the recovery unit.
 if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
-  ARTIFACT_SOURCE_KIB="$(docker run --rm -v "${ARTIFACT_VOLUME_NAME}:/from:ro" alpine:3.20 du -sk /from | awk '{print $1}')"
+  ARTIFACT_SOURCE_KIB="$(docker run --rm --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" -v "${ARTIFACT_VOLUME_NAME}:/from:ro" alpine:3.20 du -sk /from | awk '{print $1}')"
 else
   ARTIFACT_SOURCE_KIB="$(du -sk "$ARTIFACT_STORAGE_ROOT" | awk '{print $1}')"
 fi
@@ -125,7 +126,7 @@ python3 - "$OUTPUT_DIR" "$ARTIFACT_SOURCE_KIB" <<'PYSPACE'
 import os,sys
 root,kib=sys.argv[1],int(sys.argv[2])
 size=kib*1024
-maximum=int(os.environ.get('V7_BACKUP_MAX_ARTIFACT_BYTES', str(10*1024**3)))
+maximum=int(os.environ.get('V7_BACKUP_MAX_ARTIFACT_BYTES', str(22*1024**3)))
 reserve=int(os.environ.get('V7_BACKUP_FREE_RESERVE_BYTES', str(1024**3)))
 # Snapshot copy + conservatively uncompressed archive + DB/headroom reserve.
 required=size*2+reserve
@@ -159,6 +160,7 @@ if [[ -n "$COMPOSE_FILE" ]]; then
     fi
   done
   if [[ ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
+    QUIESCE_STARTED_SECONDS="$(date +%s)"
     echo "Quiescing writer services for backup consistency (downtime begins): ${QUIESCED_RUNNING_SERVICES[*]}" >&2
     docker compose -f "$COMPOSE_FILE" stop "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
   fi
@@ -170,7 +172,7 @@ pg_dump --format=custom --no-owner --no-acl --file "$OUTPUT_DIR/database.dump" "
 ARTIFACT_EXPORT_ROOT="$STAGING_DIR/artifacts"
 mkdir -p "$ARTIFACT_EXPORT_ROOT"
 if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
-  docker run --rm \
+  docker run --rm --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" \
     -v "${ARTIFACT_VOLUME_NAME}:/from:ro" \
     -v "${ARTIFACT_EXPORT_ROOT}:/to" \
     alpine:3.20 sh -c 'cp -a /from/. /to/'

@@ -122,7 +122,12 @@ export function validateProductionEnv({ env, referenceContext = null, referenceC
     if (key === 'BODY_LIMIT') continue;
     requirePositiveNumber(key);
   }
-  requirePositiveNumber('ARTIFACT_STORAGE_QUOTA_BYTES', { allowZero: true });
+  requirePositiveNumber('ARTIFACT_STORAGE_QUOTA_BYTES');
+  const quotaBytes = Number(env.ARTIFACT_STORAGE_QUOTA_BYTES);
+  const backupBytes = Number(env.V7_BACKUP_MAX_ARTIFACT_BYTES || 22 * 1024 ** 3);
+  if (!Number.isFinite(backupBytes) || backupBytes < quotaBytes * 2 + 2 * 1024 ** 3) {
+    errors.push('V7_BACKUP_MAX_ARTIFACT_BYTES must cover twice ARTIFACT_STORAGE_QUOTA_BYTES plus 2 GiB staging/filesystem headroom');
+  }
   if (!/^\d+(?:kb|mb|gb)$/i.test(String(env.BODY_LIMIT || '').trim())) {
     errors.push('BODY_LIMIT must use an explicit kb, mb, or gb value');
   }

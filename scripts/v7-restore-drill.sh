@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "${V7_RESTORE_SUPERVISED:-0}" != 1 ]]; then
+  export V7_RESTORE_SUPERVISED=1
+  export V7_BACKUP_TIMEOUT_SECONDS="${V7_RESTORE_TIMEOUT_SECONDS:-1200}"
+  export V7_BACKUP_SUPERVISOR_LABEL=Restore
+  exec python3 "$(dirname "${BASH_SOURCE[0]}")/v7-backup-supervisor.py" "${BASH_SOURCE[0]}" "$@"
+fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DRY_RUN=0
@@ -55,7 +61,9 @@ cleanup() {
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
   rm -rf "$DRILL_DIR"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 mkdir "$DRILL_DIR/artifacts"
 tar -C "$DRILL_DIR/artifacts" -xzf "$BUNDLE_DIR/artifacts.tar.gz"
 docker run -d --name "$CONTAINER_NAME" -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app \

@@ -66,10 +66,13 @@ not a new retained corrected-protocol epoch.
 `v7-backup.sh` now streams object hashes, snapshots objects into the output
 filesystem, and restarts quiesced writers before archive compression. Before
 stopping writers it checks the full source-tree size and free staging capacity.
-Defaults: 10 GiB artifact envelope, twice the object-tree size plus 1 GiB free reserve,
-300 seconds whole-backup timeout and 60 seconds recovery grace. Override using
+Defaults: 10 GiB admitted logical artifact bytes, a 22 GiB backup-tree ceiling,
+twice the observed tree size plus 1 GiB free reserve, separate 1200-second backup
+and restore deadlines, and 60 seconds recovery grace. The backup allowance covers
+one extra quota-sized abandoned-staging generation plus 2 GiB filesystem headroom. Override using
 `V7_BACKUP_MAX_ARTIFACT_BYTES`, `V7_BACKUP_FREE_RESERVE_BYTES`,
-`V7_BACKUP_TIMEOUT_SECONDS`, and `V7_BACKUP_RECOVERY_GRACE_SECONDS` only against a
+`V7_BACKUP_TIMEOUT_SECONDS`, `V7_RESTORE_TIMEOUT_SECONDS`, and
+`V7_BACKUP_RECOVERY_GRACE_SECONDS` only against a
 measured supported budget. The supervisor terminates the owned process group on
 timeout; the shell EXIT trap restarts previously running writer services. If that
 recovery itself stalls, the command fails and explicitly requires operator
@@ -287,3 +290,22 @@ IDs and accepted-membership hashes in addition to retained objects and
 restoring v1 reports a null public-group coverage count rather than pretending
 that historical inventory covered the new cache. A real legacy restore after
 this change preserved two exact artifacts and one selected member.
+
+
+Production preflight now rejects unlimited artifact admission and a backup-tree
+budget smaller than twice the configured quota plus 2 GiB. REJECTED retained-byte
+usage is included in health quota totals, matching authoritative admission.
+Container-backed backup helpers default to two CPUs. Writer restart waits for
+Compose health (default 300 seconds) and reports the complete quiescence duration.
+Backup and restore each have a 1200-second owned-process deadline; the service's
+45-minute outer bound covers both plus recovery cleanup.
+
+The source includes explicit offline-only trial drivers:
+`server/scripts/v7-backup-scale-fixture.mjs` refuses any database other than
+`backup_scale`, creates INVALID/FAILED synthetic metadata for forty 256 MiB random
+objects plus a staging mirror, and never starts a public API or media analysis.
+`server/scripts/v7-worker-capacity.mjs` separately measures real native analyzer
+coverage and whole-container cgroup peaks at concurrency one/two. It supplies no
+client validity/precheck flags and does not claim contributor timing or calibration.
+The corresponding empirical P910 receipts must pass before the chosen profile is
+reported as measured.
