@@ -1,0 +1,37 @@
+{
+  "case": "disk-full-exhaustive",
+  "startedAt": "2026-09-14T04:43:27.208702+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--resume-campaign",
+    "campaign-b92d34ea50b6f8fc",
+    "--no-submit",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/disk-full-exhaustive-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:50811",
+    "HTTPS_PROXY": "http://127.0.0.1:50811",
+    "ALL_PROXY": "http://127.0.0.1:50811",
+    "NO_PROXY": "localhost,127.0.0.1"
+  },
+  "pid": 78189,
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "diagnosticNotCalibration": true,
+  "exitCode": 6,
+  "wallSeconds": 31.093760916992323,
+  "proxyRequests": [],
+  "volumeBytes": 67067904,
+  "fillerBytes": 47185920,
+  "osError": {
+    "errno": 28,
+    "message": "[Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/owned-tail-165.bin'",
+    "freshOneByteWriteFailed": true
+  },
+  "method": "Completed journal replay on private full HFS+ volume; no re-encoding requested",
+  "priorRecordsUnchanged": true
+}

@@ -1,0 +1,71 @@
+{
+  "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000001.json": {
+    "recordSha256": "695c2c2d317cb6ec083883eda9bf1ba5d863b004446d27614f1c524b1d27167a",
+    "schedule": {
+      "campaign_id": "campaign-b92d34ea50b6f8fc",
+      "execution_order": 1,
+      "phase": "warmup",
+      "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+      "repetition_index": 1
+    },
+    "timing": {
+      "elapsed_s": 11.920981583,
+      "encode_fps": 20.13257031973388,
+      "encoded_frame_count": 240,
+      "end_monotonic_ns": 147809577434916,
+      "ffmpeg_cpu_time_s": null,
+      "realtime_multiple": 0.8388570966555783,
+      "source_fps": 24.0,
+      "source_frame_count": 240,
+      "start_monotonic_ns": 147797656453333
+    },
+    "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/001-libx264-veryslow-24-warmup-r1.mp4",
+    "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+  },
+  "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000002.json": {
+    "recordSha256": "94a0ca70df52b29475d1192505f9a665c3ed39ba59566cc8cb6c9814d80bf68c",
+    "schedule": {
+      "campaign_id": "campaign-b92d34ea50b6f8fc",
+      "execution_order": 2,
+      "phase": "measured",
+      "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+      "repetition_index": 1
+    },
+    "timing": {
+      "elapsed_s": 13.480542792,
+      "encode_fps": 17.803437421112413,
+      "encoded_frame_count": 240,
+      "end_monotonic_ns": 147868628436500,
+      "ffmpeg_cpu_time_s": null,
+      "realtime_multiple": 0.7418098925463505,
+      "source_fps": 24.0,
+      "source_frame_count": 240,
+      "start_monotonic_ns": 147855147893708
+    },
+    "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/002-libx264-veryslow-24-measured-r1.mp4",
+    "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+  },
+  "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000003.json": {
+    "recordSha256": "307be0f77326b22d9cbfd4e00034d2ff29e56e622cee4a5ca1168a3201f8f2b6",
+    "schedule": {
+      "campaign_id": "campaign-b92d34ea50b6f8fc",
+      "execution_order": 3,
+      "phase": "measured",
+      "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+      "repetition_index": 2
+    },
+    "timing": {
+      "elapsed_s": 13.655146542,
+      "encode_fps": 17.575790875756386,
+      "encoded_frame_count": 240,
+      "end_monotonic_ns": 147924030474000,
+      "ffmpeg_cpu_time_s": null,
+      "realtime_multiple": 0.7323246198231828,
+      "source_fps": 24.0,
+      "source_frame_count": 240,
+      "start_monotonic_ns": 147910375327458
+    },
+    "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/003-libx264-veryslow-24-measured-r2.mp4",
+    "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+  }
+}

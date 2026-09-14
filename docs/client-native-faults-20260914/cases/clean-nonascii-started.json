@@ -1,0 +1,31 @@
+{
+  "case": "clean-nonascii",
+  "startedAt": "2026-09-14T04:31:37.170517+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--codec",
+    "libx264",
+    "--presets",
+    "fast",
+    "--no-submit",
+    "--max-duration-minutes",
+    "0.001",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/clean-nonascii-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:64935",
+    "HTTPS_PROXY": "http://127.0.0.1:64935",
+    "ALL_PROXY": "http://127.0.0.1:64935",
+    "NO_PROXY": "localhost,127.0.0.1",
+    "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-test-suite-v1.tar.gz"
+  },
+  "pid": 75535,
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "diagnosticNotCalibration": true,
+  "proxyRequestStart": 0
+}
