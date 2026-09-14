@@ -16,11 +16,13 @@ from client.hardware_monitor import HardwareMetrics
 @pytest.fixture(scope='module')
 def helpers(tmp_path_factory):
     root = tmp_path_factory.mktemp('packaged-helper-relaunch')
-    original = Path(config.ffmpeg_exe()).resolve()
+    original = Path(os.environ.get('FFMPEG_EXE') or config.ffmpeg_exe()).resolve()
     first, second = root/'_MEIfirst'/original.name, root/'_MEIsecond'/original.name
     for target in (first, second):
         target.parent.mkdir()
         shutil.copy2(original, target)
+        # Only the private clone is made writable for the intentional tamper case.
+        target.chmod(target.stat().st_mode | 0o200)
         if (original.parent/'lib').is_dir():
             shutil.copytree(original.parent/'lib', target.parent/'lib')
         else:
