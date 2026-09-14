@@ -265,3 +265,25 @@ can run from pinned PostgreSQL 16 Docker images instead of global host installs.
 The production scheduler action still needs a tested concrete environment and
 approved destination/recipient; the next isolated P910 exercise must use the
 actual candidate DB/artifact topology before those commands are called ready.
+
+Portable P910 backup execution now has a concrete container adapter:
+`scripts/v7-postgres-docker-client.sh` can be symlinked as `pg_dump` and
+`pg_restore` in a task-owned PATH directory. Set `V7_BACKUP_DOCKER_WORK_ROOT`
+to the absolute private work root containing backup output and `TMPDIR`, and
+`V7_BACKUP_DOCKER_NETWORK` to the candidate's network. The dump client uses that
+network; isolated restore uses Linux host networking to reach its loopback-only
+fresh database. Set `V7_BACKUP_POSTGRES_IMAGE` to the inspected immutable image ID.
+
+With `V7_BACKUP_SERVER_IMAGE` set to the inspected candidate image ID,
+`v7-backup-inventory.sh` runs the exact generated Prisma client inside that image,
+with the checked inventory script mounted read-only. No host npm installation is
+required. The database URL is passed through the environment, not command text.
+The work-root mount covers snapshot and inventory paths; do not mount production
+DB filesystem paths or use unrelated host directories.
+
+Inventory v2 now binds persisted public-group representative run/artifact/analysis
+IDs and accepted-membership hashes in addition to retained objects and
+`DerivedResultMember` IDs. Older v1 backups still verify their original coverage;
+restoring v1 reports a null public-group coverage count rather than pretending
+that historical inventory covered the new cache. A real legacy restore after
+this change preserved two exact artifacts and one selected member.

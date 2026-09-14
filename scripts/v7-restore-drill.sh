@@ -69,6 +69,6 @@ RESTORE_PORT="$(docker port "$CONTAINER_NAME" 5432/tcp | head -1 | sed 's/.*://'
 [[ "$RESTORE_PORT" =~ ^[0-9]+$ ]] || { echo "could not resolve restore port" >&2; exit 1; }
 RESTORE_URL="postgresql://app:app@127.0.0.1:${RESTORE_PORT}/benchmarks"
 pg_restore --no-owner --no-acl --exit-on-error --dbname "$RESTORE_URL" "$BUNDLE_DIR/database.dump"
-DATABASE_URL="$RESTORE_URL" node "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs" \
+DATABASE_URL="$RESTORE_URL" V7_BACKUP_INVENTORY_NETWORK=host bash "$ROOT_DIR/scripts/v7-backup-inventory.sh" \
   --mode verify --artifact-root "$DRILL_DIR/artifacts" --inventory "$BUNDLE_DIR/inventory.json"
 echo "PL-v7 isolated restore drill passed"

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import path from 'node:path';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { PrismaClient } from '@prisma/client';
@@ -22,7 +23,7 @@ async function sha256File(filePath) {
   return hash.digest('hex');
 }
 
-async function databaseInventory(prisma) {
+export async function databaseInventory(prisma) {
   const artifacts = await prisma.artifact.findMany({
     where: { storageState: { in: ['RETAINED', 'VERIFIED'] } },
     select: { id: true, benchmarkRunId: true, sha256: true, byteSize: true, storageKey: true, storageState: true },
@@ -32,7 +33,9 @@ async function databaseInventory(prisma) {
     select: { id: true, benchmarkRunId: true, qualityAnalysisId: true },
     orderBy: { id: 'asc' },
   });
-  return { artifacts, derivedMembers };
+  const table = await prisma.$queryRawUnsafe(`SELECT to_regclass('"PublicCorpusGroup"')::text AS name`);
+  const publicCorpusGroups = table[0]?.name ? await prisma.$queryRawUnsafe(`SELECT id, "runId", "artifactId", "analysisId", accepted, suspect, repetitions, "acceptedMembershipHash" FROM "PublicCorpusGroup" ORDER BY id`) : [];
+  return { artifacts, derivedMembers, publicCorpusGroups };
 }
 
 async function validateObjects(root, inventory) {
@@ -47,6 +50,13 @@ async function validateObjects(root, inventory) {
   }
 }
 
+export function verifyBackupInventory(current, expected) {
+  if (!['encodingdb-v7-backup-inventory/v1', 'encodingdb-v7-backup-inventory/v2'].includes(expected.evidenceVersion)) throw new Error('unsupported backup inventory version');
+  if (JSON.stringify(current.artifacts) !== JSON.stringify(expected.artifacts)) throw new Error('restored Artifact inventory differs from backup');
+  if (JSON.stringify(current.derivedMembers) !== JSON.stringify(expected.derivedMembers)) throw new Error('restored DerivedResultMember inventory differs from backup');
+  if (expected.evidenceVersion.endsWith('/v2') && JSON.stringify(current.publicCorpusGroups) !== JSON.stringify(expected.publicCorpusGroups)) throw new Error('restored public corpus selections or membership hashes differ from backup');
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const prisma = new PrismaClient();
@@ -55,27 +65,26 @@ async function main() {
     await validateObjects(args['artifact-root'], current);
     if (args.mode === 'export') {
       const inventory = {
-        evidenceVersion: 'encodingdb-v7-backup-inventory/v1',
+        evidenceVersion: 'encodingdb-v7-backup-inventory/v2',
         createdAt: new Date().toISOString(),
         artifactCount: current.artifacts.length,
         derivedMemberCount: current.derivedMembers.length,
+        publicCorpusGroupCount: current.publicCorpusGroups.length,
         ...current,
       };
       await writeFile(args.output, `${JSON.stringify(inventory, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-      process.stdout.write(`${JSON.stringify({ ok: true, artifactCount: inventory.artifactCount, derivedMemberCount: inventory.derivedMemberCount })}\n`);
+      process.stdout.write(`${JSON.stringify({ ok: true, artifactCount: inventory.artifactCount, derivedMemberCount: inventory.derivedMemberCount, publicCorpusGroupCount: inventory.publicCorpusGroupCount })}\n`);
       return;
     }
     const expected = JSON.parse(await readFile(args.inventory, 'utf8'));
-    if (expected.evidenceVersion !== 'encodingdb-v7-backup-inventory/v1') throw new Error('unsupported backup inventory version');
-    if (JSON.stringify(current.artifacts) !== JSON.stringify(expected.artifacts)) throw new Error('restored Artifact inventory differs from backup');
-    if (JSON.stringify(current.derivedMembers) !== JSON.stringify(expected.derivedMembers)) throw new Error('restored DerivedResultMember inventory differs from backup');
-    process.stdout.write(`${JSON.stringify({ ok: true, artifactCount: current.artifacts.length, derivedMemberCount: current.derivedMembers.length })}\n`);
+    verifyBackupInventory(current, expected);
+    process.stdout.write(`${JSON.stringify({ ok: true, artifactCount: current.artifacts.length, derivedMemberCount: current.derivedMembers.length, publicCorpusGroupCount: expected.evidenceVersion.endsWith('/v2') ? current.publicCorpusGroups.length : null })}\n`);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-main().catch((error) => {
+if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) main().catch((error) => {
   process.stderr.write(`v7 backup inventory failed: ${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;
 });

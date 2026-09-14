@@ -178,7 +178,7 @@ else
   cp -a "$ARTIFACT_STORAGE_ROOT/." "$ARTIFACT_EXPORT_ROOT/"
 fi
 
-DATABASE_URL="$DATABASE_URL" node "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs" \
+DATABASE_URL="$DATABASE_URL" bash "$ROOT_DIR/scripts/v7-backup-inventory.sh" \
   --mode export --artifact-root "$ARTIFACT_EXPORT_ROOT" \
   --inventory "$OUTPUT_DIR/inventory.json" --output "$OUTPUT_DIR/inventory.json"
 restart_quiesced_services

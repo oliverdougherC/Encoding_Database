@@ -21,6 +21,6 @@ test('v7 backup and isolated restore drill bind database and artifact evidence',
   assert.match(restore, /"mode": "dry-run"/);
   assert.match(restore, /pg_restore --no-owner --no-acl --exit-on-error/);
   assert.doesNotMatch(restore, /benchmarks\?schema=/);
-  assert.match(restore, /v7-backup-inventory\.mjs/);
+  assert.match(restore, /v7-backup-inventory\.sh/);
   assert.doesNotMatch(restore, /dropdb|DROP DATABASE/);
 });
