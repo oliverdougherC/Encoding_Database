@@ -1066,7 +1066,7 @@ export async function persistDerivedResultRecord(
       const [raw] = await tx.$queryRaw<Array<{ accepted: number; acceptedMembershipHash: string }>>(Prisma.sql`${buildPublicCorpusAggregationSql(Prisma.sql`AND r."benchmarkProtocolId" = ${derivedResult.benchmarkProtocolId} AND r."workloadId" = ${derivedResult.workloadId} AND r."recipeId" = ${derivedResult.recipeId} AND r."environmentId" = ${derivedResult.environmentId}`)}
         SELECT accepted, "acceptedMembershipHash" FROM grouped WHERE "metricModelId" = (SELECT "qualityModelId" FROM "ScoreContext" WHERE id = ${derivedResult.scoreContextId})`);
       const [state] = await tx.$queryRaw<Array<{ hash: string; membership: string }>>(Prisma.sql`SELECT ${measurementGroupStateHashSql(measurementGroupScopeForMembers(members.map(member => member.benchmarkRunId)))} AS hash,
-        encode(sha256(convert_to(${JSON.stringify(members.map(member => member.qualityAnalysisId).sort())}::jsonb::text, 'UTF8')), 'hex') AS membership`);
+        (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(member_id ORDER BY member_id COLLATE "C"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM unnest(${members.map(member => member.qualityAnalysisId)}::text[]) AS member_id) AS membership`);
       derivedResult = { ...derivedResult, evidenceSummary: { ...derivedResult.evidenceSummary, measurementGroupSnapshot: {
         version: 'measurement-group-state/v2', rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
         qualifiedCount: members.length, qualifiedMembershipHash: state!.membership, stateHash: state!.hash,

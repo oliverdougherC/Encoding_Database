@@ -94,7 +94,7 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
               AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = page."acceptedMembershipHash"
               AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int > 0
               AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int
-              AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedMembershipHash'
+              AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId" COLLATE "C"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedMembershipHash'
               AND ${measurementGroupStateHashSql(measurementGroupScopeForDerived(Prisma.raw('d.id')))} = d."evidenceSummary"->'measurementGroupSnapshot'->>'stateHash')
           )
         ORDER BY d."createdAt" DESC, d.id DESC LIMIT 1

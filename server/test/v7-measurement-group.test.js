@@ -92,7 +92,7 @@ test('live complete-group verification is independent of frontier subset, valida
       const created = await persistence.createOrFetchRun(input(index));
       runs.push(await db.benchmarkRun.update({ where: { id: created.bundle.run.id }, data: { status: 'ACCEPTED' } }));
       artifacts.push(await db.artifact.update({ where: { id: created.bundle.artifact.id }, data: { storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } }));
-      analyses.push(await db.qualityAnalysis.create({ data: { benchmarkRunId: runs[index].id, artifactId: artifacts[index].id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000 } }));
+      analyses.push(await db.qualityAnalysis.create({ data: { id: `namespaced-${suffix}-${index === 0 ? '\uE000' : '\u{10000}'}`, benchmarkRunId: runs[index].id, artifactId: artifacts[index].id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000 } }));
       const verified = await loadMeasurementGroupEligibility(db, runs[0], { metricModelId: 'test-model' });
       assert.equal(verified.eligible, index === 1);
     }
@@ -137,6 +137,8 @@ test('live complete-group verification is independent of frontier subset, valida
     assert.equal(publicMixed.vmaf, 95, 'displayed quality follows stable scoring subset, not raw median 70');
     assert.equal(publicMixed.status.centerBasis, 'eligible-stable-groups');
     assert.equal((await db.derivedResultMember.count({ where: { derivedResultId: mixed.derivedResultId } })), 2, 'unstable rows never become scoring members');
+    const orderedIds = (await db.$queryRawUnsafe('SELECT "qualityAnalysisId" AS id FROM "DerivedResultMember" WHERE "derivedResultId" = $1 ORDER BY "qualityAnalysisId" COLLATE "C"', mixed.derivedResultId)).map(row => row.id);
+    assert.notDeepEqual(orderedIds, [...orderedIds].sort(), 'mixed namespaced Unicode IDs exercise SQL byte order versus JS UTF16 order');
     const otherRecipe = await db.recipe.create({ data: { fingerprint: `${suffix}-alternate`, canonicalJson: {}, codecFamily: 'h264', encoderImplementation: 'libx264', preset: 'alternate', pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0', requestedRateControlMode: 'CRF', effectiveRateControlMode: 'CRF', requestedRateControl: {}, effectiveRateControl: {} } });
     const alternateReceipt = receipt([4800, 4801], `${suffix}-alternate`, suffix);
     for (let index = 0; index < 2; index++) {
