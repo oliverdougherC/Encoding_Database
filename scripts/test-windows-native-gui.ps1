@@ -21,7 +21,6 @@ $script:process = $null
 $script:stdoutTask = $null
 $script:stderrTask = $null
 $script:harnessDeadline = [DateTime]::UtcNow.AddSeconds($(if ($Mode -eq 'Gui') {1380} else {($MeasurementMinutes*60)+$AcquisitionSeconds+60}))
-$script:events = [Collections.Generic.List[object]]::new()
 $receipt = [ordered]@{
     schemaVersion = 1; status = 'RUNNING'; mode = $Mode; startedAt = [DateTime]::UtcNow.ToString('o')
     sourceCommit = (git -C $repo rev-parse HEAD); runnerImage = $env:ImageOS; runnerImageVersion = $env:ImageVersion
@@ -34,7 +33,6 @@ $receipt = [ordered]@{
 function Save-Json($Value, [string]$Path) { $Value | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $Path -Encoding utf8 }
 function Record-Event([string]$Kind, $Data) {
     $event = @{ at = [DateTime]::UtcNow.ToString('o'); kind = $Kind; data = $Data }
-    $script:events.Add($event)
     $event | ConvertTo-Json -Depth 12 -Compress | Add-Content -LiteralPath (Join-Path $modeRoot 'events.jsonl') -Encoding utf8
 }
 Save-Json $receipt (Join-Path $modeRoot 'receipt.json')
