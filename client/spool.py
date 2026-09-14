@@ -222,8 +222,8 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
             tmp_path = f"{destination}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
             try:
                 shutil.copy2(artifact_path, tmp_path)
-                with open(tmp_path, "rb") as handle:
-                    os.fsync(handle.fileno())
+                from .campaign import sync_owned_file
+                sync_owned_file(tmp_path)
                 os.replace(tmp_path, destination)
             finally:
                 try:

@@ -106,6 +106,12 @@ PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
 
 
+def _debug_exception_traceback() -> None:
+    if config._env_flag("ENCODINGDB_DEBUG_TRACEBACK", False):
+        import traceback
+        traceback.print_exc(file=sys.stderr)
+
+
 def _format_byte_count(num_bytes: int) -> str:
     value = float(max(0, num_bytes))
     for unit in ("B", "KB", "MB", "GB", "TB"):
@@ -1265,6 +1271,7 @@ def run_benchmark_batch(
         journal.check_budget()
     except Exception as exc:
         print(f"Cannot open campaign journal: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
         return 6
     print_info(f"Campaign {campaign_id}: at most {total_tasks} encodes; resume with --resume-campaign {campaign_id}")
     total_batches = 1
@@ -1970,6 +1977,7 @@ def run_benchmark_batch(
                 _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
     except (OSError, ValueError, TimeoutError) as exc:
         print(f"Campaign retained for resume: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
         _emit_event(event_sink, "run_error", scope="batch", code=6, message=str(exc))
         return 6
     except KeyboardInterrupt:
@@ -2720,6 +2728,7 @@ def main(argv: List[str]) -> int:
             return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks)
         except Exception as exc:
             print(f"Cannot resume campaign: {exc}", file=sys.stderr)
+            _debug_exception_traceback()
             return 6
     if getattr(args, "v7_suite_clip", ""):
         return run_v7_suite_clip_mode(base_args=args, interactive=False)

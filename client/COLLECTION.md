@@ -65,3 +65,6 @@ records system selection; ambiguous QSV/AMF or other devices remain unknown and
 unverified. Unknown GPU driver identity is never replaced by an OS version.
 Native platform/hardware certification and real human calibration reviews remain
 separate release gates; passing unit tests does not certify those cells.
+
+For retained-campaign failures, set `ENCODINGDB_DEBUG_TRACEBACK=1` to include the
+original exception stack in diagnostic output. Exit codes and retention behavior remain unchanged.

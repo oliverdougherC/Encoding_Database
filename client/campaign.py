@@ -32,6 +32,16 @@ def atomic_json(path: Path, value: Any) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def sync_owned_file(path) -> None:
+    """Flush an owned artifact without changing bytes or truncating the file.
+
+    Windows os.fsync calls CRT _commit/FlushFileBuffers, which requires a
+    write-capable handle. Reopening in rb works on POSIX but fails on Windows.
+    """
+    with open(path, "r+b") as handle:
+        os.fsync(handle.fileno())
+
+
 def physical_source_id(state_dir=None) -> str:
     root = Path(state_dir or config.default_client_state_dir())
     root.mkdir(parents=True, exist_ok=True)
@@ -122,8 +132,7 @@ class CampaignJournal:
         info = record.metadata.get("info") or {}
         artifact = info.get("artifactPath")
         if artifact and Path(artifact).is_file():
-            with open(artifact, "rb") as handle:
-                os.fsync(handle.fileno())
+            sync_owned_file(artifact)
             info["artifactSha256"] = self.hash_file(artifact)
         atomic_json(self.root / f"attempt-{record.schedule.execution_order:06d}.json", record.to_dict())
         self.records[record.schedule.execution_order] = record

@@ -801,7 +801,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
         monitor._ffmpeg_pid = proc.pid
         if checkpoint_path:
             from pathlib import Path
-            from .campaign import atomic_json
+            from .campaign import atomic_json, sync_owned_file
             import psutil
             import threading
             def write_process_receipt():
@@ -822,12 +822,11 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
                 end_ns = time.perf_counter_ns()
                 if checkpoint_path:
                     from pathlib import Path
-                    from .campaign import atomic_json
+                    from .campaign import atomic_json, sync_owned_file
                     empty_metrics = vars(HardwareMetrics())
                     empty_metrics.update(encode_start_monotonic_ns=start_ns, encode_end_monotonic_ns=end_ns)
                     if os.path.isfile(cmd[-1]):
-                        with open(cmd[-1], "rb") as handle:
-                            os.fsync(handle.fileno())
+                        sync_owned_file(cmd[-1])
                     atomic_json(Path(checkpoint_path), {"command": cmd, "stdout": stdout, "stderr": stderr,
                         "returncode": proc.returncode, "elapsed": (end_ns-start_ns)/1e9,
                         "hardwareMetrics": empty_metrics,
@@ -929,7 +928,7 @@ def encode_to_artifact(
 
     if encoder.lower().endswith("_nvenc"):
         cmd[-1:-1] = ["-gpu", "0"]
-    from .campaign import atomic_json
+    from .campaign import atomic_json, sync_owned_file
     from pathlib import Path
     from types import SimpleNamespace
     import dataclasses
@@ -950,8 +949,7 @@ def encode_to_artifact(
         )
         if checkpoint_path:
             if os.path.isfile(artifact_path):
-                with open(artifact_path, "rb") as handle:
-                    os.fsync(handle.fileno())
+                sync_owned_file(artifact_path)
             atomic_json(Path(checkpoint_path), {"command": cmd, "stdout": stdout, "stderr": stderr,
                         "returncode": returncode, "elapsed": elapsed, "hardwareMetrics": vars(hw_metrics),
                         "artifactSha256": sha256_of_file(artifact_path) if os.path.isfile(artifact_path) else None})
