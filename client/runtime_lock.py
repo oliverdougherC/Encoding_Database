@@ -3,6 +3,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from . import config
@@ -415,6 +416,25 @@ def _capability_list(
     return list(fallback)
 
 
+def _write_embedded_runtime_evidence(result: Mapping[str, Any]) -> None:
+    destination = os.environ.get("ENCODINGDB_RUNTIME_EVIDENCE_PATH")
+    if not destination:
+        return
+    if not getattr(sys, "frozen", False) or not getattr(sys, "_MEIPASS", None):
+        raise RuntimeLockError("Embedded runtime evidence requires a packaged client")
+    root = os.path.realpath(sys._MEIPASS)
+    for field in ("ffmpegPath", "ffprobePath", "lockPath"):
+        candidate = os.path.realpath(result[field])
+        if os.path.commonpath([root, candidate]) != root:
+            raise RuntimeLockError(f"Packaged runtime resolved outside its extraction root: {field}")
+    from pathlib import Path
+    from .campaign import atomic_json
+    atomic_json(Path(destination), {"schemaVersion": 1, "frozen": True, "extractionRoot": root,
+        "platform": result["platform"], "ffmpegPath": result["ffmpegPath"],
+        "ffprobePath": result["ffprobePath"], "lockPath": result["lockPath"],
+        "runtimeLockFingerprint": result["fingerprint"], "identity": result["identity"]})
+
+
 def verify_runtime_lock(
     *,
     platform_key: Optional[str] = None,
@@ -465,7 +485,7 @@ def verify_runtime_lock(
     )
     _assert_binary_identity("ffmpeg", resolved_ffmpeg, expected_ffmpeg, observed["ffmpeg"])
     _assert_binary_identity("ffprobe", resolved_ffprobe, expected_ffprobe, observed["ffprobe"])
-    return {
+    result = {
         "platform": selected_platform,
         "lockPath": resolved_lock_path,
         "ffmpegPath": resolved_ffmpeg,
@@ -474,6 +494,8 @@ def verify_runtime_lock(
         "payload": payload,
         "identity": observed,
     }
+    _write_embedded_runtime_evidence(result)
+    return result
 
 
 def find_operator_runtime_lock(ffmpeg_path: str, ffprobe_path: str) -> Optional[str]:

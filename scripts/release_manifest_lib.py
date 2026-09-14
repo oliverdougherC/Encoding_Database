@@ -173,12 +173,21 @@ def run_smoke_check(
     evidence_dir = ROOT_DIR / '.test-reports' / 'native-smoke' / artifact_path.name
     evidence_dir.mkdir(parents=True, exist_ok=True)
     base_env = dict(os.environ)
+    # Candidate smoke must execute the embedded reviewed runtime, not CI provisioning paths.
+    runtime_overrides = ("FFMPEG_EXE", "FFPROBE_EXE", "ENCODINGDB_RUNTIME_LOCK_PATH",
+        "ENCODINGDB_FFMPEG_PATH", "ENCODINGDB_FFPROBE_PATH", "ENCODINGDB_RUNTIME_BUNDLE_DIR",
+        "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "LD_LIBRARY_PATH", "LD_PRELOAD")
+    for key in runtime_overrides:
+        base_env.pop(key, None)
+    with tempfile.NamedTemporaryFile(prefix="embedded-runtime-", suffix=".json", dir=evidence_dir, delete=False) as receipt:
+        runtime_evidence_path = Path(receipt.name)
     base_env.update(
         {
             "BACKEND_BASE_URL": "http://127.0.0.1:9",
             "QUEUE_DIR": str(queue_dir),
             "ENCODINGDB_SUITE_CACHE_DIR": str(suite_cache_dir),
             "ENCODINGDB_DEBUG_TRACEBACK": "1",
+            "ENCODINGDB_RUNTIME_EVIDENCE_PATH": str(runtime_evidence_path),
         }
     )
     if suite_pack_path is not None:
@@ -225,10 +234,22 @@ def run_smoke_check(
             print(proc.stdout[-12000:], file=sys.stderr)
             print(proc.stderr[-12000:], file=sys.stderr)
             raise RuntimeError(f"packaged smoke check failed for {' '.join(command)}")
+    try:
+        embedded_runtime = json.loads(runtime_evidence_path.read_text())
+        if embedded_runtime.get("frozen") is not True:
+            raise ValueError("receipt is not from a packaged client")
+        extraction_root = os.path.realpath(embedded_runtime["extractionRoot"])
+        for field in ("ffmpegPath", "ffprobePath", "lockPath"):
+            if os.path.commonpath([extraction_root, os.path.realpath(embedded_runtime[field])]) != extraction_root:
+                raise ValueError(f"{field} escaped the packaged extraction root")
+    except (OSError, ValueError, KeyError) as error:
+        raise RuntimeError(f"Native smoke did not prove embedded runtime identity: {error}") from error
     return {
         "schemaVersion": SMOKE_SCHEMA_VERSION,
         "submissionMode": "no-submit",
         "commands": commands,
+        "embeddedRuntime": embedded_runtime,
+        "runtimeEvidenceFile": runtime_evidence_path.name,
     }
 
 
