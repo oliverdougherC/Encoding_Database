@@ -198,7 +198,7 @@ jobs:
 
   client-native-macos-build:
     name: client-native-macos-build
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -209,15 +209,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          archive="$GITHUB_WORKSPACE/client/resources/runtime/archives/macos-arm64-ffmpeg9-vmaf3.2.tar.gz"
+          echo "1ef24cb8cbf23b9e1dbeeda40a58ff5f0a30e9254a324702f1b81a6953ea0c07  $archive" | shasum -a 256 -c -
           cd "$RUNNER_TEMP/ffmpeg-runtime"
-          curl -L --fail --silent --show-error -o runtime.tar.gz \
-            https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-c27482a18d7.tar.gz
-          echo "0b7534979f2f073d9eddae6f92def32fb6063c50bb4aced75f7e88ecf0611687  runtime.tar.gz" | shasum -a 256 -c -
-          tar -xzf runtime.tar.gz
+          tar -xzf "$archive"
           test -x "$PWD/ffmpeg"
           test -x "$PWD/ffprobe"
+          echo "ENCODINGDB_RUNTIME_BUNDLE_DIR=$PWD" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFMPEG_PATH=$PWD/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$PWD/ffprobe" >> "$GITHUB_ENV"
+          echo "FFMPEG_EXE=$PWD/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$PWD/ffprobe" >> "$GITHUB_ENV"
       - name: Install runtime and canonical-suite validation dependencies
         run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Generate proposed macos runtime lock for review

@@ -11,7 +11,7 @@ DEFAULT_RUNTIME_LOCK_PATH="$CLIENT_DIR/resources/runtime/ffmpeg-lock.json"
 RUNTIME_LOCK_PATH="${ENCODINGDB_RUNTIME_LOCK_PATH:-$DEFAULT_RUNTIME_LOCK_PATH}"
 APP_NAME="encodingdb-client-macos"
 ENTRYPOINT="$CLIENT_DIR/_pyinstaller_entry.py"
-BUILD_ROOT="$ROOT_DIR/.build/clients/macos"
+BUILD_ROOT="${ENCODINGDB_BUILD_ROOT:-$ROOT_DIR/.build/clients/macos}"
 LEGACY_DIST_DIR="$CLIENT_DIR/dist/macos"
 PYI_DIST_DIR="$BUILD_ROOT/dist"
 PYI_WORK_DIR="$BUILD_ROOT/work"
@@ -19,7 +19,7 @@ PYI_SPEC_DIR="$BUILD_ROOT/spec"
 RUNTIME_RESOURCE_DIR="$BUILD_ROOT/runtime_resources"
 SUITE_RESOURCE_DIR="$BUILD_ROOT/suite_resources/test_suite_v1"
 SUITE_PACK_PATH="${ENCODINGDB_SUITE_PACK_PATH:-$ROOT_DIR/encodingdb-test-suite-v1.tar.gz}"
-OUTPUT_PATH="$ROOT_DIR/$APP_NAME"
+OUTPUT_PATH="${ENCODINGDB_OUTPUT_PATH:-$ROOT_DIR/$APP_NAME}"
 BUILD_REQUIREMENTS="$CLIENT_DIR/requirements-build.txt"
 
 log() {
@@ -93,6 +93,9 @@ log "Running PyInstaller..."
 RUNTIME_LIBRARY_ARGS=()
 if [[ -d "$BUNDLE_DIR/lib" ]]; then
   RUNTIME_LIBRARY_ARGS+=(--add-data "$BUNDLE_DIR/lib:bin/mac/lib")
+fi
+if [[ -d "$BUNDLE_DIR/licenses" ]]; then
+  RUNTIME_LIBRARY_ARGS+=(--add-data "$BUNDLE_DIR/licenses:resources/runtime/licenses")
 fi
 cd "$ROOT_DIR"
 "${PYI_CMD[@]}" \

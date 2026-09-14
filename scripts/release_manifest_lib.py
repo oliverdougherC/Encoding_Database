@@ -294,7 +294,7 @@ def build_release_manifest(
         "runtime": {
             "fingerprint": runtime_fingerprint,
             "payload": runtime_lock_payload,
-            "checkedInLockPath": str(runtime_lock_path.resolve()),
+            "checkedInLockPath": runtime_lock_path.name,
         },
         "signing": signing_payload,
     }
@@ -359,6 +359,16 @@ def finalize_release(
         runtime_lock_path=resolved_runtime_lock_path,
         suite_pack_path=resolved_suite_pack_path,
     )
+    runtime_files = {'ffmpeg': ffmpeg_path, 'ffprobe': ffprobe_path}
+    library_dir = ffmpeg_path.parent / 'lib'
+    if library_dir.is_dir():
+        runtime_files.update({str(file.relative_to(ffmpeg_path.parent)): file
+                              for file in library_dir.rglob('*') if file.is_file()})
+    identities = {name: executable_identity(file) for name, file in runtime_files.items()}
+    minimum_versions = [row['minimumOsFromHeader'] for row in identities.values() if row['minimumOsFromHeader']]
+    manifest_payload['runtime']['executableIdentities'] = identities
+    manifest_payload['runtime']['minimumOsFromHeaders'] = max(
+        minimum_versions, key=lambda version: tuple(map(int, version.split('.'))), default=None)
     atomic_write_json(sidecars["runtime_lock"], runtime_lock_payload)
     atomic_write_json(sidecars["signing"], signing_payload)
     atomic_write_json(sidecars["smoke"], smoke_payload)
