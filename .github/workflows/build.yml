@@ -87,6 +87,9 @@ jobs:
       CALIBRATION_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration
       CORPUS_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_corpus
       REVIEW_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_review
+      SNAPSHOT_SOURCE_A_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_source_a
+      SNAPSHOT_SOURCE_B_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_source_b
+      SNAPSHOT_COMBINED_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_combined
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -109,7 +112,7 @@ jobs:
           PGPASSWORD: isolated-ci-only
         run: |
           set -euo pipefail
-          for database in encodingdb_test encodingdb_backend encodingdb_calibration encodingdb_corpus encodingdb_review; do
+          for database in encodingdb_test encodingdb_backend encodingdb_calibration encodingdb_corpus encodingdb_review encodingdb_calibration_source_a encodingdb_calibration_source_b encodingdb_calibration_combined; do
             if [ "$database" != encodingdb_test ]; then
               createdb -h 127.0.0.1 -U encodingdb_test "$database"
             fi
