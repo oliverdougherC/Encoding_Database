@@ -26,6 +26,7 @@ try:
     REQUESTS_VERIFY: Any = certifi.where()
 except Exception:
     REQUESTS_VERIFY = True
+REQUESTS_VERIFY = os.environ.get("REQUESTS_CA_BUNDLE") or os.environ.get("CURL_CA_BUNDLE") or REQUESTS_VERIFY
 
 import psutil
 
