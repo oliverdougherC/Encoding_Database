@@ -389,3 +389,23 @@ was removed afterward, and the final crontab SHA256 exactly matched the original
 unrelated entries were preserved. The private original crontab/environment were
 not copied into this repository. No production schedule, notification destination,
 root setting or linger setting was changed.
+
+## Linux package and isolated service proof (source 84d4086)
+
+The isolated P910 candidate was rebuilt at `84d4086` with its existing private
+environment and separate database/artifact volumes, and passed trusted-TLS API
+and actual frontend smoke. Production was unchanged. The packaged Linux binary
+was copied outside the checkout into a Japanese/space path and run with runtime
+overrides removed. `strace` recorded 18 FFmpeg/ffprobe executions, all from the
+extracted `/tmp/_MEI…/bin/linux/` bundle. Runtime integrity and bundled VMAF model
+checks passed before the intentional one-attempt budget refusal (exit 4, 193.68 s).
+The first invocation's safe queue-path validation failure is retained separately;
+no runtime conclusion is drawn from that attempt. Optional Tcl/Tk build warnings
+do not establish Linux GUI support.
+
+A six-frame diagnostic with the locked Linux runtime also encoded native NVENC
+VBR on device 0, GTX 1070 / driver 580.173.02, without substitution. This establishes
+capability only. It is not a measurement, a contribution, a quality calibration,
+or the final contributor acceptance: the later repetition-group gate correction
+still requires a rebuilt package/service and actual end-to-end evidence. Receipts
+and exact identities are in `evidence/p910-native-84/`.

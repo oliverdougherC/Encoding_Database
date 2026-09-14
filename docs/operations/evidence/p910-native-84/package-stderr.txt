@@ -1,0 +1,1 @@
+Campaign can require 5 encodes, exceeding --max-attempts. Select fewer recipes or set an explicit budget.
