@@ -910,7 +910,7 @@
       "outputPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-nocturne-lowlight-30s--libsvtav1--6--crf20"
     }
   ],
-  "operatorDriverSha256": "2583f788d8e7f1520b6ec3bf0f7adfc7e0d56ad0952267f311dcd6a09cf41343",
+  "operatorDriverSha256": "bc52e33b8fd3600b417b9501deff685874be8cafdc33119d1165ac8614695f8d",
   "hardwareDisposition": "Separate predeclared28-cell hardware choices preserved; corrected hardware execution source remains unpinned and unstarted.",
-  "planHash": "9329e72ea10c8a419da9fcbf28eea4c07d58eb0ced8365537091a64ad8cf97a5"
+  "planHash": "7c488c7d1b5cd95d38f3b2c41815970af746be41ff86feb17ae1a80a96ce4730"
 }

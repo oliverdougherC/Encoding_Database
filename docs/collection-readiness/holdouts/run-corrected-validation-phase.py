@@ -62,3 +62,4 @@ for cell in selected:
 else:
  phase_complete=True
 (evidence/(args.phase+'-status.json')).write_text(json.dumps({'phase':args.phase,'complete':phase_complete,'planHash':claimed,'observedAt':now()},indent=2)+'\n')
+raise SystemExit(0 if phase_complete else (11 if pathlib.Path(plan["pauseAtCellBoundaryFile"]).exists() else 12))
