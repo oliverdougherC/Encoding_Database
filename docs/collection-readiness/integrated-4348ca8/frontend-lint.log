@@ -1,0 +1,8 @@
+
+> frontend@0.1.0 lint
+> eslint . --max-warnings=0 && npm run typecheck
+
+
+> frontend@0.1.0 typecheck
+> tsc --noEmit
+
