@@ -4,7 +4,7 @@ import { canonicalJsonString, sha256Hex } from './persistence.js';
 export const SCORING_BEHAVIOR_MODULES = [
   '../plScore.js', './decision.js', './aggregation.js', './referenceContext.js',
   './persistence.js', './reviews.js', './recommendationPolicy.js', './calibrationRanking.js',
-  './calibration.js', './calibrationRetention.js', './suite.js',
+  './calibration.js', './calibrationRetention.js', './suite.js', './validationSources.js',
 ] as const;
 
 /** Exact reviewed implementation manifest, including centers, confidence and review eligibility. */

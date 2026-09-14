@@ -5,6 +5,8 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { applyEffectiveReview, appendEvidenceReview } from '../dist/v7/reviews.js';
+import { canonicalJsonString, sha256Hex } from '../dist/v7/persistence.js';
+import { validationSourceHash, VALIDATION_SOURCE_SUITE } from '../dist/v7/validationSources.js';
 import { loadRetainedReferenceEvidence } from '../dist/v7/referenceContext.js';
 import { loadRecomputeInputs } from '../../scripts/activate-pl-v7-production.mjs';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
@@ -66,6 +68,29 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     await writeFile(path.join(root, 'retained.bin'), Buffer.alloc(bytes.length, 1));
     await assert.rejects(verifyCalibrationRetainedEvidence(db, document, root), /SHA-256 mismatch/);
     await writeFile(path.join(root, 'retained.bin'), bytes);
+    const registration = { sourceSuiteVersion: VALIDATION_SOURCE_SUITE, workloadId: `validation-${suffix}`, sourceSha256: hash,
+      sourceGroupId: 'https://example.invalid/test-only-master', sceneGroupId: 'test-only-disjoint-scene', firstSourceFrame: 2400, endSourceFrameExclusive: 3120,
+      sourceFrameRate: '24/1', contentClass: 'talking-head', frameCount: 720, durationSeconds: 30, byteSize: bytes.length,
+      width: 1920, height: 1080, pixelFormat: 'yuv420p', frameRate: '24/1', normalization: 'TEST ONLY fixture, not media', sourceEvidenceHash: 'b'.repeat(64),
+    };
+    const registry = { schemaVersion: 'encodingdb-validation-source-registry/v1', sources: [registration] };
+    registry.registryHash = sha256Hex(canonicalJsonString(registry));
+    const registryPath = path.join(root, 'validation-sources.json'); await writeFile(registryPath, JSON.stringify(registry));
+    process.env.VALIDATION_SOURCE_REGISTRY_PATH = registryPath;
+    await db.testClip.update({ where: { id: clip.id }, data: { suiteVersion: VALIDATION_SOURCE_SUITE, workloadId: registration.workloadId,
+      sha256: hash, byteSize: bytes.length, exactFrameCount: 720, exactDurationSeconds: 30, sourceProvenance: { validationSource: registration } } });
+    await db.benchmarkRun.update({ where: { id: run.id }, data: { workloadId: registration.workloadId } });
+    await db.benchmarkProtocol.update({ where: { id: protocol.id }, data: { sourceSuiteVersion: VALIDATION_SOURCE_SUITE } });
+    const held = { ...evidence, partition: 'HOLDOUT', workloadId: registration.workloadId, sourceSuiteVersion: VALIDATION_SOURCE_SUITE, sourceSha256: hash, sourceRegistrationHash: validationSourceHash(registration) };
+    assert.deepEqual(await verifyCalibrationRetainedEvidence(db, { ...document, corpus: [held] }, root), { verifiedAnalyses: 1, verifiedObjects: 1 });
+    for (const change of [{ partition: 'CALIBRATION' }, { sourceSuiteVersion: 'encodingdb-test-suite-v1' }, { sourceRegistrationHash: '0'.repeat(64) }, { sourceSha256: '0'.repeat(64) }]) {
+      await assert.rejects(verifyCalibrationRetainedEvidence(db, { ...document, corpus: [{ ...held, ...change }] }, root), /Validation-only|Registered validation/);
+    }
+    delete process.env.VALIDATION_SOURCE_REGISTRY_PATH;
+    await assert.rejects(verifyCalibrationRetainedEvidence(db, { ...document, corpus: [held] }, root), /operator-installed source registry/);
+    await db.testClip.update({ where: { id: clip.id }, data: { suiteVersion: 'test-only', workloadId: suffix, sha256: suffix, byteSize: 1, exactFrameCount: 240, exactDurationSeconds: 10, sourceProvenance: {} } });
+    await db.benchmarkRun.update({ where: { id: run.id }, data: { workloadId: suffix } });
+    await db.benchmarkProtocol.update({ where: { id: protocol.id }, data: { sourceSuiteVersion: 'test-only' } });
     const newer = await db.qualityAnalysis.create({ data: {
       createdAt: new Date('2002-01-01T00:00:00Z'), benchmarkRunId: run.id, artifactId: artifact.id, status: 'SUSPECT', metricModelId: 'test-model',
       analysisWorkerVersion: 'test-worker-newer', analysisProvenance: { testOnly: true }, completedAt: new Date(), vmafMean: 91, vmafP5: 80, xpsnr: 36, videoBitrateBps: 1000000,

@@ -253,6 +253,8 @@ test('checked-in Apple pilot binds exact retained evidence while remaining impos
 });
 
 for (const [name, mutate, code] of [
+  ['validation source assigned to fitting', d => d.corpus[0].sourceSuiteVersion = 'encodingdb-validation-holdouts-v1', 'calibration_source_suite'],
+  ['unregistered validation source', d => d.corpus[1].sourceSuiteVersion = 'encodingdb-validation-holdouts-v1', 'holdout_source_registration'],
   ['single candidate holdout', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-6'], 'holdout_candidate_count'],
   ['duplicate native holdout choices', d => d.corpus[7].nativeRateControl = structuredClone(d.corpus[5].nativeRateControl), 'holdout_candidate_count'],
   ['empty fitting corpus', d => d.corpus.forEach(e => e.partition = 'HOLDOUT'), 'empty_fitting_corpus'],

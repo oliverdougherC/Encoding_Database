@@ -108,7 +108,10 @@ try {
     );
     return [{
       evidenceId,
-      partition: 'CALIBRATION',
+      partition: run.testClip.suiteVersion === 'encodingdb-validation-holdouts-v1' ? 'HOLDOUT' : 'CALIBRATION',
+      sourceSuiteVersion: run.testClip.suiteVersion,
+      sourceSha256: run.testClip.sha256,
+      ...(run.testClip.sourceProvenance?.validationSource ? { sourceRegistrationHash: run.testClip.sourceProvenance.validationSourceHash } : {}),
       benchmarkRunId: run.id,
       artifactId: artifact.id,
       artifactSha256: artifact.sha256,

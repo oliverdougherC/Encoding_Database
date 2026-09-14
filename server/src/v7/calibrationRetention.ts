@@ -4,6 +4,8 @@ import { realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import type { PrismaClient } from '@prisma/client';
 import type { CalibrationEvidenceDocument } from './calibration.js';
+import { loadRegisteredValidationSource, validationSourceHash, VALIDATION_SOURCE_SUITE } from './validationSources.js';
+import { loadAuthoritativeSuiteManifest } from './suite.js';
 import { applyEffectiveReview } from './reviews.js';
 import { canonicalJsonString } from './persistence.js';
 
@@ -25,6 +27,23 @@ export async function verifyCalibrationRetainedEvidence(
     if (newest?.id !== analysis.id) throw new Error(`Calibration analysis has been superseded ${analysis.id}`);
     const run = analysis.benchmarkRun;
     const artifact = analysis.artifact;
+    const sourceSuite = evidence.sourceSuiteVersion ?? document.sourceSuiteVersion;
+    if (run.testClip.suiteVersion === VALIDATION_SOURCE_SUITE || sourceSuite === VALIDATION_SOURCE_SUITE) {
+      if (evidence.partition !== 'HOLDOUT') throw new Error('Validation-only sources cannot become CALIBRATION evidence');
+      const registered = loadRegisteredValidationSource(run.workloadId);
+      if (sourceSuite !== registered.sourceSuiteVersion || evidence.sourceSha256 !== registered.sourceSha256
+        || evidence.sourceRegistrationHash !== validationSourceHash(registered)
+        || run.testClip.sha256 !== registered.sourceSha256 || run.testClip.byteSize !== registered.byteSize
+        || run.testClip.exactFrameCount !== registered.frameCount || run.testClip.exactDurationSeconds !== registered.durationSeconds
+        || run.testClip.width !== registered.width || run.testClip.height !== registered.height
+        || run.testClip.pixelFormat !== registered.pixelFormat || run.testClip.contentClass !== registered.contentClass
+        || run.testClip.frameRateNumerator !== 24 * run.testClip.frameRateDenominator
+        || canonicalJsonString((run.testClip.sourceProvenance as Record<string, unknown>).validationSource as never) !== canonicalJsonString(registered as never)) throw new Error('Registered validation source does not match retained TestClip identity');
+    } else if (document.status === 'COMPLETE' && evidence.partition === 'CALIBRATION') {
+      const frozen = loadAuthoritativeSuiteManifest();
+      if (sourceSuite !== frozen.suiteVersion || !frozen.clips.some((clip) => clip.id === run.workloadId && clip.sha256 === run.testClip.sha256)) throw new Error('CALIBRATION requires exact frozen suite sources');
+    }
+    if (evidence.sourceSha256 && evidence.sourceSha256 !== run.testClip.sha256) throw new Error('Source SHA differs from retained TestClip');
     const actual = {
       benchmarkRunId: run.id, artifactId: artifact.id, artifactSha256: artifact.sha256,
       artifactStorageState: artifact.storageState, analysisWorkerVersion: analysis.analysisWorkerVersion,
@@ -45,7 +64,7 @@ export async function verifyCalibrationRetainedEvidence(
     }
     if (analysis.metricModelId !== document.qualityModelId
       || run.benchmarkProtocol.protocolVersion !== document.benchmarkProtocolVersion
-      || run.benchmarkProtocol.sourceSuiteVersion !== document.sourceSuiteVersion
+      || run.benchmarkProtocol.sourceSuiteVersion !== sourceSuite
       || run.benchmarkProtocol.protocolVersion !== '7.1' || run.encodeTimerBoundary !== 'ffmpeg-process-v1'
       || !run.physicalSourceId || artifact.benchmarkRunId !== run.id || artifact.role !== 'ENCODED'
       || !['RETAINED', 'VERIFIED'].includes(artifact.storageState)) throw new Error(`Incompatible retained evidence ${evidence.evidenceId}`);

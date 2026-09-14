@@ -25,6 +25,9 @@ export type MetricSanityCase = typeof METRIC_SANITY_CASES[number];
 export interface CalibrationEvidenceRecord {
   evidenceId: string;
   partition: CalibrationPartition;
+  sourceSuiteVersion?: string;
+  sourceSha256?: string;
+  sourceRegistrationHash?: string;
   benchmarkRunId: string;
   artifactId: string;
   artifactSha256: string;
@@ -253,6 +256,12 @@ export function assessCalibrationEvidence(
     const partitions = runPartitions.get(evidence.benchmarkRunId) ?? new Set<CalibrationPartition>();
     partitions.add(evidence.partition);
     runPartitions.set(evidence.benchmarkRunId, partitions);
+    if (evidence.partition === 'CALIBRATION' && evidence.sourceSuiteVersion && evidence.sourceSuiteVersion !== document.sourceSuiteVersion) {
+      addFinding(errors, 'calibration_source_suite', `Fitting evidence ${evidence.evidenceId} is outside the frozen source suite`);
+    }
+    if (evidence.partition === 'HOLDOUT' && evidence.sourceSuiteVersion && evidence.sourceSuiteVersion !== document.sourceSuiteVersion && (!validSha256(evidence.sourceSha256 ?? '') || !validSha256(evidence.sourceRegistrationHash ?? ''))) {
+      addFinding(errors, 'holdout_source_registration', `Validation-only evidence ${evidence.evidenceId} lacks an immutable registered source identity`);
+    }
     if (!validSha256(evidence.artifactSha256)) {
       addFinding(errors, 'artifact_hash', `Evidence ${evidence.evidenceId} has an invalid artifact SHA-256`);
     }
