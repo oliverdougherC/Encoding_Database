@@ -124,7 +124,7 @@ def verify_receipt(receipt_path, suite, locked):
         expected = [clip["id"] for clip in suite["clips"]] if not gui else None
         summaries.append(inspect_campaigns(phase["queue"], expected, completed))
     receipt["journalVerification"] = summaries
-    receipt["status"] = "PASSED_VIRTUALIZED_WINDOWS_SOFTWARE_ONLY"
+    receipt["status"] = "PASSED_AUTOMATED_GUI_CHECKS_VISUAL_REVIEW_PENDING" if gui else "PASSED_VIRTUALIZED_WINDOWS_SOFTWARE_ONLY"
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     return receipt
 

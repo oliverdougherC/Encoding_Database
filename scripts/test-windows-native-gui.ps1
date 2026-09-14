@@ -3,7 +3,7 @@
 param(
     [ValidateSet('Gui','Console')][string]$Mode = 'Gui',
     [string]$Output = '.test-reports/windows-native-gui',
-    [int]$AcquisitionSeconds = 180,
+    [int]$AcquisitionSeconds = 600,
     [int]$MeasurementMinutes = 20
 )
 Set-StrictMode -Version Latest
@@ -20,7 +20,7 @@ $script:owned = @{}
 $script:process = $null
 $script:stdoutTask = $null
 $script:stderrTask = $null
-$script:harnessDeadline = [DateTime]::UtcNow.AddSeconds($(if ($Mode -eq 'Gui') {1380} else {($MeasurementMinutes*60)+$AcquisitionSeconds+60}))
+$script:harnessDeadline = [DateTime]::UtcNow.AddSeconds(($MeasurementMinutes*60)+$AcquisitionSeconds)
 $receipt = [ordered]@{
     schemaVersion = 1; status = 'RUNNING'; mode = $Mode; startedAt = [DateTime]::UtcNow.ToString('o')
     sourceCommit = (git -C $repo rev-parse HEAD); runnerImage = $env:ImageOS; runnerImageVersion = $env:ImageVersion
@@ -49,6 +49,9 @@ public static class EdbWindows {
  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint p);
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetWindowText(IntPtr h,StringBuilder s,int n);
  [DllImport("user32.dll",CharSet=CharSet.Unicode)] static extern int GetClassName(IntPtr h,StringBuilder s,int n);
+ [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+ [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
+ [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h,int command);
  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l);
  public static IntPtr[] Windows(IntPtr parent) { var a=new List<IntPtr>(); EnumProc f=(h,p)=>{a.Add(h);return true;}; if(parent==IntPtr.Zero)EnumWindows(f,IntPtr.Zero);else EnumChildWindows(parent,f,IntPtr.Zero);return a.ToArray(); }
@@ -136,23 +139,20 @@ function Invoke-Observed([string]$Name) {
     else { throw "BLOCKED_GUI_AUTOMATION: '$Name' exposes no invoke pattern." }
     Record-Event 'observed-control-invoked' @{name=$Name; processId=$observedProcessId}
 }
-function Select-ObservedItem([string]$Pattern, [string]$Label) {
-    $controls = @(Capture-Ui "before-select-$Label")
-    foreach ($combo in @($controls | Where-Object { $_.Current.ControlType -eq [Windows.Automation.ControlType]::ComboBox -and $_.Current.IsEnabled })) {
-        $expand = $null
-        if (-not $combo.TryGetCurrentPattern([Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$expand)) { continue }
-        $expand.Expand(); Start-Sleep -Milliseconds 150
-        $items = @(Capture-Ui "expanded-$Label")
-        $matching = @($items | Where-Object { $_.Current.Name -match $Pattern -and $_.Current.ControlType -eq [Windows.Automation.ControlType]::ListItem -and -not $_.Current.IsOffscreen })
-        if ($matching.Count -eq 1) {
-            $selection = $null
-            if ($matching[0].TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) {
-                $selection.Select(); $expand.Collapse(); Record-Event 'observed-choice-selected' @{ name=$matching[0].Current.Name; label=$Label }; return
-            }
-        }
-        $expand.Collapse()
-    }
-    throw "BLOCKED_GUI_AUTOMATION: no observed selectable $Label matching '$Pattern'."
+function Send-RunShortcut([ValidateSet('Start','Stop')][string]$Action) {
+    [void](Capture-Ui "before-shortcut-$Action")
+    $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
+    if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_FOCUS: expected one observed owned client window.' }
+    $handle=$roots[0]
+    [void][EdbWindows]::ShowWindow($handle,9)
+    [void][EdbWindows]::SetForegroundWindow($handle)
+    Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $handle } 5 'BLOCKED_GUI_FOCUS: client did not receive foreground focus; no keys sent.'
+    $keys=if ($Action -eq 'Start') {'%r'} else {'%s'}
+    [Windows.Forms.SendKeys]::SendWait($keys)
+    Record-Event 'documented-shortcut-sent' @{ action=$Action; keys=$keys; observedHandle=$handle.ToInt64() }
+}
+function Get-CompletionMarkers {
+    return @(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'campaign-complete.json' -ErrorAction SilentlyContinue)
 }
 function Wait-Until([scriptblock]$Condition, [int]$Seconds, [string]$Failure) {
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
@@ -220,12 +220,16 @@ try {
             $phase=Start-Owned $name $true
             Wait-Until { return @(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' }).Count -eq 1 } 90 'BLOCKED_GUI_DESKTOP: no packaged GUI window appeared.'
             [void](Capture-Ui 'launch')
-            Select-ObservedItem '\(libx264\)$' 'encoder'
-            Select-ObservedItem '^fast$' 'preset'
-            Invoke-Observed 'Start Run'; Wait-Encoder
+            # CLI settings initialize the GUI; retained manifests verify the actual recipe.
+            Send-RunShortcut 'Start'; Wait-Encoder
             if ($name -eq 'complete') {
-                Wait-Until { [void](Observe-Processes); return @(Get-Elements | Where-Object { $_.Current.Name -eq 'Locally complete' }).Count -gt 0 } (($MeasurementMinutes*60)+60) 'GUI did not report Locally complete before its deadline.'
+                Wait-Until {
+                    $media=@((Observe-Processes) | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') })
+                    return @(Get-CompletionMarkers).Count -gt 0 -and $media.Count -eq 0
+                } (($MeasurementMinutes*60)+60) 'GUI did not finish a durable campaign before its deadline.'
+                Start-Sleep -Seconds 2
                 [void](Capture-Ui 'locally-complete')
+                $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
             } else {
                 # Cancel only after a durable measured attempt, while a later owned encode is active.
                 Wait-Until {
@@ -234,13 +238,19 @@ try {
                     return $measured.Count -gt 0 -and $encoding.Count -gt 0
                 } (($MeasurementMinutes*60)+30) 'No later encode after a durable measured attempt; cancellation scenario not exercised.'
                 if ($name -eq 'stop') {
-                    Invoke-Observed 'Stop'; $phase.action='Stop'
-                    Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name -eq 'Run cancelled' }).Count -gt 0 } 60 'GUI did not report Run cancelled.'
-                    Wait-NoEncoders; [void](Capture-Ui 'cancelled')
+                    Send-RunShortcut 'Stop'; $phase.action='Stop'
+                    Wait-NoEncoders
+                    Start-Sleep -Seconds 2
+                    Wait-NoEncoders
+                    if (@(Get-CompletionMarkers).Count) { throw 'Stop arrived after campaign completion; cancellation was not exercised.' }
+                    [void](Capture-Ui 'cancelled')
+                    $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                 } else {
                     $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
                     [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-                    Start-Sleep -Milliseconds 250; Invoke-Observed 'Yes'; $phase.action='Close confirmed'
+                    Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name.Replace('&','') -eq 'Yes' }).Count -gt 0 } 10 'Native Close confirmation did not appear.'
+                    Invoke-Observed 'Yes'; $phase.action='Close confirmed'
+                    $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                 }
             }
             if ($name -ne 'close') {

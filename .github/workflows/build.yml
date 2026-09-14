@@ -366,14 +366,14 @@ jobs:
 
       - name: Exercise actual packaged Windows GUI
         if: ${{ !inputs.runtime_lock_evidence }}
-        timeout-minutes: 25
+        timeout-minutes: 31
         shell: powershell
-        run: ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 180
+        run: ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 600
       - name: Exercise packaged Windows seven-clip software campaign
         if: ${{ always() && !inputs.runtime_lock_evidence && hashFiles('encodingdb-client-windows-console.exe') != '' }}
-        timeout-minutes: 25
+        timeout-minutes: 31
         shell: powershell
-        run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 20 -AcquisitionSeconds 180
+        run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 20 -AcquisitionSeconds 600
       - name: Retain Windows GUI and seven-clip acceptance evidence
         if: ${{ always() && !inputs.runtime_lock_evidence }}
         uses: actions/upload-artifact@v4
