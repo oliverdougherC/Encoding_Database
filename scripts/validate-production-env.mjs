@@ -122,6 +122,11 @@ export function validateProductionEnv({ env, referenceContext = null, referenceC
     if (key === 'BODY_LIMIT') continue;
     requirePositiveNumber(key);
   }
+  for (const [key, fallback] of Object.entries({ ARTIFACT_UPLOAD_DEADLINE_MS: 300000,
+    ARTIFACT_NATIVE_TIMEOUT_MS: 300000, ARTIFACT_PROBE_TIMEOUT_MS: 60000, ARTIFACT_RESERVATION_MS: 900000 })) {
+    const value = Number(env[key] ?? fallback);
+    if (!Number.isFinite(value) || value < 1 || value > 86400000) errors.push(`${key} must be within 1 ms and 24 hours`);
+  }
   requirePositiveNumber('ARTIFACT_STORAGE_QUOTA_BYTES');
   const quotaBytes = Number(env.ARTIFACT_STORAGE_QUOTA_BYTES);
   const backupBytes = Number(env.V7_BACKUP_MAX_ARTIFACT_BYTES || 22 * 1024 ** 3);

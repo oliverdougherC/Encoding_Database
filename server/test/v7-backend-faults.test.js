@@ -95,12 +95,12 @@ test('operator middleware denies anonymous and binds configured credentials', as
   const token = process.env.V7_OPERATOR_TOKEN, identity = process.env.V7_OPERATOR_ID;
   process.env.V7_OPERATOR_TOKEN = 'isolated-secret'; process.env.V7_OPERATOR_ID = 'test-reviewer';
   const app = express(); app.use(express.json()); app.get('/operator', requireOperator, (_req, res) => res.json({ ok: true }));
-  app.use(createArtifactPipelineRouter({ persistence: { getRunArtifact: async () => ({ artifact: { storageUrl: '/isolated/placeholder' }, run: mediaBundle().run }) }, config: { autoAnalyzeOnUpload: false }, onDerivedRecompute: async () => {} }));
+  app.use(createArtifactPipelineRouter({ persistence: { getCompatibilityProtocols: async () => [], getRunArtifact: async () => ({ artifact: { storageUrl: '/isolated/placeholder' }, run: mediaBundle().run }) }, config: { autoAnalyzeOnUpload: false }, onDerivedRecompute: async () => {} }));
   const server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.once('listening', resolve));
   t.after(() => { server.close(); if (token === undefined) delete process.env.V7_OPERATOR_TOKEN; else process.env.V7_OPERATOR_TOKEN = token; if (identity === undefined) delete process.env.V7_OPERATOR_ID; else process.env.V7_OPERATOR_ID = identity; });
   const url = `http://127.0.0.1:${server.address().port}/operator`;
   const base = `http://127.0.0.1:${server.address().port}`;
-  assert.deepEqual(await (await fetch(`${base}/v7/compatibility`)).json(), { protocolVersion: '7.1', minimumClientVersion: 'client/0.3.0', encodeTimerBoundary: 'ffmpeg-process-v1' });
+  assert.deepEqual(await (await fetch(`${base}/v7/compatibility`)).json(), { protocolVersion: '7.1', minimumClientVersion: 'client/0.3.0', encodeTimerBoundary: 'ffmpeg-process-v1', sourceSuiteVersion: 'encodingdb-test-suite-v1', suiteFingerprint: 'd40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e', activeProtocolId: null });
   assert.equal((await fetch(`${base}/v7/benchmark-runs/run/artifacts/ENCODED/reanalyze`, { method: 'POST' })).status, 401);
   assert.equal((await fetch(`${base}/v7/benchmark-runs/run/artifacts/ENCODED/reanalyze`, { method: 'POST', headers: { authorization: 'Bearer isolated-secret', 'content-type': 'application/json' }, body: JSON.stringify({ reason: 'Inspect installed implementation', analysisWorkerVersion: 'invented-authority' }) })).status, 409);
   assert.equal((await fetch(url)).status, 401);

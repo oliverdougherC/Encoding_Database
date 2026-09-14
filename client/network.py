@@ -245,6 +245,7 @@ def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
 
 
 def check_compatibility(base_url: str, client_version: str) -> Dict[str, Any]:
+    from .suite import load_suite_pack_metadata, SUITE_VERSION
     response = _load_requests().get(f"{base_url.rstrip('/')}/v7/compatibility", timeout=10,
                                     verify=config.REQUESTS_VERIFY, allow_redirects=False)
     if response.status_code != 200:
@@ -255,6 +256,8 @@ def check_compatibility(base_url: str, client_version: str) -> Dict[str, Any]:
         return tuple(int(part) for part in str(value).removeprefix("client/").split("."))
     if (contract.get("protocolVersion") != config.BENCHMARK_PROTOCOL_VERSION
             or contract.get("encodeTimerBoundary") != "ffmpeg-process-v1"
+            or contract.get("sourceSuiteVersion") != SUITE_VERSION
+            or contract.get("suiteFingerprint") != load_suite_pack_metadata().get("suiteFingerprint")
             or version(client_version) < version(contract.get("minimumClientVersion", "999.0.0"))):
         raise SubmitError("Client/protocol incompatible with current collection epoch; update the client", retryable=False)
     return contract

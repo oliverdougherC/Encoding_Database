@@ -39,7 +39,7 @@ if (mode === 'prepare') {
   const output = path.join(root, `analysis-c${concurrency}`);
   await mkdir(output); // Never overwrite an earlier trial.
   const analyzer = new FfmpegArtifactAnalyzer(DEFAULT_ANALYZER_VERSION);
-  const report = { kind: 'isolated-linux-native-analyzer-capacity-not-client-timing-or-calibration', startedAt: new Date().toISOString(), host: os.hostname(), platform: os.platform(), architecture: os.arch(), sourceCommit: process.env.WORKER_CAPACITY_SOURCE_COMMIT, imageId: process.env.WORKER_CAPACITY_IMAGE_ID, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, concurrency, suiteVersion: manifest.suiteVersion, ffmpegVersion: (await runNativeProcess('ffmpeg', ['-version'])).stdout.split('\n')[0], cases: [], errors: [] };
+  const report = { kind: 'isolated-linux-native-analyzer-capacity-not-client-timing-or-calibration', startedAt: new Date().toISOString(), host: `${os.platform()}-${os.arch()}-evidence-host`, hostLabelIsAnonymous: true, platform: os.platform(), architecture: os.arch(), sourceCommit: process.env.WORKER_CAPACITY_SOURCE_COMMIT, imageId: process.env.WORKER_CAPACITY_IMAGE_ID, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, concurrency, suiteVersion: manifest.suiteVersion, ffmpegVersion: (await runNativeProcess('ffmpeg', ['-version'])).stdout.split('\n')[0], cases: [], errors: [] };
   let sampledPeak = 0;
   const sample = async () => { const value = await counter('/sys/fs/cgroup/memory.current') ?? await counter('/sys/fs/cgroup/memory/memory.usage_in_bytes'); if (value != null) sampledPeak = Math.max(sampledPeak, value); };
   const timer = setInterval(() => { sample().catch(() => {}); }, 250);

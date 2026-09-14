@@ -1,6 +1,7 @@
 {
   "kind": "isolated-worker-correctness-trial-not-calibration",
-  "host": "ofhds-MacBook-Pro.local",
+  "host": "darwin-arm64-evidence-host",
+  "hostLabelIsAnonymous": true,
   "platform": "darwin",
   "architecture": "arm64",
   "startedAt": "2026-09-14T01:11:50.943Z",

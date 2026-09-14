@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform as host_platform
 import re
 import shutil
 import stat
@@ -100,6 +101,14 @@ def detect_project_version() -> str:
     return version.strip()
 
 
+def source_identity() -> Dict[str, Any]:
+    revision = subprocess.run(['git', '-C', str(ROOT_DIR), 'rev-parse', 'HEAD'], capture_output=True, text=True, timeout=10)
+    status = subprocess.run(['git', '-C', str(ROOT_DIR), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True, timeout=10)
+    return {'revision': revision.stdout.strip() if revision.returncode == 0 else None,
+            'trackedChanges': bool(status.stdout.strip()) if status.returncode == 0 else None,
+            'buildPythonVersion': host_platform.python_version()}
+
+
 def read_client_minimum_version() -> str:
     client_match = re.search(r'CLIENT_VERSION\s*=\s*"([^"]+)"', read_text(ROOT_DIR / "client" / "main.py"))
     server_match = re.search(
@@ -169,6 +178,7 @@ def run_smoke_check(
             "BACKEND_BASE_URL": "http://127.0.0.1:9",
             "QUEUE_DIR": str(queue_dir),
             "ENCODINGDB_SUITE_CACHE_DIR": str(suite_cache_dir),
+            "ENCODINGDB_DEBUG_TRACEBACK": "1",
         }
     )
     if suite_pack_path is not None:
@@ -266,6 +276,7 @@ def build_release_manifest(
     return {
         "schemaVersion": RELEASE_MANIFEST_SCHEMA_VERSION,
         "projectVersion": detect_project_version(),
+        "source": source_identity(),
         "platform": str(platform).strip().lower(),
         "artifact": {
             "fileName": artifact_path.name,

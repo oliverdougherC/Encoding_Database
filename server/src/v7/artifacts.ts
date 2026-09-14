@@ -396,6 +396,7 @@ export interface ArtifactAnalyzer {
 }
 
 export interface ArtifactPipelinePersistence {
+  getCompatibilityProtocols?(): Promise<StoredBenchmarkProtocol[]>;
   resolveOrBootstrapBenchmarkProtocol(input: BenchmarkProtocolBootstrapInput): Promise<StoredBenchmarkProtocol>;
   upsertCanonicalTestClip(input: SuiteTestClipRecordInput): Promise<StoredTestClip>;
   resolveOrBootstrapRecipe(input: RecipeBootstrapInput): Promise<StoredRecipe>;
@@ -2125,7 +2126,7 @@ export class ArtifactPipelineService {
     const disk = await this.storage.inspectCapacity();
     return { maxPendingArtifacts: this.config.maxPendingArtifacts, maxPendingAnalyses: this.config.maxPendingAnalyses,
       storageQuotaBytes: this.config.storageQuotaBytes, storageReserveBytes: this.config.storageReserveBytes,
-      availableBytes: disk.availableBytes, reservationMs: Number(process.env.ARTIFACT_RESERVATION_MS || 86_400_000) };
+      availableBytes: disk.availableBytes, reservationMs: Number(process.env.ARTIFACT_RESERVATION_MS || 900_000) };
   }
 
   private async resolveCreateRunInput(input: CreateRunRequestInput): Promise<CreateRunInput> {
@@ -2467,7 +2468,28 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
   BACKGROUND_ARTIFACT_SERVICES.add(service);
   const router = Router();
 
-  router.get('/v7/compatibility', (_req, res) => res.json({ protocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION, minimumClientVersion: SERVER_CANONICAL_MINIMUM_CLIENT_VERSION, encodeTimerBoundary: SERVER_ENCODE_TIMER_BOUNDARY }));
+  router.get('/v7/compatibility', async (_req, res) => {
+    try {
+      if (!persistence.getCompatibilityProtocols) throw new Error('Compatibility state is unavailable');
+      const active = await persistence.getCompatibilityProtocols();
+      const compatible = active.length === 0 || (active.length === 1 && active.every(protocol =>
+        protocol.state === 'ACTIVE'
+        && protocol.protocolVersion === SERVER_CANONICAL_PROTOCOL_VERSION
+        && protocol.sourceSuiteVersion === SUITE_V1_VERSION
+        && protocol.minimumClientVersion === SERVER_CANONICAL_MINIMUM_CLIENT_VERSION
+        && protocol.metricWorkerVersion === DEFAULT_ANALYZER_VERSION
+        && canonicalJsonString(protocol.canonicalRecipeRules as JsonValue) === canonicalJsonString(SERVER_CANONICAL_RECIPE_RULES)
+        && canonicalJsonString(protocol.canonicalOutputRules as JsonValue) === canonicalJsonString(SERVER_CANONICAL_OUTPUT_RULES)));
+      if (!compatible) return res.status(409).json({ error: 'collection_protocol_activation_required' });
+      const pack = JSON.parse(await readFile(new URL('suite-pack.json', SUITE_V1_MANIFEST_PATH), 'utf8'));
+      res.json({ protocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION,
+        minimumClientVersion: SERVER_CANONICAL_MINIMUM_CLIENT_VERSION, encodeTimerBoundary: SERVER_ENCODE_TIMER_BOUNDARY,
+        sourceSuiteVersion: SUITE_V1_VERSION, suiteFingerprint: pack.suiteFingerprint,
+        activeProtocolId: active[0]?.id ?? null });
+    } catch {
+      res.status(503).json({ error: 'compatibility_state_unavailable' });
+    }
+  });
 
   router.post('/v7/benchmark-runs', async (req, res) => {
     try {
@@ -2865,6 +2887,12 @@ function immutableRunHash(input: CreateRunInput): string {
 
 export function createPrismaArtifactPipelinePersistence(client: PrismaClient, config = mergeArtifactPipelineConfig(undefined)): ArtifactPipelinePersistence {
   return {
+    async getCompatibilityProtocols() {
+      return client.benchmarkProtocol.findMany({ where: { OR: [{ state: 'ACTIVE' }, {
+        protocolVersion: SERVER_CANONICAL_PROTOCOL_VERSION, sourceSuiteVersion: SUITE_V1_VERSION,
+        metricWorkerVersion: DEFAULT_ANALYZER_VERSION,
+      }] }, orderBy: { id: 'asc' }, take: 3 });
+    },
     async resolveOrBootstrapBenchmarkProtocol(input) {
       const activeProtocol = await client.benchmarkProtocol.findFirst({
         where: { state: 'ACTIVE' },

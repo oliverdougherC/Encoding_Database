@@ -431,7 +431,11 @@ async function startServer() {
 
     // Tune server timeouts
     server.headersTimeout = 65_000; // allow a bit over common proxy timeouts
-    server.requestTimeout = 60_000;
+    const uploadDeadlineMs = Number(process.env.ARTIFACT_UPLOAD_DEADLINE_MS || 300_000);
+    if (!Number.isFinite(uploadDeadlineMs) || uploadDeadlineMs < 1 || uploadDeadlineMs > 86_400_000) {
+      throw new Error('ARTIFACT_UPLOAD_DEADLINE_MS must be within 1 ms and 24 hours');
+    }
+    server.requestTimeout = Math.max(65_000, uploadDeadlineMs + 30_000);
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

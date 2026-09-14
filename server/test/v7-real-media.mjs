@@ -11,7 +11,7 @@ import { runNativeProcess } from '../dist/v7/nativeProcess.js';
 const manifest = loadAuthoritativeSuiteManifest();
 const root = process.env.BACKEND_MEDIA_ARTIFACT_DIR || await mkdtemp(path.join(os.tmpdir(), 'encodingdb-seven-clip-check-'));
 await mkdir(root, { recursive: true });
-const report = { kind: 'isolated-worker-correctness-trial-not-calibration', host: os.hostname(), platform: os.platform(), architecture: os.arch(), startedAt: new Date().toISOString(), suiteVersion: manifest.suiteVersion, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, ffmpegVersion: (await runNativeProcess('ffmpeg', ['-version'])).stdout.split('\n')[0], cases: [] };
+const report = { kind: 'isolated-worker-correctness-trial-not-calibration', host: `${os.platform()}-${os.arch()}-evidence-host`, hostLabelIsAnonymous: true, platform: os.platform(), architecture: os.arch(), startedAt: new Date().toISOString(), suiteVersion: manifest.suiteVersion, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, ffmpegVersion: (await runNativeProcess('ffmpeg', ['-version'])).stdout.split('\n')[0], cases: [] };
 const analyzer = new FfmpegArtifactAnalyzer(DEFAULT_ANALYZER_VERSION);
 try {
   for (const clip of manifest.clips) {
