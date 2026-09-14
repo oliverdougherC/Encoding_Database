@@ -1,0 +1,51 @@
+........................................................................ [ 22%]
+........................................................................ [ 45%]
+................................F....................................... [ 68%]
+........................................................................ [ 91%]
+..........................                                               [100%]
+=================================== FAILURES ===================================
+__ test_resume_rejects_changed_identity_before_any_process_launch[executable] __
+
+helpers = (PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-102/packaged-helper-relaunc...ivate/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-102/packaged-helper-relaunch0/source.mkv'))
+pending_validation = ({'artifact_name': 'warmup.mp4', 'checkpoint_path': '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-o...'}], 'schemaVersion': 1}, 'seed': 17}, 'installation-e8b9c7202167bfa6b23a31b05dfd2285f2a8e8055b30d1fac832923786ba2d60')
+changed = 'executable'
+
+    @pytest.mark.parametrize('changed', ['executable','dependency','arguments','source_argument','artifact','missing_binding'])
+    def test_resume_rejects_changed_identity_before_any_process_launch(helpers,pending_validation,changed):
+        _, second, source = helpers
+        arguments, saved, artifact, checkpoint, _, _ = pending_validation
+        target = None
+        original = None
+        stamp = None
+        if changed in ('executable','dependency','artifact'):
+            target = second if changed == 'executable' else (second.parent/'lib'/'checkpoint-test-dependency.bin' if changed == 'dependency' else artifact)
+            original = target.read_bytes()
+            stamp = target.stat()
+>           target.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+
+client/tests/test_process_checkpoint_relocation.py:110:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:796: in write_bytes
+    with self.open(mode='wb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-102/packaged-helper-relaunch0/_MEIsecond/ffmpeg')
+mode = 'wb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       PermissionError: [Errno 13] Permission denied: '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-102/packaged-helper-relaunch0/_MEIsecond/ffmpeg'
+
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/pathlib/__init__.py:771: PermissionError
+=========================== short test summary info ============================
+FAILED client/tests/test_process_checkpoint_relocation.py::test_resume_rejects_changed_identity_before_any_process_launch[executable]
+1 failed, 313 passed in 120.89s (0:02:00)

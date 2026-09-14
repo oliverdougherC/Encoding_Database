@@ -31,3 +31,12 @@ helper, sudo invocation or service configuration is installed. No newly collecte
 observation retroactively qualifies attempts that lacked telemetry at measurement
 time. The focused fixture preserves only the relevant fields from the actual
 single-adapter read-only receipt.
+
+At source `d4b1a26`, actual nonprivileged HardwareMonitor collection produced six
+valid utilization samples averaging 60.5%. A subsequent protocol snapshot had two
+valid samples averaging 65.5%, and the unchanged 35% suspect threshold correctly
+returned `background-gpu-suspect`. Temperature stayed unknown. These observations
+prove source attribution and the fail-closed readiness behavior, not that this
+busy host was ready for qualified hardware measurements. The exact samples,
+snapshot, tests and environmental fixture failure are retained in
+`evidence/mac-agx-collector/`.
