@@ -14,8 +14,9 @@ type GroupSummary = {
 };
 type PageSummary = { totalCount: bigint; groups: GroupSummary[] };
 
-function literalContains(value: string): string {
-  return `%${value.replace(/[\\%_]/g, '\\$&')}%`;
+function containsPattern(value: string): string {
+  // Match the existing Prisma contains/ILIKE wildcard semantics.
+  return `%${value}%`;
 }
 
 /** All user values are SQL parameters; the only SQL identifiers below are fixed whitelists. */
@@ -24,14 +25,14 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
   for (const [key, column] of [
     ['cpu', 'e."cpuModel"'], ['gpu', 'e."gpuModel"'], ['preset', 'p."preset"'],
   ] as const) {
-    if (query[key]?.trim()) filters.push(Prisma.sql`${Prisma.raw(column)} ILIKE ${literalContains(query[key]!.trim())}`);
+    if (query[key]?.trim()) filters.push(Prisma.sql`${Prisma.raw(column)} ILIKE ${containsPattern(query[key]!.trim())}`);
   }
   if (query.encoderType === 'hardware' || query.encoderType === 'software') {
     const hardware = Prisma.join(HARDWARE_SUFFIXES.map(s => Prisma.sql`right(p."encoderImplementation", ${s.length}::int) = ${s}`), ' OR ');
     filters.push(query.encoderType === 'hardware' ? Prisma.sql`(${hardware})` : Prisma.sql`NOT (${hardware})`);
   }
   if (query.search?.trim()) {
-    const value = literalContains(query.search.trim());
+    const value = containsPattern(query.search.trim());
     filters.push(Prisma.sql`(${Prisma.join([
       'g."workloadId"', 'e."cpuModel"', 'e."gpuModel"', 'e."osName"', 'e."osVersion"',
       'p."encoderImplementation"', 'p."codecFamily"', 'p."preset"',
@@ -103,9 +104,7 @@ function buildPublicCorpusAggregationSql(filter: Prisma.Sql) {
         SELECT a.* FROM "QualityAnalysis" a WHERE a."benchmarkRunId" = r.id
           AND (a."analysisWorkerVersion" = b."metricWorkerVersion" OR a."analysisWorkerVersion" = ${DEFAULT_ANALYZER_VERSION}
             OR starts_with(a."analysisWorkerVersion", 'authoritative-analysis/'))
-        ORDER BY CASE WHEN a."analysisWorkerVersion" = b."metricWorkerVersion" THEN 0
-          WHEN a."analysisWorkerVersion" = ${DEFAULT_ANALYZER_VERSION} THEN 1 ELSE 2 END,
-          a."createdAt" DESC, a.id DESC LIMIT 1
+        ORDER BY a."createdAt" DESC, a.id DESC LIMIT 1
       ) a ON a."artifactId" = f.id
       LEFT JOIN LATERAL (
         SELECT v.decision FROM "EvidenceReview" v WHERE v."analysisId" = a.id

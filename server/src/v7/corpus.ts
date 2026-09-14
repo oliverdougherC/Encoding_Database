@@ -235,7 +235,8 @@ function independentSourceKey(record: DirectEvidenceRecord): string | null {
 }
 
 function sortByCreatedDesc<T extends { createdAt: Date }>(records: readonly T[]): T[] {
-  return [...records].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+  return [...records].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    || String((right as T & { id?: string }).id ?? '').localeCompare(String((left as T & { id?: string }).id ?? '')));
 }
 
 function selectPrimaryEncodedArtifact(run: PublicCorpusBenchmarkRunRecord) {
@@ -247,20 +248,15 @@ function selectPrimaryEncodedArtifact(run: PublicCorpusBenchmarkRunRecord) {
 }
 
 function selectLatestEligibleServerAnalysis(run: PublicCorpusBenchmarkRunRecord) {
-  const candidates = sortByCreatedDesc(run.qualityAnalyses.filter((analysis) => (
-    ELIGIBLE_ANALYSIS_STATUSES.includes(analysis.status as ServerAnalysisStatus)
-  )));
-  if (candidates.length === 0) return null;
-  const metricWorkerVersion = run.benchmarkProtocol.metricWorkerVersion?.trim() || null;
-  const exactProtocol = metricWorkerVersion == null
-    ? []
-    : candidates.filter((analysis) => analysis.analysisWorkerVersion === metricWorkerVersion);
-  if (exactProtocol.length > 0) return exactProtocol[0]!;
-  const canonicalDefault = candidates.filter((analysis) => analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION);
-  if (canonicalDefault.length > 0) return canonicalDefault[0]!;
-  const authoritativePrefix = candidates.filter((analysis) => analysis.analysisWorkerVersion.startsWith('authoritative-analysis/'));
-  if (authoritativePrefix.length > 0) return authoritativePrefix[0]!;
-  return null;
+  const protocolWorker = run.benchmarkProtocol.metricWorkerVersion?.trim();
+  const latest = sortByCreatedDesc(run.qualityAnalyses.filter(analysis => (
+    analysis.analysisWorkerVersion === protocolWorker
+    || analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION
+    || analysis.analysisWorkerVersion.startsWith('authoritative-analysis/')
+  )))[0];
+  // A newer pending/failed/rejected analysis suspends older evidence. Reviewing
+  // an old analysis never changes this immutable creation-order selection.
+  return latest && ELIGIBLE_ANALYSIS_STATUSES.includes(latest.status as ServerAnalysisStatus) ? latest : null;
 }
 
 function buildRateControlLabel(record: PublicCorpusBenchmarkRunRecord): PublicCorpusRateControl {
@@ -486,7 +482,7 @@ export function extractDirectEvidenceRecords(
   return runs.flatMap((run) => {
     const artifact = selectPrimaryEncodedArtifact(run);
     const analysis = selectLatestEligibleServerAnalysis(run);
-    if (!artifact || !analysis) return [];
+    if (!artifact || !analysis || analysis.artifactId !== artifact.id) return [];
     return [{ run, artifact, analysis }];
   });
 }

@@ -19,7 +19,7 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
     await removeCorpusFixture(db);
     const fixture = await seedCorpusFixture(db, `corpus-test-${Date.now()}`);
     const queries = [{}, { encoderType: 'hardware' }, { encoderType: 'software' }, { preset: 'slow' },
-      { search: 'libx264' }, { cpu: '100%_literal' }, { gpu: 'not present' }, { search: "' OR 1=1 --" }];
+      { search: 'libx264' }, { cpu: '100%_literal' }, { cpu: 'CPU%' }, { gpu: 'not present' }, { search: "' OR 1=1 --" }];
     for (const query of queries) {
       const runs = await db.benchmarkRun.findMany({ where: { AND: [buildPublicCorpusWhere(query), { id: { startsWith: fixture.prefix } }] },
         include: { benchmarkProtocol: true, recipe: true, environment: true, artifacts: true, qualityAnalyses: true } });
@@ -104,6 +104,17 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
     } finally { await restarted.$disconnect(); }
 
     assert.equal((await read()).sampleCounts.suspect, 4);
+    await db.qualityAnalysis.update({ where: { id: target.id }, data: { status: 'SUSPECT' } });
+    const newer = await db.qualityAnalysis.create({ data: {
+      benchmarkRunId: target.benchmarkRunId, artifactId: target.artifact.id, status: 'PENDING',
+      metricModelId: target.metricModelId, analysisWorkerVersion: 'authoritative-analysis/corpus-test-next', analysisProvenance: {},
+    } });
+    await review('EXPECTED');
+    assert.equal((await read()).sampleCounts.suspect, 4, 'newer pending worker must shadow older expected review');
+    assert.equal((await read()).sampleCounts.accepted, 0);
+    await db.qualityAnalysis.update({ where: { id: newer.id }, data: { status: 'SUSPECT' } });
+    assert.equal((await read()).sampleCounts.suspect, 5);
+    assert.equal((await read()).sampleCounts.accepted, 0, 'new analysis must not inherit old exact-analysis review');
   } finally {
     await removeCorpusFixture(db);
     await db.$disconnect();
