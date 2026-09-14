@@ -259,6 +259,7 @@ for (const [name, mutate, code] of [
   ['duplicate native holdout choices', d => d.corpus[7].nativeRateControl = structuredClone(d.corpus[5].nativeRateControl), 'holdout_candidate_count'],
   ['empty fitting corpus', d => d.corpus.forEach(e => e.partition = 'HOLDOUT'), 'empty_fitting_corpus'],
   ['overlapping holdout groups', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-2'], 'holdout_group_leakage'],
+  ['identical native RC disguised with decorative settings', d => d.corpus.filter(e => e.encoderImplementation === 'libx264').forEach((e, index) => e.nativeRateControl = { mode: index % 2 ? 'CRF' : 'crf', qualityValue: index % 2 ? '20' : 20, extras: { note: `different-${index}` } }), 'rate_quality_coverage'],
   ['identical native RC disguised with fingerprints', d => d.corpus.filter(e => e.encoderImplementation === 'libx264').forEach(e => e.nativeRateControl = { mode: 'crf', qualityValue: 20 }), 'rate_quality_coverage'],
   ['wrong-family top result', d => d.topResultReviews[0].evidenceId = 'evidence-8', 'top_result_family'],
   ['empty metric review', d => d.metricSanityReviews[0].evidenceIds = [], 'metric_sanity_review'],

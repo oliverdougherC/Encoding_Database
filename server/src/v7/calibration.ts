@@ -217,11 +217,21 @@ function addFinding(target: CalibrationFinding[], code: string, message: string)
   }
 }
 
+export function nativeRatePointKey(settings: Record<string, unknown>): string {
+  const mode = typeof settings?.mode === 'string' ? settings.mode.trim().toLowerCase() : '';
+  const qualityModes = ['crf', 'cq', 'icq', 'cqp', 'qp'];
+  const bitrateModes = ['vbr', 'cbr', 'abr'];
+  const raw = qualityModes.includes(mode) ? settings.qualityValue : bitrateModes.includes(mode) ? settings.targetBitrateKbps : null;
+  const value = typeof raw === 'number' ? raw : typeof raw === 'string' && raw.trim() ? Number(raw) : NaN;
+  if (!Number.isFinite(value) || (!qualityModes.includes(mode) && value <= 0)) return 'unknown-native-axis';
+  return canonicalJsonString({ mode, value });
+}
+
 export function holdoutGroup(entry: CalibrationEvidenceRecord, dimension: HoldoutDimension): string {
   if (dimension === 'HARDWARE_FAMILY') return entry.hardwareFamily;
   if (dimension === 'ENCODER_FAMILY') return entry.encoderFamily;
   if (dimension === 'CONTENT_CLASS') return entry.contentClass;
-  return `${entry.encoderImplementation}:${canonicalJsonString(entry.nativeRateControl as never)}`;
+  return `${entry.encoderImplementation}:${nativeRatePointKey(entry.nativeRateControl)}`;
 }
 
 export function assessCalibrationEvidence(
@@ -326,14 +336,16 @@ export function assessCalibrationEvidence(
     const key = `${evidence.workloadId}\u241f${evidence.encoderImplementation}`;
     const fingerprints = rateGroups.get(key) ?? new Set<string>();
     if (!evidence.nativeRateControl || !Object.keys(evidence.nativeRateControl).length) addFinding(errors, 'native_rate_control', `Evidence ${evidence.evidenceId} lacks native rate control`);
-    fingerprints.add(canonicalJsonString(evidence.nativeRateControl as never));
+    const nativePoint = nativeRatePointKey(evidence.nativeRateControl);
+    if (nativePoint === 'unknown-native-axis') addFinding(errors, 'native_rate_axis', `Evidence ${evidence.evidenceId} has no finite native control axis`);
+    fingerprints.add(nativePoint);
     rateGroups.set(key, fingerprints);
   }
   const presetGroups = new Map<string, Set<string>>();
   for (const row of fitting.filter((entry) => !blockedIds.has(entry.evidenceId) && (entry.runStatus === 'ACCEPTED' || reviewedExpectedSuspectEvidence.has(entry.evidenceId)))) {
     const key = `${row.workloadId}:${row.encoderImplementation}:${row.preset}`;
     const values = presetGroups.get(key) ?? new Set<string>();
-    values.add(canonicalJsonString(row.nativeRateControl as never)); presetGroups.set(key, values);
+    values.add(nativeRatePointKey(row.nativeRateControl)); presetGroups.set(key, values);
   }
   for (const [key, points] of presetGroups) if (points.size < requirements.minimumRatePointsPerWorkloadImplementation) {
     addFinding(errors, 'preset_rate_quality_coverage', `${key} lacks distinct native RC points within the same preset`);
@@ -396,7 +408,7 @@ export function assessCalibrationEvidence(
   for (const evaluation of holdouts) {
     const referenced = evaluation.evidenceIds.map((id) => evidenceById.get(id));
     const choices = referenced.filter((entry): entry is CalibrationEvidenceRecord => Boolean(entry));
-    const nativeChoices = new Set(choices.map((entry) => canonicalJsonString({ implementation: entry.encoderImplementation, preset: entry.preset, nativeRateControl: entry.nativeRateControl } as never)));
+    const nativeChoices = new Set(choices.map((entry) => canonicalJsonString({ implementation: entry.encoderImplementation, preset: entry.preset, nativeRateControl: nativeRatePointKey(entry.nativeRateControl) } as never)));
     if (new Set(evaluation.evidenceIds).size < 2 || nativeChoices.size < 2) {
       addFinding(errors, 'holdout_candidate_count', `${evaluation.evaluationId} must compare at least two distinct native recipe choices`);
     }
