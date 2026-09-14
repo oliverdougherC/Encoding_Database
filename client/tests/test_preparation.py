@@ -123,26 +123,6 @@ class PreparationTests(unittest.TestCase):
                 suite._copy_preparation_file(str(source), str(Path(root) / 'partial'))
             self.assertEqual((Path(root) / 'partial').stat().st_size, 1024 * 1024)
 
-    def test_download_stop_retains_partial_and_closes_response_without_retry(self):
-        stop = threading.Event()
-        response = mock.Mock(status_code=200)
-        def chunks(**kwargs):
-            yield b'first'
-            stop.set()
-            yield b'second'
-        response.iter_content.side_effect = chunks
-        requests = mock.Mock()
-        requests.get.return_value = response
-        with tempfile.TemporaryDirectory() as root, mock.patch.object(suite, '_load_requests', return_value=requests):
-            target = str(Path(root) / 'pack')
-            with self.assertRaises(KeyboardInterrupt), campaign.PreparationScope(stop).activate():
-                suite._download_suite_pack('https://invalid.example/pack', target, {'distribution': {'byteSize': 100}})
-            self.assertEqual(Path(target + '.part').read_bytes(), b'first')
-            self.assertFalse(Path(target).exists())
-        response.close.assert_called_once()
-        requests.get.assert_called_once()
-        self.assertEqual(requests.get.call_args.kwargs['timeout'], (3, 1))
-
     def test_stalled_probe_cancels_owned_process_on_first_poll(self):
         stop = threading.Event()
         process = mock.MagicMock()

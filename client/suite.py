@@ -3,8 +3,12 @@ import json
 import math
 import os
 import shutil
+import queue
+import threading
+from urllib.parse import urljoin
 import subprocess
-from .campaign import check_preparation_cancelled, preparation_progress, run_measurement_process
+from .campaign import (check_preparation_cancelled, preparation_progress, run_measurement_process,
+                       start_owned_acquisition, wait_for_owned_acquisition)
 import sys
 import tempfile
 import tarfile
@@ -1001,12 +1005,105 @@ def _load_requests():
     return requests
 
 
+# Network latency and user cancellation are separate bounds. A one-second read
+# timeout rejected normal GitHub headers in release-preflight run 34815842143.
+_SUITE_HTTP_TIMEOUT = (10, 30)
+_SUITE_MAX_REDIRECTS = 5
+_SUITE_CHUNK_BYTES = 64 * 1024
+
+
+def _suite_download_events(url: str, headers: Mapping[str, str]):
+    """Stream via a bounded queue; only the caller may write the owned .part.
+
+    requests cannot reliably interrupt a blocked DNS/connect/header/body read.
+    Keep that read on one daemon thread so Stop remains responsive. That thread
+    owns response.close and discards late results after cancellation; it never
+    writes files and never follows another redirect after cancellation.
+    """
+    events = queue.Queue(maxsize=2)
+    stopped = threading.Event()
+
+    def send(kind, value=None):
+        while not stopped.is_set():
+            try:
+                events.put((kind, value), timeout=0.1)
+                return True
+            except queue.Full:
+                pass
+        return False
+
+    def read_network():
+        response = None
+        try:
+            requests = _load_requests()
+            current_url = url
+            for redirect in range(_SUITE_MAX_REDIRECTS + 1):
+                if stopped.is_set():
+                    return
+                response = requests.get(current_url, stream=True, timeout=_SUITE_HTTP_TIMEOUT,
+                                        headers=dict(headers), verify=config.REQUESTS_VERIFY,
+                                        allow_redirects=False)
+                if stopped.is_set():
+                    return
+                if response.status_code not in (301, 302, 303, 307, 308):
+                    break
+                location = response.headers.get("Location")
+                if not location or redirect == _SUITE_MAX_REDIRECTS:
+                    raise RuntimeError("Suite download exceeded redirect limit or has no redirect location")
+                current_url = urljoin(current_url, location)
+                response.close()
+                response = None
+            if response.status_code not in (200, 206):
+                response.raise_for_status()
+                raise RuntimeError(f"Unexpected suite download HTTP status {response.status_code}")
+            if not send("status", response.status_code):
+                return
+            # An ignored Range is retried from zero by the caller; do not read
+            # the body of that response into a partial file from another offset.
+            if "Range" in headers and response.status_code != 206:
+                return
+            for chunk in response.iter_content(chunk_size=_SUITE_CHUNK_BYTES):
+                if stopped.is_set():
+                    return
+                if chunk and not send("chunk", chunk):
+                    return
+        except BaseException as exc:
+            send("error", exc)
+        finally:
+            try:
+                if response is not None:
+                    response.close()
+            except Exception as exc:
+                send("error", exc)
+            send("done")
+
+    worker = threading.Thread(target=read_network, name="encodingdb-suite-download", daemon=True)
+    check_preparation_cancelled()
+    try:
+        start_owned_acquisition(worker)
+        while True:
+            check_preparation_cancelled()
+            try:
+                kind, value = events.get(timeout=0.1)
+            except queue.Empty:
+                continue
+            check_preparation_cancelled()
+            if kind == "error":
+                raise value
+            if kind == "done":
+                return
+            yield kind, value
+    finally:
+        stopped.set()
+        # Never join or close a response here: either can wait on the socket.
+        # The reader closes it on return/timeout and cannot mutate retained data.
+
+
 def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]) -> None:
     distribution = dict(metadata.get("distribution") or {})
     expected_size = int(distribution.get("byteSize") or 0)
     temp_path = f"{destination}.part"
     os.makedirs(os.path.dirname(destination), exist_ok=True)
-    requests = _load_requests()
     resume_from = 0
     if os.path.exists(temp_path):
         size = os.path.getsize(temp_path)
@@ -1021,31 +1118,26 @@ def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]
             headers["Range"] = f"bytes={resume_from}-"
             mode = "ab"
         preparation_progress("download", path=destination, completedBytes=resume_from if mode == "ab" else 0, totalBytes=expected_size)
-        response = None
+        events = _suite_download_events(url, headers)
         try:
-            # Short read/connect bounds ensure Stop is observed even on a stalled peer.
-            response = requests.get(url, stream=True, timeout=(3, 1), headers=headers, verify=config.REQUESTS_VERIFY)
-            check_preparation_cancelled()
-            if response.status_code not in (200, 206):
-                response.raise_for_status()
-            if allow_resume and response.status_code != 206:
+            kind, status = next(events)
+            if kind != "status":
+                raise RuntimeError("Suite download did not provide an HTTP status")
+            if allow_resume and status != 206:
                 os.remove(temp_path)
                 continue
             completed = resume_from if mode == "ab" else 0
             with open(temp_path, mode) as handle:
-                for chunk in response.iter_content(chunk_size=64 * 1024):
+                for kind, chunk in events:
+                    if kind != "chunk":
+                        raise RuntimeError("Unexpected suite download event")
                     check_preparation_cancelled()
-                    if chunk:
-                        handle.write(chunk)
-                        completed += len(chunk)
-                        preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
+                    handle.write(chunk)
+                    completed += len(chunk)
+                    preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
             break
-        except Exception:
-            check_preparation_cancelled()
-            raise
         finally:
-            if response is not None:
-                response.close()
+            events.close()
     result = _verify_suite_pack_file(temp_path, metadata)
     if not result.ok:
         raise RuntimeError(result.message)
@@ -1232,6 +1324,7 @@ def ensure_suite_clip(
     cache_root: Optional[str] = None,
     regenerate_on_mismatch: bool = True,
 ) -> PreparedSuiteClip:
+    wait_for_owned_acquisition()
     resolved_cache_root = cache_root or _suite_cache_root()
     packaged_path: Optional[str] = None
     for manifest_path in _manifest_resource_candidates():

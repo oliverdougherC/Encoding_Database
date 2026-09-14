@@ -8,6 +8,7 @@ import secrets
 import math
 import time
 import subprocess
+import threading
 from contextvars import ContextVar
 from contextlib import contextmanager
 from pathlib import Path
@@ -17,6 +18,9 @@ from . import config
 from .protocol import (ArtifactProbe, BenchmarkRunRecord, EncodeTiming, EnvironmentSnapshot,
                        ScheduledRun, ValidityReason, ValidityResult)
 
+
+_ACQUISITION_READER = None
+_ACQUISITION_READER_LOCK = threading.Lock()
 
 _PREPARATION = ContextVar("encodingdb_preparation", default=None)
 
@@ -47,6 +51,7 @@ class PreparationScope:
         token = _PREPARATION.set(self)
         try:
             self.check()
+            wait_for_owned_acquisition()
             yield self
         finally:
             _PREPARATION.reset(token)
@@ -62,6 +67,33 @@ def check_preparation_cancelled():
     scope = _PREPARATION.get()
     if scope is not None:
         scope.check()
+
+
+def wait_for_owned_acquisition():
+    """Fence subsequent preparation/timing from an older canceled network read."""
+    while True:
+        check_preparation_cancelled()
+        with _ACQUISITION_READER_LOCK:
+            reader = _ACQUISITION_READER
+        if reader is None or not reader.is_alive():
+            return
+        preparation_progress("download-closing")
+        reader.join(timeout=0.1)
+
+
+def start_owned_acquisition(reader):
+    """At most one network reader per client process, including canceled work."""
+    global _ACQUISITION_READER
+    while True:
+        wait_for_owned_acquisition()
+        with _ACQUISITION_READER_LOCK:
+            previous = _ACQUISITION_READER
+            if previous is not None and previous.is_alive():
+                continue
+            check_preparation_cancelled()
+            _ACQUISITION_READER = reader
+            reader.start()
+            return
 
 
 _MEASUREMENT_BUDGET = ContextVar("encodingdb_measurement_budget", default=None)
