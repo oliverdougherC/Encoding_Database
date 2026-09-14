@@ -17,9 +17,9 @@ RUNTIME_LOCK_SIDECAR_CANDIDATES: Sequence[str] = (
 )
 REQUIRED_FILTERS: Sequence[str] = ("libvmaf", "xpsnr")
 PLATFORM_REQUIRED_ENCODERS: Mapping[str, Sequence[str]] = {
-    "linux": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
-    "mac": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
-    "win": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
+    "linux": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
+    "mac": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
+    "win": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
 }
 PLATFORM_OPTIONAL_ENCODERS: Mapping[str, Sequence[str]] = {
     "linux": (
@@ -115,7 +115,7 @@ def runtime_capability_requirements(platform_key: Optional[str] = None) -> Dict[
         "filters": sorted(_dedupe_strings(REQUIRED_FILTERS)),
         "requiredEncoders": sorted(required),
         "optionalEncoders": sorted(optional),
-        "smokeTestEncoders": [encoder for encoder in required if encoder in ("libx264", "libx265", "libaom-av1", "libvpx-vp9")],
+        "smokeTestEncoders": [encoder for encoder in required if encoder in ("libx264", "libx265", "libsvtav1", "libaom-av1", "libvpx-vp9")],
     }
 
 
@@ -173,6 +173,32 @@ def _binary_record(path: str, version_output: str) -> Dict[str, Any]:
     }
 
 
+def runtime_dependency_records(ffmpeg_path: str) -> List[Dict[str, Any]]:
+    root = os.path.dirname(os.path.abspath(ffmpeg_path))
+    library_root = os.path.join(root, "lib")
+    records = []
+    if os.path.isdir(library_root):
+        for current, dirs, files in os.walk(library_root):
+            dirs.sort()
+            for name in sorted(files):
+                path = os.path.join(current, name)
+                if os.path.commonpath([os.path.realpath(root), os.path.realpath(path)]) != os.path.realpath(root):
+                    raise RuntimeLockError("runtime dependency escapes bundled binary directory")
+                records.append({"relativePath": os.path.relpath(path, root).replace(os.sep, "/"),
+                                "sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
+    return records
+
+
+def _verify_dependencies(ffmpeg_path: str, expected: Any) -> None:
+    observed = runtime_dependency_records(ffmpeg_path)
+    if expected is None:
+        if observed:
+            raise RuntimeLockError("bundled runtime dependencies require a hash-bound lock")
+        return
+    if not isinstance(expected, list) or observed != expected:
+        raise RuntimeLockError("runtime dependency SHA-256, membership or size mismatch")
+
+
 def probe_runtime_identity(
     *,
     ffmpeg_path: str,
@@ -215,6 +241,7 @@ def probe_runtime_identity(
     ffprobe_record = _binary_record(ffprobe_path, ffprobe_version_output)
     ffprobe_record["buildFingerprint"] = recipe.ffmpeg_build_fingerprint(ffprobe_version_output)
     return {
+        "runtimeDependencies": runtime_dependency_records(ffmpeg_path),
         "ffmpeg": ffmpeg_record,
         "ffprobe": ffprobe_record,
         "capabilities": {
@@ -409,6 +436,7 @@ def verify_runtime_lock(
 
     resolved_ffmpeg = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffmpeg_path, entry=expected_ffmpeg)
     resolved_ffprobe = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffprobe_path, entry=expected_ffprobe)
+    _verify_dependencies(resolved_ffmpeg, platform_entry.get("runtimeDependencies"))
     default_requirements = runtime_capability_requirements(selected_platform)
     observed = probe_runtime_identity(
         ffmpeg_path=resolved_ffmpeg,

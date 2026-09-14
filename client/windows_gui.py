@@ -46,6 +46,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.base_url_var = tk.StringVar(value=str(getattr(base_args, "base_url", "")))
             self.retries_var = tk.IntVar(value=max(1, int(getattr(base_args, "retries", 3))))
             self.batch_size_var = tk.IntVar(value=max(0, int(getattr(base_args, "batch_size", 0))))
+            self.bitrate_var = tk.StringVar(value=str(getattr(base_args, "target_bitrate_kbps", "") or ""))
             self.crf_var = tk.IntVar(value=int(getattr(base_args, "crf", 24) or 24))
 
             self.selected_encoder_var = tk.StringVar(value="")
@@ -84,7 +85,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.mode_combo = ttk.Combobox(
                 row1,
                 textvariable=self.mode_var,
-                values=["Single", "Small", "Medium", "Full"],
+                values=["Single", "Full"],
                 state="readonly",
                 width=14,
             )
@@ -119,6 +120,10 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             ttk.Label(row3, text="Native quality value").pack(side="left")
             self.crf_spin = ttk.Spinbox(row3, from_=10, to=40, textvariable=self.crf_var, width=6)
             self.crf_spin.pack(side="left", padx=(8, 0))
+
+            ttk.Label(row3, text="Bitrate kbps (hardware)").pack(side="left", padx=(12, 0))
+            self.bitrate_entry = ttk.Entry(row3, textvariable=self.bitrate_var, width=8)
+            self.bitrate_entry.pack(side="left", padx=(6, 0))
 
             buttons = ttk.Frame(config_frame)
             buttons.pack(fill="x", pady=(10, 0))
@@ -179,7 +184,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.crf_spin.configure(state=enabled)
 
         def _update_single_fields_state(self) -> None:
-            single = self.mode_var.get() == "Single"
+            single = True
             state = "readonly" if single and not self.running else "disabled"
             spin_state = "normal" if single and not self.running else "disabled"
             self.encoder_combo.configure(state=state)
@@ -252,6 +257,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.batch_size = max(0, int(self.batch_size_var.get() or 0))
             run_args.pause_on_exit = False
             run_args.menu = False
+            bitrate = self.bitrate_var.get().strip()
+            try:
+                run_args.target_bitrate_kbps = int(bitrate) if bitrate else None
+            except ValueError:
+                messagebox.showerror("Bitrate", "Enter a positive integer bitrate in kbps")
+                self._set_running(False)
+                return
             if not run_args.no_submit:
                 consent_ok = client_main._ensure_interactive_publication_consent(
                     queue_dir=str(run_args.queue_dir),
@@ -266,7 +278,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     self.no_submit_var.set(True)
                     self._append_log("Publication consent not granted; switching to local dry-run mode.")
 
-            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=True)
+            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=False)
             self.worker_thread.start()
 
         def _run_worker(self, run_args: argparse.Namespace, mode: str) -> None:
@@ -275,31 +287,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             rc = 1
             try:
-                if mode == "Single":
-                    encoder = self._selected_encoder()
-                    preset = self._selected_preset()
-                    crf = int(self.crf_var.get())
-                    effective_args = client_main.build_single_effective_args(
-                        base_args=run_args,
-                        encoder=encoder,
-                        preset=preset,
-                        crf=crf,
-                    )
-                    rc = client_main.run_with_args(
-                        effective_args,
-                        event_sink=sink,
-                        cancel_event=self.cancel_event,
-                        show_end_screen=False,
-                    )
-                else:
-                    mode_key = mode.lower()
-                    rc = client_main.run_batch_mode(
-                        mode=mode_key,
-                        base_args=run_args,
-                        event_sink=sink,
-                        cancel_event=self.cancel_event,
-                        show_end_screen=False,
-                    )
+                effective_args = client_main.build_single_effective_args(
+                    base_args=run_args, encoder=self._selected_encoder(),
+                    preset=self._selected_preset(), crf=int(self.crf_var.get()),
+                )
+                effective_args.campaign = "full" if mode == "Full" else "quick"
+                rc = client_main.run_with_args(effective_args, event_sink=sink,
+                                              cancel_event=self.cancel_event, show_end_screen=False)
             except Exception as e:
                 self.event_queue.put(("error", f"{e}\n{traceback.format_exc()}"))
                 rc = 1
@@ -310,7 +304,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             if not self.running:
                 return
             self.cancel_event.set()
-            self.summary_var.set("Stopping after current step...")
+            self.summary_var.set("Stopping owned encoder; retaining campaign...")
             self._append_log("Cancellation requested")
 
         def _handle_event(self, event: Dict[str, Any]) -> None:
@@ -435,7 +429,9 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         self._set_running(False)
                         rc = int(payload)
                         if rc == 0:
-                            self.summary_var.set("Run finished successfully")
+                            self.summary_var.set("Locally complete" if self.no_submit_var.get() else "Uploaded; analysis pending")
+                        elif rc == 10:
+                            self.summary_var.set("Saved locally; upload queued")
                         elif rc == 130:
                             self.summary_var.set("Run cancelled")
                         else:
@@ -450,7 +446,16 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 if not messagebox.askyesno("Exit", "A benchmark run is still active. Stop and exit?"):
                     return
                 self.cancel_event.set()
+                self.summary_var.set("Stopping and saving campaign before close...")
+                self.root.after(100, self._close_when_stopped)
+                return
             self.root.destroy()
+
+        def _close_when_stopped(self):
+            if self.worker_thread and self.worker_thread.is_alive():
+                self.root.after(100, self._close_when_stopped)
+            else:
+                self.root.destroy()
 
         def run(self) -> int:
             self.root.mainloop()

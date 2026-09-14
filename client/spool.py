@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import time
+import random
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -180,18 +182,8 @@ def cleanup_spool(queue_dir: str) -> CleanupStats:
 
 
 def _write_json_atomic(path: str, payload: Dict[str, Any]) -> None:
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    tmp_path = f"{path}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
-    try:
-        with open(tmp_path, "w", encoding="utf-8") as fh:
-            json.dump(payload, fh, separators=(",", ":"), sort_keys=True)
-        os.replace(tmp_path, path)
-    finally:
-        try:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-        except Exception:
-            pass
+    from .campaign import atomic_json
+    atomic_json(Path(path), payload)
 
 
 def _envelope_for_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -201,6 +193,8 @@ def _envelope_for_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
         "localHash": local_hash_for_payload(payload),
         "payload": dict(payload),
         "queuedAt": now,
+        "retryDeadlineAt": now + 7 * 24 * 3600,
+        "nextAttemptAt": now,
         "attempts": 0,
         "lastAttemptAt": None,
         "lastError": "",
@@ -228,6 +222,8 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
             tmp_path = f"{destination}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
             try:
                 shutil.copy2(artifact_path, tmp_path)
+                with open(tmp_path, "rb") as handle:
+                    os.fsync(handle.fileno())
                 os.replace(tmp_path, destination)
             finally:
                 try:
@@ -242,6 +238,9 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
 
 
 def spool_payload(queue_dir: str, payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash_for_payload(payload)}.json")
+    if os.path.isfile(receipt_path):
+        return receipt_path, _envelope_for_payload(payload)
     spool_payload_value = _preserve_artifact_for_spool(queue_dir, payload)
     envelope = _envelope_for_payload(spool_payload_value)
     path = _queue_path(queue_dir, envelope["localHash"])
@@ -274,6 +273,8 @@ def load_spool_entry(path: str) -> Dict[str, Any]:
             "attempts": int(raw.get("attempts") or 0),
             "lastAttemptAt": raw.get("lastAttemptAt"),
             "lastError": str(raw.get("lastError") or ""),
+            "retryDeadlineAt": raw.get("retryDeadlineAt", int(raw.get("queuedAt") or time.time()) + 7 * 24 * 3600),
+            "nextAttemptAt": raw.get("nextAttemptAt", 0),
         }
     # Legacy queue file: raw payload only.
     return {
@@ -420,8 +421,11 @@ def _cleanup_managed_artifact_if_unreferenced(queue_dir: str, entry: Dict[str, A
         pass
 
 
-def _retain_entry(path: str, entry: Dict[str, Any], error: str) -> None:
-    _write_json_atomic(path, _update_entry_for_attempt(entry, error=error))
+def _retain_entry(path: str, entry: Dict[str, Any], error: str, retry_after: float = 0.0) -> None:
+    updated = _update_entry_for_attempt(entry, error=error)
+    delay = max(retry_after, min(3600.0, 2 ** min(updated["attempts"], 12)) * random.uniform(0.75, 1.25))
+    updated["nextAttemptAt"] = time.time() + delay
+    _write_json_atomic(path, updated)
 
 
 def _submission_success_message(payload: Dict[str, Any], response: Any) -> str:
@@ -445,11 +449,19 @@ def submit_spooled_path(
     retries: int,
     use_token: bool,
 ) -> Tuple[str, str]:
+    if os.path.dirname(os.path.abspath(path)) == os.path.abspath(os.path.join(queue_dir, "receipts")):
+        receipt = json.loads(Path(path).read_text())
+        return "submitted", _submission_success_message({"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, receipt.get("response"))
     try:
         entry = load_spool_entry(path)
     except Exception as exc:
         move_to_dead_letter(queue_dir, path, None, f"corrupt_spool:{exc}")
         return "corrupt", str(exc)
+    if time.time() >= entry.get("retryDeadlineAt", float("inf")):
+        move_to_dead_letter(queue_dir, path, entry, "retry_deadline_expired")
+        return "dead_lettered", "retry_deadline_expired"
+    if time.time() < entry.get("nextAttemptAt", 0):
+        return "retained", "retry_backoff_pending"
     try:
         payload = entry["payload"]
         response: Any = None
@@ -472,6 +484,9 @@ def submit_spooled_path(
                 retries=retries,
                 use_token=use_token,
             )
+        _write_json_atomic(os.path.join(queue_dir, "receipts", os.path.basename(path)),
+                           {"localHash": entry["localHash"], "uploadedAt": time.time(), "response": response,
+                            "status": "uploaded_analysis_pending"})
         _cleanup_managed_artifact_if_unreferenced(queue_dir, entry, excluding_entry_path=path)
         try:
             os.remove(path)
@@ -480,7 +495,7 @@ def submit_spooled_path(
         return "submitted", _submission_success_message(payload, response)
     except SubmitError as exc:
         if exc.retryable:
-            _retain_entry(path, entry, str(exc))
+            _retain_entry(path, entry, str(exc), exc.retry_after)
             return "retained", str(exc)
         move_to_dead_letter(queue_dir, path, entry, str(exc))
         return "dead_lettered", str(exc)
@@ -507,7 +522,10 @@ def replay_spool(
     except Exception:
         return stats
 
-    for path in files:
+    started = time.monotonic()
+    for path in files[:25]:
+        if time.monotonic() - started >= 60:
+            break
         status, _message = submit_spooled_path(
             path,
             queue_dir=queue_dir,

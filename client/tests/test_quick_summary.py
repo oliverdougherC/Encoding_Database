@@ -26,7 +26,7 @@ class QuickSummaryTests(unittest.TestCase):
             stack.enter_context(mock.patch.object(main.time,'time',return_value=1_800_000_000.0))
             info = stack.enter_context(mock.patch.object(main,'print_info'))
             end = stack.enter_context(mock.patch.object(main,'print_end_screen'))
-            self.assertEqual(main.run_with_args(args,event_sink=events.append),0)
+            self.assertEqual(main.run_legacy_diagnostic(args,event_sink=events.append),0)
             self.assertEqual(next(e for e in events if e['type']=='run_complete')['elapsedSeconds'],5.5)
             return info.call_args_list,end.call_args_list
 

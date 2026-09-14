@@ -36,6 +36,8 @@ CLIENT_APP_DIR_NAME = "EncodingDB"
 
 
 def default_client_state_dir() -> str:
+    if os.environ.get("ENCODINGDB_STATE_DIR"):
+        return os.path.abspath(os.environ["ENCODINGDB_STATE_DIR"])
     home = os.path.expanduser("~")
     system_name = platform.system().lower()
     if system_name.startswith("darwin"):
@@ -53,14 +55,14 @@ def default_queue_dir() -> str:
 
 ENV_BACKEND_BASE_URL = os.environ.get("BACKEND_BASE_URL", BACKEND_BASE_URL)
 ENV_API_KEY = os.environ.get("API_KEY", "")
-ENV_PRESETS = os.environ.get("PRESETS", "fast,medium,slow")
+ENV_PRESETS = os.environ.get("PRESETS", "fast")
 ENV_CRF = os.environ.get("CRF", "24")
 ENV_CODEC = os.environ.get("CODEC", "")  # If empty, prompt interactively
 ENV_INGEST_HMAC_SECRET = os.environ.get("INGEST_HMAC_SECRET", "")
 ENV_QUEUE_DIR = os.environ.get("QUEUE_DIR", default_queue_dir())
 
 SCORE_FORMULA_VERSION = "7.0"
-BENCHMARK_PROTOCOL_VERSION = "7.0"
+BENCHMARK_PROTOCOL_VERSION = "7.1"
 
 # Batch aggregation for Small/Full multi-run flows
 _BATCH_ACTIVE: bool = False

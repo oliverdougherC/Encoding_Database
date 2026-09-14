@@ -3,10 +3,10 @@ import json
 import os
 from typing import Any, Dict, Optional
 
-from .network import SubmitError, _load_requests
+from .network import SubmitError, _load_requests, retry_after_seconds
 
 AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND = "authoritative-artifact-run-v1"
-AUTHORITATIVE_ANALYZER_VERSION = "authoritative-analysis/v1"
+AUTHORITATIVE_ANALYZER_VERSION = "authoritative-analysis/v2"
 AUTHORITATIVE_SUITE_ID = "encodingdb-test-suite"
 
 
@@ -127,6 +127,7 @@ def build_environment_bootstrap(
         "ffmpegVersion": _canonical_required_text(identity.get("ffmpegVersion")),
         "encoderVersion": _canonical_optional_text(identity.get("encoderVersion")),
         "clientVersion": _canonical_required_text(identity.get("clientVersion")),
+        **{key: identity[key] for key in ("executionArchitecture", "translationMode", "runtimeIdentity", "selectedDeviceEvidence") if identity.get(key) is not None},
     }
     return {
         "fingerprint": _sha256_text(_canonical_json(environment_identity)),
@@ -200,7 +201,9 @@ def submit_artifact_submission(
     auth_content_type = str(submission.get("contentType") or "application/octet-stream")
     last_error: Optional[SubmitError] = None
 
-    for attempt in range(1, max(1, retries) + 1):
+    # The durable spool owns retry scheduling, deadlines and backoff. One network
+    # transaction per entry avoids hot retries across multiple clients.
+    for attempt in range(1, 2):
         try:
             create_response = requests.post(
                 create_url,
@@ -218,6 +221,7 @@ def submit_artifact_submission(
                 retryable=True,
                 status_code=create_response.status_code,
                 body=create_response.text or "",
+                retry_after=retry_after_seconds(create_response.headers),
             )
             continue
         if create_response.status_code >= 400:
@@ -226,6 +230,7 @@ def submit_artifact_submission(
                 retryable=False,
                 status_code=create_response.status_code,
                 body=create_response.text or "",
+                retry_after=retry_after_seconds(create_response.headers),
             )
 
         try:
@@ -262,6 +267,7 @@ def submit_artifact_submission(
                 retryable=True,
                 status_code=auth_response.status_code,
                 body=auth_response.text or "",
+                retry_after=retry_after_seconds(auth_response.headers),
             )
             continue
         if auth_response.status_code >= 400:
@@ -270,6 +276,7 @@ def submit_artifact_submission(
                 retryable=False,
                 status_code=auth_response.status_code,
                 body=auth_response.text or "",
+                retry_after=retry_after_seconds(auth_response.headers),
             )
         auth_json = auth_response.json()
         if not isinstance(auth_json, dict):
@@ -302,6 +309,7 @@ def submit_artifact_submission(
                 retryable=True,
                 status_code=upload_response.status_code,
                 body=upload_response.text or "",
+                retry_after=retry_after_seconds(upload_response.headers),
             )
             continue
         if upload_response.status_code >= 400:
@@ -310,6 +318,7 @@ def submit_artifact_submission(
                 retryable=False,
                 status_code=upload_response.status_code,
                 body=upload_response.text or "",
+                retry_after=retry_after_seconds(upload_response.headers),
             )
         try:
             return upload_response.json()

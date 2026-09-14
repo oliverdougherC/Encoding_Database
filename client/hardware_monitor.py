@@ -413,8 +413,7 @@ class HardwareMonitor:
         if len(indexes) == 1:
             return indexes
         if self._gpu_vendor == "nvidia":
-            self._record_missing("gpu_ambiguous")
-            return None
+            return [0]  # canonical NVENC commands explicitly use -gpu 0
         self._record_missing("gpu_ambiguous")
         return None
 

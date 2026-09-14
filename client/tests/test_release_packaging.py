@@ -86,7 +86,7 @@ class ReleasePackagingTests(unittest.TestCase):
 
     def test_release_version_is_assigned_and_missing_version_is_rejected(self) -> None:
         metadata = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text())
-        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+(?:-beta\.\d+)?$")
+        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$")
         import datetime
         datetime.date.fromisoformat(metadata["releaseDate"])
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -96,7 +96,7 @@ class ReleasePackagingTests(unittest.TestCase):
                     release_manifest_lib.detect_project_version()
 
     def test_read_client_minimum_version_is_coherent(self) -> None:
-        self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.2.0")
+        self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.3.0")
 
     def test_finalize_release_writes_expected_sidecars(self) -> None:
         runtime_payload = {

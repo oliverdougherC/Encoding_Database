@@ -112,6 +112,7 @@ class MainRoutingTests(unittest.TestCase):
             codec="",
             presets="",
             no_submit=no_submit,
+            local_metrics=True,
             crf=24,
             retries=1,
             queue_dir=queue_dir,
@@ -371,7 +372,7 @@ class MainRoutingTests(unittest.TestCase):
                         },
                     ), \
                     mock.patch.object(client_main, "run_single_benchmark") as bench_mock:
-                rc = client_main.run_with_args(args, show_end_screen=False)
+                rc = client_main.run_legacy_diagnostic(args, show_end_screen=False)
 
         self.assertEqual(rc, 7)
         bench_mock.assert_not_called()
@@ -399,9 +400,9 @@ class MainRoutingTests(unittest.TestCase):
             artifact_paths[2]: {"sourceFps": 24.0, "sourceDurationSeconds": 5.0, "videoBitrateBps": 2_050_000},
         }
         encode_infos = [
-            {"artifactPath": artifact_paths[0], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
-            {"artifactPath": artifact_paths[1], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
-            {"artifactPath": artifact_paths[2], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
+            {"artifactPath": artifact_paths[0], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
+            {"artifactPath": artifact_paths[1], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
+            {"artifactPath": artifact_paths[2], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
         ]
         perf_ticks = itertools.count(start=0, step=1_000_000_000)
 
@@ -439,6 +440,8 @@ class MainRoutingTests(unittest.TestCase):
                             outputs[0]: {"vmaf": 95.0, "vmafMean": 95.0, "vmafP5": 92.0, "metricModelId": "vmaf-v1-sdr-1080p"}
                         },
                     ), \
+                    mock.patch.object(client_main, "sha256_of_file", return_value="a" * 64), \
+                    mock.patch.object(client_main, "_build_authoritative_run_create_request", return_value={"artifact": {"sha256": "a" * 64, "byteSize": 1_000_000}}), \
                     mock.patch.object(client_main, "should_skip_submission", side_effect=capture_skip):
                 rc = client_main.run_benchmark_batch(
                     hardware=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS"),
@@ -455,7 +458,7 @@ class MainRoutingTests(unittest.TestCase):
         self.assertTrue(all("protocol_validity=" in payload.get("notes", "") for payload in captured_payloads))
         self.assertTrue(all("protocol_env=" in payload.get("notes", "") for payload in captured_payloads))
         self.assertTrue(all("suite_meta=" in payload.get("notes", "") for payload in captured_payloads))
-        dry_run_events = [event for event in event_log if event.get("type") == "submit_result" and event.get("status") == "dry_run"]
+        dry_run_events = [event for event in event_log if event.get("type") == "submit_result" and event.get("status") == "locally_complete"]
         self.assertEqual(len(dry_run_events), 2)
 
     def test_run_benchmark_batch_retries_after_invalid_environment_gate(self) -> None:
@@ -515,9 +518,9 @@ class MainRoutingTests(unittest.TestCase):
             ),
         ])
         encode_infos = [
-            {"artifactPath": artifact_paths[0], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
-            {"artifactPath": artifact_paths[1], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
-            {"artifactPath": artifact_paths[2], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None},
+            {"artifactPath": artifact_paths[0], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
+            {"artifactPath": artifact_paths[1], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
+            {"artifactPath": artifact_paths[2], "encoderUsed": "libx264", "presetUsed": "fast", "fileSizeBytes": 1_000_000, "error": None, "encodeStartMonotonicNs": 1_000_000_000, "encodeEndMonotonicNs": 2_000_000_000},
         ]
         probe_metrics = {
             clip.path: {"sourceFps": 24.0, "sourceDurationSeconds": 5.0, "videoBitrateBps": 8_000_000},
@@ -552,6 +555,8 @@ class MainRoutingTests(unittest.TestCase):
                             outputs[0]: {"vmaf": 95.0, "vmafMean": 95.0, "vmafP5": 92.0, "metricModelId": "vmaf-v1-sdr-1080p"}
                         },
                     ), \
+                    mock.patch.object(client_main, "sha256_of_file", return_value="a" * 64), \
+                    mock.patch.object(client_main, "_build_authoritative_run_create_request", return_value={"artifact": {"sha256": "a" * 64, "byteSize": 1_000_000}}), \
                     mock.patch.object(client_main, "should_skip_submission", side_effect=capture_skip):
                 rc = client_main.run_benchmark_batch(
                     hardware=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS"),
@@ -561,7 +566,7 @@ class MainRoutingTests(unittest.TestCase):
                     event_sink=event_log.append,
                 )
 
-        self.assertEqual(rc, 0)
+        self.assertEqual(rc, 1)
         self.assertEqual(encode_mock.call_count, 3)
         self.assertEqual(len(captured_payloads), 2)
         invalid_events = [
@@ -584,6 +589,8 @@ class MainRoutingTests(unittest.TestCase):
             "presetUsed": "fast",
             "fileSizeBytes": 1_000_000,
             "elapsedMs": 1_000,
+            "encodeStartMonotonicNs": 1_000_000_000,
+            "encodeEndMonotonicNs": 2_000_000_000,
             "frameCount": 120,
             "error": None,
             "requestedRecipeJson": '{"codecFamily":"h264","encoderImplementation":"libx264","rateControlRequested":{"mode":"crf","qualityValue":24},"outputRequested":{"pixelFormat":"yuv420p","bitDepth":8,"chromaSubsampling":"4:2:0","containerFormat":"mp4"}}',
@@ -598,6 +605,7 @@ class MainRoutingTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as queue_dir:
             args = self._batch_args(queue_dir, no_submit=False)
             with ExitStack() as stack:
+                stack.enter_context(mock.patch.object(client_main, "check_compatibility", return_value={}))
                 stack.enter_context(mock.patch.object(client_main, "ensure_ffmpeg_and_ffprobe", return_value=(True, "ffmpeg version n7")))
                 stack.enter_context(mock.patch.object(client_main, "_ensure_local_quality_stack", return_value=(True, 0)))
                 stack.enter_context(mock.patch.object(client_main, "_build_protocol_config", return_value=client_main.ProtocolConfig.for_version("7.0", stability_threshold_ratio=1.0, max_adaptive_repeats=0)))

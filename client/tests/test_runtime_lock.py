@@ -82,7 +82,7 @@ class RuntimeLockTests(unittest.TestCase):
         self.assertEqual(payload["platforms"]["mac"]["ffmpeg"]["relativePath"], "bin/mac/ffmpeg")
         self.assertEqual(
             payload["platforms"]["mac"]["capabilities"]["requiredEncoders"],
-            ["libaom-av1", "libvpx-vp9", "libx264", "libx265"],
+            ["libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"],
         )
         self.assertNotIn("h264_videotoolbox", payload["platforms"]["mac"]["capabilities"]["requiredEncoders"])
 
