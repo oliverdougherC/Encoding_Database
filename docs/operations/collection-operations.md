@@ -219,3 +219,15 @@ The job was unloaded afterward. See the
 [scheduled retention receipt](evidence/scheduled-retention-final-20260914.json)
 and [log](evidence/scheduled-retention-final-20260914.log). Production scheduling
 and alert routing remain uninstalled/unverified.
+
+The overlapping synthetic arrival stream also completed: 600 atomic run/artifact/
+analysis chains in 600.69 seconds, write p95 18.26 ms. The targeted group's accepted
+membership grew from 6 to 606 while independent physical-source count stayed at 3.
+Final reconciliation found **100622 runs = 100622 artifacts = 100622 analyses =
+100622 public members**, consisting of 80614 accepted and 20008 suspect members,
+with zero dirty groups. See the [arrival report](evidence/metadata-arrivals-report-20260914.json),
+[exact reconciliation](evidence/metadata-arrivals-reconciliation-20260914.json) and
+[execution provenance correction](evidence/metadata-arrivals-provenance-20260914.json).
+The correction preserves the original report and identifies the actual code
+imported when the long-running process started; a later git HEAD observed at
+report writing must not be treated as code that process executed.
