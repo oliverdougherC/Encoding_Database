@@ -1,6 +1,7 @@
 import type { Benchmark } from "./types";
 
 export function measurementBasis(row: Benchmark): string {
+  if (row.status.centerBasis === "eligible-stable-groups") return "Stable measurement groups";
   if (row.status.centerBasis === "suspect") return "Suspect · review required";
   if (row.status.centerBasis === "accepted") return "Accepted measurements";
   return "Measurement basis unknown";

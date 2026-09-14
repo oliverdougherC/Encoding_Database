@@ -77,7 +77,7 @@ export function hasIncompatibleWorkloads(rows: CompareRow[]): boolean {
 
 export function canCompareMetric(rows: CompareRow[], context: "measurement" | "quality"): boolean {
   if (rows.length < 2 || hasIncompatibleWorkloads(rows) || rows.some(row =>
-    row.status.centerBasis !== "accepted" || row.sampleCounts.accepted === 0)) return false;
+    !["accepted", "eligible-stable-groups"].includes(row.status.centerBasis ?? "") || row.sampleCounts.accepted === 0)) return false;
   if (context === "measurement") return true;
   return rows.every(row => row.quality.qualityModelId && row.versions.analysisWorkerVersion) &&
     new Set(rows.map(row => JSON.stringify([row.quality.qualityModelId, row.versions.analysisWorkerVersion]))).size === 1;

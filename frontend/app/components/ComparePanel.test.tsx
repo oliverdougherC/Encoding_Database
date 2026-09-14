@@ -164,6 +164,14 @@ describe("comparison eligibility", () => {
     expect(metricRow("FPS").getByText("200.00")).toHaveClass(styles.bestCell);
     expect(metricRow("VMAF").getByText("97.0")).not.toHaveClass(styles.bestCell);
   });
+  it("compares compatible stable group centers without changing raw counts", () => {
+    const other = faster();
+    other.status = { ...other.status, centerBasis: "eligible-stable-groups" };
+    render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);
+    expect(metricRow("FPS").getByText("200.00")).toHaveClass(styles.bestCell);
+    expect(screen.getByText("Stable measurement groups")).toBeInTheDocument();
+    expect(metricRow("Accepted runs").getByText("9")).not.toHaveClass(styles.bestCell);
+  });
   it("keeps suspect-only 0 accepted / 4 suspect evidence neutral and PL unavailable", () => {
     const other = faster(); other.status = { ...other.status, centerBasis: "suspect", artifactState: "VERIFIED" }; other.sampleCounts = { ...other.sampleCounts, accepted: 0, suspect: 4 };
     const { container } = render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);

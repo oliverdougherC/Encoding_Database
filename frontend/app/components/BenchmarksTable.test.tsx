@@ -138,6 +138,7 @@ describe("evidence interpretation", () => {
     ["suspect", "VERIFIED", 0, 4, "Suspect · review required", "Awaiting retention"],
     ["accepted", "RETAINED", 3, 0, "Accepted measurements", "Retained"],
     ["accepted", "MIXED_VERIFIED_RETAINED", 2, 2, "Accepted measurements", "Partially retained"],
+    ["eligible-stable-groups", "RETAINED", 12, 2, "Stable measurement groups", "Retained"],
   ] as const)("separates %s centers, integrity, retention and null PL", (centerBasis, artifactState, accepted, suspect, basis, retention) => {
     render(<BenchmarkDetailsDialog row={makeRow({ status: { ...makeRow().status, centerBasis, artifactState }, sampleCounts: { ...makeRow().sampleCounts, accepted, suspect } })} close={() => {}} />);
     expect(screen.getByText(basis)).toBeInTheDocument();
