@@ -82,6 +82,7 @@ if (mode === 'rebuild-fixture') {
     if (!batch.length) break;
     await client.$executeRawUnsafe(`UPDATE "QualityAnalysis" SET id = encode(sha256(convert_to("benchmarkRunId" || '-analysis', 'UTF8')), 'hex') WHERE id = ANY($1::text[])`, batch.map(row => row.id));
   }
+  await client.$executeRawUnsafe(`INSERT INTO "PublicCorpusDirtyGroup" ("baseKey","benchmarkProtocolId","workloadId","recipeId","environmentId") SELECT "baseKey","benchmarkProtocolId","workloadId","recipeId","environmentId" FROM "PublicCorpusGroup" ON CONFLICT ("baseKey") DO UPDATE SET "updatedAt" = clock_timestamp() AT TIME ZONE 'UTC'`);
   for (let index = 0; index <= 980; index++) { await rebuild(environmentId(index)); if (index % 25 === 0) console.log(JSON.stringify({ rebuiltCohorts: index + 1, at: new Date() })); }
   await drain();
   const checks = []; for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
