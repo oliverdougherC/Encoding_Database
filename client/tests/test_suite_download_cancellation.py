@@ -185,3 +185,23 @@ def test_bad_completed_bytes_never_install_and_redirects_are_bounded(tmp_path):
             suite._download_suite_pack('https://example.invalid/loop', str(tmp_path/'other'), metadata(b'good'))
         assert requests.get.call_count == suite._SUITE_MAX_REDIRECTS + 1
     campaign.wait_for_owned_acquisition()
+
+
+@pytest.mark.parametrize('resume', [False, True])
+def test_oversized_stream_never_writes_beyond_declared_pack_size(tmp_path, resume):
+    target = tmp_path / 'pack'
+    partial = Path(str(target) + '.part')
+    if resume:
+        partial.write_bytes(b'go')
+    response = mock.Mock(status_code=206 if resume else 200)
+    response.iter_content.return_value = iter([b'odEXCESS'] if resume else [b'go', b'odEXCESS'])
+    requests = mock.Mock()
+    requests.get.return_value = response
+    with mock.patch.object(suite, '_load_requests', return_value=requests):
+        with pytest.raises(RuntimeError, match='exceeds declared'):
+            suite._download_suite_pack('https://example.invalid/pack', str(target), metadata(b'good'))
+        with campaign.PreparationScope().activate():
+            assert not campaign._ACQUISITION_READER.is_alive()
+    assert partial.read_bytes() == b'go'
+    assert not target.exists()
+    response.close.assert_called_once()

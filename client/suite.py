@@ -1132,6 +1132,8 @@ def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]
                     if kind != "chunk":
                         raise RuntimeError("Unexpected suite download event")
                     check_preparation_cancelled()
+                    if completed + len(chunk) > expected_size:
+                        raise RuntimeError("Suite download exceeds declared pack size")
                     handle.write(chunk)
                     completed += len(chunk)
                     preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
