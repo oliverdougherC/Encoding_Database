@@ -132,3 +132,23 @@ describe("BenchmarkDetailsDialog", () => {
     expect(screen.getByText(/Unavailable: no public production DerivedResult published/)).toBeInTheDocument();
   });
 });
+
+describe("evidence interpretation", () => {
+  it.each([
+    ["suspect", "VERIFIED", 0, 4, "Suspect · review required", "Awaiting retention"],
+    ["accepted", "RETAINED", 3, 0, "Accepted measurements", "Retained"],
+    ["accepted", "MIXED_VERIFIED_RETAINED", 2, 2, "Accepted measurements", "Partially retained"],
+  ] as const)("separates %s centers, integrity, retention and null PL", (centerBasis, artifactState, accepted, suspect, basis, retention) => {
+    render(<BenchmarkDetailsDialog row={makeRow({ status: { ...makeRow().status, centerBasis, artifactState }, sampleCounts: { ...makeRow().sampleCounts, accepted, suspect } })} close={() => {}} />);
+    expect(screen.getByText(basis)).toBeInTheDocument();
+    expect(screen.getByText("Verified bytes")).toBeInTheDocument();
+    expect(screen.getByText(retention)).toBeInTheDocument();
+    expect(screen.getByText(`${accepted} / ${suspect} / 0 / 0`)).toBeInTheDocument();
+    expect(screen.getByText("Unavailable", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("LOW · not recommendation-eligible")).toBeInTheDocument();
+  });
+  it("does not invent confidence for sparse accepted evidence", () => {
+    render(<BenchmarkDetailsDialog row={makeRow({ sampleCounts: { ...makeRow().sampleCounts, accepted: 1, suspect: 0 }, confidence: { ...makeRow().confidence, unavailableReason: "Insufficient independent sources" } })} close={() => {}} />);
+    expect(screen.getByText("Insufficient independent sources")).toBeInTheDocument();
+  });
+});

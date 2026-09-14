@@ -102,3 +102,6 @@
 }
 
 .compatibilityWarning { margin: 0 0 14px; padding: 9px 10px; border: 1px solid var(--amber); border-radius: 6px; background: var(--amber-soft); color: var(--text); font-size: .84rem; }
+
+.compareTable td { overflow-wrap:anywhere; min-width:120px; }
+@media(max-width:600px){.panelHeader{align-items:flex-start;gap:12px;flex-direction:column}.panelTitle{font-size:13px}.panelBody{padding:12px}}

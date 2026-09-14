@@ -2,12 +2,14 @@
 
 import { useEffect, useRef } from "react";
 import type { Benchmark } from "./BenchmarksTable";
+import { measurementBasis, artifactIntegrity, artifactRetention, hasPublicPl } from "../lib/evidence";
 import styles from "./ComparePanel.module.css";
 
 type CompareRow = Benchmark;
 
 type Metric = {
   label: string;
+  context?: "measurement" | "quality";
   getValue: (row: CompareRow) => string;
   getNumeric: (row: CompareRow) => number | null;
   higherIsBetter: boolean;
@@ -21,22 +23,27 @@ const METRICS: Metric[] = [
   { label: "Recipe fingerprint", getValue: r => r.recipe.fingerprint, getNumeric: () => null, higherIsBetter: true },
   { label: "Rate control", getValue: r => r.recipe.rateControl.label, getNumeric: () => null, higherIsBetter: true },
   { label: "Workload ID", getValue: r => r.workloadId, getNumeric: () => null, higherIsBetter: true },
-  { label: "FPS", getValue: r => r.performance.encodeFps == null ? "-" : r.performance.encodeFps.toFixed(2), getNumeric: r => r.performance.encodeFps, higherIsBetter: true },
-  { label: "Realtime", getValue: r => r.performance.realTimeRatio == null ? "-" : `${r.performance.realTimeRatio.toFixed(2)}x`, getNumeric: r => r.performance.realTimeRatio, higherIsBetter: true },
-  { label: "VMAF", getValue: r => r.quality.vmafMean == null ? "-" : r.quality.vmafMean.toFixed(1), getNumeric: r => r.quality.vmafMean, higherIsBetter: true },
-  { label: "VMAF p5", getValue: r => r.quality.vmafP5 == null ? "-" : r.quality.vmafP5.toFixed(1), getNumeric: r => r.quality.vmafP5, higherIsBetter: true },
-  { label: "Bitrate (Mbps)", getValue: r => r.bitrate.videoBitrateBps == null ? "-" : (r.bitrate.videoBitrateBps / 1_000_000).toFixed(2), getNumeric: r => r.bitrate.videoBitrateBps, higherIsBetter: false },
-  { label: "File Size (MB)", getValue: r => r.fileSizeBytes == null ? "-" : (r.fileSizeBytes / (1024 * 1024)).toFixed(2), getNumeric: r => r.fileSizeBytes, higherIsBetter: false },
+  { label: "FPS", context: "measurement", getValue: r => r.performance.encodeFps == null ? "-" : r.performance.encodeFps.toFixed(2), getNumeric: r => r.performance.encodeFps, higherIsBetter: true },
+  { label: "Realtime", context: "measurement", getValue: r => r.performance.realTimeRatio == null ? "-" : `${r.performance.realTimeRatio.toFixed(2)}x`, getNumeric: r => r.performance.realTimeRatio, higherIsBetter: true },
+  { label: "VMAF", context: "quality", getValue: r => r.quality.vmafMean == null ? "-" : r.quality.vmafMean.toFixed(1), getNumeric: r => r.quality.vmafMean, higherIsBetter: true },
+  { label: "VMAF p5", context: "quality", getValue: r => r.quality.vmafP5 == null ? "-" : r.quality.vmafP5.toFixed(1), getNumeric: r => r.quality.vmafP5, higherIsBetter: true },
+  { label: "Bitrate (Mbps)", context: "measurement", getValue: r => r.bitrate.videoBitrateBps == null ? "-" : (r.bitrate.videoBitrateBps / 1_000_000).toFixed(2), getNumeric: r => r.bitrate.videoBitrateBps, higherIsBetter: false },
+  { label: "File Size (MB)", context: "measurement", getValue: r => r.fileSizeBytes == null ? "-" : (r.fileSizeBytes / (1024 * 1024)).toFixed(2), getNumeric: r => r.fileSizeBytes, higherIsBetter: false },
+  { label: "Measurement basis", getValue: measurementBasis, getNumeric: () => null, higherIsBetter: true },
+  { label: "Artifact integrity", getValue: artifactIntegrity, getNumeric: () => null, higherIsBetter: true },
+  { label: "Artifact retention", getValue: artifactRetention, getNumeric: () => null, higherIsBetter: true },
   { label: "Evidence tier", getValue: r => r.status.evidenceTier, getNumeric: () => null, higherIsBetter: true },
-  { label: "PL status", getValue: r => r.status.scoring === "PUBLIC" ? "Public" : "Withheld", getNumeric: () => null, higherIsBetter: true },
-  { label: "Accepted runs", getValue: r => String(r.sampleCounts.accepted), getNumeric: r => r.sampleCounts.accepted, higherIsBetter: true },
-  { label: "Repetitions", getValue: r => String(r.sampleCounts.repetitions), getNumeric: r => r.sampleCounts.repetitions, higherIsBetter: true },
+  { label: "PL status", getValue: r => hasPublicPl(r) ? "Public" : "Unavailable", getNumeric: () => null, higherIsBetter: true },
+  { label: "Accepted runs", getValue: r => String(r.sampleCounts.accepted), getNumeric: () => null, higherIsBetter: true },
+  { label: "Suspect runs", getValue: r => String(r.sampleCounts.suspect), getNumeric: () => null, higherIsBetter: true },
+  { label: "Repetitions", getValue: r => String(r.sampleCounts.repetitions), getNumeric: () => null, higherIsBetter: true },
   { label: "Confidence", getValue: r => r.confidence.available ? `${r.confidence.lower?.toFixed(3)} to ${r.confidence.upper?.toFixed(3)}` : "Unavailable", getNumeric: () => null, higherIsBetter: true },
 ];
 
 function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
+  if (!metric.context || !canCompareMetric(rows, metric.context)) return null;
   const numericVals = rows.map(r => metric.getNumeric(r));
-  const nonNull = numericVals.filter(v => v != null);
+  const nonNull = numericVals.filter(v => v != null && Number.isFinite(v));
   if (nonNull.length < 2) return null;
   if (nonNull.every(v => v === nonNull[0])) return null;
 
@@ -44,7 +51,7 @@ function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
   let bestVal: number | null = null;
   for (let i = 0; i < rows.length; i++) {
     const v = numericVals[i];
-    if (v == null) continue;
+    if (v == null || !Number.isFinite(v)) continue;
     if (bestVal == null || (metric.higherIsBetter ? v > bestVal : v < bestVal)) {
       bestVal = v;
       bestIdx = i;
@@ -53,16 +60,27 @@ function findBestIndex(rows: CompareRow[], metric: Metric): number | null {
   return bestIdx;
 }
 
-const normalizeIdentityPart = (value: string | number | null | undefined) => String(value ?? "").trim().toLowerCase();
-
+// Recipes are the variables being compared. Exact workload, environment and
+// measurement lineage must agree before emphasizing differences between them.
 export function workloadIdentity(row: CompareRow): string {
-  return [row.workloadId, row.recipe.fingerprint, row.environment.fingerprint, row.versions.referenceContextVersion, row.versions.benchmarkProtocolVersion]
-    .map(normalizeIdentityPart)
-    .join("|");
+  return JSON.stringify([row.workloadId, row.environment.fingerprint,
+    row.versions.sourceSuiteVersion, row.versions.benchmarkProtocolId,
+    row.versions.benchmarkProtocolVersion, row.versions.aggregatorVersion]);
 }
 
 export function hasIncompatibleWorkloads(rows: CompareRow[]): boolean {
-  return new Set(rows.map(workloadIdentity)).size > 1;
+  return rows.some(row => !row.workloadId || !row.environment.fingerprint ||
+    !row.versions.sourceSuiteVersion || !row.versions.benchmarkProtocolId ||
+    !row.versions.benchmarkProtocolVersion || !row.versions.aggregatorVersion) ||
+    new Set(rows.map(workloadIdentity)).size > 1;
+}
+
+export function canCompareMetric(rows: CompareRow[], context: "measurement" | "quality"): boolean {
+  if (rows.length < 2 || hasIncompatibleWorkloads(rows) || rows.some(row =>
+    row.status.centerBasis !== "accepted" || row.sampleCounts.accepted === 0)) return false;
+  if (context === "measurement") return true;
+  return rows.every(row => row.quality.qualityModelId && row.versions.analysisWorkerVersion) &&
+    new Set(rows.map(row => JSON.stringify([row.quality.qualityModelId, row.versions.analysisWorkerVersion]))).size === 1;
 }
 
 export default function ComparePanel({
@@ -113,7 +131,9 @@ export default function ComparePanel({
           </div>
         </div>
         <div className={styles.panelBody}>
-          {incompatible ? <p className={styles.compatibilityWarning}>These configurations differ by workload, recipe fingerprint, environment fingerprint, or benchmark protocol lineage. Their performance, bitrate, and quality metrics are not directly comparable.</p> : null}
+          {incompatible ? <p className={styles.compatibilityWarning}>Different workload, environment, or measurement protocol. Values are shown without winner highlights.</p> : null}
+          {!incompatible && !canCompareMetric(rows, "measurement") ? <p className={styles.compatibilityWarning}>Suspect or unknown measurement basis. Values are shown for inspection only.</p> : null}
+          {canCompareMetric(rows, "measurement") && !canCompareMetric(rows, "quality") ? <p className={styles.compatibilityWarning}>Quality model or analysis version differs or is unknown. Quality values have no winner highlights.</p> : null}
           <table className={styles.compareTable}>
             <thead>
               <tr>

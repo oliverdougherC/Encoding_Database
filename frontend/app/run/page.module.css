@@ -19,3 +19,6 @@
 .aside ul { display:grid; gap:10px; margin:16px 0 22px; padding-left:18px; color:var(--muted); }
 .callout { padding:12px 14px; border-left:3px solid var(--accent); border-radius:0 7px 7px 0; background:var(--accent-soft); color:var(--text-2); font-size:12px; }
 @media(max-width:800px){.grid{grid-template-columns:1fr}}
+.downloads { display:flex; flex-wrap:wrap; gap:8px; }
+.panel li>div { min-width:0; }
+.panel pre { max-width:100%; overflow-x:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
