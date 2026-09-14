@@ -1,0 +1,1 @@
+{"case": "clean-nonascii", "exit": 11, "seconds": 86.39193270800752}

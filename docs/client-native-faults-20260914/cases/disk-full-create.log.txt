@@ -1,0 +1,4 @@
+hdiutil: create: -format requires -srcfolder or -srcdevice
+hdiutil: WARNING: 'hdiutil create ...' is deprecated. Please use 'diskutil image create ...' instead.
+Usage:	hdiutil create <sizespec> [options] <imagepath>
+	hdiutil create -help

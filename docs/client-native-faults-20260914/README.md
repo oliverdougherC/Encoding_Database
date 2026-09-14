@@ -22,7 +22,7 @@ Candidate SHA-256: `c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8a
 Candidate: `/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-client-macos`.
 Its actual archive audit passes all 102 locked helper/dependency members. Actual embedded help and x264-fast local contribution smoke both exited 0. The smoke receipt captures FFmpeg, ffprobe and lock paths inside `_MEI52yvOz`, not external provisioned helpers. Packaging/unit checks: 19 passed.
 
-Exact invocation arrays, controlled environment, timestamps, exit codes and signals are in `acceptance.json` and `cases/`; native harness scripts are retained in `harness/`. All invocations use the shared installation state at `/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state`.
+Exact invocation arrays, controlled environment, timestamps, exit codes and signals are in `acceptance.json` and `cases/`; console transcripts use `.log.txt` so they remain durably tracked; native harness scripts are retained in `harness/`. All invocations use the shared installation state at `/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state`.
 
 | Case | Observed result |
 | --- | --- |

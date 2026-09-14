@@ -1,0 +1,21 @@
+Campaign retained for resume: [Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/épreuve 客户端/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000001.json.tmp-ee38fd8de823b134'
+Traceback (most recent call last):
+  File "client/main.py", line 1575, in run_benchmark_batch
+    campaign_result = execute_protocol_campaign(
+        recipes=recipe_specs,
+    ...<5 lines>...
+        resumed_records=journal.records,
+    )
+  File "client/protocol.py", line 1018, in execute_protocol_campaign
+    record_sink(record)
+    ~~~~~~~~~~~^^^^^^^^
+  File "client/campaign.py", line 225, in save
+    atomic_json(self.root / f"attempt-{record.schedule.execution_order:06d}.json", record.to_dict())
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "client/campaign.py", line 108, in atomic_json
+    with temporary.open("x", encoding="utf-8") as handle:
+         ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "pathlib/__init__.py", line 771, in open
+OSError: [Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/épreuve 客户端/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000001.json.tmp-ee38fd8de823b134'
+Campaign campaign-b92d34ea50b6f8fc: at most 5 encodes; resume with --resume-campaign campaign-b92d34ea50b6f8fc
+Batch 1/1: 1 protocol recipe(s)
