@@ -47,7 +47,7 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     const run = await db.benchmarkRun.create({ data: {
       benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id,
       payloadHash: suffix, status: 'ACCEPTED', physicalSourceId: suffix, encodeTimerBoundary: 'ffmpeg-process-v1', realTimeRatio: 2,
-      campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 1, inputHash: clip.sha256, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 48, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { measurementGroup: groupReceipt(5000) },
+      campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 1, inputHash: clip.sha256, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 48, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: groupReceipt(5000) },
     } });
     const artifact = await db.artifact.create({ data: { benchmarkRunId: run.id, role: 'ENCODED', sha256: hash, byteSize: bytes.length, storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } });
     const analysis = await db.qualityAnalysis.create({ data: {
@@ -55,7 +55,7 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
       analysisWorkerVersion: 'test-worker', analysisProvenance: { testOnly: true, workerBuildFingerprint: 'b'.repeat(64) }, completedAt: new Date(), vmafMean: 92.4, vmafP5: 88, xpsnr: 37, videoBitrateBps: 1000000,
     } });
 
-    const sibling = await db.benchmarkRun.create({ data: { benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, payloadHash: `${suffix}-sibling`, status: 'ACCEPTED', physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 2, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: clip.sha256, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 48, realTimeRatio: 2, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { measurementGroup: groupReceipt(5000) } } });
+    const sibling = await db.benchmarkRun.create({ data: { benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, payloadHash: `${suffix}-sibling`, status: 'ACCEPTED', physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 2, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: clip.sha256, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 48, realTimeRatio: 2, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: groupReceipt(5000) } } });
     const siblingArtifact = await db.artifact.create({ data: { benchmarkRunId: sibling.id, role: 'ENCODED', sha256: hash, byteSize: bytes.length, storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } });
     await db.qualityAnalysis.create({ data: { benchmarkRunId: sibling.id, artifactId: siblingArtifact.id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'test-worker', analysisProvenance: { testOnly: true, workerBuildFingerprint: 'b'.repeat(64) }, completedAt: new Date(), vmafMean: 92.4, vmafP5: 88, xpsnr: 37, videoBitrateBps: 1000000 } });
     assert.equal((await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'test-only' })).length, 2, 'positive complete stable group baseline before newer analysis tests');
@@ -88,7 +88,7 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     process.env.VALIDATION_SOURCE_REGISTRY_PATH = registryPath;
     await db.testClip.update({ where: { id: clip.id }, data: { suiteVersion: VALIDATION_SOURCE_SUITE, workloadId: registration.workloadId,
       sha256: hash, byteSize: bytes.length, exactFrameCount: 720, exactDurationSeconds: 30, sourceProvenance: { validationSource: registration } } });
-    await db.benchmarkRun.updateMany({ where: { benchmarkProtocolId: protocol.id }, data: { workloadId: registration.workloadId, inputHash: hash, sourceFrameCount: 720, encodedFrameCount: 720, encodeWallTimeMs: 15000, preRunEnvironmentCheck: { measurementGroup: groupReceipt(15000) } } });
+    await db.benchmarkRun.updateMany({ where: { benchmarkProtocolId: protocol.id }, data: { workloadId: registration.workloadId, inputHash: hash, sourceFrameCount: 720, encodedFrameCount: 720, encodeWallTimeMs: 15000, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: groupReceipt(15000) } } });
     await db.benchmarkProtocol.update({ where: { id: protocol.id }, data: { sourceSuiteVersion: VALIDATION_SOURCE_SUITE } });
     const held = { ...evidence, partition: 'HOLDOUT', workloadId: registration.workloadId, sourceSuiteVersion: VALIDATION_SOURCE_SUITE, sourceSha256: hash, sourceRegistrationHash: validationSourceHash(registration) };
     assert.deepEqual(await verifyCalibrationRetainedEvidence(db, { ...document, corpus: [held] }, root), { verifiedAnalyses: 1, verifiedObjects: 1 });
@@ -98,7 +98,7 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     delete process.env.VALIDATION_SOURCE_REGISTRY_PATH;
     await assert.rejects(verifyCalibrationRetainedEvidence(db, { ...document, corpus: [held] }, root), /operator-installed source registry/);
     await db.testClip.update({ where: { id: clip.id }, data: { suiteVersion: 'test-only', workloadId: suffix, sha256: suffix, byteSize: 1, exactFrameCount: 240, exactDurationSeconds: 10, sourceProvenance: {} } });
-    await db.benchmarkRun.updateMany({ where: { benchmarkProtocolId: protocol.id }, data: { workloadId: suffix, inputHash: suffix, sourceFrameCount: 240, encodedFrameCount: 240, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { measurementGroup: groupReceipt(5000) } } });
+    await db.benchmarkRun.updateMany({ where: { benchmarkProtocolId: protocol.id }, data: { workloadId: suffix, inputHash: suffix, sourceFrameCount: 240, encodedFrameCount: 240, encodeWallTimeMs: 5000, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: groupReceipt(5000) } } });
     await db.benchmarkProtocol.update({ where: { id: protocol.id }, data: { sourceSuiteVersion: 'test-only' } });
     const newer = await db.qualityAnalysis.create({ data: {
       createdAt: new Date('2002-01-01T00:00:00Z'), benchmarkRunId: run.id, artifactId: artifact.id, status: 'SUSPECT', metricModelId: 'test-model',

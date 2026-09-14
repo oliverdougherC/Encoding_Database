@@ -1045,8 +1045,15 @@ export async function persistDerivedResultRecord(
   members: ReadonlyArray<{ benchmarkRunId: string; qualityAnalysisId: string }>,
 ): Promise<string> {
   const write = async (tx: Prisma.TransactionClient): Promise<string> => {
-    if (derivedResult.recomputationSpec.protocolVersion === '7.1' && members.length > 0) {
+    if (derivedResult.recomputationSpec.protocolVersion === '7.1') {
       await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+      const existing = await tx.derivedResult.findUnique({ where: buildDerivedResultUniqueWhere(derivedResult), select: { id: true } });
+      await tx.$executeRaw(Prisma.sql`SELECT encodingdb_lock_measurement_groups(coalesce((SELECT jsonb_agg(jsonb_build_array("physicalSourceId","campaignId","repetitionGroupId")) FROM (
+        SELECT "physicalSourceId","campaignId","repetitionGroupId" FROM "BenchmarkRun" WHERE id = ANY(${members.map(member => member.benchmarkRunId)}::text[])
+        UNION SELECT "physicalSourceId","campaignId","repetitionGroupId" FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${existing?.id ?? ''}
+      ) keys), '[]'::jsonb))`);
+    }
+    if (derivedResult.recomputationSpec.protocolVersion === '7.1' && members.length > 0) {
       const context = await tx.scoreContext.findUniqueOrThrow({ where: { id: derivedResult.scoreContextId } });
       const candidates = await tx.benchmarkRun.findMany({ where: { id: { in: members.map(member => member.benchmarkRunId) } } });
       const verify = createMeasurementGroupVerifier(tx, { metricModelId: context.qualityModelId });
@@ -1061,7 +1068,7 @@ export async function persistDerivedResultRecord(
       const [state] = await tx.$queryRaw<Array<{ hash: string; membership: string }>>(Prisma.sql`SELECT ${measurementGroupStateHashSql(measurementGroupScopeForMembers(members.map(member => member.benchmarkRunId)))} AS hash,
         encode(sha256(convert_to(${JSON.stringify(members.map(member => member.qualityAnalysisId).sort())}::jsonb::text, 'UTF8')), 'hex') AS membership`);
       derivedResult = { ...derivedResult, evidenceSummary: { ...derivedResult.evidenceSummary, measurementGroupSnapshot: {
-        version: 'measurement-group-state/v1', rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
+        version: 'measurement-group-state/v2', rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
         qualifiedCount: members.length, qualifiedMembershipHash: state!.membership, stateHash: state!.hash,
       } } };
     }
@@ -1081,6 +1088,11 @@ export async function persistDerivedResultRecord(
           qualityAnalysisId,
         })),
       });
+    }
+    if (derivedResult.recomputationSpec.protocolVersion === '7.1') {
+      await tx.$executeRaw(Prisma.sql`DELETE FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${persisted.id}`);
+      if (members.length) await tx.$executeRaw(Prisma.sql`INSERT INTO "DerivedResultGroupDependency" ("derivedResultId","physicalSourceId","campaignId","repetitionGroupId")
+        SELECT DISTINCT ${persisted.id}, "physicalSourceId","campaignId","repetitionGroupId" FROM "BenchmarkRun" WHERE id = ANY(${members.map(member => member.benchmarkRunId)}::text[])`);
     }
     return persisted.id;
   };

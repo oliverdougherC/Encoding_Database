@@ -16,7 +16,7 @@ const receipt = (times, group = 'group', campaign = 'campaign') => ({ schemaVers
 function group(times = [1000, 1001], source = 'physical-source-1') {
   const shared = receipt(times);
   return times.map((ms, index) => ({ id: `${source}-${index}`, benchmarkProtocolId: 'protocol', testClipId: 'clip', workloadId: 'workload', recipeId: 'recipe', environmentId: 'environment', physicalSourceId: source, campaignId: 'campaign', repetitionGroupId: 'group', repetitionIndex: index + 1,
-    preRunEnvironmentCheck: { measurementGroup: shared }, status: 'ACCEPTED', encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: 'a'.repeat(64), encodeWallTimeMs: ms, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms,
+    preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: shared }, status: 'ACCEPTED', encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: 'a'.repeat(64), encodeWallTimeMs: ms, sourceFrameCount: 240, encodedFrameCount: 240, sourceFps: 24, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms,
     benchmarkProtocol: { protocolVersion: '7.1', canonicalRecipeRules: CANONICAL_MEASUREMENT_RULES }, testClip: { sha256: 'a'.repeat(64), exactFrameCount: 240, exactDurationSeconds: 10, frameRateNumerator: 24, frameRateDenominator: 1 },
     qualityAnalyses: [{ id: `analysis-${source}-${index}`, createdAt: new Date(), metricModelId: 'model', analysisWorkerVersion: 'worker', status: 'COMPLETE', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, evidenceReviews: [], artifact: { id: `artifact-${source}-${index}`, benchmarkRunId: `${source}-${index}`, role: 'ENCODED', storageState: 'RETAINED', sha256: 'c'.repeat(64), byteSize: 100, storageProvider: 'localfs', storageKey: 'object', storageUrl: '/retained/object' } }],
   }));
@@ -31,6 +31,11 @@ test('complete canonical group eligibility derives timing, exact members and cur
   assert.equal(check(group()).eligible, true);
   for (const [name, change, pattern] of [
     ['missing', rows => { delete rows[0].preRunEnvironmentCheck.measurementGroup; }, /missing/],
+    ['missing sampler', rows => { delete rows[1].preRunEnvironmentCheck.snapshot; }, /background-observation/],
+    ['old sampler', rows => { rows[1].preRunEnvironmentCheck.snapshot.telemetry_sources = 'cpu_psutil'; }, /background-observation/],
+    ['missing observation', rows => { delete rows[1].preRunEnvironmentCheck.snapshot.background_cpu_pct; }, /background-observation/],
+    ['null observation', rows => { rows[1].preRunEnvironmentCheck.snapshot.background_cpu_pct = null; }, /background-observation/],
+    ['nonfinite observation', rows => { rows[1].preRunEnvironmentCheck.snapshot.background_cpu_pct = Infinity; }, /background-observation/],
     ['partial upload', rows => rows.pop(), /incomplete/],
     ['pending analysis', rows => { rows[1].qualityAnalyses = []; }, /missing/],
     ['mixed summary', rows => { rows[1].preRunEnvironmentCheck.measurementGroup = receipt([1000, 1001.0001]); }, /inconsistent/],
@@ -44,6 +49,8 @@ test('complete canonical group eligibility derives timing, exact members and cur
     ['nonretained', rows => { rows[1].qualityAnalyses[0].artifact.storageState = 'UPLOADED'; }, /ineligible/],
   ]) { const rows = structuredClone(group()); change(rows); const result = check(rows); assert.equal(result.eligible, false, name); assert.match(result.reason, pattern, name); }
   const rows = group();
+  rows[1].preRunEnvironmentCheck.snapshot = { telemetry_sources: 'cpu_psutil, cpu_psutil_blocking_window_v1', background_cpu_pct: 0 };
+  assert.equal(check(rows).eligible, true, 'successful blocking fallback and measured idle zero qualify');
   assert.throws(() => parseMeasurementGroupReceipt({ ...receipt([1000, 1001]), stable: true }, rows[0]));
   assert.throws(() => parseMeasurementGroupReceipt({ ...receipt([1000, 1001]), countedAttempts: [{ repetitionIndex: 1, encodeWallTimeMs: 1000 }, { repetitionIndex: 1, encodeWallTimeMs: 1001 }] }));
 });
@@ -77,9 +84,9 @@ test('live complete-group verification is independent of frontier subset, valida
     const clip = await db.testClip.create({ data: { suiteId: suffix, suiteVersion: 'TEST ONLY', manifestVersion: 'TEST ONLY', clipKey: suffix, displayName: 'TEST ONLY', workloadId: suffix, contentClass: 'talking-head', sourceProvenance: {}, sha256: hash(suffix), byteSize: 1, exactFrameCount: 240, exactDurationSeconds: 10, frameRateNumerator: 24, frameRateDenominator: 1, width: 1920, height: 1080, pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0' } });
     const recipe = await db.recipe.create({ data: { fingerprint: suffix, canonicalJson: {}, codecFamily: 'h264', encoderImplementation: 'libx264', pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0', requestedRateControlMode: 'CRF', effectiveRateControlMode: 'CRF', requestedRateControl: {}, effectiveRateControl: {} } });
     const environment = await db.environment.create({ data: { fingerprint: suffix, canonicalJson: {}, cpuModel: 'TEST ONLY', cpuArchitecture: 'arm64', osName: 'test', osVersion: 'test', ffmpegBuildFingerprint: suffix, ffmpegVersion: 'test', clientVersion: 'client/0.3.0' } });
-    const shared = receipt([1000, 1001], suffix, suffix);
+    const shared = receipt([24000, 24001], suffix, suffix);
     const runs = [], analyses = [], artifacts = [];
-    const input = index => ({ benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, payloadHash: hash(`${suffix}-${index}`), physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: index + 1, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: clip.sha256, encodeWallTimeMs: 1000 + index, encodeFps: 240000 / (1000 + index), sourceFps: 24, realTimeRatio: 10000 / (1000 + index), sourceFrameCount: 240, encodedFrameCount: 240, preRunEnvironmentCheck: { measurementGroup: shared }, artifact: { role: 'ENCODED', sha256: sha, byteSize: bytes.length } });
+    const input = index => ({ benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, payloadHash: hash(`${suffix}-${index}`), physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: index + 1, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: clip.sha256, encodeWallTimeMs: 24000 + index, encodeFps: 240000 / (24000 + index), sourceFps: 24, realTimeRatio: 10000 / (24000 + index), sourceFrameCount: 240, encodedFrameCount: 240, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: shared }, artifact: { role: 'ENCODED', sha256: sha, byteSize: bytes.length } });
     const persistence = createPrismaArtifactPipelinePersistence(db);
     for (let index = 0; index < 2; index++) {
       const created = await persistence.createOrFetchRun(input(index));
@@ -90,10 +97,10 @@ test('live complete-group verification is independent of frontier subset, valida
       assert.equal(verified.eligible, index === 1);
     }
     await assert.rejects(persistence.createOrFetchRun({ ...input(0), payloadHash: hash('different-key') }), /already has an immutable run/);
-    await assert.rejects(persistence.createOrFetchRun({ ...input(1), payloadHash: hash('extra-index'), repetitionIndex: 3, preRunEnvironmentCheck: { measurementGroup: receipt([1000, 1001, 1002], suffix, suffix) } }), /receipt does not bind|receipt is immutable/);
+    await assert.rejects(persistence.createOrFetchRun({ ...input(1), payloadHash: hash('extra-index'), repetitionIndex: 3, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: receipt([1000, 1001, 1002], suffix, suffix) } }), /receipt does not bind|receipt is immutable/);
     const loaded = await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'TEST ONLY' });
     assert.equal(loaded.length, 2);
-    const evidence = { evidenceId: analyses[0].id, qualityAnalysisId: analyses[0].id, benchmarkRunId: runs[0].id, artifactId: artifacts[0].id, artifactSha256: sha, artifactStorageState: 'RETAINED', analysisWorkerVersion: 'authoritative-analysis/test-worker', recipeFingerprint: suffix, environmentFingerprint: suffix, machineSourceId: suffix, workloadId: suffix, contentClass: 'talking-head', hardwareFamily: 'software', encoderFamily: 'h264', encoderImplementation: 'libx264', nativeRateControl: {}, preset: 'unspecified', runStatus: 'ACCEPTED', analysisStatus: 'COMPLETE', vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000, realTimeRatio: 10 };
+    const evidence = { evidenceId: analyses[0].id, qualityAnalysisId: analyses[0].id, benchmarkRunId: runs[0].id, artifactId: artifacts[0].id, artifactSha256: sha, artifactStorageState: 'RETAINED', analysisWorkerVersion: 'authoritative-analysis/test-worker', recipeFingerprint: suffix, environmentFingerprint: suffix, machineSourceId: suffix, workloadId: suffix, contentClass: 'talking-head', hardwareFamily: 'software', encoderFamily: 'h264', encoderImplementation: 'libx264', nativeRateControl: {}, preset: 'unspecified', runStatus: 'ACCEPTED', analysisStatus: 'COMPLETE', vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000, realTimeRatio: 10000 / 24000 };
     const document = { corpus: [evidence], metricSanityReviews: [], qualityModelId: 'test-model', benchmarkProtocolVersion: '7.1', sourceSuiteVersion: 'TEST ONLY' };
     assert.equal((await verifyCalibrationRetainedEvidence(db, document, root)).verifiedAnalyses, 1, 'frontier subset one verifies complete underlying two-run group');
     const context = await db.scoreContext.create({ data: { benchmarkProtocolId: protocol.id, formulaVersion: '7.0', contextVersion: suffix, workloadId: suffix, qualityModelId: 'test-model', workloadReferenceBitrateBps: 1000000, transformConstants: {} } });
@@ -113,10 +120,10 @@ test('live complete-group verification is independent of frontier subset, valida
     const page = async () => (await loadPublicCorpusPage(db, {}, { take: 1, id: publicId, publicReferenceContextVersions: new Set([context.contextVersion]) })).rows[0];
     const initial = await rebuildPublic();
     assert.equal((await page()).pl.total, initial.derivedResult.plTotal);
-    const badTimes = [2000, 2061.014, 2000, 2000];
+    const badTimes = [2400, 2473.2168, 2400, 2400];
     const badReceipt = receipt(badTimes, `${suffix}-unstable`, suffix);
     for (const [index, ms] of badTimes.entries()) {
-      const created = await persistence.createOrFetchRun({ ...input(0), payloadHash: hash(`${suffix}-unstable-${index}`), physicalSourceId: `${suffix}-other`, repetitionGroupId: badReceipt.repetitionGroupId, repetitionIndex: index + 1, encodeWallTimeMs: ms, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms, preRunEnvironmentCheck: { measurementGroup: badReceipt } });
+      const created = await persistence.createOrFetchRun({ ...input(0), payloadHash: hash(`${suffix}-unstable-${index}`), physicalSourceId: `${suffix}-other`, repetitionGroupId: badReceipt.repetitionGroupId, repetitionIndex: index + 1, encodeWallTimeMs: ms, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: badReceipt } });
       await db.benchmarkRun.update({ where: { id: created.bundle.run.id }, data: { status: 'ACCEPTED' } });
       await db.artifact.update({ where: { id: created.bundle.artifact.id }, data: { storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } });
       await db.qualityAnalysis.create({ data: { benchmarkRunId: created.bundle.run.id, artifactId: created.bundle.artifact.id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, vmafMean: 70, vmafP5: 60, videoBitrateBps: 1000000 } });
@@ -131,23 +138,55 @@ test('live complete-group verification is independent of frontier subset, valida
     assert.equal(publicMixed.status.centerBasis, 'eligible-stable-groups');
     assert.equal((await db.derivedResultMember.count({ where: { derivedResultId: mixed.derivedResultId } })), 2, 'unstable rows never become scoring members');
     const otherRecipe = await db.recipe.create({ data: { fingerprint: `${suffix}-alternate`, canonicalJson: {}, codecFamily: 'h264', encoderImplementation: 'libx264', preset: 'alternate', pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0', requestedRateControlMode: 'CRF', effectiveRateControlMode: 'CRF', requestedRateControl: {}, effectiveRateControl: {} } });
-    const alternateReceipt = receipt([1500, 1501], `${suffix}-alternate`, suffix);
+    const alternateReceipt = receipt([4800, 4801], `${suffix}-alternate`, suffix);
     for (let index = 0; index < 2; index++) {
-      const ms = 1500 + index;
-      const created = await persistence.createOrFetchRun({ ...input(0), recipeId: otherRecipe.id, payloadHash: hash(`${suffix}-alternate-${index}`), repetitionGroupId: alternateReceipt.repetitionGroupId, repetitionIndex: index + 1, encodeWallTimeMs: ms, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms, preRunEnvironmentCheck: { measurementGroup: alternateReceipt } });
+      const ms = 4800 + index;
+      const created = await persistence.createOrFetchRun({ ...input(0), recipeId: otherRecipe.id, payloadHash: hash(`${suffix}-alternate-${index}`), repetitionGroupId: alternateReceipt.repetitionGroupId, repetitionIndex: index + 1, encodeWallTimeMs: ms, encodeFps: 240000 / ms, realTimeRatio: 10000 / ms, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: alternateReceipt } });
       await db.benchmarkRun.update({ where: { id: created.bundle.run.id }, data: { status: 'ACCEPTED' } });
       await db.artifact.update({ where: { id: created.bundle.artifact.id }, data: { storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } });
       await db.qualityAnalysis.create({ data: { benchmarkRunId: created.bundle.run.id, artifactId: created.bundle.artifact.id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, vmafMean: 85, vmafP5: 75, videoBitrateBps: 1000000 } });
     }
-    await rebuildPublic(otherRecipe);
+    const otherProjection = await rebuildPublic(otherRecipe);
+    const otherPublicId = `${protocol.id}::${suffix}::${otherRecipe.id}::${environment.id}::test-model`;
+    const untouchedOther = await db.derivedResult.findUnique({ where: { id: otherProjection.derivedResultId } });
+    const unchangedOriginal = await db.derivedResult.findUnique({ where: { id: mixed.derivedResultId } });
     for (const sort of ['fps', 'vmaf']) {
       const sorted = await loadPublicCorpusPage(db, { search: suffix, sort, dir: 'desc' }, { take: 1, publicReferenceContextVersions: new Set([context.contextVersion]) });
       assert.equal(sorted.totalCount, 2);
-      assert.equal(sorted.rows[0].id, publicId, 'pagination sorts by displayed stable-group centers, not lower raw diagnostic medians');
+      assert.equal(sorted.rows[0].id, sort === 'fps' ? otherPublicId : publicId, 'pagination sorts by displayed stable-group centers, not lower raw diagnostic medians');
     }
-    const extra = await db.benchmarkRun.create({ data: { benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 3, payloadHash: crypto.randomUUID(), preRunEnvironmentCheck: { measurementGroup: shared } } });
+    await db.qualityAnalysis.update({ where: { id: analyses[0].id }, data: { recomputePending: true, lastError: 'bookkeeping only' } });
+    assert.equal((await page()).pl.total, mixed.derivedResult.plTotal, 'bookkeeping does not invalidate group qualification');
+    assert.equal((await db.$queryRawUnsafe('SELECT count(*)::int AS count FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = $1 AND "invalidatedAt" IS NOT NULL', mixed.derivedResultId))[0].count, 0);
+    let releaseGroup, groupLocked;
+    const groupReady = new Promise(resolve => { groupLocked = resolve; });
+    const groupRelease = new Promise(resolve => { releaseGroup = resolve; });
+    const frozenGroup = db.$transaction(async tx => { await tx.$executeRawUnsafe('SELECT encodingdb_lock_measurement_groups($1::jsonb)', JSON.stringify([[suffix, suffix, suffix]])); groupLocked(); await groupRelease; });
+    await groupReady;
+    let extraCommitted = false;
+    const pendingExtra = db.benchmarkRun.create({ data: { benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id, physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: suffix, repetitionIndex: 3, payloadHash: crypto.randomUUID(), preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: shared } } }).then(row => { extraCommitted = true; return row; });
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(extraCommitted, false, 'source mutations wait for an in-flight group qualification lock');
+    releaseGroup(); await frozenGroup;
+    const extra = await pendingExtra;
+
+    const crossed = await loadPublicCorpusPage(db, { search: suffix, sort: 'fps', dir: 'desc' }, { take: 1, publicReferenceContextVersions: new Set([context.contextVersion]) });
+    assert.equal(crossed.rows[0].id, publicId, 'stale off-page A must cross above B when its diagnostic fallback is faster');
+    assert.ok(Math.abs(crossed.rows[0].fps - (100 + 240000 / 2473.2168) / 2) < 1e-10);
+    assert.equal(crossed.rows[0].pl.total, null);
+    assert.equal(crossed.rows[0].status.centerBasis, 'accepted');
+    assert.deepEqual(await db.derivedResult.findUnique({ where: { id: otherProjection.derivedResultId } }), untouchedOther, 'unrelated group projection stays unchanged');
+    assert.deepEqual(await db.derivedResult.findUnique({ where: { id: mixed.derivedResultId } }), unchangedOriginal, 'durable dependency invalidation preserves original derived values and membership');
     assert.equal((await page()).pl.total, null, 'a non-accepted extra sibling changes the full group-state certificate even when accepted membership is unchanged');
     await db.benchmarkRun.delete({ where: { id: extra.id } });
+    await rebuildPublic();
+    assert.equal((await page()).pl.total, mixed.derivedResult.plTotal);
+    await db.benchmarkRun.update({ where: { id: runs[1].id }, data: { preRunEnvironmentCheck: { measurementGroup: shared, snapshot: { telemetry_sources: 'cpu_psutil', background_cpu_pct: 0 } } } });
+    const oldSamplerPage = await loadPublicCorpusPage(db, { search: suffix, sort: 'fps', dir: 'desc' }, { take: 1, publicReferenceContextVersions: new Set([context.contextVersion]) });
+    assert.equal(oldSamplerPage.rows[0].id, publicId, 'sampler provenance invalidates off-page qualification before sorting');
+    assert.equal(oldSamplerPage.rows[0].pl.total, null);
+    await assert.rejects(verifyCalibrationRetainedEvidence(db, document, root), /missing-corrected-background-observation/);
+    await db.benchmarkRun.update({ where: { id: runs[1].id }, data: { preRunEnvironmentCheck: input(1).preRunEnvironmentCheck } });
     await rebuildPublic();
     assert.equal((await page()).pl.total, mixed.derivedResult.plTotal);
     const suspendedReview = await db.evidenceReview.create({ data: { id: crypto.randomUUID(), analysisId: analyses[1].id, benchmarkRunId: runs[1].id, artifactId: artifacts[1].id, artifactSha256: sha, metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', reviewerId: 'SYNTHETIC TEST NOT HUMAN', decision: 'INVESTIGATE', rationale: 'Synthetic sibling-review regression', evidenceLinks: [] } });

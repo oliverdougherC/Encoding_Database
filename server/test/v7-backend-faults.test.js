@@ -259,7 +259,7 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   const metrics = { vmafMean: 95, vmafP5: 90, videoBitrateBps: 1_000_000, fileSizeBytes: 10000 };
   const newRun = burst.find(entry => entry.status === 'fulfilled').value.bundle;
   const groupReceipt = { schemaVersion: 'encodingdb-measurement-group/v1', campaignId: 'snapshot-group', repetitionGroupId: 'snapshot-group', completed: true, countedAttempts: [1, 2].map(repetitionIndex => ({ repetitionIndex, encodeWallTimeMs: 1000 })) };
-  for (const [index, bundle] of [slowRun, newRun].entries()) await client.benchmarkRun.update({ where: { id: bundle.run.id }, data: { campaignId: 'snapshot-group', repetitionGroupId: 'snapshot-group', repetitionIndex: index + 1, preRunEnvironmentCheck: { ...body.preRunEnvironmentCheck, measurementGroup: groupReceipt } } });
+  for (const [index, bundle] of [slowRun, newRun].entries()) await client.benchmarkRun.update({ where: { id: bundle.run.id }, data: { campaignId: 'snapshot-group', repetitionGroupId: 'snapshot-group', repetitionIndex: index + 1, preRunEnvironmentCheck: { ...body.preRunEnvironmentCheck, snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: groupReceipt } } });
   await client.qualityAnalysis.updateMany({ where: { benchmarkRunId: slowRun.run.id }, data: { analysisProvenance: { workerBuildFingerprint: 'a'.repeat(64) } } });
 
   await client.qualityAnalysis.updateMany({ where: { benchmarkRunId: slowRun.run.id }, data: metrics });
@@ -312,6 +312,21 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal(aggregate.acceptedRunCount, 2);
   assert.equal(aggregate.centerVmafMean, 95, 'updating old evidence cannot resurrect its superseded analysis');
   assert.equal(aggregate.members.length, 2, 'newer complete member set wins after out-of-order scheduling');
+  await client.qualityAnalysis.updateMany({ data: { recomputePending: false } });
+  const groupRun = await client.benchmarkRun.findUnique({ where: { id: slowRun.run.id } });
+  await client.benchmarkRun.update({ where: { id: slowRun.run.id }, data: { preRunEnvironmentCheck: { ...groupRun.preRunEnvironmentCheck, snapshot: { telemetry_sources: 'cpu_psutil_blocking_window_v1', background_cpu_pct: 0 } } } });
+  assert.equal((await client.$queryRawUnsafe('SELECT count(*)::int AS count FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = $1 AND "invalidatedAt" IS NOT NULL', aggregate.id))[0].count, 1);
+  const previousContextPath = process.env.PL_V7_REFERENCE_CONTEXT_PATH;
+  let dependencyRebuilds = 0;
+  try {
+    process.env.PL_V7_REFERENCE_CONTEXT_PATH = activeEnv.PL_V7_REFERENCE_CONTEXT_PATH;
+    await replicaPersistence.retryDerivedRecomputes(async payload => { dependencyRebuilds++; await createDefaultDerivedRecomputeCallback(replica, activeEnv)(payload); });
+  } finally {
+    if (previousContextPath === undefined) delete process.env.PL_V7_REFERENCE_CONTEXT_PATH;
+    else process.env.PL_V7_REFERENCE_CONTEXT_PATH = previousContextPath;
+  }
+  assert.equal(dependencyRebuilds, 1, 'a restarted dispatcher discovers dirty active dependencies even with no QA retry flag');
+  assert.equal((await client.$queryRawUnsafe('SELECT count(*)::int AS count FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = $1 AND "invalidatedAt" IS NOT NULL', aggregate.id))[0].count, 0);
   const pendingReplacement = await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'PENDING', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'replacement-test-worker', analysisProvenance: {} } });
   await rebuild(rebuildPayload);
   assert.equal((await client.derivedResult.findUnique({ where: { id: aggregate.id } })).acceptedRunCount, 1, 'new pending analysis blocks reviewed older evidence');

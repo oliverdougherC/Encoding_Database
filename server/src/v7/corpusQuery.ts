@@ -68,9 +68,11 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
         WHERE d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."plTotal" IS NOT NULL
           AND d."benchmarkProtocolId" = grouped."benchmarkProtocolId" AND d."workloadId" = grouped."workloadId" AND d."recipeId" = grouped."recipeId" AND d."environmentId" = grouped."environmentId"
           AND c."qualityModelId" = grouped."metricModelId" AND c."contextVersion" = ANY(${[...contexts]}::text[])
-          AND (b."protocolVersion" <> '7.1' OR (d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v1'
+          AND (b."protocolVersion" <> '7.1' OR (d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v2'
             AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = grouped.accepted
-            AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = grouped."acceptedMembershipHash"))
+            AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = grouped."acceptedMembershipHash"
+            AND EXISTS (SELECT 1 FROM "DerivedResultGroupDependency" dependency WHERE dependency."derivedResultId" = d.id)
+            AND NOT EXISTS (SELECT 1 FROM "DerivedResultGroupDependency" dependency WHERE dependency."derivedResultId" = d.id AND dependency."invalidatedAt" IS NOT NULL)))
         ORDER BY d."createdAt" DESC, d.id DESC LIMIT 1
       ) candidate ON true
     ), page AS (
@@ -87,7 +89,7 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
               AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page.accepted
               AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page."acceptedMembershipHash")
             OR (scoredProtocol."protocolVersion" = '7.1'
-              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v1'
+              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v2'
               AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = page.accepted
               AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = page."acceptedMembershipHash"
               AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int > 0

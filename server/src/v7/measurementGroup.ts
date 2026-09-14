@@ -72,6 +72,10 @@ export function evaluateMeasurementGroup(target: MeasurementGroupRun, members: r
     try { observed = parseMeasurementGroupReceipt(receiptFromRun(member), member); } catch { return { ...result, reason: 'inconsistent-receipt-or-timing' }; }
     if (!observed || canonicalJsonString(observed as never) !== canonicalReceipt || member.repetitionIndex == null || seen.has(member.repetitionIndex)) return { ...result, reason: 'inconsistent-receipt-or-members' };
     seen.add(member.repetitionIndex);
+    const snapshot = object(object(member.preRunEnvironmentCheck)?.snapshot);
+    const sources = typeof snapshot?.telemetry_sources === 'string' ? snapshot.telemetry_sources.split(',').map(source => source.trim()) : [];
+    if (!sources.some(source => source === 'cpu_psutil_thread_window_v1' || source === 'cpu_psutil_blocking_window_v1')
+      || typeof snapshot?.background_cpu_pct !== 'number' || !Number.isFinite(snapshot.background_cpu_pct)) return { ...result, reason: 'missing-corrected-background-observation' };
     if (!timingMatches(member)) return { ...result, reason: 'invalid-timing-tuple' };
     const latest = [...(member.qualityAnalyses ?? [])].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() || b.id.localeCompare(a.id))[0];
     if (!latest || latest.metricModelId !== identity.metricModelId || (worker && latest.analysisWorkerVersion !== worker)) return { ...result, reason: 'missing-or-mixed-analysis' };
@@ -137,9 +141,9 @@ export function createMeasurementGroupVerifier(client: MeasurementGroupClient, i
 export function measurementGroupStateHashSql(scope: Prisma.Sql): Prisma.Sql {
   return Prisma.sql`(SELECT encode(sha256(convert_to(coalesce(jsonb_agg(jsonb_build_array(
     r.id, r."benchmarkProtocolId", r."testClipId", r."workloadId", r."recipeId", r."environmentId", r."physicalSourceId", r."campaignId", r."repetitionGroupId", r."repetitionIndex",
-    r.status, r."encodeTimerBoundary", r."inputHash", r."encodeWallTimeMs", r."encodeFps", r."sourceFps", r."realTimeRatio", r."sourceFrameCount", r."encodedFrameCount", r."preRunEnvironmentCheck"->'measurementGroup',
+    r.status, r."encodeTimerBoundary", r."inputHash", r."encodeWallTimeMs", r."encodeFps", r."sourceFps", r."realTimeRatio", r."sourceFrameCount", r."encodedFrameCount", r."preRunEnvironmentCheck",
     b."protocolVersion", b."canonicalRecipeRules", c.sha256, c."exactFrameCount", c."exactDurationSeconds", c."frameRateNumerator", c."frameRateDenominator",
-    a.id, a.status, a."metricModelId", a."analysisWorkerVersion", a."analysisProvenance"->'workerBuildFingerprint',
+    a.id, a.status, a."metricModelId", a."analysisWorkerVersion", a."analysisProvenance"->'workerBuildFingerprint', a."vmafMean", a."vmafP5", a."videoBitrateBps", a."fileSizeBytes",
     f.id, f.role, f."benchmarkRunId", f.sha256, f."byteSize", f."storageState", f."storageProvider", f."storageKey", f."storageUrl",
     review.id, review.decision
   ) ORDER BY r.id), '[]'::jsonb)::text, 'UTF8')), 'hex')

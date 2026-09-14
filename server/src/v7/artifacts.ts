@@ -3527,12 +3527,24 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async retryDerivedRecomputes(callback) {
       const jobs = await client.qualityAnalysis.findMany({ where: { recomputePending: true } as any, orderBy: { updatedAt: 'asc' }, take: 10 });
+      const active = loadActiveRecommendationContextIdentity();
+      if (active && jobs.length < 10) {
+        const dirty = await client.$queryRawUnsafe<Array<{ id: string }>>(`SELECT DISTINCT representative.id FROM "DerivedResultGroupDependency" dependency
+          JOIN "DerivedResult" d ON d.id = dependency."derivedResultId" JOIN "ScoreContext" c ON c.id = d."scoreContextId"
+          JOIN LATERAL (SELECT a.id FROM "QualityAnalysis" a JOIN "BenchmarkRun" r ON r.id = a."benchmarkRunId"
+            WHERE r."benchmarkProtocolId" = d."benchmarkProtocolId" AND r."workloadId" = d."workloadId" AND r."recipeId" = d."recipeId" AND r."environmentId" = d."environmentId" AND a."metricModelId" = c."qualityModelId"
+            ORDER BY a."createdAt" DESC, a.id DESC LIMIT 1) representative ON true
+          WHERE dependency."invalidatedAt" IS NOT NULL AND d.kind = 'WORKLOAD' AND c."contextVersion" = $1 AND c."formulaVersion" = $2 AND c."qualityModelId" = $3 AND c."referenceFrontier"->>'contextHash' = $4
+          LIMIT 10`, active.contextVersion, active.formulaVersion, active.qualityModelId, active.hash);
+        const extra = await client.qualityAnalysis.findMany({ where: { id: { in: dirty.map(row => row.id).filter(id => !jobs.some(job => job.id === id)) } } });
+        jobs.push(...extra.slice(0, 10 - jobs.length));
+      }
       for (const job of jobs) {
         try {
           await callback({ benchmarkRunId: job.benchmarkRunId, artifactId: job.artifactId!, metricModelId: job.metricModelId, analysisWorkerVersion: job.analysisWorkerVersion });
           await client.qualityAnalysis.updateMany({ where: { id: job.id, updatedAt: job.updatedAt }, data: { recomputePending: false, recomputeLastError: null } as any });
         } catch (error) {
-          await client.qualityAnalysis.updateMany({ where: { id: job.id, updatedAt: job.updatedAt }, data: { recomputeLastError: normalizeError(error) } as any });
+          await client.qualityAnalysis.updateMany({ where: { id: job.id, updatedAt: job.updatedAt }, data: { recomputePending: true, recomputeLastError: normalizeError(error) } as any });
         }
       }
     },

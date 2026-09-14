@@ -1,0 +1,40 @@
+TAP version 13
+# Subtest: native process deadline, output budget and abort terminate owned process trees
+ok 1 - native process deadline, output budget and abort terminate owned process trees
+  ---
+  duration_ms: 532.020875
+  type: 'test'
+  ...
+# Subtest: real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+ok 2 - real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+  ---
+  duration_ms: 1371.347667
+  type: 'test'
+  ...
+# Subtest: VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+ok 3 - VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+  ---
+  duration_ms: 0.4645
+  type: 'test'
+  ...
+# Subtest: operator middleware denies anonymous and binds configured credentials
+ok 4 - operator middleware denies anonymous and binds configured credentials
+  ---
+  duration_ms: 36.703958
+  type: 'test'
+  ...
+# Subtest: PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+ok 5 - PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+  ---
+  duration_ms: 10259.479417
+  type: 'test'
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 5
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 12337.127625
