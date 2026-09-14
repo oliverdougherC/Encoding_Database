@@ -258,6 +258,7 @@ class HardwareMonitor:
         self._thread: Optional[threading.Thread] = None
         self._gpu_samples: List[_GpuSample] = []
         self._cpu_samples: List[_CpuSample] = []
+        self._cpu_baseline_ready = False
         self._proc_samples: List[_ProcSample] = []
         self._battery_samples: List[_BatterySample] = []
         self._memory_peak_bytes: float = 0.0
@@ -317,10 +318,6 @@ class HardwareMonitor:
         )
         self._energy_collector.start()
 
-        try:
-            psutil.cpu_percent(interval=None)
-        except Exception:
-            pass
         for proc in self._collect_process_tree():
             try:
                 proc.cpu_percent(interval=None)
@@ -358,6 +355,14 @@ class HardwareMonitor:
             self._collectors.append(_Collector("powermetrics", 2.0, self._sample_powermetrics))
 
     def _sample_loop(self) -> None:
+        # psutil keeps system CPU baselines by thread ID. A caller-thread prime
+        # cannot reset a recycled sampler ID's history from a previous encode.
+        self._cpu_baseline_ready = False
+        self._read_cpu_percent()
+        # The discarded baseline is not a zero-utilization sample. Give the
+        # first retained delta the >=100ms interval recommended by psutil.
+        if self._stop_event.wait(0.1):
+            return
         while not self._stop_event.is_set():
             now = time.monotonic()
             for collector in self._collectors:
@@ -554,20 +559,27 @@ class HardwareMonitor:
             self._record_source("gpu_temp_powermetrics")
         cpu_temp = parsed.get("cpuTempMaxC")
         if cpu_temp is not None:
-            overall = 0.0
-            try:
-                overall = float(psutil.cpu_percent(interval=None))
-            except Exception:
-                overall = 0.0
+            overall = self._read_cpu_percent()
+            if overall is None:
+                return
             with self._lock:
                 self._cpu_samples.append(_CpuSample(overall_pct=overall, temp_c=cpu_temp))
             self._record_source("cpu_temp_powermetrics")
 
-    def _sample_cpu(self) -> None:
+    def _read_cpu_percent(self) -> Optional[float]:
         try:
             overall = float(psutil.cpu_percent(interval=None))
         except Exception:
             self._record_missing("cpu_unavailable")
+            return None
+        if not self._cpu_baseline_ready:
+            self._cpu_baseline_ready = True
+            return None
+        return overall
+
+    def _sample_cpu(self) -> None:
+        overall = self._read_cpu_percent()
+        if overall is None:
             return
         freq: Optional[float] = None
         try:
