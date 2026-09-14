@@ -1,7 +1,10 @@
 // Build the server receipt from completed local measurements, never a claimed threshold.
 export function validationMeasurementGroup(result) {
   const counted = result.runs.filter(run => run.countedForStability === true);
+  const measured = result.runs.filter(run => run.schedule.phase === 'measured');
   if (counted.length < 2 || counted.length > 4 || counted.length !== result.measuredRunsCounted
+    || !Number.isInteger(result.measuredRunsRequired) || result.measuredRunsRequired < 2
+    || !Number.isInteger(result.measuredRunsCompleted) || result.measuredRunsCompleted !== measured.length
     || result.measuredRunsCompleted < result.measuredRunsRequired) throw new Error('Incomplete validation measurement group');
   const first = counted[0].schedule;
   const seen = new Set();
