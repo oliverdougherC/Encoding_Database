@@ -5,12 +5,100 @@ import json
 import os
 import re
 import secrets
+import math
+import time
+import subprocess
+from contextvars import ContextVar
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
 from . import config
 from .protocol import (ArtifactProbe, BenchmarkRunRecord, EncodeTiming, EnvironmentSnapshot,
                        ScheduledRun, ValidityReason, ValidityResult)
+
+
+_MEASUREMENT_BUDGET = ContextVar("encodingdb_measurement_budget", default=None)
+
+
+class MeasurementBudgetExceeded(BaseException):
+    """A resumable pause, not invalid scientific evidence or a probe failure."""
+    def __init__(self, budget):
+        self.budget = budget
+        super().__init__(f"Measurement time budget of {budget.minutes:g} minutes exhausted")
+
+
+class MeasurementBudget:
+    def __init__(self, minutes=60, *, cancel_event=None, clock=None):
+        self.minutes = float(minutes)
+        if not math.isfinite(self.minutes) or not math.isfinite(self.minutes * 60) or self.minutes <= 0:
+            raise ValueError("--max-duration-minutes must be positive and finite")
+        self.clock = clock or time.monotonic
+        self.started = self.clock()
+        self.deadline = self.started + self.minutes * 60
+        self.cancel_event = cancel_event
+
+    def remaining_seconds(self):
+        if self.cancel_event is not None and self.cancel_event.is_set():
+            raise KeyboardInterrupt
+        remaining = self.deadline - self.clock()
+        if remaining <= 0:
+            raise MeasurementBudgetExceeded(self)
+        return remaining
+
+    def check(self):
+        self.remaining_seconds()
+
+    @contextmanager
+    def activate(self):
+        token = _MEASUREMENT_BUDGET.set(self)
+        try:
+            self.check()
+            yield self
+        finally:
+            _MEASUREMENT_BUDGET.reset(token)
+
+
+def check_measurement_budget():
+    budget = _MEASUREMENT_BUDGET.get()
+    if budget is not None:
+        budget.check()
+
+
+def measurement_timeout(maximum):
+    budget = _MEASUREMENT_BUDGET.get()
+    return maximum if budget is None else min(maximum, budget.remaining_seconds())
+
+
+def run_measurement_process(*args, **kwargs):
+    """Keep validation tools inside the allowance and responsive to Stop/Close."""
+    budget = _MEASUREMENT_BUDGET.get()
+    if budget is None:
+        return subprocess.run(*args, **kwargs)
+    budget.check()
+    timeout = kwargs.pop("timeout", None) or 60
+    check = kwargs.pop("check", False)
+    command = args[0] if args else kwargs.get("args")
+    deadline = time.monotonic() + timeout
+    kwargs.setdefault("start_new_session", os.name != "nt")
+    with subprocess.Popen(*args, **kwargs) as process:
+        try:
+            while True:
+                try:
+                    stdout, stderr = process.communicate(timeout=measurement_timeout(min(0.2, max(0.001, deadline - time.monotonic()))))
+                    break
+                except subprocess.TimeoutExpired:
+                    budget.check()
+                    if time.monotonic() >= deadline:
+                        raise subprocess.TimeoutExpired(command, timeout)
+            budget.check()
+            if check and process.returncode:
+                raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
+            return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+        except BaseException:
+            from .ffmpeg import _terminate_owned_process
+            _terminate_owned_process(process)
+            raise
 
 
 def atomic_json(path: Path, value: Any) -> None:

@@ -257,6 +257,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.batch_size = max(0, int(self.batch_size_var.get() or 0))
             run_args.pause_on_exit = False
             run_args.menu = False
+            self._append_log(f"Measurement allowance: {getattr(run_args, 'max_duration_minutes', 60):g} minutes; acquisition is separate.")
             bitrate = self.bitrate_var.get().strip()
             try:
                 run_args.target_bitrate_kbps = int(bitrate) if bitrate else None
@@ -430,6 +431,8 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         rc = int(payload)
                         if rc == 0:
                             self.summary_var.set("Locally complete" if self.no_submit_var.get() else "Uploaded; analysis pending")
+                        elif rc == 11:
+                            self.summary_var.set("Time budget reached; campaign saved for resume")
                         elif rc == 10:
                             self.summary_var.set("Saved locally; upload queued")
                         elif rc == 130:

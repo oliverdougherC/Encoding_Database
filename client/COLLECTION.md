@@ -17,8 +17,14 @@ python -m client --upload-only
 Replace the example campaign ID with the ID printed by your run. Quick runs use one
 canonical clip; full runs use all seven with the selected recipe. Each recipe has
 one warmup, two required measured repetitions and up to two adaptive repetitions.
-The default limits are 100 attempts and 2048 MiB retained storage; change them explicitly
-with `--max-attempts` and `--max-storage-mb`. Local metrics are optional, enabled by
+The default limits are 100 attempts, 2048 MiB retained storage and 60 minutes per
+measurement invocation; change them explicitly with `--max-attempts`,
+`--max-storage-mb` and `--max-duration-minutes`. The time allowance starts with the
+warmup/repetition schedule. Acquisition and preflight occur before it; uploads and
+optional quality diagnostics occur afterward. Expiry cancels owned measurement
+processes, writes a budget-exhaustion record and returns exit 11. An explicit
+`--resume-campaign ID` starts a new allowance while reusing completed attempts.
+Local metrics are optional, enabled by
 `--local-metrics`, and run after every timed experiment finishes.
 
 CLI Single, menu Single and GUI Single use this same authoritative artifact flow.
@@ -53,7 +59,9 @@ or quality analysis in the client.
 Exit 0 means locally completed or uploaded; upload alone does not mean accepted.
 Exit 10 means uploads remain queued. Exit 1 reports invalid/skipped/rejected/failed work,
 exit 5 a compatibility failure, exit 6 a retained campaign/storage/resume error, and
-exit 130 cancellation. Server analysis and review still determine suspect, accepted,
+exit 130 cancellation. Exit 11 means the measurement allowance was exhausted and
+the campaign is saved for resume. Server analysis and review still determine
+suspect, accepted,
 rejected, retention and scoring eligibility; upload receipts preserve server responses.
 
 A random installation pseudonym is stored separately from cohorts and campaigns.
@@ -68,3 +76,8 @@ separate release gates; passing unit tests does not certify those cells.
 
 For retained-campaign failures, set `ENCODINGDB_DEBUG_TRACEBACK=1` to include the
 original exception stack in diagnostic output. Exit codes and retention behavior remain unchanged.
+
+Completed process checkpoints bind the executable and bundled dependency hashes.
+A GUI or CLI relaunch can use a byte-identical helper in a new extraction directory
+without re-encoding; meaningful command arguments and artifact checks stay strict.
+A checkpoint missing this runtime binding cannot be trusted for process resume.

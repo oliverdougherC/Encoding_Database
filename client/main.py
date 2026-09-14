@@ -1,6 +1,7 @@
 import argparse
 import dataclasses
 import json
+import math
 import os
 import re
 import subprocess
@@ -62,7 +63,8 @@ from .artifacts import (
     build_recipe_bootstrap,
 )
 from .network import fetch_baseline_rows, check_compatibility
-from .campaign import CampaignJournal, atomic_json, physical_source_id, journal_path
+from .campaign import (CampaignJournal, atomic_json, physical_source_id, journal_path,
+    MeasurementBudget, MeasurementBudgetExceeded, check_measurement_budget, measurement_timeout, run_measurement_process)
 from .identity import selected_device
 from .protocol import (
     ArtifactProbe,
@@ -708,6 +710,7 @@ def _infer_expected_codec_name(encoder: str) -> Optional[str]:
 
 
 def _probe_artifact_contract(path: str) -> ArtifactProbe:
+    check_measurement_budget()
     cmd = [
         config.ffprobe_exe(),
         "-v", "error",
@@ -722,7 +725,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
         path,
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
     except Exception:
         return ArtifactProbe(decodable=False, truncated=True)
     if proc.returncode != 0:
@@ -783,7 +786,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
     keyframe_interval_min: Optional[int] = None
     keyframe_interval_max: Optional[int] = None
     try:
-        keyframe_proc = subprocess.run(
+        keyframe_proc = run_measurement_process(
             [
                 config.ffprobe_exe(), "-v", "error", "-select_streams", "v:0",
                 "-show_entries", "frame=key_frame", "-of", "csv=p=0", path,
@@ -940,7 +943,8 @@ def _capture_protocol_environment_snapshot(
     )
     monitor.start()
     try:
-        time.sleep(max(0.1, background_cpu_seconds))
+        time.sleep(measurement_timeout(max(0.1, background_cpu_seconds)))
+        check_measurement_budget()
     finally:
         environment_metrics = monitor.stop()
     background_cpu_pct = environment_metrics.cpu_util_avg
@@ -1203,6 +1207,10 @@ def run_benchmark_batch(
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
 ) -> int:
+    duration_minutes = float(getattr(args, "max_duration_minutes", 60))
+    if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
+        print("--max-duration-minutes must be positive and finite", file=sys.stderr)
+        return 4
     if bool(getattr(sys, "frozen", False)) or os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH"):
         from .runtime_lock import verify_runtime_lock
         try:
@@ -1303,6 +1311,7 @@ def run_benchmark_batch(
         totalBatches=total_batches,
         workers=workers,
         noSubmit=bool(getattr(args, "no_submit", False)),
+        maxDurationMinutes=duration_minutes,
         protocol={
             "version": protocol_config.version,
             "warmupRuns": protocol_config.warmup_runs,
@@ -1528,15 +1537,17 @@ def run_benchmark_batch(
                     },
                 )
 
-            campaign_result = execute_protocol_campaign(
-                recipes=recipe_specs,
-                config=protocol_config,
-                encode_runner=_encode_protocol_run,
-                environment_sampler=_sample_environment,
-                seed=campaign_seed,
-                record_sink=journal.save,
-                resumed_records=journal.records,
-            )
+            budget = MeasurementBudget(duration_minutes, cancel_event=cancel_event)
+            with budget.activate():
+                campaign_result = execute_protocol_campaign(
+                    recipes=recipe_specs,
+                    config=protocol_config,
+                    encode_runner=_encode_protocol_run,
+                    environment_sampler=_sample_environment,
+                    seed=campaign_seed,
+                    record_sink=journal.save,
+                    resumed_records=journal.records,
+                )
             attempt_evidence_path = _persist_protocol_attempt_evidence(args.queue_dir, campaign_result)
             _emit_event(
                 event_sink,
@@ -1975,6 +1986,23 @@ def run_benchmark_batch(
                 processed_total += 1
                 progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
                 _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
+    except MeasurementBudgetExceeded as exc:
+        status = {"status": "budget_exhausted", "campaignId": campaign_id,
+                  "maxDurationMinutes": exc.budget.minutes,
+                  "elapsedSeconds": max(0.0, exc.budget.clock() - exc.budget.started),
+                  "stoppedAt": time.time(), "phase": "measurement"}
+        flight = journal.root / "in-flight.json"
+        try:
+            if flight.exists():
+                status["lastStartedAttempt"] = json.loads(flight.read_text())
+            atomic_json(journal.root / f"budget-exhausted-{time.time_ns()}.json", status)
+        except OSError as error:
+            print(f"Time budget exhausted; unable to persist pause status: {error}", file=sys.stderr)
+            _debug_exception_traceback()
+            return 6
+        print_warning(f"{exc}. Saved attempts remain available; resume with --resume-campaign {campaign_id}.")
+        _emit_event(event_sink, "run_budget_exhausted", scope="batch", **status)
+        return 11
     except (OSError, ValueError, TimeoutError) as exc:
         print(f"Campaign retained for resume: {exc}", file=sys.stderr)
         _debug_exception_traceback()
@@ -2090,7 +2118,7 @@ def run_v7_suite_clip_mode(
         use_token=getattr(base_args, "use_token", False),
         strict_authoritative=True,
     )
-    for field in ("campaign_seed", "max_attempts", "max_storage_mb", "local_metrics"):
+    for field in ("campaign_seed", "max_attempts", "max_storage_mb", "max_duration_minutes", "local_metrics"):
         if hasattr(base_args, field):
             setattr(strict_args, field, getattr(base_args, field))
     return run_benchmark_batch(
@@ -2442,6 +2470,9 @@ def build_single_effective_args(
         batch_size=getattr(base_args, "batch_size", 0),
         use_token=getattr(base_args, "use_token", False),
         target_bitrate_kbps=getattr(base_args, "target_bitrate_kbps", None),
+        max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
+        max_attempts=getattr(base_args, "max_attempts", 100),
+        max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
         pause_on_exit=getattr(base_args, "pause_on_exit", False),
     )
 
@@ -2497,6 +2528,9 @@ def run_batch_mode(
                 menu=False,
                 batch_size=getattr(base_args, "batch_size", 0),
                 use_token=getattr(base_args, "use_token", False),
+                max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
+                max_attempts=getattr(base_args, "max_attempts", 100),
+                max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
             ),
             tasks=tasks,
             event_sink=event_sink,
@@ -2646,6 +2680,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--upload-only", action="store_true", help="Retry due queued uploads without encoding")
     p.add_argument("--local-metrics", action="store_true", help="Run optional local quality diagnostics after all measurements")
     p.add_argument("--max-attempts", type=int, default=100, help="Maximum planned warmup/measured encodes (default 100)")
+    p.add_argument("--max-duration-minutes", type=float, default=60, help="Measurement allowance per invocation in minutes; acquisition and uploads are separate (default 60)")
     p.add_argument("--max-storage-mb", type=int, default=2048, help="Maximum retained queue and campaign storage in MiB")
     p.add_argument("--legacy-diagnostic", action="store_true", help="Noncanonical local-only legacy diagnostic; never publishes")
     return p
@@ -2689,6 +2724,8 @@ def main(argv: List[str]) -> int:
     if args.queue_status:
         _print_queue_status(args.queue_dir)
         return 0
+    if not math.isfinite(args.max_duration_minutes) or not math.isfinite(args.max_duration_minutes * 60) or args.max_duration_minutes <= 0:
+        parser.error("--max-duration-minutes must be positive and finite")
     if args.max_attempts < 1 or args.max_storage_mb < 1:
         parser.error("Campaign budgets must be positive")
     if args.resume_campaign and args.submit and not args.no_submit:

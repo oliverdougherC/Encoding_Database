@@ -6,6 +6,7 @@ import os
 import platform
 import subprocess
 import struct
+import shutil
 from pathlib import Path
 
 from . import config
@@ -54,6 +55,22 @@ def executable_architectures(path):
     except (OSError, ValueError, struct.error):
         pass
     return ["unknown"]
+
+
+def process_runtime_identity(executable):
+    """Bind a process checkpoint to actual bytes, independent of extraction path.
+
+    Read afresh at launch/resume: cached path metadata is insufficient to detect
+    changed bytes with restored timestamps, especially on Windows.
+    """
+    from .runtime_lock import _sha256_path, runtime_dependency_records
+    resolved = shutil.which(executable)
+    if resolved is None:
+        if not os.path.isfile(executable):
+            raise FileNotFoundError(f"Cannot identify process executable: {executable}")
+        resolved = os.path.abspath(executable)
+    return {"schemaVersion": 1, "executableSha256": _sha256_path(resolved),
+            "runtimeDependencies": runtime_dependency_records(resolved)}
 
 
 @functools.lru_cache(maxsize=8)

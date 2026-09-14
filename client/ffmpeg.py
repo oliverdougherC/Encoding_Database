@@ -13,6 +13,7 @@ from typing import Optional, Dict, Any, List, Mapping
 
 from . import config
 from . import recipe as recipe_model
+from .campaign import check_measurement_budget, measurement_timeout, run_measurement_process
 from .decode import run_decode_benchmark
 from .encoders import (
     effective_preset_for_encoder, map_preset_for_encoder,
@@ -787,6 +788,11 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
     Includes launch and encoder flush. Monitor preparation/teardown, probing,
     decode validation, hashing and local quality analysis are outside the interval.
     """
+    check_measurement_budget()
+    process_runtime = None
+    if checkpoint_path:
+        from .identity import process_runtime_identity
+        process_runtime = process_runtime_identity(cmd[0])
     monitor = HardwareMonitor(ffmpeg_pid=None, interval=0.5, encoder_name=encoder_name,
                               host_gpu_vendors=host_gpu_vendors)
     monitor.start()
@@ -795,6 +801,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
     receipt_errors = []
     hw_metrics = None
     try:
+        check_measurement_budget()
         start_ns = time.perf_counter_ns()
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                 start_new_session=os.name != "nt")
@@ -818,7 +825,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
             receipt_writer.start()
         while True:
             try:
-                stdout, stderr = proc.communicate(timeout=0.2)
+                stdout, stderr = proc.communicate(timeout=measurement_timeout(0.2))
                 end_ns = time.perf_counter_ns()
                 if checkpoint_path:
                     from pathlib import Path
@@ -827,7 +834,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
                     empty_metrics.update(encode_start_monotonic_ns=start_ns, encode_end_monotonic_ns=end_ns)
                     if os.path.isfile(cmd[-1]):
                         sync_owned_file(cmd[-1])
-                    atomic_json(Path(checkpoint_path), {"command": cmd, "stdout": stdout, "stderr": stderr,
+                    atomic_json(Path(checkpoint_path), {"command": cmd, "processRuntime": process_runtime, "stdout": stdout, "stderr": stderr,
                         "returncode": proc.returncode, "elapsed": (end_ns-start_ns)/1e9,
                         "hardwareMetrics": empty_metrics,
                         "artifactSha256": None, "artifactByteSize": os.path.getsize(cmd[-1]) if os.path.isfile(cmd[-1]) else None})
@@ -842,6 +849,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
                         raise receipt_errors[0]
                 break
             except subprocess.TimeoutExpired:
+                check_measurement_budget()
                 if receipt_errors:
                     raise receipt_errors[0]
                 if cancel_event is not None and cancel_event.is_set():
@@ -862,6 +870,7 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
         if checkpoint_path and proc is not None and proc.poll() is not None:
             from pathlib import Path
             Path(checkpoint_path + ".active.json").unlink(missing_ok=True)
+    hw_metrics.process_runtime_identity = process_runtime
     hw_metrics.encode_start_monotonic_ns = start_ns
     hw_metrics.encode_end_monotonic_ns = end_ns
     return stdout, stderr, proc.returncode, (end_ns - start_ns) / 1e9, hw_metrics
@@ -932,10 +941,19 @@ def encode_to_artifact(
     from pathlib import Path
     from types import SimpleNamespace
     import dataclasses
+    executed_command = cmd
     if checkpoint_path and os.path.exists(checkpoint_path):
         saved = json.loads(Path(checkpoint_path).read_text())
         from .campaign import CampaignJournal
-        if (saved["command"] != cmd or not os.path.exists(artifact_path)
+        from .identity import process_runtime_identity
+        saved_command = saved.get("command")
+        if not isinstance(saved_command, list) or saved_command[1:] != cmd[1:]:
+            raise ValueError("Interrupted process checkpoint arguments do not match this recipe")
+        saved_runtime = saved.get("processRuntime")
+        if not isinstance(saved_runtime, dict) or saved_runtime != process_runtime_identity(cmd[0]):
+            raise ValueError("Interrupted process checkpoint runtime identity is missing or changed")
+        executed_command = saved_command
+        if (not os.path.exists(artifact_path)
                 or (saved.get("artifactSha256") is not None and CampaignJournal.hash_file(artifact_path) != saved["artifactSha256"])
                 or (saved.get("artifactSha256") is None and os.path.getsize(artifact_path) != saved.get("artifactByteSize"))):
             raise ValueError("Interrupted process checkpoint does not match this recipe")
@@ -950,7 +968,7 @@ def encode_to_artifact(
         if checkpoint_path:
             if os.path.isfile(artifact_path):
                 sync_owned_file(artifact_path)
-            atomic_json(Path(checkpoint_path), {"command": cmd, "stdout": stdout, "stderr": stderr,
+            atomic_json(Path(checkpoint_path), {"command": cmd, "processRuntime": getattr(hw_metrics, "process_runtime_identity", None), "stdout": stdout, "stderr": stderr,
                         "returncode": returncode, "elapsed": elapsed, "hardwareMetrics": vars(hw_metrics),
                         "artifactSha256": sha256_of_file(artifact_path) if os.path.isfile(artifact_path) else None})
     total_frames = _parse_frame_count(stdout) or _parse_frame_count(stderr)
@@ -1035,7 +1053,7 @@ def encode_to_artifact(
         'encodeStartMonotonicNs': getattr(hw_metrics, 'encode_start_monotonic_ns', None),
         'encodeEndMonotonicNs': getattr(hw_metrics, 'encode_end_monotonic_ns', None),
         'encodeTimerBoundary': 'ffmpeg-process-v1',
-        'executedCommand': cmd,
+        'executedCommand': executed_command,
         'encoderUsed': encoder,
         'elapsedMs': int(round(elapsed * 1000)),
         'fps': float(fps_val),
@@ -1150,6 +1168,7 @@ def _parse_ratio(value: Any) -> Optional[float]:
 
 
 def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
+    check_measurement_budget()
     resolved = os.path.realpath(path)
     try:
         stat = os.stat(resolved)
@@ -1191,7 +1210,7 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
         path,
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
         payload = json.loads(proc.stdout or "{}")
         if isinstance(payload, dict):
             frames = payload.get("frames") or []
@@ -1254,7 +1273,7 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
         pass
 
     try:
-        packet_evidence = probe_video_packet_evidence(path, config.ffprobe_exe(), subprocess.run)
+        packet_evidence = probe_video_packet_evidence(path, config.ffprobe_exe(), run_measurement_process)
         result["videoPayloadBytes"] = packet_evidence["videoPayloadBytes"]
     except Exception:
         pass
@@ -1283,7 +1302,7 @@ def validate_artifact_decodability(path: str) -> tuple[bool, Optional[str]]:
         "-i", path, "-map", "0:v:0", "-an", "-sn", "-dn", "-f", "null", "-",
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
     except Exception as exc:
         return False, f"decode-validation-unavailable:{type(exc).__name__}"
     if proc.returncode == 0:
