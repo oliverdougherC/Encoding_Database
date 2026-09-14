@@ -31,18 +31,34 @@ def positive_minutes(value):
         raise argparse.ArgumentTypeError('--max-duration-minutes must be positive and finite')
     return number
 
+def validation_recipe(encoder, preset, crf, target_bitrate_kbps):
+    from client.recipe import build_rate_control_config
+    hardware = encoder in ('h264_nvenc', 'h264_videotoolbox')
+    if hardware:
+        if crf is not None or not isinstance(target_bitrate_kbps, int) or target_bitrate_kbps <= 0:
+            raise ValueError('Hardware validation requires explicit positive --target-bitrate-kbps and no --crf')
+        expected_preset = 'p4' if encoder == 'h264_nvenc' else 'default'
+        if preset not in (None, expected_preset): raise ValueError(f'{encoder} validation uses the declared {expected_preset} preset')
+        return expected_preset, None, build_rate_control_config(encoder=encoder, mode='vbr', target_bitrate_kbps=target_bitrate_kbps)
+    if target_bitrate_kbps is not None: raise ValueError('Software validation requires native CRF, not a bitrate target')
+    quality = 23 if crf is None else crf
+    if not 0 <= quality <= (63 if encoder == 'libsvtav1' else 51): raise ValueError('CRF is outside the native range')
+    return preset or ('6' if encoder == 'libsvtav1' else 'fast'), quality, None
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--registry', type=Path, required=True)
     parser.add_argument('--workload', required=True)
     parser.add_argument('--reference', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
-    parser.add_argument('--encoder', choices=['libx264', 'libx265', 'libsvtav1'], default='libx264')
-    parser.add_argument('--preset', default='fast')
-    parser.add_argument('--crf', type=int, default=23)
+    parser.add_argument('--encoder', choices=['libx264', 'libx265', 'libsvtav1', 'h264_nvenc', 'h264_videotoolbox'], default='libx264')
+    parser.add_argument('--preset')
+    parser.add_argument('--crf', type=int)
+    parser.add_argument('--target-bitrate-kbps', type=int)
     parser.add_argument('--seed', type=int)
     parser.add_argument('--max-duration-minutes', type=positive_minutes, default=60.0)
     args = parser.parse_args()
+    args.preset, args.crf, native_rate_control = validation_recipe(args.encoder, args.preset, args.crf, args.target_bitrate_kbps)
     from client import config
     from client.campaign import CampaignJournal, MeasurementBudget, MeasurementBudgetExceeded, atomic_json, physical_source_id
     from client.ffmpeg import encode_to_artifact
@@ -64,9 +80,10 @@ def main():
     protocol = ProtocolConfig.for_version('7.1')
     seed = args.seed if args.seed is not None else secrets.randbits(63)
     recipe_data = {'encoder': args.encoder, 'preset': args.preset, 'crf': args.crf, 'sourceRegistrationHash': canonical_hash(source)}
+    if native_rate_control is not None: recipe_data['rateControl'] = dataclasses.asdict(native_rate_control)
     recipe_id = canonical_hash(recipe_data)
     spec = RecipeSpec(recipe_id, StructuralExpectation(duration_s=source['durationSeconds'], frame_count=source['frameCount'], width=1920, height=1080,
-        codec={'libx264': 'h264', 'libx265': 'hevc', 'libsvtav1': 'av1'}[args.encoder], pix_fmt='yuv420p', bit_depth=8, chroma_subsampling='4:2:0',
+        codec={'libx264': 'h264', 'libx265': 'hevc', 'libsvtav1': 'av1', 'h264_nvenc': 'h264', 'h264_videotoolbox': 'h264'}[args.encoder], pix_fmt='yuv420p', bit_depth=8, chroma_subsampling='4:2:0',
         color_range='tv', color_space='bt709', color_transfer='bt709', color_primaries='bt709', avg_frame_rate=24, no_audio=True), recipe_data)
     campaign_id = generate_campaign_id('7.1', [recipe_id], seed)
     manifest = {'schemaVersion': 'encodingdb-controlled-validation-campaign/v1', 'validationOnly': True, 'protocolVersion': '7.1',
@@ -78,6 +95,7 @@ def main():
     def encode(schedule, recipe):
         name = f'{schedule.execution_order:03d}-{schedule.phase}.mp4'
         info = encode_to_artifact(input_path=str(args.reference), encoder=args.encoder, preset=args.preset, crf=args.crf,
+            rate_control=native_rate_control,
             out_dir=str(journal.root), artifact_name=name, host_gpu_vendors=hardware.gpuVendors,
             checkpoint_path=str(journal.root / (name + '.process.json')), max_output_bytes=journal.check_budget())
         if info.get('error') or info.get('encodeTimerBoundary') != 'ffmpeg-process-v1':

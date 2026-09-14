@@ -119,7 +119,20 @@ def _build_rate_control_args(
         if quality is not None:
             args += ["-crf", str(quality)]
     elif enc.endswith("_nvenc"):
-        if mode == "cq":
+        if mode == "vbr":
+            if target is None or target <= 0:
+                raise ValueError(f"{enc} VBR mode requires positive targetBitrateKbps")
+            for name, original, value in (("maxBitrateKbps", rate_control.maxBitrateKbps, maxrate), ("bufferSizeKbits", rate_control.bufferSizeKbits, bufsize)):
+                if original is not None and (value is None or value <= 0):
+                    raise ValueError(f"{enc} VBR {name} must be positive when supplied")
+            if maxrate is not None and maxrate < target:
+                raise ValueError(f"{enc} VBR maxBitrateKbps cannot be below its target")
+            args += ["-rc", "vbr", "-b:v", f"{target}k"]
+            if maxrate is not None:
+                args += ["-maxrate:v", f"{maxrate}k"]
+            if bufsize is not None:
+                args += ["-bufsize:v", f"{bufsize}k"]
+        elif mode == "cq":
             if quality is None:
                 raise ValueError(f"{enc} CQ mode requires qualityValue")
             args += ["-cq", str(max(0, min(51, quality)))]

@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "encodingdb-validation-path-bindings/v1",
+  "registryHash": "023d5490161da7c22d0534b7af968630ffaa8fb263b864c7270a7cbee9c5df76",
+  "bindings": [
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/atlas-receipts-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/atlas-receipts-30s/reference.mkv",
+      "sha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/chimera-fountain-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/chimera-fountain-30s/reference.mkv",
+      "sha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-ballet-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+      "sha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-grain-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-grain-30s/reference.mkv",
+      "sha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-lowlight-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-lowlight-30s/reference.mkv",
+      "sha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/sol-cave-forest-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/sol-cave-forest-30s/reference.mkv",
+      "sha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b"
+    },
+    {
+      "kind": "REFERENCE",
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/tos-outdoor-dialogue-30s/reference.mkv",
+      "retainedPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/tos-outdoor-dialogue-30s/reference.mkv",
+      "sha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03"
+    }
+  ]
+}
