@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import http from 'node:http';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
-import { execFileSync } from 'node:child_process';
+import { execFile, execFileSync } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileAsync = promisify(execFile);
 import { performance } from 'node:perf_hooks';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../server/package.json', import.meta.url));
@@ -184,8 +186,8 @@ if (mode === 'rebuild-fixture') {
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
   const sampler = (async () => { while (performance.now() < deadline) {
     const node = await (await fetch(base + '/memory')).json();
-    const dbBytes = Number(execFileSync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.current'], { encoding: 'utf8' }).trim());
-    const dbPeak = Number(execFileSync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.peak'], { encoding: 'utf8' }).trim());
+    const { stdout } = await execFileAsync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory.peak']);
+    const [dbBytes, dbPeak] = stdout.trim().split(/\s+/).map(Number);
     resources.push({ at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes, dbLifetimePeakBytes: dbPeak }); await sleep(5000);
   } })();
   const writer = (async () => { for (let cycle = 0; cycle < 5; cycle++) {
