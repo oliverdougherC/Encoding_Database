@@ -1,0 +1,154 @@
+{
+  "sourceCommit": "730de3ccc6c20372fd582a9155588b41734b4600",
+  "scope": "initial pre-followup isolated candidate; no timed certification",
+  "containers": [
+    {
+      "name": "encodingdb-candidate-730de3c-db-1",
+      "imageId": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+      "startedAt": "2026-09-14T01:47:46.28212523Z",
+      "state": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 1073741824,
+      "sharedMemoryBytes": 268435456,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb-candidate-730de3c_db_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-server-1",
+      "imageId": "sha256:63cb59713fabf51c1c8166ce287f09f8cb4ed13ab9b8bfb679ad8f5f55511bd2",
+      "startedAt": "2026-09-14T01:47:52.130012771Z",
+      "state": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 17179869184,
+      "sharedMemoryBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb-candidate-730de3c_artifact_data",
+          "destination": "/app/artifacts"
+        }
+      ]
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-frontend-1",
+      "imageId": "sha256:e20695175061da1de395f8840a898d60308bc2c68b84ddc010588c337d79289f",
+      "startedAt": "2026-09-14T01:47:52.446605077Z",
+      "state": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 536870912,
+      "sharedMemoryBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": []
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-nginx-1",
+      "imageId": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "startedAt": "2026-09-14T01:48:03.788620197Z",
+      "state": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 134217728,
+      "sharedMemoryBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "bind",
+          "name": null,
+          "destination": "/etc/nginx/conf.d"
+        },
+        {
+          "type": "bind",
+          "name": null,
+          "destination": "/etc/nginx/certs"
+        }
+      ]
+    }
+  ],
+  "health": {
+    "status": "ok",
+    "reasons": [],
+    "capturedAt": "2026-09-14T01:55:45.993Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 536870912
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 0,
+      "checkedThisCycle": 0,
+      "complete": true,
+      "cycleStartedAt": "2026-09-14T01:51:38.227Z",
+      "lastCompletedAt": "2026-09-14T01:55:45.993Z"
+    },
+    "capacity": {
+      "pendingUploads": 0,
+      "pendingAnalyses": 0,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 1,
+      "activeLeases": 0,
+      "expiredLeases": 0,
+      "retryDue": 0
+    },
+    "artifacts": {
+      "byState": {},
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 0
+    },
+    "analyses": {
+      "byStatus": {},
+      "pendingOldestSeconds": null,
+      "completedLatencySeconds": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 0,
+      "quotaBytes": null,
+      "availableBytes": 247255031808,
+      "freeBytes": 272820834304
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T01:55:45.993Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    },
+    "freshness": {
+      "cacheTtlSeconds": 30,
+      "ageSeconds": 0.068
+    }
+  }
+}
