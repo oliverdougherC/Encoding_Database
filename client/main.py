@@ -2858,7 +2858,10 @@ def main(argv: List[str]) -> int:
                     result = json.loads(marker.read_text())
                     campaign_failures = bool(result.get("skipped") or result.get("failed"))
                 for path in sorted(root.glob("submission-*.json")):
-                    spool_payload(args.queue_dir, json.loads(path.read_text()))
+                    _spooled_path, entry = spool_payload(args.queue_dir, json.loads(path.read_text()))
+                    if entry.get("terminal") is True:
+                        campaign_failures = True
+                        print_warning(f"Retained upload is terminal ({entry.get('lastError') or 'terminal_upload'}); see {_spooled_path}.")
             stats = replay_spool(args.queue_dir, base_url=args.base_url, api_key=args.api_key,
                                  retries=1, use_token=False)
             return 1 if campaign_failures or stats.dead_lettered or stats.corrupt else (10 if count_pending_entries(args.queue_dir) else 0)

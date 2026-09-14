@@ -129,6 +129,11 @@ def cleanup_spool(queue_dir: str) -> CleanupStats:
     stats = CleanupStats(pending_entries_retained=count_pending_entries(queue_dir))
 
     dead_letter_root = _dead_letter_dir(queue_dir)
+    # Explicit cleanup may delete terminal media, but must not erase the verdict.
+    for old in Path(dead_letter_root).glob("*.json"):
+        local_hash = old.stem.rsplit("-", 1)[-1]
+        if len(local_hash) == 64 and all(c in "0123456789abcdef" for c in local_hash):
+            terminal_spool_entry(queue_dir, local_hash)
     for path in _iter_files(dead_letter_root):
         try:
             file_size = int(os.path.getsize(path))
@@ -221,7 +226,19 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
         if not os.path.exists(destination):
             tmp_path = f"{destination}.tmp-{os.getpid()}-{int(time.time() * 1000)}"
             try:
-                shutil.copy2(artifact_path, tmp_path)
+                expected_size = int(payload.get("artifactByteSize", -1))
+                if expected_size < 0 or os.path.getsize(artifact_path) != expected_size:
+                    raise ValueError("Retained artifact size differs from immutable upload metadata")
+                copied = 0
+                with open(artifact_path, "rb") as source, open(tmp_path, "xb") as target:
+                    for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                        copied += len(chunk)
+                        if copied > expected_size:
+                            raise ValueError("Retained artifact grew during bounded upload staging")
+                        target.write(chunk)
+                if copied != expected_size:
+                    raise ValueError("Retained artifact shrank during upload staging")
+                shutil.copystat(artifact_path, tmp_path)
                 from .campaign import sync_owned_file
                 sync_owned_file(tmp_path)
                 os.replace(tmp_path, destination)
@@ -237,23 +254,46 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
     return updated
 
 
+def terminal_spool_entry(queue_dir: str, local_hash: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """Durable terminal identity; legacy dead letters are indexed before reuse."""
+    path = os.path.join(queue_dir, "terminal", f"{local_hash}.json")
+    if os.path.isfile(path):
+        return path, json.loads(Path(path).read_text())
+    for old in sorted(Path(_dead_letter_dir(queue_dir)).glob(f"*-{local_hash}.json")):
+        try:
+            entry = json.loads(old.read_text())
+        except (OSError, ValueError):
+            entry = {"lastError": "corrupt_legacy_dead_letter"}
+        if not isinstance(entry, dict):
+            entry = {"lastError": "corrupt_legacy_dead_letter"}
+        entry.update(terminal=True, localHash=local_hash, deadLetterPath=str(old))
+        _write_json_atomic(path, entry)
+        return path, entry
+    return None
+
+
 def spool_payload(queue_dir: str, payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash_for_payload(payload)}.json")
     if os.path.isfile(receipt_path):
         return receipt_path, _envelope_for_payload(payload)
+    local_hash = local_hash_for_payload(payload)
+    terminal = terminal_spool_entry(queue_dir, local_hash)
+    if terminal is not None:
+        return terminal
+    path = _queue_path(queue_dir, local_hash)
+    if os.path.exists(path):
+        try:
+            return path, load_spool_entry(path)
+        except Exception:
+            move_to_dead_letter(queue_dir, path, None, "corrupt_existing_spool")
+            terminal = terminal_spool_entry(queue_dir, local_hash)
+            if terminal is None:
+                raise ValueError("Corrupt upload could not retain terminal identity")
+            return terminal
     spool_payload_value = _preserve_artifact_for_spool(queue_dir, payload)
     envelope = _envelope_for_payload(spool_payload_value)
-    path = _queue_path(queue_dir, envelope["localHash"])
-    if not os.path.exists(path):
-        _write_json_atomic(path, envelope)
-        return path, envelope
-    try:
-        existing = load_spool_entry(path)
-        return path, existing
-    except Exception:
-        dead_letter_path, _ = move_to_dead_letter(queue_dir, path, None, "corrupt_existing_spool")
-        _write_json_atomic(path, envelope)
-        return path, envelope
+    _write_json_atomic(path, envelope)
+    return path, envelope
 
 
 def load_spool_entry(path: str) -> Dict[str, Any]:
@@ -306,6 +346,18 @@ def move_to_dead_letter(
     basename = os.path.basename(source_path)
     dead_name = f"{int(time.time() * 1000)}-{basename}"
     dead_path = os.path.join(_dead_letter_dir(queue_dir), dead_name)
+    # Commit terminal identity BEFORE moving evidence or deleting the active item.
+    # A crash in either operation must not make resume assign a fresh deadline.
+    local_hash = str((entry or {}).get("localHash") or Path(basename).stem)
+    if len(local_hash) == 64 and all(c in "0123456789abcdef" for c in local_hash):
+        terminal = terminal_spool_entry(queue_dir, local_hash)
+        if terminal is None:
+            terminal_value = dict(entry or {})
+            terminal_value.update(terminal=True, localHash=local_hash, lastError=reason[:500],
+                                  terminalAt=time.time(), deadLetterPath=dead_path)
+            _write_json_atomic(os.path.join(queue_dir, "terminal", f"{local_hash}.json"), terminal_value)
+        else:
+            dead_path = terminal[1].get("deadLetterPath") or dead_path
     if entry is None:
         try:
             os.replace(source_path, dead_path)
@@ -367,17 +419,21 @@ def _validate_managed_artifact_for_replay(queue_dir: str, payload: Dict[str, Any
 
 def _move_managed_artifact_to_dead_letter(queue_dir: str, source_entry_path: str, entry: Dict[str, Any]) -> Dict[str, Any]:
     artifact_path = _entry_artifact_path(entry)
-    if not artifact_path or not os.path.exists(artifact_path) or not _is_managed_artifact_path(queue_dir, artifact_path):
+    if not artifact_path or not _is_managed_artifact_path(queue_dir, artifact_path):
         return entry
     if _managed_artifact_is_referenced(queue_dir, artifact_path, excluding_entry_path=source_entry_path):
         return entry
     dead_artifact_dir = os.path.join(_dead_letter_dir(queue_dir), MANAGED_ARTIFACT_DIRNAME)
-    os.makedirs(dead_artifact_dir, exist_ok=True)
     destination = os.path.join(dead_artifact_dir, os.path.basename(artifact_path))
-    try:
-        os.replace(artifact_path, destination)
-    except Exception:
+    if os.path.exists(artifact_path):
+        os.makedirs(dead_artifact_dir, exist_ok=True)
+        try:
+            os.replace(artifact_path, destination)
+        except Exception:
+            return entry
+    elif not os.path.exists(destination):
         return entry
+    # Recover a crash after the artifact rename but before its JSON receipt commit.
     payload = dict(entry.get("payload") or {})
     payload["artifactPath"] = destination
     updated = dict(entry)
@@ -452,11 +508,18 @@ def submit_spooled_path(
     if os.path.dirname(os.path.abspath(path)) == os.path.abspath(os.path.join(queue_dir, "receipts")):
         receipt = json.loads(Path(path).read_text())
         return "submitted", _submission_success_message({"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, receipt.get("response"))
+    if os.path.dirname(os.path.abspath(path)) == os.path.abspath(os.path.join(queue_dir, "terminal")):
+        return "dead_lettered", str(json.loads(Path(path).read_text()).get("lastError") or "terminal_upload")
     try:
         entry = load_spool_entry(path)
     except Exception as exc:
         move_to_dead_letter(queue_dir, path, None, f"corrupt_spool:{exc}")
         return "corrupt", str(exc)
+    terminal = terminal_spool_entry(queue_dir, entry["localHash"])
+    if terminal is not None:
+        reason = str(terminal[1].get("lastError") or "terminal_upload")
+        move_to_dead_letter(queue_dir, path, entry, reason)
+        return "dead_lettered", reason
     if time.time() >= entry.get("retryDeadlineAt", float("inf")):
         move_to_dead_letter(queue_dir, path, entry, "retry_deadline_expired")
         return "dead_lettered", "retry_deadline_expired"

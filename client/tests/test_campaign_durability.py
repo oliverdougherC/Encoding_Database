@@ -160,7 +160,7 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
     atomic_json(root/'campaign-complete.json',{'skipped':0,'failed':0})
     payload={'retained':'immutable'}
     atomic_json(root/'submission-000001.json',payload)
-    with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload') as save, mock.patch.object(main,'replay_spool',return_value=spool.ReplayStats(submitted=1)), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
+    with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',return_value=spool.ReplayStats(submitted=1)), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
         assert main.main(['prog','--resume-campaign',campaign_id,'--submit','--queue-dir',str(tmp_path)]) == 0
     save.assert_called_once_with(str(tmp_path),payload)
     source.assert_not_called()

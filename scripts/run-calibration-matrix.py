@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import signal
+import shutil
 import subprocess
 import sys
 import time
@@ -151,23 +152,93 @@ def queue_due(item, now):
     return min(min(e.get('nextAttemptAt', 0), e.get('retryDeadlineAt', now)) for e in entries)
 
 
+MIB = 1024 * 1024
+
+
+def client_state_dir():
+    if os.environ.get('ENCODINGDB_STATE_DIR'):
+        return Path(os.environ['ENCODINGDB_STATE_DIR']).resolve()
+    if sys.platform == 'darwin':
+        return Path.home() / 'Library' / 'Application Support' / 'EncodingDB'
+    return (Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local' / 'state') / 'EncodingDB').resolve()
+
+
+def terminal_evidence(item):
+    queue = Path(item['queueDir'])
+    return [str(p) for folder in ('terminal', 'dead-letter')
+            for p in sorted((queue / folder).glob('*.json'))]
+
+
+def upload_staging_bytes(item):
+    """Bound additional copies from the exact retained, cell-owned submissions."""
+    queue = Path(item['queueDir'])
+    root = campaign_path(item)
+    submissions = sorted(root.glob('submission-*.json')) if root else []
+    if not submissions:
+        raise ValueError('Completed cell has no prepared submissions; refusing empty publication')
+    copies = {}
+    for path in submissions:
+        payload = read(path)
+        if payload.get('submissionKind') != 'authoritative-artifact-run-v1':
+            raise ValueError('Matrix publication requires canonical retained artifact submissions')
+        material = dict(payload)
+        material.pop('artifactPath', None)
+        material.pop('artifactManaged', None)
+        local_hash = hashlib.sha256(json.dumps(material, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        if (queue / 'receipts' / f'{local_hash}.json').exists():
+            continue
+        source = Path(payload['artifactPath']).resolve()
+        if queue.resolve() not in source.parents:
+            raise ValueError('Prepared upload artifact is outside its owned cell queue')
+        size = source.stat().st_size
+        if size != payload['artifactByteSize']:
+            raise ValueError('Retained upload artifact size changed')
+        sha = payload['artifactSha256']
+        if not re.fullmatch('[0-9a-f]{64}', sha):
+            raise ValueError('Invalid retained artifact SHA')
+        destination = queue / 'artifacts' / (sha + (source.suffix.lower() or '.bin'))
+        if not destination.exists():
+            copies[str(destination)] = size
+    return sum(copies.values())
+
+
+def storage_allowance(root, queue, total_mb, cell_mb, reserve_mb, *, staging_bytes=None):
+    used = sum(p.stat().st_size for p in root.rglob('*') if p.is_file())
+    queue_used = sum(p.stat().st_size for p in queue.rglob('*') if p.is_file())
+    # Leave room for both ledger atomic replacement and finite client journal/log writes.
+    overhead = max(16 * MIB, (root / 'ledger.json').stat().st_size * 2 if (root / 'ledger.json').exists() else 0)
+    disk_free = shutil.disk_usage(root).free
+    available = min(total_mb * MIB - used, disk_free - reserve_mb * MIB) - overhead
+    if staging_bytes is not None:
+        if staging_bytes > cell_mb * MIB or staging_bytes > available:
+            raise ValueError('Insufficient retained budget/free disk for bounded upload staging plus reserve')
+        return dict(diskFreeBytes=disk_free, reservedBytes=reserve_mb * MIB, usedBytes=used,
+                    stagingBytes=staging_bytes, overheadBytes=overhead)
+    # Reserve the whole requested cell allowance before launching, not only one byte.
+    remaining = cell_mb * MIB - queue_used
+    if remaining <= 0 or remaining > available:
+        raise ValueError('Insufficient retained budget/free disk for this cell plus reserve')
+    return dict(diskFreeBytes=disk_free, reservedBytes=reserve_mb * MIB, usedBytes=used,
+                cellLimitMiB=cell_mb, overheadBytes=overhead)
+
+
 @contextlib.contextmanager
-def exclusive(root):
+def exclusive(root, name="runner.lock"):
     # macOS/Linux runner. Inherited lock keeps a surviving CLI fenced after parent SIGKILL.
     import fcntl
     root.mkdir(parents=True, exist_ok=True)
-    with (root / 'runner.lock').open('a+b') as f:
+    with (root / name).open('a+b') as f:
         try:
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise ValueError('Another runner or its surviving CLI still owns this root') from None
+            raise ValueError(f'Another runner or surviving CLI owns {root / name}') from None
         yield f
 
 
 def run_child(cmd, env, log, seconds, lock):
     with log.open('ab') as out:
         p = subprocess.Popen(cmd, env=env, stdout=out, stderr=subprocess.STDOUT,
-                             start_new_session=True, pass_fds=(lock.fileno(),))
+                             start_new_session=True, pass_fds=tuple(handle.fileno() for handle in lock))
         try:
             return p.wait(timeout=seconds)
         except (subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
@@ -182,7 +253,9 @@ def run_child(cmd, env, log, seconds, lock):
 
 def execute(args, items):
     root = args.output.resolve()
-    with exclusive(root) as lock:
+    state_dir = client_state_dir()
+    with exclusive(state_dir, 'measurement.lock') as host_lock, exclusive(root) as root_lock:
+        lock = (host_lock, root_lock)
         identity = dict(matrixSha256=digest(args.matrix), clientSha256=digest(args.cli),
                         clientSourceSha=args.client_source_sha, runnerSha256=digest(__file__),
                         slots=sorted(set(args.source_slot)), sessions=sorted(set(args.sessions)), seed=args.seed)
@@ -197,6 +270,9 @@ def execute(args, items):
                 raise ValueError('Upload requires --all-host-timing-complete and an explicit --base-url')
             if not all(completed(evidence(item)) for item in items):
                 raise ValueError('All selected cells/sessions must finish timing before any upload')
+            if ledger.get('uploadBaseUrl', args.base_url) != args.base_url:
+                raise ValueError('Publication target changed; retained receipts cannot prove upload to another server')
+            ledger['uploadBaseUrl'] = args.base_url
             ledger['phase'] = 'upload'
         help_result = subprocess.run([str(args.cli), '--help'], capture_output=True, timeout=60)
         (root / 'client-help.txt').write_bytes(help_result.stdout + help_result.stderr)
@@ -206,7 +282,8 @@ def execute(args, items):
         invocation = dict(startedAt=time.time(), phase=args.phase, maxCells=args.max_cells,
                           maxMinutes=args.max_duration_minutes, maxStorageMiB=args.max_storage_mb,
                           perCellStorageMiB=args.cell_storage_mb, perCellMinutes=args.cell_minutes,
-                          helpExitCode=help_result.returncode, helpSha256=digest(root / 'client-help.txt'))
+                          helpExitCode=help_result.returncode, helpSha256=digest(root / 'client-help.txt'),
+                          diskReserveMiB=args.disk_reserve_mb, hostLock=str(state_dir / 'measurement.lock'))
         ledger['invocations'].append(invocation)
         atomic(path, ledger)
         started = time.monotonic()
@@ -225,6 +302,16 @@ def execute(args, items):
             row['timingComplete'] = completed(ev)
             if args.phase == 'timing' and completed(ev):
                 continue
+            if args.phase == 'timing' and ev.get('completion') is not None:
+                row['timingTerminal'] = ev['completion']
+                result = 1
+                break  # Completed failed/skipped evidence is not a retry campaign.
+            if args.phase == 'upload':
+                terminal = terminal_evidence(item)
+                if row.get('uploadTerminal') or terminal:
+                    row.setdefault('uploadTerminal', dict(reason='terminal_retained_upload', evidence=terminal))
+                    result = 1
+                    break
             if args.phase == 'upload' and row.get('uploadComplete'):
                 continue
             if args.phase == 'upload' and row.get('nextUploadAt', 0) > time.time():
@@ -236,23 +323,27 @@ def execute(args, items):
             if remaining <= 1:
                 result = 10
                 break
-            used = sum(p.stat().st_size for p in root.rglob('*') if p.is_file())
-            free_mb = (args.max_storage_mb * 1024 * 1024 - used) // (1024 * 1024)
             queue = Path(item['queueDir'])
-            queue_used_mb = math.ceil(sum(p.stat().st_size for p in queue.rglob('*') if p.is_file()) / (1024 * 1024))
-            cap = min(args.cell_storage_mb, queue_used_mb + free_mb - 1)
-            if cap <= queue_used_mb:
+            try:
+                storage = storage_allowance(root, queue, args.max_storage_mb, args.cell_storage_mb,
+                    args.disk_reserve_mb, staging_bytes=upload_staging_bytes(item) if args.phase == 'upload' else None)
+            except (ValueError, OSError) as exc:
+                row['storagePause'] = dict(reason=str(exc), pausedAt=time.time())
+                print(f'Matrix storage pause: {exc}', file=sys.stderr)
                 result = 6
                 break
+            cap = args.cell_storage_mb
             minutes = min(args.cell_minutes, remaining / 60)
             cmd = command(args.cli, item, cap, minutes, ev.get('campaignId'),
                           args.phase == 'upload', args.base_url)
             log = root / 'logs' / (item['key'].replace('/', '__') + f"-{len(row['calls'])}.log")
             log.parent.mkdir(parents=True, exist_ok=True)
-            call = dict(command=cmd, seed=item['seed'], startedAt=time.time(), exitCode=None, log=str(log))
+            call = dict(command=cmd, seed=item['seed'], startedAt=time.time(), exitCode=None, log=str(log), storage=storage)
             row['calls'].append(call)
             atomic(path, ledger)  # durable before the child can create an artifact
-            env = dict(os.environ, ENCODINGDB_PROTOCOL_SEED=str(item['seed']))
+            env = dict(os.environ, ENCODINGDB_PROTOCOL_SEED=str(item['seed']), ENCODINGDB_STATE_DIR=str(state_dir))
+            for override in ('ENCODINGDB_PROTOCOL_STABILITY_THRESHOLD', 'ENCODINGDB_PROTOCOL_MAX_ADAPTIVE_REPEATS'):
+                env.pop(override, None)
             code = run_child(cmd, env, log, minutes * 60 + 30, lock)
             call.update(exitCode=code, finishedAt=time.time(), logSha256=digest(log))
             atomic(path, ledger)
@@ -267,6 +358,9 @@ def execute(args, items):
             row['timingComplete'] = completed(ev)
             if args.phase == 'upload':
                 row['uploadComplete'] = code == 0
+                if code == 1 or terminal_evidence(item):
+                    row['uploadTerminal'] = dict(reason='terminal_retained_upload', exitCode=code,
+                                                  evidence=terminal_evidence(item))
                 row['nextUploadAt'] = max(time.time() + 60, queue_due(item, time.time())) if code == 10 else 0
             atomic(path, ledger)
             count += 1
@@ -299,9 +393,11 @@ def main(argv=None):
     p.add_argument('--cell-minutes', type=float, default=10)
     p.add_argument('--max-storage-mb', type=int, default=16384)
     p.add_argument('--cell-storage-mb', type=int, default=1024)
+    p.add_argument('--disk-reserve-mb', type=int, default=2048,
+                   help='Actual filesystem free-space reserve, beyond cell/upload growth (default 2048 MiB)')
     args = p.parse_args(argv)
     try:
-        for name in ['max_cells', 'max_duration_minutes', 'cell_minutes', 'max_storage_mb', 'cell_storage_mb']:
+        for name in ['max_cells', 'max_duration_minutes', 'cell_minutes', 'max_storage_mb', 'cell_storage_mb', 'disk_reserve_mb']:
             if not math.isfinite(getattr(args, name)) or getattr(args, name) <= 0:
                 raise ValueError(f'{name} must be finite and positive')
         args.cli = args.cli.resolve()
@@ -312,7 +408,7 @@ def main(argv=None):
             print(json.dumps(dict(status='PLAN_ONLY_UNEXECUTED', matrixSha256=digest(args.matrix),
                 matrixCells=len(read(args.matrix)['cells']), selectedCellSessions=len(items),
                 maximumEncodes=len(items) * 5, invocationMaxCells=args.max_cells,
-                invocationMaxMinutes=args.max_duration_minutes, storageLimitMiB=args.max_storage_mb,
+                invocationMaxMinutes=args.max_duration_minutes, storageLimitMiB=args.max_storage_mb, diskReserveMiB=args.disk_reserve_mb,
                 cells=[dict(**i, command=command(args.cli, i, args.cell_storage_mb, args.cell_minutes,
                     (campaign_path(i).name if campaign_path(i) else 'RETAINED_CAMPAIGN_ID')
                     if args.phase == 'upload' else None, args.phase == 'upload',

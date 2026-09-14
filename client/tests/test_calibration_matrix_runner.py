@@ -1,11 +1,13 @@
 """FAKE CLI fixtures exercise orchestration only; never calibration evidence."""
 import importlib.util
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[2] / 'scripts/run-calibration-matrix.py'
 SPEC = importlib.util.spec_from_file_location('matrix_runner', SCRIPT)
@@ -14,7 +16,7 @@ SPEC.loader.exec_module(runner)
 MATRIX = runner.read(runner.DEFAULT_MATRIX)
 FAKE = '''#!/usr/bin/env python3
 # SYNTHETIC TEST FIXTURE, no encoder and no measured data.
-import json, os, pathlib, sys
+import hashlib, json, os, pathlib, sys
 args=sys.argv[1:]
 if '--help' in args:
  print('--max-duration-minutes --upload-only --resume-campaign --v7-suite-clip'); sys.exit(0)
@@ -27,12 +29,26 @@ if '--resume-campaign' not in args:
  (root/'encoded-once.txt').write_text('FAKE TEST FIXTURE')
  sys.exit(130)
 if '--upload-only' in args:
+ if os.environ.get('FAKE_TERMINAL'):
+  (queue/'terminal').mkdir(exist_ok=True); (queue/'terminal'/'fixture.json').write_text('{}'); sys.exit(1)
+ if os.environ.get('FAKE_UPLOADED'): sys.exit(0)
  (queue/'pending.json').write_text(json.dumps({'nextAttemptAt':9999999999, 'retryDeadlineAt':9999999999})); sys.exit(10)
-(root/'campaign-complete.json').write_text(json.dumps({'failed':0,'skipped':0}))
+artifact=root/'encoded-once.txt'
+for index in range(2):
+ payload={'submissionKind':'authoritative-artifact-run-v1','artifactPath':str(artifact),'artifactSha256':hashlib.sha256(artifact.read_bytes()).hexdigest(),'artifactByteSize':artifact.stat().st_size,'runCreate':{'repetitionIndex':index}}
+ (root/f'submission-{index}.json').write_text(json.dumps(payload))
+(root/'campaign-complete.json').write_text(json.dumps({'failed':0,'skipped':0,'fixtureStable':False}))
 '''
 
 
 class MatrixRunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.state = tempfile.TemporaryDirectory()
+        self.addCleanup(self.state.cleanup)
+        patch = mock.patch.dict(os.environ, {'ENCODINGDB_STATE_DIR': self.state.name})
+        patch.start()
+        self.addCleanup(patch.stop)
+
     def test_entire_matrix_slots_sessions_and_determinism(self):
         self.assertEqual(len(MATRIX['cells']), 252)
         mac = runner.plan(MATRIX, ['source-a', 'videotoolbox-host'], [1, 2], 9, Path('/tmp/test'))
@@ -73,7 +89,8 @@ class MatrixRunnerTests(unittest.TestCase):
         matrix = root / 'matrix.json'
         matrix.write_text(json.dumps(dict(MATRIX, cells=MATRIX['cells'][:1])))
         return ['--cli', str(fake), '--matrix', str(matrix), '--source-slot', 'source-a',
-                '--sessions', '1', '--output', str(root/'output'), '--client-source-sha', 'a'*40]
+                '--sessions', '1', '--output', str(root/'output'), '--client-source-sha', 'a'*40,
+                '--cell-storage-mb', '1', '--disk-reserve-mb', '1']
 
     def test_default_plan_has_no_writes_or_execution(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -101,6 +118,7 @@ class MatrixRunnerTests(unittest.TestCase):
             self.assertEqual(runner.main(upload), 10)
             row = next(iter(runner.read(ledger_path)['cells'].values()))
             self.assertEqual(len(row['calls']), 3)
+            self.assertEqual(row['calls'][2]['storage']['stagingBytes'], len(b'FAKE TEST FIXTURE'))
             self.assertIn('--upload-only', row['calls'][2]['command'])
             self.assertNotIn('--no-submit', row['calls'][2]['command'])
             self.assertEqual(runner.main(args), 6)  # no timing after publication began
@@ -126,6 +144,85 @@ class MatrixRunnerTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     with runner.exclusive(Path(tmp)):
                         pass
+
+    def test_different_output_roots_share_host_lock(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.setup_fixture(tmp) + ['--execute']
+            with runner.exclusive(Path(self.state.name), 'measurement.lock'):
+                self.assertEqual(runner.main(args), 6)
+            self.assertFalse((Path(tmp)/'output'/'ledger.json').exists())
+
+    def test_child_keeps_host_lock_after_parent_closes_its_descriptor(self):
+        with runner.exclusive(Path(self.state.name), 'measurement.lock') as lock:
+            child = subprocess.Popen([sys.executable, '-c', 'import time;time.sleep(30)'], pass_fds=(lock.fileno(),))
+        try:
+            with self.assertRaises(ValueError):
+                with runner.exclusive(Path(self.state.name), 'measurement.lock'):
+                    pass
+        finally:
+            child.terminate()
+            child.wait()
+
+    def test_real_free_space_and_upload_copy_budget_are_reserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            queue = root/'queue'
+            with mock.patch.object(runner.shutil, 'disk_usage', return_value=mock.Mock(free=1024*runner.MIB)):
+                with self.assertRaisesRegex(ValueError, 'free disk'):
+                    runner.storage_allowance(root, queue, 16384, 1024, 2048)
+            with mock.patch.object(runner.shutil, 'disk_usage', return_value=mock.Mock(free=10000*runner.MIB)):
+                with self.assertRaisesRegex(ValueError, 'upload staging'):
+                    runner.storage_allowance(root, queue, 100, 10, 1, staging_bytes=11*runner.MIB)
+                with self.assertRaisesRegex(ValueError, 'upload staging'):
+                    runner.storage_allowance(root, queue, 20, 10, 1, staging_bytes=10*runner.MIB)
+
+    def test_terminal_upload_and_failed_timing_are_not_retried(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.setup_fixture(tmp) + ['--execute']
+            self.assertEqual(runner.main(args), 130)
+            self.assertEqual(runner.main(args), 0)
+            upload = args + ['--phase', 'upload', '--all-host-timing-complete', '--base-url', 'http://test.invalid']
+            with mock.patch.dict(os.environ, {'FAKE_TERMINAL': '1'}):
+                self.assertEqual(runner.main(upload), 1)
+            ledger = Path(tmp)/'output'/'ledger.json'
+            before = len(next(iter(runner.read(ledger)['cells'].values()))['calls'])
+            self.assertEqual(runner.main(upload), 1)
+            self.assertEqual(len(next(iter(runner.read(ledger)['cells'].values()))['calls']), before)
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.setup_fixture(tmp) + ['--execute']
+            self.assertEqual(runner.main(args), 130)
+            marker = next((Path(tmp)/'output').glob('queues/**/manifest.json')).parent/'campaign-complete.json'
+            marker.write_text(json.dumps({'failed': 1, 'skipped': 0}))
+            self.assertEqual(runner.main(args), 1)
+            self.assertEqual(runner.main(args), 1)
+            row = next(iter(runner.read(Path(tmp)/'output'/'ledger.json')['cells'].values()))
+            self.assertEqual(len(row['calls']), 1)
+
+    def test_completed_unstable_cell_uploads_once_and_pins_target(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.setup_fixture(tmp) + ['--execute']
+            self.assertEqual(runner.main(args), 130)
+            self.assertEqual(runner.main(args), 0)
+            upload = args + ['--phase', 'upload', '--all-host-timing-complete', '--base-url', 'http://test.invalid']
+            with mock.patch.dict(os.environ, {'FAKE_UPLOADED': '1'}):
+                self.assertEqual(runner.main(upload), 0)
+                self.assertEqual(runner.main(upload), 0)
+            row = next(iter(runner.read(Path(tmp)/'output'/'ledger.json')['cells'].values()))
+            self.assertEqual(len(row['calls']), 3)
+            self.assertEqual(runner.main(upload[:-1] + ['http://different.invalid']), 6)
+
+    def test_child_clears_only_protocol_overrides(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            args = self.setup_fixture(tmp) + ['--execute']
+            with mock.patch.dict(os.environ, {'ENCODINGDB_PROTOCOL_STABILITY_THRESHOLD': '1',
+                    'ENCODINGDB_PROTOCOL_MAX_ADAPTIVE_REPEATS': '0', 'SSL_CERT_FILE': '/fixture/ca'}), \
+                 mock.patch.object(runner, 'run_child', wraps=runner.run_child) as child:
+                self.assertEqual(runner.main(args), 130)
+            env = child.call_args.args[1]
+            self.assertNotIn('ENCODINGDB_PROTOCOL_STABILITY_THRESHOLD', env)
+            self.assertNotIn('ENCODINGDB_PROTOCOL_MAX_ADAPTIVE_REPEATS', env)
+            self.assertEqual(env['SSL_CERT_FILE'], '/fixture/ca')
+            self.assertEqual(env['ENCODINGDB_STATE_DIR'], str(Path(self.state.name).resolve()))
 
 
 if __name__ == '__main__':
