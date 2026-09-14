@@ -704,6 +704,8 @@ model DerivedResult {
   confidenceIntervals   Json
   dispersion            Json
   recomputationSpec     Json
+  invalidatedAt         DateTime?
+  invalidationReason    String?
 
   benchmarkProtocol BenchmarkProtocol     @relation(fields: [benchmarkProtocolId], references: [id], onDelete: Restrict)
   testClip          TestClip?             @relation(fields: [testClipId], references: [id], onDelete: SetNull)
