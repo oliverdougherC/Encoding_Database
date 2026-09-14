@@ -86,6 +86,14 @@ function Observe-Processes {
         }
         $script:currentPhase.encoderObserved = $true
     }
+    if ($script:currentPhase.name -eq 'prepare-stop' -and -not $script:currentPhase.preparationProbe) {
+        $probes=@($alive | Where-Object { $_.Name -eq 'ffprobe.exe' -and $_.CommandLine -match '-count_frames' -and $_.ExecutablePath })
+        if ($probes.Count) {
+            $probe=$probes[0]
+            $script:currentPhase.preparationProbe=@{ path=$probe.ExecutablePath; sha256=(Get-FileHash -Algorithm SHA256 -LiteralPath $probe.ExecutablePath).Hash.ToLowerInvariant(); commandLine=$probe.CommandLine }
+            Record-Event 'owned-preparation-probe' $script:currentPhase.preparationProbe
+        }
+    }
     return $alive
 }
 function Get-OwnedWindows {
@@ -164,7 +172,7 @@ function Start-Owned([string]$Name, [bool]$Gui) {
     $phasePath = Join-Path $modeRoot $Name; New-Item -ItemType Directory $phasePath | Out-Null
     $state = Join-Path $env:RUNNER_TEMP ("encodingdb-native-$Mode-$Name-" + [Guid]::NewGuid().ToString('N') + '-' + [char]0x00E9)
     New-Item -ItemType Directory -Force (Join-Path $state 'tmp') | Out-Null
-    $phase = @{ name=$Name; path=$phasePath; status='RUNNING'; helpers=@{}; encoderObserved=$false; queue= (Join-Path $phasePath ('queue-' + [char]0x00E9)); state=$state; exitCode=$null; survivors=@(); action=$null }
+    $phase = @{ name=$Name; path=$phasePath; status='RUNNING'; helpers=@{}; encoderObserved=$false; preparationProbe=$null; queue= (Join-Path $phasePath ('queue-' + [char]0x00E9)); state=$state; exitCode=$null; survivors=@(); action=$null }
     $script:currentPhase = $phase; $script:owned = @{}
     $exe = Join-Path $repo $(if ($Gui) {'encodingdb-client-windows.exe'} else {'encodingdb-client-windows-console.exe'})
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
@@ -186,6 +194,10 @@ function Start-Owned([string]$Name, [bool]$Gui) {
         '"' + [Regex]::Replace($escaped, '(\\+)$', '$1$1') + '"'
     })
     $info.Arguments = [string]::Join(' ', $quoted)
+    if ($Name -eq 'prepare-stop') {
+        $phase.sourcePackPath=Join-Path $repo 'encodingdb-test-suite-v1.tar.gz'
+        $phase.sourcePackBefore=(Get-FileHash -LiteralPath $phase.sourcePackPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    }
     $phase.command = @($exe) + $arguments; $phase.executableSha256 = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
     $script:process = [Diagnostics.Process]::new(); $script:process.StartInfo=$info; [void]$script:process.Start()
     $record = Get-CimInstance Win32_Process -Filter "ProcessId=$($script:process.Id)" | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine
@@ -216,41 +228,56 @@ try {
         if ($phase.exitCode -ne 0) { throw "Seven-clip console returned $($phase.exitCode); not accepted as PASS." }
         $phase.survivors=@(Observe-Processes); if ($phase.survivors.Count) { throw 'Console left owned children running.' }; $phase.status='PASSED'
     } else {
-        foreach ($name in @('complete','stop','close')) {
+        foreach ($name in @('prepare-stop','complete','stop','close')) {
             $phase=Start-Owned $name $true
             Wait-Until { return @(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' }).Count -eq 1 } 90 'BLOCKED_GUI_DESKTOP: no packaged GUI window appeared.'
             [void](Capture-Ui 'launch')
             # CLI settings initialize the GUI; retained manifests verify the actual recipe.
-            Send-RunShortcut 'Start'; Wait-Encoder
-            if ($name -eq 'complete') {
-                Wait-Until {
-                    $media=@((Observe-Processes) | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') })
-                    return @(Get-CompletionMarkers).Count -gt 0 -and $media.Count -eq 0
-                } (($MeasurementMinutes*60)+60) 'GUI did not finish a durable campaign before its deadline.'
-                Start-Sleep -Seconds 2
-                [void](Capture-Ui 'locally-complete')
+            Send-RunShortcut 'Start'
+            if ($name -eq 'prepare-stop') {
+                Wait-Until { [void](Observe-Processes); return $null -ne $phase.preparationProbe } $AcquisitionSeconds 'Source preparation probe was not observed.'
+                if (@(Get-ChildItem -Path $phase.queue -Recurse -Filter 'manifest.json' -ErrorAction SilentlyContinue).Count) { throw 'Campaign already exists; preparation cancellation was not exercised.' }
+                [void](Capture-Ui 'source-preparation')
+                Send-RunShortcut 'Stop'; $phase.action='Stop during preparation'
+                Wait-NoEncoders; Start-Sleep -Seconds 2; Wait-NoEncoders
+                if (@(Get-CompletionMarkers).Count -or @(Get-ChildItem -Path $phase.queue -Recurse -Filter 'attempt-*.json' -ErrorAction SilentlyContinue).Count) { throw 'Measured work appeared during preparation cancellation.' }
+                [void](Capture-Ui 'preparation-cancelled')
+                $phase.sourcePackAfter=(Get-FileHash -LiteralPath $phase.sourcePackPath -Algorithm SHA256).Hash.ToLowerInvariant()
+                $phase.preparationCache=@(Get-ChildItem -LiteralPath (Join-Path $phase.state 'suite-cache') -Recurse -File -ErrorAction SilentlyContinue | Select-Object FullName,Length)
+                $phase.scope='Local-pack source preparation Stop; not a network-download resume test'
                 $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
             } else {
-                # Cancel only after a durable measured attempt, while a later owned encode is active.
-                Wait-Until {
-                    $measured=@(Get-ChildItem -Path $phase.queue -Recurse -Filter 'attempt-*.json' -ErrorAction SilentlyContinue | Where-Object { (Get-Content $_.FullName -Raw | ConvertFrom-Json).schedule.phase -eq 'measured' })
-                    $encoding=@((Observe-Processes) | Where-Object { $_.Name -eq 'ffmpeg.exe' -and $_.CommandLine -match '(?:-c:v|-vcodec)\s+"?libx264' })
-                    return $measured.Count -gt 0 -and $encoding.Count -gt 0
-                } (($MeasurementMinutes*60)+30) 'No later encode after a durable measured attempt; cancellation scenario not exercised.'
-                if ($name -eq 'stop') {
-                    Send-RunShortcut 'Stop'; $phase.action='Stop'
-                    Wait-NoEncoders
+                Wait-Encoder
+                if ($name -eq 'complete') {
+                    Wait-Until {
+                        $media=@((Observe-Processes) | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') })
+                        return @(Get-CompletionMarkers).Count -gt 0 -and $media.Count -eq 0
+                    } (($MeasurementMinutes*60)+60) 'GUI did not finish a durable campaign before its deadline.'
                     Start-Sleep -Seconds 2
-                    Wait-NoEncoders
-                    if (@(Get-CompletionMarkers).Count) { throw 'Stop arrived after campaign completion; cancellation was not exercised.' }
-                    [void](Capture-Ui 'cancelled')
+                    [void](Capture-Ui 'locally-complete')
                     $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                 } else {
-                    $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
-                    [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-                    Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name.Replace('&','') -eq 'Yes' }).Count -gt 0 } 10 'Native Close confirmation did not appear.'
-                    Invoke-Observed 'Yes'; $phase.action='Close confirmed'
-                    $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
+                    # Cancel only after a durable measured attempt, while a later owned encode is active.
+                    Wait-Until {
+                        $measured=@(Get-ChildItem -Path $phase.queue -Recurse -Filter 'attempt-*.json' -ErrorAction SilentlyContinue | Where-Object { (Get-Content $_.FullName -Raw | ConvertFrom-Json).schedule.phase -eq 'measured' })
+                        $encoding=@((Observe-Processes) | Where-Object { $_.Name -eq 'ffmpeg.exe' -and $_.CommandLine -match '(?:-c:v|-vcodec)\s+"?libx264' })
+                        return $measured.Count -gt 0 -and $encoding.Count -gt 0
+                    } (($MeasurementMinutes*60)+30) 'No later encode after a durable measured attempt; cancellation scenario not exercised.'
+                    if ($name -eq 'stop') {
+                        Send-RunShortcut 'Stop'; $phase.action='Stop'
+                        Wait-NoEncoders
+                        Start-Sleep -Seconds 2
+                        Wait-NoEncoders
+                        if (@(Get-CompletionMarkers).Count) { throw 'Stop arrived after campaign completion; cancellation was not exercised.' }
+                        [void](Capture-Ui 'cancelled')
+                        $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
+                    } else {
+                        $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
+                        [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
+                        Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name.Replace('&','') -eq 'Yes' }).Count -gt 0 } 10 'Native Close confirmation did not appear.'
+                        Invoke-Observed 'Yes'; $phase.action='Close confirmed'
+                        $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
+                    }
                 }
             }
             if ($name -ne 'close') {

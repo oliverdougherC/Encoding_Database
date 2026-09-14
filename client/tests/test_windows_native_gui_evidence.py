@@ -66,6 +66,32 @@ class WindowsEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "valid process timing"):
                 verifier.inspect_campaigns(root, None, True)
 
+    def test_preparation_stop_is_separate_from_measured_cancellation(self):
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name)
+            queue = root / "queue"; queue.mkdir()
+            pack = root / "suite.tar.gz"; pack.write_bytes(b"TEST ONLY source pack")
+            for screenshot in ("source-preparation.png", "preparation-cancelled.png"):
+                (root / screenshot).write_bytes(b"TEST ONLY screenshot existence fixture")
+            phase = {"action": "Stop during preparation", "encoderObserved": False, "queue": str(queue), "path": str(root),
+                     "preparationProbe": {"commandLine": "ffprobe -count_frames canonical.mkv", "path": r"C:\temp\_MEI123\ffprobe.exe", "sha256": "probe-hash"},
+                     "sourcePackPath": str(pack), "sourcePackBefore": verifier.digest(pack), "sourcePackAfter": verifier.digest(pack)}
+            locked = {"ffprobe": {"sha256": "probe-hash"}}
+            result = verifier.verify_preparation_stop(phase, locked)
+            self.assertEqual(result["measuredAttempts"], 0)
+            self.assertTrue(result["preparationCancelled"])
+            with self.assertRaisesRegex(ValueError, "after encoding"):
+                verifier.verify_preparation_stop({**phase, "encoderObserved": True}, locked)
+            campaign = queue / "campaigns/campaign-test"; campaign.mkdir(parents=True)
+            (campaign / "manifest.json").write_text("{}")
+            with self.assertRaisesRegex(ValueError, "created measured work"):
+                verifier.verify_preparation_stop(phase, locked)
+            (campaign / "manifest.json").unlink()
+            pack.write_bytes(b"changed")
+            with self.assertRaisesRegex(ValueError, "changed the delivered"):
+                verifier.verify_preparation_stop(phase, locked)
+
+
     def test_blocked_gui_and_forced_cleanup_never_become_pass(self):
         with tempfile.TemporaryDirectory() as name:
             path = Path(name) / "receipt.json"

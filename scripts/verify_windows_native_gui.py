@@ -97,6 +97,19 @@ def inspect_campaigns(queue, expected_clips, completed):
     return {"clips": sorted(clips), "measuredAttempts": measured_count, "warmupAttempts": warmup_count, "artifacts": artifacts}
 
 
+def verify_preparation_stop(phase, locked):
+    require(phase.get("action") == "Stop during preparation", "Source preparation Stop was not performed")
+    require(not phase.get("encoderObserved"), "Preparation Stop occurred after encoding started")
+    probe = phase.get("preparationProbe") or {}
+    require("-count_frames" in probe.get("commandLine", ""), "No active source preparation probe observed")
+    require("_mei" in probe.get("path", "").casefold() and probe.get("sha256") == locked["ffprobe"]["sha256"], "Preparation probe was not the reviewed embedded helper")
+    queue = Path(phase["queue"])
+    require(not list(queue.glob("campaigns/*/manifest.json")) and not list(queue.rglob("attempt-*.json")) and not list(queue.rglob("campaign-complete.json")), "Preparation cancellation unexpectedly created measured work")
+    require(digest(phase["sourcePackPath"]) == phase.get("sourcePackBefore") == phase.get("sourcePackAfter"), "Preparation Stop changed the delivered source pack")
+    require((Path(phase["path"]) / "source-preparation.png").is_file() and (Path(phase["path"]) / "preparation-cancelled.png").is_file(), "Preparation Stop screenshots are missing")
+    return {"preparationCancelled": True, "measuredAttempts": 0, "sourcePackUnchanged": True, "visualStatusReview": "PENDING_PARENT_INSPECTION"}
+
+
 def verify_receipt(receipt_path, suite, locked):
     receipt_path = Path(receipt_path)
     receipt = load(receipt_path)
@@ -104,12 +117,14 @@ def verify_receipt(receipt_path, suite, locked):
     require(not receipt["cleanupForced"], "Harness required forced process cleanup")
     require("Windows" in receipt["os"]["Caption"], "No actual Windows OS receipt")
     gui = receipt["mode"] == "Gui"
-    require([phase["name"] for phase in receipt["phases"]] == (["complete", "stop", "close"] if gui else ["seven-clips"]), "Required native acceptance phases are missing")
+    require([phase["name"] for phase in receipt["phases"]] == (["prepare-stop", "complete", "stop", "close"] if gui else ["seven-clips"]), "Required native acceptance phases are missing")
     summaries = []
     for phase in receipt["phases"]:
         require(phase["status"] == "PASSED" and not phase["survivors"], "Native phase failed or left owned processes")
         require(phase["exitCode"] == 0, "Packaged process returned nonzero")
-        require(phase["encoderObserved"] and phase["helpers"], "No actual packaged encoder process observed")
+        preparation = phase["name"] == "prepare-stop"
+        if not preparation:
+            require(phase["encoderObserved"] and phase["helpers"], "No actual packaged encoder process observed")
         require("--no-submit" in phase["command"] and "--submit" not in phase["command"], "Unexpected publication command")
         verify_embedded(load(Path(phase["path"]) / "embedded-runtime.json"), locked)
         for helper in phase["helpers"].values():
@@ -120,6 +135,9 @@ def verify_receipt(receipt_path, suite, locked):
             require((Path(phase["path"]) / "launch.uia.json").is_file(), "Missing initial accessible-control capture")
             if phase["name"] in ("stop", "close"):
                 require(phase["action"] == ("Stop" if phase["name"] == "stop" else "Close confirmed"), "Required GUI cancellation action not observed")
+        if preparation:
+            summaries.append(verify_preparation_stop(phase, locked))
+            continue
         completed = phase["name"] in ("complete", "seven-clips")
         expected = [clip["id"] for clip in suite["clips"]] if not gui else None
         summaries.append(inspect_campaigns(phase["queue"], expected, completed))
