@@ -112,7 +112,7 @@ if (mode === 'seed') {
     try {
       const req = new URL(request.url, `http://127.0.0.1:${port}`);
       let result;
-      if (req.pathname === '/memory') result = { peakRss, ...process.memoryUsage(), mutations };
+      if (req.pathname === '/memory') result = { peakRss: Math.max(peakRss, process.resourceUsage().maxRSS * 1024), ...process.memoryUsage(), mutations };
       else if (req.pathname === '/mutate' && request.method === 'POST') {
         const started = new Date(); const cycle = ++cycles;
         const env = environmentId(0), group = `${env}-block-0-stable-0`;
@@ -171,7 +171,8 @@ if (mode === 'seed') {
   const sampler = (async () => { while (performance.now() < deadline) {
     const node = await (await fetch(base + '/memory')).json();
     const dbBytes = Number(execFileSync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.current'], { encoding: 'utf8' }).trim());
-    resources.push({ at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes }); await sleep(5000);
+    const dbPeak = Number(execFileSync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.peak'], { encoding: 'utf8' }).trim());
+    resources.push({ at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes, dbLifetimePeakBytes: dbPeak }); await sleep(5000);
   } })();
   const writer = (async () => { for (let cycle = 0; cycle < 5; cycle++) {
     await sleep(cycle === 0 ? 30000 : 90000);
@@ -180,7 +181,7 @@ if (mode === 'seed') {
   } })();
   await Promise.all([...Array.from({ length: 25 }, (_, index) => reader(index)), sampler, writer]);
   latencies.sort((a, b) => a - b); const quantile = p => latencies[Math.floor((latencies.length - 1) * p)];
-  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), mutations, resources };
+  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources };
   report.passed = failures.length === 0 && report.latencyMs.p95 <= 1000 && mutations.length === 5 && scoredRows > 0;
   await writeFile(`${output}/measurement.json`, JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, resources: undefined, mutations: mutations.length, failures: failures.slice(0, 5) }));
   process.exitCode = report.passed ? 0 : 1;

@@ -21,4 +21,4 @@ node scripts/projection-scale/run.mjs serve
 node scripts/projection-scale/run.mjs measure
 ```
 
-NodeRSS is sampled in the server every200ms; DBcgroup memory is sampled every5seconds. The latter includes PostgreSQL processes and pagecache within the1GiBcontainer and is not directly comparable to processRSS. Docker Desktop VM memory and load-generator RSS are outside these two series. The exact source SHA, image digest, platform, commands, seed proof and measured receipt must accompany any result claim. No existing database or P910workload is used.
+NodeRSS is sampled in the server every200ms and includes the process resourceUsage maximum; DBcgroup memory is sampled every5seconds with its lifetime memory.peak high-water mark separately retained (including seeding). The latter includes PostgreSQL processes and pagecache within the1GiBcontainer and is not directly comparable to processRSS. Docker Desktop VM memory and load-generator RSS are outside these two series. The exact source SHA, image digest, platform, commands, seed proof and measured receipt must accompany any result claim. No existing database or P910workload is used.
