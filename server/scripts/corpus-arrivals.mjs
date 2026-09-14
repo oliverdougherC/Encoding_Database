@@ -6,6 +6,7 @@ import { performance } from 'node:perf_hooks';
 import { execFileSync } from 'node:child_process';
 import { loadPublicCorpusPage } from '../dist/v7/corpusQuery.js';
 import { assertIsolatedCorpusDatabase } from '../test/fixtures/corpus-postgres.mjs';
+const executionSourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
 const url = process.env.CORPUS_TEST_DATABASE_URL;
 assertIsolatedCorpusDatabase(url);
 const prefix = process.env.CORPUS_SCALE_PREFIX;
@@ -61,7 +62,7 @@ try {
     throw new Error('Arrival public membership or independent-source accounting mismatch');
   }
   const report = { groupId, acceptedBefore: beforeRow.sampleCounts.accepted, acceptedAfter: afterRow.sampleCounts.accepted,
-    independentSourcesBefore: beforeRow.sampleCounts.independentSources, independentSourcesAfter: afterRow.sampleCounts.independentSources, schema: 'encodingdb-isolated-metadata-arrivals/v1', fixtureOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    independentSourcesBefore: beforeRow.sampleCounts.independentSources, independentSourcesAfter: afterRow.sampleCounts.independentSources, schema: 'encodingdb-isolated-metadata-arrivals/v1', fixtureOnly: true, sourceSha: executionSourceSha,
     campaign, requestedDurationSeconds: seconds, elapsedMs: performance.now() - started, stoppedEarly: stopping,
     targetArrivalsPerSecond: 1, createdRuns: count, verifiedRunArtifactAnalysisChains: verified,
     writeP95Ms: latencies[Math.floor(latencies.length * .95)],
