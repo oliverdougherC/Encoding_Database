@@ -5,6 +5,7 @@ import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
 import { loadActiveRecommendationContextIdentity, loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
 import { installedWorkerProvenance } from './workerProvenance.js';
+import { CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -61,9 +62,7 @@ export const SERVER_ENCODE_TIMER_BOUNDARY = 'ffmpeg-process-v1' as const;
 export const SERVER_CANONICAL_RECIPE_RULES = {
   artifactUploadRequired: true,
   warmupRuns: 1,
-  minimumMeasuredRuns: 2,
-  stabilityThresholdRatio: 0.03,
-  maxAdaptiveRepeats: 2,
+  ...CANONICAL_MEASUREMENT_RULES,
 } as const;
 export const SERVER_CANONICAL_OUTPUT_RULES = {
   singleVideoStream: true,
@@ -238,6 +237,7 @@ export interface StoredQualityAnalysis {
 }
 
 export interface RunArtifactBundle {
+  measurementGroup?: MeasurementGroupEligibility;
   run: StoredBenchmarkRun;
   artifact: StoredArtifact;
   qualityAnalyses: StoredQualityAnalysis[];
@@ -313,6 +313,7 @@ export interface EnvironmentBootstrapInput {
 }
 
 export interface CreateRunRequestInput {
+  measurementGroup?: unknown;
   benchmarkProtocol: BenchmarkProtocolBootstrapInput;
   testClip: TestClipBootstrapInput;
   recipe: RecipeBootstrapInput;
@@ -585,6 +586,7 @@ const RUN_CREATE_SCHEMA = z.object({
   energyDomains: z.array(z.unknown()).optional().nullable(),
   decodeBenchmark: z.unknown().optional().nullable(),
   preRunEnvironmentCheck: z.unknown().optional(),
+  measurementGroup: z.unknown().optional(),
   ffmpegProgressTelemetry: z.unknown().optional(),
   clientQualityDebug: z.unknown().optional(),
   artifact: z.object({
@@ -1585,6 +1587,7 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
       clientQualityDebug: bundle.run.clientQualityDebug ?? null,
       energyDomains: bundle.run.energyDomains ?? null,
       decodeBenchmark: bundle.run.decodeBenchmark ?? null,
+      measurementGroup: bundle.measurementGroup ?? null,
     },
     artifact: {
       id: bundle.artifact.id,
@@ -2143,6 +2146,13 @@ export class ArtifactPipelineService {
     assertMetricModelCompatibility(input.expectedMetricModelId ?? null, testClip);
 
     validateCanonicalTiming(input, testClip);
+    let preRunEnvironmentCheck = input.preRunEnvironmentCheck;
+    try {
+      const nested = receiptFromRun(input);
+      const group = parseMeasurementGroupReceipt(input.measurementGroup ?? nested, input);
+      if (input.measurementGroup != null && nested != null && canonicalJsonString(input.measurementGroup as never) !== canonicalJsonString(nested as never)) throw new Error('Conflicting measurement group receipt copies');
+      if (group) preRunEnvironmentCheck = { ...(asJsonObject(input.preRunEnvironmentCheck) ?? {}), measurementGroup: group };
+    } catch (error) { throw new HttpError(400, `Invalid measurement group receipt: ${normalizeError(error)}`); }
     let energyDomains: ReturnType<typeof normalizeEnergyDomains>;
     let decodeBenchmark: ReturnType<typeof normalizeDecodeBenchmark>;
     try {
@@ -2184,7 +2194,7 @@ export class ArtifactPipelineService {
       telemetryMissing: input.telemetryMissing,
       energyDomains,
       decodeBenchmark,
-      preRunEnvironmentCheck: input.preRunEnvironmentCheck,
+      preRunEnvironmentCheck,
       ffmpegProgressTelemetry: input.ffmpegProgressTelemetry,
       clientQualityDebug: input.clientQualityDebug,
       artifact: {
@@ -2366,10 +2376,12 @@ export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient, 
         }
       }
 
-      const aggregateAnalyses = [...latestPerRun.values()].map((analysis) => {
+      const verifyGroup = createMeasurementGroupVerifier(tx, { metricModelId: payload.metricModelId });
+      const aggregateAnalyses = await Promise.all([...latestPerRun.values()].map(async (analysis) => {
         const effective = applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status,
           artifactState: analysis.artifact?.storageState ?? 'PENDING', analysisId: analysis.id, reviews: analysis.evidenceReviews });
         return ({
+        measurementGroup: await verifyGroup(analysis.benchmarkRun),
         qualityAnalysisId: analysis.id,
         analysisWorkerVersion: analysis.analysisWorkerVersion,
         benchmarkRunId: analysis.benchmarkRunId,
@@ -2386,7 +2398,7 @@ export function createDefaultDerivedRecomputeCallback(rootClient: PrismaClient, 
         physicalSourceId: analysis.benchmarkRun.physicalSourceId ?? null,
         machineKey: analysis.benchmarkRun.physicalSourceId ?? null,
         contributorKey: null,
-      }); });
+      }); }));
 
       for (const scoreContext of scoreContexts) {
         const transform = transformConstantsFromScoreContext(scoreContext.transformConstants);
@@ -2504,6 +2516,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         energyDomains: input.energyDomains,
         decodeBenchmark: input.decodeBenchmark,
         preRunEnvironmentCheck: input.preRunEnvironmentCheck,
+        measurementGroup: input.measurementGroup,
         ffmpegProgressTelemetry: input.ffmpegProgressTelemetry,
         clientQualityDebug: input.clientQualityDebug,
         artifact: {
@@ -2609,6 +2622,7 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         benchmarkRunStatus: bundle.run.status,
         benchmarkRunStatusReason: bundle.run.statusReason,
         analyses: bundleToResponse(bundle).analyses,
+        measurementGroup: bundle.measurementGroup ?? null,
       });
     } catch (error) {
       const serialized = serializeError(error);
@@ -3254,6 +3268,17 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           if ((existing as any).immutablePayloadHash !== contentHash) throw new HttpError(409, 'Idempotency key conflicts with immutable run contents');
           return { run: existing, created: false };
         }
+        if (input.physicalSourceId && input.campaignId && input.repetitionGroupId) {
+          const siblings = await tx.benchmarkRun.findMany({ where: { physicalSourceId: input.physicalSourceId, campaignId: input.campaignId, repetitionGroupId: input.repetitionGroupId }, take: 5 });
+          const receipt = parseMeasurementGroupReceipt(receiptFromRun(input), input);
+          for (const sibling of siblings) {
+            if (sibling.repetitionIndex === input.repetitionIndex) throw new HttpError(409, 'A measurement group repetition already has an immutable run');
+            if (['benchmarkProtocolId', 'testClipId', 'workloadId', 'recipeId', 'environmentId'].some(key => (sibling as any)[key] !== (input as any)[key])) throw new HttpError(409, 'Measurement group identity cannot span different experiment contexts');
+            const prior = parseMeasurementGroupReceipt(receiptFromRun(sibling));
+            if (prior && (!prior.countedAttempts.some(attempt => attempt.repetitionIndex === input.repetitionIndex && attempt.encodeWallTimeMs === input.encodeWallTimeMs)
+              || (receipt && canonicalJsonString(prior as never) !== canonicalJsonString(receipt as never)))) throw new HttpError(409, 'Measurement group completed receipt is immutable');
+          }
+        }
         if (input.admission) await assertAdmission(tx, input.artifact.byteSize, input.admission);
         const createdAt = await databaseNow(tx);
         const created = await tx.benchmarkRun.create({
@@ -3308,7 +3333,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
         where: { id: benchmarkRunId },
         include: PRISMA_RUN_INCLUDE,
       });
-      return run ? normalizeBundle(run, role) : null;
+      if (!run) return null;
+      const bundle = normalizeBundle(run, role);
+      return { ...bundle, measurementGroup: await loadMeasurementGroupEligibility(client, run, { metricModelId: deriveMetricModelFallback(bundle) }) };
     },
     async getArtifactBySha256(sha256) {
       const artifact = await client.artifact.findFirst({
@@ -3414,6 +3441,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
     },
     async ensureQualityAnalysisQueued(input) {
       const run = await client.$transaction(async (tx) => {
+        await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
         await lockCapacity(tx);
         const now = await databaseNow(tx);
         const existing = await tx.qualityAnalysis.findUnique({

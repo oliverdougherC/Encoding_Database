@@ -94,7 +94,7 @@ export interface PublicCorpusRow {
   status: {
     benchmarkProtocol: 'ACTIVE';
     artifactState: 'VERIFIED' | 'RETAINED' | 'MIXED_VERIFIED_RETAINED';
-    centerBasis: 'accepted' | 'suspect';
+    centerBasis: 'accepted' | 'suspect' | 'eligible-stable-groups';
     scoring: PublicCorpusScoringStatus;
     evidenceTier: 'PROVISIONAL' | 'LOW' | 'MEDIUM' | 'HIGH';
     eligibleForDefaultRecommendation: boolean;

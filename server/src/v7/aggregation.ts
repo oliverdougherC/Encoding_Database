@@ -1,3 +1,4 @@
+import { createMeasurementGroupVerifier, measurementGroupStateHashSql, measurementGroupScopeForMembers, type MeasurementGroupEligibility } from './measurementGroup.js';
 import {
   buildAggregationCompatibilityKey,
   buildDerivedResultRecomputationSpec,
@@ -10,12 +11,12 @@ import {
   computePlScoreV7,
   type PlScoreV7Context,
 } from '../plScore.js';
-import type {
+import {
   Prisma,
-  PrismaClient,
+  type PrismaClient,
 } from '@prisma/client';
 
-export const DERIVED_RESULT_AGGREGATOR_VERSION = 'derived-result-aggregation/v3-physical-source-bootstrap' as const;
+export const DERIVED_RESULT_AGGREGATOR_VERSION = 'derived-result-aggregation/v4-complete-measurement-groups' as const;
 export const DEFAULT_BOOTSTRAP_ITERATIONS = 2000 as const;
 export const DEFAULT_BOOTSTRAP_CONFIDENCE_LEVEL = 0.95 as const;
 export const MIN_BOOTSTRAP_SAMPLE_SIZE = 2 as const;
@@ -70,6 +71,7 @@ export interface AggregateIdentity {
 }
 
 export interface AggregateRunObservation {
+  measurementGroup?: MeasurementGroupEligibility;
   benchmarkRunId: string;
   status: AggregateRunStatus;
   encodeFps: number | null;
@@ -166,6 +168,8 @@ export interface RebuildDerivedResultAggregateOutput {
     eligibleForDefaultRecommendation: boolean;
     acceptedRunCount: number;
     plEligibleAcceptedRunCount: number;
+    measurementGroupBlockedRunCount: number;
+    measurementGroupReasons: readonly string[];
     suspectRunCount: number;
     rejectedRunCount: number;
     invalidRunCount: number;
@@ -191,6 +195,7 @@ export interface RebuildDerivedResultAggregateOutput {
 }
 
 export interface AggregateAnalysisRecord {
+  measurementGroup?: MeasurementGroupEligibility;
   qualityAnalysisId: string;
   analysisWorkerVersion: string;
   benchmarkRunId: string;
@@ -635,6 +640,8 @@ function evidenceSummaryToJson(
     eligibleForDefaultRecommendation: evidence.eligibleForDefaultRecommendation,
     acceptedRunCount: evidence.acceptedRunCount,
     plEligibleAcceptedRunCount: evidence.plEligibleAcceptedRunCount,
+    measurementGroupBlockedRunCount: evidence.measurementGroupBlockedRunCount,
+    measurementGroupReasons: [...evidence.measurementGroupReasons],
     suspectRunCount: evidence.suspectRunCount,
     rejectedRunCount: evidence.rejectedRunCount,
     invalidRunCount: evidence.invalidRunCount,
@@ -676,6 +683,7 @@ function buildAggregateRunObservation(
   if (status == null) return null;
   return {
     benchmarkRunId: record.benchmarkRunId,
+    ...(record.measurementGroup ? { measurementGroup: record.measurementGroup.analysisIds.includes(record.qualityAnalysisId) ? record.measurementGroup : { ...record.measurementGroup, eligible: false, reason: 'analysis-not-selected-in-group' } } : {}),
     status,
     encodeFps: record.encodeFps,
     sourceFps: record.sourceFps,
@@ -773,7 +781,8 @@ export function rebuildDerivedResultAggregate(
   const suspectRuns = runs.filter((run) => run.status === 'suspect');
   const rejectedRuns = runs.filter((run) => run.status === 'rejected');
   const invalidRuns = runs.filter((run) => run.status === 'invalid');
-  const plEligibleAcceptedRuns = acceptedRuns.filter((run) => (
+  const groupQualifiedRuns = acceptedRuns.filter(run => identity.protocolVersion !== '7.1' || (run.measurementGroup?.eligible === true && run.measurementGroup.memberRunIds.includes(run.benchmarkRunId)));
+  const plEligibleAcceptedRuns = groupQualifiedRuns.filter((run) => (
     run.vmafMean != null
     && run.vmafP5 != null
     && run.encodeFps != null
@@ -827,18 +836,18 @@ export function rebuildDerivedResultAggregate(
     };
   }));
 
-  const acceptedRunIds = acceptedRuns.map((run) => run.benchmarkRunId);
-  const repetitionCount = new Set(acceptedRuns.map(runRepetitionKey)).size;
-  const independentSourceCount = new Set(acceptedRuns.map((run) => run.physicalSourceId).filter(Boolean)).size;
+  const acceptedRunIds = groupQualifiedRuns.map((run) => run.benchmarkRunId);
+  const repetitionCount = new Set(groupQualifiedRuns.map(runRepetitionKey)).size;
+  const independentSourceCount = new Set(groupQualifiedRuns.map((run) => run.physicalSourceId).filter(Boolean)).size;
   const machineCount = independentSourceCount;
   const contributorCount = new Set(acceptedRuns.map((run) => run.contributorKey ?? 'unknown-contributor')).size;
   const evidenceTier = classifyEvidenceTier(
     policy,
-    acceptedRuns.length,
+    plEligibleAcceptedRuns.length,
     independentSourceCount,
     confidenceIntervals.plTotal.width,
   );
-  const eligibleForDefaultRecommendation = policy.policyStatus === 'CALIBRATED'
+  const eligibleForDefaultRecommendation = plEligibleAcceptedRuns.length > 0 && policy.policyStatus === 'CALIBRATED'
     && TIER_ORDER[evidenceTier] >= TIER_ORDER[policy.defaultRecommendationMinimumTier];
   const evidence = {
     policyVersion: policy.policyVersion,
@@ -847,6 +856,8 @@ export function rebuildDerivedResultAggregate(
     eligibleForDefaultRecommendation,
     acceptedRunCount: acceptedRuns.length,
     plEligibleAcceptedRunCount: plEligibleAcceptedRuns.length,
+    measurementGroupBlockedRunCount: acceptedRuns.length - groupQualifiedRuns.length,
+    measurementGroupReasons: [...new Set(acceptedRuns.filter(run => !groupQualifiedRuns.includes(run)).map(run => run.measurementGroup?.reason ?? 'missing-receipt'))].sort(),
     suspectRunCount: suspectRuns.length,
     rejectedRunCount: rejectedRuns.length,
     invalidRunCount: invalidRuns.length,
@@ -1034,6 +1045,26 @@ export async function persistDerivedResultRecord(
   members: ReadonlyArray<{ benchmarkRunId: string; qualityAnalysisId: string }>,
 ): Promise<string> {
   const write = async (tx: Prisma.TransactionClient): Promise<string> => {
+    if (derivedResult.recomputationSpec.protocolVersion === '7.1' && members.length > 0) {
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+      const context = await tx.scoreContext.findUniqueOrThrow({ where: { id: derivedResult.scoreContextId } });
+      const candidates = await tx.benchmarkRun.findMany({ where: { id: { in: members.map(member => member.benchmarkRunId) } } });
+      const verify = createMeasurementGroupVerifier(tx, { metricModelId: context.qualityModelId });
+      for (const candidate of candidates) {
+        const group = await verify(candidate);
+        if (!group.eligible || members.some(member => member.benchmarkRunId === candidate.id && !group.analysisIds.includes(member.qualityAnalysisId))) throw new Error('Derived members lost complete stable group eligibility');
+      }
+      if (candidates.length !== new Set(members.map(member => member.benchmarkRunId)).size) throw new Error('Derived measurement group members are missing');
+      const { buildPublicCorpusAggregationSql } = await import('./corpusQuery.js');
+      const [raw] = await tx.$queryRaw<Array<{ accepted: number; acceptedMembershipHash: string }>>(Prisma.sql`${buildPublicCorpusAggregationSql(Prisma.sql`AND r."benchmarkProtocolId" = ${derivedResult.benchmarkProtocolId} AND r."workloadId" = ${derivedResult.workloadId} AND r."recipeId" = ${derivedResult.recipeId} AND r."environmentId" = ${derivedResult.environmentId}`)}
+        SELECT accepted, "acceptedMembershipHash" FROM grouped WHERE "metricModelId" = (SELECT "qualityModelId" FROM "ScoreContext" WHERE id = ${derivedResult.scoreContextId})`);
+      const [state] = await tx.$queryRaw<Array<{ hash: string; membership: string }>>(Prisma.sql`SELECT ${measurementGroupStateHashSql(measurementGroupScopeForMembers(members.map(member => member.benchmarkRunId)))} AS hash,
+        encode(sha256(convert_to(${JSON.stringify(members.map(member => member.qualityAnalysisId).sort())}::jsonb::text, 'UTF8')), 'hex') AS membership`);
+      derivedResult = { ...derivedResult, evidenceSummary: { ...derivedResult.evidenceSummary, measurementGroupSnapshot: {
+        version: 'measurement-group-state/v1', rawAcceptedCount: raw?.accepted ?? 0, rawAcceptedMembershipHash: raw?.acceptedMembershipHash ?? null,
+        qualifiedCount: members.length, qualifiedMembershipHash: state!.membership, stateHash: state!.hash,
+      } } };
+    }
     const persisted = await tx.derivedResult.upsert({
       where: buildDerivedResultUniqueWhere(derivedResult),
       create: buildDerivedResultCreateInput(derivedResult),

@@ -257,6 +257,11 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   assert.equal(burst.filter(entry => entry.status === 'fulfilled').length, 2, '25 contributors reserve at most capacity two');
   assert.ok(burst.filter(entry => entry.status === 'rejected').every(entry => /backlog capacity/.test(entry.reason.message)));
   const metrics = { vmafMean: 95, vmafP5: 90, videoBitrateBps: 1_000_000, fileSizeBytes: 10000 };
+  const newRun = burst.find(entry => entry.status === 'fulfilled').value.bundle;
+  const groupReceipt = { schemaVersion: 'encodingdb-measurement-group/v1', campaignId: 'snapshot-group', repetitionGroupId: 'snapshot-group', completed: true, countedAttempts: [1, 2].map(repetitionIndex => ({ repetitionIndex, encodeWallTimeMs: 1000 })) };
+  for (const [index, bundle] of [slowRun, newRun].entries()) await client.benchmarkRun.update({ where: { id: bundle.run.id }, data: { campaignId: 'snapshot-group', repetitionGroupId: 'snapshot-group', repetitionIndex: index + 1, preRunEnvironmentCheck: { ...body.preRunEnvironmentCheck, measurementGroup: groupReceipt } } });
+  await client.qualityAnalysis.updateMany({ where: { benchmarkRunId: slowRun.run.id }, data: { analysisProvenance: { workerBuildFingerprint: 'a'.repeat(64) } } });
+
   await client.qualityAnalysis.updateMany({ where: { benchmarkRunId: slowRun.run.id }, data: metrics });
   const oldAnalysis = await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'historical-test-worker', analysisProvenance: {}, createdAt: new Date('2000-01-01'), completedAt: new Date('2000-01-01'), ...metrics, vmafMean: 100, vmafP5: 100 } });
   await appendEvidenceReview(client, oldAnalysis.id, 'SYNTHETIC TEST FIXTURE NOT HUMAN REVIEW', { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, artifactSha256: slowRun.artifact.sha256, metricModelId: queueInput.metricModelId, analysisWorkerVersion: 'historical-test-worker', decision: 'EXPECTED', rationale: 'Synthetic old-analysis selection regression only', evidenceLinks: ['https://example.test/synthetic-fixture'], supersedesId: null });
@@ -295,10 +300,9 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   const rebuildPayload = { benchmarkRunId: slowRun.run.id, artifactId: slowRun.artifact.id, metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION };
   const older = rebuild(rebuildPayload);
   await ready;
-  const newRun = burst.find(entry => entry.status === 'fulfilled').value.bundle;
   await client.benchmarkRun.update({ where: { id: newRun.run.id }, data: { status: 'ACCEPTED' } });
-  await client.artifact.update({ where: { id: newRun.artifact.id }, data: { storageState: 'RETAINED' } });
-  await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: newRun.run.id, artifactId: newRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, analysisProvenance: {}, ...metrics } });
+  await client.artifact.update({ where: { id: newRun.artifact.id }, data: { storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'test/object', storageUrl: '/test/object' } });
+  await client.qualityAnalysis.create({ data: { createdAt: new Date(), benchmarkRunId: newRun.run.id, artifactId: newRun.artifact.id, status: 'COMPLETE', metricModelId: queueInput.metricModelId, analysisWorkerVersion: DEFAULT_ANALYZER_VERSION, analysisProvenance: { workerBuildFingerprint: 'a'.repeat(64) }, ...metrics } });
   const newer = rebuild(rebuildPayload);
   await new Promise(resolve => setTimeout(resolve, 40));
   assert.equal(snapshots, 1, 'second recomputation cannot read ahead of a locked snapshot');

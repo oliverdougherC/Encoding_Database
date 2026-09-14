@@ -46,11 +46,7 @@ test('two real PostgreSQL evidence namespaces combine without changing measured 
     await importCalibrationSnapshot(combined, { snapshotDirectory: path.join(root, 'snapshot-a'), storageRoot: storage });
     assert.equal(await combined.benchmarkRun.count({ where: { id: { in: [first.run.id, second.run.id] } } }), 2);
     await writeFile(path.join(root, 'protocols.json'), JSON.stringify([first.protocol.id, second.protocol.id]));
-    execFileSync(process.execPath, [fileURLToPath(new URL('../../scripts/generate-calibration-evidence.mjs', import.meta.url)), '--benchmark-protocol-ids', path.join(root, 'protocols.json'), '--quality-model-id', 'TEST ONLY MODEL', '--calibration-version', 'TEST ONLY snapshot rehearsal', '--output', path.join(root, 'draft.json')], { env: { ...process.env, DATABASE_URL: process.env.SNAPSHOT_COMBINED_URL } });
-    const draft = JSON.parse(readFileSync(path.join(root, 'draft.json'), 'utf8'));
-    assert.equal(draft.status, 'DRAFT');
-    assert.deepEqual(new Set(draft.corpus.map(row => row.qualityAnalysisId)), new Set([first.analysis.id, second.analysis.id]));
-    assert.equal(draft.corpus.find(row => row.qualityAnalysisId === second.analysis.id).partition, 'HOLDOUT');
+    assert.throws(() => execFileSync(process.execPath, [fileURLToPath(new URL('../../scripts/generate-calibration-evidence.mjs', import.meta.url)), '--benchmark-protocol-ids', path.join(root, 'protocols.json'), '--quality-model-id', 'TEST ONLY MODEL', '--calibration-version', 'TEST ONLY snapshot rehearsal', '--output', path.join(root, 'draft.json')], { env: { ...process.env, DATABASE_URL: process.env.SNAPSHOT_COMBINED_URL } }), /No retained authoritative calibration evidence/);
     const readCount = await withReadOnlyCalibrationEvidence(combined, a, async tx => {
       assert.equal((await tx.$queryRawUnsafe('SHOW transaction_read_only'))[0].transaction_read_only, 'on');
       return tx.qualityAnalysis.count({ where: { id: { in: [first.analysis.id, second.analysis.id] } } });

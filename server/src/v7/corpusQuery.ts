@@ -1,4 +1,5 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
+import { measurementGroupStateHashSql, measurementGroupScopeForDerived } from './measurementGroup.js';
 import { DEFAULT_ANALYZER_VERSION } from './artifacts.js';
 import { buildPublicCorpusRows, getPublicReferenceContextVersions, type PublicCorpusRow } from './corpus.js';
 
@@ -7,7 +8,7 @@ export const MAX_PUBLIC_CORPUS_PAGE_SIZE = 100;
 const HARDWARE_SUFFIXES = ['_videotoolbox', '_nvenc', '_qsv', '_amf', '_vaapi', '_v4l2m2m', '_omx'];
 type CorpusQuery = Record<string, string | undefined>;
 type GroupSummary = {
-  id: string; runId: string; artifactId: string; analysisId: string; derivedId: string | null;
+  id: string; runId: string; artifactId: string; analysisId: string; derivedId: string | null; verifiedDerivedId?: string | null;
   accepted: number; suspect: number; repetitions: number; independentSources: number; machines: number;
   fps: number | null; sourceFps: number | null; vmaf: number | null; vmafP5: number | null;
   videoBitrateBps: number | null; fileSizeBytes: number | null; artifactState: PublicCorpusRow['status']['artifactState'];
@@ -42,8 +43,8 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
   const filter = filters.length ? Prisma.sql`AND ${Prisma.join(filters, ' AND ')}` : Prisma.empty;
   const sorts: Record<string, string> = {
     cpuModel: '"cpuModel"', gpuModel: 'coalesce("gpuModel", \'\')', codec: '"encoderName"',
-    preset: 'coalesce("preset", \'default\')', fps: 'fps', vmaf: 'vmaf',
-    fileSizeBytes: 'round("fileSizeBytes"::numeric)', videoBitrateBps: '"videoBitrateBps"', samples: 'accepted',
+    preset: 'coalesce("preset", \'default\')', fps: '"displayFps"', vmaf: '"displayVmaf"',
+    fileSizeBytes: 'round("displayFileSizeBytes"::numeric)', videoBitrateBps: '"displayVideoBitrateBps"', samples: 'accepted',
   };
   const sort = Prisma.raw(sorts[query.sort ?? ''] ?? '"createdAt"');
   const direction = Prisma.raw(query.dir === 'asc' ? 'ASC' : 'DESC');
@@ -56,18 +57,44 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
       JOIN "Environment" e ON e.id = g."environmentId"
       JOIN "Recipe" p ON p.id = g."recipeId"
       WHERE b.state = 'ACTIVE' ${filter}
+    ), candidates AS MATERIALIZED (
+      SELECT grouped.*, candidate.id AS "derivedId",
+        CASE WHEN candidate."evidenceSummary"->'measurementGroupSnapshot' IS NOT NULL THEN candidate."centerEncodeFps" ELSE grouped.fps END AS "displayFps",
+        CASE WHEN candidate."evidenceSummary"->'measurementGroupSnapshot' IS NOT NULL THEN candidate."centerVmafMean" ELSE grouped.vmaf END AS "displayVmaf",
+        CASE WHEN candidate."evidenceSummary"->'measurementGroupSnapshot' IS NOT NULL THEN candidate."centerVideoBitrateBps" ELSE grouped."videoBitrateBps" END AS "displayVideoBitrateBps",
+        CASE WHEN candidate."evidenceSummary"->'measurementGroupSnapshot' IS NOT NULL THEN candidate."centerFileSizeBytes" ELSE grouped."fileSizeBytes" END AS "displayFileSizeBytes"
+      FROM grouped LEFT JOIN LATERAL (
+        SELECT d.* FROM "DerivedResult" d JOIN "ScoreContext" c ON c.id = d."scoreContextId" JOIN "BenchmarkProtocol" b ON b.id = d."benchmarkProtocolId"
+        WHERE d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."plTotal" IS NOT NULL
+          AND d."benchmarkProtocolId" = grouped."benchmarkProtocolId" AND d."workloadId" = grouped."workloadId" AND d."recipeId" = grouped."recipeId" AND d."environmentId" = grouped."environmentId"
+          AND c."qualityModelId" = grouped."metricModelId" AND c."contextVersion" = ANY(${[...contexts]}::text[])
+          AND (b."protocolVersion" <> '7.1' OR (d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v1'
+            AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = grouped.accepted
+            AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = grouped."acceptedMembershipHash"))
+        ORDER BY d."createdAt" DESC, d.id DESC LIMIT 1
+      ) candidate ON true
     ), page AS (
-      SELECT * FROM grouped ORDER BY ${sort} ${direction} NULLS LAST, id ASC LIMIT ${pageSize} OFFSET ${offset}
+      SELECT * FROM candidates ORDER BY ${sort} ${direction} NULLS LAST, id ASC LIMIT ${pageSize} OFFSET ${offset}
     ), hydrated AS (
-      SELECT page.*, d.id AS "derivedId" FROM page LEFT JOIN LATERAL (
-        SELECT d.id FROM "DerivedResult" d JOIN "ScoreContext" c ON c.id = d."scoreContextId"
-        WHERE d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."benchmarkProtocolId" = page."benchmarkProtocolId"
+      SELECT page.*, d.id AS "verifiedDerivedId" FROM page LEFT JOIN LATERAL (
+        SELECT d.id FROM "DerivedResult" d JOIN "ScoreContext" c ON c.id = d."scoreContextId" JOIN "BenchmarkProtocol" scoredProtocol ON scoredProtocol.id = d."benchmarkProtocolId"
+        WHERE d.id = page."derivedId" AND d.kind = 'WORKLOAD' AND d."invalidatedAt" IS NULL AND d."benchmarkProtocolId" = page."benchmarkProtocolId"
           AND d."workloadId" = page."workloadId" AND d."recipeId" = page."recipeId" AND d."environmentId" = page."environmentId"
           AND c."qualityModelId" = page."metricModelId" AND c."contextVersion" = ANY(${[...contexts]}::text[])
         AND page.accepted > 0
-          AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page.accepted
-          AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex')
-            FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page."acceptedMembershipHash"
+          AND (
+            (scoredProtocol."protocolVersion" <> '7.1'
+              AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page.accepted
+              AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = page."acceptedMembershipHash")
+            OR (scoredProtocol."protocolVersion" = '7.1'
+              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'version' = 'measurement-group-state/v1'
+              AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedCount')::int = page.accepted
+              AND d."evidenceSummary"->'measurementGroupSnapshot'->>'rawAcceptedMembershipHash' = page."acceptedMembershipHash"
+              AND (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int > 0
+              AND (SELECT count(*) FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = (d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedCount')::int
+              AND (SELECT encode(sha256(convert_to(coalesce(jsonb_agg(m."qualityAnalysisId" ORDER BY m."qualityAnalysisId"), '[]'::jsonb)::text, 'UTF8')), 'hex') FROM "DerivedResultMember" m WHERE m."derivedResultId" = d.id) = d."evidenceSummary"->'measurementGroupSnapshot'->>'qualifiedMembershipHash'
+              AND ${measurementGroupStateHashSql(measurementGroupScopeForDerived(Prisma.raw('d.id')))} = d."evidenceSummary"->'measurementGroupSnapshot'->>'stateHash')
+          )
         ORDER BY d."createdAt" DESC, d.id DESC LIMIT 1
       ) d ON true
     )
@@ -75,7 +102,7 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
       coalesce((SELECT jsonb_agg(to_jsonb(hydrated) ORDER BY ${sort} ${direction} NULLS LAST, id ASC) FROM hydrated), '[]'::jsonb) AS groups`;
 }
 
-function buildPublicCorpusAggregationSql(filter: Prisma.Sql) {
+export function buildPublicCorpusAggregationSql(filter: Prisma.Sql) {
   const median = (column: string) => {
     const value = Prisma.raw(column);
     return Prisma.sql`CASE WHEN bool_or(accepted) THEN
@@ -136,14 +163,16 @@ function buildPublicCorpusAggregationSql(filter: Prisma.Sql) {
     )`;
 }
 
-function applySummary(row: PublicCorpusRow, group: GroupSummary): PublicCorpusRow {
+function applySummary(row: PublicCorpusRow, group: GroupSummary, scored?: { centerEncodeFps: number | null; centerRealTimeRatio: number | null; centerVmafMean: number | null; centerVmafP5: number | null; centerVideoBitrateBps: number | null; centerFileSizeBytes: number | null; evidenceSummary: unknown }): PublicCorpusRow {
+  const stableBasis = scored && (scored.evidenceSummary as Record<string, unknown>)?.measurementGroupSnapshot != null;
+  if (stableBasis) group = { ...group, fps: scored.centerEncodeFps, vmaf: scored.centerVmafMean, vmafP5: scored.centerVmafP5, videoBitrateBps: scored.centerVideoBitrateBps, fileSizeBytes: scored.centerFileSizeBytes };
   const sourceFps = group.sourceFps != null && group.sourceFps > 0 ? group.sourceFps : null;
   const realTimeRatio = group.fps != null && sourceFps != null ? group.fps / sourceFps : null;
   const fileSizeBytes = group.fileSizeBytes == null ? null : Math.round(group.fileSizeBytes);
   return {
     ...row, fps: group.fps, vmaf: group.vmaf, vmafP5: group.vmafP5, sourceFps, realTimeRatio,
     videoBitrateBps: group.videoBitrateBps, fileSizeBytes, samples: group.accepted,
-    status: { ...row.status, artifactState: group.artifactState, centerBasis: group.accepted > 0 ? 'accepted' : 'suspect' },
+    status: { ...row.status, artifactState: group.artifactState, centerBasis: stableBasis ? 'eligible-stable-groups' : group.accepted > 0 ? 'accepted' : 'suspect' },
     sampleCounts: { ...row.sampleCounts, accepted: group.accepted, suspect: group.suspect,
       repetitions: group.repetitions, independentSources: group.independentSources, machines: group.machines },
     performance: { encodeFps: group.fps, realTimeRatio },
@@ -199,6 +228,8 @@ export async function loadPublicCorpusPage(prisma: PrismaClient, query: CorpusQu
     const [summary] = await tx.$queryRaw<PageSummary[]>(buildPublicCorpusPageSql(query, options.take, options.skip ?? 0, [...versions], options.id));
     if (!summary?.groups.length) return { rows: [], totalCount: Number(summary?.totalCount ?? 0) };
     const ids = summary.groups;
+    const stale = ids.filter(group => group.derivedId && group.verifiedDerivedId !== group.derivedId).map(group => group.derivedId!);
+    if (stale.length) throw Object.assign(new Error('Scoring group certificate changed; rebuild required'), { code: 'CORPUS_SCORE_REBUILD_PENDING', derivedIds: stale });
     const runs = await tx.benchmarkRun.findMany({
       where: { id: { in: ids.map(g => g.runId) } },
       include: { benchmarkProtocol: true, recipe: true, environment: true,
@@ -213,11 +244,17 @@ export async function loadPublicCorpusPage(prisma: PrismaClient, query: CorpusQu
     return { rows: ids.map(group => {
       const row = rows.get(group.id);
       if (!row) throw new Error('Corpus snapshot hydration did not resolve its selected evidence');
-      return applySummary(row, group);
+      return applySummary(row, group, derivedResults.find(result => result.id === group.derivedId));
     }), totalCount: Number(summary.totalCount) };
   }, { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead, timeout: 30_000, maxWait: 5_000 });
     } catch (error) {
-      if ((error as { code?: string }).code !== 'CORPUS_REBUILD_PENDING' || attempt === 2) throw error;
+      if ((error as { code?: string }).code === 'CORPUS_SCORE_REBUILD_PENDING') {
+        const ids = (error as { derivedIds: string[] }).derivedIds;
+        await prisma.derivedResult.updateMany({ where: { id: { in: ids } }, data: { invalidatedAt: new Date(), invalidationReason: 'Measurement group state or scoring membership changed' } });
+        const pending = await prisma.$queryRaw<Array<{ id: string }>>(Prisma.sql`SELECT min("qualityAnalysisId") AS id FROM "DerivedResultMember" WHERE "derivedResultId" = ANY(${ids}::text[]) GROUP BY "derivedResultId"`);
+        await prisma.qualityAnalysis.updateMany({ where: { id: { in: pending.map(row => row.id) } }, data: { recomputePending: true } });
+        if (attempt === 2) throw error;
+      } else if ((error as { code?: string }).code !== 'CORPUS_REBUILD_PENDING' || attempt === 2) throw error;
     }
   }
   throw new Error('Corpus read attempts exhausted');
@@ -227,7 +264,7 @@ export async function loadPublicCorpusPage(prisma: PrismaClient, query: CorpusQu
 export function isPublicCorpusBusyError(error: unknown): boolean {
   if (error == null || typeof error !== 'object') return false;
   const value = error as { code?: string; meta?: { code?: string } };
-  return ['P2024', 'P2028', 'CORPUS_REBUILD_PENDING'].includes(value.code ?? '')
+  return ['P2024', 'P2028', 'CORPUS_REBUILD_PENDING', 'CORPUS_SCORE_REBUILD_PENDING'].includes(value.code ?? '')
     || ['57014', '53100', '53200', '53300'].includes(value.meta?.code ?? '');
 }
 

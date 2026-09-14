@@ -395,7 +395,7 @@ test('legacy checkbox calibration with overlapping folds and unrelated frontier 
   assert.throws(() => activateReferenceContextForProduction(context, calibration), /not ready for production freeze/);
 });
 
-test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses', async () => {
+test('legacy retained rows without complete group receipts cannot fit new reference contexts', async () => {
   const rows = await loadRetainedReferenceEvidence({
     benchmarkRun: {
       async findMany() {
@@ -446,9 +446,7 @@ test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus late
     suiteVersion: 'encodingdb-test-suite-v1',
   });
 
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].qualityAnalysisId, 'analysis-2');
-  assert.equal(rows[0].artifactStorageState, 'RETAINED');
+  assert.deepEqual(rows, []);
 });
 
 test('score-context seeds include workload and GENERAL rows and reject provisional activation by default', async () => {

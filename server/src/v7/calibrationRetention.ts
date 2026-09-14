@@ -1,3 +1,4 @@
+import { createMeasurementGroupVerifier } from './measurementGroup.js';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { realpath, stat } from 'node:fs/promises';
@@ -11,12 +12,13 @@ import { canonicalJsonString } from './persistence.js';
 
 /** Verifies live identities and object bytes, not a self-consistent exported JSON. */
 export async function verifyCalibrationRetainedEvidence(
-  client: Pick<PrismaClient, 'qualityAnalysis'>,
+  client: Pick<PrismaClient, 'qualityAnalysis' | 'benchmarkRun'>,
   document: CalibrationEvidenceDocument,
   storageRoot = process.env.ARTIFACT_STORAGE_ROOT ?? path.resolve(process.cwd(), '.artifacts'),
 ): Promise<{ verifiedAnalyses: number; verifiedObjects: number }> {
   const root = await realpath(storageRoot);
   const verifiedObjects = new Set<string>();
+  const verifyGroup = createMeasurementGroupVerifier(client, { metricModelId: document.qualityModelId, verifyRetainedBytes: true, storageRoot: root });
   for (const evidence of document.corpus) {
     const analysis = await client.qualityAnalysis.findUnique({
       where: { id: evidence.qualityAnalysisId },
@@ -71,6 +73,7 @@ export async function verifyCalibrationRetainedEvidence(
     const effective = applyEffectiveReview({ runStatus: run.status, analysisStatus: analysis.status, artifactState: artifact.storageState, analysisId: analysis.id, reviews: analysis.evidenceReviews });
     if ((evidence.evidenceReviewId ?? null) !== effective.reviewId) throw new Error(`Evidence review head changed ${evidence.evidenceId}`);
     const excluded = document.metricSanityReviews.some((review) => review.disposition === 'EXCLUDE' && review.evidenceIds.includes(evidence.evidenceId));
+    if (!excluded) { const group = await verifyGroup(run); if (!group.eligible) throw new Error(`Measurement group is ineligible: ${group.reason} (${run.id})`); }
     if (!excluded && !effective.eligible) throw new Error(`Evidence lacks effective retained eligibility ${evidence.evidenceId}`);
     if (!artifact.storageKey || artifact.storageProvider !== 'localfs') throw new Error(`Unsupported or missing retained storage identity ${artifact.id}`);
     const objectPath = await realpath(path.resolve(root, artifact.storageKey));

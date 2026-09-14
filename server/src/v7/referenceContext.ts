@@ -1,3 +1,4 @@
+import { createMeasurementGroupVerifier } from './measurementGroup.js';
 import { buildScoringBehaviorHash } from './recommendationPolicy.js';
 import { applyEffectiveReview } from './reviews.js';
 import { readFileSync } from 'node:fs';
@@ -1186,6 +1187,8 @@ export async function loadRetainedReferenceEvidence(
     ],
   });
 
+  const verifyGroup = createMeasurementGroupVerifier(client, { metricModelId: options.qualityModelId });
+  const groupEligibility = new Map(await Promise.all(runs.map(async run => [run.id, await verifyGroup(run)] as const)));
   return runs.flatMap((run) => {
     const analysis = run.qualityAnalyses[0];
     const artifact = run.artifacts.find((entry) => entry.id === analysis?.artifactId);
@@ -1193,7 +1196,7 @@ export async function loadRetainedReferenceEvidence(
       return [];
     }
     const effective = applyEffectiveReview({ runStatus: run.status, analysisStatus: analysis.status, artifactState: artifact.storageState, analysisId: analysis.id, reviews: analysis.evidenceReviews });
-    if (!effective.eligible) return [];
+    if (!effective.eligible || !groupEligibility.get(run.id)?.eligible) return [];
     return [{
       benchmarkRunId: run.id,
       benchmarkProtocolId: run.benchmarkProtocolId,
