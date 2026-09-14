@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-14T02:41:23Z",
+  "finishedAt": "2026-09-14T03:05:18.346155+00:00",
+  "bundle": "/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063",
+  "exitCode": 0,
+  "restoreRequired": true
+}

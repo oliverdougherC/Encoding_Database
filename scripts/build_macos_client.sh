@@ -11,7 +11,7 @@ DEFAULT_RUNTIME_LOCK_PATH="$CLIENT_DIR/resources/runtime/ffmpeg-lock.json"
 RUNTIME_LOCK_PATH="${ENCODINGDB_RUNTIME_LOCK_PATH:-$DEFAULT_RUNTIME_LOCK_PATH}"
 APP_NAME="encodingdb-client-macos"
 ENTRYPOINT="$CLIENT_DIR/_pyinstaller_entry.py"
-BUILD_ROOT="$ROOT_DIR/.build/clients/macos"
+BUILD_ROOT="${ENCODINGDB_BUILD_ROOT:-$ROOT_DIR/.build/clients/macos}"
 LEGACY_DIST_DIR="$CLIENT_DIR/dist/macos"
 PYI_DIST_DIR="$BUILD_ROOT/dist"
 PYI_WORK_DIR="$BUILD_ROOT/work"
@@ -19,7 +19,7 @@ PYI_SPEC_DIR="$BUILD_ROOT/spec"
 RUNTIME_RESOURCE_DIR="$BUILD_ROOT/runtime_resources"
 SUITE_RESOURCE_DIR="$BUILD_ROOT/suite_resources/test_suite_v1"
 SUITE_PACK_PATH="${ENCODINGDB_SUITE_PACK_PATH:-$ROOT_DIR/encodingdb-test-suite-v1.tar.gz}"
-OUTPUT_PATH="$ROOT_DIR/$APP_NAME"
+OUTPUT_PATH="${ENCODINGDB_OUTPUT_PATH:-$ROOT_DIR/$APP_NAME}"
 BUILD_REQUIREMENTS="$CLIENT_DIR/requirements-build.txt"
 
 log() {
@@ -90,22 +90,30 @@ FFMPEG_EXE="$FFMPEG_PATH" FFPROBE_EXE="$FFPROBE_PATH" \
   --pack-out "$SUITE_PACK_PATH"
 
 log "Running PyInstaller..."
+RUNTIME_LIBRARY_ARGS=()
+if [[ -d "$BUNDLE_DIR/lib" ]]; then
+  RUNTIME_LIBRARY_ARGS+=(--add-data "$BUNDLE_DIR/lib:bin/mac/lib")
+fi
+if [[ -d "$BUNDLE_DIR/licenses" ]]; then
+  RUNTIME_LIBRARY_ARGS+=(--add-data "$BUNDLE_DIR/licenses:resources/runtime/licenses")
+fi
 cd "$ROOT_DIR"
-"${PYI_CMD[@]}" \
-  --clean \
+"$BUILD_PYTHON" -m PyInstaller.utils.cliutils.makespec \
   --onefile \
   --name "$APP_NAME" \
-  --distpath "$PYI_DIST_DIR" \
-  --workpath "$PYI_WORK_DIR" \
   --specpath "$PYI_SPEC_DIR" \
   --paths "$ROOT_DIR" \
   --add-data "$FFMPEG_PATH:bin/mac" \
   --add-data "$FFPROBE_PATH:bin/mac" \
+  ${RUNTIME_LIBRARY_ARGS[@]+"${RUNTIME_LIBRARY_ARGS[@]}"} \
   --add-data "$CLIENT_DIR/presets.json:." \
   --add-data "$SUITE_RESOURCE_DIR:resources/test_suite_v1" \
   --add-data "$RUNTIME_RESOURCE_DIR:resources/runtime" \
   --add-data "$CLIENT_DIR/resources/vmaf:resources/vmaf" \
   "$ENTRYPOINT"
+"$BUILD_PYTHON" "$ROOT_DIR/scripts/pyinstaller_locked_runtime.py" patch-spec \
+  --path "$PYI_SPEC_DIR/$APP_NAME.spec" --lock "$RUNTIME_LOCK_PATH" --platform mac
+"${PYI_CMD[@]}" --clean --distpath "$PYI_DIST_DIR" --workpath "$PYI_WORK_DIR" "$PYI_SPEC_DIR/$APP_NAME.spec"
 
 if [[ ! -f "$PYI_DIST_DIR/$APP_NAME" ]]; then
   die "Build output not found at $PYI_DIST_DIR/$APP_NAME"
@@ -114,6 +122,9 @@ fi
 log "Placing executable in repository root..."
 mv -f "$PYI_DIST_DIR/$APP_NAME" "$OUTPUT_PATH"
 chmod +x "$OUTPUT_PATH" || true
+"$BUILD_PYTHON" "$ROOT_DIR/scripts/pyinstaller_locked_runtime.py" audit \
+  --path "$OUTPUT_PATH" --lock "$RUNTIME_LOCK_PATH" --platform mac > "$OUTPUT_PATH.embedded-runtime.json" \
+  || die "Embedded runtime differs from reviewed bytes or lacks executable helpers"
 if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
   log "Build-only validation complete; release sidecars require an assigned project version."
 else

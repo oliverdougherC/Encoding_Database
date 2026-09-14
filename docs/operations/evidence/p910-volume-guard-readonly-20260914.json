@@ -1,0 +1,20 @@
+{
+  "scope": "Read-only live P910 mount guard; no rollout",
+  "sourceCommit": "fe28b8a",
+  "mismatchedDefaultRejected": true,
+  "preserved": {
+    "project": "encodingdb",
+    "checked": [
+      {
+        "service": "db",
+        "target": "/var/lib/postgresql/data",
+        "volume": "encodingdb_db_data"
+      },
+      {
+        "service": "server",
+        "target": "/app/artifacts",
+        "volume": "encodingdb_prod_artifact_data"
+      }
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "sourceCommit": "84d4086e4679566cfa6a7d10678be74a0a8993ab",
+  "kind": "packaged-runtime-and-model-smoke-with-no-measured-campaign",
+  "command": [
+    "/mnt/NVME/docker/encodingdb-operations/20260914-linux-package-smoke/\u65e5\u672c\u8a9e path/encodingdb-client-linux",
+    "--cli",
+    "--codec",
+    "libx264",
+    "--presets",
+    "medium",
+    "--no-submit",
+    "--local-metrics",
+    "--max-attempts",
+    "1",
+    "--queue-dir",
+    "/mnt/NVME/docker/encodingdb-operations/20260914-linux-package-smoke/queue"
+  ],
+  "exitCode": 1,
+  "expectedBudgetRejectionCode": 4,
+  "runtimeOverrideNamesExplicitlyRemoved": [
+    "FFMPEG_EXE",
+    "FFPROBE_EXE",
+    "ENCODINGDB_FFMPEG_PATH",
+    "ENCODINGDB_FFPROBE_PATH",
+    "ENCODINGDB_RUNTIME_LOCK_PATH",
+    "ENCODINGDB_RUNTIME_BUNDLE_DIR",
+    "LD_LIBRARY_PATH",
+    "PYTHONPATH",
+    "PYTHONHOME"
+  ],
+  "path": "/usr/bin:/bin",
+  "observedHelperExecutions": [],
+  "allHelpersEmbedded": false,
+  "artifactSha256": "5d54d0d476fe9ff142ca138956f1e7de3600a0ac11d5650d4e2feb5d87615b01",
+  "nonAsciiOutsideCheckoutPath": "/mnt/NVME/docker/encodingdb-operations/20260914-linux-package-smoke/\u65e5\u672c\u8a9e path",
+  "scope": "Local suite pack supplied for this diagnostic. No runtime override and no measured encodes; separate clean acquisition/E2E still required."
+}

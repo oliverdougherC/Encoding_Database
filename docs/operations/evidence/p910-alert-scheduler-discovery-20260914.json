@@ -1,0 +1,72 @@
+{
+  "capturedAt": "2026-09-14T01:37:14.181988+00:00",
+  "host": "P910",
+  "readOnly": true,
+  "productionChanged": false,
+  "privilegedScheduler": {
+    "sudoNoninteractive": false,
+    "rootCrontabReadable": false,
+    "reason": "sudo requires a password; root crontab PermissionError",
+    "systemCrontabEncodingDbEntries": 0,
+    "visibleEncodingDbSystemTimers": 0,
+    "visibleEncodingDbUserTimers": 0
+  },
+  "prometheus": {
+    "configPath": "/mnt/NVME/docker/appdata/prometheus/config/prometheus.yml",
+    "ruleFiles": [],
+    "alertmanagerConfigurations": 0,
+    "scrapeJobs": [
+      "prometheus",
+      "node",
+      "cadvisor",
+      "nvidia"
+    ],
+    "encodingDbChecks": 0
+  },
+  "grafana": {
+    "readOnlySqliteInspection": true,
+    "alertRules": 0,
+    "legacyNotifications": 0,
+    "receiverCount": 1,
+    "receiverDeliveryConfigurations": 0,
+    "receiverCategory": "empty receiver stub; no actual channel configured",
+    "smtpEnvironmentConfigured": false,
+    "encodingDbSpecificConfiguration": false
+  },
+  "backup": {
+    "knownExistingDestinations": [
+      "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/legacy-online",
+      "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/legacy-final",
+      "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/before-hotfix-b0f0bc7d12cb"
+    ],
+    "retentionPolicyVerified": false,
+    "rpoVerified": false,
+    "rtoVerified": false,
+    "destinationFilesystem": "ZFS NVME",
+    "destinationAvailableBytes": 1684865417216,
+    "existingRecoveryReceipt": "historical-recovery-20260914.json"
+  },
+  "productionTopology": {
+    "project": "encodingdb",
+    "network": "encodingdb_app",
+    "databaseVolume": "encodingdb_db_data",
+    "artifactVolume": "encodingdb_prod_artifact_data",
+    "apiPublished": false,
+    "databasePublished": false,
+    "nginxContainer": "encodingdb-nginx",
+    "nginxPublishedPort": 101,
+    "nginxAdditionalNetwork": "npm_default"
+  },
+  "taskLocalTools": {
+    "nodePath": "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/bin/node",
+    "nodeVersion": "v20.20.2",
+    "hostDefaultPathHasPgDump": false,
+    "hostDefaultPathHasPgRestore": false,
+    "postgresClientPlan": "reuse pinned PostgreSQL16 Docker clients; no global installation"
+  },
+  "notPerformed": [
+    "root access bypass",
+    "notification delivery",
+    "production stop/restart/config/data writes"
+  ]
+}

@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "${V7_RESTORE_SUPERVISED:-0}" != 1 ]]; then
+  export V7_RESTORE_SUPERVISED=1
+  export V7_BACKUP_TIMEOUT_SECONDS="${V7_RESTORE_TIMEOUT_SECONDS:-1200}"
+  export V7_BACKUP_SUPERVISOR_LABEL=Restore
+  exec python3 "$(dirname "${BASH_SOURCE[0]}")/v7-backup-supervisor.py" "${BASH_SOURCE[0]}" "$@"
+fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DRY_RUN=0
@@ -55,11 +61,13 @@ cleanup() {
   docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
   rm -rf "$DRILL_DIR"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 mkdir "$DRILL_DIR/artifacts"
 tar -C "$DRILL_DIR/artifacts" -xzf "$BUNDLE_DIR/artifacts.tar.gz"
 docker run -d --name "$CONTAINER_NAME" -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app \
-  -e POSTGRES_DB=benchmarks -P postgres:16-alpine >/dev/null
+  -e POSTGRES_DB=benchmarks -p 127.0.0.1::5432 postgres:16-alpine >/dev/null
 for _ in $(seq 1 60); do
   if docker exec "$CONTAINER_NAME" pg_isready -U app -d benchmarks >/dev/null 2>&1; then break; fi
   sleep 1
@@ -69,6 +77,6 @@ RESTORE_PORT="$(docker port "$CONTAINER_NAME" 5432/tcp | head -1 | sed 's/.*://'
 [[ "$RESTORE_PORT" =~ ^[0-9]+$ ]] || { echo "could not resolve restore port" >&2; exit 1; }
 RESTORE_URL="postgresql://app:app@127.0.0.1:${RESTORE_PORT}/benchmarks"
 pg_restore --no-owner --no-acl --exit-on-error --dbname "$RESTORE_URL" "$BUNDLE_DIR/database.dump"
-DATABASE_URL="$RESTORE_URL" node "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs" \
+DATABASE_URL="$RESTORE_URL" V7_BACKUP_INVENTORY_NETWORK=host bash "$ROOT_DIR/scripts/v7-backup-inventory.sh" \
   --mode verify --artifact-root "$DRILL_DIR/artifacts" --inventory "$BUNDLE_DIR/inventory.json"
 echo "PL-v7 isolated restore drill passed"

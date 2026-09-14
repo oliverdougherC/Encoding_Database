@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16-alpine
+    shm_size: ${DB_SHARED_MEMORY_SIZE:-256m}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-app}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me}
@@ -19,9 +20,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: ${DB_MEMORY_LIMIT:-1G}
         reservations:
-          memory: 256M
+          memory: ${DB_MEMORY_RESERVATION:-256M}
 
   server:
     build:
@@ -33,12 +34,13 @@ services:
       PORT: ${PORT:-3001}
       DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-change_me}@db:5432/${POSTGRES_DB:-benchmarks}?schema=public}
       ARTIFACT_STORAGE_ROOT: /app/artifacts
+      ARTIFACT_STORAGE_QUOTA_BYTES: ${ARTIFACT_STORAGE_QUOTA_BYTES:-10737418240}
       ARTIFACT_UPLOAD_SECRET: ${ARTIFACT_UPLOAD_SECRET:?ARTIFACT_UPLOAD_SECRET is required}
     depends_on:
       db:
         condition: service_healthy
     # Do not expose server directly; reachable only via internal network and nginx
-    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    command: sh -c "npx prisma migrate deploy && node scripts/rebuild-corpus.mjs --enqueue-all && node dist/index.js"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health/ready', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 10s
@@ -52,9 +54,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: ${SERVER_MEMORY_LIMIT:-16G}
         reservations:
-          memory: 128M
+          memory: ${SERVER_MEMORY_RESERVATION:-1G}
 
   frontend:
     build:
@@ -78,9 +80,9 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: ${FRONTEND_MEMORY_LIMIT:-512M}
         reservations:
-          memory: 128M
+          memory: ${FRONTEND_MEMORY_RESERVATION:-128M}
 
   nginx:
     image: nginx:1.27-alpine
@@ -110,15 +112,15 @@ services:
     deploy:
       resources:
         limits:
-          memory: 128M
+          memory: ${NGINX_MEMORY_LIMIT:-128M}
         reservations:
-          memory: 64M
+          memory: ${NGINX_MEMORY_RESERVATION:-64M}
 
 volumes:
   db_data:
-    name: encodingdb_prod_db_data
+    name: ${DATABASE_VOLUME_NAME:-encodingdb_prod_db_data}
   artifact_data:
-    name: encodingdb_prod_artifact_data
+    name: ${ARTIFACT_VOLUME_NAME:-encodingdb_prod_artifact_data}
 
 networks:
   app:

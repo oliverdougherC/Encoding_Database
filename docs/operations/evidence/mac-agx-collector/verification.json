@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "d4b1a261778427ae482f4e5fde4c88ffc5b2e6dc",
+  "focusedTests": {
+    "command": ".venv-release/bin/python -m pytest client/tests/test_agx_telemetry.py client/tests/test_telemetry_monitor.py client/tests/test_main_routing.py -q",
+    "passed": 35,
+    "failed": 0,
+    "seconds": 1.29
+  },
+  "fullClientSuite": {
+    "passed": 313,
+    "failed": 1,
+    "seconds": 120.89,
+    "failure": "Existing test_process_checkpoint_relocation.py executable mutation fixture preserves0555 helper mode and fails before code under test; no AGX dependency.",
+    "isolatedRecovery": "All8 relocation tests pass with writable0755 private helper copy; exact executable bytes unchanged."
+  },
+  "initialSetupFailure": "Host Python lackedpytest; initial isolated worktree lacked canonical resources. Corrected using existing releasevenv and linked canonical media, no installs/regeneration.",
+  "compileall": true,
+  "gitDiffCheck": true
+}

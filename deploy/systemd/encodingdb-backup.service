@@ -1,0 +1,15 @@
+[Unit]
+Description=EncodingDB paired database/artifact backup and isolated restore
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=encodingdb
+WorkingDirectory=/opt/encodingdb
+EnvironmentFile=/etc/encodingdb/backup.env
+ExecStart=/bin/bash /opt/encodingdb/scripts/v7-scheduled-backup.sh
+TimeoutStartSec=45min
+TimeoutStopSec=90s
+KillMode=control-group
+UMask=0077

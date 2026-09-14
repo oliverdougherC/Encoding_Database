@@ -1,12 +1,16 @@
 import argparse
+from functools import wraps
 import dataclasses
 import json
+import math
 import os
 import re
 import subprocess
 import sys
 import tempfile
 import time
+import secrets
+from contextlib import nullcontext
 from typing import Optional, Dict, Any, List, Tuple, Callable
 
 import psutil
@@ -29,9 +33,9 @@ from .config import (
     HardwareInfo, sanitize_payload_for_server, validate_queue_dir, QueueDirError,
 )
 from .hardware import (
-    detect_hardware, resolve_batch_size, measure_background_cpu_load,
+    detect_hardware, resolve_batch_size, measure_background_cpu_load, CPU_BLOCKING_WINDOW_SOURCE,
 )
-from .hardware_monitor import HardwareMonitor
+from .hardware_monitor import HardwareMonitor, CPU_THREAD_WINDOW_SOURCE
 from .encoders import (
     ensure_ffmpeg_and_ffprobe, has_encoder, has_libvmaf,
     is_codec_family_selector, normalize_codec_family, pick_software_encoder_for_family,
@@ -59,7 +63,11 @@ from .artifacts import (
     build_payload_hash,
     build_recipe_bootstrap,
 )
-from .network import fetch_baseline_rows
+from .network import fetch_baseline_rows, check_compatibility
+from .campaign import (CampaignJournal, atomic_json, physical_source_id, journal_path,
+    PreparationScope, preparation_progress, check_preparation_cancelled,
+    MeasurementBudget, MeasurementBudgetExceeded, check_measurement_budget, measurement_timeout, run_measurement_process)
+from .identity import selected_device
 from .protocol import (
     ArtifactProbe,
     EncodeOutcome,
@@ -69,6 +77,7 @@ from .protocol import (
     RecipeSpec,
     StructuralExpectation,
     execute_protocol_campaign,
+    generate_campaign_id,
 )
 from .spool import (
     cleanup_spool,
@@ -96,9 +105,15 @@ from .ui import (
     print_info, print_success, print_warning, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.2.0"
+CLIENT_VERSION = "client/0.3.0"
 PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
+
+
+def _debug_exception_traceback() -> None:
+    if config._env_flag("ENCODINGDB_DEBUG_TRACEBACK", False):
+        import traceback
+        traceback.print_exc(file=sys.stderr)
 
 
 def _format_byte_count(num_bytes: int) -> str:
@@ -263,6 +278,54 @@ def _emit_event(event_sink: Optional[Callable[[Dict[str, Any]], None]], event_ty
         pass
 
 
+def _preparation_operation(function):
+    @wraps(function)
+    def wrapped(*args, **kwargs):
+        sink = kwargs.get("event_sink")
+
+        def progress(stage, **details):
+            _emit_event(sink, "preparation_progress", scope="preparation", stage=stage, **details)
+            if sink is None:
+                label = details.get("clipId") or os.path.basename(str(details.get("path") or ""))
+                done, total = details.get("completedBytes"), details.get("totalBytes")
+                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                print_info(f"Preparing: {stage} {label}{amount}")
+
+        try:
+            with PreparationScope(kwargs.get("cancel_event"), progress).activate():
+                return function(*args, **kwargs)
+        except KeyboardInterrupt:
+            print_info("Preparation or collection interrupted; retained downloads and campaign records can be resumed.")
+            _emit_event(sink, "run_interrupted", scope="preparation")
+            return 130
+    return wrapped
+
+
+def _preparation_preflight(args, *, base_url=None):
+    check_preparation_cancelled()
+    if not getattr(args, "no_submit", False):
+        preparation_progress("compatibility")
+        try:
+            check_compatibility(base_url or args.base_url, CLIENT_VERSION)
+        except Exception as exc:
+            print(f"Compatibility check failed before preparation: {exc}. Use --no-submit for local collection.", file=sys.stderr)
+            return 5
+    return _preparation_runtime_integrity()
+
+
+def _preparation_runtime_integrity():
+    check_preparation_cancelled()
+    if bool(getattr(sys, "frozen", False)) or os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH"):
+        from .runtime_lock import verify_runtime_lock
+        preparation_progress("runtime")
+        try:
+            verify_runtime_lock(ffmpeg_path=config.ffmpeg_exe(), ffprobe_path=config.ffprobe_exe())
+        except Exception as exc:
+            print(f"Runtime integrity check failed before preparation: {exc}", file=sys.stderr)
+            return 2
+    return 0
+
+
 def _prepare_quick_suite_clip() -> PreparedSuiteClip:
     manifest = load_default_suite_manifest()
     return ensure_suite_clip(get_default_quick_clip(manifest))
@@ -306,6 +369,36 @@ def _load_suite_manifest_clip(prepared_clip: PreparedSuiteClip) -> Dict[str, Any
     raise RuntimeError(f"Suite clip {prepared_clip.clip_id} not found in manifest")
 
 
+def _completed_measurement_groups(campaign_result: Any) -> Dict[str, Dict[str, Any]]:
+    """Bind counted timing members only after execute_protocol_campaign returns.
+
+    The server recomputes stability and verifies retained membership; this receipt
+    deliberately makes no claim that the group is stable or eligible.
+    """
+    groups = {}
+    for recipe_result in campaign_result.recipe_results:
+        attempts = [
+            {"repetitionIndex": record.schedule.repetition_index,
+             "encodeWallTimeMs": record.timing.elapsed_s * 1000.0}
+            for record in recipe_result.runs
+            if record.schedule.phase == "measured"
+            and record.counted_for_stability and record.timing is not None
+        ]
+        attempts.sort(key=lambda attempt: attempt["repetitionIndex"])
+        # Incomplete/invalid groups remain visible as individual observations.
+        # They cannot acquire a group receipt by filling in invented repetitions.
+        if not 2 <= len(attempts) <= 4:
+            continue
+        groups[recipe_result.recipe_id] = {
+            "schemaVersion": "encodingdb-measurement-group/v1",
+            "campaignId": campaign_result.campaign_id,
+            "repetitionGroupId": f"{campaign_result.campaign_id}:{recipe_result.recipe_id}",
+            "completed": True,
+            "countedAttempts": attempts,
+        }
+    return groups
+
+
 def _build_authoritative_run_create_request(
     *,
     prepared_clip: PreparedSuiteClip,
@@ -320,6 +413,7 @@ def _build_authoritative_run_create_request(
     client_version: str,
     execution_identity_payload: Dict[str, Any],
     protocol_config: ProtocolConfig,
+    measurement_group: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     suite_clip = _load_suite_manifest_clip(prepared_clip)
     telemetry = {
@@ -443,13 +537,15 @@ def _build_authoritative_run_create_request(
             environment_json=str(execution_identity_payload.get("environmentJson") or "{}"),
             cpu_model=hardware.cpuModel,
         ),
+        "physicalSourceId": physical_source_id(),
+        "encodeTimerBoundary": "ffmpeg-process-v1",
         "workloadId": prepared_clip.workload_id,
-        "expectedMetricModelId": metrics.get("metricModelId"),
+        "expectedMetricModelId": "vmaf-v1-sdr-1080p",
         "inputHash": prepared_clip.input_hash,
         "campaignId": record.schedule.campaign_id,
         "repetitionGroupId": f"{record.schedule.campaign_id}:{recipe_id}",
         "repetitionIndex": record.schedule.repetition_index,
-        "encodeWallTimeMs": int(round(record.timing.elapsed_s * 1000.0)),
+        "encodeWallTimeMs": record.timing.elapsed_s * 1000.0,
         "encodeFps": float(record.timing.encode_fps),
         "sourceFps": float(record.timing.source_fps),
         "realTimeRatio": float(record.timing.realtime_multiple),
@@ -479,6 +575,8 @@ def _build_authoritative_run_create_request(
             "mediaContainer": artifact_probe.get("containerFormat"),
         },
     }
+    if measurement_group is not None:
+        run_create["measurementGroup"] = measurement_group
     run_create["payloadHash"] = build_payload_hash(run_create)
     return run_create
 
@@ -695,6 +793,7 @@ def _infer_expected_codec_name(encoder: str) -> Optional[str]:
 
 
 def _probe_artifact_contract(path: str) -> ArtifactProbe:
+    check_measurement_budget()
     cmd = [
         config.ffprobe_exe(),
         "-v", "error",
@@ -709,7 +808,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
         path,
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
     except Exception:
         return ArtifactProbe(decodable=False, truncated=True)
     if proc.returncode != 0:
@@ -770,7 +869,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
     keyframe_interval_min: Optional[int] = None
     keyframe_interval_max: Optional[int] = None
     try:
-        keyframe_proc = subprocess.run(
+        keyframe_proc = run_measurement_process(
             [
                 config.ffprobe_exe(), "-v", "error", "-select_streams", "v:0",
                 "-show_entries", "frame=key_frame", "-of", "csv=p=0", path,
@@ -779,6 +878,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            timeout=60,
         )
         keyframes = [
             index for index, line in enumerate((keyframe_proc.stdout or "").splitlines())
@@ -795,7 +895,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
     output_metrics = probe_video_stream_metrics(path)
     return ArtifactProbe(
         decodable=decodable,
-        duration_s=duration_s,
+        duration_s=duration_s if duration_s is not None else _safe_float(output_metrics.get("sourceDurationSeconds")),
         frame_count=frame_count,
         width=_safe_int(video_stream.get("width")),
         height=_safe_int(video_stream.get("height")),
@@ -819,7 +919,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
             if output_metrics.get("bFrameReordering") is not None
             else None
         ),
-        avg_frame_rate=avg_frame_rate,
+        avg_frame_rate=avg_frame_rate if avg_frame_rate is not None else _safe_float(output_metrics.get("sourceFps")),
         time_base=time_base,
         video_stream_count=video_stream_count,
         auxiliary_stream_count=auxiliary_stream_count,
@@ -854,9 +954,8 @@ def _build_protocol_recipe_specs(
         rate_control = task.get("rateControl")
         effective_input, input_hash, prepared_clip = _resolve_input_for_task(default_input_path, default_input_hash, task)
         source_probe = _probe_artifact_contract(effective_input)
-        source_metrics = probe_video_stream_metrics(effective_input)
-        source_duration = source_probe.duration_s if source_probe.duration_s is not None else _safe_float(source_metrics.get("sourceDurationSeconds"))
-        source_fps = source_probe.avg_frame_rate if source_probe.avg_frame_rate is not None else _safe_float(source_metrics.get("sourceFps"))
+        source_duration = source_probe.duration_s
+        source_fps = source_probe.avg_frame_rate
         source_frame_count = source_probe.frame_count
         if source_frame_count is None and source_duration is not None and source_fps is not None:
             source_frame_count = int(round(source_duration * source_fps))
@@ -926,12 +1025,18 @@ def _capture_protocol_environment_snapshot(
     )
     monitor.start()
     try:
-        time.sleep(max(0.1, background_cpu_seconds))
+        time.sleep(measurement_timeout(max(0.1, background_cpu_seconds)))
+        check_measurement_budget()
     finally:
         environment_metrics = monitor.stop()
-    background_cpu_pct = environment_metrics.cpu_util_avg
+    background_cpu_pct = _safe_float(environment_metrics.cpu_util_avg)
+    sources = set(filter(None, (environment_metrics.telemetry_sources or "").split(",")))
     if background_cpu_pct is None:
-        background_cpu_pct = measure_background_cpu_load(background_cpu_seconds, background_cpu_interval)
+        sources.discard(CPU_THREAD_WINDOW_SOURCE)
+        sources.discard(CPU_BLOCKING_WINDOW_SOURCE)
+        background_cpu_pct = _safe_float(measure_background_cpu_load(background_cpu_seconds, background_cpu_interval))
+        if background_cpu_pct is not None:
+            sources.add(CPU_BLOCKING_WINDOW_SOURCE)
     power_source: Optional[str] = None
     try:
         battery = psutil.sensors_battery()
@@ -984,14 +1089,18 @@ def _capture_protocol_environment_snapshot(
         gpu_power_w=environment_metrics.gpu_power_avg_w,
         gpu_memory_mb=environment_metrics.gpu_mem_peak_mb,
         cpu_frequency_mhz=environment_metrics.cpu_freq_avg_mhz,
-        selected_accelerator=encoder if is_hardware_encoder_name(encoder) else "software",
+        selected_accelerator=(selected_device(encoder)["deviceId"]
+                              if is_hardware_encoder_name(encoder) else "software"),
         accelerator_is_hardware=is_hardware_encoder_name(encoder),
         gpu_load_trustworthy=(
             not is_hardware_encoder_name(encoder)
-            or int(environment_metrics.gpu_sample_count or 0) > 0
+            or (selected_device(encoder)["deviceId"] != "unknown"
+                and int(environment_metrics.gpu_util_sample_count or 0) > 0
+                and _safe_float(environment_metrics.gpu_util_avg) is not None
+                and 0 <= environment_metrics.gpu_util_avg <= 100)
         ),
-        gpu_sample_count=int(environment_metrics.gpu_sample_count or 0),
-        telemetry_sources=environment_metrics.telemetry_sources,
+        gpu_sample_count=int(environment_metrics.gpu_util_sample_count or 0),
+        telemetry_sources=",".join(sorted(sources)) or None,
         telemetry_missing=environment_metrics.telemetry_missing,
     )
 
@@ -1179,6 +1288,7 @@ def build_batch_tasks_for_mode(
     return tasks
 
 
+@_preparation_operation
 def run_benchmark_batch(
     *,
     hardware: HardwareInfo,
@@ -1188,15 +1298,21 @@ def run_benchmark_batch(
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
 ) -> int:
+    duration_minutes = float(getattr(args, "max_duration_minutes", 60))
+    if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
+        print("--max-duration-minutes must be positive and finite", file=sys.stderr)
+        return 4
+    preflight_rc = _preparation_preflight(args, base_url=base_url)
+    if preflight_rc:
+        return preflight_rc
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
         print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
         return 2
-    quality_ok, quality_rc = _ensure_local_quality_stack(event_sink=event_sink, scope="batch")
-    if not quality_ok:
-        if bool(getattr(args, "no_submit", False)):
+    if getattr(args, "local_metrics", False):
+        quality_ok, quality_rc = _ensure_local_quality_stack(event_sink=event_sink, scope="batch")
+        if not quality_ok:
             return quality_rc
-        print_warning("Continuing without client-local quality diagnostics; server artifact analysis is authoritative.")
     suite_clip = tasks[0].get("suiteClip") if tasks else None
     if not isinstance(suite_clip, PreparedSuiteClip):
         print("Batch benchmark requires EncodingDB Test Suite v1 clip identities.", file=sys.stderr)
@@ -1204,7 +1320,15 @@ def run_benchmark_batch(
     input_path = suite_clip.path
     default_input_hash = suite_clip.input_hash
     protocol_config = _build_protocol_config()
-    campaign_seed = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_SEED"))
+    planned_attempts = len(tasks) * (protocol_config.warmup_runs + protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats)
+    if planned_attempts > int(getattr(args, "max_attempts", 100)):
+        print(f"Campaign can require {planned_attempts} encodes, exceeding --max-attempts. Select fewer recipes or set an explicit budget.", file=sys.stderr)
+        return 4
+    campaign_seed = getattr(args, "campaign_seed", None)
+    if campaign_seed is None:
+        campaign_seed = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_SEED"))
+    if campaign_seed is None:
+        campaign_seed = secrets.randbits(63)
     recipe_specs = _build_protocol_recipe_specs(
         tasks,
         default_input_path=input_path,
@@ -1221,6 +1345,24 @@ def run_benchmark_batch(
             + protocol_config.max_adaptive_repeats
         ),
     )
+    campaign_id = generate_campaign_id(protocol_config.version, list(recipe_by_id), campaign_seed)
+    from .identity import runtime_identity
+    manifest = {
+        "protocolVersion": protocol_config.version, "seed": campaign_seed,
+        "physicalSourceId": physical_source_id(), "hardware": dataclasses.asdict(hardware),
+        "runtime": runtime_identity(), "protocolConfig": dataclasses.asdict(protocol_config),
+        "selectedDevices": {str(t["encoder"]): selected_device(str(t["encoder"])) for t in tasks},
+        "tasks": [{"encoder": t["encoder"], "preset": t["preset"], "crf": t.get("crf"),
+                   "rateControl": t.get("rateControl"), "clipId": t["suiteClip"].clip_id} for t in tasks],
+    }
+    try:
+        journal = CampaignJournal(args.queue_dir, campaign_id, manifest, int(getattr(args, "max_storage_mb", 2048)))
+        journal.check_budget()
+    except Exception as exc:
+        print(f"Cannot open campaign journal: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
+        return 6
+    print_info(f"Campaign {campaign_id}: at most {total_tasks} encodes; resume with --resume-campaign {campaign_id}")
     total_batches = 1
     run_started_at = time.perf_counter()
     use_token = _should_use_submit_token(args)
@@ -1250,6 +1392,7 @@ def run_benchmark_batch(
         totalBatches=total_batches,
         workers=workers,
         noSubmit=bool(getattr(args, "no_submit", False)),
+        maxDurationMinutes=duration_minutes,
         protocol={
             "version": protocol_config.version,
             "warmupRuns": protocol_config.warmup_runs,
@@ -1276,7 +1419,7 @@ def run_benchmark_batch(
         return f"{stage} {index}/{total} | {stats}"
 
     try:
-        with tempfile.TemporaryDirectory() as batch_dir, \
+        with journal.measurement_lock(), nullcontext(str(journal.root)) as batch_dir, \
                 BatchRunDashboard(total_tasks=total_tasks, total_batches=total_batches, hardware=hardware) as progress:
             print_info(f"Batch 1/{total_batches}: {len(recipe_specs)} protocol recipe(s)")
             progress.start_batch(batch_no=1, batch_size=total_tasks)
@@ -1304,6 +1447,12 @@ def run_benchmark_batch(
             def _sample_environment(schedule: Any, recipe: RecipeSpec) -> EnvironmentSnapshot:
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
+                environment_path = journal.root / f"environment-{schedule.execution_order:06d}.json"
+                if environment_path.exists() and list(journal.root.glob(f"{schedule.execution_order:03d}-*.process.json")):
+                    retained = json.loads(environment_path.read_text())
+                    if retained["schedule"] != schedule.to_dict():
+                        raise ValueError("Interrupted environment checkpoint schedule changed")
+                    return EnvironmentSnapshot(**retained["snapshot"])
                 task = _task_from_recipe(recipe)
                 progress.set_description(
                     _batch_status(f"{schedule.phase.title()} env", schedule.execution_order, task["encoder"], task["preset"])
@@ -1312,6 +1461,7 @@ def run_benchmark_batch(
                     hardware=hardware,
                     encoder=task["encoder"],
                 )
+                atomic_json(environment_path, {"schedule": schedule.to_dict(), "snapshot": snapshot.to_dict()})
                 _emit_event(
                     event_sink,
                     "protocol_environment",
@@ -1377,7 +1527,8 @@ def run_benchmark_batch(
                     repetitionIndex=schedule.repetition_index,
                     executionOrder=schedule.execution_order,
                 )
-                start_ns = time.perf_counter_ns()
+                journal.check_budget()
+                atomic_json(journal.root / "in-flight.json", schedule.to_dict())
                 info = encode_to_artifact(
                     input_path=effective_input,
                     encoder=encoder,
@@ -1387,8 +1538,16 @@ def run_benchmark_batch(
                     out_dir=batch_dir,
                     artifact_name=artifact_name,
                     host_gpu_vendors=list(getattr(hardware, 'gpuVendors', []) or []),
+                    cancel_event=cancel_event,
+                    checkpoint_path=os.path.join(batch_dir, artifact_name + '.process.json'),
+                    max_output_bytes=journal.check_budget(),
                 )
-                end_ns = time.perf_counter_ns()
+                start_ns = info.get('encodeStartMonotonicNs')
+                end_ns = info.get('encodeEndMonotonicNs')
+                if start_ns is None or end_ns is None:
+                    info["error"] = info.get("error") or "Encode returned no corrected process interval"
+                    return EncodeOutcome(timing=None, probe=ArtifactProbe(decodable=False, decode_error=info["error"]),
+                                         metadata={"info": info, "inputHash": input_hash, "suiteClip": prepared_clip})
                 info["task"] = task
                 info["_input_hash"] = input_hash
                 info["_effective_input"] = effective_input
@@ -1459,13 +1618,17 @@ def run_benchmark_batch(
                     },
                 )
 
-            campaign_result = execute_protocol_campaign(
-                recipes=recipe_specs,
-                config=protocol_config,
-                encode_runner=_encode_protocol_run,
-                environment_sampler=_sample_environment,
-                seed=campaign_seed,
-            )
+            budget = MeasurementBudget(duration_minutes, cancel_event=cancel_event)
+            with budget.activate():
+                campaign_result = execute_protocol_campaign(
+                    recipes=recipe_specs,
+                    config=protocol_config,
+                    encode_runner=_encode_protocol_run,
+                    environment_sampler=_sample_environment,
+                    seed=campaign_seed,
+                    record_sink=journal.save,
+                    resumed_records=journal.records,
+                )
             attempt_evidence_path = _persist_protocol_attempt_evidence(args.queue_dir, campaign_result)
             _emit_event(
                 event_sink,
@@ -1475,6 +1638,7 @@ def run_benchmark_batch(
                 path=attempt_evidence_path,
             )
 
+            measurement_groups = _completed_measurement_groups(campaign_result)
             measured_records: List[Tuple[RecipeSpec, Any]] = []
             for recipe_result in campaign_result.recipe_results:
                 recipe = recipe_by_id[recipe_result.recipe_id]
@@ -1492,6 +1656,9 @@ def run_benchmark_batch(
                         measured_records.append((recipe, record))
 
             for recipe, record in measured_records:
+                if not getattr(args, "local_metrics", False):
+                    record.metadata["metrics"] = {}
+                    continue
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
                 info = dict(record.metadata.get("info") or {})
@@ -1615,7 +1782,7 @@ def run_benchmark_batch(
                     _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
                     continue
 
-                prepared_clip = record.metadata.get("suiteClip")
+                prepared_clip = task.get("suiteClip")
                 payload: Dict[str, Any] = {
                     'cpuModel': hardware.cpuModel,
                     'gpuModel': hardware.gpuModel or "",
@@ -1659,7 +1826,6 @@ def run_benchmark_batch(
                 metric_model_id = artifact_metrics.get('metricModelId')
                 if metric_model_id:
                     payload['metricModelId'] = str(metric_model_id)
-                _apply_v7_score_contract(payload)
                 ssim_score = artifact_metrics.get('ssim')
                 if ssim_score is not None:
                     payload['ssim'] = float(ssim_score)
@@ -1769,37 +1935,12 @@ def run_benchmark_batch(
                         repetitionIndex=record.schedule.repetition_index,
                         executionOrder=record.schedule.execution_order,
                     )
-                elif args.no_submit:
-                    if payload.get('scoreEligibilityNote'):
-                        print_info(str(payload['scoreEligibilityNote']))
-                    if record.overall_validity.state == "suspect":
-                        print_warning(
-                            f"Protocol suspect for {payload['codec']} {payload['preset']}: "
-                            + ",".join([reason.code for reason in record.overall_validity.reasons])
-                        )
-                    progress.set_description(_batch_status("Dry-run", next_index, str(payload['codec']), str(payload['preset'])))
-                    progress.update_counters(
-                        submitted=submitted_count, skipped=skipped_count,
-                        queued=queued_count, failed=failed_count,
-                    )
-                    _emit_event(
-                        event_sink,
-                        "submit_result",
-                        index=next_index,
-                        total=total_tasks,
-                        status="dry_run",
-                        protocolValidity=record.overall_validity.to_dict(),
-                        campaignId=record.schedule.campaign_id,
-                        recipeId=recipe.recipe_id,
-                        repetitionIndex=record.schedule.repetition_index,
-                        executionOrder=record.schedule.execution_order,
-                    )
                 else:
                     if payload.get('scoreEligibilityNote') and not payload.get('scoreFormulaVersion'):
                         print_warning(str(payload['scoreEligibilityNote']))
                     if record.overall_validity.state == "suspect":
                         print_warning(
-                            f"Submitting suspect protocol evidence for {payload['codec']} {payload['preset']}: "
+                            f"Retaining suspect protocol evidence for {payload['codec']} {payload['preset']}: "
                             + ",".join([reason.code for reason in record.overall_validity.reasons])
                         )
                     status = "failed"
@@ -1820,12 +1961,22 @@ def run_benchmark_batch(
                             client_version=client_version,
                             execution_identity_payload=execution_identity_payload,
                             protocol_config=protocol_config,
+                            measurement_group=measurement_groups.get(recipe.recipe_id),
                         )
                         authoritative_submission = build_artifact_submission_payload(
                             artifact_path=str(info["artifactPath"]),
                             media_container=artifact_probe.get("containerFormat"),
                             run_create=authoritative_run_create,
                         )
+                        local_path = journal.root / f"submission-{record.schedule.execution_order:06d}.json"
+                        if local_path.exists():
+                            authoritative_submission = json.loads(local_path.read_text())
+                        else:
+                            atomic_json(local_path, authoritative_submission)
+                        if args.no_submit:
+                            _emit_event(event_sink, "submit_result", status="locally_complete", campaignId=campaign_id)
+                            completed_count_local += 1
+                            continue
                         status, error_text, queued_count = _submit_payload_with_spool(
                             queue_dir=args.queue_dir,
                             base_url=base_url,
@@ -1835,13 +1986,6 @@ def run_benchmark_batch(
                             use_token=use_token,
                         )
                         if status == "submitted":
-                            queued_count = _replay_pending_uploads(
-                                queue_dir=args.queue_dir,
-                                base_url=base_url,
-                                api_key=args.api_key,
-                                retries=max(1, args.retries),
-                                use_token=use_token,
-                            )
                             submitted_count += 1
                             if error_text:
                                 print_info(f"Authoritative benchmark run recorded as {error_text}.")
@@ -1925,20 +2069,35 @@ def run_benchmark_batch(
                 processed_total += 1
                 progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
                 _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
+    except MeasurementBudgetExceeded as exc:
+        status = {"status": "budget_exhausted", "campaignId": campaign_id,
+                  "maxDurationMinutes": exc.budget.minutes,
+                  "elapsedSeconds": max(0.0, exc.budget.clock() - exc.budget.started),
+                  "stoppedAt": time.time(), "phase": "measurement"}
+        flight = journal.root / "in-flight.json"
+        try:
+            if flight.exists():
+                status["lastStartedAttempt"] = json.loads(flight.read_text())
+            atomic_json(journal.root / f"budget-exhausted-{time.time_ns()}.json", status)
+        except OSError as error:
+            print(f"Time budget exhausted; unable to persist pause status: {error}", file=sys.stderr)
+            _debug_exception_traceback()
+            return 6
+        print_warning(f"{exc}. Saved attempts remain available; resume with --resume-campaign {campaign_id}.")
+        _emit_event(event_sink, "run_budget_exhausted", scope="batch", **status)
+        return 11
+    except (OSError, ValueError, TimeoutError) as exc:
+        print(f"Campaign retained for resume: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
+        _emit_event(event_sink, "run_error", scope="batch", code=6, message=str(exc))
+        return 6
     except KeyboardInterrupt:
         print_warning("Batch run interrupted by user.")
         _emit_event(event_sink, "run_interrupted", scope="batch", processed=processed_total, total=total_tasks)
         return 130
 
+    atomic_json(journal.root / "campaign-complete.json", {"campaignId": campaign_id, "skipped": skipped_count, "failed": failed_count})
     elapsed_seconds = max(0.0, time.perf_counter() - run_started_at)
-    if not getattr(args, 'no_submit', False):
-        queued_count = _replay_pending_uploads(
-            queue_dir=args.queue_dir,
-            base_url=base_url,
-            api_key=args.api_key,
-            retries=max(1, args.retries),
-            use_token=use_token,
-        )
     throughput_per_hour = (completed_count_local / elapsed_seconds * 3600.0) if elapsed_seconds > 0 else 0.0
     print_batch_summary({
         "totalTasks": total_tasks,
@@ -1965,14 +2124,16 @@ def run_benchmark_batch(
         elapsedSeconds=elapsed_seconds,
         throughputPerHour=throughput_per_hour,
     )
-    if bool(getattr(args, "strict_authoritative", False)) and not getattr(args, "no_submit", False):
-        if queued_count or failed_count or skipped_count:
-            return 1
-        if submitted_count <= 0:
-            return 1
+    if failed_count or skipped_count:
+        return 1
+    if not getattr(args, "no_submit", False) and queued_count:
+        return 10
+    if not getattr(args, "no_submit", False) and submitted_count <= 0:
+        return 1
     return 0
 
 
+@_preparation_operation
 def run_v7_suite_clip_mode(
     *,
     base_args: argparse.Namespace,
@@ -1981,12 +2142,13 @@ def run_v7_suite_clip_mode(
     interactive: bool = False,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
+    preflight_rc = _preparation_preflight(base_args)
+    if preflight_rc:
+        return preflight_rc
     clip_id = str(getattr(base_args, "v7_suite_clip", "") or "").strip()
-    if not clip_id:
-        print("--v7-suite-clip is required for v7 suite clip mode.", file=sys.stderr)
-        return 1
     try:
-        suite_clip = _prepare_named_suite_clip(clip_id)
+        suite_clips = (_prepare_full_suite() if getattr(base_args, "campaign", "quick") == "full"
+                       else [_prepare_named_suite_clip(clip_id) if clip_id else _prepare_quick_suite_clip()])
     except Exception as exc:
         print(f"Unable to prepare suite clip {clip_id}: {exc}", file=sys.stderr)
         return 3
@@ -2014,7 +2176,7 @@ def run_v7_suite_clip_mode(
         preset_list = ["medium"]
     crf_value = getattr(base_args, "crf", None)
     target_bitrate_kbps = getattr(base_args, "target_bitrate_kbps", None)
-    if resolved_encoder.lower().endswith("_videotoolbox"):
+    if target_bitrate_kbps is not None or resolved_encoder.lower().endswith("_videotoolbox"):
         if target_bitrate_kbps is None or target_bitrate_kbps <= 0:
             print("VideoToolbox v7 runs require --target-bitrate-kbps.", file=sys.stderr)
             return 4
@@ -2029,7 +2191,7 @@ def run_v7_suite_clip_mode(
             "rateControl": task_rate_control,
             "suiteClip": suite_clip,
         }
-        for preset in preset_list
+        for suite_clip in suite_clips for preset in preset_list
     ]
     strict_args = argparse.Namespace(
         base_url=base_args.base_url,
@@ -2043,6 +2205,9 @@ def run_v7_suite_clip_mode(
         use_token=getattr(base_args, "use_token", False),
         strict_authoritative=True,
     )
+    for field in ("campaign_seed", "max_attempts", "max_storage_mb", "max_duration_minutes", "local_metrics"):
+        if hasattr(base_args, field):
+            setattr(strict_args, field, getattr(base_args, field))
     return run_benchmark_batch(
         hardware=detect_hardware(),
         base_url=base_args.base_url,
@@ -2053,7 +2218,38 @@ def run_v7_suite_clip_mode(
     )
 
 
-def run_with_args(
+@_preparation_operation
+def _resume_campaign(args, *, event_sink=None, cancel_event=None):
+    args = _apply_submission_policy(args, interactive=False)
+    preflight_rc = _preparation_preflight(args)
+    if preflight_rc:
+        return preflight_rc
+    try:
+        root = journal_path(args.queue_dir, args.resume_campaign)
+        saved = json.loads((root / "manifest.json").read_text())
+        args.campaign_seed = saved["seed"]
+        tasks = [{"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
+                  "rateControl": task["rateControl"], "suiteClip": _prepare_named_suite_clip(task["clipId"])}
+                 for task in saved["tasks"]]
+        check_preparation_cancelled()
+        return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks,
+                                   event_sink=event_sink, cancel_event=cancel_event)
+    except Exception as exc:
+        print(f"Cannot resume campaign: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
+        return 6
+
+
+def run_with_args(args, *, event_sink=None, cancel_event=None, show_end_screen=True, interactive=True):
+    if getattr(args, "legacy_diagnostic", False):
+        args.no_submit = True
+        return run_legacy_diagnostic(args, event_sink=event_sink, cancel_event=cancel_event,
+                                     show_end_screen=show_end_screen, interactive=False)
+    return run_v7_suite_clip_mode(base_args=args, event_sink=event_sink,
+                                  cancel_event=cancel_event, interactive=interactive)
+
+
+def run_legacy_diagnostic(
     args: argparse.Namespace,
     *,
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
@@ -2382,10 +2578,15 @@ def build_single_effective_args(
         menu=False,
         batch_size=getattr(base_args, "batch_size", 0),
         use_token=getattr(base_args, "use_token", False),
+        target_bitrate_kbps=getattr(base_args, "target_bitrate_kbps", None),
+        max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
+        max_attempts=getattr(base_args, "max_attempts", 100),
+        max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
         pause_on_exit=getattr(base_args, "pause_on_exit", False),
     )
 
 
+@_preparation_operation
 def run_batch_mode(
     *,
     mode: str,
@@ -2396,6 +2597,9 @@ def run_batch_mode(
     interactive: bool = True,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
+    preflight_rc = _preparation_preflight(base_args)
+    if preflight_rc:
+        return preflight_rc
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     encoders = _filter_canonical_encoders(list_all_available_encoders())
     if not encoders:
@@ -2437,6 +2641,9 @@ def run_batch_mode(
                 menu=False,
                 batch_size=getattr(base_args, "batch_size", 0),
                 use_token=getattr(base_args, "use_token", False),
+                max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
+                max_attempts=getattr(base_args, "max_attempts", 100),
+                max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
             ),
             tasks=tasks,
             event_sink=event_sink,
@@ -2456,6 +2663,7 @@ def run_batch_mode(
         config._BATCH_ACTIVE = False
 
 
+@_preparation_operation
 def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.Namespace) -> int:
     try:
         import subprocess
@@ -2464,12 +2672,6 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             subprocess.run(["stty", "sane"], check=False)
     except Exception:
         pass
-    try:
-        _prepare_quick_suite_clip()
-    except Exception as exc:
-        print(f"EncodingDB Test Suite v1 is unavailable: {exc}", file=sys.stderr)
-        return 6
-    print_success("EncodingDB Test Suite v1 Verified")
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
     estimates = build_mode_estimates(presets_cfg)
     s_minutes = estimates["smallMinutes"]
@@ -2488,6 +2690,10 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         return 0
 
     if choice == 0:
+        base_args = _apply_submission_policy(base_args, interactive=True)
+        preflight_rc = _preparation_preflight(base_args)
+        if preflight_rc:
+            return preflight_rc
         all_encs = list_all_available_encoders()
         if not all_encs:
             print("No available encoders found in this ffmpeg build.", file=sys.stderr)
@@ -2581,6 +2787,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--gui", action="store_true", help="Force Windows GUI mode")
     p.add_argument("--cli", action="store_true", help="Force terminal mode")
     p.add_argument("--v7-suite-clip", default="", help="Run authoritative PLA-77 flow against one canonical EncodingDB Test Suite v1 clip ID without prompts")
+    p.add_argument("--campaign", choices=("quick", "full"), default="quick", help="One clip (quick) or all seven clips (full), with the selected recipe")
+    p.add_argument("--resume-campaign", default="", help="Resume a retained campaign ID, preserving completed attempts")
+    p.add_argument("--upload-only", action="store_true", help="Retry due queued uploads without encoding")
+    p.add_argument("--local-metrics", action="store_true", help="Run optional local quality diagnostics after all measurements")
+    p.add_argument("--max-attempts", type=int, default=100, help="Maximum planned warmup/measured encodes (default 100)")
+    p.add_argument("--max-duration-minutes", type=float, default=60, help="Measurement allowance per invocation in minutes; acquisition and uploads are separate (default 60)")
+    p.add_argument("--max-storage-mb", type=int, default=2048, help="Maximum retained queue and campaign storage in MiB")
+    p.add_argument("--legacy-diagnostic", action="store_true", help="Noncanonical local-only legacy diagnostic; never publishes")
     return p
 
 
@@ -2622,18 +2836,49 @@ def main(argv: List[str]) -> int:
     if args.queue_status:
         _print_queue_status(args.queue_dir)
         return 0
+    if not math.isfinite(args.max_duration_minutes) or not math.isfinite(args.max_duration_minutes * 60) or args.max_duration_minutes <= 0:
+        parser.error("--max-duration-minutes must be positive and finite")
+    if args.max_attempts < 1 or args.max_storage_mb < 1:
+        parser.error("Campaign budgets must be positive")
+    if args.resume_campaign and args.submit and not args.no_submit:
+        try:
+            args.upload_only = (journal_path(args.queue_dir, args.resume_campaign) / "campaign-complete.json").exists()
+        except ValueError as exc:
+            parser.error(str(exc))
+    if args.upload_only:
+        if args.no_submit:
+            parser.error("--upload-only cannot be combined with --no-submit")
+        try:
+            check_compatibility(args.base_url, CLIENT_VERSION)
+            campaign_failures = False
+            if args.resume_campaign:
+                root = journal_path(args.queue_dir, args.resume_campaign)
+                marker = root / "campaign-complete.json"
+                if marker.exists():
+                    result = json.loads(marker.read_text())
+                    campaign_failures = bool(result.get("skipped") or result.get("failed"))
+                for path in sorted(root.glob("submission-*.json")):
+                    spool_payload(args.queue_dir, json.loads(path.read_text()))
+            stats = replay_spool(args.queue_dir, base_url=args.base_url, api_key=args.api_key,
+                                 retries=1, use_token=False)
+            return 1 if campaign_failures or stats.dead_lettered or stats.corrupt else (10 if count_pending_entries(args.queue_dir) else 0)
+        except Exception as exc:
+            print(f"Upload deferred: {exc}", file=sys.stderr)
+            return 10
+    if args.resume_campaign:
+        return _resume_campaign(args)
     if getattr(args, "v7_suite_clip", ""):
         return run_v7_suite_clip_mode(base_args=args, interactive=False)
     if args.menu:
         return interactive_menu_flow(parser, args)
-    if args.cli:
+    if args.cli and not direct_single_run_intent and "--campaign" not in raw_args:
         return interactive_menu_flow(parser, args)
     if args.gui:
         if os.name != "nt":
             print("--gui is only supported on Windows.", file=sys.stderr)
             return 1
         return run_windows_gui_flow(args)
-    if direct_single_run_intent:
+    if direct_single_run_intent or "--campaign" in raw_args:
         return run_with_args(args, interactive=False)
     if os.name == "nt" and bool(getattr(sys, "frozen", False)):
         return run_windows_gui_flow(args)

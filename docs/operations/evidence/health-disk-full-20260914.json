@@ -1,0 +1,74 @@
+{
+  "scope": "actual isolated Docker1MiB tmpfs filled until ENOSPC; metadata stubbed; production unchanged",
+  "snapshot": {
+    "status": "degraded",
+    "reasons": [
+      "storage_reserve_exhausted"
+    ],
+    "capturedAt": "2026-09-14T01:02:04.451Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 1024
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 0,
+      "checkedThisCycle": 0,
+      "complete": true,
+      "cycleStartedAt": "2026-09-14T01:02:04.451Z",
+      "lastCompletedAt": "2026-09-14T01:02:04.451Z"
+    },
+    "capacity": {
+      "pendingUploads": 0,
+      "pendingAnalyses": 0,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 2,
+      "activeLeases": 0,
+      "expiredLeases": 0,
+      "retryDue": 0
+    },
+    "artifacts": {
+      "byState": {},
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 0
+    },
+    "analyses": {
+      "byStatus": {},
+      "pendingOldestSeconds": null,
+      "completedLatencySeconds": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 0,
+      "quotaBytes": null,
+      "availableBytes": 0,
+      "freeBytes": 0
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T01:02:04.451Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    }
+  }
+}

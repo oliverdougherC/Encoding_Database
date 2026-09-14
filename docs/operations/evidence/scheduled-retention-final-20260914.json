@@ -1,0 +1,24 @@
+{
+  "sourceCommit": "3a325e2",
+  "scriptSha256": "d1fd132ed8381468411147b4833e2f797385086f79b084c2d546c529be4c3662",
+  "scope": "three real launchd scheduled backups and isolated restores during sustained metadata read/arrival load; synthetic recovery fixtures only",
+  "productionModified": false,
+  "schedulerUnloaded": true,
+  "successfulScheduledRestores": 3,
+  "retentionCount": 2,
+  "remainingCompletedBundles": [
+    "backup-20260914T011738Z-41780",
+    "backup-20260914T011751Z-41983"
+  ],
+  "unrelatedDirectoryPreserved": true,
+  "lastStatus": {
+    "version": 1,
+    "startedAt": "2026-09-14T01:17:51Z",
+    "finishedAt": "2026-09-14T01:17:54.054751+00:00",
+    "bundle": "/tmp/encodingdb-scheduled-backup-final/bundles/backup-20260914T011751Z-41983",
+    "exitCode": 0,
+    "restoreRequired": true
+  },
+  "retainedArtifactCount": 2,
+  "selectedMemberCount": 1
+}

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEFAULT_ANALYZER_VERSION } from './artifacts.js';
 
-export const PUBLIC_CORPUS_READ_MODEL_VERSION = 'v7-public-corpus-direct-read-model/v3' as const;
+export const PUBLIC_CORPUS_READ_MODEL_VERSION = 'v7-public-corpus-durable-read-model/v5' as const;
 
 export type PublicCorpusScoringStatus =
   | 'PUBLIC'
@@ -94,7 +94,7 @@ export interface PublicCorpusRow {
   status: {
     benchmarkProtocol: 'ACTIVE';
     artifactState: 'VERIFIED' | 'RETAINED' | 'MIXED_VERIFIED_RETAINED';
-    centerBasis: 'accepted' | 'suspect';
+    centerBasis: 'accepted' | 'suspect' | 'eligible-stable-groups';
     scoring: PublicCorpusScoringStatus;
     evidenceTier: 'PROVISIONAL' | 'LOW' | 'MEDIUM' | 'HIGH';
     eligibleForDefaultRecommendation: boolean;
@@ -230,12 +230,13 @@ function repetitionKey(record: DirectEvidenceRecord): string {
   return record.run.repetitionGroupId?.trim() || record.run.id;
 }
 
-function independentSourceKey(record: DirectEvidenceRecord): string {
-  return `${record.run.environment.fingerprint}::${record.run.campaignId?.trim() || 'unknown-campaign'}`;
+function independentSourceKey(record: DirectEvidenceRecord): string | null {
+  return (record.run as typeof record.run & { physicalSourceId?: string | null }).physicalSourceId?.trim() || null;
 }
 
 function sortByCreatedDesc<T extends { createdAt: Date }>(records: readonly T[]): T[] {
-  return [...records].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+  return [...records].sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime()
+    || String((right as T & { id?: string }).id ?? '').localeCompare(String((left as T & { id?: string }).id ?? '')));
 }
 
 function selectPrimaryEncodedArtifact(run: PublicCorpusBenchmarkRunRecord) {
@@ -247,20 +248,15 @@ function selectPrimaryEncodedArtifact(run: PublicCorpusBenchmarkRunRecord) {
 }
 
 function selectLatestEligibleServerAnalysis(run: PublicCorpusBenchmarkRunRecord) {
-  const candidates = sortByCreatedDesc(run.qualityAnalyses.filter((analysis) => (
-    ELIGIBLE_ANALYSIS_STATUSES.includes(analysis.status as ServerAnalysisStatus)
-  )));
-  if (candidates.length === 0) return null;
-  const metricWorkerVersion = run.benchmarkProtocol.metricWorkerVersion?.trim() || null;
-  const exactProtocol = metricWorkerVersion == null
-    ? []
-    : candidates.filter((analysis) => analysis.analysisWorkerVersion === metricWorkerVersion);
-  if (exactProtocol.length > 0) return exactProtocol[0]!;
-  const canonicalDefault = candidates.filter((analysis) => analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION);
-  if (canonicalDefault.length > 0) return canonicalDefault[0]!;
-  const authoritativePrefix = candidates.filter((analysis) => analysis.analysisWorkerVersion.startsWith('authoritative-analysis/'));
-  if (authoritativePrefix.length > 0) return authoritativePrefix[0]!;
-  return null;
+  const protocolWorker = run.benchmarkProtocol.metricWorkerVersion?.trim();
+  const latest = sortByCreatedDesc(run.qualityAnalyses.filter(analysis => (
+    analysis.analysisWorkerVersion === protocolWorker
+    || analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION
+    || analysis.analysisWorkerVersion.startsWith('authoritative-analysis/')
+  )))[0];
+  // A newer pending/failed/rejected analysis suspends older evidence. Reviewing
+  // an old analysis never changes this immutable creation-order selection.
+  return latest && ELIGIBLE_ANALYSIS_STATUSES.includes(latest.status as ServerAnalysisStatus) ? latest : null;
 }
 
 function buildRateControlLabel(record: PublicCorpusBenchmarkRunRecord): PublicCorpusRateControl {
@@ -297,22 +293,6 @@ function buildRateControlLabel(record: PublicCorpusBenchmarkRunRecord): PublicCo
     bufferSizeKbits,
     label: limits.length > 0 ? `${details} (${limits.join(', ')})` : details,
   };
-}
-
-function classifyEvidenceTier(
-  acceptedRunCount: number,
-  independentSourceCount: number,
-  publicConfidenceWidth: number | null,
-): PublicCorpusRow['status']['evidenceTier'] {
-  if (acceptedRunCount < 2 || independentSourceCount < 2) return 'PROVISIONAL';
-  let tier: PublicCorpusRow['status']['evidenceTier'] = 'LOW';
-  if (acceptedRunCount >= 3 && independentSourceCount >= 2 && publicConfidenceWidth != null && publicConfidenceWidth <= 8) {
-    tier = 'MEDIUM';
-  }
-  if (acceptedRunCount >= 5 && independentSourceCount >= 3 && publicConfidenceWidth != null && publicConfidenceWidth <= 4) {
-    tier = 'HIGH';
-  }
-  return tier;
 }
 
 function buildArtifactState(records: readonly DirectEvidenceRecord[]): PublicCorpusRow['status']['artifactState'] {
@@ -502,7 +482,7 @@ export function extractDirectEvidenceRecords(
   return runs.flatMap((run) => {
     const artifact = selectPrimaryEncodedArtifact(run);
     const analysis = selectLatestEligibleServerAnalysis(run);
-    if (!artifact || !analysis) return [];
+    if (!artifact || !analysis || analysis.artifactId !== artifact.id) return [];
     return [{ run, artifact, analysis }];
   });
 }
@@ -544,8 +524,8 @@ export function buildPublicCorpusRows(input: {
       const publicConfidenceWidth = publicDerivedResult?.confidenceLower != null && publicDerivedResult.confidenceUpper != null
         ? publicDerivedResult.confidenceUpper - publicDerivedResult.confidenceLower
         : null;
-      const acceptedIndependentSources = new Set(acceptedRecords.map(independentSourceKey)).size;
-      const evidenceTier = classifyEvidenceTier(acceptedRecords.length, acceptedIndependentSources, publicConfidenceWidth);
+      const acceptedIndependentSources = new Set(acceptedRecords.map(independentSourceKey).filter(Boolean)).size;
+      const evidenceTier = publicDerivedResult?.evidenceTier ?? 'PROVISIONAL';
       const qualityModelId = records[0]?.analysis.metricModelId ?? null;
       const physicalMemoryBytes = normalizePhysicalMemoryBytes(newestRecord.environment.physicalMemoryBytes);
       return {
@@ -625,8 +605,8 @@ export function buildPublicCorpusRows(input: {
           rejected: 0,
           invalid: 0,
           repetitions: new Set(records.map(repetitionKey)).size,
-          independentSources: acceptedRecords.length > 0 ? acceptedIndependentSources : new Set(records.map(independentSourceKey)).size,
-          machines: 1,
+          independentSources: acceptedRecords.length > 0 ? acceptedIndependentSources : new Set(records.map(independentSourceKey).filter(Boolean)).size,
+          machines: new Set(records.map(independentSourceKey).filter(Boolean)).size,
           contributors: null,
         },
         performance: {

@@ -1,0 +1,16 @@
+{
+  "author": "Codex AI visual inspection, not a human calibration reviewer",
+  "method": "Inspected six temporal contact frames per completed reference and four Chimera range endpoints; full technical decode/probe separate.",
+  "observations": {
+    "nocturne-ballet-30s": "Studio ballet motion/turns/steps and shot changes. Moderate athletic-action proxy; not sports-event footage.",
+    "nocturne-lowlight-30s": "Gold-lit performance room, shadowed bodies and wall gradients; visually different from frozen stairwell/piano close-ups. SameNocturne master remains grouped in source-disjoint folds.",
+    "nocturne-grain-30s": "Blue-lit masked stage performance, costume/setting different from frozenoffice/hallway grain excerpt. Publisher-addedgrain remains.",
+    "sol-cave-forest-30s": "Stylized cave/forest/effects animation with flatcharacter/shape regions and detailedtextures; not uniformlyflatcel backgrounds.",
+    "tos-outdoor-dialogue-30s": "Outdoor young-character close-ups and dialogue intercut withcomposited overlays; different from frozenindoor older-character dialogue. Cinematic blackbars preserved.",
+    "chimera-fountain-30s": "Continuous fountain/spray water texture withpeople/camera motion; water-detail proxy, not foliage. Frozenhillside frame range andblackframe3600 excluded.",
+    "atlas-receipts-30s": "Newauthoredlog/filter/detail/docs/searchevents;720PNGhashes sharezero withfrozen240 screenframes."
+  },
+  "normalizationCorrection": "First384Chimera intermediates usedlinear-first normalization andremain quarantined, never registered. Finalsource reproducescanonical acquisition resize inP3/PQ16-bitRGB beforetone mapping.",
+  "descriptionErratum": "Planv4 descriptive normalizationOrder text says23976/1001; authoritative sourceFrameRate field, executedcommands andregistered source all correctlyuse24000/1001. This is a descriptive typo, not an executedcadence change.",
+  "calibrationApproval": null
+}

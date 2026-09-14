@@ -1,0 +1,28 @@
+TAP version 13
+# Subtest: complete canonical group eligibility derives timing, exact members and current retained review state
+ok 1 - complete canonical group eligibility derives timing, exact members and current retained review state
+  ---
+  duration_ms: 3.489083
+  type: 'test'
+  ...
+# Subtest: three unstable four-attempt groups cannot manufacture HIGH confidence or PL from identical source medians
+ok 2 - three unstable four-attempt groups cannot manufacture HIGH confidence or PL from identical source medians
+  ---
+  duration_ms: 41.883875
+  type: 'test'
+  ...
+# Subtest: live complete-group verification is independent of frontier subset, validates sibling bytes, and rechecks later reviews
+ok 3 - live complete-group verification is independent of frontier subset, validates sibling bytes, and rechecks later reviews
+  ---
+  duration_ms: 620.962292
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 3
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 798.648375

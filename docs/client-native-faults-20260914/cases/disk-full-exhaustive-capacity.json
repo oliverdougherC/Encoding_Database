@@ -1,0 +1,10 @@
+{
+  "totalBytes": 67067904,
+  "availableBytes": 0,
+  "tinyFiles": 165,
+  "osError": {
+    "errno": 28,
+    "message": "[Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/owned-tail-165.bin'",
+    "freshOneByteWriteFailed": true
+  }
+}

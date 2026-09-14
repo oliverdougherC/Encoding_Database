@@ -1,0 +1,75 @@
+{
+  "capturedAt": "2026-09-14T03:43:17.433Z",
+  "host": "P910",
+  "deployedServerCommit": "b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+  "schema": "existing production Prisma schema before timing migration; no encodeTimerBoundary column queried",
+  "readOnly": true,
+  "rawTablesAndObjectsUnchanged": true,
+  "recomputedMeasurements": 0,
+  "classification": "INCOMPATIBLE_UNRECOVERED_PRE_CORRECTED_TIMING_DEPLOYMENT",
+  "classificationRationale": "All existing old-schema measurements remain historical. Protocol/client labels do not retroactively establish the corrected ffmpeg-process-v1 boundary. Retained objects can support quality reanalysis, not recovery of an unrecorded process timing interval.",
+  "benchmarkRunCount": 4,
+  "benchmarkRunGroups": [
+    {
+      "protocolVersion": "7.0",
+      "clientVersion": "client/0.2.0",
+      "status": "SUSPECT",
+      "count": 4,
+      "runIds": [
+        "cmtz8j2u40005o6b33bg0qfip",
+        "cmtz8j51c000ao6b3y5c5bx18",
+        "cmtzbhxam0001o3b3giad1lvv",
+        "cmtzbhxng0006o3b3eid2c7q2"
+      ]
+    }
+  ],
+  "benchmarkRuns": [
+    {
+      "id": "cmtz8j2u40005o6b33bg0qfip",
+      "createdAt": "2026-09-13T03:09:01.084Z",
+      "status": "SUSPECT",
+      "benchmarkProtocolId": "cmtz8j2si0000o6b3fiyuz44a",
+      "protocolVersion": "7.0",
+      "clientVersion": "client/0.2.0",
+      "reportedEncodeWallTimeMs": 3131,
+      "reportedEncodeFps": 76.64202139427793,
+      "timingCompatibility": "INCOMPATIBLE_UNRECOVERED"
+    },
+    {
+      "id": "cmtz8j51c000ao6b3y5c5bx18",
+      "createdAt": "2026-09-13T03:09:03.936Z",
+      "status": "SUSPECT",
+      "benchmarkProtocolId": "cmtz8j2si0000o6b3fiyuz44a",
+      "protocolVersion": "7.0",
+      "clientVersion": "client/0.2.0",
+      "reportedEncodeWallTimeMs": 3159,
+      "reportedEncodeFps": 75.97029998353104,
+      "timingCompatibility": "INCOMPATIBLE_UNRECOVERED"
+    },
+    {
+      "id": "cmtzbhxam0001o3b3giad1lvv",
+      "createdAt": "2026-09-13T04:32:06.094Z",
+      "status": "SUSPECT",
+      "benchmarkProtocolId": "cmtz8j2si0000o6b3fiyuz44a",
+      "protocolVersion": "7.0",
+      "clientVersion": "client/0.2.0",
+      "reportedEncodeWallTimeMs": 3303,
+      "reportedEncodeFps": 72.65480598715004,
+      "timingCompatibility": "INCOMPATIBLE_UNRECOVERED"
+    },
+    {
+      "id": "cmtzbhxng0006o3b3eid2c7q2",
+      "createdAt": "2026-09-13T04:32:06.556Z",
+      "status": "SUSPECT",
+      "benchmarkProtocolId": "cmtz8j2si0000o6b3fiyuz44a",
+      "protocolVersion": "7.0",
+      "clientVersion": "client/0.2.0",
+      "reportedEncodeWallTimeMs": 3333,
+      "reportedEncodeFps": 72.00887509385532,
+      "timingCompatibility": "INCOMPATIBLE_UNRECOVERED"
+    }
+  ],
+  "legacySubmissionCount": 0,
+  "legacySubmissionGroups": [],
+  "legacyBenchmarkAggregateCount": 0
+}

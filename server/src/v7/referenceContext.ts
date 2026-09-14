@@ -1,3 +1,6 @@
+import { createMeasurementGroupVerifier } from './measurementGroup.js';
+import { buildScoringBehaviorHash } from './recommendationPolicy.js';
+import { applyEffectiveReview } from './reviews.js';
 import { readFileSync } from 'node:fs';
 
 import type { Prisma, PrismaClient } from '@prisma/client';
@@ -9,6 +12,7 @@ import {
 } from './calibration.js';
 import {
   persistDerivedResultRecord,
+  type RecommendationEvidencePolicy,
   type DerivedResultPersistenceClient,
   type DerivedResultPersistenceShape,
 } from './aggregation.js';
@@ -116,6 +120,7 @@ export interface LoadRetainedReferenceEvidenceOptions {
 }
 
 export interface GenerateReferenceContextFromDatabaseOptions {
+  fittingAnalysisIds: readonly string[];
   benchmarkProtocolId: string;
   benchmarkProtocolVersion: string;
   sourceSuiteVersion: string;
@@ -189,6 +194,9 @@ export interface ReferenceContext {
     sourceIdHash: string;
   };
   workloads: readonly WorkloadReferenceContextEntry[];
+  scoringBehaviorHash?: string;
+  recommendationEvidencePolicy?: RecommendationEvidencePolicy;
+  recommendationEvidencePolicyHash?: string;
   hash: string;
 }
 
@@ -339,6 +347,7 @@ type PersistGeneralDerivedResultClient = DerivedResultPersistenceClient & {
       confidenceUpper: number | null;
       evidenceTier: EvidenceTier;
       scoreContextId: string;
+      evidenceSummary?: Prisma.JsonValue;
       testClip: { contentClass: string } | null;
       members: Array<{ benchmarkRunId: string; qualityAnalysisId: string }>;
     }>>;
@@ -529,13 +538,6 @@ function toCanonicalJsonValue<T>(value: T): T {
 
 function hashContextPayload(value: Omit<ReferenceContext, 'hash'>): string {
   return sha256Hex(canonicalJsonString(toCanonicalJsonValue(value) as never));
-}
-
-function sourceIdHashFromEvidence(evidence: readonly ReferenceFrontierEvidence[]): string {
-  const ids = evidence
-    .map((entry) => entry.referenceId)
-    .sort(compareText);
-  return sha256Hex(canonicalJsonString(ids as never));
 }
 
 function buildUnavailableMetricInterval(confidenceLevel: number): Record<string, number | string | null> {
@@ -1026,11 +1028,43 @@ export function calculateProductionReferenceContextHash(
   context: ReferenceContext,
   calibrationVersion: string,
   calibrationReviewHash: string,
+  freeze?: CalibrationEvidenceDocument['freeze'],
 ): string {
   if (context.provenance.sourceMode !== 'retained-benchmark-evidence') {
     throw new Error('Only a reference context generated from retained benchmark evidence can be considered for production');
   }
-  return productionActivationCandidate(context, calibrationVersion, calibrationReviewHash).hash;
+  const bound = freeze ? { ...context, scoringBehaviorHash: freeze.scoringBehaviorHash, recommendationEvidencePolicy: freeze.evidencePolicy, recommendationEvidencePolicyHash: freeze.evidencePolicyHash } : context;
+  return productionActivationCandidate(bound, calibrationVersion, calibrationReviewHash).hash;
+}
+
+export function assertReferenceContextCalibrationBinding(context: ReferenceContext, calibration: CalibrationEvidenceDocument): void {
+  if (context.provenance.sourceMode !== 'retained-benchmark-evidence') throw new Error('Synthetic reference contexts cannot be promoted by relabeling');
+  const freeze = calibration.freeze;
+  if (!freeze || context.targetMetricValue !== freeze.bitrateReferenceVmafAnchor
+    || (['qualityExponent', 'speedCurveRate', 'speedSaturationRealtime'] as const).some((key) => context.transformConstants[key] !== freeze[key])) {
+    throw new Error('Reviewed scoring constants do not match applied context constants');
+  }
+  const evidence = new Map(calibration.corpus.map((entry) => [entry.qualityAnalysisId, entry]));
+  const blocked = new Set(calibration.metricSanityReviews.filter((entry) => entry.disposition === 'INVESTIGATE' || entry.disposition === 'EXCLUDE').flatMap((entry) => entry.evidenceIds));
+  if (!context.workloads.length) throw new Error('Production context lacks workload frontiers');
+  for (const workload of context.workloads) {
+    if (!workload.referenceFrontier.length) throw new Error('Production context lacks retained frontier');
+    for (const point of workload.referenceFrontier) {
+      if (!point.evidence.length) throw new Error('Frontier point lacks retained evidence');
+      for (const ref of point.evidence) {
+        const row = evidence.get(ref.qualityAnalysisId ?? '');
+        if (ref.kind !== 'retained-run-analysis' || !row || row.partition !== 'CALIBRATION' || blocked.has(row.evidenceId)
+          || row.workloadId !== workload.workloadId || row.contentClass !== workload.contentClass
+          || row.benchmarkRunId !== ref.benchmarkRunId || row.artifactId !== ref.artifactId
+          || row.artifactSha256 !== ref.artifactSha256 || row.analysisWorkerVersion !== ref.analysisWorkerVersion
+          || row.videoBitrateBps !== point.bitrateBps || row.vmafMean !== point.vmafMean) {
+          throw new Error('Frontier must use exact permitted CALIBRATION retained measurements; holdouts and synthetic samples are forbidden');
+        }
+      }
+    }
+    const expected = interpolateReferenceBitrate(workload.workloadId, workload.referenceFrontier, context.targetMetricValue);
+    if (Math.abs(expected - workload.workloadReferenceBitrateBps) > 0.000001) throw new Error('Applied reference bitrate does not match retained frontier interpolation');
+  }
 }
 
 export function activateReferenceContextForProduction(
@@ -1048,7 +1082,9 @@ export function activateReferenceContextForProduction(
   if (mismatches.length) {
     throw new Error(`Calibration evidence is incompatible with the reference context: ${mismatches.map(([name]) => name).join(', ')}`);
   }
-  const promoted = productionActivationCandidate(context, calibration.calibrationVersion, calibration.reviewHash);
+  assertReferenceContextCalibrationBinding(context, calibration);
+  const withPolicy = { ...context, scoringBehaviorHash: calibration.freeze.scoringBehaviorHash, recommendationEvidencePolicy: calibration.freeze.evidencePolicy, recommendationEvidencePolicyHash: calibration.freeze.evidencePolicyHash };
+  const promoted = productionActivationCandidate(withPolicy, calibration.calibrationVersion, calibration.reviewHash);
   if (calibration.freeze.scoreContextHash !== promoted.hash) {
     throw new Error(`Calibration freeze references score-context hash ${calibration.freeze.scoreContextHash}, expected ${promoted.hash}`);
   }
@@ -1068,6 +1104,13 @@ export function parseReferenceContext(raw: string): ReferenceContext {
     throw new Error('Test-only provisional reference contexts must not allow production activation');
   }
   if (parsed.activation.stage === 'PRODUCTION') {
+    if (parsed.provenance.sourceMode !== 'retained-benchmark-evidence'
+      || parsed.scoringBehaviorHash !== buildScoringBehaviorHash()
+      || !parsed.recommendationEvidencePolicy || parsed.recommendationEvidencePolicy.policyStatus !== 'CALIBRATED'
+      || sha256Hex(canonicalJsonString(parsed.recommendationEvidencePolicy as never)) !== parsed.recommendationEvidencePolicyHash
+      || parsed.workloads.some((workload) => !workload.referenceFrontier.length || workload.referenceFrontier.some((point) => !point.evidence.length || point.evidence.some((evidence) => evidence.kind !== 'retained-run-analysis')))) {
+      throw new Error('Production context requires retained frontiers, exact scoring behavior, and hash-bound calibrated policy');
+    }
     if (!parsed.activation.productionActivationAllowed
       || !parsed.activation.calibrationVersion?.trim()
       || !/^[0-9a-f]{64}$/.test(parsed.activation.calibrationReviewHash ?? '')) {
@@ -1091,7 +1134,7 @@ export async function loadRetainedReferenceEvidence(
   const runs = await client.benchmarkRun.findMany({
     where: {
       benchmarkProtocolId: options.benchmarkProtocolId,
-      status: 'ACCEPTED',
+      status: { in: ['ACCEPTED', 'SUSPECT'] },
       testClip: {
         suiteVersion,
       },
@@ -1105,7 +1148,7 @@ export async function loadRetainedReferenceEvidence(
       qualityAnalyses: {
         some: {
           metricModelId: options.qualityModelId,
-          status: 'COMPLETE',
+          status: { in: ['COMPLETE', 'SUSPECT'] },
           videoBitrateBps: { not: null },
           vmafMean: { not: null },
         },
@@ -1128,14 +1171,12 @@ export async function loadRetainedReferenceEvidence(
         ],
       },
       qualityAnalyses: {
+        include: { evidenceReviews: true },
         where: {
           metricModelId: options.qualityModelId,
-          status: 'COMPLETE',
-          videoBitrateBps: { not: null },
-          vmafMean: { not: null },
         },
         orderBy: [
-          { updatedAt: 'desc' },
+          { createdAt: 'desc' },
           { id: 'desc' },
         ],
       },
@@ -1146,12 +1187,16 @@ export async function loadRetainedReferenceEvidence(
     ],
   });
 
+  const verifyGroup = createMeasurementGroupVerifier(client, { metricModelId: options.qualityModelId });
+  const groupEligibility = new Map(await Promise.all(runs.map(async run => [run.id, await verifyGroup(run)] as const)));
   return runs.flatMap((run) => {
-    const artifact = run.artifacts[0];
     const analysis = run.qualityAnalyses[0];
+    const artifact = run.artifacts.find((entry) => entry.id === analysis?.artifactId);
     if (!artifact || !artifact.sha256 || !analysis || analysis.videoBitrateBps == null || analysis.vmafMean == null) {
       return [];
     }
+    const effective = applyEffectiveReview({ runStatus: run.status, analysisStatus: analysis.status, artifactState: artifact.storageState, analysisId: analysis.id, reviews: analysis.evidenceReviews });
+    if (!effective.eligible || !groupEligibility.get(run.id)?.eligible) return [];
     return [{
       benchmarkRunId: run.id,
       benchmarkProtocolId: run.benchmarkProtocolId,
@@ -1160,7 +1205,7 @@ export async function loadRetainedReferenceEvidence(
       workloadId: run.workloadId,
       testClipId: run.testClipId,
       contentClass: run.testClip.contentClass,
-      benchmarkRunStatus: run.status,
+      benchmarkRunStatus: 'ACCEPTED' as const,
       payloadHash: run.payloadHash,
       recipeId: run.recipeId,
       recipeFingerprint: run.recipe.fingerprint,
@@ -1171,7 +1216,7 @@ export async function loadRetainedReferenceEvidence(
       artifactStorageState: artifact.storageState,
       artifactSha256: artifact.sha256,
       qualityAnalysisId: analysis.id,
-      qualityAnalysisStatus: analysis.status,
+      qualityAnalysisStatus: 'COMPLETE' as const,
       analysisWorkerVersion: analysis.analysisWorkerVersion,
       qualityModelId: analysis.metricModelId,
       videoBitrateBps: analysis.videoBitrateBps,
@@ -1207,7 +1252,7 @@ export async function generateReferenceContextFromDatabase(
     speedSaturationRealtime: options.speedSaturationRealtime ?? 4,
     requiredWorkloads: suiteWorkloadsFromManifest(manifest),
     requiredContentClasses: manifest.requiredContentClasses,
-    evidence,
+    evidence: evidence.filter((entry) => options.fittingAnalysisIds.includes(entry.qualityAnalysisId)),
   });
 }
 
@@ -1259,6 +1304,9 @@ export function buildScoreContextSeedRecords(
       referenceFrontier: workload.referenceFrontier,
       provenance: context.provenance,
       activation: context.activation,
+      contextHash: context.hash,
+      recommendationEvidencePolicy: context.recommendationEvidencePolicy ?? null,
+      recommendationEvidencePolicyHash: context.recommendationEvidencePolicyHash ?? null,
     },
   }));
 
@@ -1281,6 +1329,9 @@ export function buildScoreContextSeedRecords(
       })),
       provenance: context.provenance,
       activation: context.activation,
+      contextHash: context.hash,
+      recommendationEvidencePolicy: context.recommendationEvidencePolicy ?? null,
+      recommendationEvidencePolicyHash: context.recommendationEvidencePolicyHash ?? null,
     },
   };
 
@@ -1303,10 +1354,24 @@ export async function persistScoreContextsFromReferenceContext(
     throw new Error(`Reference context ${context.contextVersion} is ${context.activation.stage} and cannot be activated in production persistence`);
   }
 
+  if (options.allowTestOnlyActivation !== true) parseReferenceContext(JSON.stringify(context));
   const seeds = buildScoreContextSeedRecords(context, benchmarkProtocolId);
   const write = async (tx: Prisma.TransactionClient): Promise<PersistedScoreContextRecord[]> => {
     const persisted: PersistedScoreContextRecord[] = [];
+    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
     for (const seed of seeds) {
+      const existing = await tx.scoreContext.findUnique({ where: {
+        formulaVersion_contextVersion_workloadId_qualityModelId: {
+          formulaVersion: seed.formulaVersion, contextVersion: seed.contextVersion,
+          workloadId: seed.workloadId, qualityModelId: seed.qualityModelId,
+        },
+      } });
+      if (existing && (existing.benchmarkProtocolId !== seed.benchmarkProtocolId
+        || existing.workloadReferenceBitrateBps !== seed.workloadReferenceBitrateBps
+        || canonicalJsonString(existing.transformConstants as never) !== canonicalJsonString(seed.transformConstants as never)
+        || canonicalJsonString(existing.referenceFrontier as never) !== canonicalJsonString(seed.referenceFrontier as never))) {
+        throw new Error(`Immutable score context ${seed.contextVersion}/${seed.workloadId} already exists with different reviewed contents; use a new context version`);
+      }
       const record = await tx.scoreContext.upsert({
         where: {
           formulaVersion_contextVersion_workloadId_qualityModelId: {
@@ -1639,6 +1704,7 @@ function buildGeneralDerivedResultFromWorkloadEvidence(input: {
     confidenceLower: number | null;
     confidenceUpper: number | null;
     evidenceTier: EvidenceTier;
+    evidenceSummary?: Prisma.JsonValue;
     memberAnalysisMembers: ReadonlyArray<{ benchmarkRunId: string; qualityAnalysisId: string }>;
   }>;
 }): BuiltGeneralDerivedResult | null {
@@ -1698,6 +1764,12 @@ function buildGeneralDerivedResultFromWorkloadEvidence(input: {
     sourceDerivedResultIds: [...new Set(contributingDerivedResultIds)].sort(compareText),
     sourceWorkloadIds: [...new Set(contributingWorkloadIds)].sort(compareText),
     coverageComplete: true,
+    eligibleForDefaultRecommendation: input.workloadResults.length > 0 && new Set(input.workloadResults.map((row) => (row.evidenceSummary as Record<string, unknown> | undefined)?.policyVersion)).size === 1 && input.workloadResults.every((row) => {
+      const summary = row.evidenceSummary as Record<string, unknown> | undefined;
+      return summary?.eligibleForDefaultRecommendation === true && summary?.policyStatus === 'CALIBRATED';
+    }),
+    policyStatus: input.workloadResults.every((row) => (row.evidenceSummary as Record<string, unknown> | undefined)?.policyStatus === 'CALIBRATED') ? 'CALIBRATED' : 'PROVISIONAL_UNCALIBRATED',
+    policyVersions: [...new Set(input.workloadResults.map((row) => (row.evidenceSummary as Record<string, unknown> | undefined)?.policyVersion).filter(Boolean))],
   };
 
   const confidenceIntervals = {
@@ -1824,6 +1896,7 @@ export async function persistGeneralDerivedResultFromWorkloadEvidence(
   const workloadResults = await client.derivedResult.findMany({
     where: {
       kind: 'WORKLOAD',
+      invalidatedAt: null,
       benchmarkProtocolId: options.benchmarkProtocolId,
       recipeId: options.recipeId,
       environmentId: options.environmentId,
@@ -1880,6 +1953,7 @@ export async function persistGeneralDerivedResultFromWorkloadEvidence(
         confidenceLower: row.confidenceLower,
         confidenceUpper: row.confidenceUpper,
         evidenceTier: row.evidenceTier,
+        evidenceSummary: row.evidenceSummary ?? null,
         memberAnalysisMembers: row.members.map((member) => ({
           benchmarkRunId: member.benchmarkRunId,
           qualityAnalysisId: member.qualityAnalysisId,

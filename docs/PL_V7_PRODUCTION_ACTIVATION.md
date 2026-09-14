@@ -190,3 +190,23 @@ asserts:
   analysis row;
 - the exact-membership unique index exists.
 - `/health/ready`, `/query`, and `/corpus` succeed against the rehearsed DB.
+
+## Corrected-protocol activation safeguards
+
+COMPLETE calibration is mandatory even for an already PRODUCTION context.
+Activation re-verifies live DB measurements, current review heads, retained object
+SHA/size, constants/policy and actual production golden/holdout rankings. Advisory
+transaction lock 714555 spans live eligibility verification through read/rebuild/
+persistence, shared with workers and review writers. The default activation
+timeout is 30 minutes (`CALIBRATION_ACTIVATION_TIMEOUT_MS`); plan this operator
+maintenance interval against corpus size. Public requests must not run this scan.
+
+Output paths are reserved before DB mutations. A conflict leaves the database
+unchanged; a later DB failure can leave prepared hash-identical files for recovery.
+Retry without output flags using the same context, or choose fresh output names.
+The deployed path in env bindings must be updated for the container mount.
+
+`scoringBehaviorHash` binds the compiled scoring module closure, including aggregation,
+reference construction, persistence and review eligibility as well as fixed
+weights/constraints. Changes require a new reviewed context; old context identity
+and old-protocol timing are never silently relabeled.

@@ -1,0 +1,21 @@
+{
+  "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/?list-type=2&prefix=Chimera%2F&delimiter=%2F&max-keys=1000",
+  "prefixes": [
+    "Chimera/tif_DCI4k2398p/",
+    "Chimera/tif_DCI4k5994p/"
+  ],
+  "files": [
+    {
+      "key": "Chimera/Chimera_DCI4k2398p_HDR_P3PQ.mp4",
+      "bytes": 2533440911
+    },
+    {
+      "key": "Chimera/Chimera_DCI4k5994p_HDR_P3PQ.mp4",
+      "bytes": 10913501217
+    },
+    {
+      "key": "Chimera/creative-commons-attribution-4-intl-public-license.txt",
+      "bytes": 105020
+    }
+  ]
+}

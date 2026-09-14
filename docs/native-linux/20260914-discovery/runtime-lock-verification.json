@@ -1,0 +1,8 @@
+{
+  "ffmpegPath": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg",
+  "ffprobePath": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe",
+  "fingerprint": "993646b0a33d539f486ee57975e16ec0c329b58375696cbe2b6d64bf771973ef",
+  "lockPath": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/source/discovery-21beba9f/client/resources/runtime/ffmpeg-lock.json",
+  "mode": "verified",
+  "platform": "linux"
+}

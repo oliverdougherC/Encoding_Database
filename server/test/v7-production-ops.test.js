@@ -11,12 +11,14 @@ import {
   buildProductionEnvBindings,
   loadProductionActivationPlan,
   persistActivationState,
+  runProductionActivation,
 } from '../../scripts/activate-pl-v7-production.mjs';
 import {
   buildReferenceContextBindings,
   parseEnvText,
   validateProductionEnv,
 } from '../../scripts/validate-production-env.mjs';
+import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, rebuildDerivedResultAggregateFromAnalyses } from '../dist/v7/aggregation.js';
 import { parseReferenceContext } from '../dist/v7/referenceContext.js';
 
 const contextFixturePath = new URL('../config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json', import.meta.url);
@@ -35,6 +37,7 @@ function productionContextFixture() {
       calibrationReviewHash: 'a'.repeat(64),
     },
     hash: provisional.hash,
+    recommendationEvidencePolicy: DEFAULT_RECOMMENDATION_EVIDENCE_POLICY,
   };
 }
 
@@ -206,6 +209,8 @@ test('buildActivationPersistencePayloads uses exact analysis membership for work
 test('persistActivationState upserts score contexts and derived results idempotently', async () => {
   const stored = new Map();
   const modules = {
+    rebuildDerivedResultAggregateFromAnalyses,
+    async persistGeneralDerivedResultFromWorkloadEvidence() { return null; },
     async persistScoreContextsFromReferenceContext() {
       return [
         { id: 'score-workload', kind: 'WORKLOAD', workloadId: 'sports-action-960x540-24p' },
@@ -233,13 +238,12 @@ test('persistActivationState upserts score contexts and derived results idempote
   const second = await persistActivationState({}, input);
 
   assert.equal(first.scoreContexts.length, 2);
-  assert.equal(first.derivedResults.length, 2);
-  assert.equal(second.derivedResults.length, 2);
-  assert.equal(stored.size, 2);
+  assert.equal(first.derivedResults.length, 1);
+  assert.equal(second.derivedResults.length, 1);
+  assert.equal(stored.size, 1);
   assert.deepEqual(
     [...stored.values()].map((row) => row.members),
     [
-      [{ benchmarkRunId: 'run-workload-1', qualityAnalysisId: 'analysis-workload-1' }],
       [{ benchmarkRunId: 'run-workload-1', qualityAnalysisId: 'analysis-workload-1' }],
     ],
   );
@@ -317,14 +321,15 @@ test('production activation doc and deployment wiring mention env validation, ac
   assert.match(deploy, /\/api\/corpus\?limit=1/);
   assert.match(deploy, /\/health\/v7-evidence/);
   assert.ok(deploy.indexOf('run_preflight_validation') < deploy.indexOf('git fetch --prune'));
-  assert.match(compose, /name: encodingdb_prod_db_data/);
-  assert.match(compose, /name: encodingdb_prod_artifact_data/);
+  assert.match(compose, /name: \$\{DATABASE_VOLUME_NAME:-encodingdb_prod_db_data\}/);
+  assert.match(compose, /name: \$\{ARTIFACT_VOLUME_NAME:-encodingdb_prod_artifact_data\}/);
   assert.match(rootEnv, /PL_V7_REFERENCE_CONTEXT_PATH=/);
   assert.match(rootEnv, /ARTIFACT_VOLUME_NAME=encodingdb_prod_artifact_data/);
   assert.match(serverEnv, /ALLOW_TEST_ONLY_REFERENCE_CONTEXTS=0/);
   assert.match(backupScript, /--compose-file/);
   assert.match(backupScript, /Quiescing writer services for backup consistency/);
-  assert.match(backupScript, /Restarting quiesced writer services/);
+  assert.match(backupScript, /Restarting exact quiesced writer containers/);
+  assert.ok(backupScript.includes('docker start "${QUIESCED_CONTAINER_IDS[@]}"'));
   assert.match(migrationScript, /qualityAnalysisId backfill failed/);
   assert.match(migrationScript, /legacy Benchmark row did not survive migration/);
   assert.match(migrationScript, /npx tsx src\/index\.ts/);
@@ -347,4 +352,22 @@ test('activation plan loader accepts repository-relative temp file paths', async
     }),
     /not ready for production freeze/,
   );
+});
+
+
+test('reactivating a parsed production context still requires COMPLETE calibration', async () => {
+  await assert.rejects(loadProductionActivationPlan({
+    referenceContextPath: contextFixturePath.pathname,
+    modules: { parseReferenceContext: () => productionContextFixture() },
+  }), /required for activation and reactivation/);
+});
+
+
+test('first promotion without a promoted artifact output fails before any database call', async () => {
+  let databaseCalls = 0;
+  await assert.rejects(runProductionActivation({ apply: true, benchmarkProtocolId: 'test-only', plan: {
+    modules: { prisma: { async $transaction() { databaseCalls += 1; } } },
+    promotedContext: productionContextFixture(), referenceContextPath: contextFixturePath.pathname, requiresPromotedContextOutput: true,
+  } }), /requires --promoted-context-output before database writes/);
+  assert.equal(databaseCalls, 0);
 });

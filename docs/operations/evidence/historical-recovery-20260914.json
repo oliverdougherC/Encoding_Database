@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-09-14T00:45:21.094Z",
+  "kind": "historical-isolated-recovery",
+  "source": "P910 before-hotfix-b0f0bc7d12cb",
+  "target": "local PostgreSQL16 encodingdb_operations_restore",
+  "productionModified": false,
+  "files": [
+    {
+      "name": "database.dump",
+      "sha256": "6d637b15990565b60853f97a41eb2c6a0ac5c534eda451dfccdde7751754babf",
+      "byteSize": 73413,
+      "verified": true
+    },
+    {
+      "name": "artifacts.tar.gz",
+      "sha256": "9e7f7f78251e7aded32f4be1e359e5c8c9f05be7471c79b18c4eb830f1e62261",
+      "byteSize": 2537398,
+      "verified": true
+    },
+    {
+      "name": "inventory.json",
+      "sha256": "e93083a86653c905089fb8789f0c985cfdaec537e033f085841b176af4d3b230",
+      "byteSize": 812,
+      "verified": true
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "cmtz8j2u40006o6b3hcouw7xx",
+      "runId": "cmtz8j2u40005o6b33bg0qfip",
+      "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "byteSize": 2539152,
+      "state": "UPLOADED",
+      "verified": true
+    },
+    {
+      "id": "cmtz8j51c000bo6b3gvodhfkf",
+      "runId": "cmtz8j51c000ao6b3y5c5bx18",
+      "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "byteSize": 2539152,
+      "state": "UPLOADED",
+      "verified": true
+    }
+  ],
+  "counts": {
+    "runs": 2,
+    "analyses": 2,
+    "derivedMembers": 0
+  },
+  "commands": [
+    {
+      "command": "pg_restore --no-owner --no-acl --exit-on-error into isolated encodingdb_operations_restore",
+      "exitCode": 0
+    },
+    {
+      "command": "SHA256 verification, exact Artifact/BenchmarkRun identities and selected-membership counts",
+      "exitCode": 0
+    }
+  ],
+  "limitation": "Historical snapshot has UPLOADED artifacts and zero selected derived members; this verifies exact existing recovery, not a new scheduled backup or recovery of a retained corrected-protocol epoch."
+}

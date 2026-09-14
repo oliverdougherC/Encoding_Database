@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { buildScoringBehaviorHash } from '../dist/v7/recommendationPolicy.js';
+import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } from '../dist/v7/aggregation.js';
+import { canonicalJsonString, sha256Hex } from '../dist/v7/persistence.js';
 
 import {
   CALIBRATION_EVIDENCE_SCHEMA_VERSION,
@@ -125,6 +128,21 @@ function completeDocument() {
     reviewHash: '',
     evidenceHash: '',
   };
+  document.corpus[3].contentClass = 'validation-only-content';
+  document.corpus[3].workloadId = 'validation-only-workload';
+  document.corpus.push({ ...structuredClone(document.corpus[1]), evidenceId: 'evidence-9', benchmarkRunId: 'run-9', artifactId: 'artifact-9', qualityAnalysisId: 'analysis-9', nativeRateControl: { mode: 'crf', qualityValue: 24 } });
+  document.corpus.push({ ...structuredClone(document.corpus[3]), evidenceId: 'evidence-10', benchmarkRunId: 'run-10', artifactId: 'artifact-10', qualityAnalysisId: 'analysis-10', nativeRateControl: { mode: 'crf', qualityValue: 18 } });
+  document.topResultReviews.forEach((review, index) => { review.scenario = 'BALANCED'; review.candidateEvidenceIds = index === 0 ? ['evidence-4', 'evidence-10'] : ['evidence-6', 'evidence-8']; });
+  document.holdoutEvaluations.forEach((evaluation, index) => {
+    evaluation.fittingEvidenceIds = ['evidence-1'];
+    evaluation.frontierEvidenceIds = ['evidence-1'];
+    evaluation.fittedContextHash = 'f'.repeat(64);
+    evaluation.evidenceIds = [[ 'evidence-6', 'evidence-8' ], [ 'evidence-6', 'evidence-8' ], [ 'evidence-4', 'evidence-10' ], [ 'evidence-2', 'evidence-9' ]][index];
+    evaluation.predictedTopEvidenceId = evaluation.evidenceIds[0];
+  });
+  document.freeze.scoringBehaviorHash = buildScoringBehaviorHash();
+  document.freeze.evidencePolicy = { ...DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, policyStatus: 'CALIBRATED', policyVersion: document.freeze.evidencePolicyVersion };
+  document.freeze.evidencePolicyHash = sha256Hex(canonicalJsonString(document.freeze.evidencePolicy));
   document.reviewHash = buildCalibrationReviewHash(document);
   document.evidenceHash = buildCalibrationEvidenceHash(document);
   return document;
@@ -233,3 +251,26 @@ test('checked-in Apple pilot binds exact retained evidence while remaining impos
   assert.ok(assessment.errors.some((finding) => finding.code === 'missing_golden_scenario'));
   assert.equal(assessment.readyForProductionFreeze, false);
 });
+
+for (const [name, mutate, code] of [
+  ['validation source assigned to fitting', d => d.corpus[0].sourceSuiteVersion = 'encodingdb-validation-holdouts-v1', 'calibration_source_suite'],
+  ['unregistered validation source', d => d.corpus[1].sourceSuiteVersion = 'encodingdb-validation-holdouts-v1', 'holdout_source_registration'],
+  ['single candidate holdout', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-6'], 'holdout_candidate_count'],
+  ['duplicate native holdout choices', d => d.corpus[7].nativeRateControl = structuredClone(d.corpus[5].nativeRateControl), 'holdout_candidate_count'],
+  ['empty fitting corpus', d => d.corpus.forEach(e => e.partition = 'HOLDOUT'), 'empty_fitting_corpus'],
+  ['overlapping holdout groups', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-2'], 'holdout_group_leakage'],
+  ['identical native RC disguised with decorative settings', d => d.corpus.filter(e => e.encoderImplementation === 'libx264').forEach((e, index) => e.nativeRateControl = { mode: index % 2 ? 'CRF' : 'crf', qualityValue: index % 2 ? '20' : 20, extras: { note: `different-${index}` } }), 'rate_quality_coverage'],
+  ['identical native RC disguised with fingerprints', d => d.corpus.filter(e => e.encoderImplementation === 'libx264').forEach(e => e.nativeRateControl = { mode: 'crf', qualityValue: 20 }), 'rate_quality_coverage'],
+  ['wrong-family top result', d => d.topResultReviews[0].evidenceId = 'evidence-8', 'top_result_family'],
+  ['empty metric review', d => d.metricSanityReviews[0].evidenceIds = [], 'metric_sanity_review'],
+  ['unresolved investigation', d => d.metricSanityReviews[0].disposition = 'INVESTIGATE', 'unresolved_investigation'],
+  ['unbound calibrated confidence constants', d => d.freeze.evidencePolicy.tiers.high.minimumIndependentSources = 1, 'freeze_evidence_policy'],
+]) {
+  test(`semantic gate rejects ${name} even after hashes are recomputed`, () => {
+    const document = completeDocument(); mutate(document);
+    document.reviewHash = buildCalibrationReviewHash(document); document.evidenceHash = buildCalibrationEvidenceHash(document);
+    const assessment = assessCalibrationEvidence(document, requirements);
+    assert.equal(assessment.readyForProductionFreeze, false);
+    assert.ok(assessment.errors.some(finding => finding.code === code), JSON.stringify(assessment.errors));
+  });
+}

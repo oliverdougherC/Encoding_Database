@@ -1,0 +1,45 @@
+{
+  "case": "corrupt-pack",
+  "startedAt": "2026-09-14T04:33:44.537630+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-package/encodingdb-client-macos",
+    "--codec",
+    "libx264",
+    "--presets",
+    "fast",
+    "--no-submit",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/corrupt-pack-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:65323",
+    "HTTPS_PROXY": "http://127.0.0.1:65323",
+    "ALL_PROXY": "http://127.0.0.1:65323",
+    "NO_PROXY": "localhost,127.0.0.1",
+    "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-package/encodingdb-test-suite-v1.tar.gz"
+  },
+  "pid": 76050,
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "diagnosticNotCalibration": true,
+  "exitCode": 3,
+  "wallSeconds": 8.852649582986487,
+  "proxyRequests": [
+    {
+      "method": "GET",
+      "target": "/corrupt-pack",
+      "time": 1789360433.225779
+    },
+    {
+      "method": "CONNECT",
+      "target": "github.com:443",
+      "time": 1789360433.227778
+    }
+  ],
+  "corruptPackSha256": "dbb1613ece77f32531c16bfd10686cc1b961d0870b07d0adf39a3dac21b06dc1",
+  "referencePackSha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+  "attemptRecords": 0
+}

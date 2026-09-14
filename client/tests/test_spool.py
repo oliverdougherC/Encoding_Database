@@ -237,6 +237,10 @@ class SpoolTests(unittest.TestCase):
                 )
                 self.assertEqual(first.retained, 1)
                 self.assertTrue(os.path.exists(managed_path))
+                entry = load_spool_entry(path)
+                entry["nextAttemptAt"] = 0
+                with open(path, "w") as handle:
+                    json.dump(entry, handle)
                 second = replay_spool(
                     queue_dir,
                     base_url="http://127.0.0.1:9",

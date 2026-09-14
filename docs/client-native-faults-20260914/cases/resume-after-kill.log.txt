@@ -1,0 +1,13 @@
+Campaign campaign-b92d34ea50b6f8fc: at most 5 encodes; resume with --resume-campaign campaign-b92d34ea50b6f8fc
+Batch 1/1: 1 protocol recipe(s)
+Legacy submission advisory for libx264 veryslow: high_background_load:20.6%
+Batch Summary
+  Planned Tasks: 5
+  Batches: 1
+  Completed Encodes: 2
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 19s
+  Throughput: 379.9 encodes/hour

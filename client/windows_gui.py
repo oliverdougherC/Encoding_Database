@@ -10,7 +10,43 @@ from .encoders import (
     enumerate_supported_presets_for_encoder,
     get_encoder_friendly_label,
     list_all_available_encoders,
+    is_codec_family_selector,
+    normalize_codec_family,
+    pick_software_encoder_for_family,
 )
+
+
+def initial_gui_settings(base_args: argparse.Namespace, encoders: list[str]) -> tuple[str, str, int]:
+    """Honor configured native choices; only an omitted encoder uses the GUI default."""
+    requested = str(getattr(base_args, "codec", "") or "").strip()
+    encoder = requested or (encoders[0] if encoders else "")
+    if requested and requested not in encoders and is_codec_family_selector(requested):
+        family = normalize_codec_family(requested)
+        encoder = pick_software_encoder_for_family(family) if family else ""
+    if not encoder or encoder not in encoders:
+        raise ValueError(f"Requested encoder '{requested or '(none available)'}' is not available.")
+    presets = enumerate_supported_presets_for_encoder(encoder)
+    requested_presets = [value.strip() for value in str(getattr(base_args, "presets", "") or "").split(",") if value.strip()]
+    preset = requested_presets[0] if requested_presets else (presets[len(presets) // 2] if presets else "")
+    if not preset or preset not in presets:
+        raise ValueError(f"Requested preset '{preset}' is not supported by {encoder}.")
+    quality = getattr(base_args, "crf", None)
+    return encoder, preset, int(24 if quality is None else quality)
+
+
+def initial_window_geometry(work_area: tuple[int, int, int, int]) -> tuple[int, int, int, int]:
+    """Leave room for native window chrome inside the actual work area."""
+    left, top, right, bottom = work_area
+    return min(1100, max(1, right - left - 32)), min(760, max(1, bottom - top - 64)), left + 8, top + 8
+
+
+def desktop_work_area(root: Any) -> tuple[int, int, int, int]:
+    import ctypes
+    from ctypes import wintypes
+    rect = wintypes.RECT()
+    if ctypes.windll.user32.SystemParametersInfoW(0x0030, 0, ctypes.byref(rect), 0):
+        return rect.left, rect.top, rect.right, rect.bottom
+    return 0, 0, root.winfo_screenwidth(), max(1, root.winfo_screenheight() - 60)
 
 
 def launch_windows_gui(base_args: argparse.Namespace) -> int:
@@ -28,12 +64,24 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         parser = client_main.build_arg_parser()
         return client_main.interactive_menu_flow(parser, base_args)
 
+    runtime_rc = client_main._preparation_runtime_integrity()
+    if runtime_rc:
+        messagebox.showerror("Runtime integrity", "Bundled runtime verification failed. See the diagnostic output.")
+        return runtime_rc
+    encoders = list_all_available_encoders()
+    try:
+        initial_encoder, initial_preset, initial_quality = initial_gui_settings(base_args, encoders)
+    except ValueError as exc:
+        messagebox.showerror("Unsupported configuration", str(exc))
+        return 4
+
     class WindowsClientApp:
         def __init__(self) -> None:
             self.root = tk.Tk()
             self.root.title("EncodingDB Windows Client")
-            self.root.geometry("1100x760")
-            self.root.minsize(980, 700)
+            width, height, left, top = initial_window_geometry(desktop_work_area(self.root))
+            self.root.geometry(f"{width}x{height}{left:+d}{top:+d}")
+            self.root.minsize(min(980, width), min(640, height))
 
             self.base_args = argparse.Namespace(**vars(base_args))
             self.event_queue: queue.Queue = queue.Queue()
@@ -41,12 +89,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.cancel_event = threading.Event()
             self.running = False
 
-            self.mode_var = tk.StringVar(value="Medium")
+            self.mode_var = tk.StringVar(value="Single")
             self.no_submit_var = tk.BooleanVar(value=bool(getattr(base_args, "no_submit", False)))
             self.base_url_var = tk.StringVar(value=str(getattr(base_args, "base_url", "")))
             self.retries_var = tk.IntVar(value=max(1, int(getattr(base_args, "retries", 3))))
             self.batch_size_var = tk.IntVar(value=max(0, int(getattr(base_args, "batch_size", 0))))
-            self.crf_var = tk.IntVar(value=int(getattr(base_args, "crf", 24) or 24))
+            self.bitrate_var = tk.StringVar(value=str(getattr(base_args, "target_bitrate_kbps", "") or ""))
+            self.crf_var = tk.IntVar(value=initial_quality)
 
             self.selected_encoder_var = tk.StringVar(value="")
             self.selected_preset_var = tk.StringVar(value="")
@@ -70,6 +119,8 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self._update_single_fields_state()
             self._poll_events()
             self.root.protocol("WM_DELETE_WINDOW", self._on_close)
+            self.root.bind("<Alt-r>", self._start_shortcut)
+            self.root.bind("<Alt-s>", self._stop_shortcut)
 
         def _build_ui(self, ttk: Any, tk: Any, scrolledtext: Any) -> None:
             outer = ttk.Frame(self.root, padding=12)
@@ -84,7 +135,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.mode_combo = ttk.Combobox(
                 row1,
                 textvariable=self.mode_var,
-                values=["Single", "Small", "Medium", "Full"],
+                values=["Single", "Full"],
                 state="readonly",
                 width=14,
             )
@@ -117,14 +168,18 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.preset_combo.pack(side="left", padx=(8, 16))
 
             ttk.Label(row3, text="Native quality value").pack(side="left")
-            self.crf_spin = ttk.Spinbox(row3, from_=10, to=40, textvariable=self.crf_var, width=6)
+            self.crf_spin = ttk.Spinbox(row3, from_=0, to=40, textvariable=self.crf_var, width=6)
             self.crf_spin.pack(side="left", padx=(8, 0))
+
+            ttk.Label(row3, text="Bitrate kbps (hardware)").pack(side="left", padx=(12, 0))
+            self.bitrate_entry = ttk.Entry(row3, textvariable=self.bitrate_var, width=8)
+            self.bitrate_entry.pack(side="left", padx=(6, 0))
 
             buttons = ttk.Frame(config_frame)
             buttons.pack(fill="x", pady=(10, 0))
-            self.start_btn = ttk.Button(buttons, text="Start Run", command=self._start_run)
+            self.start_btn = ttk.Button(buttons, text="Start Run (Alt+R)", underline=6, command=self._start_run)
             self.start_btn.pack(side="left")
-            self.stop_btn = ttk.Button(buttons, text="Stop", command=self._stop_run, state="disabled")
+            self.stop_btn = ttk.Button(buttons, text="Stop (Alt+S)", underline=0, command=self._stop_run, state="disabled")
             self.stop_btn.pack(side="left", padx=(8, 0))
 
             progress_frame = ttk.LabelFrame(outer, text="Live Progress", padding=10)
@@ -179,7 +234,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.crf_spin.configure(state=enabled)
 
         def _update_single_fields_state(self) -> None:
-            single = self.mode_var.get() == "Single"
+            single = True
             state = "readonly" if single and not self.running else "disabled"
             spin_state = "normal" if single and not self.running else "disabled"
             self.encoder_combo.configure(state=state)
@@ -187,7 +242,6 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.crf_spin.configure(state=spin_state)
 
         def _refresh_encoders(self) -> None:
-            encoders = list_all_available_encoders()
             labels = []
             self.encoder_values = []
             for enc in encoders:
@@ -196,17 +250,18 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 self.encoder_values.append(enc)
             self.encoder_combo["values"] = labels
             if labels and not self.selected_encoder_var.get():
-                self.encoder_combo.current(0)
-                self.selected_encoder_var.set(labels[0])
-            self._refresh_presets()
+                index = self.encoder_values.index(initial_encoder)
+                self.encoder_combo.current(index)
+                self.selected_encoder_var.set(labels[index])
+            self._refresh_presets(initial_preset)
 
         def _selected_encoder(self) -> str:
             idx = self.encoder_combo.current()
             if idx is None or idx < 0 or idx >= len(self.encoder_values):
-                return self.encoder_values[0] if self.encoder_values else ""
+                return ""
             return self.encoder_values[idx]
 
-        def _refresh_presets(self) -> None:
+        def _refresh_presets(self, requested: Optional[str] = None) -> None:
             encoder = self._selected_encoder()
             presets = enumerate_supported_presets_for_encoder(encoder) if encoder else []
             if not presets:
@@ -214,21 +269,29 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.preset_values = list(presets)
             self.preset_combo["values"] = presets
             if presets:
-                self.preset_combo.current(min(max(0, len(presets) // 2), len(presets) - 1))
+                self.preset_combo.current(presets.index(requested) if requested is not None else len(presets) // 2)
                 self.selected_preset_var.set(self.preset_combo.get())
 
         def _selected_preset(self) -> str:
             value = self.preset_combo.get().strip()
             if value:
                 return value
-            return self.preset_values[0] if self.preset_values else "medium"
+            return ""
+
+        def _start_shortcut(self, _event: Any = None) -> str:
+            self._start_run()
+            return "break"
+
+        def _stop_shortcut(self, _event: Any = None) -> str:
+            self._stop_run()
+            return "break"
 
         def _start_run(self) -> None:
             if self.running:
                 return
             mode = self.mode_var.get().strip()
-            if mode == "Single" and not self._selected_encoder():
-                messagebox.showerror("No encoder", "No available encoder was detected in your FFmpeg build.")
+            if not self._selected_encoder() or self._selected_preset() not in self.preset_values:
+                messagebox.showerror("Unsupported configuration", "Select an available encoder and supported preset before starting.")
                 return
             self.cancel_event.clear()
             self._set_running(True)
@@ -252,6 +315,14 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.batch_size = max(0, int(self.batch_size_var.get() or 0))
             run_args.pause_on_exit = False
             run_args.menu = False
+            self._append_log(f"Measurement allowance: {getattr(run_args, 'max_duration_minutes', 60):g} minutes; acquisition is separate.")
+            bitrate = self.bitrate_var.get().strip()
+            try:
+                run_args.target_bitrate_kbps = int(bitrate) if bitrate else None
+            except ValueError:
+                messagebox.showerror("Bitrate", "Enter a positive integer bitrate in kbps")
+                self._set_running(False)
+                return
             if not run_args.no_submit:
                 consent_ok = client_main._ensure_interactive_publication_consent(
                     queue_dir=str(run_args.queue_dir),
@@ -266,7 +337,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     self.no_submit_var.set(True)
                     self._append_log("Publication consent not granted; switching to local dry-run mode.")
 
-            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=True)
+            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=False)
             self.worker_thread.start()
 
         def _run_worker(self, run_args: argparse.Namespace, mode: str) -> None:
@@ -275,31 +346,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             rc = 1
             try:
-                if mode == "Single":
-                    encoder = self._selected_encoder()
-                    preset = self._selected_preset()
-                    crf = int(self.crf_var.get())
-                    effective_args = client_main.build_single_effective_args(
-                        base_args=run_args,
-                        encoder=encoder,
-                        preset=preset,
-                        crf=crf,
-                    )
-                    rc = client_main.run_with_args(
-                        effective_args,
-                        event_sink=sink,
-                        cancel_event=self.cancel_event,
-                        show_end_screen=False,
-                    )
-                else:
-                    mode_key = mode.lower()
-                    rc = client_main.run_batch_mode(
-                        mode=mode_key,
-                        base_args=run_args,
-                        event_sink=sink,
-                        cancel_event=self.cancel_event,
-                        show_end_screen=False,
-                    )
+                effective_args = client_main.build_single_effective_args(
+                    base_args=run_args, encoder=self._selected_encoder(),
+                    preset=self._selected_preset(), crf=int(self.crf_var.get()),
+                )
+                effective_args.campaign = "full" if mode == "Full" else "quick"
+                rc = client_main.run_with_args(effective_args, event_sink=sink,
+                                              cancel_event=self.cancel_event, show_end_screen=False)
             except Exception as e:
                 self.event_queue.put(("error", f"{e}\n{traceback.format_exc()}"))
                 rc = 1
@@ -310,12 +363,21 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             if not self.running:
                 return
             self.cancel_event.set()
-            self.summary_var.set("Stopping after current step...")
+            self.summary_var.set("Stopping owned work; retaining downloads and campaign...")
             self._append_log("Cancellation requested")
 
         def _handle_event(self, event: Dict[str, Any]) -> None:
             event_type = str(event.get("type") or "")
             if not event_type:
+                return
+
+            if event_type == "preparation_progress":
+                stage = str(event.get("stage") or "source")
+                self.stage_var.set(f"Preparing: {stage}")
+                label = event.get("clipId") or os.path.basename(str(event.get("path") or ""))
+                done, total = event.get("completedBytes"), event.get("totalBytes")
+                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                self.summary_var.set(f"Preparing {label}{amount}; Stop is available")
                 return
 
             if event_type == "run_start":
@@ -435,7 +497,11 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         self._set_running(False)
                         rc = int(payload)
                         if rc == 0:
-                            self.summary_var.set("Run finished successfully")
+                            self.summary_var.set("Locally complete" if self.no_submit_var.get() else "Uploaded; analysis pending")
+                        elif rc == 11:
+                            self.summary_var.set("Time budget reached; campaign saved for resume")
+                        elif rc == 10:
+                            self.summary_var.set("Saved locally; upload queued")
                         elif rc == 130:
                             self.summary_var.set("Run cancelled")
                         else:
@@ -450,7 +516,16 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 if not messagebox.askyesno("Exit", "A benchmark run is still active. Stop and exit?"):
                     return
                 self.cancel_event.set()
+                self.summary_var.set("Stopping and saving campaign before close...")
+                self.root.after(100, self._close_when_stopped)
+                return
             self.root.destroy()
+
+        def _close_when_stopped(self):
+            if self.worker_thread and self.worker_thread.is_alive():
+                self.root.after(100, self._close_when_stopped)
+            else:
+                self.root.destroy()
 
         def run(self) -> int:
             self.root.mainloop()

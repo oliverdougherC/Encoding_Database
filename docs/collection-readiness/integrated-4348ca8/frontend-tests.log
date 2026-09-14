@@ -1,0 +1,27 @@
+
+> frontend@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/ofhd/Developer/Encoding_Database/frontend
+
+ ✓ app/lib/queryState.test.ts (4 tests) 3ms
+ ✓ app/lib/plScore.test.ts (7 tests) 5ms
+ ✓ app/lib/api.test.ts (3 tests) 6ms
+ ✓ app/api/corpus/route.test.ts (4 tests) 14ms
+ ✓ app/components/workbenchSemantics.test.ts (6 tests) 2ms
+ ✓ app/api/corpus/[id]/route.test.ts (2 tests) 5ms
+ ✓ app/api/query/route.test.ts (4 tests) 17ms
+ ✓ app/page.test.tsx (5 tests) 80ms
+ ✓ app/components/BenchmarksTable.test.tsx (5 tests) 128ms
+ ✓ app/components/ComparePanel.test.tsx (8 tests) 159ms
+ ✓ app/run/page.test.tsx (1 test) 251ms
+ ✓ app/components/LeaderboardsPanel.test.tsx (5 tests) 268ms
+ ✓ app/methodology/page.test.tsx (2 tests) 409ms
+   ✓ MethodologyPage > renders the concise v7 reference and KaTeX equations  312ms
+
+ Test Files  13 passed (13)
+      Tests  56 passed (56)
+   Start at  18:15:34
+   Duration  1.96s (transform 1.16s, setup 1.34s, collect 3.68s, tests 1.35s, environment 10.61s, prepare 910ms)
+

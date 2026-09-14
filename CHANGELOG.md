@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.1] - 2026-09-14
+
+Unpublished corrected-collection candidate. Protocol 7.1 separates process-only
+encode timing and physical source identity from historical 7.0 measurements.
+Client 0.3.0 adds authoritative quick/full contributions, durable attempts and
+upload-only recovery. Server changes enforce complete media, bounded admission,
+fenced analysis, append-only reviews and bounded corpus/health queries.
+
+PL activation remains gated on genuine final-suite calibration and human
+holdout review. Native builds and staging tests do not certify a production epoch.
+
 ## [1.2.0] - 2026-09-13
 
 Approved promotion of the reviewed canonical-suite candidate. Public artifacts

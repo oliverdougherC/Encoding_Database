@@ -3,6 +3,8 @@ import json
 import os
 import shutil
 import subprocess
+from .campaign import check_preparation_cancelled, run_measurement_process
+import sys
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from . import config
@@ -17,9 +19,9 @@ RUNTIME_LOCK_SIDECAR_CANDIDATES: Sequence[str] = (
 )
 REQUIRED_FILTERS: Sequence[str] = ("libvmaf", "xpsnr")
 PLATFORM_REQUIRED_ENCODERS: Mapping[str, Sequence[str]] = {
-    "linux": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
-    "mac": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
-    "win": ("libaom-av1", "libvpx-vp9", "libx264", "libx265"),
+    "linux": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
+    "mac": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
+    "win": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
 }
 PLATFORM_OPTIONAL_ENCODERS: Mapping[str, Sequence[str]] = {
     "linux": (
@@ -76,6 +78,7 @@ def _sha256_path(path: str) -> str:
     digest = hashlib.sha256()
     with open(path, "rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            check_preparation_cancelled()
             digest.update(chunk)
     return digest.hexdigest()
 
@@ -115,12 +118,12 @@ def runtime_capability_requirements(platform_key: Optional[str] = None) -> Dict[
         "filters": sorted(_dedupe_strings(REQUIRED_FILTERS)),
         "requiredEncoders": sorted(required),
         "optionalEncoders": sorted(optional),
-        "smokeTestEncoders": [encoder for encoder in required if encoder in ("libx264", "libx265", "libaom-av1", "libvpx-vp9")],
+        "smokeTestEncoders": [encoder for encoder in required if encoder in ("libx264", "libx265", "libsvtav1", "libaom-av1", "libvpx-vp9")],
     }
 
 
 def _run_text(command: Sequence[str]) -> str:
-    proc = subprocess.run(
+    proc = run_measurement_process(
         list(command),
         check=False,
         stdout=subprocess.PIPE,
@@ -173,6 +176,32 @@ def _binary_record(path: str, version_output: str) -> Dict[str, Any]:
     }
 
 
+def runtime_dependency_records(ffmpeg_path: str) -> List[Dict[str, Any]]:
+    root = os.path.dirname(os.path.abspath(ffmpeg_path))
+    library_root = os.path.join(root, "lib")
+    records = []
+    if os.path.isdir(library_root):
+        for current, dirs, files in os.walk(library_root):
+            dirs.sort()
+            for name in sorted(files):
+                path = os.path.join(current, name)
+                if os.path.commonpath([os.path.realpath(root), os.path.realpath(path)]) != os.path.realpath(root):
+                    raise RuntimeLockError("runtime dependency escapes bundled binary directory")
+                records.append({"relativePath": os.path.relpath(path, root).replace(os.sep, "/"),
+                                "sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
+    return records
+
+
+def _verify_dependencies(ffmpeg_path: str, expected: Any) -> None:
+    observed = runtime_dependency_records(ffmpeg_path)
+    if expected is None:
+        if observed:
+            raise RuntimeLockError("bundled runtime dependencies require a hash-bound lock")
+        return
+    if not isinstance(expected, list) or observed != expected:
+        raise RuntimeLockError("runtime dependency SHA-256, membership or size mismatch")
+
+
 def probe_runtime_identity(
     *,
     ffmpeg_path: str,
@@ -191,8 +220,8 @@ def probe_runtime_identity(
 
     observed_filters = _normalize_filters(filter_output)
     observed_encoders = _normalize_encoders(encoder_output)
-    requested_filters = sorted(_dedupe_strings(required_filters or requirements["filters"]))
-    requested_encoders = sorted(_dedupe_strings(required_encoders or requirements["requiredEncoders"]))
+    requested_filters = sorted(_dedupe_strings([*requirements["filters"], *(required_filters or [])]))
+    requested_encoders = sorted(_dedupe_strings([*requirements["requiredEncoders"], *(required_encoders or [])]))
     declared_optional_encoders = sorted(
         encoder for encoder in _dedupe_strings(optional_encoders or requirements["optionalEncoders"])
         if encoder not in requested_encoders
@@ -215,6 +244,7 @@ def probe_runtime_identity(
     ffprobe_record = _binary_record(ffprobe_path, ffprobe_version_output)
     ffprobe_record["buildFingerprint"] = recipe.ffmpeg_build_fingerprint(ffprobe_version_output)
     return {
+        "runtimeDependencies": runtime_dependency_records(ffmpeg_path),
         "ffmpeg": ffmpeg_record,
         "ffprobe": ffprobe_record,
         "capabilities": {
@@ -361,13 +391,17 @@ def _resolve_binary_path(
     return os.path.abspath(os.path.join(os.path.dirname(lock_path), relative_path))
 
 
-def _assert_binary_identity(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
+def _assert_binary_bytes(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
     if not os.path.exists(path):
         raise RuntimeLockError(f"{label} binary does not exist at {path}")
     if observed.get("sha256") != expected.get("sha256"):
         raise RuntimeLockError(f"{label} SHA-256 mismatch for {path}")
     if int(observed.get("byteSize") or 0) != int(expected.get("byteSize") or 0):
         raise RuntimeLockError(f"{label} byte size mismatch for {path}")
+
+
+def _assert_binary_identity(label: str, path: str, expected: Mapping[str, Any], observed: Mapping[str, Any]) -> None:
+    _assert_binary_bytes(label, path, expected, observed)
     if str(observed.get("versionLine") or "").strip() != str(expected.get("versionLine") or "").strip():
         raise RuntimeLockError(f"{label} version line mismatch for {path}")
     expected_build = str(expected.get("buildFingerprint") or "").strip()
@@ -386,6 +420,25 @@ def _capability_list(
         if isinstance(value, list):
             return value
     return list(fallback)
+
+
+def _write_embedded_runtime_evidence(result: Mapping[str, Any]) -> None:
+    destination = os.environ.get("ENCODINGDB_RUNTIME_EVIDENCE_PATH")
+    if not destination:
+        return
+    if not getattr(sys, "frozen", False) or not getattr(sys, "_MEIPASS", None):
+        raise RuntimeLockError("Embedded runtime evidence requires a packaged client")
+    root = os.path.realpath(sys._MEIPASS)
+    for field in ("ffmpegPath", "ffprobePath", "lockPath"):
+        candidate = os.path.realpath(result[field])
+        if os.path.commonpath([root, candidate]) != root:
+            raise RuntimeLockError(f"Packaged runtime resolved outside its extraction root: {field}")
+    from pathlib import Path
+    from .campaign import atomic_json
+    atomic_json(Path(destination), {"schemaVersion": 1, "frozen": True, "extractionRoot": root,
+        "platform": result["platform"], "ffmpegPath": result["ffmpegPath"],
+        "ffprobePath": result["ffprobePath"], "lockPath": result["lockPath"],
+        "runtimeLockFingerprint": result["fingerprint"], "identity": result["identity"]})
 
 
 def verify_runtime_lock(
@@ -409,6 +462,9 @@ def verify_runtime_lock(
 
     resolved_ffmpeg = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffmpeg_path, entry=expected_ffmpeg)
     resolved_ffprobe = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffprobe_path, entry=expected_ffprobe)
+    for label, path, expected in (("ffmpeg", resolved_ffmpeg, expected_ffmpeg), ("ffprobe", resolved_ffprobe, expected_ffprobe)):
+        _assert_binary_bytes(label, path, expected, {"sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
+    _verify_dependencies(resolved_ffmpeg, platform_entry.get("runtimeDependencies"))
     default_requirements = runtime_capability_requirements(selected_platform)
     observed = probe_runtime_identity(
         ffmpeg_path=resolved_ffmpeg,
@@ -437,7 +493,7 @@ def verify_runtime_lock(
     )
     _assert_binary_identity("ffmpeg", resolved_ffmpeg, expected_ffmpeg, observed["ffmpeg"])
     _assert_binary_identity("ffprobe", resolved_ffprobe, expected_ffprobe, observed["ffprobe"])
-    return {
+    result = {
         "platform": selected_platform,
         "lockPath": resolved_lock_path,
         "ffmpegPath": resolved_ffmpeg,
@@ -446,6 +502,8 @@ def verify_runtime_lock(
         "payload": payload,
         "identity": observed,
     }
+    _write_embedded_runtime_evidence(result)
+    return result
 
 
 def find_operator_runtime_lock(ffmpeg_path: str, ffprobe_path: str) -> Optional[str]:

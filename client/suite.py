@@ -4,6 +4,7 @@ import math
 import os
 import shutil
 import subprocess
+from .campaign import check_preparation_cancelled, preparation_progress, run_measurement_process
 import sys
 import tempfile
 import tarfile
@@ -370,13 +371,19 @@ def _build_manifest_seed() -> Dict[str, Any]:
 
 
 def _sha256_of_file(path: str) -> str:
+    total = os.path.getsize(path)
+    preparation_progress("hash", path=path, totalBytes=total)
     hasher = hashlib.sha256()
+    completed = 0
     with open(path, "rb") as handle:
         while True:
+            check_preparation_cancelled()
             chunk = handle.read(1024 * 1024)
             if not chunk:
                 break
             hasher.update(chunk)
+            completed += len(chunk)
+            preparation_progress("hash", path=path, completedBytes=completed, totalBytes=total)
     return hasher.hexdigest()
 
 
@@ -460,7 +467,8 @@ def _probe_clip(path: str) -> Dict[str, Any]:
         "-of", "json",
         path,
     ]
-    proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    preparation_progress("probe", path=path)
+    proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     payload = json.loads(proc.stdout or "{}")
     streams = payload.get("streams") if isinstance(payload, dict) else None
     stream = streams[0] if isinstance(streams, list) and streams else {}
@@ -935,6 +943,23 @@ def _verify_extracted_suite_pack(extract_root: str, metadata: Mapping[str, Any],
                 raise RuntimeError(f"extracted suite pack checksum mismatch for {clip.clip_id}")
 
 
+def _copy_preparation_stream(source, destination, *, path, total):
+    completed = 0
+    while True:
+        preparation_progress("copy", path=path, completedBytes=completed, totalBytes=total)
+        chunk = source.read(1024 * 1024)
+        if not chunk:
+            break
+        destination.write(chunk)
+        completed += len(chunk)
+    check_preparation_cancelled()
+
+
+def _copy_preparation_file(source, destination):
+    with open(source, "rb") as reader, open(destination, "wb") as writer:
+        _copy_preparation_stream(reader, writer, path=source, total=os.path.getsize(source))
+
+
 def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
     target_root = _suite_pack_extract_root(metadata, cache_root)
     canonical_root = os.path.join(target_root, "canonical")
@@ -948,15 +973,19 @@ def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root:
     staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=parent_dir)
     try:
         with tarfile.open(pack_path, "r:gz") as archive:
-            for member in archive.getmembers():
+            for member in archive:
+                preparation_progress("extract", path=member.name, totalBytes=member.size)
                 parts = member.name.split("/")
                 if not member.isfile() or member.name.startswith("/") or any(part in ("", ".", "..") for part in parts) or "\\" in member.name:
                     raise RuntimeError("suite pack contains an unsafe archive member")
-            archive.extractall(staging_root)
+                destination = os.path.join(staging_root, member.name)
+                os.makedirs(os.path.dirname(destination), exist_ok=True)
+                with archive.extractfile(member) as source, open(destination, "xb") as target:
+                    _copy_preparation_stream(source, target, path=member.name, total=member.size)
         _verify_extracted_suite_pack(staging_root, metadata)
         shutil.rmtree(target_root, ignore_errors=True)
         os.replace(staging_root, target_root)
-    except Exception:
+    except BaseException:
         shutil.rmtree(staging_root, ignore_errors=True)
         raise
     return os.path.join(target_root, "canonical")
@@ -991,20 +1020,32 @@ def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]
         if allow_resume and resume_from > 0:
             headers["Range"] = f"bytes={resume_from}-"
             mode = "ab"
-        response = requests.get(url, stream=True, timeout=30, headers=headers, verify=config.REQUESTS_VERIFY)
-        if response.status_code not in (200, 206):
-            response.raise_for_status()
-        if allow_resume and response.status_code != 206:
-            try:
+        preparation_progress("download", path=destination, completedBytes=resume_from if mode == "ab" else 0, totalBytes=expected_size)
+        response = None
+        try:
+            # Short read/connect bounds ensure Stop is observed even on a stalled peer.
+            response = requests.get(url, stream=True, timeout=(3, 1), headers=headers, verify=config.REQUESTS_VERIFY)
+            check_preparation_cancelled()
+            if response.status_code not in (200, 206):
+                response.raise_for_status()
+            if allow_resume and response.status_code != 206:
                 os.remove(temp_path)
-            except FileNotFoundError:
-                pass
-            continue
-        with open(temp_path, mode) as handle:
-            for chunk in response.iter_content(chunk_size=1024 * 1024):
-                if chunk:
-                    handle.write(chunk)
-        break
+                continue
+            completed = resume_from if mode == "ab" else 0
+            with open(temp_path, mode) as handle:
+                for chunk in response.iter_content(chunk_size=64 * 1024):
+                    check_preparation_cancelled()
+                    if chunk:
+                        handle.write(chunk)
+                        completed += len(chunk)
+                        preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
+            break
+        except Exception:
+            check_preparation_cancelled()
+            raise
+        finally:
+            if response is not None:
+                response.close()
     result = _verify_suite_pack_file(temp_path, metadata)
     if not result.ok:
         raise RuntimeError(result.message)
@@ -1048,7 +1089,7 @@ def _ensure_suite_pack_available(pack_metadata: Mapping[str, Any], cache_root: O
         staging = tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(cached_pack_path), prefix=".suite-pack-", suffix=".tmp")
         staging.close()
         try:
-            shutil.copyfile(candidate, staging.name)
+            _copy_preparation_file(candidate, staging.name)
             verified = _verify_suite_pack_file(staging.name, pack_metadata)
             if not verified.ok:
                 raise RuntimeError(verified.message)
@@ -1088,7 +1129,7 @@ def _materialize_clip_from_suite_pack(clip: SuiteClip, pack_metadata: Mapping[st
     staging = tempfile.NamedTemporaryFile(delete=False, dir=os.path.dirname(target_path), prefix=f".{clip.clip_id}-", suffix=".staging")
     staging.close()
     try:
-        shutil.copyfile(source_path, staging.name)
+        _copy_preparation_file(source_path, staging.name)
         result = verify_suite_clip(staging.name, clip)
         if not result.ok:
             raise RuntimeError(result.message)
@@ -1101,7 +1142,8 @@ def _materialize_clip_from_suite_pack(clip: SuiteClip, pack_metadata: Mapping[st
     return target_path
 
 
-def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
+def _verify_suite_clip_bytes(path: str, clip: SuiteClip) -> ClipVerificationResult:
+    preparation_progress("validate", clipId=clip.clip_id, path=path)
     if not os.path.exists(path):
         return ClipVerificationResult(False, f"{clip.file_name} not found", {"path": path})
     actual_size = os.path.getsize(path)
@@ -1119,6 +1161,13 @@ def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
             {"path": path, "expected": clip.sha256, "actual": actual_hash, "field": "sha256"},
         )
 
+    return ClipVerificationResult(True, "ok", {"path": path})
+
+
+def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
+    result = _verify_suite_clip_bytes(path, clip)
+    if not result.ok:
+        return result
     probe = _probe_clip(path)
     expected_container = str(clip.acquisition.get("container") or "").strip()
     if expected_container and not _container_matches(expected_container, str(probe.get("containerFormat") or "")):
@@ -1200,7 +1249,9 @@ def ensure_suite_clip(
         result = verify_suite_clip(path, clip)
         if not result.ok and regenerate_on_mismatch:
             path = _materialize_clip_from_suite_pack(clip, load_suite_pack_metadata(), resolved_cache_root)
-            result = verify_suite_clip(path, clip)
+            # That exact staged stream passed this clip's complete media contract.
+            # Recheck the renamed bytes, including SHA, before reusing that result.
+            result = _verify_suite_clip_bytes(path, clip)
         if not result.ok:
             raise RuntimeError(result.message)
     elif cache_root is not None:
@@ -1211,7 +1262,7 @@ def ensure_suite_clip(
             handle, staging_path = tempfile.mkstemp(prefix=f".{clip.clip_id}-", suffix=".staging", dir=os.path.dirname(path))
             os.close(handle)
             try:
-                shutil.copyfile(packaged_path, staging_path)
+                _copy_preparation_file(packaged_path, staging_path)
                 os.replace(staging_path, path)
             finally:
                 try:
@@ -1220,7 +1271,7 @@ def ensure_suite_clip(
                     pass
             result = verify_suite_clip(path, clip)
     else:
-        result = verify_suite_clip(path, clip)
+        result = _verify_suite_clip_bytes(path, clip)
     if not result.ok:
         raise RuntimeError(result.message)
 
@@ -1245,7 +1296,8 @@ def ensure_suite(
     suite = manifest or load_default_suite_manifest()
     target_ids = set(clip_ids or [clip.clip_id for clip in suite.clips])
     prepared: List[PreparedSuiteClip] = []
-    for clip in suite.clips:
+    for index, clip in enumerate(suite.clips, 1):
+        preparation_progress("clip", clipId=clip.clip_id, completedClips=index - 1, totalClips=len(suite.clips))
         if clip.clip_id in target_ids:
             prepared.append(ensure_suite_clip(clip, cache_root=cache_root))
     return prepared

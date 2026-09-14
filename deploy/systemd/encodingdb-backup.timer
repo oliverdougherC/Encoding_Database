@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily EncodingDB verified backup
+
+[Timer]
+OnCalendar=*-*-* 02:00:00 UTC
+RandomizedDelaySec=5min
+Persistent=true
+Unit=encodingdb-backup.service
+
+[Install]
+WantedBy=timers.target

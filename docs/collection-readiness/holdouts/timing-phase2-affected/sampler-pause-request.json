@@ -1,0 +1,33 @@
+{
+  "status": "SCHEDULER_STOPPED_CURRENT_CELL_ALLOWED_TO_FINISH",
+  "reason": "Confirmed stale per-thread psutil background-sampler baseline; source0185 measurements exploratory only, no calibration eligibility inferred",
+  "schedulerPid": 4112123,
+  "children": [
+    {
+      "pid": 278411,
+      "command": [
+        "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/native-build-venv/bin/python",
+        "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/source/timing-0185a00/scripts/run-validation-campaign.py",
+        "--registry",
+        "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/validation-source-registry-final-v1.json",
+        "--workload",
+        "validation-nocturne-ballet-30s",
+        "--reference",
+        "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+        "--output",
+        "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/campaigns/validation-nocturne-ballet-30s--libx265--fast--crf28",
+        "--encoder",
+        "libx265",
+        "--preset",
+        "fast",
+        "--crf",
+        "28",
+        "--seed",
+        "202609140017",
+        "--max-duration-minutes",
+        "60"
+      ]
+    }
+  ],
+  "createdAt": "2026-09-14T05:50:55Z"
+}

@@ -13,12 +13,13 @@ from typing import Optional, Dict, Any, List, Mapping
 
 from . import config
 from . import recipe as recipe_model
+from .campaign import check_measurement_budget, measurement_timeout, run_measurement_process
 from .decode import run_decode_benchmark
 from .encoders import (
     effective_preset_for_encoder, map_preset_for_encoder,
 )
 from .energy import derive_energy_intensities, serialize_energy_domains
-from .hardware_monitor import HardwareMonitor
+from .hardware_monitor import HardwareMonitor, HardwareMetrics
 from .media_evidence import probe_video_packet_evidence
 
 EXTENDED_TELEMETRY_KEYS: tuple = (
@@ -40,13 +41,8 @@ _FFMPEG_BANNER_CACHE: Optional[str] = None
 
 
 def _driver_identity() -> Optional[str]:
-    value = (os.environ.get("ENCODINGDB_DRIVER_VERSION") or "").strip()
-    if value:
-        return value
-    try:
-        return str(platform.version()).strip() or str(platform.release()).strip() or None
-    except Exception:
-        return None
+    # An OS release or an environment override is not observed driver evidence.
+    return None
 
 
 def get_ffmpeg_banner(*, force_refresh: bool = False) -> Optional[str]:
@@ -123,14 +119,27 @@ def _build_rate_control_args(
         if quality is not None:
             args += ["-crf", str(quality)]
     elif enc.endswith("_nvenc"):
-        if mode == "cq":
-            if quality is None:
-                raise ValueError(f"{enc} CQ mode requires qualityValue")
-            args += ["-cq", str(max(0, min(51, quality)))]
+        if mode == "vbr":
+            if target is None or target <= 0:
+                raise ValueError(f"{enc} VBR mode requires positive targetBitrateKbps")
+            for name, original, value in (("maxBitrateKbps", rate_control.maxBitrateKbps, maxrate), ("bufferSizeKbits", rate_control.bufferSizeKbits, bufsize)):
+                if original is not None and (value is None or value <= 0):
+                    raise ValueError(f"{enc} VBR {name} must be positive when supplied")
+            if maxrate is not None and maxrate < target:
+                raise ValueError(f"{enc} VBR maxBitrateKbps cannot be below its target")
+            args += ["-rc", "vbr", "-b:v", f"{target}k"]
+            if maxrate is not None:
+                args += ["-maxrate:v", f"{maxrate}k"]
+            if bufsize is not None:
+                args += ["-bufsize:v", f"{bufsize}k"]
+        elif mode == "cq":
+            if quality is None or not 0 <= quality <= 51:
+                raise ValueError(f"{enc} canonical CQ mode requires qualityValue in 0..51")
+            args += ["-cq", str(quality)]
         elif mode in ("qp", "cqp"):
-            if quality is None:
-                raise ValueError(f"{enc} QP mode requires qualityValue")
-            args += ["-qp", str(max(0, min(51, quality)))]
+            if quality is None or not 0 <= quality <= 51:
+                raise ValueError(f"{enc} canonical QP mode requires qualityValue in 0..51")
+            args += ["-qp", str(quality)]
         else:
             raise ValueError(f"{enc} does not support canonical {mode} rate control")
     elif enc.endswith("_qsv"):
@@ -235,16 +244,21 @@ def build_execution_identity_payload(
     else:
         payload["failureCode"] = str(artifact_info.get("failureCode") or "protocol_violation")
 
+    from .identity import selected_device, execution_provenance
+    import dataclasses
+    device = selected_device(str(artifact_info.get("encoderUsed") or artifact_info.get("encoderRequested") or ""))
     environment_identity = recipe_model.build_environment_identity(
         hardware_info=hardware,
-        accelerator=str(artifact_info.get("encoderUsed") or artifact_info.get("encoderRequested") or "").strip() or None,
-        driver_version=_driver_identity(),
+        accelerator=device["deviceId"],
+        gpu_model=device["model"] if device["deviceId"] != "cpu" else "not-applicable",
+        driver_version=device["driverVersion"],
         ffmpeg_version=ffmpeg_version,
         ffmpeg_banner=get_ffmpeg_banner(),
-        encoder_version=str(artifact_info.get("encoderUsed") or artifact_info.get("encoderRequested") or "").strip() or None,
+        encoder_version=recipe_model.ffmpeg_build_fingerprint(get_ffmpeg_banner()),
         client_version=client_version,
         benchmark_protocol_version=benchmark_protocol_version or config.BENCHMARK_PROTOCOL_VERSION,
     )
+    environment_identity = dataclasses.replace(environment_identity, selectedDeviceEvidence=device, **execution_provenance())
     payload["environmentJson"] = recipe_model.canonical_json(environment_identity)
     payload["environmentFingerprint"] = recipe_model.environment_fingerprint(environment_identity)
     if environment_identity.driverVersion:
@@ -761,25 +775,118 @@ def build_telemetry_notes(
     return notes
 
 
-def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optional[List[str]] = None) -> tuple:
-    """Run an FFmpeg command with hardware monitoring via Popen.
+def _terminate_owned_process(proc: Any) -> None:
+    import signal
+    if proc.poll() is not None:
+        return
+    if os.name != "nt":
+        os.killpg(proc.pid, signal.SIGTERM)
+    else:
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=10)
+    try:
+        proc.communicate(timeout=5)
+    except subprocess.TimeoutExpired:
+        if os.name != "nt":
+            os.killpg(proc.pid, signal.SIGKILL)
+        else:
+            proc.kill()
+        proc.communicate(timeout=5)
 
-    Returns (stdout, stderr, returncode, elapsed, hw_metrics).
+
+def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optional[List[str]] = None,
+                   cancel_event: Optional[Any] = None, timeout_seconds: float = 3600,
+                   max_output_bytes: Optional[int] = None, checkpoint_path: Optional[str] = None) -> tuple:
+    """ffmpeg-process-v1: monotonic immediately before Popen through communicate.
+
+    Includes launch and encoder flush. Monitor preparation/teardown, probing,
+    decode validation, hashing and local quality analysis are outside the interval.
     """
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-    monitor = HardwareMonitor(
-        ffmpeg_pid=proc.pid,
-        interval=0.5,
-        encoder_name=encoder_name,
-        host_gpu_vendors=host_gpu_vendors,
-    )
+    check_measurement_budget()
+    process_runtime = None
+    if checkpoint_path:
+        from .identity import process_runtime_identity
+        process_runtime = process_runtime_identity(cmd[0])
+    monitor = HardwareMonitor(ffmpeg_pid=None, interval=0.5, encoder_name=encoder_name,
+                              host_gpu_vendors=host_gpu_vendors)
     monitor.start()
-    start = time.perf_counter()
-    stdout, stderr = proc.communicate()
-    end = time.perf_counter()
-    hw_metrics = monitor.stop()
-    elapsed = max(0.0001, end - start)
-    return stdout, stderr, proc.returncode, elapsed, hw_metrics
+    proc = None
+    receipt_writer = None
+    receipt_errors = []
+    hw_metrics = None
+    try:
+        check_measurement_budget()
+        start_ns = time.perf_counter_ns()
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                start_new_session=os.name != "nt")
+        monitor._ffmpeg_pid = proc.pid
+        if checkpoint_path:
+            from pathlib import Path
+            from .campaign import atomic_json, sync_owned_file
+            import psutil
+            import threading
+            def write_process_receipt():
+                try:
+                    created_at = psutil.Process(proc.pid).create_time()
+                    atomic_json(Path(checkpoint_path + ".active.json"), {"pid": proc.pid,
+                                "createdAt": created_at, "command": cmd})
+                except psutil.NoSuchProcess:
+                    # An already exited process cannot become an orphan.
+                    return
+                except Exception as exc:
+                    receipt_errors.append(exc)
+            receipt_writer = threading.Thread(target=write_process_receipt, daemon=True)
+            receipt_writer.start()
+        while True:
+            try:
+                stdout, stderr = proc.communicate(timeout=measurement_timeout(0.2))
+                end_ns = time.perf_counter_ns()
+                if checkpoint_path:
+                    from pathlib import Path
+                    from .campaign import atomic_json, sync_owned_file
+                    empty_metrics = vars(HardwareMetrics())
+                    empty_metrics.update(encode_start_monotonic_ns=start_ns, encode_end_monotonic_ns=end_ns)
+                    if os.path.isfile(cmd[-1]):
+                        sync_owned_file(cmd[-1])
+                    atomic_json(Path(checkpoint_path), {"command": cmd, "processRuntime": process_runtime, "stdout": stdout, "stderr": stderr,
+                        "returncode": proc.returncode, "elapsed": (end_ns-start_ns)/1e9,
+                        "hardwareMetrics": empty_metrics,
+                        "artifactSha256": None, "artifactByteSize": os.path.getsize(cmd[-1]) if os.path.isfile(cmd[-1]) else None})
+                hw_metrics = monitor.stop()
+                # A slow receipt write must not extend a completed encode's
+                # interval. Join before checkpoint cleanup or another attempt.
+                if receipt_writer is not None:
+                    receipt_writer.join(timeout=10)
+                    if receipt_writer.is_alive():
+                        raise TimeoutError("Process receipt persistence did not finish")
+                    if receipt_errors:
+                        raise receipt_errors[0]
+                break
+            except subprocess.TimeoutExpired:
+                check_measurement_budget()
+                if receipt_errors:
+                    raise receipt_errors[0]
+                if cancel_event is not None and cancel_event.is_set():
+                    raise KeyboardInterrupt
+                if max_output_bytes is not None and os.path.exists(cmd[-1]) and os.path.getsize(cmd[-1]) >= max_output_bytes:
+                    raise OSError("Campaign storage budget reached during encode")
+                if (time.perf_counter_ns() - start_ns) / 1e9 > timeout_seconds:
+                    raise TimeoutError("Encoding exceeded the per-attempt time budget")
+    except BaseException:
+        if proc is not None:
+            _terminate_owned_process(proc)
+        raise
+    finally:
+        if receipt_writer is not None:
+            receipt_writer.join(timeout=10)
+        if hw_metrics is None:
+            hw_metrics = monitor.stop()
+        if checkpoint_path and proc is not None and proc.poll() is not None:
+            from pathlib import Path
+            Path(checkpoint_path + ".active.json").unlink(missing_ok=True)
+    hw_metrics.process_runtime_identity = process_runtime
+    hw_metrics.encode_start_monotonic_ns = start_ns
+    hw_metrics.encode_end_monotonic_ns = end_ns
+    return stdout, stderr, proc.returncode, (end_ns - start_ns) / 1e9, hw_metrics
 
 
 def encode_to_artifact(
@@ -793,6 +900,10 @@ def encode_to_artifact(
     out_dir: str,
     artifact_name: str,
     host_gpu_vendors: Optional[List[str]] = None,
+    cancel_event: Optional[Any] = None,
+    timeout_seconds: float = 3600,
+    checkpoint_path: Optional[str] = None,
+    max_output_bytes: Optional[int] = None,
 ) -> Dict[str, Any]:
     os.makedirs(out_dir, exist_ok=True)
     artifact_path = os.path.join(out_dir, artifact_name)
@@ -837,11 +948,42 @@ def encode_to_artifact(
             "rateControlDisplay": recipe_model.describe_rate_control(resolved_rate_control),
         }
 
-    stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
-        cmd,
-        encoder_name=encoder,
-        host_gpu_vendors=host_gpu_vendors,
-    )
+    if encoder.lower().endswith("_nvenc"):
+        cmd[-1:-1] = ["-gpu", "0"]
+    from .campaign import atomic_json, sync_owned_file
+    from pathlib import Path
+    from types import SimpleNamespace
+    import dataclasses
+    executed_command = cmd
+    if checkpoint_path and os.path.exists(checkpoint_path):
+        saved = json.loads(Path(checkpoint_path).read_text())
+        from .campaign import CampaignJournal
+        from .identity import process_runtime_identity
+        saved_command = saved.get("command")
+        if not isinstance(saved_command, list) or saved_command[1:] != cmd[1:]:
+            raise ValueError("Interrupted process checkpoint arguments do not match this recipe")
+        saved_runtime = saved.get("processRuntime")
+        if not isinstance(saved_runtime, dict) or saved_runtime != process_runtime_identity(cmd[0]):
+            raise ValueError("Interrupted process checkpoint runtime identity is missing or changed")
+        executed_command = saved_command
+        if (not os.path.exists(artifact_path)
+                or (saved.get("artifactSha256") is not None and CampaignJournal.hash_file(artifact_path) != saved["artifactSha256"])
+                or (saved.get("artifactSha256") is None and os.path.getsize(artifact_path) != saved.get("artifactByteSize"))):
+            raise ValueError("Interrupted process checkpoint does not match this recipe")
+        stdout, stderr, returncode, elapsed = saved["stdout"], saved["stderr"], saved["returncode"], saved["elapsed"]
+        hw_metrics = SimpleNamespace(**saved["hardwareMetrics"])
+    else:
+        stdout, stderr, returncode, elapsed, hw_metrics = _run_monitored(
+            cmd, encoder_name=encoder, host_gpu_vendors=host_gpu_vendors,
+            cancel_event=cancel_event, timeout_seconds=timeout_seconds,
+            max_output_bytes=max_output_bytes, checkpoint_path=checkpoint_path,
+        )
+        if checkpoint_path:
+            if os.path.isfile(artifact_path):
+                sync_owned_file(artifact_path)
+            atomic_json(Path(checkpoint_path), {"command": cmd, "processRuntime": getattr(hw_metrics, "process_runtime_identity", None), "stdout": stdout, "stderr": stderr,
+                        "returncode": returncode, "elapsed": elapsed, "hardwareMetrics": vars(hw_metrics),
+                        "artifactSha256": sha256_of_file(artifact_path) if os.path.isfile(artifact_path) else None})
     total_frames = _parse_frame_count(stdout) or _parse_frame_count(stderr)
     fps_val = (total_frames / elapsed) if total_frames > 0 else 0.0
     size_val = os.path.getsize(artifact_path) if os.path.exists(artifact_path) else 0
@@ -921,6 +1063,10 @@ def encode_to_artifact(
     )
     result: Dict[str, Any] = {
         'artifactPath': artifact_path,
+        'encodeStartMonotonicNs': getattr(hw_metrics, 'encode_start_monotonic_ns', None),
+        'encodeEndMonotonicNs': getattr(hw_metrics, 'encode_end_monotonic_ns', None),
+        'encodeTimerBoundary': 'ffmpeg-process-v1',
+        'executedCommand': executed_command,
         'encoderUsed': encoder,
         'elapsedMs': int(round(elapsed * 1000)),
         'fps': float(fps_val),
@@ -1035,7 +1181,13 @@ def _parse_ratio(value: Any) -> Optional[float]:
 
 
 def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
+    check_measurement_budget()
     resolved = os.path.realpath(path)
+    try:
+        stat = os.stat(resolved)
+        resolved = f"{resolved}:{stat.st_size}:{stat.st_mtime_ns}"
+    except OSError:
+        pass
     cached = _VIDEO_PROBE_CACHE.get(resolved)
     if cached is not None:
         return dict(cached)
@@ -1066,14 +1218,19 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
         config.ffprobe_exe(),
         "-v", "error", "-count_frames",
         "-select_streams", "v:0",
-        "-show_entries", "stream=nb_read_frames,avg_frame_rate,time_base,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
+        "-show_entries", "frame=key_frame:stream=nb_read_frames,avg_frame_rate,time_base,bit_rate,duration,codec_name,codec_tag_string,profile,level,pix_fmt,has_b_frames,bits_per_raw_sample:format=duration,size,format_name",
         "-of", "json",
         path,
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
         payload = json.loads(proc.stdout or "{}")
         if isinstance(payload, dict):
+            frames = payload.get("frames") or []
+            keyframes = [index for index, frame in enumerate(frames) if frame.get("key_frame") == 1]
+            intervals = [right-left for left, right in zip(keyframes, keyframes[1:])]
+            if intervals:
+                result["gopFrames"], result["keyintMin"] = max(intervals), min(intervals)
             streams = payload.get("streams")
             if isinstance(streams, list) and streams:
                 stream = streams[0] if isinstance(streams[0], dict) else {}
@@ -1129,7 +1286,7 @@ def probe_video_stream_metrics(path: str) -> Dict[str, Any]:
         pass
 
     try:
-        packet_evidence = probe_video_packet_evidence(path, config.ffprobe_exe(), subprocess.run)
+        packet_evidence = probe_video_packet_evidence(path, config.ffprobe_exe(), run_measurement_process)
         result["videoPayloadBytes"] = packet_evidence["videoPayloadBytes"]
     except Exception:
         pass
@@ -1158,7 +1315,7 @@ def validate_artifact_decodability(path: str) -> tuple[bool, Optional[str]]:
         "-i", path, "-map", "0:v:0", "-an", "-sn", "-dn", "-f", "null", "-",
     ]
     try:
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = run_measurement_process(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=60)
     except Exception as exc:
         return False, f"decode-validation-unavailable:{type(exc).__name__}"
     if proc.returncode == 0:

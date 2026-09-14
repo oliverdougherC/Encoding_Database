@@ -1,0 +1,4 @@
+/Users/ofhd/Developer/EncodingDB-worktrees/operations/scripts/v7-scheduled-backup.sh: line 28: args[@]: unbound variable
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists

@@ -1,0 +1,3 @@
+{"case": "cancel", "exit": 130, "seconds": 59.09214824999799}
+{"case": "kill-after-resume", "exit": -9, "seconds": 55.365757374995155}
+{"case": "resume-after-kill", "exit": 0, "seconds": 55.41259720901144}

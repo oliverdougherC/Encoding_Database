@@ -1,0 +1,31 @@
+{
+  "schema": "encodingdb-isolated-corpus-scale/v1",
+  "sourceSha": "7314c9aebef878bbfa806961a368478f1bb0e4f6",
+  "sourceDirty": true,
+  "fixtureOnly": true,
+  "prefix": "corpus-scale-1789346954183",
+  "metadataRuns": 100020,
+  "groups": 7004,
+  "concurrentBrowsers": 25,
+  "requests": 100,
+  "successes": 98,
+  "failures": [
+    "PrismaClientKnownRequestError: \nInvalid `prisma.$queryRaw()` invocation:\n\n\nRaw query failed. Code: `57014`. Message: `ERROR: canceling statement due to statement timeout`",
+    "PrismaClientKnownRequestError: \nInvalid `prisma.$queryRaw()` invocation:\n\n\nRaw query failed. Code: `57014`. Message: `ERROR: canceling statement due to statement timeout`"
+  ],
+  "elapsedMs": 40099.97987500002,
+  "p50Ms": 8928.54124999998,
+  "p95Ms": 13583.520083999989,
+  "maxMs": 14766.67624999999,
+  "peakNodeRssBytes": 108560384,
+  "uniqueGroupsInspected": 2192,
+  "limits": {
+    "pageRows": 100,
+    "statementTimeoutMs": 15000,
+    "transactionTimeoutMs": 30000
+  },
+  "limitations": [
+    "Metadata-only isolated PostgreSQL fixture; no media throughput, human review or production readiness claim.",
+    "Actual HTTP and sustained ingestion/restart tests are separate operations gates."
+  ]
+}

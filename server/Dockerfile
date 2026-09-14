@@ -78,6 +78,9 @@ COPY --from=builder /app/config ./config
 # Prisma client is in node_modules when using default output
 COPY prisma ./prisma
 
+# Bounded summary backfill runs after migrations and before readiness.
+COPY scripts ./scripts
+
 # The model identity is part of the public PL-v7 evidence contract. Refuse to
 # publish an image containing a different file under the canonical name.
 # The final XPSNR probe uses the analyzer's compiled normalization helper so

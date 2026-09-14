@@ -1,0 +1,21 @@
+{
+  "groupId": "corpus-scale-1789346954183-protocol::corpus-scale-1789346954183::corpus-scale-1789346954183-recipe-1::corpus-scale-1789346954183-env::fixture-model",
+  "acceptedBefore": 6,
+  "acceptedAfter": 606,
+  "independentSourcesBefore": 3,
+  "independentSourcesAfter": 3,
+  "schema": "encodingdb-isolated-metadata-arrivals/v1",
+  "fixtureOnly": true,
+  "sourceSha": "f607d53915aca102c78aab11cc7cc9e26967156e",
+  "campaign": "corpus-scale-1789346954183-arrival-1789348224890",
+  "requestedDurationSeconds": 600,
+  "elapsedMs": 600686.325917,
+  "stoppedEarly": false,
+  "targetArrivalsPerSecond": 1,
+  "createdRuns": 600,
+  "verifiedRunArtifactAnalysisChains": 600,
+  "writeP95Ms": 18.26445799996145,
+  "limitations": [
+    "Synthetic database metadata arrivals exercise summary invalidation under browsing; no encoded media, client upload, worker or calibration proof."
+  ]
+}

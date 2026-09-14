@@ -1,0 +1,2 @@
+hdiutil: WARNING: 'hdiutil attach -nobrowse -mountpoint ...' is deprecated. Please use 'diskutil image attach --mountOptions nobrowse --mountPoint ...' instead.
+{"case": "disk-full-exhaustive", "exit": 6, "seconds": 31.093760916992323}

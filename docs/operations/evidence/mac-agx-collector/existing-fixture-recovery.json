@@ -1,0 +1,9 @@
+{
+  "kind": "existing-readonly-helper-fixture-recovery",
+  "originalMode": "0o555",
+  "privateCopyMode": "0o755",
+  "helperBytesUnchanged": true,
+  "exitCode": 0,
+  "stdout": "........                                                                 [100%]\n8 passed in 1.52s\n",
+  "stderr": ""
+}

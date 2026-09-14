@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "encodingdb-validation-holdout-plan/v1",
+  "version": "longer-scenes-20260914-v2",
+  "status": "PREDECLARED_NOT_CALIBRATION",
+  "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+  "normalizationSource": "scripts/prepare_canonical_references.py",
+  "scenes": [
+    {
+      "id": "nocturne-ballet-30s",
+      "kind": "movie-range",
+      "sourceId": "nocturne",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-ballet-class-30-60",
+      "contentClassCandidate": "high-motion-sports",
+      "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "creator": "Netflix, Inc.",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+      "expectedOriginalBytes": 95342480296,
+      "expectedOriginalEtag": "\"12c6511a001c286b1eb6a1cd2c9fcd22-5683\"",
+      "startSeconds": 30,
+      "durationSeconds": 30,
+      "sourceFrameRate": "60/1",
+      "firstSourceFrame": 1800,
+      "endSourceFrameExclusive": 3600,
+      "frameIndexConvention": "zero-based, half-open",
+      "normalization": "nocturne",
+      "frozenFrameRanges": [
+        {
+          "start": 5400,
+          "endExclusive": 6000,
+          "workloadId": "film-grain-1080p24-final"
+        },
+        {
+          "start": 8880,
+          "endExclusive": 9480,
+          "workloadId": "dark-gradients-1080p24-final"
+        }
+      ],
+      "selectionEvidence": "Existing samples show ballet steps and turns in bright rehearsal studio; moderate athletic-action proxy, not sports-event footage.",
+      "humanReviewStatus": "PENDING"
+    },
+    {
+      "id": "nocturne-lowlight-30s",
+      "kind": "movie-range",
+      "sourceId": "nocturne",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-solo-duet-180-210",
+      "contentClassCandidate": "dark-gradients-shadows",
+      "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "creator": "Netflix, Inc.",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+      "expectedOriginalBytes": 95342480296,
+      "expectedOriginalEtag": "\"12c6511a001c286b1eb6a1cd2c9fcd22-5683\"",
+      "startSeconds": 180,
+      "durationSeconds": 30,
+      "sourceFrameRate": "60/1",
+      "firstSourceFrame": 10800,
+      "endSourceFrameExclusive": 12600,
+      "frameIndexConvention": "zero-based, half-open",
+      "normalization": "nocturne",
+      "frozenFrameRanges": [
+        {
+          "start": 5400,
+          "endExclusive": 6000,
+          "workloadId": "film-grain-1080p24-final"
+        },
+        {
+          "start": 8880,
+          "endExclusive": 9480,
+          "workloadId": "dark-gradients-1080p24-final"
+        }
+      ],
+      "selectionEvidence": "Existing184\u2013200s samples show shadowed rehearsal room and smooth illuminated wall gradients; distinct from frozen stairwell/piano excerpt.",
+      "humanReviewStatus": "PENDING"
+    },
+    {
+      "id": "sol-cave-forest-30s",
+      "kind": "movie-range",
+      "sourceId": "sol-levante",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+      "sceneGroupId": "sol-levante-cave-forest-30-60",
+      "contentClassCandidate": "animation-flat-fields",
+      "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+      "creator": "Netflix, Inc. and Production I.G",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/creative-commons-attribution-4-intl-public-license.txt",
+      "expectedOriginalBytes": 16136968701,
+      "expectedOriginalEtag": "\"e3772443014ae23a966897df9a1bd878-940\"",
+      "startSeconds": 30,
+      "durationSeconds": 30,
+      "sourceFrameRate": "24/1",
+      "firstSourceFrame": 720,
+      "endSourceFrameExclusive": 1440,
+      "frameIndexConvention": "zero-based, half-open",
+      "normalization": "sol",
+      "frozenFrameRanges": [
+        {
+          "start": 4152,
+          "endExclusive": 4344,
+          "workloadId": "animation-1080p24-final"
+        }
+      ],
+      "selectionEvidence": "Existing30/45/60s samples show cave, forest and stylized effects; texture-rich animation, not uniformly flat backgrounds.",
+      "humanReviewStatus": "PENDING"
+    },
+    {
+      "id": "tos-outdoor-dialogue-30s",
+      "kind": "png-sequence",
+      "sourceId": "tears-of-steel",
+      "sourceGroupId": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+      "sceneGroupId": "tos-outdoor-dialogue-300-330",
+      "contentClassCandidate": "talking-head",
+      "url": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+      "creator": "Blender Foundation / Mango Open Movie Project",
+      "license": "CC-BY-3.0",
+      "licenseUrl": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/README.txt",
+      "publisherChecksumsFile": "tears-of-steel-SHA256SUMS.txt",
+      "publisherChecksumsSha256": "ac1491373e20a7d0961a6e3d379fa88c2159cc38ff6c0830c9a95dbd00503630",
+      "startSeconds": 300,
+      "durationSeconds": 30,
+      "sourceFrameRate": "24/1",
+      "firstSourceFrame": 7200,
+      "endSourceFrameExclusive": 7920,
+      "frameIndexConvention": "zero-based half-open; publisher PNG filename is index+1",
+      "normalization": "tos",
+      "frozenFrameRanges": [
+        {
+          "start": 5760,
+          "endExclusive": 6000,
+          "workloadId": "talking-head-1080p24-final"
+        },
+        {
+          "start": 11712,
+          "endExclusive": 11952,
+          "workloadId": "athletic-action-1080p24-final"
+        }
+      ],
+      "selectionEvidence": "Retained300\u2013340s contact sheet shows dialogue and faces outdoors, distinct from frozen240\u2013250s indoor older-character dialogue. Sequence includes shot changes and composited overlays; human scene acceptance pending.",
+      "humanReviewStatus": "PENDING"
+    },
+    {
+      "id": "nocturne-grain-30s",
+      "kind": "movie-range",
+      "sourceId": "nocturne",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-unresolved-scene-360-390",
+      "contentClassCandidate": "film-grain-noise",
+      "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "creator": "Netflix, Inc.",
+      "license": "CC-BY-4.0",
+      "licenseUrl": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/creative-commons-attribution-4-intl-public-license.txt",
+      "expectedOriginalBytes": 95342480296,
+      "expectedOriginalEtag": "\"12c6511a001c286b1eb6a1cd2c9fcd22-5683\"",
+      "startSeconds": 360,
+      "durationSeconds": 30,
+      "sourceFrameRate": "60/1",
+      "firstSourceFrame": 21600,
+      "endSourceFrameExclusive": 23400,
+      "frameIndexConvention": "zero-based, half-open",
+      "normalization": "nocturne",
+      "frozenFrameRanges": [
+        {
+          "start": 5400,
+          "endExclusive": 6000,
+          "workloadId": "film-grain-1080p24-final"
+        },
+        {
+          "start": 8880,
+          "endExclusive": 9480,
+          "workloadId": "dark-gradients-1080p24-final"
+        }
+      ],
+      "selectionEvidence": "Publisher-added-grain source. This new range is uninspected until its output contact sheet and full playback are reviewed; scene independence is not asserted. Source-group fold excludes the entire Nocturne master.",
+      "humanReviewStatus": "PENDING"
+    }
+  ],
+  "bounds": {
+    "maximumNewDownloadBytes": 21474836480,
+    "maximumTaskStorageBytes": 21474836480,
+    "minimumFreeDiskBytes": 5368709120,
+    "simultaneousScenes": 1,
+    "ffmpegDecodeFilterEncodeThreads": 2
+  },
+  "remainingClasses": {
+    "fine-natural-detail": "Local Chimera10s excerpt only; longer natural scene range must be verified in licensed master.",
+    "screen-text": "Retained authored screen master10s coincides with frozen workload; no30s disjoint master local. Independently authored replay is separate preparation."
+  },
+  "foldRules": [
+    {
+      "experiment": "SCENE_DISJOINT",
+      "fittingExclusion": "All evaluation sceneGroupId source-frame ranges; same master may be in fit. This is not master-disjoint.",
+      "evaluation": "Selected30s scene; no fitting from held-out pixels."
+    },
+    {
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "fittingExclusion": "All observations with held sourceGroupId masterURL, including both frozen Nocturne classes.",
+      "evaluation": "Selected scenes from held master; distinct experiment from scene holdout."
+    }
+  ],
+  "humanReview": null,
+  "expansionRationale": "Bounded source preparation adds publisher-checksummed TOS dialogue and a separateNocturne grain candidate before any codec timing or scoring; earlier completed scene entries are immutable."
+}

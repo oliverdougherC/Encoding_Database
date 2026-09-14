@@ -6,12 +6,15 @@ import compression from 'compression';
 import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
 import rateLimit from 'express-rate-limit';
-import routes from './routes.js';
+import routes, { invalidateRouteCaches } from './routes.js';
 import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { collectV7EvidenceHealth } from './v7/operationalHealth.js';
-import { startArtifactPipelineBackgroundWork } from './v7/artifacts.js';
+import { createV7EvidenceHealthMonitor, V7EvidenceHealthUnavailable } from './v7/operationalHealth.js';
+import { startArtifactPipelineBackgroundWork, stopArtifactPipelineBackgroundWork } from './v7/artifacts.js';
+import { publicCorpusReadiness, startPublicCorpusRefreshLoop } from './v7/corpusQuery.js';
+import { createEvidenceReviewRouter } from './v7/reviews.js';
+import { requireOperator, operatorIdentity } from './v7/operatorAuth.js';
 
 export const app = express();
 
@@ -343,25 +346,32 @@ app.get('/health/live', (_req, res) => {
 app.get('/health/ready', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok' });
+    const corpus = await publicCorpusReadiness(prisma);
+    res.status(corpus.ready ? 200 : 503).json({ status: corpus.ready ? 'ok' : 'degraded', corpus });
   } catch {
     res.status(503).json({ status: 'degraded', error: 'db_unreachable' });
   }
 });
 
-app.get('/health/v7-evidence', async (_req, res) => {
+const evidenceHealthMonitor = createV7EvidenceHealthMonitor(prisma, {
+  storageRoot: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || path.join(process.cwd(), '.artifacts')),
+  pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
+  pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
+  orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
+  storageQuotaBytes: Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0) || null,
+  storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
+  maxPendingUploads: Number(process.env.ARTIFACT_PENDING_UPLOAD_MAX || 500),
+  maxPendingAnalyses: Number(process.env.ARTIFACT_PENDING_ANALYSIS_MAX || 500),
+  maxConcurrentUploads: Number(process.env.ARTIFACT_UPLOAD_CONCURRENCY_MAX || 4),
+  maxConcurrentAnalyses: Number(process.env.ARTIFACT_ANALYSIS_CONCURRENCY_MAX || 2),
+});
+const evidenceHealthLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
+app.get('/health/v7-evidence', evidenceHealthLimiter, async (_req, res) => {
   try {
-    const health = await collectV7EvidenceHealth(prisma, {
-      storageRoot: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || path.join(process.cwd(), '.artifacts')),
-      pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
-      pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
-      orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
-      storageQuotaBytes: Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0) || null,
-      storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
-    });
+    const health = await evidenceHealthMonitor();
     res.status(health.status === 'ok' ? 200 : 503).json(health);
-  } catch {
-    res.status(503).json({ status: 'degraded', reasons: ['evidence_health_unavailable'] });
+  } catch (error) {
+    res.status(503).json({ status: 'degraded', reasons: ['evidence_health_unavailable'], ...(error instanceof V7EvidenceHealthUnavailable ? { failedAt: error.failedAt, retryAt: error.retryAt } : {}) });
   }
 });
 
@@ -376,6 +386,7 @@ app.get('/health/token', (req, res) => {
 });
 
 // Routes
+app.use(createEvidenceReviewRouter({ client: prisma, authorize: requireOperator, reviewerIdentity: operatorIdentity, afterReview: invalidateRouteCaches }));
 app.use(routes);
 
 // 404 handler
@@ -404,12 +415,14 @@ app.use((err: any, req: express.Request, res: express.Response, _next: express.N
 
 const port = process.env.PORT || 3001;
 let server: ReturnType<typeof app.listen>;
+let stopCorpusRefresh: (() => void) | undefined;
 
 // Start server with explicit database connection
 async function startServer() {
   try {
     // Connect to database before accepting requests
     await connectDatabase();
+    stopCorpusRefresh = startPublicCorpusRefreshLoop(prisma);
     startArtifactPipelineBackgroundWork();
 
     server = app.listen(port, () => {
@@ -418,7 +431,11 @@ async function startServer() {
 
     // Tune server timeouts
     server.headersTimeout = 65_000; // allow a bit over common proxy timeouts
-    server.requestTimeout = 60_000;
+    const uploadDeadlineMs = Number(process.env.ARTIFACT_UPLOAD_DEADLINE_MS || 300_000);
+    if (!Number.isFinite(uploadDeadlineMs) || uploadDeadlineMs < 1 || uploadDeadlineMs > 86_400_000) {
+      throw new Error('ARTIFACT_UPLOAD_DEADLINE_MS must be within 1 ms and 24 hours');
+    }
+    server.requestTimeout = Math.max(65_000, uploadDeadlineMs + 30_000);
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);
@@ -428,6 +445,8 @@ async function startServer() {
 // Graceful shutdown
 async function shutdown(signal: string) {
   console.log(`\n${signal} received. Shutting down...`);
+  stopCorpusRefresh?.();
+  stopArtifactPipelineBackgroundWork();
   if (server) {
     server.close(async () => {
       try {

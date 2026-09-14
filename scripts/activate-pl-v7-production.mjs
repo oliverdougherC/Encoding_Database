@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -72,7 +72,11 @@ async function loadModules() {
     import(path.join(serverRoot, 'dist', 'v7', 'calibration.js')),
     import(path.join(serverRoot, 'dist', 'v7', 'aggregation.js')),
   ]);
-  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule };
+  const reviews = await import(path.join(serverRoot, 'dist', 'v7', 'reviews.js'));
+  const ranking = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRanking.js'));
+  const retention = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRetention.js'));
+  const measurementGroup = await import(path.join(serverRoot, 'dist', 'v7', 'measurementGroup.js'));
+  return { ...dbModule, ...referenceContextModule, ...calibrationModule, ...aggregationModule, ...retention, ...reviews, ...ranking, ...measurementGroup };
 }
 
 export async function loadProductionActivationPlan(options) {
@@ -96,17 +100,8 @@ export async function loadProductionActivationPlan(options) {
     calibration = parseCalibrationEvidence(readFileSync(calibrationPath, 'utf8'));
   }
 
-  if (context.activation?.stage !== 'PRODUCTION') {
-    if (!calibration) {
-      throw new Error('A complete --calibration-evidence document is required to activate a provisional reference context');
-    }
-    promotedContext = activateReferenceContextForProduction(context, calibration);
-  } else if (calibration) {
-    if (context.activation.calibrationVersion !== calibration.calibrationVersion
-      || context.activation.calibrationReviewHash !== calibration.reviewHash) {
-      throw new Error('Production reference context does not match the supplied calibration version/review hash');
-    }
-  }
+  if (!calibration) throw new Error('Complete --calibration-evidence is required for activation and reactivation');
+  promotedContext = activateReferenceContextForProduction(context, calibration);
 
   if (promotedContext.provenance?.sourceMode !== 'retained-benchmark-evidence') {
     throw new Error('Only retained authoritative evidence can be activated for production');
@@ -117,6 +112,7 @@ export async function loadProductionActivationPlan(options) {
     calibration,
     promotedContext,
     referenceContextPath,
+    requiresPromotedContextOutput: context.activation?.stage !== 'PRODUCTION',
   };
 }
 
@@ -286,8 +282,26 @@ export async function persistActivationState(client, {
     scoreContexts,
   });
   const derivedResults = [];
-  for (const payload of payloads) {
-    const id = await modules.persistDerivedResultRecord(client, payload.derivedResult, payload.members);
+  // Workload activation uses the identical clustered scorer and evidence policy as
+  // online ingestion. General results are rebuilt from those persisted workloads.
+  for (const payload of payloads.filter((entry) => entry.kind === 'WORKLOAD')) {
+    const rows = evidence.filter((entry) => payload.members.some((member) => member.qualityAnalysisId === entry.qualityAnalysisId));
+    const first = rows[0];
+    const workload = promotedContext.workloads.find((entry) => entry.workloadId === payload.workloadId);
+    const aggregate = modules.rebuildDerivedResultAggregateFromAnalyses({
+      identity: {
+        kind: 'workload', benchmarkProtocolId, protocolVersion: promotedContext.benchmarkProtocolVersion,
+        sourceSuiteVersion: promotedContext.sourceSuiteVersion, workloadId: payload.workloadId, testClipId: first.testClipId,
+        recipeId: first.recipeId, recipeFingerprint: first.recipeFingerprint,
+        environmentId: first.environmentId, environmentFingerprint: first.environmentFingerprint,
+        scoreContextId: payload.derivedResult.scoreContextId, scoreContextVersion: promotedContext.contextVersion,
+        qualityModelId: promotedContext.qualityModelId, formulaVersion: promotedContext.formulaVersion,
+      },
+      scoreContext: { workloadId: payload.workloadId, workloadReferenceBitrateBps: workload.workloadReferenceBitrateBps, ...promotedContext.transformConstants },
+      evidencePolicy: promotedContext.recommendationEvidencePolicy,
+      analyses: rows,
+    });
+    const id = await modules.persistDerivedResultRecord(client, aggregate.derivedResult, payload.members);
     derivedResults.push({
       id,
       kind: payload.kind,
@@ -295,23 +309,30 @@ export async function persistActivationState(client, {
       memberCount: payload.members.length,
     });
   }
-  return {
-    scoreContexts,
-    derivedResults,
-  };
+  for (const pair of new Map(evidence.map((entry) => [`${entry.recipeId}:${entry.environmentId}`, entry])).values()) {
+    const id = await modules.persistGeneralDerivedResultFromWorkloadEvidence(client, {
+      benchmarkProtocolId, protocolVersion: promotedContext.benchmarkProtocolVersion,
+      sourceSuiteVersion: promotedContext.sourceSuiteVersion, formulaVersion: promotedContext.formulaVersion,
+      contextVersion: promotedContext.contextVersion, qualityModelId: promotedContext.qualityModelId,
+      recipeId: pair.recipeId, recipeFingerprint: pair.recipeFingerprint,
+      environmentId: pair.environmentId, environmentFingerprint: pair.environmentFingerprint,
+    });
+    if (id) derivedResults.push({ id, kind: 'GENERAL' });
+  }
+  return { scoreContexts, derivedResults };
 }
 
-async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext) {
+export async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext, modules) {
   const analyses = await prisma.qualityAnalysis.findMany({
     where: {
       metricModelId: promotedContext.qualityModelId,
-      status: { in: ['COMPLETE', 'SUSPECT', 'REJECTED'] },
       benchmarkRun: {
         benchmarkProtocolId,
         status: { in: ['ACCEPTED', 'SUSPECT', 'REJECTED'] },
       },
     },
     include: {
+      artifact: true, evidenceReviews: true,
       benchmarkRun: {
         include: {
           benchmarkProtocol: true,
@@ -321,10 +342,14 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
         },
       },
     },
-    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 
-  return latestAnalysesByRun(analyses).map((analysis) => ({
+  const latest = latestAnalysesByRun(analyses);
+  const groups = new Map();
+  for (const analysis of latest) groups.set(analysis.id, await modules.loadMeasurementGroupEligibility(prisma, analysis.benchmarkRun, { metricModelId: promotedContext.qualityModelId }));
+  return latest.filter((analysis) => groups.get(analysis.id).eligible && modules.applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status, artifactState: analysis.artifact?.storageState ?? 'MISSING', analysisId: analysis.id, reviews: analysis.evidenceReviews }).eligible).map((analysis) => ({
+    measurementGroup: groups.get(analysis.id),
     qualityAnalysisId: analysis.id,
     analysisWorkerVersion: analysis.analysisWorkerVersion,
     benchmarkRunId: analysis.benchmarkRunId,
@@ -337,9 +362,12 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
     recipeFingerprint: analysis.benchmarkRun.recipe.fingerprint,
     environmentId: analysis.benchmarkRun.environmentId,
     environmentFingerprint: analysis.benchmarkRun.environment.fingerprint,
+    physicalSourceId: analysis.benchmarkRun.physicalSourceId,
+    campaignId: analysis.benchmarkRun.campaignId,
+    repetitionGroupId: analysis.benchmarkRun.repetitionGroupId,
     qualityModelId: analysis.metricModelId,
-    benchmarkRunStatus: analysis.benchmarkRun.status,
-    qualityAnalysisStatus: analysis.status,
+    benchmarkRunStatus: 'ACCEPTED',
+    qualityAnalysisStatus: 'COMPLETE',
     encodeFps: analysis.benchmarkRun.encodeFps,
     sourceFps: analysis.benchmarkRun.sourceFps,
     realTimeRatio: analysis.benchmarkRun.realTimeRatio,
@@ -348,6 +376,19 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext)
     vmafMean: analysis.vmafMean,
     vmafP5: analysis.vmafP5,
   }));
+}
+
+export async function withReadOnlyCalibrationEvidence(evidenceClient, targetClient, callback) {
+  const [sourceDatabase, targetDatabase] = await Promise.all([
+    evidenceClient.$queryRawUnsafe('SELECT current_database() AS name'), targetClient.$queryRawUnsafe('SELECT current_database() AS name'),
+  ]);
+  if (!/^encodingdb_calibration_[a-z0-9_]+$/.test(sourceDatabase[0].name)) throw new Error('External evidence must use a dedicated encodingdb_calibration_* database');
+  if (sourceDatabase[0].name === targetDatabase[0].name) throw new Error('Evidence and target database are the same; use the unified single-database mode');
+  return evidenceClient.$transaction(async tx => {
+    await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
+    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+    return callback(tx);
+  }, { isolationLevel: 'RepeatableRead', timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) });
 }
 
 export async function runProductionActivation(options) {
@@ -363,6 +404,9 @@ export async function runProductionActivation(options) {
     recomputeReferenceScores,
   } = modules;
 
+  if (options.apply === true && plan.requiresPromotedContextOutput && !options.promotedContextOutputPath) {
+    throw new Error('First production promotion requires --promoted-context-output before database writes');
+  }
   const envBindings = buildProductionEnvBindings(
     promotedContext,
     options.promotedContextOutputPath
@@ -370,31 +414,55 @@ export async function runProductionActivation(options) {
       : referenceContextPath,
   );
 
+  // Reserve output paths before any database mutation. Retain prewritten artifacts
+  // after a transaction failure: reactivation is idempotent and their hashes identify
+  // exactly what was prepared, rather than leaving a committed DB with missing files.
+  const preparedOutputs = [];
+  if (options.apply === true) {
+    try {
+      for (const [target, contents] of [[options.promotedContextOutputPath, `${JSON.stringify(promotedContext, null, 2)}\n`], [options.envOutputPath, formatEnvBindings(envBindings)]]) {
+        if (!target) continue;
+        const outputPath = path.resolve(process.cwd(), target);
+        mkdirSync(path.dirname(outputPath), { recursive: true });
+        const fd = openSync(outputPath, 'wx'); closeSync(fd); preparedOutputs.push(outputPath);
+        writeFileSync(outputPath, contents);
+      }
+    } catch (error) { for (const output of preparedOutputs) unlinkSync(output); throw error; }
+  }
+  let externalEvidenceClient = null;
+  const evidenceUrl = options.evidenceDatabaseUrl ?? process.env.CALIBRATION_EVIDENCE_DATABASE_URL;
+  if (evidenceUrl) {
+    const { PrismaClient } = await import(path.join(serverRoot, 'node_modules/@prisma/client/default.js'));
+    externalEvidenceClient = new PrismaClient({ datasources: { db: { url: evidenceUrl } } });
+  }
+  const evidenceStorageRoot = options.evidenceStorageRoot ?? process.env.CALIBRATION_EVIDENCE_STORAGE_ROOT;
   try {
-    const evidence = await loadRecomputeInputs(prisma, options.benchmarkProtocolId, promotedContext);
-    const recomputed = recomputeReferenceScores(evidence, promotedContext);
-    const persisted = options.apply === true
-      ? await prisma.$transaction((tx) => persistActivationState(tx, {
-          modules,
-          benchmarkProtocolId: options.benchmarkProtocolId,
-          promotedContext,
-          evidence,
-          recomputed,
-        }))
-      : { scoreContexts: [], derivedResults: [] };
+    if (!calibration) throw new Error('Calibration evidence is mandatory');
+    const rankingVerification = modules.verifyCalibrationRanking(calibration, promotedContext);
+    const execute = async (client, apply, verifiedExternal = null) => {
+      if (apply) await client.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+      const retainedVerification = verifiedExternal ?? await modules.verifyCalibrationRetainedEvidence(client, calibration, evidenceStorageRoot);
+      const evidence = await loadRecomputeInputs(client, options.benchmarkProtocolId, promotedContext, modules);
+      const recomputed = recomputeReferenceScores(evidence, promotedContext);
+      const persisted = apply ? await persistActivationState(client, { modules, benchmarkProtocolId: options.benchmarkProtocolId, promotedContext, evidence, recomputed }) : { scoreContexts: [], derivedResults: [] };
+      return { evidence, recomputed, persisted, retainedVerification };
+    };
+    const act = async (verifiedExternal = null) => options.apply === true
+      ? prisma.$transaction((tx) => execute(tx, true, verifiedExternal), { timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) })
+      : execute(prisma, false, verifiedExternal);
+    const { evidence, recomputed, persisted, retainedVerification } = externalEvidenceClient
+      ? await withReadOnlyCalibrationEvidence(externalEvidenceClient, prisma, async evidenceTx => {
+          const verified = await modules.verifyCalibrationRetainedEvidence(evidenceTx, calibration, evidenceStorageRoot);
+          return act(verified);
+        })
+      : await act();
 
-    if (options.apply === true && options.promotedContextOutputPath) {
-      const outputPath = path.resolve(process.cwd(), options.promotedContextOutputPath);
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, `${JSON.stringify(promotedContext, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
-    }
-    if (options.apply === true && options.envOutputPath) {
-      const outputPath = path.resolve(process.cwd(), options.envOutputPath);
-      mkdirSync(path.dirname(outputPath), { recursive: true });
-      writeFileSync(outputPath, formatEnvBindings(envBindings), { encoding: 'utf8', flag: 'wx' });
-    }
 
     return {
+      retainedVerification,
+      rankingVerification,
+      evidencePolicyVersion: promotedContext.recommendationEvidencePolicy.policyVersion,
+      evidencePolicyHash: promotedContext.recommendationEvidencePolicyHash,
       mode: options.apply === true ? 'apply' : 'dry-run',
       benchmarkProtocolId: options.benchmarkProtocolId,
       contextVersion: promotedContext.contextVersion,
@@ -410,6 +478,7 @@ export async function runProductionActivation(options) {
       envBindings,
     };
   } finally {
+    if (externalEvidenceClient) await externalEvidenceClient.$disconnect().catch(() => {});
     if (typeof prisma?.$disconnect === 'function') {
       await prisma.$disconnect().catch(() => {});
     }
@@ -423,6 +492,8 @@ async function main() {
     benchmarkProtocolId: flags.get('--benchmark-protocol-id'),
     referenceContextPath: flags.get('--reference-context'),
     calibrationEvidencePath: flags.get('--calibration-evidence') ?? null,
+    evidenceDatabaseUrl: process.env.CALIBRATION_EVIDENCE_DATABASE_URL,
+    evidenceStorageRoot: process.env.CALIBRATION_EVIDENCE_STORAGE_ROOT,
     promotedContextOutputPath: flags.get('--promoted-context-output') ?? null,
     envOutputPath: flags.get('--env-output') ?? null,
   });

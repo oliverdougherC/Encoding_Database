@@ -1,0 +1,119 @@
+{
+  "schemaVersion": "encodingdb-measurement-provenance-qualification/v1",
+  "status": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION",
+  "affectedSourceCommit": "0185a001e268b35aad492a8d35c487f5527ac3f5",
+  "reason": "Confirmed psutil per-thread CPU baseline defect: HardwareMonitor primed caller but sampled another/reused thread. Historical background flags cannot be reconstructed.",
+  "correctionCommit": "0803b43",
+  "qualification": "Manual exclusive task allocation does not establish accuracy of individual environment snapshots. Original flags and raw receipts remain untouched; prior timing-stability passes do not confer final calibration eligibility.",
+  "completedCells": 17,
+  "retainedAttempts": 57,
+  "timingSpreadPassedCells": 14,
+  "timingSpreadFailedCells": 3,
+  "nextOriginalCellNotStarted": 18,
+  "affectedCampaigns": [
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf18",
+      "campaignId": "campaign-1e655f26be5e9c62",
+      "seed": 202609140001,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf28",
+      "campaignId": "campaign-404332ac7d56055a",
+      "seed": 202609140002,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libsvtav1--6--crf20",
+      "campaignId": "campaign-7b2eadcde33e89f1",
+      "seed": 202609140003,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libsvtav1--6--crf36",
+      "campaignId": "campaign-2b9b4d2c10bc614f",
+      "seed": 202609140005,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx264--fast--crf18",
+      "campaignId": "campaign-ef23a2b0f59735cd",
+      "seed": 202609140009,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx265--fast--crf18",
+      "campaignId": "campaign-205f6ff4edb2d3b8",
+      "seed": 202609140006,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libx265--fast--crf28",
+      "campaignId": "campaign-82f4b0b64658d039",
+      "seed": 202609140017,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libsvtav1--6--crf20",
+      "campaignId": "campaign-e2a74f16e2242180",
+      "seed": 202609140015,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libsvtav1--6--crf36",
+      "campaignId": "campaign-c0b42521bd9cb3bd",
+      "seed": 202609140014,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libx265--fast--crf28",
+      "campaignId": "campaign-dbf807c5851d1397",
+      "seed": 202609140012,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libsvtav1--6--crf36",
+      "campaignId": "campaign-56141996fe83efbd",
+      "seed": 202609140010,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libx265--fast--crf18",
+      "campaignId": "campaign-ab2dd2e40bff0179",
+      "seed": 202609140008,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libsvtav1--6--crf20",
+      "campaignId": "campaign-703197236f0badf4",
+      "seed": 202609140016,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libx265--fast--crf28",
+      "campaignId": "campaign-d09b1d8df104c80e",
+      "seed": 202609140007,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libsvtav1--6--crf36",
+      "campaignId": "campaign-f38a216b2110f684",
+      "seed": 202609140011,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx264--fast--crf18",
+      "campaignId": "campaign-ea77b5c90db55d08",
+      "seed": 202609140013,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx264--fast--crf28",
+      "campaignId": "campaign-cd3f00b45573479d",
+      "seed": 202609140004,
+      "classification": "EXPLORATORY_NOT_ELIGIBLE_FOR_CALIBRATION"
+    }
+  ],
+  "retainedProof": "All57 completed artifacts rehashed and exact720frame/timer/FPS tuples checked; no metric analysis, database import or PL activation occurred.",
+  "disposition": "Fresh execution revision required with corrected source, same finite choices, new campaign seeds/output paths; no data removal or historical validity-flag rewrite."
+}

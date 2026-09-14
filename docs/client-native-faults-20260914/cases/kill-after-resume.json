@@ -1,0 +1,110 @@
+{
+  "case": "kill-after-resume",
+  "startedAt": "2026-09-14T04:35:34.110987+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--resume-campaign",
+    "campaign-b92d34ea50b6f8fc",
+    "--no-submit",
+    "--max-duration-minutes",
+    "3",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/kill-after-resume-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:49226",
+    "HTTPS_PROXY": "http://127.0.0.1:49226",
+    "ALL_PROXY": "http://127.0.0.1:49226",
+    "NO_PROXY": "localhost,127.0.0.1"
+  },
+  "pid": 76850,
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "diagnosticNotCalibration": true,
+  "beforeStop": {
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000001.json": {
+      "recordSha256": "695c2c2d317cb6ec083883eda9bf1ba5d863b004446d27614f1c524b1d27167a",
+      "schedule": {
+        "campaign_id": "campaign-b92d34ea50b6f8fc",
+        "execution_order": 1,
+        "phase": "warmup",
+        "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+        "repetition_index": 1
+      },
+      "timing": {
+        "elapsed_s": 11.920981583,
+        "encode_fps": 20.13257031973388,
+        "encoded_frame_count": 240,
+        "end_monotonic_ns": 147809577434916,
+        "ffmpeg_cpu_time_s": null,
+        "realtime_multiple": 0.8388570966555783,
+        "source_fps": 24.0,
+        "source_frame_count": 240,
+        "start_monotonic_ns": 147797656453333
+      },
+      "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/001-libx264-veryslow-24-warmup-r1.mp4",
+      "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+    },
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/attempt-000002.json": {
+      "recordSha256": "94a0ca70df52b29475d1192505f9a665c3ed39ba59566cc8cb6c9814d80bf68c",
+      "schedule": {
+        "campaign_id": "campaign-b92d34ea50b6f8fc",
+        "execution_order": 2,
+        "phase": "measured",
+        "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+        "repetition_index": 1
+      },
+      "timing": {
+        "elapsed_s": 13.480542792,
+        "encode_fps": 17.803437421112413,
+        "encoded_frame_count": 240,
+        "end_monotonic_ns": 147868628436500,
+        "ffmpeg_cpu_time_s": null,
+        "realtime_multiple": 0.7418098925463505,
+        "source_fps": 24.0,
+        "source_frame_count": 240,
+        "start_monotonic_ns": 147855147893708
+      },
+      "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/002-libx264-veryslow-24-measured-r1.mp4",
+      "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+    }
+  },
+  "activeReceipt": {
+    "command": [
+      "/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIFjxrW1/bin/mac/ffmpeg",
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-nostats",
+      "-progress",
+      "pipe:1",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/athletic-action-1080p24-final.mkv",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryslow",
+      "-crf",
+      "24",
+      "-pix_fmt",
+      "yuv420p",
+      "-video_track_timescale",
+      "24000",
+      "-an",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-b92d34ea50b6f8fc/003-libx264-veryslow-24-measured-r2.mp4"
+    ],
+    "createdAt": 1789360589.430117,
+    "pid": 77107
+  },
+  "clientMainPid": 76853,
+  "signal": "SIGKILL",
+  "exitCode": -9,
+  "wallSeconds": 55.365757374995155,
+  "proxyRequests": [],
+  "orphanAliveAfterStop": true
+}

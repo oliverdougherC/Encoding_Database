@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "scope": "Native macOS CLI fault validation only; diagnostic timings, not calibration; no production submission or GUI certification",
+  "sourceCommit": "f673170",
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "cases": [
+    {
+      "case": "clean-nonascii",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--no-submit",
+        "--max-duration-minutes",
+        "0.001",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/clean-nonascii-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:64935",
+        "HTTPS_PROXY": "http://127.0.0.1:64935",
+        "ALL_PROXY": "http://127.0.0.1:64935",
+        "NO_PROXY": "localhost,127.0.0.1",
+        "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-test-suite-v1.tar.gz"
+      },
+      "exitCode": 11,
+      "wallSeconds": 86.39193270800752,
+      "proxyRequests": [],
+      "priorRecordsUnchanged": null,
+      "orphanAliveAfterStop": null,
+      "orphanReceiptRemoved": null,
+      "volumeBytes": null,
+      "osError": null
+    },
+    {
+      "case": "corrupt-pack",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-package/encodingdb-client-macos",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--no-submit",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/corrupt-pack-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:65323",
+        "HTTPS_PROXY": "http://127.0.0.1:65323",
+        "ALL_PROXY": "http://127.0.0.1:65323",
+        "NO_PROXY": "localhost,127.0.0.1",
+        "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/corrupt-package/encodingdb-test-suite-v1.tar.gz",
+        "ENCODINGDB_SUITE_PACK_URL": "http://127.0.0.1:65323/corrupt-pack"
+      },
+      "exitCode": 3,
+      "wallSeconds": 8.852649582986487,
+      "proxyRequests": [
+        {
+          "method": "GET",
+          "target": "/corrupt-pack",
+          "time": 1789360433.225779
+        },
+        {
+          "method": "CONNECT",
+          "target": "github.com:443",
+          "time": 1789360433.227778
+        }
+      ],
+      "priorRecordsUnchanged": null,
+      "orphanAliveAfterStop": null,
+      "orphanReceiptRemoved": null,
+      "volumeBytes": null,
+      "osError": null,
+      "environmentNote": "URL overlay reconstructed from the retained harness and matching localhost GET receipt; original case receipt is preserved unchanged."
+    },
+    {
+      "case": "cancel",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+        "--codec",
+        "libx264",
+        "--presets",
+        "veryslow",
+        "--no-submit",
+        "--max-duration-minutes",
+        "3",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/cancel-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:49226",
+        "HTTPS_PROXY": "http://127.0.0.1:49226",
+        "ALL_PROXY": "http://127.0.0.1:49226",
+        "NO_PROXY": "localhost,127.0.0.1"
+      },
+      "exitCode": 130,
+      "wallSeconds": 59.09214824999799,
+      "proxyRequests": [],
+      "priorRecordsUnchanged": null,
+      "orphanAliveAfterStop": false,
+      "orphanReceiptRemoved": null,
+      "volumeBytes": null,
+      "osError": null
+    },
+    {
+      "case": "kill-after-resume",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+        "--resume-campaign",
+        "campaign-b92d34ea50b6f8fc",
+        "--no-submit",
+        "--max-duration-minutes",
+        "3",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/kill-after-resume-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:49226",
+        "HTTPS_PROXY": "http://127.0.0.1:49226",
+        "ALL_PROXY": "http://127.0.0.1:49226",
+        "NO_PROXY": "localhost,127.0.0.1"
+      },
+      "exitCode": -9,
+      "wallSeconds": 55.365757374995155,
+      "proxyRequests": [],
+      "priorRecordsUnchanged": null,
+      "orphanAliveAfterStop": true,
+      "orphanReceiptRemoved": null,
+      "volumeBytes": null,
+      "osError": null
+    },
+    {
+      "case": "resume-after-kill",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+        "--resume-campaign",
+        "campaign-b92d34ea50b6f8fc",
+        "--no-submit",
+        "--max-duration-minutes",
+        "3",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/resume-after-kill-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:49226",
+        "HTTPS_PROXY": "http://127.0.0.1:49226",
+        "ALL_PROXY": "http://127.0.0.1:49226",
+        "NO_PROXY": "localhost,127.0.0.1"
+      },
+      "exitCode": 0,
+      "wallSeconds": 55.41259720901144,
+      "proxyRequests": [],
+      "priorRecordsUnchanged": true,
+      "orphanAliveAfterStop": null,
+      "orphanReceiptRemoved": true,
+      "volumeBytes": null,
+      "osError": null
+    },
+    {
+      "case": "disk-full-exhaustive",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+        "--resume-campaign",
+        "campaign-b92d34ea50b6f8fc",
+        "--no-submit",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+      ],
+      "environment": {
+        "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+        "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+        "ENCODINGDB_DEBUG_TRACEBACK": "1",
+        "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/disk-full-exhaustive-embedded-runtime.json",
+        "HTTP_PROXY": "http://127.0.0.1:50811",
+        "HTTPS_PROXY": "http://127.0.0.1:50811",
+        "ALL_PROXY": "http://127.0.0.1:50811",
+        "NO_PROXY": "localhost,127.0.0.1"
+      },
+      "exitCode": 6,
+      "wallSeconds": 31.093760916992323,
+      "proxyRequests": [],
+      "priorRecordsUnchanged": true,
+      "orphanAliveAfterStop": null,
+      "orphanReceiptRemoved": null,
+      "volumeBytes": 67067904,
+      "osError": {
+        "errno": 28,
+        "message": "[Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/owned-tail-165.bin'",
+        "freshOneByteWriteFailed": true
+      }
+    }
+  ],
+  "reusableCache": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+  "sharedState": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state"
+}

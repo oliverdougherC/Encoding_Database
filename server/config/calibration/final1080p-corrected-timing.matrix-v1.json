@@ -1,0 +1,5081 @@
+{
+  "schemaVersion": "encodingdb-calibration-matrix/v1",
+  "matrixVersion": "final1080p-corrected-timing-2026-09-14-v1",
+  "status": "PREDECLARED_UNEXECUTED",
+  "protocolVersion": "7.1",
+  "minimumClientVersion": "client/0.3.0",
+  "timerBoundary": "ffmpeg-process-v1",
+  "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+  "qualityModelId": "vmaf-v1-sdr-1080p",
+  "validatedScopeCandidate": "1920x1080 24fps SDR BT.709 only",
+  "excludedScope": [
+    "4K transfer unverified",
+    "HDR",
+    "HFR",
+    "canonical decode/Playback Fit"
+  ],
+  "sourceSlots": {
+    "source-a": {
+      "candidateHost": "Mac",
+      "physicalSourceId": null,
+      "status": "CORRECTED_PROTOCOL_UNVERIFIED"
+    },
+    "source-b": {
+      "candidateHost": "P910",
+      "physicalSourceId": null,
+      "status": "CORRECTED_PROTOCOL_UNVERIFIED"
+    },
+    "nvenc-host": {
+      "candidateHost": "P910",
+      "physicalSourceId": null,
+      "status": "HARDWARE_RUNTIME_UNVERIFIED"
+    },
+    "videotoolbox-host": {
+      "candidateHost": "Mac",
+      "physicalSourceId": null,
+      "status": "HARDWARE_RUNTIME_UNVERIFIED"
+    }
+  },
+  "cells": [
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx264-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-fast-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-fast-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-fast-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-slow-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-slow-crf23",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 23
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-slow-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libx265-slow-crf33",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx265",
+      "preset": "slow",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 33
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-6-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-6-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-6-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-6-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "6",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-8-crf20",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 20
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-8-crf28",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 28
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-8-crf36",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 36
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-libsvtav1-8-crf44",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libsvtav1",
+      "preset": "8",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 44
+      },
+      "physicalSourceSlots": [
+        "source-a",
+        "source-b"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p4-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p4-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p4-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p4-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p4",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p7-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p7-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p7-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_nvenc-p7-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_nvenc",
+      "preset": "p7",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "nvenc-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-athletic-action-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "athletic-action-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-natural-detail-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "natural-detail-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-film-grain-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-dark-gradients-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-animation-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "animation-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-screen-text-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_videotoolbox-default-vbr1500",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 1500
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_videotoolbox-default-vbr3000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 3000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_videotoolbox-default-vbr6000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 6000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    },
+    {
+      "cellId": "fit-talking-head-1080p24-final-h264_videotoolbox-default-vbr12000",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "h264_videotoolbox",
+      "preset": "default",
+      "nativeRateControl": {
+        "mode": "vbr",
+        "targetBitrateKbps": 12000
+      },
+      "physicalSourceSlots": [
+        "videotoolbox-host"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "HARDWARE_UNVERIFIED"
+    }
+  ],
+  "folds": [
+    {
+      "foldId": "hardware-nvenc",
+      "dimension": "HARDWARE_FAMILY",
+      "fitGroupRule": "hardwareFamily != nvenc",
+      "evaluationGroupRule": "hardwareFamily == nvenc"
+    },
+    {
+      "foldId": "encoder-av1",
+      "dimension": "ENCODER_FAMILY",
+      "fitGroupRule": "encoderFamily != av1",
+      "evaluationGroupRule": "encoderFamily == av1"
+    },
+    {
+      "foldId": "recipe-midrange",
+      "dimension": "RECIPE_RANGE",
+      "fitGroupRule": "native RC endpoints per implementation/preset",
+      "evaluationGroupRule": "native RC interior points per implementation/preset"
+    },
+    {
+      "foldId": "content-high-motion-sports",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != high-motion-sports",
+      "evaluationGroupRule": "contentClass == high-motion-sports",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-fine-natural-detail",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != fine-natural-detail",
+      "evaluationGroupRule": "contentClass == fine-natural-detail",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-film-grain-noise",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != film-grain-noise",
+      "evaluationGroupRule": "contentClass == film-grain-noise",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-dark-gradients-shadows",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != dark-gradients-shadows",
+      "evaluationGroupRule": "contentClass == dark-gradients-shadows",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-animation-flat-fields",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != animation-flat-fields",
+      "evaluationGroupRule": "contentClass == animation-flat-fields",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-screen-text",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != screen-text",
+      "evaluationGroupRule": "contentClass == screen-text",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    },
+    {
+      "foldId": "content-talking-head",
+      "dimension": "CONTENT_CLASS",
+      "fitGroupRule": "contentClass != talking-head",
+      "evaluationGroupRule": "contentClass == talking-head",
+      "longerSceneRequirement": "Independent licensed-master scene, minimum 30 seconds, no source frame overlap; verify GOP/startup/lookahead and predeclare fitting-only transfer reference workload mapping."
+    }
+  ],
+  "adaptiveRules": {
+    "trigger": "Within-session timing spread above 3%, or failure to bracket VMAF90 reference anchor",
+    "maximumAdditionalRunsPerSession": 2,
+    "curveExpansion": "At most two additional native RC values per implementation/preset/workload, declared before new runs and never chosen from held-out outcomes",
+    "failure": "Remain unvalidated on unresolved variance, unbracketed anchor, incompatible exact device/toolchain or missing implementation; no substitute encoder"
+  },
+  "predeclaredAcceptance": {
+    "goldenChoices": "Every reviewed Balanced/Quality/Storage/Realtime comparison agrees with production ranking under its hard constraints; report ties and all rejected choices. No post-hoc criteria changes.",
+    "holdouts": "Every named fold uses group-disjoint fitting/evaluation IDs, a separately fitted retained frontier artifact and production-ranker predicted choice confirmed by a knowledgeable reviewer. Any systematic inversion blocks activation.",
+    "metricDisagreement": "Every investigated case resolved by an exact-analysis append-only operator review or explicitly excluded from all fitting/frontier/ranking evidence.",
+    "physicalSource": "At least two persistent physical-source pseudonyms; sessions and environment hashes do not count as new machines.",
+    "humanReview": "Blank identities/judgments remain blank until supplied by genuine knowledgeable reviewers.",
+    "singleHardwareSource": "A hardware family observed on one physical source stays below any policy requiring independent-machine corroboration; additional campaigns cannot repair this."
+  },
+  "matrixHash": "a3b676fe7e09ff9ed2f4f136193f2d3df16aca270b41b633c9c725276d3bb126"
+}

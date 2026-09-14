@@ -1,0 +1,18 @@
+{
+  "sourceCommit": "84d4086e4679566cfa6a7d10678be74a0a8993ab",
+  "serverImage": "sha256:34d103cc4fc524e46325249540489b29b9f3345a2efc75f706c60da9019a6201",
+  "frontendImage": "sha256:a9e3cf2e9aad486e197ac9989576a76201c7955db77dd0226cd48299c77fd2ef",
+  "linuxExecutableSha256": "5d54d0d476fe9ff142ca138956f1e7de3600a0ac11d5650d4e2feb5d87615b01",
+  "isolatedComposeProject": "encodingdb-candidate-730de3c",
+  "candidateRoot": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c",
+  "packageSmoke": "Expected exit4 after actual embedded runtime integrity, bundled model checks, and explicit1-attempt budget refusal; no measured encodes or uploads. First attempt exited1 on safe queue-directory validation before helper execution; retry queue is under working directory.",
+  "runtimeOverridesRemoved": true,
+  "helperExecutionCount": 18,
+  "allHelperPathsEmbedded": true,
+  "canonicalAcceptance": "not tested; waiting for repetition-group server and client corrections",
+  "nvenc": "6-frame native device0 VBR capability only; not throughput or calibration",
+  "productionChanged": false,
+  "buildWarnings": [
+    "Optional Tcl/Tk libraries missing; CLI smoke passes; Linux GUI not verified"
+  ]
+}

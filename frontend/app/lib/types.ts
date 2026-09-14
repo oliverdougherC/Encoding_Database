@@ -72,7 +72,7 @@ export type Benchmark = {
   status: {
     benchmarkProtocol: "ACTIVE";
     artifactState?: "VERIFIED" | "RETAINED" | "MIXED_VERIFIED_RETAINED";
-    centerBasis?: "accepted" | "suspect";
+    centerBasis?: "accepted" | "suspect" | "eligible-stable-groups";
     scoring: PublicCorpusScoringStatus;
     evidenceTier: EvidenceTier;
     eligibleForDefaultRecommendation: boolean;

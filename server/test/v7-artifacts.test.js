@@ -195,6 +195,7 @@ class MemoryPersistence {
     this.testClips.set(key, record);
     return {
       id: record.id,
+      sha256: record.sha256,
       workloadId: record.workloadId,
       displayName: record.displayName,
       sourceProvenance: record.sourceProvenance,
@@ -705,7 +706,7 @@ async function createHarness(configOverrides = {}) {
         provider: 'localfs',
         bucket: null,
       },
-      analyzerVersion: 'worker-v1',
+      analyzerVersion: DEFAULT_ANALYZER_VERSION,
       autoAnalyzeOnUpload: true,
       ...configOverrides,
     },
@@ -830,16 +831,19 @@ function buildRunBody(fixtures, overrides = {}) {
       canonicalJson: JSON.parse(fixtures.environment.canonicalJson),
       identity: fixtures.environment.identity,
     },
+    preRunEnvironmentCheck: { overallValidity: { state: 'valid' }, environmentValidity: { state: 'valid' }, structuralValidity: { state: 'valid' } },
     payloadHash: overrides.payloadHash || 'a'.repeat(64),
 	    workloadId: fixtures.clip.workloadId,
     expectedMetricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
-    inputHash: 'b'.repeat(64),
+    inputHash: fixtures.clip.sha256,
+    encodeTimerBoundary: 'ffmpeg-process-v1',
+    physicalSourceId: 'test-physical-source-1',
     encodeWallTimeMs: 10_000,
-    encodeFps: 120,
+    encodeFps: fixtures.clip.media.frameCount / 10,
     sourceFps: 24,
-    realTimeRatio: 5,
-    sourceFrameCount: 240,
-    encodedFrameCount: 240,
+    realTimeRatio: (fixtures.clip.media.duration.numerator / fixtures.clip.media.duration.denominator) / 10,
+    sourceFrameCount: fixtures.clip.media.frameCount,
+    encodedFrameCount: fixtures.clip.media.frameCount,
     energyDomains: overrides.energyDomains,
     decodeBenchmark: overrides.decodeBenchmark,
     clientQualityDebug: overrides.clientQualityDebug ?? { vmafMean: 1.0, vmafP5: 0.5 },
@@ -887,7 +891,7 @@ async function createServiceHarness(configOverrides = {}, analyzerOverride = nul
     },
     storageQuotaBytes: null,
     storageReserveBytes: 0,
-    analyzerVersion: 'worker-v1',
+    analyzerVersion: DEFAULT_ANALYZER_VERSION,
     autoAnalyzeOnUpload: true,
     validateMediaBeforePublish: false,
     analysisPollIntervalMs: 10,
@@ -1330,7 +1334,7 @@ test('upload authorization enforces expiry, type, size, overwrite, and rate-ish 
   );
 });
 
-test('rejected encoded artifact makes the immutable benchmark run non-canonical', async (t) => {
+test('transport truncation leaves immutable metadata pending for a valid retry', async (t) => {
   const harness = await createServiceHarness();
   t.after(() => harness.close());
   const run = await createRunDirect(harness.service, harness.fixtures, {
@@ -1354,12 +1358,12 @@ test('rejected encoded artifact makes the immutable benchmark run non-canonical'
     /byte size does not match authorization/,
   );
   const bundle = await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
-  assert.equal(bundle.artifact.storageState, 'REJECTED');
-  assert.equal(bundle.run.status, 'REJECTED');
-  assert.match(bundle.run.statusReason, /size.*match/i);
+  assert.equal(bundle.artifact.storageState, 'PENDING');
+  assert.equal(bundle.run.status, 'PENDING');
+  assert.match(bundle.artifact.stateReason, /size.*match/i);
 });
 
-test('retained artifacts can be reanalyzed with a newer worker version while same-version jobs stay idempotent', async (t) => {
+test('retained artifacts reject caller-invented workers while installed-identity retries stay idempotent', async (t) => {
   const harness = await createServiceHarness();
   t.after(() => harness.close());
 
@@ -1398,24 +1402,8 @@ test('retained artifacts can be reanalyzed with a newer worker version while sam
   assert.equal(idempotentBundle.qualityAnalyses.length, 1);
   assert.equal(harness.analyzer.calls.length, 1);
 
-  await harness.service.queueAuthoritativeAnalysis(
-    run.bundle.run.id,
-    'worker-v2',
-    PRIMARY_QUALITY_PLAN.metricModelId,
-  );
-  const upgradedBundle = await waitForBundleAnalysisState(
-    harness.service,
-    run.bundle.run.id,
-    (value) => value.qualityAnalyses.some((analysis) => analysis.analysisWorkerVersion === 'worker-v2' && analysis.status === 'COMPLETE'),
-    'upgraded reanalysis completion',
-  );
-  assert.equal(upgradedBundle.qualityAnalyses.length, 2);
-  const upgradedAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === 'worker-v2');
-  const baselineAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION);
-  assert.equal(upgradedAnalysis?.vmafMean, 97.25);
-  assert.ok(baselineAnalysis);
-  assert.equal(upgradedBundle.artifact.storageState, 'RETAINED');
-  assert.equal(harness.analyzer.calls.length, 2);
+  await assert.rejects(harness.service.queueAuthoritativeAnalysis(run.bundle.run.id, 'worker-v2', PRIMARY_QUALITY_PLAN.metricModelId), /installed server worker/);
+  assert.equal(harness.analyzer.calls.length, 1);
 });
 
 test('analysis maxAttempts counts executions once and permits the configured third attempt', async (t) => {
@@ -1687,7 +1675,7 @@ test('semantic bootstrap rejects non-canonical protocol drift and minimum-client
   assert.equal(versionResponse.status, 409);
 });
 
-test('default derived recompute callback persists workload derived results from authoritative analyses', async () => {
+test('default derived recompute callback leaves historical results untouched without explicit active context', async () => {
   const calls = [];
   const client = {
     benchmarkRun: {
@@ -1737,6 +1725,8 @@ test('default derived recompute callback persists workload derived results from 
       async findMany() {
         return [{
           id: 'analysis-1',
+          artifact: {storageState: 'RETAINED'},
+          evidenceReviews: [],
           benchmarkRunId: 'run-1',
           status: 'COMPLETE',
           analysisWorkerVersion: 'authoritative-analysis/v1',
@@ -1769,6 +1759,7 @@ test('default derived recompute callback persists workload derived results from 
         calls.push(['createMany', args]);
       },
     },
+    async $executeRawUnsafe() { return 0; },
     async $transaction(fn) {
       return fn(this);
     },
@@ -1782,12 +1773,5 @@ test('default derived recompute callback persists workload derived results from 
     analysisWorkerVersion: 'worker-v1',
   });
 
-  assert.deepEqual(calls.map(([name]) => name), ['upsert', 'deleteMany', 'createMany']);
-  assert.equal(calls[0][1].create.workloadId, 'sports-action-960x540-24p');
-  assert.equal(calls[0][1].create.scoreContext.connect.id, 'score-1');
-  assert.deepEqual(calls[2][1].data, [{
-    derivedResultId: 'derived-1',
-    benchmarkRunId: 'run-1',
-    qualityAnalysisId: 'analysis-1',
-  }]);
+  assert.deepEqual(calls, []);
 });

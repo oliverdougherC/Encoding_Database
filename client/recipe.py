@@ -161,6 +161,10 @@ class EnvironmentIdentity:
     encoderVersion: Optional[str]
     clientVersion: Optional[str]
     benchmarkProtocolVersion: Optional[str]
+    executionArchitecture: Optional[str] = None
+    translationMode: Optional[str] = None
+    runtimeIdentity: Optional[Dict[str, Any]] = None
+    selectedDeviceEvidence: Optional[Dict[str, Any]] = None
 
 
 def canonical_encoder_name(value: str) -> str:

@@ -1,0 +1,1133 @@
+{
+  "schemaVersion": 1,
+  "platform": "mac",
+  "artifactSha256": "3c3bc0e545c80e1cfc06970678cd77a152dec9bb86d86baff26c8a54d15a645a",
+  "reviewedLockSha256": "8cdbd7b3ebf74286ef0b58146d3f7f89d193793439a8c54a4f281214f7ef7ef3",
+  "ok": false,
+  "issues": [
+    {
+      "path": "bin/mac/ffmpeg",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/ffprobe",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libSvtAv1Enc.4.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libX11.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libXau.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libXdmcp.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libaom.3.14.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libarchive.13.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libaribb24.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libass.9.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libavcodec.63.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libavdevice.63.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libavfilter.12.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libavformat.63.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libavutil.61.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libb2.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libbluray.4.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libbrotlicommon.1.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libbrotlidec.1.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libbrotlienc.1.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libcjson.1.7.19.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libcrypto.3.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libdav1d.7.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libfontconfig.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libfreetype.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libfribidi.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libggml-base.0.19.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libggml.0.19.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libgif.7.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libglib-2.0.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libgmp.10.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libgnutls.30.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libgraphite2.3.3.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libharfbuzz.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libhogweed.7.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libhwy.1.4.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libidn2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libintl.8.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libjpeg.8.3.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libjxl.0.12.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libjxl_cms.0.12.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libjxl_threads.0.12.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/liblcms2.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libleptonica.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/liblz4.1.10.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/liblzma.5.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libmbedcrypto.3.6.7.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libmp3lame.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libmpg123.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libnettle.9.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libogg.0.8.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libomp.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libopencore-amrnb.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libopencore-amrwb.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libopenjp2.2.5.4.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libopus.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libp11-kit.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libpcre2-8.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libplacebo.360.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libpng16.16.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/librav1e.0.8.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/librist.4.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/librubberband.3.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsamplerate.0.2.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libshaderc_shared.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsharpyuv.0.1.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsnappy.1.2.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsodium.26.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsoxr.0.1.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libspeex.1.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libsrt.1.5.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libssh.4.12.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libssl.3.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libswresample.7.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libswscale.10.1.100.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libtasn1.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libtesseract.5.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libtheoradec.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libtheoraenc.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libtiff.6.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libudfread.3.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libunibreak.7.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libunistring.5.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvidstab.1.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvmaf.3.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvorbis.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvorbisenc.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvpx.12.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libvulkan.1.4.357.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libwebp.7.2.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libwebpmux.3.1.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libwhisper.1.9.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libx264.165.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libx265.216.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libxcb-shape.0.0.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libxcb-shm.0.0.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libxcb-xfixes.0.0.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libxcb.1.1.0.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libxvidcore.4.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libzimg.2.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libzmq.5.dylib",
+      "sha256Matches": false,
+      "executable": true
+    },
+    {
+      "path": "bin/mac/lib/libzstd.1.5.7.dylib",
+      "sha256Matches": false,
+      "executable": true
+    }
+  ],
+  "entries": [
+    {
+      "path": "bin/mac/ffmpeg",
+      "sha256": "27bf6d4070a4cb5645d4bf770a481f9d6409ac16d69bb8adcdb01b374970b2c6",
+      "byteSize": 489680,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/ffprobe",
+      "sha256": "0cfeb2a163d6e33f889b21bf145278c5f2fba0be097d9b0bd3be9bfa0cfb40d5",
+      "byteSize": 301264,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libSvtAv1Enc.4.2.0.dylib",
+      "sha256": "8c719c1d251dd5f36e1a8728f5ab04fe50d3c85d6ddc60dada57bf9a99650a03",
+      "byteSize": 3039680,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libX11.6.dylib",
+      "sha256": "b7360290772cf53ebb81705bb78fa40acf018e630ebf0b08a0c59ee2c57c7041",
+      "byteSize": 1001344,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libXau.6.dylib",
+      "sha256": "7743a43e43efea005e55ed55a5d05a386db4a2264b80a352aecb1155fe46f3c8",
+      "byteSize": 35136,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libXdmcp.6.dylib",
+      "sha256": "1adbd314b079fb00b2b5c8cb5822c76b4bfe1150c48bbbf37107e4a87a22ea09",
+      "byteSize": 36048,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libaom.3.14.1.dylib",
+      "sha256": "0bf18fface258b449f4da42f3fec54626920485f1ab7936c0178ef7a9e33dcaf",
+      "byteSize": 4076640,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libarchive.13.dylib",
+      "sha256": "8b3f5de57e6c755e4a7ed92d38f95fe1ac1325d417ccea942b57cf893d011acf",
+      "byteSize": 685456,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libaribb24.0.dylib",
+      "sha256": "fd1ddb27e160a492a4634fd9b2feef065115303c5a8d757916a08a0ec4aadcc3",
+      "byteSize": 104192,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libass.9.dylib",
+      "sha256": "de7d995adbca605237354485c5e4c3d926e1819a2d6f21dead355ad16180b2a4",
+      "byteSize": 228640,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libavcodec.63.1.100.dylib",
+      "sha256": "1d1f498000126de1e7cb2d8400ca43e054f38ee1b8e5ccf2c9a54432db18a968",
+      "byteSize": 10760896,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libavdevice.63.1.100.dylib",
+      "sha256": "30c54c9f0b99a34b51810a6fa15b57225ed24ac421639c55c3fe5da24652fab7",
+      "byteSize": 185024,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libavfilter.12.1.100.dylib",
+      "sha256": "e2ec2d8f3e23170cf64e5a8b1f9a35f6194b9988471ce2509318221246c48749",
+      "byteSize": 3328752,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libavformat.63.1.100.dylib",
+      "sha256": "afee6020093eaa269b82539ed42fba3ffea9f949d6cac630cb38edb3eb7436ae",
+      "byteSize": 2478656,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libavutil.61.1.100.dylib",
+      "sha256": "18510a9e5f5b4db4f265a2f1e1762ce1a55925929636de31d697899a0ebc7cf2",
+      "byteSize": 706224,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libb2.1.dylib",
+      "sha256": "fe34b5106780fe723b2980baffc616f87c48592b035fd9bc834d8883f81aff22",
+      "byteSize": 67600,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libbluray.4.dylib",
+      "sha256": "ca42b28bf73990526144fd09f217df2fcecca6d767c54e7a0e2183972194da05",
+      "byteSize": 355840,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libbrotlicommon.1.2.0.dylib",
+      "sha256": "0189214a4b310c0475200b70ec60e03dc5e0d7cbe8b4c1c5a0d0587370727a64",
+      "byteSize": 149264,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libbrotlidec.1.2.0.dylib",
+      "sha256": "a6a6562e8241ba09f319c10cf45b7c2877c8cc53747c9bbb18e58c4c02b6d44c",
+      "byteSize": 69744,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libbrotlienc.1.2.0.dylib",
+      "sha256": "49f07440757da070e294925994adfd5b3566144e59efa649c74eeb9a813300de",
+      "byteSize": 635344,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libcjson.1.7.19.dylib",
+      "sha256": "7a10a27dcee14df59b439e4a3ca876cdd49e69cdd27cd2367af4962c048e9395",
+      "byteSize": 71952,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libcrypto.3.dylib",
+      "sha256": "085bd3d0d3576c70905c2611bffeba2445bac9e25e4e0d54bc93706748dfb2d4",
+      "byteSize": 4828048,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libdav1d.7.dylib",
+      "sha256": "e04653f38ea95efd1d98b830d40950f69a2478ddf2804df2d62e7902cc9f213f",
+      "byteSize": 825360,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libfontconfig.1.dylib",
+      "sha256": "6c176ab7f88bdfdfdc17013d9d9a4b07ee3f86f5ee0180c4f01f3bbbe3af14a3",
+      "byteSize": 453344,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libfreetype.6.dylib",
+      "sha256": "fd34b5cc48374e8032a4165741b965915d83952b9f653888cad2f4de800a0787",
+      "byteSize": 620256,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libfribidi.0.dylib",
+      "sha256": "56ba9ecea9a8242f569ca1b365e37358e05f9416254c60a7e62df2126db56ea8",
+      "byteSize": 153040,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libggml-base.0.19.0.dylib",
+      "sha256": "b93d23009c81493f74d9ea3c0fa5f66934ca753aef785219d17744358fcf8cd6",
+      "byteSize": 503152,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libggml.0.19.0.dylib",
+      "sha256": "ea6ea2fb799ff799ebdb22c82348721e3ae55fe2a182621ffdd9cf4c5a8467f0",
+      "byteSize": 59936,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libgif.7.2.0.dylib",
+      "sha256": "e2d24a54ecfa558000d772070bf0cf065e41f586ecae993ec3ff166417461043",
+      "byteSize": 54672,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libglib-2.0.0.dylib",
+      "sha256": "16b07b6270a30d77b80de6df200ba5d9b194a4bc0294d6a24f44f57bb0804cd2",
+      "byteSize": 1351424,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libgmp.10.dylib",
+      "sha256": "bc214d6e56a222af36c22a10e4e13dda63dd403154d52490cc8b579dd088beac",
+      "byteSize": 432320,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libgnutls.30.dylib",
+      "sha256": "7cdce0cb45607d1064dac5449214bac2acd1c54a6d020023cf74c4f1344324a0",
+      "byteSize": 2324784,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libgraphite2.3.3.1.dylib",
+      "sha256": "e130779381a6becf2f9f83a75ddd432e9472e5491aea3fcba1237bcc3255dab4",
+      "byteSize": 124560,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libharfbuzz.0.dylib",
+      "sha256": "c796c59f942477453f0c0dafb6637fd1375b40bbbbbd66122b3ff4e6244a7778",
+      "byteSize": 1228032,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libhogweed.7.0.dylib",
+      "sha256": "4c52d1393c2cc23a28caca122f6424e771780f6d69a2ab483bcaf519635a1e3e",
+      "byteSize": 277520,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libhwy.1.4.0.dylib",
+      "sha256": "97d27c58c2fc1ee1b3057b0a3eff19899b849f54e43ff04936976024e4562b93",
+      "byteSize": 80624,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libidn2.0.dylib",
+      "sha256": "70d489ede0bcb9efa431205a25d532d5fa0cb5e036be76d0daddeeb7b5ef63b4",
+      "byteSize": 238896,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libintl.8.dylib",
+      "sha256": "49a52bc4a7241bf82392f65eb3ae20f5414bdd8684e806f79115a03ec5940747",
+      "byteSize": 210816,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libjpeg.8.3.2.dylib",
+      "sha256": "4d89fec70bce9c319a8f526cacbb07e6af10d0698bc2f04d8ae74cef563ddcae",
+      "byteSize": 454256,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libjxl.0.12.0.dylib",
+      "sha256": "058d13c41c4dcb1edcd260778c8da1326a263db4b059dd5b96e339221da8bb40",
+      "byteSize": 1915984,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libjxl_cms.0.12.0.dylib",
+      "sha256": "6146dba6b80b8b02e3107a0f6e6b15631a90e43e8a6077754fb2740874dd4a0c",
+      "byteSize": 95264,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libjxl_threads.0.12.0.dylib",
+      "sha256": "2f9a88806ba0c04dcf7bce473726c907be1f67fb7df569d59ae8a3c8394d80ba",
+      "byteSize": 38592,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/liblcms2.2.dylib",
+      "sha256": "3100a217dd1be978da2aa404c1fc54556bb8c0dae9f1cb49e2f8404ed61018c1",
+      "byteSize": 338272,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libleptonica.6.dylib",
+      "sha256": "5795bf99302d81409a525e27f28a802c787e6a14d7a3b0ac50e793b9300693f8",
+      "byteSize": 2190448,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/liblz4.1.10.0.dylib",
+      "sha256": "5caf417c0ad522c256d54e4c620ddc3f0fb091e3421156230f5eb700dc94bd99",
+      "byteSize": 158048,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/liblzma.5.dylib",
+      "sha256": "86c7f923766ff02c8948158a4c73967646f80f1628a7a301e449b0803fc08ec8",
+      "byteSize": 166528,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libmbedcrypto.3.6.7.dylib",
+      "sha256": "13fddeb85153083a568e8f5c90e46763d3d853ff85d675e383a3b00b47fd8ac4",
+      "byteSize": 495216,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libmp3lame.0.dylib",
+      "sha256": "37afbaf495337e1911dadc25bada8acbed7a0073426ec8c6536d8ace237bdb41",
+      "byteSize": 214640,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libmpg123.0.dylib",
+      "sha256": "5f8f718d787706b8aaa3f6409815c330cd111d81c6ca0ee8348b28bcac7c65fe",
+      "byteSize": 270336,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libnettle.9.0.dylib",
+      "sha256": "70936ae7e9263a0019da5a4ec4cc8d4118bc906bf87e48cf31a6df947a6a2cbe",
+      "byteSize": 314624,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libogg.0.8.6.dylib",
+      "sha256": "3c8a46ea16d6cbb004ac152b09f29349badf35a87fd6ef46825319acb8620e88",
+      "byteSize": 53728,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libomp.dylib",
+      "sha256": "2183ce65397a853f13b984ca8d34fa6a0670fe57b7c956a94e2fa37d3f9644ee",
+      "byteSize": 721120,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libopencore-amrnb.0.dylib",
+      "sha256": "5e3ea42603bbe786370c200bea4b648c190f7c30d02934c31a87a88602205702",
+      "byteSize": 159584,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libopencore-amrwb.0.dylib",
+      "sha256": "f031b1a3d6d7d4f8086013b3bf6743d3a4bf8d194d01cd9c2f99d4f4ad428c0e",
+      "byteSize": 87616,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libopenjp2.2.5.4.dylib",
+      "sha256": "fab30b9116a6a6e7154a5b0885d4c4dd9158eb897bf7f5387b929ed7e1129a0b",
+      "byteSize": 306160,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libopus.0.dylib",
+      "sha256": "b4060c636931fb2794115634ab0d4b51b93249ef35ea0641303f28b4030a14ea",
+      "byteSize": 355760,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libp11-kit.0.dylib",
+      "sha256": "17d4309ada6f5a739a091681c0980a931599c324e1fffc77c28845aa9b7428d5",
+      "byteSize": 1593536,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libpcre2-8.0.dylib",
+      "sha256": "3e66bc3e48cfea84c5d5c1f67193f1eda68c7a741bd98dcc1814932e7694c05d",
+      "byteSize": 570832,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libplacebo.360.dylib",
+      "sha256": "135ba77647506bfc1d22117c91fe01036e3196e81c27af4396f438a93dcd6db4",
+      "byteSize": 939808,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libpng16.16.dylib",
+      "sha256": "d291af94d200ed6c451d9b6b882a45a35276118dffece09dc61a7875984a01c3",
+      "byteSize": 190272,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/librav1e.0.8.1.dylib",
+      "sha256": "48a66840d972858f67d3c35747acfc70f82ec30cc4bc20fd31649202ccf3ead3",
+      "byteSize": 2906912,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/librist.4.dylib",
+      "sha256": "553f21a0c653eeadd24eb0140357c6fc370f485c5540bb0a7dac6f7698805673",
+      "byteSize": 225584,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/librubberband.3.dylib",
+      "sha256": "01dbefec9a020a1a60957a33ca4005f931f4187e584831adeb445c18d556b9f6",
+      "byteSize": 373824,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsamplerate.0.2.2.dylib",
+      "sha256": "a2891aa6496e77169db8245636111bc9fc7ef3c186c3692e8b1973308ce8b349",
+      "byteSize": 1529840,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libshaderc_shared.1.dylib",
+      "sha256": "7cd5f0b191ed6911bcb9f765dbb2150ddd61bf73b46f8ad0fb1c5ee616b4d57c",
+      "byteSize": 7367824,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsharpyuv.0.1.2.dylib",
+      "sha256": "83e0c58df18d655ac8f4fcda64cfd458a47346cc27763ddc6f229efd3f5ef8a8",
+      "byteSize": 51584,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsnappy.1.2.2.dylib",
+      "sha256": "f6c5d44e6574624d25414682f5fde7be903488b4d0ad1cf0cd523a22405effe8",
+      "byteSize": 61568,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsodium.26.dylib",
+      "sha256": "f93645b84415971338f807d475bf66a1b624cd824c2b6c3d520e777083343594",
+      "byteSize": 346720,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsoxr.0.1.2.dylib",
+      "sha256": "983eaa298b00cd4b22b69c7a8e82aa34a51445d67c4a76973951bd124f397ece",
+      "byteSize": 140560,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libspeex.1.dylib",
+      "sha256": "14fd8c831cae4aea474f97bae5b3d4d71112582714ea6ffd624d779e667597e5",
+      "byteSize": 107552,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libsrt.1.5.6.dylib",
+      "sha256": "e14efe54e5ba6c42ff816e72ef522fb923032c1ed527d0020ced053e1e366b78",
+      "byteSize": 709088,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libssh.4.12.0.dylib",
+      "sha256": "bb6258e2d02ac64765e47bbb0298fee49d0a7cf3df904454b2ddc8682c325e27",
+      "byteSize": 516848,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libssl.3.dylib",
+      "sha256": "54756418e4303e93a77bf06e5e2f8e2116002d0e479ed72a47844c9cb63dd9a7",
+      "byteSize": 867008,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libswresample.7.1.100.dylib",
+      "sha256": "d9bcadfaf39816a195884c0be0eda79414a3ee007504cd34de1b909e705c2369",
+      "byteSize": 103488,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libswscale.10.1.100.dylib",
+      "sha256": "b4bb6bfe31dc4eb85eda46e8c271366362cf81b94cae23bc54a31d74b9019620",
+      "byteSize": 718592,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libtasn1.6.dylib",
+      "sha256": "b5bab46aca18b9d167ae832b9eb92f836dcf0091e3f9188b86edcc171e235461",
+      "byteSize": 89728,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libtesseract.5.dylib",
+      "sha256": "18e36f06817f97ada1508a070bfa7db6eb8c473c51147ab15820bb2547a61d04",
+      "byteSize": 2786336,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libtheoradec.2.dylib",
+      "sha256": "5496d974a931076e4d00ee71a937d7253961be89b5a6eb82010d5fd7e3339c71",
+      "byteSize": 72816,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libtheoraenc.2.dylib",
+      "sha256": "54705011022a3bbef1fbc339dbfa8c763b6b7eefa7a8bfa605ef330cdf13ca71",
+      "byteSize": 159168,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libtiff.6.dylib",
+      "sha256": "0ab58dd97ce01616fda54a3070641247485a1aa06690c063553ebb01b4f6f3d8",
+      "byteSize": 525504,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libudfread.3.dylib",
+      "sha256": "cea33ceeee76257addd83cbba06cd4747464ea08dd16dbd3e43cd3292879f06f",
+      "byteSize": 53184,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libunibreak.7.dylib",
+      "sha256": "0586e63d34975cd9f373e275c625accbc3c0a214e20b516ccf770053c62edb14",
+      "byteSize": 151696,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libunistring.5.dylib",
+      "sha256": "327ca66139d07836531307a2f5ff955a405743014cb7861b3e047776a5ad9313",
+      "byteSize": 2005056,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvidstab.1.2.dylib",
+      "sha256": "82999dbed9c4402121cb232b7b328465d336318bae73e671af8b94c84978ad48",
+      "byteSize": 93616,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvmaf.3.dylib",
+      "sha256": "fa476867e155aa06c6f6b5276ec1d844f071e3f9e91596b2163c9f71270fe134",
+      "byteSize": 1571616,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvorbis.0.dylib",
+      "sha256": "86ad89cfd877114c94697e2dba43e32485a2d7437239d4835d5cbfb68ac2993a",
+      "byteSize": 175088,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvorbisenc.2.dylib",
+      "sha256": "374633896715f0e57d8f709dce8d98a0ed022e8fc9006693cbf4318466fe12ca",
+      "byteSize": 705824,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvpx.12.dylib",
+      "sha256": "c80ba598e9c5bb58f4a63c296d2f3a787de645cd10814cce0feb4c648944f9fc",
+      "byteSize": 1736496,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libvulkan.1.4.357.dylib",
+      "sha256": "ff009cf348deb215e23a3ef98ab5cd75901565aabfc000ac97895c7f25289d2e",
+      "byteSize": 645744,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libwebp.7.2.0.dylib",
+      "sha256": "66b7119a09018ba36a485a68e4f8d95e60c6d69028d002cfb6d019d2627f2507",
+      "byteSize": 334336,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libwebpmux.3.1.2.dylib",
+      "sha256": "b0bea8914081d622a14401e8b0494fdb6a4ab46cdec01668f97d29e55b1e9bd8",
+      "byteSize": 55248,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libwhisper.1.9.2.dylib",
+      "sha256": "ea4b2b46f6e70e965dd7ee0356dc48fc181baade5b70103a04414a71846d5748",
+      "byteSize": 413552,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libx264.165.dylib",
+      "sha256": "e5e9375a88b05b20d9527b165f61f1e20db1535da2d881c7ce5fcaabf7257dc2",
+      "byteSize": 1256304,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libx265.216.dylib",
+      "sha256": "2ee7f24f3347140c45845740a0d98e380f823f7ca165c0a931331274662966b1",
+      "byteSize": 7458432,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libxcb-shape.0.0.0.dylib",
+      "sha256": "68ae86a1fb81ba87308d3497303953effbb9d1489bb04e6de7cd102afe0c3afa",
+      "byteSize": 53056,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libxcb-shm.0.0.0.dylib",
+      "sha256": "1b6959833bccffa99f0dd3313229daea75964bf2278275cb7d2b3d826ec101a7",
+      "byteSize": 52160,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libxcb-xfixes.0.0.0.dylib",
+      "sha256": "68aac40205aeed4f6ac391ed57bd7685c22865bcf655368fcd16650983795a6e",
+      "byteSize": 62656,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libxcb.1.1.0.dylib",
+      "sha256": "83a51a6f82cf181b62c26cf13e8c6ea13c189df9484b9dd3570a65fd53e2981f",
+      "byteSize": 175760,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libxvidcore.4.dylib",
+      "sha256": "070b0cb11b994c16061e04417fae5e5a112581f71b34ac8ca7de0461d351f6c9",
+      "byteSize": 439232,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libzimg.2.dylib",
+      "sha256": "06625f96da13e5676e73f4c87ea19f1bcebd687c9bf3ec08747ade11594d0083",
+      "byteSize": 386208,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libzmq.5.dylib",
+      "sha256": "24c6a07cc91437408e5f508671ec65b849c613adca89c7e2d870b708c1312364",
+      "byteSize": 656112,
+      "archiveType": "b"
+    },
+    {
+      "path": "bin/mac/lib/libzstd.1.5.7.dylib",
+      "sha256": "0af4670c6d14ccc614f70aa1e757b3313fe629b5d05d8e818c9f644443b730bb",
+      "byteSize": 631664,
+      "archiveType": "b"
+    }
+  ]
+}

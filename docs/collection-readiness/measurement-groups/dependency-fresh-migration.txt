@@ -1,0 +1,98 @@
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "encodingdb_dependencies_fresh", schema "public" at "localhost:55439"
+
+29 migrations found in prisma/migrations
+
+Applying migration `20251001180225_init_postgres`
+Applying migration `20251003172300_add_submission_metadata`
+Applying migration `20251004120000_harden_ingest`
+Applying migration `20251004143000_add_crf_column`
+Applying migration `20251008045500_sync_schema_columns`
+Applying migration `20251009000000_create_submission_table`
+Applying migration `20251010120000_data_integrity_sprint1`
+Applying migration `20251012120000_sprint2_optimizations`
+Applying migration `20260218120000_sprint3_ssim_psnr`
+Applying migration `20260218130000_sprint5_multi_content`
+Applying migration `20260218130000_sprint5_multi_content_resolution`
+Applying migration `20260218130000_sprint6_hardware_metrics`
+Applying migration `20260218140000_sprint4_query_indexes`
+Applying migration `20260219170000_sprint7_extended_telemetry`
+Applying migration `20260314120000_reliable_client_telemetry`
+Applying migration `20260811060000_invalidate_reversed_vmaf`
+Applying migration `20260811230000_pl_score_v7_contract`
+Applying migration `20260812010000_v7_evidence_epoch`
+Applying migration `20260812023000_v7_artifact_lifecycle`
+Applying migration `20260812030000_legacy_aggregate_null_identity`
+Applying migration `20260812040000_exact_analysis_membership`
+Applying migration `20260812120000_v7_authoritative_analysis_queue`
+Applying migration `20260812153000_v7_environment_physical_memory`
+Applying migration `20260914010000_collection_integrity`
+Applying migration `20260914011000_review_derivation_invalidation`
+Applying migration `20260914012000_corpus_groups`
+Applying migration `20260914013000_precise_process_interval`
+Applying migration `20260914014000_measurement_group_lookup`
+Applying migration `20260914015000_group_projection_dependencies`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20251001180225_init_postgres/
+    └─ migration.sql
+  └─ 20251003172300_add_submission_metadata/
+    └─ migration.sql
+  └─ 20251004120000_harden_ingest/
+    └─ migration.sql
+  └─ 20251004143000_add_crf_column/
+    └─ migration.sql
+  └─ 20251008045500_sync_schema_columns/
+    └─ migration.sql
+  └─ 20251009000000_create_submission_table/
+    └─ migration.sql
+  └─ 20251010120000_data_integrity_sprint1/
+    └─ migration.sql
+  └─ 20251012120000_sprint2_optimizations/
+    └─ migration.sql
+  └─ 20260218120000_sprint3_ssim_psnr/
+    └─ migration.sql
+  └─ 20260218130000_sprint5_multi_content/
+    └─ migration.sql
+  └─ 20260218130000_sprint5_multi_content_resolution/
+    └─ migration.sql
+  └─ 20260218130000_sprint6_hardware_metrics/
+    └─ migration.sql
+  └─ 20260218140000_sprint4_query_indexes/
+    └─ migration.sql
+  └─ 20260219170000_sprint7_extended_telemetry/
+    └─ migration.sql
+  └─ 20260314120000_reliable_client_telemetry/
+    └─ migration.sql
+  └─ 20260811060000_invalidate_reversed_vmaf/
+    └─ migration.sql
+  └─ 20260811230000_pl_score_v7_contract/
+    └─ migration.sql
+  └─ 20260812010000_v7_evidence_epoch/
+    └─ migration.sql
+  └─ 20260812023000_v7_artifact_lifecycle/
+    └─ migration.sql
+  └─ 20260812030000_legacy_aggregate_null_identity/
+    └─ migration.sql
+  └─ 20260812040000_exact_analysis_membership/
+    └─ migration.sql
+  └─ 20260812120000_v7_authoritative_analysis_queue/
+    └─ migration.sql
+  └─ 20260812153000_v7_environment_physical_memory/
+    └─ migration.sql
+  └─ 20260914010000_collection_integrity/
+    └─ migration.sql
+  └─ 20260914011000_review_derivation_invalidation/
+    └─ migration.sql
+  └─ 20260914012000_corpus_groups/
+    └─ migration.sql
+  └─ 20260914013000_precise_process_interval/
+    └─ migration.sql
+  └─ 20260914014000_measurement_group_lookup/
+    └─ migration.sql
+  └─ 20260914015000_group_projection_dependencies/
+    └─ migration.sql
+      
+All migrations have been successfully applied.

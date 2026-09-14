@@ -1,0 +1,58 @@
+[
+  {
+    "frameIndex": 1200,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_01200.tif",
+    "bytes": 53101658,
+    "sha256": "92b866a30818e3e9c2f0f7bd02c2a007a433e859db6197d2352aeb5bf56f02ac",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_01200.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 1800,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_01800.tif",
+    "bytes": 53101658,
+    "sha256": "014db50e9da98514bf7ef7418d1bb30d943611137f05808200c7242929fb6296",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_01800.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 2400,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_02400.tif",
+    "bytes": 53101658,
+    "sha256": "d5d85b4f429f6f9676d18ac4b55c11f788b910c05eac9531f1806acce22a4655",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_02400.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 3000,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_03000.tif",
+    "bytes": 53101658,
+    "sha256": "abe451734fc8f22ce154be04a533c073019749ada1a77f75871015772bcdba07",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_03000.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 3600,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_03600.tif",
+    "bytes": 53101658,
+    "sha256": "3abb48d6af8fda45e2a7946b9645572fbd7e2ff3cb4f78a5eba498506c4c74a0",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_03600.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 4200,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_04200.tif",
+    "bytes": 53101658,
+    "sha256": "821656aa83adb0589f7f87f4afb448e6d67a7dd770bf088a6f0e8ed8d1f8beb9",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_04200.tif",
+    "selectionPreviewOnly": true
+  },
+  {
+    "frameIndex": 4800,
+    "url": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_04800.tif",
+    "bytes": 53101658,
+    "sha256": "f030d315e7ea7af1e2c403c88e1a31a55114a72e1c04707b67e1ee343056966a",
+    "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/chimera-selection/Chimera_DCI4k2398p_HDR_P3PQ_04800.tif",
+    "selectionPreviewOnly": true
+  }
+]

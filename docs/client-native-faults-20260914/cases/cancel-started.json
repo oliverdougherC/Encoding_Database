@@ -1,0 +1,30 @@
+{
+  "case": "cancel",
+  "startedAt": "2026-09-14T04:34:34.919411+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--codec",
+    "libx264",
+    "--presets",
+    "veryslow",
+    "--no-submit",
+    "--max-duration-minutes",
+    "3",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/receipts/cancel-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:49226",
+    "HTTPS_PROXY": "http://127.0.0.1:49226",
+    "ALL_PROXY": "http://127.0.0.1:49226",
+    "NO_PROXY": "localhost,127.0.0.1"
+  },
+  "pid": 76466,
+  "artifactSha256": "c61e106f6b18480224b65f6c7e0137f51d12f26eb9f4b39a9d75f9fa6f8ab908",
+  "diagnosticNotCalibration": true,
+  "proxyRequestStart": 0
+}

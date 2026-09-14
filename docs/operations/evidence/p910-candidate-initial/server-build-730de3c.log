@@ -1,0 +1,155 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 5.64kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.7s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+#4 ...
+
+#5 [internal] load metadata for docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb
+#5 DONE 0.5s
+
+#4 [internal] load metadata for docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+#4 DONE 0.5s
+
+#6 [internal] load metadata for docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+#6 DONE 0.6s
+
+#7 [internal] load .dockerignore
+#7 transferring context:
+#7 transferring context: 230B done
+#7 DONE 0.3s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [node-runtime 1/1] FROM docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+#9 resolve docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5 0.1s done
+#9 DONE 0.1s
+
+#10 [vmaf-builder 1/2] FROM docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+#10 resolve docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea 0.1s done
+#10 DONE 0.1s
+
+#11 [runtime  1/13] FROM docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb
+#11 resolve docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb 0.1s done
+#11 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 1.27MB 0.1s done
+#8 DONE 0.1s
+
+#12 [builder  1/11] WORKDIR /app
+#12 CACHED
+
+#13 [builder  2/11] COPY package.json package-lock.json* ./
+#13 DONE 0.1s
+
+#14 [builder  3/11] RUN npm ci --no-audit --no-fund
+#14 10.39 
+#14 10.39 added 142 packages in 10s
+#14 10.39 npm notice
+#14 10.39 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+#14 10.39 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#14 10.39 npm notice To update run: npm install -g npm@12.0.2
+#14 10.39 npm notice
+#14 DONE 11.1s
+
+#15 [builder  4/11] COPY tsconfig.json ./
+#15 DONE 0.2s
+
+#16 [builder  5/11] COPY prisma ./prisma
+#16 DONE 0.1s
+
+#17 [builder  6/11] COPY src ./src
+#17 DONE 0.1s
+
+#18 [builder  7/11] COPY resources ./resources
+#18 DONE 3.2s
+
+#19 [builder  8/11] COPY config ./config
+#19 DONE 0.1s
+
+#20 [builder  9/11] RUN npx prisma generate
+#20 2.472 Prisma schema loaded from prisma/schema.prisma
+#20 3.384 
+#20 3.384 ✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 407ms
+#20 3.384 
+#20 3.384 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#20 3.384 
+#20 3.384 Tip: Need your database queries to be 1000x faster? Accelerate offers you that and more: https://pris.ly/tip-2-accelerate
+#20 3.384 
+#20 DONE 3.5s
+
+#21 [builder 10/11] RUN npm run build
+#21 0.589 
+#21 0.589 > server@1.0.0 build
+#21 0.589 > tsc
+#21 0.589 
+#21 DONE 8.6s
+
+#22 [builder 11/11] RUN npm prune --omit=dev --no-audit --no-fund
+#22 1.246 
+#22 1.246 up to date in 722ms
+#22 DONE 1.3s
+
+#23 [runtime  2/13] WORKDIR /app
+#23 CACHED
+
+#24 [runtime  3/13] COPY --from=node-runtime /usr/local/ /usr/local/
+#24 CACHED
+
+#25 [vmaf-builder 2/2] RUN apt-get update     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends       build-essential ca-certificates curl meson nasm ninja-build pkg-config python3     && curl --fail --location --retry 3       "https://codeload.github.com/Netflix/vmaf/tar.gz/refs/tags/v3.2.0"       --output /tmp/vmaf.tar.gz     && echo "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc  /tmp/vmaf.tar.gz" | sha256sum -c -     && mkdir /tmp/vmaf     && tar -xzf /tmp/vmaf.tar.gz --strip-components=1 -C /tmp/vmaf     && meson setup /tmp/vmaf/libvmaf/build /tmp/vmaf/libvmaf       --buildtype=release --prefix=/usr/local --libdir=lib       -Denable_tests=false -Denable_docs=false -Denable_float=true -Dbuilt_in_models=true     && ninja -C /tmp/vmaf/libvmaf/build     && DESTDIR=/vmaf-install meson install -C /tmp/vmaf/libvmaf/build
+#25 CACHED
+
+#26 [runtime  4/13] COPY --from=vmaf-builder /vmaf-install/usr/local/lib/ /usr/local/lib/
+#26 CACHED
+
+#27 [runtime  5/13] RUN ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq '[[:space:]]libvmaf[[:space:]]'     && ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq '[[:space:]]xpsnr[[:space:]]'     && command -v ffprobe >/dev/null
+#27 CACHED
+
+#28 [runtime  6/13] COPY --from=builder /app/node_modules ./node_modules
+#28 DONE 1.6s
+
+#29 [runtime  7/13] COPY package.json package-lock.json* ./
+#29 DONE 0.2s
+
+#30 [runtime  8/13] COPY --from=builder /app/dist ./dist
+#30 DONE 0.1s
+
+#31 [runtime  9/13] COPY --from=builder /app/resources ./resources
+#31 DONE 2.2s
+
+#32 [runtime 10/13] COPY --from=builder /app/config ./config
+#32 DONE 0.1s
+
+#33 [runtime 11/13] COPY prisma ./prisma
+#33 DONE 0.1s
+
+#34 [runtime 12/13] COPY scripts ./scripts
+#34 DONE 0.1s
+
+#35 [runtime 13/13] RUN echo "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app/resources/vmaf/vmaf_v1.0.16_3d0h.json"     | sha256sum -c -     && test -f /app/resources/test_suite_v1/manifest.json     && node -e 'const fs=require("fs"),crypto=require("crypto"),path=require("path"); const root="/app/resources/test_suite_v1"; const manifest=JSON.parse(fs.readFileSync(path.join(root,"manifest.json"))); for(const clip of manifest.clips){const bytes=fs.readFileSync(path.join(root,"canonical",clip.fileName)); if(bytes.length!==clip.byteSize||crypto.createHash("sha256").update(bytes).digest("hex")!==clip.sha256) throw new Error(`invalid canonical source ${clip.id}`)}'     && test -f /app/config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json     && ffmpeg -hide_banner -loglevel error       -f lavfi -i testsrc2=size=960x540:rate=2:duration=2       -f lavfi -i testsrc2=size=960x540:rate=2:duration=2       -lavfi "[0:v][1:v]libvmaf=model=path=/app/resources/vmaf/vmaf_v1.0.16_3d0h.json:n_threads=1:log_fmt=json:log_path=/tmp/vmaf-preflight.json"       -f null -     && test -s /tmp/vmaf-preflight.json     && grep -q '"vmaf"' /tmp/vmaf-preflight.json     && node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { buildDiagnosticFilterInputs } from "./dist/v7/artifacts.js"; execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-lavfi", `${buildDiagnosticFilterInputs(1)};[distorted][reference]xpsnr`, "-f", "null", "-"], { stdio: "inherit" });'
+#35 0.334 /app/resources/vmaf/vmaf_v1.0.16_3d0h.json: OK
+#35 DONE 7.4s
+
+#36 exporting to image
+#36 exporting layers
+#36 exporting layers 148.6s done
+#36 exporting manifest sha256:e60b9ecca2502518ca58d352fad6f0b56253b1e60872f366e94ee73b2f919e0f 0.0s done
+#36 exporting config sha256:00b2770cdef102df60d3f146300bef24f82e486c7c39de90ddef225a67369992 0.0s done
+#36 exporting attestation manifest sha256:48c788a22ed99b4329fcde9c734813f1c97db925988cb4b2698e6683243b56aa 0.1s done
+#36 exporting manifest list sha256:63cb59713fabf51c1c8166ce287f09f8cb4ed13ab9b8bfb679ad8f5f55511bd2
+#36 exporting manifest list sha256:63cb59713fabf51c1c8166ce287f09f8cb4ed13ab9b8bfb679ad8f5f55511bd2 0.0s done
+#36 naming to docker.io/library/encodingdb-candidate-server:730de3c done
+#36 unpacking to docker.io/library/encodingdb-candidate-server:730de3c
+#36 unpacking to docker.io/library/encodingdb-candidate-server:730de3c 21.4s done
+#36 DONE 170.2s

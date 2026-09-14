@@ -1,0 +1,151 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.04kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.7s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/node:20-alpine
+#4 DONE 0.6s
+
+#5 [internal] load .dockerignore
+#5 transferring context:
+#5 transferring context: 2B done
+#5 DONE 0.2s
+
+#6 [internal] load build context
+#6 DONE 0.0s
+
+#7 [builder 1/8] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#7 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#7 DONE 0.1s
+
+#6 [internal] load build context
+#6 transferring context: 1.27MB 0.1s done
+#6 DONE 0.1s
+
+#8 [builder 2/8] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/8] COPY package.json package-lock.json* ./
+#9 DONE 0.1s
+
+#10 [builder 4/8] RUN npm ci
+#10 16.04 
+#10 16.04 added 292 packages, and audited 293 packages in 16s
+#10 16.04 
+#10 16.05 74 packages are looking for funding
+#10 16.05   run `npm fund` for details
+#10 16.06 
+#10 16.06 2 moderate severity vulnerabilities
+#10 16.06 
+#10 16.06 To address all issues (including breaking changes), run:
+#10 16.06   npm audit fix --force
+#10 16.06 
+#10 16.06 Run `npm audit` for details.
+#10 16.06 npm notice
+#10 16.06 npm notice New major version of npm available! 10.8.2 -> 12.0.2
+#10 16.06 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+#10 16.06 npm notice To update run: npm install -g npm@12.0.2
+#10 16.06 npm notice
+#10 DONE 16.2s
+
+#11 [builder 5/8] COPY . .
+#11 DONE 0.4s
+
+#12 [builder 6/8] RUN mkdir -p public
+#12 DONE 0.4s
+
+#13 [builder 7/8] RUN npm run build
+#13 0.745 
+#13 0.745 > frontend@0.1.0 build
+#13 0.745 > next build --turbopack
+#13 0.745 
+#13 1.501 ▲ Next.js 16.3.4 (Turbopack)
+#13 1.538 ✓ Running next.config.mjs took 35ms
+#13 1.549 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#13 1.549 This information is used to shape Next.js' roadmap and prioritize features.
+#13 1.549 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#13 1.550 https://nextjs.org/telemetry
+#13 1.550 
+#13 1.611 
+#13 1.847   Creating an optimized production build ...
+#13 8.186 ✓ Compiled successfully in 5.6s
+#13 8.226   Running TypeScript ...
+#13 15.24   Finished TypeScript in 7.0s ...
+#13 15.26   Collecting page data using 20 workers ...
+#13 16.73   Generating static pages using 20 workers (0/17) ...
+#13 17.50   Generating static pages using 20 workers (4/17) 
+#13 17.79   Generating static pages using 20 workers (8/17) 
+#13 18.28   Generating static pages using 20 workers (12/17) 
+#13 18.33 ✓ Generating static pages using 20 workers (17/17) in 1599ms
+#13 18.34   Finalizing page optimization ...
+#13 18.38 
+#13 18.38 Route (app)
+#13 18.38 ┌ ƒ /
+#13 18.38 ├ ○ /_not-found
+#13 18.38 ├ ƒ /api/analytics/encoders
+#13 18.38 ├ ƒ /api/analytics/hardware
+#13 18.38 ├ ƒ /api/analytics/leaderboards
+#13 18.38 ├ ƒ /api/corpus
+#13 18.38 ├ ƒ /api/corpus/[id]
+#13 18.38 ├ ƒ /api/hwlink
+#13 18.38 ├ ƒ /api/query
+#13 18.38 ├ ○ /compare-encoders
+#13 18.38 ├ ƒ /encoders
+#13 18.38 ├ ƒ /hardware
+#13 18.38 ├ ƒ /leaderboards
+#13 18.38 ├ ○ /methodology
+#13 18.38 ├ ○ /plove
+#13 18.38 ├ ƒ /results/[id]
+#13 18.38 └ ○ /run
+#13 18.38 
+#13 18.38 
+#13 18.38 ○  (Static)   prerendered as static content
+#13 18.38 ƒ  (Dynamic)  server-rendered on demand
+#13 18.38 
+#13 DONE 18.6s
+
+#14 [builder 8/8] RUN npm prune --omit=dev
+#14 2.325 
+#14 2.325 up to date, audited 36 packages in 2s
+#14 2.325 
+#14 2.325 11 packages are looking for funding
+#14 2.325   run `npm fund` for details
+#14 2.328 
+#14 2.328 found 0 vulnerabilities
+#14 DONE 3.0s
+
+#15 [runner 3/7] COPY --from=builder /app/node_modules ./node_modules
+#15 CACHED
+
+#16 [runner 4/7] COPY --from=builder /app/package.json ./package.json
+#16 DONE 0.0s
+
+#17 [runner 5/7] COPY --from=builder /app/.next ./.next
+#17 DONE 0.3s
+
+#18 [runner 6/7] COPY --from=builder /app/public ./public
+#18 DONE 0.1s
+
+#19 [runner 7/7] COPY --from=builder /app/next.config.mjs ./next.config.mjs
+#19 DONE 0.1s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 6.3s done
+#20 exporting manifest sha256:c8d511ae93a982aa9201c9fdcbd1054426037bf914944ec03675c67bc27bc18e 0.0s done
+#20 exporting config sha256:599cffa44dae894354999deb8ed463f1dd559ef73bb5b8d97471b1da70c616e1 0.0s done
+#20 exporting attestation manifest sha256:3cceddbd89a21c369ed7a0bbe3f2a08d3077bc0502b2180366a6ae3c8c41cf8d 0.0s done
+#20 exporting manifest list sha256:e20695175061da1de395f8840a898d60308bc2c68b84ddc010588c337d79289f
+#20 exporting manifest list sha256:e20695175061da1de395f8840a898d60308bc2c68b84ddc010588c337d79289f 0.0s done
+#20 naming to docker.io/library/encodingdb-candidate-frontend:730de3c done
+#20 unpacking to docker.io/library/encodingdb-candidate-frontend:730de3c
+#20 unpacking to docker.io/library/encodingdb-candidate-frontend:730de3c 0.9s done
+#20 DONE 7.4s

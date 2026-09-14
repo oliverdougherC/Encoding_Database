@@ -4,14 +4,14 @@
 .tableMeta,.pagination { display:flex; justify-content:space-between; gap:12px; color:var(--muted); font-size:.82rem; }
 .tableMeta { min-height:46px; margin-top:12px; padding:0 14px; align-items:center; border:1px solid var(--border); border-bottom:0; border-radius:var(--radius) var(--radius) 0 0; background:var(--surface); }
 .pagination { margin:12px 0; }
-.tableWrap { min-width:980px; border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius); overflow:hidden; background:var(--surface); }
-.gridHeader,.row { display:grid; grid-template-columns:var(--columns); align-items:center; }
+.tableWrap { min-width:0; max-width:100%; overflow-x:auto; border:1px solid var(--border); border-radius:0 0 var(--radius) var(--radius); background:var(--surface); }
+.gridHeader,.row { min-width:1358px; display:grid; grid-template-columns:var(--columns); align-items:center; }
 .gridHeader { min-height:42px; background:var(--surface-3); border-bottom:1px solid var(--border); color:var(--muted); font-size:11px; font-weight:800; }
 .gridHeader>* { padding:0 10px; }
 .headButton { border:0; background:transparent; color:inherit; font:inherit; padding:7px 0; }
 .headButton:hover { color:var(--accent); }
 .right { text-align:right; width:100%; }
-.scroller { height:min(62vh,650px); overflow:auto; }
+.scroller { min-width:1358px; height:min(62vh,650px); overflow:auto; }
 .row { position:absolute; left:0; width:100%; border-bottom:1px solid color-mix(in srgb,var(--border) 65%,transparent); font-size:13px; }
 .row:hover { background:color-mix(in srgb,var(--surface-2) 55%,transparent); }
 .row>* { min-width:0; padding:7px 10px; }
@@ -37,3 +37,5 @@
 .srOnly { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0,0,0,0); }
 @media(max-width:1000px){.controls{grid-template-columns:repeat(3,1fr)}.search{grid-column:span 3}.tableWrap{overflow:auto}}
 @media(max-width:600px){.controls{grid-template-columns:1fr 1fr}.search{grid-column:span 2}.tableMeta,.pagination{align-items:flex-start;flex-direction:column}.metricGrid{grid-template-columns:1fr 1fr}.provenance{grid-template-columns:1fr}.provenance dt{padding-bottom:0;border-bottom:0}.provenance dd{padding-top:3px}}
+
+.detailActions { display:flex; flex-shrink:0; gap:8px; }

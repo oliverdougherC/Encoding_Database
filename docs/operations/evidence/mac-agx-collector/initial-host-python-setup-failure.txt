@@ -1,0 +1,315 @@
+Matrix runner stopped: Upload phase already began; no more timing in this root
+Matrix runner stopped: Matrix/client/source/runner/selection changed; use a new root
+Matrix runner stopped: All selected cells/sessions must finish timing before any upload
+Requested encoder 'libsvtav1' is not available.
+Selected hardware encoder 'h264_nvenc' is not usable on this machine.
+Compatibility check failed before preparation: unsupported. Use --no-submit for local collection.
+Compatibility check failed before preparation: unsupported. Use --no-submit for local collection.
+Compatibility check failed before preparation: unsupported. Use --no-submit for local collection.
+Failed to submit fast: fixture
+/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_spool.py:47: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmp9qi7jr8z/artifact.mp4'>
+  artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_spool.py:47: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmp69k2pgi4/artifact.mp4'>
+  artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_spool.py:47: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmp4i50y1wy/artifact.mp4'>
+  artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_spool.py:47: ResourceWarning: unclosed file <_io.BufferedReader name='/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpc9m0aikv/artifact.mp4'>
+  artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+======================================================================
+ERROR: test_campaign_durability (unittest.loader._FailedTest.test_campaign_durability)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_campaign_durability
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_campaign_durability.py", line 8, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_collection_preflight (unittest.loader._FailedTest.test_collection_preflight)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_collection_preflight
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_collection_preflight.py", line 3, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_config_tls (unittest.loader._FailedTest.test_config_tls)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_config_tls
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_config_tls.py", line 8, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_cpu_sampler_baseline (unittest.loader._FailedTest.test_cpu_sampler_baseline)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_cpu_sampler_baseline
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_cpu_sampler_baseline.py", line 6, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_cpu_window_provenance (unittest.loader._FailedTest.test_cpu_window_provenance)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_cpu_window_provenance
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_cpu_window_provenance.py", line 4, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_execution_identity (unittest.loader._FailedTest.test_execution_identity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_execution_identity
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_execution_identity.py", line 4, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_measurement_budget (unittest.loader._FailedTest.test_measurement_budget)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_measurement_budget
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_measurement_budget.py", line 8, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_measurement_group_receipt (unittest.loader._FailedTest.test_measurement_group_receipt)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_measurement_group_receipt
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_measurement_group_receipt.py", line 7, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_owned_artifact_sync (unittest.loader._FailedTest.test_owned_artifact_sync)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_owned_artifact_sync
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_owned_artifact_sync.py", line 13, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_packaged_runtime_integrity (unittest.loader._FailedTest.test_packaged_runtime_integrity)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_packaged_runtime_integrity
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_packaged_runtime_integrity.py", line 9, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_process_checkpoint_relocation (unittest.loader._FailedTest.test_process_checkpoint_relocation)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_process_checkpoint_relocation
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_process_checkpoint_relocation.py", line 10, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_quality_alignment (unittest.loader._FailedTest.test_quality_alignment)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_quality_alignment
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_quality_alignment.py", line 3, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_smoke_deadlines (unittest.loader._FailedTest.test_smoke_deadlines)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_smoke_deadlines
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_smoke_deadlines.py", line 11, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_source_preparation_dedup (unittest.loader._FailedTest.test_source_preparation_dedup)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_source_preparation_dedup
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/unittest/loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_source_preparation_dedup.py", line 8, in <module>
+    import pytest
+ModuleNotFoundError: No module named 'pytest'
+
+
+======================================================================
+ERROR: test_checked_in_suite_pack_metadata_matches_current_suite_resources (test_suite_v1.SuiteV1Tests.test_checked_in_suite_pack_metadata_matches_current_suite_resources)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_suite_v1.py", line 120, in test_checked_in_suite_pack_metadata_matches_current_suite_resources
+    suite.verify_suite_pack_metadata(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        str(Path(suite.get_manifest_path()).parent),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        suite.load_suite_pack_metadata(),
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/suite.py", line 851, in verify_suite_pack_metadata
+    expected = build_suite_pack_metadata(
+        suite_root,
+    ...<2 lines>...
+        download_urls=list(dict(metadata.get("distribution") or {}).get("downloadUrls") or []),
+    )
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/suite.py", line 741, in build_suite_pack_metadata
+    build_suite_pack_archive(suite_root_abs, temp_output, manifest=manifest_value)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/suite.py", line 807, in build_suite_pack_archive
+    info.size = os.path.getsize(absolute_path)
+                ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<frozen genericpath>", line 86, in getsize
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/resources/test_suite_v1/canonical/athletic-action-1080p24-final.mkv'
+
+======================================================================
+FAIL: test_all_packaged_canonical_assets_match_the_frozen_manifest (test_suite_v1.SuiteV1Tests.test_all_packaged_canonical_assets_match_the_frozen_manifest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/ofhd/Developer/EncodingDB-worktrees/operations-agx/client/tests/test_suite_v1.py", line 116, in test_all_packaged_canonical_assets_match_the_frozen_manifest
+    self.assertIn("resources/test_suite_v1/canonical", prepared_clip.path.replace("\\", "/"))
+    ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'resources/test_suite_v1/canonical' not found in '/Users/ofhd/Library/Caches/EncodingDB/suite/encodingdb-test-suite-v1/canonical/athletic-action-1080p24-final.mkv'
+
+----------------------------------------------------------------------
+Ran 203 tests in 58.759s
+
+FAILED (failures=1, errors=15)
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpts2pd84c/output/ledger.json", "executedCells": 1, "exitCode": 130, "timingComplete": 0, "selectedCellSessions": 1}
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpts2pd84c/output/ledger.json", "executedCells": 1, "exitCode": 0, "timingComplete": 1, "selectedCellSessions": 1}
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpts2pd84c/output/ledger.json", "executedCells": 0, "exitCode": 0, "timingComplete": 1, "selectedCellSessions": 1}
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpts2pd84c/output/ledger.json", "executedCells": 1, "exitCode": 10, "timingComplete": 1, "selectedCellSessions": 1}
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpts2pd84c/output/ledger.json", "executedCells": 0, "exitCode": 10, "timingComplete": 1, "selectedCellSessions": 1}
+{"ledger": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpd2ycqvo6/output/ledger.json", "executedCells": 1, "exitCode": 130, "timingComplete": 0, "selectedCellSessions": 1}
+Calculating quality metrics (VMAF, SSIM, PSNR)...
+Calculating quality metrics (VMAF, SSIM, PSNR)...
+Calculating quality metrics (VMAF, SSIM, PSNR)...
+Publication consent is required before the first interactive submission.
+Publishing benchmark results sends benchmark evidence to the EncodingDB server.
+Collected fields include hardware profile (CPU model, GPU model, RAM, OS), workload settings (codec, preset, CRF or bitrate, suite clip, input hash), benchmark results (FPS, output size, VMAF, SSIM, PSNR, runtime), and hardware telemetry samples when available.
+Authoritative V7 runs also upload the encoded benchmark artifact so the server can run its own analysis.
+Failed uploads stay in the local offline queue until replayed or explicitly cleaned up.
+Local queue directory: /tmp/queue
+Not collected: names, email addresses, account identifiers, serial numbers, MAC addresses, general filesystem snapshots, or unrelated personal files.
+Publication consent was not granted. Continuing in local dry-run mode.
+Noninteractive CLI defaults to local-only mode. Pass --submit to publish or --no-submit to make dry-run intent explicit.
+Queue directory: /private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpqi8zbqnm
+Pending payloads: 0 (0 B)
+Dead-letter files: 0 (0 B)
+Managed spool artifacts: 0 (0 B)
+Noninteractive CLI defaults to local-only mode. Pass --submit to publish or --no-submit to make dry-run intent explicit.
+Noninteractive CLI defaults to local-only mode. Pass --submit to publish or --no-submit to make dry-run intent explicit.
+FFmpeg (Version n7) Detected
+Preparation or collection interrupted; retained downloads and campaign records can be resumed.
+Noninteractive CLI defaults to local-only mode. Pass --submit to publish or --no-submit to make dry-run intent explicit.
+Preparing: runtime
+Preparation or collection interrupted; retained downloads and campaign records can be resumed.
+Preparing: compatibility
+Preparing: compatibility
+Preparation or collection interrupted; retained downloads and campaign records can be resumed.
+Select an option:
+Preparing: compatibility
+Submitted Results
+Queued for retry: fast (fixture)
+Verified and materialized both suite trees: fixture
+Verified and materialized both suite trees: fixture
+Please close all heavy background applications for accurate results.
+Type "yes" to proceed
+  1) a
+  2) b
+  3) c

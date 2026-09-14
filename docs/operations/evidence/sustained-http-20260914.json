@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-14T00:58:04.436646+00:00",
+  "fixture": "isolated encodingdb_corpus 100020+ synthetic metadata rows; corpus/read model staged; no media throughput",
+  "concurrency": 25,
+  "requestedDurationSeconds": 600,
+  "p95BudgetMs": 1000.0,
+  "scope": "isolated read-only API/frontend load; no encode/upload claims",
+  "samples": [],
+  "targets": {
+    "corpus": "http://127.0.0.1:3081/corpus?limit=25",
+    "catalog": "http://127.0.0.1:3081/test-videos",
+    "frontend": "http://127.0.0.1:3082/",
+    "frontend-corpus": "http://127.0.0.1:3082/api/corpus?limit=25"
+  },
+  "status": "aborted",
+  "stoppedAt": "2026-09-14T01:04:43.374399+00:00",
+  "reason": "Read-model owner requested stopping known-failed uncached100k scans to remove contention while testing replacement durable summaries. Separate completed old-path25browser100request DB baseline measuredp95 7.34s versus1s target. In-memory HTTP latency samples were not recovered; do not claim full600s execution.",
+  "lastObservedDatabaseDockerStats": {
+    "cpuPercent": 2356.41,
+    "memoryMiB": 806.9,
+    "capturedAt": "2026-09-14T01:04:13Z"
+  }
+}

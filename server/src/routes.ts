@@ -6,19 +6,10 @@ import crypto from 'node:crypto';
 import { BoundedTtlCache } from './cache.js';
 import {
   addDerivedBenchmarkFields,
-  aggregateEncoders,
-  aggregateHardware,
-  buildAnalyticsWhere,
   parseAnalyticsFilters,
 } from './analytics.js';
 import { buildDecisionPayload, type DecisionCandidate, type EvidenceTier } from './v7/decision.js';
-import {
-  buildPublicCorpusRows,
-  buildPublicCorpusOrderBy,
-  buildPublicCorpusWhere,
-  getPublicReferenceContextVersions,
-  sortPublicCorpusRows,
-} from './v7/corpus.js';
+import { isPublicCorpusBusyError, loadPublicCorpusPage } from './v7/corpusQuery.js';
 import { buildPublicTestVideoCatalog } from './v7/suite.js';
 import { createArtifactPipelineRouter } from './v7/artifacts.js';
 
@@ -256,6 +247,7 @@ async function loadCanonicalLeaderboardRecords(filters: ReturnType<typeof parseA
   return prisma.derivedResult.findMany({
     where: {
       kind: 'WORKLOAD',
+      invalidatedAt: null,
       workloadId,
       acceptedRunCount: { gte: filters.minSamples },
       scoreContext: {
@@ -1302,7 +1294,7 @@ const analyticsCache = new BoundedTtlCache<unknown>({
   maxEntries: QUERY_CACHE_MAX_ENTRIES,
 });
 
-function invalidateRouteCaches(): void {
+export function invalidateRouteCaches(): void {
   queryCache.clear();
   analyticsCache.clear();
 }
@@ -1539,63 +1531,27 @@ router.get('/query', async (req, res) => {
 router.get('/corpus', async (req, res) => {
   try {
     const query = req.query as Record<string, string | undefined>;
-    const take = parseTakeParam(query.limit);
-    const skip = parseSkipParam(query.skip);
-    const where = buildPublicCorpusWhere(query);
-    const order = buildPublicCorpusOrderBy(query.sort, query.dir === 'asc' ? 'asc' : 'desc');
-    const wantTotal = query.total === '1';
-    const cacheKey = JSON.stringify({ path: 'corpus', take, skip, where, order, wantTotal });
-    const cached = analyticsCache.get(cacheKey) as { rows: ReturnType<typeof buildPublicCorpusRows>; totalCount: number | null } | undefined;
-    if (cached) {
-      if (wantTotal && cached.totalCount != null) {
-        res.setHeader('X-Total-Count', String(cached.totalCount));
-      }
-      return res.json(cached.rows);
-    }
-
-    const publicReferenceContextVersions = getPublicReferenceContextVersions();
-    const directRuns = await prisma.benchmarkRun.findMany({
-      where,
-      include: {
-        benchmarkProtocol: true,
-        recipe: true,
-        environment: true,
-        artifacts: true,
-        qualityAnalyses: true,
-      },
+    const { rows, totalCount } = await loadPublicCorpusPage(prisma, query, {
+      take: parseTakeParam(query.limit), skip: parseSkipParam(query.skip),
     });
-    const groupedRows = buildPublicCorpusRows({
-      runs: directRuns,
-      derivedResults: publicReferenceContextVersions.size === 0
-        ? []
-        : await prisma.derivedResult.findMany({
-          where: {
-            kind: 'WORKLOAD',
-            benchmarkProtocol: { state: 'ACTIVE' },
-            scoreContext: {
-              contextVersion: { in: [...publicReferenceContextVersions] },
-            },
-          },
-          include: {
-            benchmarkProtocol: true,
-            recipe: true,
-            environment: true,
-            scoreContext: true,
-          },
-        }),
-      publicReferenceContextVersions,
-    });
-    const sortedRows = sortPublicCorpusRows(groupedRows, order);
-    const totalCount = groupedRows.length;
-    const rows = sortedRows.slice(skip ?? 0, (skip ?? 0) + take);
-    analyticsCache.set(cacheKey, { rows, totalCount: wantTotal ? totalCount : null });
-    if (totalCount != null) {
-      res.setHeader('X-Total-Count', String(totalCount));
-    }
+    res.setHeader('X-Total-Count', String(totalCount));
     res.json(rows);
   } catch (err) {
     logError('GET /corpus', err);
+    if (isPublicCorpusBusyError(err)) return res.setHeader('Retry-After', '2').status(503).json({ error: 'Corpus query capacity is temporarily unavailable; retry shortly' });
     res.status(500).json({ error: 'Failed to fetch public V7 corpus' });
+  }
+});
+
+router.get('/corpus/:id', async (req, res) => {
+  try {
+    const { rows } = await loadPublicCorpusPage(prisma, {}, { take: 1, id: req.params.id });
+    if (!rows[0]) return res.status(404).json({ error: 'Public V7 corpus row not found' });
+    res.json(rows[0]);
+  } catch (err) {
+    logError('GET /corpus/:id', err);
+    if (isPublicCorpusBusyError(err)) return res.setHeader('Retry-After', '2').status(503).json({ error: 'Corpus query capacity is temporarily unavailable; retry shortly' });
+    res.status(500).json({ error: 'Failed to fetch public V7 corpus row' });
   }
 });
 

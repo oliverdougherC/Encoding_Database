@@ -27,6 +27,8 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
   } catch (cause) {
     error = cause instanceof Error ? cause.message : "Unable to load benchmark results";
   }
+  const accepted = rows.reduce((sum, row) => sum + row.sampleCounts.accepted, 0);
+  const suspect = rows.reduce((sum, row) => sum + row.sampleCounts.suspect, 0);
   const systems = new Set(rows.map((row) => row.environment.fingerprint)).size;
   const encoders = new Set(rows.map((row) => row.encoderName)).size;
   const codecs = new Set(rows.map((row) => row.codecFamily || row.codec)).size;
@@ -37,7 +39,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
         <div className={styles.heroMain}>
           <p className={styles.kicker}>V7 public corpus</p>
           <h1>Brevity is the soul of wit.</h1>
-          <p className={styles.lede}>Browse V7 workload results backed by retained evidence, clear hardware context, and canonical recipes. Public PL stays blank until a production reference context is published.</p>
+          <p className={styles.lede}>Browse V7 workload results with verified artifacts, clear hardware context, and canonical recipes. Public PL stays blank until a production reference context is published.</p>
           <HeroSearch className={styles.heroSearch} />
           {!error && <div className={styles.datasetLine}>
             <span><strong>{totalCount.toLocaleString()}</strong> V7 aggregates</span>
@@ -47,8 +49,9 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
         </div>
         <aside className={styles.corpus}>
           <p className={styles.kicker}>Corpus status</p>
-          <div className={styles.big}>{totalCount.toLocaleString()}</div>
-          <p className={styles.corpusLabel}>accepted V7 workload aggregates available to inspect</p>
+          <div className={styles.big}>{error ? "—" : totalCount.toLocaleString()}</div>
+          <p className={styles.corpusLabel}>{error ? "Corpus counts temporarily unavailable" : "V7 workload aggregates available to inspect"}</p>
+          {!error && <p className={styles.corpusLabel}>{accepted.toLocaleString()} accepted · {suspect.toLocaleString()} suspect runs on this page</p>}
           <div className={styles.coverage}>
             <div><strong>{systems}</strong><span>environments shown</span></div>
             <div><strong>{encoders}</strong><span>encoders shown</span></div>
@@ -66,7 +69,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
         : <BenchmarksTable initialData={rows} totalCount={totalCount} currentPage={state.page} />}
       <aside className={styles.note}>
         <strong>About this V7 surface</strong>
-        <span>Each row is a retained V7 workload aggregate. Test-only reference contexts never surface as public PL, and submission-specific notes or personal media are never attributed to a corpus row.</span>
+        <span>Each row is a V7 workload aggregate. Suspect measurements remain visible for review. Test-only reference contexts never surface as public PL, and submission-specific notes or personal media are never attributed to a corpus row.</span>
         <a href={`/methodology?${buildWorkbenchSearchString(state)}`}>Read methodology</a>
       </aside>
     </div>

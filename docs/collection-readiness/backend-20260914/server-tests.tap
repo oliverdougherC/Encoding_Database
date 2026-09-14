@@ -1,0 +1,1168 @@
+TAP version 13
+# Subtest: evidence serialization preserves exact Prisma memory integers
+ok 1 - evidence serialization preserves exact Prisma memory integers
+  ---
+  duration_ms: 0.396791
+  type: 'test'
+  ...
+# Subtest: accepts a complete unscored evidence snapshot
+ok 2 - accepts a complete unscored evidence snapshot
+  ---
+  duration_ms: 0.592083
+  type: 'test'
+  ...
+# Subtest: rejects synthetic references
+ok 3 - rejects synthetic references
+  ---
+  duration_ms: 0.190792
+  type: 'test'
+  ...
+# Subtest: rejects missing repeated measurements
+ok 4 - rejects missing repeated measurements
+  ---
+  duration_ms: 0.075875
+  type: 'test'
+  ...
+# Subtest: rejects changed canonical hash
+ok 5 - rejects changed canonical hash
+  ---
+  duration_ms: 0.1245
+  type: 'test'
+  ...
+# Subtest: rejects missing retained bytes
+ok 6 - rejects missing retained bytes
+  ---
+  duration_ms: 0.071583
+  type: 'test'
+  ...
+# Subtest: rejects incomplete frame distribution
+ok 7 - rejects incomplete frame distribution
+  ---
+  duration_ms: 0.100042
+  type: 'test'
+  ...
+# Subtest: rejects generic schema rejection
+ok 8 - rejects generic schema rejection
+  ---
+  duration_ms: 0.066375
+  type: 'test'
+  ...
+# Subtest: rejects accepted legacy run
+ok 9 - rejects accepted legacy run
+  ---
+  duration_ms: 0.246916
+  type: 'test'
+  ...
+# Subtest: rejects PL path enabled
+ok 10 - rejects PL path enabled
+  ---
+  duration_ms: 0.285708
+  type: 'test'
+  ...
+# Subtest: rejects PL context enabled
+ok 11 - rejects PL context enabled
+  ---
+  duration_ms: 0.13625
+  type: 'test'
+  ...
+# Subtest: rejects PL unexpectedly available
+ok 12 - rejects PL unexpectedly available
+  ---
+  duration_ms: 0.098625
+  type: 'test'
+  ...
+# Subtest: rejects frontend missing row
+ok 13 - rejects frontend missing row
+  ---
+  duration_ms: 0.062667
+  type: 'test'
+  ...
+# Subtest: rejects unrecovered interruption
+ok 14 - rejects unrecovered interruption
+  ---
+  duration_ms: 0.087958
+  type: 'test'
+  ...
+# Subtest: rejects failed reanalysis idempotence
+ok 15 - rejects failed reanalysis idempotence
+  ---
+  duration_ms: 0.057125
+  type: 'test'
+  ...
+# Subtest: all seven invocations submit explicitly, cannot consume clip-list stdin, and ignore retained nested audit JSON
+ok 16 - all seven invocations submit explicitly, cannot consume clip-list stdin, and ignore retained nested audit JSON
+  ---
+  duration_ms: 231.4865
+  type: 'test'
+  ...
+# Subtest: the predeclared native rate point is passed unchanged to every clip
+ok 17 - the predeclared native rate point is passed unchanged to every clip
+  ---
+  duration_ms: 76.674792
+  type: 'test'
+  ...
+# Subtest: pending root submission JSON still fails certification
+ok 18 - pending root submission JSON still fails certification
+  ---
+  duration_ms: 66.3445
+  type: 'test'
+  ...
+# Subtest: fewer than seven processed IDs fails certification
+ok 19 - fewer than seven processed IDs fails certification
+  ---
+  duration_ms: 57.177791
+  type: 'test'
+  ...
+# Subtest: empty clip IDs fail before invoking client
+ok 20 - empty clip IDs fail before invoking client
+  ---
+  duration_ms: 46.21575
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:29.604Z","level":"info","id":"37bcca91-09ab-4aba-8514-fb601c8891f4","method":"POST","url":"/submit","status":401,"length":"35","responseMs":3.725,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.608Z","level":"info","id":"4855c647-67eb-4108-87c9-d740f043806a","method":"GET","url":"/submit-token","status":200,"length":"84","responseMs":0.481,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.613Z","level":"info","id":"d8d5e98f-1f1e-44a8-9b3c-010973689994","method":"POST","url":"/submit","status":400,"length":"501","responseMs":2.099,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.617Z","level":"info","id":"bf5e89be-c437-4d7a-9fe1-f7c62e803a7b","method":"POST","url":"/submit","status":400,"length":"501","responseMs":0.678,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# Subtest: hybrid rejects unsigned requests and accepts token or HMAC authentication
+ok 21 - hybrid rejects unsigned requests and accepts token or HMAC authentication
+  ---
+  duration_ms: 31.422291
+  type: 'test'
+  ...
+# Subtest: invalid INGEST_MODE fails module startup
+ok 22 - invalid INGEST_MODE fails module startup
+  ---
+  duration_ms: 106.2875
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:29.850Z","level":"info","id":"318eac7f-e98f-45d9-a558-1c88c72abd1a","method":"GET","url":"/submit-token","status":200,"length":"84","responseMs":1.194,"userAgent":"rotating-agent-0","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.853Z","level":"info","id":"c009e1eb-f37a-4efb-84e6-fe3ede3134a5","method":"GET","url":"/submit/token","status":200,"length":"84","responseMs":0.314,"userAgent":"rotating-agent-1","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.854Z","level":"info","id":"d7e28ec8-6f0d-4692-be02-5b4a10b28354","method":"GET","url":"/health/token","status":429,"length":"42","responseMs":0.228,"userAgent":"rotating-agent-2","remoteAddr":"127.0.0.1"}
+# Subtest: all token aliases share an IP-only issuance ceiling
+ok 23 - all token aliases share an IP-only issuance ceiling
+  ---
+  duration_ms: 19.106625
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:29.863Z","level":"info","id":"cd7fb2e9-95a6-465a-b1d7-c67850b5cc29","method":"POST","url":"/submit","status":400,"length":"501","responseMs":4.228,"userAgent":"rotating-agent-0","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.866Z","level":"info","id":"b77f495e-bafc-40c3-97f1-6242b9f09284","method":"POST","url":"/submit","status":400,"length":"501","responseMs":1.209,"userAgent":"rotating-agent-1","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:29.868Z","level":"info","id":"e2a88a60-8ef4-41f0-834f-b8d12c41badf","method":"POST","url":"/submit","status":429,"length":"42","responseMs":0.268,"userAgent":"rotating-agent-2","remoteAddr":"127.0.0.1"}
+# Subtest: rotating User-Agent does not bypass submit ceiling
+ok 24 - rotating User-Agent does not bypass submit ceiling
+  ---
+  duration_ms: 13.645459
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:30.001Z","level":"info","id":"944471f0-e43b-48bc-8a4f-469099b75cfe","method":"GET","url":"/submit","status":405,"length":"30","responseMs":1.682,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# Subtest: GET /submit with token header remains method-guarded (auth applies to POST only)
+ok 25 - GET /submit with token header remains method-guarded (auth applies to POST only)
+  ---
+  duration_ms: 18.049583
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:30.014Z","level":"info","id":"e219bc64-aafb-4e0c-ba3d-3f29417d0195","method":"POST","url":"/submit","status":400,"length":"501","responseMs":4.602,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# Subtest: public mode permits unsigned POSTs to reach payload validation
+ok 26 - public mode permits unsigned POSTs to reach payload validation
+  ---
+  duration_ms: 9.417584
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:30.016Z","level":"info","id":"11ee2698-5672-48cd-80d6-4d599b4c5a87","method":"GET","url":"/submit-token","status":200,"length":"84","responseMs":0.537,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:30.018Z","level":"info","id":"5dbf7506-e15a-42c5-b644-c7bc5184e5cc","method":"POST","url":"/submit","status":400,"length":"501","responseMs":0.649,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:30.021Z","level":"info","id":"4b280914-00d4-4f77-b3bb-00ca82db03a9","method":"POST","url":"/submit","status":400,"length":"501","responseMs":0.401,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# Subtest: token is released after validation failure and can be retried
+ok 27 - token is released after validation failure and can be retried
+  ---
+  duration_ms: 7.749666
+  type: 'test'
+  ...
+# {"time":"2026-09-14T02:24:30.155Z","level":"info","id":"9f93f7ae-fc4d-4368-82e9-8b1862e80286","method":"GET","url":"/submit-token","status":200,"length":"84","responseMs":1.202,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:30.164Z","level":"info","id":"669b8fbf-8030-4368-b88e-0711c5c0217a","method":"POST","url":"/submit","status":401,"length":"29","responseMs":2.825,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# {"time":"2026-09-14T02:24:30.169Z","level":"info","id":"d201c9e6-c4d9-4078-b769-42e358df9d0a","method":"POST","url":"/submit","status":400,"length":"501","responseMs":2.405,"userAgent":"node","remoteAddr":"127.0.0.1"}
+# Subtest: signed mode rejects tokens and accepts only a valid HMAC
+ok 28 - signed mode rejects tokens and accepts only a valid HMAC
+  ---
+  duration_ms: 29.764791
+  type: 'test'
+  ...
+# Subtest: packaged client and authoritative server agree exactly on real artifact packet bytes
+ok 29 - packaged client and authoritative server agree exactly on real artifact packet bytes
+  ---
+  duration_ms: 218.397875
+  type: 'test'
+  ...
+# Subtest: PL v7 is fixed, bounded, monotonic, and dominance-safe
+ok 30 - PL v7 is fixed, bounded, monotonic, and dominance-safe
+  ---
+  duration_ms: 0.718416
+  type: 'test'
+  ...
+# Subtest: PL v7 refuses incomplete evidence and invalid contexts
+ok 31 - PL v7 refuses incomplete evidence and invalid contexts
+  ---
+  duration_ms: 0.089417
+  type: 'test'
+  ...
+# Subtest: reference contexts are explicit and versioned outside the candidate set
+ok 32 - reference contexts are explicit and versioned outside the candidate set
+  ---
+  duration_ms: 0.082292
+  type: 'test'
+  ...
+# Subtest: execution plan pins VMAF v1 analysis context and canonical input order
+ok 33 - execution plan pins VMAF v1 analysis context and canonical input order
+  ---
+  duration_ms: 0.436125
+  type: 'test'
+  ...
+# Subtest: pristine fixture yields high mean, high P5, and deterministic diagnostics provenance
+ok 34 - pristine fixture yields high mean, high P5, and deterministic diagnostics provenance
+  ---
+  duration_ms: 1.255125
+  type: 'test'
+  ...
+# Subtest: intentionally degraded fixture remains internally consistent and lowers canonical quality
+ok 35 - intentionally degraded fixture remains internally consistent and lowers canonical quality
+  ---
+  duration_ms: 0.209292
+  type: 'test'
+  ...
+# Subtest: localized bad segment drops P5 and V_PL much harder than the mean
+ok 36 - localized bad segment drops P5 and V_PL much harder than the mean
+  ---
+  duration_ms: 0.216542
+  type: 'test'
+  ...
+# Subtest: reversed-reference fixture is rejected before canonical analysis parsing
+ok 37 - reversed-reference fixture is rejected before canonical analysis parsing
+  ---
+  duration_ms: 0.172833
+  type: 'test'
+  ...
+# Subtest: diagnostic parsers stay deterministic for finite and inf-style outputs
+ok 38 - diagnostic parsers stay deterministic for finite and inf-style outputs
+  ---
+  duration_ms: 0.156375
+  type: 'test'
+  ...
+# Subtest: XPSNR parser accepts the pinned FFmpeg component/minimum summary
+ok 39 - XPSNR parser accepts the pinned FFmpeg component/minimum summary
+  ---
+  duration_ms: 0.358834
+  type: 'test'
+  ...
+# Subtest: reference context generation is deterministic and order-invariant
+ok 40 - reference context generation is deterministic and order-invariant
+  ---
+  duration_ms: 2.77275
+  type: 'test'
+  ...
+# Subtest: reference context generation rejects workloads whose frontier cannot bracket VMAF 90
+ok 41 - reference context generation rejects workloads whose frontier cannot bracket VMAF 90
+  ---
+  duration_ms: 0.428459
+  type: 'test'
+  ...
+# Subtest: recomputation is invariant to unrelated rows and preserves environment scope
+ok 42 - recomputation is invariant to unrelated rows and preserves environment scope
+  ---
+  duration_ms: 1.678667
+  type: 'test'
+  ...
+# Subtest: general PL requires full equal-class coverage and stays hardware-scoped
+ok 43 - general PL requires full equal-class coverage and stays hardware-scoped
+  ---
+  duration_ms: 0.441708
+  type: 'test'
+  ...
+# Subtest: retained authoritative evidence generation is deterministic and retains provenance IDs and hashes
+ok 44 - retained authoritative evidence generation is deterministic and retains provenance IDs and hashes
+  ---
+  duration_ms: 2.048166
+  type: 'test'
+  ...
+# Subtest: retained evidence cannot be promoted with the checked-in incomplete PLA-87 pilot
+ok 45 - retained evidence cannot be promoted with the checked-in incomplete PLA-87 pilot
+  ---
+  duration_ms: 5.378917
+  type: 'test'
+  ...
+# Subtest: legacy checkbox calibration with overlapping folds and unrelated frontier IDs is rejected
+ok 46 - legacy checkbox calibration with overlapping folds and unrelated frontier IDs is rejected
+  ---
+  duration_ms: 5.174875
+  type: 'test'
+  ...
+# Subtest: loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses
+ok 47 - loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses
+  ---
+  duration_ms: 0.333583
+  type: 'test'
+  ...
+# Subtest: score-context seeds include workload and GENERAL rows and reject provisional activation by default
+ok 48 - score-context seeds include workload and GENERAL rows and reject provisional activation by default
+  ---
+  duration_ms: 0.711208
+  type: 'test'
+  ...
+# Subtest: persistGeneralDerivedResultFromWorkloadEvidence persists GENERAL only with complete workload coverage
+ok 49 - persistGeneralDerivedResultFromWorkloadEvidence persists GENERAL only with complete workload coverage
+  ---
+  duration_ms: 1.124292
+  type: 'test'
+  ...
+# Subtest: exact retained frontier binding rejects holdouts, relabeled samples and mismatched applied constants
+ok 50 - exact retained frontier binding rejects holdouts, relabeled samples and mismatched applied constants
+  ---
+  duration_ms: 1.1905
+  type: 'test'
+  ...
+# Subtest: persisted context version cannot be rewritten with different reviewed constants
+ok 51 - persisted context version cannot be rewritten with different reviewed constants
+  ---
+  duration_ms: 0.273791
+  type: 'test'
+  ...
+# Subtest: GET /test-videos returns the seven-clip manifest-backed catalog
+ok 52 - GET /test-videos returns the seven-clip manifest-backed catalog
+  ---
+  duration_ms: 19.852416
+  type: 'test'
+  ...
+# Subtest: Method guard: GET /submit is 405 with Allow=POST
+ok 53 - Method guard: GET /submit is 405 with Allow=POST
+  ---
+  duration_ms: 2.961083
+  type: 'test'
+  ...
+# Subtest: Method guard: POST /query is 405 with Allow=GET, HEAD
+ok 54 - Method guard: POST /query is 405 with Allow=GET, HEAD
+  ---
+  duration_ms: 5.913667
+  type: 'test'
+  ...
+# Subtest: buildPublicCorpusWhere scopes direct V7 evidence filters
+ok 55 - buildPublicCorpusWhere scopes direct V7 evidence filters
+  ---
+  duration_ms: 0.18
+  type: 'test'
+  ...
+# Subtest: buildPublicCorpusOrderBy supports V7 public sort keys only
+ok 56 - buildPublicCorpusOrderBy supports V7 public sort keys only
+  ---
+  duration_ms: 0.086667
+  type: 'test'
+  ...
+# Subtest: GET /corpus returns unscored rows from direct retained evidence when no ScoreContext or DerivedResult exists
+ok 57 - GET /corpus returns unscored rows from direct retained evidence when no ScoreContext or DerivedResult exists
+  ---
+  duration_ms: 3.153334
+  type: 'test'
+  ...
+# Subtest: GET /query rejects categorical telemetry filters on mixed aggregates
+ok 58 - GET /query rejects categorical telemetry filters on mixed aggregates
+  ---
+  duration_ms: 2.857458
+  type: 'test'
+  ...
+# Subtest: POST /submit rejects invalid payloads with 400
+ok 59 - POST /submit rejects invalid payloads with 400
+  ---
+  duration_ms: 3.707458
+  type: 'test'
+  ...
+# Subtest: POST /submit rejects non-single-pass payloads
+ok 60 - POST /submit rejects non-single-pass payloads
+  ---
+  duration_ms: 1.566541
+  type: 'test'
+  ...
+# Subtest: buildSubmissionPayloadHash changes when telemetry changes
+ok 61 - buildSubmissionPayloadHash changes when telemetry changes
+  ---
+  duration_ms: 0.299541
+  type: 'test'
+  ...
+# Subtest: buildSubmissionPayloadHash changes when content dimensions change
+ok 62 - buildSubmissionPayloadHash changes when content dimensions change
+  ---
+  duration_ms: 0.07425
+  type: 'test'
+  ...
+# Subtest: DEFAULT_QUERY_LIMIT is sane
+ok 63 - DEFAULT_QUERY_LIMIT is sane
+  ---
+  duration_ms: 0.025375
+  type: 'test'
+  ...
+# Subtest: aggregate sample count is an allowed workbench sort
+ok 64 - aggregate sample count is an allowed workbench sort
+  ---
+  duration_ms: 0.020792
+  type: 'test'
+  ...
+# Subtest: TEST_VIDEO_CATALOG has no placeholders
+ok 65 - TEST_VIDEO_CATALOG has no placeholders
+  ---
+  duration_ms: 0.08675
+  type: 'test'
+  ...
+# Subtest: normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry
+ok 66 - normalizeCpuFreqMHz converts GHz-like values and drops invalid telemetry
+  ---
+  duration_ms: 0.056166
+  type: 'test'
+  ...
+# Subtest: parseTelemetryFromNotes reads new numeric coverage fields
+ok 67 - parseTelemetryFromNotes reads new numeric coverage fields
+  ---
+  duration_ms: 0.089209
+  type: 'test'
+  ...
+# Subtest: parseTelemetryMetaFromNotes reads raw diagnostic strings
+ok 68 - parseTelemetryMetaFromNotes reads raw diagnostic strings
+  ---
+  duration_ms: 0.04975
+  type: 'test'
+  ...
+# Subtest: parseTakeParam normalizes invalid, float, and oversized values
+ok 69 - parseTakeParam normalizes invalid, float, and oversized values
+  ---
+  duration_ms: 0.045125
+  type: 'test'
+  ...
+# Subtest: parseSkipParam accepts only positive integers
+ok 70 - parseSkipParam accepts only positive integers
+  ---
+  duration_ms: 0.025375
+  type: 'test'
+  ...
+# Subtest: runSubmitTransactionWithRetry retries once for non-payload unique conflicts
+ok 71 - runSubmitTransactionWithRetry retries once for non-payload unique conflicts
+  ---
+  duration_ms: 0.086917
+  type: 'test'
+  ...
+# Subtest: runSubmitTransactionWithRetry does not retry payloadHash conflicts
+ok 72 - runSubmitTransactionWithRetry does not retry payloadHash conflicts
+  ---
+  duration_ms: 0.155833
+  type: 'test'
+  ...
+# Subtest: only canonical, plausible submissions can be accepted
+ok 73 - only canonical, plausible submissions can be accepted
+  ---
+  duration_ms: 0.034125
+  type: 'test'
+  ...
+# Subtest: idempotent retry lookup derives the aggregate key from Submission
+ok 74 - idempotent retry lookup derives the aggregate key from Submission
+  ---
+  duration_ms: 0.038583
+  type: 'test'
+  ...
+# Subtest: global workbench search spans advertised text and numeric result fields
+ok 75 - global workbench search spans advertised text and numeric result fields
+  ---
+  duration_ms: 0.087584
+  type: 'test'
+  ...
+# Subtest: workbench CPU and GPU filters remain server-side alongside global search
+ok 76 - workbench CPU and GPU filters remain server-side alongside global search
+  ---
+  duration_ms: 0.169167
+  type: 'test'
+  ...
+# Subtest: hardware encoder classification includes Linux and Raspberry Pi suffixes
+ok 77 - hardware encoder classification includes Linux and Raspberry Pi suffixes
+  ---
+  duration_ms: 0.053417
+  type: 'test'
+  ...
+# Subtest: parseAnalyticsFilters defaults to the canonical comparison slice
+ok 78 - parseAnalyticsFilters defaults to the canonical comparison slice
+  ---
+  duration_ms: 0.187875
+  type: 'test'
+  ...
+# Subtest: parseAnalyticsFilters preserves lossless CRF 0
+ok 79 - parseAnalyticsFilters preserves lossless CRF 0
+  ---
+  duration_ms: 0.083833
+  type: 'test'
+  ...
+# Subtest: GET /analytics/leaderboards uses canonical derived results and an exact immutable Environment scope
+ok 80 - GET /analytics/leaderboards uses canonical derived results and an exact immutable Environment scope
+  ---
+  duration_ms: 19.653083
+  type: 'test'
+  ...
+# Subtest: GET /analytics/leaderboards returns an empty canonical payload when only legacy benchmark rows exist
+ok 81 - GET /analytics/leaderboards returns an empty canonical payload when only legacy benchmark rows exist
+  ---
+  duration_ms: 2.104917
+  type: 'test'
+  ...
+# Subtest: aggregateLeaderboards keeps distinct workload slices separate and enforces minSamples
+ok 82 - aggregateLeaderboards keeps distinct workload slices separate and enforces minSamples
+  ---
+  duration_ms: 0.440333
+  type: 'test'
+  ...
+# Subtest: aggregateLeaderboards computes filter-invariant PL v7 only from complete versioned evidence
+ok 83 - aggregateLeaderboards computes filter-invariant PL v7 only from complete versioned evidence
+  ---
+  duration_ms: 0.217792
+  type: 'test'
+  ...
+# Subtest: aggregateLeaderboards keeps hardware-scoped PL rows separate for identical encoder/workload slices
+ok 84 - aggregateLeaderboards keeps hardware-scoped PL rows separate for identical encoder/workload slices
+  ---
+  duration_ms: 0.251875
+  type: 'test'
+  ...
+# Subtest: aggregateHardware computes stable weighted averages within a fixed slice
+ok 85 - aggregateHardware computes stable weighted averages within a fixed slice
+  ---
+  duration_ms: 0.209875
+  type: 'test'
+  ...
+# Subtest: aggregateEncoders keeps preset-specific profiles distinct
+ok 86 - aggregateEncoders keeps preset-specific profiles distinct
+  ---
+  duration_ms: 0.227209
+  type: 'test'
+  ...
+# Subtest: codec family helpers resolve encoder names consistently
+ok 87 - codec family helpers resolve encoder names consistently
+  ---
+  duration_ms: 0.037208
+  type: 'test'
+  ...
+# Subtest: BoundedTtlCache supports multi-key hits and bounded eviction
+ok 88 - BoundedTtlCache supports multi-key hits and bounded eviction
+  ---
+  duration_ms: 0.042375
+  type: 'test'
+  ...
+# Subtest: query cache helper reports bounded size
+ok 89 - query cache helper reports bounded size
+  ---
+  duration_ms: 0.030375
+  type: 'test'
+  ...
+# Subtest: default recommendation evidence policy stays explicitly provisional until PLA-87 calibration
+ok 90 - default recommendation evidence policy stays explicitly provisional until PLA-87 calibration
+  ---
+  duration_ms: 0.464583
+  type: 'test'
+  ...
+# Subtest: uncalibrated default policy never enables a public recommendation
+ok 91 - uncalibrated default policy never enables a public recommendation
+  ---
+  duration_ms: 6.701542
+  type: 'test'
+  ...
+# Subtest: robust centers resist accepted outliers while suspect and invalid runs stay out of canonical PL
+ok 92 - robust centers resist accepted outliers while suspect and invalid runs stay out of canonical PL
+  ---
+  duration_ms: 0.58225
+  type: 'test'
+  ...
+# Subtest: one run and repeated same-physical-source runs remain provisional with unavailable confidence
+ok 93 - one run and repeated same-physical-source runs remain provisional with unavailable confidence
+  ---
+  duration_ms: 0.195125
+  type: 'test'
+  ...
+# Subtest: independent runs raise evidence tier without changing the point estimate
+ok 94 - independent runs raise evidence tier without changing the point estimate
+  ---
+  duration_ms: 2.525417
+  type: 'test'
+  ...
+# Subtest: rebuild is deterministic and returns a derived-result-ready recomputation payload
+ok 95 - rebuild is deterministic and returns a derived-result-ready recomputation payload
+  ---
+  duration_ms: 0.702875
+  type: 'test'
+  ...
+# Subtest: cluster bootstrap resamples independent physical-source centers rather than raw repeats
+ok 96 - cluster bootstrap resamples independent physical-source centers rather than raw repeats
+  ---
+  duration_ms: 1.631916
+  type: 'test'
+  ...
+# Subtest: analysis records rebuild with explicit invalid counts and preserve accepted membership only
+ok 97 - analysis records rebuild with explicit invalid counts and preserve accepted membership only
+  ---
+  duration_ms: 0.24675
+  type: 'test'
+  ...
+# Subtest: analysis status mapping excludes pending and preserves ordering
+ok 98 - analysis status mapping excludes pending and preserves ordering
+  ---
+  duration_ms: 0.22575
+  type: 'test'
+  ...
+# Subtest: persistDerivedResultAggregate upserts derived rows and rewrites member links
+ok 99 - persistDerivedResultAggregate upserts derived rows and rewrites member links
+  ---
+  duration_ms: 0.556
+  type: 'test'
+  ...
+# Subtest: campaign IDs and environment aliases cannot manufacture independent physical sources
+ok 100 - campaign IDs and environment aliases cannot manufacture independent physical sources
+  ---
+  duration_ms: 0.211125
+  type: 'test'
+  ...
+# Subtest: diagnostic filter inputs restore source cadence after timestamp normalization for both streams
+ok 101 - diagnostic filter inputs restore source cadence after timestamp normalization for both streams
+  ---
+  duration_ms: 0.5225
+  type: 'test'
+  ...
+# Subtest: diagnostic filter inputs reject invalid source cadence before constructing an FFmpeg graph
+ok 102 - diagnostic filter inputs reject invalid source cadence before constructing an FFmpeg graph
+  ---
+  duration_ms: 3.788042
+  type: 'test'
+  ...
+# Subtest: ffprobe MOV-family aliases normalize to the canonical MP4 container
+ok 103 - ffprobe MOV-family aliases normalize to the canonical MP4 container
+  ---
+  duration_ms: 0.131167
+  type: 'test'
+  ...
+# Subtest: ffprobe pixel formats infer component depth instead of chroma digits
+ok 104 - ffprobe pixel formats infer component depth instead of chroma digits
+  ---
+  duration_ms: 0.184583
+  type: 'test'
+  ...
+# Subtest: run creation validates and persists canonical energy domains and decode evidence
+ok 105 - run creation validates and persists canonical energy domains and decode evidence
+  ---
+  duration_ms: 28.584417
+  type: 'test'
+  ...
+# Subtest: run creation rejects mislabeled energy/decode evidence instead of storing arbitrary JSON
+ok 106 - run creation rejects mislabeled energy/decode evidence instead of storing arbitrary JSON
+  ---
+  duration_ms: 4.848292
+  type: 'test'
+  ...
+# Subtest: artifact upload stores client quality as debug only and returns authoritative server analysis
+ok 107 - artifact upload stores client quality as debug only and returns authoritative server analysis
+  ---
+  duration_ms: 35.813167
+  type: 'test'
+  ...
+# Subtest: artifact upload is incrementally streamed across multiple chunks
+ok 108 - artifact upload is incrementally streamed across multiple chunks
+  ---
+  duration_ms: 3.456959
+  type: 'test'
+  ...
+# Subtest: truncated, hash-mismatched, and disconnected streams never publish retained evidence
+ok 109 - truncated, hash-mismatched, and disconnected streams never publish retained evidence
+  ---
+  duration_ms: 7.177375
+  type: 'test'
+  ...
+# Subtest: stream overflow stops consumption and leaves no staged or retained object
+ok 110 - stream overflow stops consumption and leaves no staged or retained object
+  ---
+  duration_ms: 3.070417
+  type: 'test'
+  ...
+# Subtest: duplicate payloads and upload retries remain idempotent without duplicating analyses
+ok 111 - duplicate payloads and upload retries remain idempotent without duplicating analyses
+  ---
+  duration_ms: 6.179958
+  type: 'test'
+  ...
+# Subtest: upload authorization enforces expiry, type, size, overwrite, and rate-ish controls
+ok 112 - upload authorization enforces expiry, type, size, overwrite, and rate-ish controls
+  ---
+  duration_ms: 43.047458
+  type: 'test'
+  ...
+# Subtest: transport truncation leaves immutable metadata pending for a valid retry
+ok 113 - transport truncation leaves immutable metadata pending for a valid retry
+  ---
+  duration_ms: 2.907708
+  type: 'test'
+  ...
+# Subtest: retained artifacts reject caller-invented workers while installed-identity retries stay idempotent
+ok 114 - retained artifacts reject caller-invented workers while installed-identity retries stay idempotent
+  ---
+  duration_ms: 28.068959
+  type: 'test'
+  ...
+# Subtest: analysis maxAttempts counts executions once and permits the configured third attempt
+ok 115 - analysis maxAttempts counts executions once and permits the configured third attempt
+  ---
+  duration_ms: 29.052458
+  type: 'test'
+  ...
+# Subtest: startup reconciliation resumes durable pending authoritative analysis
+ok 116 - startup reconciliation resumes durable pending authoritative analysis
+  ---
+  duration_ms: 27.430208
+  type: 'test'
+  ...
+# Subtest: authoritative worker concurrency is bounded by configuration
+ok 117 - authoritative worker concurrency is bounded by configuration
+  ---
+  duration_ms: 107.703125
+  type: 'test'
+  ...
+# Subtest: delayed durable claims plus simultaneous kicks still respect authoritative concurrency limits
+ok 118 - delayed durable claims plus simultaneous kicks still respect authoritative concurrency limits
+  ---
+  duration_ms: 110.124125
+  type: 'test'
+  ...
+# Subtest: exhausted authoritative analysis failures remain observable and retry-counted
+ok 119 - exhausted authoritative analysis failures remain observable and retry-counted
+  ---
+  duration_ms: 28.3835
+  type: 'test'
+  ...
+# Subtest: semantic bootstrap rejects non-canonical protocol drift and minimum-client incompatibility
+ok 120 - semantic bootstrap rejects non-canonical protocol drift and minimum-client incompatibility
+  ---
+  duration_ms: 8.90675
+  type: 'test'
+  ...
+# Subtest: default derived recompute callback leaves historical results untouched without explicit active context
+ok 121 - default derived recompute callback leaves historical results untouched without explicit active context
+  ---
+  duration_ms: 0.308708
+  type: 'test'
+  ...
+# Subtest: native process deadline, output budget and abort terminate owned process trees
+ok 122 - native process deadline, output budget and abort terminate owned process trees
+  ---
+  duration_ms: 520.555
+  type: 'test'
+  ...
+# Subtest: real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+ok 123 - real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+  ---
+  duration_ms: 1292.002
+  type: 'test'
+  ...
+# Subtest: VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+ok 124 - VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+  ---
+  duration_ms: 0.453042
+  type: 'test'
+  ...
+# Subtest: operator middleware denies anonymous and binds configured credentials
+ok 125 - operator middleware denies anonymous and binds configured credentials
+  ---
+  duration_ms: 31.400708
+  type: 'test'
+  ...
+# Subtest: PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+ok 126 - PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+  ---
+  duration_ms: 10123.7025
+  type: 'test'
+  ...
+# Subtest: v7 backup and isolated restore drill bind database and artifact evidence
+ok 127 - v7 backup and isolated restore drill bind database and artifact evidence
+  ---
+  duration_ms: 2.601208
+  type: 'test'
+  ...
+# Subtest: live PostgreSQL and retained object verification rejects relabeled measurements, identities and bytes
+ok 128 - live PostgreSQL and retained object verification rejects relabeled measurements, identities and bytes
+  ---
+  duration_ms: 59.397417
+  type: 'test'
+  ...
+# Subtest: complete reviewed evidence can pass the explicit production-freeze gate
+ok 129 - complete reviewed evidence can pass the explicit production-freeze gate
+  ---
+  duration_ms: 2.951167
+  type: 'test'
+  ...
+# Subtest: draft evidence reports missing real hardware, reviewers, holdouts, and freeze instead of self-certifying
+ok 130 - draft evidence reports missing real hardware, reviewers, holdouts, and freeze instead of self-certifying
+  ---
+  duration_ms: 1.229333
+  type: 'test'
+  ...
+# Subtest: the same benchmark run cannot leak between calibration and holdout partitions
+ok 131 - the same benchmark run cannot leak between calibration and holdout partitions
+  ---
+  duration_ms: 1.244458
+  type: 'test'
+  ...
+# Subtest: canonical evidence hash detects edits after reviewer sign-off
+ok 132 - canonical evidence hash detects edits after reviewer sign-off
+  ---
+  duration_ms: 0.764
+  type: 'test'
+  ...
+# Subtest: placeholder decisions and rejected holdouts cannot freeze production policy
+ok 133 - placeholder decisions and rejected holdouts cannot freeze production policy
+  ---
+  duration_ms: 0.930583
+  type: 'test'
+  ...
+# Subtest: knowledgeably reviewed expected SUSPECT evidence can establish a rate-quality point
+ok 134 - knowledgeably reviewed expected SUSPECT evidence can establish a rate-quality point
+  ---
+  duration_ms: 0.717458
+  type: 'test'
+  ...
+# Subtest: checked-in Apple pilot binds exact retained evidence while remaining impossible to freeze
+ok 135 - checked-in Apple pilot binds exact retained evidence while remaining impossible to freeze
+  ---
+  duration_ms: 3.145334
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects empty fitting corpus even after hashes are recomputed
+ok 136 - semantic gate rejects empty fitting corpus even after hashes are recomputed
+  ---
+  duration_ms: 0.805375
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects overlapping holdout groups even after hashes are recomputed
+ok 137 - semantic gate rejects overlapping holdout groups even after hashes are recomputed
+  ---
+  duration_ms: 0.78825
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects identical native RC disguised with fingerprints even after hashes are recomputed
+ok 138 - semantic gate rejects identical native RC disguised with fingerprints even after hashes are recomputed
+  ---
+  duration_ms: 1.04575
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects wrong-family top result even after hashes are recomputed
+ok 139 - semantic gate rejects wrong-family top result even after hashes are recomputed
+  ---
+  duration_ms: 0.832583
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects empty metric review even after hashes are recomputed
+ok 140 - semantic gate rejects empty metric review even after hashes are recomputed
+  ---
+  duration_ms: 0.616959
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects unresolved investigation even after hashes are recomputed
+ok 141 - semantic gate rejects unresolved investigation even after hashes are recomputed
+  ---
+  duration_ms: 0.881833
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects unbound calibrated confidence constants even after hashes are recomputed
+ok 142 - semantic gate rejects unbound calibrated confidence constants even after hashes are recomputed
+  ---
+  duration_ms: 0.869458
+  type: 'test'
+  ...
+# Subtest: Balanced Fit uses the stored canonical PL total and preserves canonical ordering
+ok 143 - Balanced Fit uses the stored canonical PL total and preserves canonical ordering
+  ---
+  duration_ms: 1.2205
+  type: 'test'
+  ...
+# Subtest: environment key is the immutable fingerprint, not a display hardware tuple
+ok 144 - environment key is the immutable fingerprint, not a display hardware tuple
+  ---
+  duration_ms: 4.419125
+  type: 'test'
+  ...
+# Subtest: certification accepts a complete software and hardware authority chain
+ok 145 - certification accepts a complete software and hardware authority chain
+  ---
+  duration_ms: 0.855625
+  type: 'test'
+  ...
+# Subtest: certification rejects client/server evidence without authoritative analysis
+ok 146 - certification rejects client/server evidence without authoritative analysis
+  ---
+  duration_ms: 0.239084
+  type: 'test'
+  ...
+# Subtest: certification rejects a hardware path that never reached aggregation
+ok 147 - certification rejects a hardware path that never reached aggregation
+  ---
+  duration_ms: 0.156042
+  type: 'test'
+  ...
+# Subtest: certification rejects frontend data that differs from the server
+ok 148 - certification rejects frontend data that differs from the server
+  ---
+  duration_ms: 0.06975
+  type: 'test'
+  ...
+# Subtest: certification rejects missing interruption recovery evidence
+ok 149 - certification rejects missing interruption recovery evidence
+  ---
+  duration_ms: 0.085666
+  type: 'test'
+  ...
+# Subtest: certification rejects invalid media that was not explicitly rejected
+ok 150 - certification rejects invalid media that was not explicitly rejected
+  ---
+  duration_ms: 0.0415
+  type: 'test'
+  ...
+# Subtest: certificate checksum manifest cannot hash itself
+ok 151 - certificate checksum manifest cannot hash itself
+  ---
+  duration_ms: 2.6295
+  type: 'test'
+  ...
+# Subtest: certificate records explicit native rate-control settings
+ok 152 - certificate records explicit native rate-control settings
+  ---
+  duration_ms: 0.360333
+  type: 'test'
+  ...
+# Subtest: certificate queries one exact immutable environment and score context
+ok 153 - certificate queries one exact immutable environment and score context
+  ---
+  duration_ms: 0.589667
+  type: 'test'
+  ...
+# Subtest: certificate routes the packaged software path through one-shot upload fault injection
+ok 154 - certificate routes the packaged software path through one-shot upload fault injection
+  ---
+  duration_ms: 0.877417
+  type: 'test'
+  ...
+# Subtest: good pixels cannot erase suspect, invalid or missing client measurement evidence
+ok 155 - good pixels cannot erase suspect, invalid or missing client measurement evidence
+  ---
+  duration_ms: 4.646583
+  type: 'test'
+  ...
+# Subtest: v7 evidence health is healthy when retained objects and derivations resolve
+ok 156 - v7 evidence health is healthy when retained objects and derivations resolve
+  ---
+  duration_ms: 0.566917
+  type: 'test'
+  ...
+# Subtest: v7 evidence health reports every release-blocking operational condition
+ok 157 - v7 evidence health reports every release-blocking operational condition
+  ---
+  duration_ms: 0.095291
+  type: 'test'
+  ...
+# Subtest: canonicalJsonString sorts nested object keys deterministically
+ok 158 - canonicalJsonString sorts nested object keys deterministically
+  ---
+  duration_ms: 0.448791
+  type: 'test'
+  ...
+# Subtest: buildRecipeFingerprint normalizes aliases, case, and option ordering
+ok 159 - buildRecipeFingerprint normalizes aliases, case, and option ordering
+  ---
+  duration_ms: 0.486375
+  type: 'test'
+  ...
+# Subtest: buildRecipeFingerprint changes for materially different effective recipes
+ok 160 - buildRecipeFingerprint changes for materially different effective recipes
+  ---
+  duration_ms: 0.097417
+  type: 'test'
+  ...
+# Subtest: buildEnvironmentFingerprint normalizes architecture aliases but keeps material driver changes distinct
+ok 161 - buildEnvironmentFingerprint normalizes architecture aliases but keeps material driver changes distinct
+  ---
+  duration_ms: 0.192833
+  type: 'test'
+  ...
+# Subtest: aggregation compatibility key blocks protocol, workload, recipe, environment, or score-context drift
+ok 162 - aggregation compatibility key blocks protocol, workload, recipe, environment, or score-context drift
+  ---
+  duration_ms: 0.385167
+  type: 'test'
+  ...
+# Subtest: derived-result recomputation specs and scope keys are canonical and non-null
+ok 163 - derived-result recomputation specs and scope keys are canonical and non-null
+  ---
+  duration_ms: 0.285916
+  type: 'test'
+  ...
+# Subtest: schema and migration isolate legacy aggregates and require explicit canonical workload identity
+ok 164 - schema and migration isolate legacy aggregates and require explicit canonical workload identity
+  ---
+  duration_ms: 0.50625
+  type: 'test'
+  ...
+# Subtest: legacy compatibility aggregate keeps null workload identities unique
+ok 165 - legacy compatibility aggregate keeps null workload identities unique
+  ---
+  duration_ms: 0.440958
+  type: 'test'
+  ...
+# Subtest: derived membership and bitrate provenance retain exact immutable analysis evidence
+ok 166 - derived membership and bitrate provenance retain exact immutable analysis evidence
+  ---
+  duration_ms: 0.468209
+  type: 'test'
+  ...
+# Subtest: activation plan rejects the checked-in draft calibration for production activation
+ok 167 - activation plan rejects the checked-in draft calibration for production activation
+  ---
+  duration_ms: 23.341333
+  type: 'test'
+  ...
+# Subtest: buildProductionEnvBindings emits hash-bound PL v7 env keys
+ok 168 - buildProductionEnvBindings emits hash-bound PL v7 env keys
+  ---
+  duration_ms: 4.967458
+  type: 'test'
+  ...
+# Subtest: buildActivationPersistencePayloads uses exact analysis membership for workload and general derived results
+ok 169 - buildActivationPersistencePayloads uses exact analysis membership for workload and general derived results
+  ---
+  duration_ms: 0.305417
+  type: 'test'
+  ...
+# Subtest: persistActivationState upserts score contexts and derived results idempotently
+ok 170 - persistActivationState upserts score contexts and derived results idempotently
+  ---
+  duration_ms: 1.824042
+  type: 'test'
+  ...
+# Subtest: validateProductionEnv rejects mismatched or unsafe production env contracts
+ok 171 - validateProductionEnv rejects mismatched or unsafe production env contracts
+  ---
+  duration_ms: 0.736208
+  type: 'test'
+  ...
+# Subtest: parseEnvText ignores comments and preserves explicit values
+ok 172 - parseEnvText ignores comments and preserves explicit values
+  ---
+  duration_ms: 0.101334
+  type: 'test'
+  ...
+# Subtest: production activation doc and deployment wiring mention env validation, activation, backup volume, and migration rehearsal
+ok 173 - production activation doc and deployment wiring mention env validation, activation, backup volume, and migration rehearsal
+  ---
+  duration_ms: 4.211833
+  type: 'test'
+  ...
+# Subtest: activation plan loader accepts repository-relative temp file paths
+ok 174 - activation plan loader accepts repository-relative temp file paths
+  ---
+  duration_ms: 4.725042
+  type: 'test'
+  ...
+# Subtest: reactivating a parsed production context still requires COMPLETE calibration
+ok 175 - reactivating a parsed production context still requires COMPLETE calibration
+  ---
+  duration_ms: 0.467375
+  type: 'test'
+  ...
+# Subtest: deployed hash-bound policy survives reload and rejects mismatch without promoting sparse fallback
+ok 176 - deployed hash-bound policy survives reload and rejects mismatch without promoting sparse fallback
+  ---
+  duration_ms: 2.524041
+  type: 'test'
+  ...
+# Subtest: exact-analysis review preserves automatic evidence and fails closed across revocation and reanalysis
+ok 177 - exact-analysis review preserves automatic evidence and fails closed across revocation and reanalysis
+  ---
+  duration_ms: 0.396416
+  type: 'test'
+  ...
+# Subtest: PostgreSQL review append, supersession, dedupe, identity binding and immutable trigger
+ok 178 - PostgreSQL review append, supersession, dedupe, identity binding and immutable trigger
+  ---
+  duration_ms: 85.766458
+  type: 'test'
+  ...
+# Subtest: all packaged canonical source artifacts match manifest bytes and hashes
+ok 179 - all packaged canonical source artifacts match manifest bytes and hashes
+  ---
+  duration_ms: 937.018
+  type: 'test'
+  ...
+# Subtest: authoritative frozen suite exposes seven actual references and retained acquisition
+ok 180 - authoritative frozen suite exposes seven actual references and retained acquisition
+  ---
+  duration_ms: 0.9355
+  type: 'test'
+  ...
+# Subtest: public catalog exposes retained canonical reference identities
+ok 181 - public catalog exposes retained canonical reference identities
+  ---
+  duration_ms: 0.222
+  type: 'test'
+  ...
+# Subtest: parseSuiteManifest rejects invalid canonical coverage and corrupted clip evidence
+ok 182 - parseSuiteManifest rejects invalid canonical coverage and corrupted clip evidence
+  ---
+  duration_ms: 2.027875
+  type: 'test'
+  ...
+# Subtest: parseSuiteManifest accepts reviewed retained-reference provenance for future frozen suites
+ok 183 - parseSuiteManifest accepts reviewed retained-reference provenance for future frozen suites
+  ---
+  duration_ms: 0.229375
+  type: 'test'
+  ...
+# Subtest: buildSuiteTestClipUpsertArgs preserves immutable reference evidence exactly
+ok 184 - buildSuiteTestClipUpsertArgs preserves immutable reference evidence exactly
+  ---
+  duration_ms: 0.188917
+  type: 'test'
+  ...
+# Subtest: upsertSuiteTestClips persists every canonical suite clip once
+ok 185 - upsertSuiteTestClips persists every canonical suite clip once
+  ---
+  duration_ms: 0.157584
+  type: 'test'
+  ...
+# Subtest: normalizeEnergyDomains derives per-work energy only for compatible labeled counters
+ok 186 - normalizeEnergyDomains derives per-work energy only for compatible labeled counters
+  ---
+  duration_ms: 0.555375
+  type: 'test'
+  ...
+# Subtest: normalizeEnergyDomains handles counter wrap and rejects mislabeled counters
+ok 187 - normalizeEnergyDomains handles counter wrap and rejects mislabeled counters
+  ---
+  duration_ms: 0.219125
+  type: 'test'
+  ...
+# Subtest: normalizeDecodeBenchmark distinguishes deterministic complete runs from deferred ones
+ok 188 - normalizeDecodeBenchmark distinguishes deterministic complete runs from deferred ones
+  ---
+  duration_ms: 0.117792
+  type: 'test'
+  ...
+# Subtest: normalizeDecodeBenchmark requires rationale for non-complete statuses
+ok 189 - normalizeDecodeBenchmark requires rationale for non-complete statuses
+  ---
+  duration_ms: 0.051667
+  type: 'test'
+  ...
+# Subtest: installed worker provenance binds executed tool bytes and compiled closure across process starts
+ok 190 - installed worker provenance binds executed tool bytes and compiled closure across process starts
+  ---
+  duration_ms: 501.17875
+  type: 'test'
+  ...
+1..190
+# tests 190
+# suites 0
+# pass 190
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17132.412375
