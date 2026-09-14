@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "encodingdb-integrated-checks/v1",
+  "sourceCommit": "df754f01729ea3b6765ffae2b877eb673515e297",
+  "date": "2026-09-14",
+  "server": {
+    "command": "npm --prefix server test",
+    "tests": 222,
+    "passed": 222,
+    "failed": 0,
+    "skipped": 0,
+    "environment": "Eight isolated PostgreSQL test databases with all 29 migrations; backend America/Los_Angeles timezone; locked Mac FFmpeg/ffprobe on PATH."
+  },
+  "client": {
+    "command": ".venv-release/bin/python -m pytest client/tests -q",
+    "tests": 315,
+    "passed": 315,
+    "failed": 0,
+    "skipped": 0,
+    "environment": "Python3.14.6; explicit locked macOS arm64 FFmpeg9 / VMAF3.2 helper paths."
+  },
+  "logs": [
+    {
+      "file": "server.log",
+      "sha256": "3794a9c532188aded77c6c469e3fc5173ef7d1d55f2ae5dd213ad524bd613cc6",
+      "originalPath": ".test-reports/release-20260914/server-final-group-integrated.log"
+    },
+    {
+      "file": "client.log",
+      "sha256": "5481d455a0c969d9f3c22495748dd95e6faa50167ba5e0a9b8277a885736e17a",
+      "originalPath": ".test-reports/release-20260914/client-final-window-integrated.log"
+    }
+  ],
+  "limitations": [
+    "These are integrated automated tests, not final native/hardware/calibration certification.",
+    "Subsequent membership collation fix11a2b99 was independently tested by backend with three actual PostgreSQL group cases and build; this receipt does not relabel the earlier full suite.",
+    "Release Preflight34815842143 for11a2b99 failed before suite materialization completed: read timeout=1. Repair and rerun required."
+  ]
+}

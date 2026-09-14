@@ -8,10 +8,12 @@ stopping point; completed source acquisition and freeze are not reopened.
 
 ## Candidate and published baseline
 
-This snapshot describes candidate source `90f71135b02ef2a3c90b6aef55403b8ef3281432`
-(including cleanup `4348ca8f1fc0e5a8e1bde2dacc3d01c463ba4b43`). It is a development
-candidate, not the final approved build/deployment SHA. Record any later integrated
-SHA and rerun affected checks before promotion.
+This checkpoint describes pushed candidate source
+`11a2b99544058d11561210a5b78f3eeb55320388`. It is a development candidate,
+not the final approved build/deployment SHA. Native CI 34815842127 is still running.
+Release Preflight 34815842143 failed during suite acquisition because the new
+cancellation path used a one-second read timeout; repair and rerun are required.
+Record later source changes and rerun affected checks before promotion.
 
 | Identity | Current state |
 | --- | --- |
@@ -31,30 +33,39 @@ no accepted corrected-protocol production epoch in this snapshot.
 
 ## Executed evidence and its limits
 
-- **Implementation:** [integrated 4348ca8 receipts](collection-readiness/integrated-4348ca8/receipt.json)
-  record 219 server tests (zero skips), 217 client tests and 56 frontend tests,
-  plus frontend lint/typecheck/build. These certify the recorded source snapshot;
-  later candidate changes require affected checks again. Earlier lane transcripts
-  retain their own counts and provenance.
-  [Backend evidence](collection-readiness/backend-20260914/README.md),
-  [scoring/review regressions](collection-readiness/scoring-evidence-20260914.md),
-  [corpus evidence](collection-readiness/corpus-20260914/README.md), and
-  [frontend tests/screenshots](../frontend/evidence/collection-ui/README.md)
-  show the scope already exercised. Tests are not hardware or perceptual approval.
-- **Native Mac:** local package/model smoke and native arm64 helpers are available.
-  The full helper bundle requires macOS 26.5+, is ad-hoc signed, and is not Developer
-  ID signed/notarized. [Runtime and model receipt](NATIVE_RUNTIME_20260914.md).
-  Final native CI and real contribution/recovery acceptance remain required.
-- **Linux/Windows:** final native CI and exact downloadable-client certification
-  remain pending. [P910 preparation](native-linux/20260914-discovery/README.md)
-  verifies an x86_64 runtime with x264/x265/SVT-AV1 and VMAF 3.2 plus the actual
-  pinned-model execution; GTX 1070 discovery does not certify NVENC native RC.
-  Intel macOS, QSV and AMF are not established by these receipts.
+- **Implementation:** [integrated df754f0 receipts](collection-readiness/integrated-df754f0/receipt.json)
+  record 222 server tests and 315 client tests, zero failures/skips. Frontend
+  stable-group changes passed 58 tests plus lint/typecheck/build; screenshots are
+  retained with the frontend evidence. The later `11a2b99` membership-certificate
+  repair uses SQL `COLLATE "C"` for both generation and verification, with actual
+  PostgreSQL mixed-Unicode identity coverage. Independent source review found no
+  release-blocking findings in those changes. Subsequent fixes and empirical gates
+  remain separate. [Earlier integrated receipts](collection-readiness/integrated-4348ca8/receipt.json)
+  preserve their own source and counts.
+- **Native Mac:** [actual packaged fault evidence](client-native-faults-20260914/README.md)
+  covers embedded byte integrity, non-ASCII acquisition, corrupt pack rejection,
+  SIGINT/SIGKILL resume and actual private-volume ENOSPC. The intermediate
+  `65a07d8` package also executed both seven-clip software and VideoToolbox campaigns.
+  Those observations predate corrected CPU sampler provenance and remain exploratory,
+  ineligible for final calibration. Final-source rebuild and contribution/recovery
+  acceptance are still required. The helpers declare macOS 26.5 minimum; execution
+  was on macOS 27.0 build26A428, not a verified minimum-version host. Signing is
+  ad hoc, with no Developer ID signature/notarization. The bounded nonprivileged
+  [AGX collector](operations/agx-system-gpu.md) observes system GPU load, not media-engine occupancy.
+- **Linux/Windows:** [P910 native evidence](operations/evidence/p910-native-84/)
+  includes embedded-helper probes and real NVENC device0 VBR4000/8000 capability
+  checks on GTX1070. These are not final seven-clip downloadable-client certification.
+  Actual Windows CI GUI inspection exposed settings/keyboard/work-area defects;
+  repairs and the preparation-Stop harness are now awaiting successful native CI.
+  Two known physical Windows hosts remain unavailable. Intel macOS, QSV and AMF
+  are not certified by these receipts.
 - **Serving:** [601-second load](operations/evidence/sustained-http-summary-20260914.json)
   used 25 simulated users and completed 124,737 requests without errors.
   [Reconciliation](operations/evidence/metadata-arrivals-reconciliation-20260914.json)
   ended at 100,622 runs/artifacts/analyses/public members, with no dirty groups.
-  These are synthetic metadata in isolated staging. The tested router lacked the
+  These are synthetic metadata in isolated staging. A renewed 100,000-row,
+  25-HTTP-reader, 600-second trial is running after the group/projection changes;
+  the older numbers do not certify the updated query. The tested older router lacked the
   health route (`healthAllOk=false`); this is not 25 concurrent uploads, encoder
   throughput, full queue drain, or final production TLS/topology certification.
 - **Storage/recovery:** [full-size P910 trial](operations/evidence/p910-backup-scale/receipt.json)
@@ -69,8 +80,11 @@ no accepted corrected-protocol production epoch in this snapshot.
   authorized alert delivery remain separate gates.
 - **Sources/calibration:** acquisition, provenance, frozen public-suite distribution
   and [seven longer reference preparations](collection-readiness/holdouts/source-readiness.json)
-  are complete. The fresh 42-cell longer-scene run is underway; no completed
-  measurement or human review is inferred. The canonical plan contains 252 recipe/
+  are complete. The corrected 42-cell software longer-scene run is underway: at the
+  07:00 UTC checkpoint, nine cells completed, seven timing-stable and two unstable.
+  All failed/unstable observations remain recorded. Seventeen cells from
+  the earlier sampler revision remain exploratory and excluded. No human review
+  is inferred; the separate 28-cell hardware extension is unexecuted. The canonical plan contains 252 recipe/
   workload cells expanded to **840 host cell/sessions**, still unexecuted as a
   complete matrix. [Matrix runbook](collection-readiness/matrix-runner.md) and
   [holdout/combined-evidence workflow](collection-readiness/holdouts/README.md).
