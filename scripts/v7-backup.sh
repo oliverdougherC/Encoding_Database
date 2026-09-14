@@ -15,6 +15,7 @@ QUIESCE_SERVICES="${QUIESCE_SERVICES:-server}"
 DRY_RUN=0
 OUTPUT_DIR=""
 QUIESCED_RUNNING_SERVICES=()
+QUIESCED_CONTAINER_IDS=()
 LOCK_OWNED=0
 
 usage() {
@@ -90,21 +91,42 @@ mkdir -p "$OUTPUT_DIR"
 STAGING_DIR="$(mktemp -d "$OUTPUT_DIR/.staging.XXXXXX")"
 
 restart_quiesced_services() {
-  if [[ -n "$COMPOSE_FILE" && ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
-    echo "Restarting quiesced writer services: ${QUIESCED_RUNNING_SERVICES[*]}" >&2
-    docker compose -f "$COMPOSE_FILE" up -d --wait --wait-timeout "${V7_BACKUP_WRITER_RECOVERY_TIMEOUT_SECONDS:-300}" "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
-    echo "Writer quiescence duration seconds: $(( $(date +%s) - QUIESCE_STARTED_SECONDS ))" >&2
+  if [[ -n "$COMPOSE_FILE" && ${#QUIESCED_CONTAINER_IDS[@]} -gt 0 ]]; then
+    echo "Restarting exact quiesced writer containers: ${QUIESCED_RUNNING_SERVICES[*]}" >&2
+    # Never re-evaluate compose during recovery: changed defaults/configuration
+    # must not replace a data volume or start a different image during a backup.
+    docker start "${QUIESCED_CONTAINER_IDS[@]}" >/dev/null || return 1
+    local deadline=$((SECONDS + ${V7_BACKUP_WRITER_RECOVERY_TIMEOUT_SECONDS:-300}))
+    local all_ready summary cid
+    while (( SECONDS < deadline )); do
+      all_ready=1
+      for cid in "${QUIESCED_CONTAINER_IDS[@]}"; do
+        summary="$(docker inspect --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid" 2>/dev/null)" || return 1
+        if [[ "$summary" != 'running healthy' && "$summary" != 'running none' ]]; then all_ready=0; fi
+      done
+      if (( all_ready == 1 )); then
+        echo "Writer quiescence duration seconds: $(( $(date +%s) - QUIESCE_STARTED_SECONDS ))" >&2
+        return 0
+      fi
+      sleep 1
+    done
+    echo 'Quiesced writer recovery did not become healthy within its deadline' >&2
+    return 1
   fi
 }
 
 cleanup() {
   local original_status=$?
   set +e
-  restart_quiesced_services
-  rm -rf "$STAGING_DIR"
-  if [[ ! -f "$OUTPUT_DIR/SHA256SUMS" ]]; then rm -rf "$OUTPUT_DIR"; fi
-  if (( LOCK_OWNED == 1 )); then rmdir "$LOCK_DIR"; fi
-  return "$original_status"
+  if ! restart_quiesced_services; then original_status=1; fi
+  if ! rm -rf "$STAGING_DIR"; then original_status=1; fi
+  if [[ ! -f "$OUTPUT_DIR/SHA256SUMS" ]]; then
+    if ! rm -rf "$OUTPUT_DIR"; then original_status=1; fi
+  fi
+  if (( LOCK_OWNED == 1 )); then
+    if ! rmdir "$LOCK_DIR"; then original_status=1; fi
+  fi
+  exit "$original_status"
 }
 trap cleanup EXIT
 trap 'exit 130' INT
@@ -118,7 +140,7 @@ LOCK_OWNED=1
 # Reject a backup that cannot fit before interrupting writers. Size includes all
 # objects, not just retained rows; pending uploads are part of the recovery unit.
 if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
-  ARTIFACT_SOURCE_KIB="$(docker run --rm --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" -v "${ARTIFACT_VOLUME_NAME}:/from:ro" alpine:3.20 du -sk /from | awk '{print $1}')"
+  ARTIFACT_SOURCE_KIB="$(docker run --rm --label "encodingdb.backup.scope=${V7_BACKUP_SCOPE:-manual}" --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --memory "${V7_BACKUP_DOCKER_MEMORY:-2g}" -v "${ARTIFACT_VOLUME_NAME}:/from:ro" alpine:3.20 du -sk /from | awk '{print $1}')"
 else
   ARTIFACT_SOURCE_KIB="$(du -sk "$ARTIFACT_STORAGE_ROOT" | awk '{print $1}')"
 fi
@@ -157,6 +179,7 @@ if [[ -n "$COMPOSE_FILE" ]]; then
     state="$(docker inspect --format '{{.State.Status}}' "$cid" 2>/dev/null || true)"
     if [[ "$state" == "running" ]]; then
       QUIESCED_RUNNING_SERVICES+=("$service")
+      QUIESCED_CONTAINER_IDS+=("$cid")
     fi
   done
   if [[ ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
@@ -172,10 +195,11 @@ pg_dump --format=custom --no-owner --no-acl --file "$OUTPUT_DIR/database.dump" "
 ARTIFACT_EXPORT_ROOT="$STAGING_DIR/artifacts"
 mkdir -p "$ARTIFACT_EXPORT_ROOT"
 if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
-  docker run --rm --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" \
+  docker run --rm --label "encodingdb.backup.scope=${V7_BACKUP_SCOPE:-manual}" --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --memory "${V7_BACKUP_DOCKER_MEMORY:-2g}" \
     -v "${ARTIFACT_VOLUME_NAME}:/from:ro" \
     -v "${ARTIFACT_EXPORT_ROOT}:/to" \
-    alpine:3.20 sh -c 'cp -a /from/. /to/'
+    --env BACKUP_COPY_UID="$(id -u)" --env BACKUP_COPY_GID="$(id -g)" \
+    alpine:3.20 sh -c 'cp -a /from/. /to/ && chown -R "$BACKUP_COPY_UID:$BACKUP_COPY_GID" /to'
 else
   cp -a "$ARTIFACT_STORAGE_ROOT/." "$ARTIFACT_EXPORT_ROOT/"
 fi
@@ -185,7 +209,8 @@ DATABASE_URL="$DATABASE_URL" bash "$ROOT_DIR/scripts/v7-backup-inventory.sh" \
   --inventory "$OUTPUT_DIR/inventory.json" --output "$OUTPUT_DIR/inventory.json"
 restart_quiesced_services
 QUIESCED_RUNNING_SERVICES=()
-tar -C "$ARTIFACT_EXPORT_ROOT" -czf "$OUTPUT_DIR/artifacts.tar.gz" .
+QUIESCED_CONTAINER_IDS=()
+tar -C "$ARTIFACT_EXPORT_ROOT" -cf - . | python3 "$ROOT_DIR/scripts/v7-gzip-stream.py" "$OUTPUT_DIR/artifacts.tar.gz"
 (
   cd "$OUTPUT_DIR"
   shasum -a 256 artifacts.tar.gz database.dump inventory.json > SHA256SUMS

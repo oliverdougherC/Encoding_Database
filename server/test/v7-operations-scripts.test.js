@@ -52,3 +52,12 @@ test('interrupted capacity runs retain observed samples and never claim completi
     await rm(directory, { recursive: true, force: true });
   }
 });
+
+test('stored-block gzip preserves arbitrary media bytes without a new restore format', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-gzip-'));
+  try {
+    const target = path.join(directory, 'archive.gz');
+    const result = await exec('python3', ['-c', `import gzip,subprocess,sys,os\npayload=os.urandom(3*1024*1024)\nr=subprocess.run([sys.executable,${JSON.stringify(path.join(root, 'scripts/v7-gzip-stream.py'))},${JSON.stringify(target)}],input=payload,check=True,capture_output=True)\nassert gzip.open(${JSON.stringify(target)},'rb').read()==payload\nprint(r.stderr.decode())`], { env: { ...process.env, V7_BACKUP_COMPRESSION_LEVEL: '0' } });
+    assert.equal(JSON.parse(result.stdout).compressionLevel, 0);
+  } finally { await rm(directory, { recursive: true, force: true }); }
+});

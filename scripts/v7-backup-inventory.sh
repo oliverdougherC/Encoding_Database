@@ -9,8 +9,8 @@ fi
 [[ "$V7_BACKUP_DOCKER_WORK_ROOT" == /* && -d "$V7_BACKUP_DOCKER_WORK_ROOT" ]] || { echo 'backup Docker work root must be an existing absolute directory' >&2; exit 2; }
 # Use the exact candidate's generated Prisma client, without installing host npm
 # packages. Pass the database secret through the environment, never command text.
-exec docker run --rm --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --network "${V7_BACKUP_INVENTORY_NETWORK:-${V7_BACKUP_DOCKER_NETWORK:-host}}" \
-  --user "$(id -u):$(id -g)" --env DATABASE_URL \
+exec docker run --rm --label "encodingdb.backup.scope=${V7_BACKUP_SCOPE:-manual}" --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --memory "${V7_BACKUP_DOCKER_MEMORY:-2g}" --network "${V7_BACKUP_INVENTORY_NETWORK:-${V7_BACKUP_DOCKER_NETWORK:-host}}" \
+  --user "$(id -u):$(id -g)" --env DATABASE_URL --env V7_BACKUP_REPORT_CGROUP=1 \
   -v "$V7_BACKUP_DOCKER_WORK_ROOT:$V7_BACKUP_DOCKER_WORK_ROOT" \
   -v "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs:/app/scripts/v7-backup-inventory.mjs:ro" \
   --entrypoint node "$V7_BACKUP_SERVER_IMAGE" /app/scripts/v7-backup-inventory.mjs "$@"

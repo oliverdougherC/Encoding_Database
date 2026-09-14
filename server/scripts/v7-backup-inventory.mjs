@@ -81,6 +81,11 @@ async function main() {
     process.stdout.write(`${JSON.stringify({ ok: true, artifactCount: current.artifacts.length, derivedMemberCount: current.derivedMembers.length, publicCorpusGroupCount: expected.evidenceVersion.endsWith('/v2') ? current.publicCorpusGroups.length : null })}\n`);
   } finally {
     await prisma.$disconnect();
+    if (process.env.V7_BACKUP_REPORT_CGROUP === '1') {
+      let peak = null;
+      try { peak = Number((await readFile('/sys/fs/cgroup/memory.peak', 'utf8')).trim()); } catch {}
+      process.stderr.write(`${JSON.stringify({ kind: 'backup-inventory-resource-use', cgroupPeakMemoryBytes: peak, nodeMaxRssBytes: process.resourceUsage().maxRSS * 1024 })}\n`);
+    }
   }
 }
 

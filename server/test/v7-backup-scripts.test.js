@@ -12,7 +12,8 @@ test('v7 backup and isolated restore drill bind database and artifact evidence',
   assert.match(backup, /cp -a \/from\/\. \/to\//);
   assert.match(backup, /Quiescing writer services for backup consistency/);
   assert.match(backup, /docker compose -f "\$COMPOSE_FILE" stop/);
-  assert.match(backup, /docker compose -f "\$COMPOSE_FILE" up -d/);
+  assert.match(backup, /docker start "\$\{QUIESCED_CONTAINER_IDS\[@\]\}"/);
+  assert.doesNotMatch(backup, /docker compose.*up -d/);
   assert.match(backup, /"mode": "dry-run"/);
   assert.match(backup, /k != "schema"/);
   assert.match(backup, /artifacts\.tar\.gz database\.dump inventory\.json > SHA256SUMS/);

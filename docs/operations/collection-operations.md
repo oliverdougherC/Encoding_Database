@@ -295,8 +295,9 @@ this change preserved two exact artifacts and one selected member.
 Production preflight now rejects unlimited artifact admission and a backup-tree
 budget smaller than twice the configured quota plus 2 GiB. REJECTED retained-byte
 usage is included in health quota totals, matching authoritative admission.
-Container-backed backup helpers default to two CPUs. Writer restart waits for
-Compose health (default 300 seconds) and reports the complete quiescence duration.
+Container-backed backup helpers default to two CPUs. Writer restart resumes the exact stopped container IDs, waits for their health
+(default 300 seconds), and reports the complete quiescence duration. It never
+re-evaluates Compose defaults or changes data volumes/images during recovery.
 Backup and restore each have a 1200-second owned-process deadline; the service's
 45-minute outer bound covers both plus recovery cleanup.
 
@@ -309,3 +310,26 @@ coverage and whole-container cgroup peaks at concurrency one/two. It supplies no
 client validity/precheck flags and does not claim contributor timing or calibration.
 The corresponding empirical P910 receipts must pass before the chosen profile is
 reported as measured.
+
+
+The full-size named-volume trial exposed a real portability failure: Docker's
+archive copy preserved root ownership, leaving host-user staging cleanup unable
+to remove the snapshot. Snapshot copies now change ownership only on the copied
+`/to` tree, while the source volume stays mounted read-only. Cleanup failure is a
+nonzero operation result even if checksums were already written.
+
+The first compressed full-size run spent 1058 seconds on backup, mostly trying
+to compress high-entropy bytes. Gzip stored blocks (compression level 0) now keep
+the same universally readable `.tar.gz` format with bounded 1 MiB streaming
+buffers and an fsync before success; already-compressed media does not benefit
+from expensive recompression. `V7_BACKUP_COMPRESSION_LEVEL` may select 0–9.
+The same full-size fixture is rerun under the unchanged deadline to validate the
+ownership correction and faster archive path.
+
+`scripts/v7-isolated-cron.py` is a one-shot acceptance registration helper,
+restricted to task-owned P910 paths and an `encodingdb-isolated-` marker. It saves
+the original crontab privately, re-reads/remerges concurrent edits, and removes
+only its marked entry from the current crontab. It does not install production
+jobs or restore a stale whole crontab over somebody else's changes. A regression
+covers concurrent and later unrelated edits. P910's user manager has no linger;
+a timer kept alive by SSH is scheduled capacity evidence, not unattended proof.
