@@ -1,0 +1,31 @@
+{
+  "evidenceVersion": "encodingdb-v7-backup-inventory/v1",
+  "createdAt": "2026-09-14T00:51:23.364Z",
+  "artifactCount": 2,
+  "derivedMemberCount": 1,
+  "artifacts": [
+    {
+      "id": "cmtz8j2u40006o6b3hcouw7xx",
+      "benchmarkRunId": "cmtz8j2u40005o6b33bg0qfip",
+      "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "byteSize": 2539152,
+      "storageKey": "objects/36/361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "cmtz8j51c000bo6b3gvodhfkf",
+      "benchmarkRunId": "cmtz8j51c000ao6b3y5c5bx18",
+      "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "byteSize": 2539152,
+      "storageKey": "objects/36/361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "storageState": "RETAINED"
+    }
+  ],
+  "derivedMembers": [
+    {
+      "id": "operations-synthetic-member",
+      "benchmarkRunId": "cmtz8j2u40005o6b33bg0qfip",
+      "qualityAnalysisId": "cmtz8j4wi0008o6b3u86u1v4r"
+    }
+  ]
+}

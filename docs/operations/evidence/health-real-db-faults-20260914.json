@@ -1,0 +1,81 @@
+{
+  "scope": "isolated PostgreSQL16 copied historical data, injected worker failure/expired lease; production unchanged",
+  "snapshot": {
+    "status": "degraded",
+    "reasons": [
+      "stale_pending_analyses",
+      "failed_analyses",
+      "expired_analysis_leases"
+    ],
+    "capturedAt": "2026-09-14T01:01:33.742Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 536870912
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 0,
+      "checkedThisCycle": 0,
+      "complete": true,
+      "cycleStartedAt": "2026-09-14T01:01:33.742Z",
+      "lastCompletedAt": "2026-09-14T01:01:33.742Z"
+    },
+    "capacity": {
+      "pendingUploads": 0,
+      "pendingAnalyses": 1,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 2,
+      "activeLeases": 0,
+      "expiredLeases": 1,
+      "retryDue": 1
+    },
+    "artifacts": {
+      "byState": {
+        "UPLOADED": 2
+      },
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 0
+    },
+    "analyses": {
+      "byStatus": {
+        "FAILED": 1,
+        "PENDING": 1
+      },
+      "pendingOldestSeconds": 78749.98,
+      "completedLatencySeconds": {
+        "sampleCount": 1,
+        "p50": 78749.579,
+        "p95": 78749.579,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 5078304,
+      "quotaBytes": null,
+      "availableBytes": 16280723456,
+      "freeBytes": 16280723456
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T01:01:33.742Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    }
+  }
+}

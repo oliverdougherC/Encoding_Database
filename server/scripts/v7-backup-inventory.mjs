@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import crypto from 'node:crypto';
+import { createReadStream } from 'node:fs';
 import path from 'node:path';
 import { readFile, stat, writeFile } from 'node:fs/promises';
 import { PrismaClient } from '@prisma/client';
@@ -16,8 +17,9 @@ function parseArgs(argv) {
 }
 
 async function sha256File(filePath) {
-  const bytes = await readFile(filePath);
-  return crypto.createHash('sha256').update(bytes).digest('hex');
+  const hash = crypto.createHash('sha256');
+  for await (const chunk of createReadStream(filePath)) hash.update(chunk);
+  return hash.digest('hex');
 }
 
 async function databaseInventory(prisma) {

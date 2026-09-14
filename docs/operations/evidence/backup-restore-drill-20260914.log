@@ -1,0 +1,5 @@
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 isolated restore drill passed

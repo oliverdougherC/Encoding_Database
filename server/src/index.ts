@@ -10,7 +10,7 @@ import routes from './routes.js';
 import { prisma, connectDatabase, disconnectDatabase } from './db.js';
 import crypto from 'node:crypto';
 import path from 'node:path';
-import { collectV7EvidenceHealth } from './v7/operationalHealth.js';
+import { createV7EvidenceHealthMonitor, V7EvidenceHealthUnavailable } from './v7/operationalHealth.js';
 import { startArtifactPipelineBackgroundWork } from './v7/artifacts.js';
 
 export const app = express();
@@ -349,19 +349,25 @@ app.get('/health/ready', async (_req, res) => {
   }
 });
 
-app.get('/health/v7-evidence', async (_req, res) => {
+const evidenceHealthMonitor = createV7EvidenceHealthMonitor(prisma, {
+  storageRoot: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || path.join(process.cwd(), '.artifacts')),
+  pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
+  pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
+  orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
+  storageQuotaBytes: Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0) || null,
+  storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
+  maxPendingUploads: Number(process.env.ARTIFACT_PENDING_UPLOAD_MAX || 500),
+  maxPendingAnalyses: Number(process.env.ARTIFACT_PENDING_ANALYSIS_MAX || 500),
+  maxConcurrentUploads: Number(process.env.ARTIFACT_UPLOAD_CONCURRENCY_MAX || 4),
+  maxConcurrentAnalyses: Number(process.env.ARTIFACT_ANALYSIS_CONCURRENCY_MAX || 2),
+});
+const evidenceHealthLimiter = rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false });
+app.get('/health/v7-evidence', evidenceHealthLimiter, async (_req, res) => {
   try {
-    const health = await collectV7EvidenceHealth(prisma, {
-      storageRoot: path.resolve(process.env.ARTIFACT_STORAGE_ROOT || path.join(process.cwd(), '.artifacts')),
-      pendingUploadSeconds: Number(process.env.V7_PENDING_UPLOAD_ALERT_SECONDS || 900),
-      pendingAnalysisSeconds: Number(process.env.V7_PENDING_ANALYSIS_ALERT_SECONDS || 1800),
-      orphanStagingSeconds: Number(process.env.V7_ORPHAN_STAGING_ALERT_SECONDS || 3600),
-      storageQuotaBytes: Number(process.env.ARTIFACT_STORAGE_QUOTA_BYTES || 0) || null,
-      storageReserveBytes: Number(process.env.ARTIFACT_STORAGE_RESERVE_BYTES || 512 * 1024 * 1024),
-    });
+    const health = await evidenceHealthMonitor();
     res.status(health.status === 'ok' ? 200 : 503).json(health);
-  } catch {
-    res.status(503).json({ status: 'degraded', reasons: ['evidence_health_unavailable'] });
+  } catch (error) {
+    res.status(503).json({ status: 'degraded', reasons: ['evidence_health_unavailable'], ...(error instanceof V7EvidenceHealthUnavailable ? { failedAt: error.failedAt, retryAt: error.retryAt } : {}) });
   }
 });
 

@@ -59,7 +59,7 @@ trap cleanup EXIT INT TERM
 mkdir "$DRILL_DIR/artifacts"
 tar -C "$DRILL_DIR/artifacts" -xzf "$BUNDLE_DIR/artifacts.tar.gz"
 docker run -d --name "$CONTAINER_NAME" -e POSTGRES_USER=app -e POSTGRES_PASSWORD=app \
-  -e POSTGRES_DB=benchmarks -P postgres:16-alpine >/dev/null
+  -e POSTGRES_DB=benchmarks -p 127.0.0.1::5432 postgres:16-alpine >/dev/null
 for _ in $(seq 1 60); do
   if docker exec "$CONTAINER_NAME" pg_isready -U app -d benchmarks >/dev/null 2>&1; then break; fi
   sleep 1

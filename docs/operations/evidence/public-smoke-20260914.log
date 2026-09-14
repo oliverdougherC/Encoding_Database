@@ -1,0 +1,3 @@
+[production-smoke] Checking non-mutating production API surfaces at https://encodingdb.platinumlabs.dev
+[production-smoke] Checking frontend at https://encodingdb.platinumlabs.dev
+[production-smoke] Production smoke checks passed (API and frontend)

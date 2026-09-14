@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-14T00:57:56Z",
+  "finishedAt": "2026-09-14T00:57:58.712798+00:00",
+  "bundle": "/tmp/encodingdb-scheduled-backup-acceptance/bundles/backup-20260914T005756Z-32821",
+  "exitCode": 0,
+  "restoreRequired": true,
+  "scheduler": "macOS launchd StartInterval=10; guarded single scheduled execution; job unloaded after success",
+  "productionModified": false,
+  "fixture": "encodingdb_operations_backup synthetic retention/context/member added only in isolated DB",
+  "earlierFailure": "Bash3 empty-array expansion failed; corrected and regression added; first-failure log retained",
+  "sourceScope": "current operations worktree, uncommitted candidate; final commit must repeat affected checks",
+  "inventory": {
+    "evidenceVersion": "encodingdb-v7-backup-inventory/v1",
+    "createdAt": "2026-09-14T00:57:56.435Z",
+    "artifactCount": 2,
+    "derivedMemberCount": 1,
+    "artifacts": [
+      {
+        "id": "cmtz8j2u40006o6b3hcouw7xx",
+        "benchmarkRunId": "cmtz8j2u40005o6b33bg0qfip",
+        "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+        "byteSize": 2539152,
+        "storageKey": "objects/36/361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+        "storageState": "RETAINED"
+      },
+      {
+        "id": "cmtz8j51c000bo6b3gvodhfkf",
+        "benchmarkRunId": "cmtz8j51c000ao6b3y5c5bx18",
+        "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+        "byteSize": 2539152,
+        "storageKey": "objects/36/361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+        "storageState": "RETAINED"
+      }
+    ],
+    "derivedMembers": [
+      {
+        "id": "operations-synthetic-member",
+        "benchmarkRunId": "cmtz8j2u40005o6b33bg0qfip",
+        "qualityAnalysisId": "cmtz8j4wi0008o6b3u86u1v4r"
+      }
+    ]
+  },
+  "sha256sums": "5cd07d106f4d2a03dbed312e8f479a891e2a6d7f93ea69b4a0203a5bd7491d6a  artifacts.tar.gz\n5350860b11b997ffdcf21da98c57b602b0ea5d53fc91668dd3f421cca87f1c31  database.dump\ndedec57b7236de9cbfe6dd0b3b5be1bc946af68504f46b055e760cdef7d594cc  inventory.json\n"
+}
