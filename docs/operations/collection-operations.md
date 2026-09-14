@@ -362,3 +362,13 @@ backpressure. Exact quota exhaustion is explicit, including reservations even
 before bytes arrive. The updated collector stayed bounded on 100662 synthetic
 metadata rows: cold refresh 79.1 ms, 25 shared monitor calls 35.9 ms, and 1000
 cached calls 0.617 ms ([receipt](evidence/health-reservations-scale-20260914.json)).
+
+The [pre-migration production timing inventory](evidence/production-timing-inventory-before-migration-20260914.json)
+queried the actual old-schema production database in one repeatable-read snapshot.
+It found four BenchmarkRuns (all protocol 7.0, client/0.2.0, SUSPECT), zero legacy
+Submission rows and zero legacy Benchmark aggregate rows. All four IDs and their
+original reported timing values are preserved. No new timing-boundary column was
+queried, no values were rewritten, and no recovery was inferred from retained
+pixels. These existing timings remain incompatible/unrecovered under the corrected
+process-boundary contract; the explicit legacy-table counts are not an inference
+from the four V7 rows.
