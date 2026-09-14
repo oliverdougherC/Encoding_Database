@@ -77,3 +77,5 @@ Namespace regressions were executed on isolated PostgreSQL: valid registered
 HOLDOUT accepted; CALIBRATION relabeling, frozen-suite masquerading, source/hash
 mismatch and absent operator registry rejected. Full native runner execution is
 still pending the integrator's quiet host window and final integrated code.
+
+The cross-database path is now implemented and rehearsed; see `combined-evidence/README.md`. It preserves measured identities and uses an explicit read-only activation binding. The controlled importer also retains exact fractional milliseconds and the complete observed environment-validity wrapper. Native controlled-runner execution still awaits the coordinated quiet window.

@@ -373,6 +373,19 @@ export async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedC
   }));
 }
 
+export async function withReadOnlyCalibrationEvidence(evidenceClient, targetClient, callback) {
+  const [sourceDatabase, targetDatabase] = await Promise.all([
+    evidenceClient.$queryRawUnsafe('SELECT current_database() AS name'), targetClient.$queryRawUnsafe('SELECT current_database() AS name'),
+  ]);
+  if (!/^encodingdb_calibration_[a-z0-9_]+$/.test(sourceDatabase[0].name)) throw new Error('External evidence must use a dedicated encodingdb_calibration_* database');
+  if (sourceDatabase[0].name === targetDatabase[0].name) throw new Error('Evidence and target database are the same; use the unified single-database mode');
+  return evidenceClient.$transaction(async tx => {
+    await tx.$executeRawUnsafe('SET TRANSACTION READ ONLY');
+    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
+    return callback(tx);
+  }, { isolationLevel: 'RepeatableRead', timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) });
+}
+
 export async function runProductionActivation(options) {
   const plan = options.plan ?? await loadProductionActivationPlan(options);
   const {
@@ -411,20 +424,33 @@ export async function runProductionActivation(options) {
       }
     } catch (error) { for (const output of preparedOutputs) unlinkSync(output); throw error; }
   }
+  let externalEvidenceClient = null;
+  const evidenceUrl = options.evidenceDatabaseUrl ?? process.env.CALIBRATION_EVIDENCE_DATABASE_URL;
+  if (evidenceUrl) {
+    const { PrismaClient } = await import(path.join(serverRoot, 'node_modules/@prisma/client/default.js'));
+    externalEvidenceClient = new PrismaClient({ datasources: { db: { url: evidenceUrl } } });
+  }
+  const evidenceStorageRoot = options.evidenceStorageRoot ?? process.env.CALIBRATION_EVIDENCE_STORAGE_ROOT;
   try {
     if (!calibration) throw new Error('Calibration evidence is mandatory');
     const rankingVerification = modules.verifyCalibrationRanking(calibration, promotedContext);
-    const execute = async (client, apply) => {
+    const execute = async (client, apply, verifiedExternal = null) => {
       if (apply) await client.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
-      const retainedVerification = await modules.verifyCalibrationRetainedEvidence(client, calibration);
+      const retainedVerification = verifiedExternal ?? await modules.verifyCalibrationRetainedEvidence(client, calibration, evidenceStorageRoot);
       const evidence = await loadRecomputeInputs(client, options.benchmarkProtocolId, promotedContext, modules);
       const recomputed = recomputeReferenceScores(evidence, promotedContext);
       const persisted = apply ? await persistActivationState(client, { modules, benchmarkProtocolId: options.benchmarkProtocolId, promotedContext, evidence, recomputed }) : { scoreContexts: [], derivedResults: [] };
       return { evidence, recomputed, persisted, retainedVerification };
     };
-    const { evidence, recomputed, persisted, retainedVerification } = options.apply === true
-      ? await prisma.$transaction((tx) => execute(tx, true), { timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) })
-      : await execute(prisma, false);
+    const act = async (verifiedExternal = null) => options.apply === true
+      ? prisma.$transaction((tx) => execute(tx, true, verifiedExternal), { timeout: Number(process.env.CALIBRATION_ACTIVATION_TIMEOUT_MS ?? 1800000) })
+      : execute(prisma, false, verifiedExternal);
+    const { evidence, recomputed, persisted, retainedVerification } = externalEvidenceClient
+      ? await withReadOnlyCalibrationEvidence(externalEvidenceClient, prisma, async evidenceTx => {
+          const verified = await modules.verifyCalibrationRetainedEvidence(evidenceTx, calibration, evidenceStorageRoot);
+          return act(verified);
+        })
+      : await act();
 
 
     return {
@@ -447,6 +473,7 @@ export async function runProductionActivation(options) {
       envBindings,
     };
   } finally {
+    if (externalEvidenceClient) await externalEvidenceClient.$disconnect().catch(() => {});
     if (typeof prisma?.$disconnect === 'function') {
       await prisma.$disconnect().catch(() => {});
     }
@@ -460,6 +487,8 @@ async function main() {
     benchmarkProtocolId: flags.get('--benchmark-protocol-id'),
     referenceContextPath: flags.get('--reference-context'),
     calibrationEvidencePath: flags.get('--calibration-evidence') ?? null,
+    evidenceDatabaseUrl: process.env.CALIBRATION_EVIDENCE_DATABASE_URL,
+    evidenceStorageRoot: process.env.CALIBRATION_EVIDENCE_STORAGE_ROOT,
     promotedContextOutputPath: flags.get('--promoted-context-output') ?? null,
     envOutputPath: flags.get('--env-output') ?? null,
   });

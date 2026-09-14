@@ -70,7 +70,7 @@ try {
     const timing = record.timing;
     const measuredElapsed = (timing.end_monotonic_ns - timing.start_monotonic_ns) / 1e9;
     if (Math.abs(measuredElapsed - timing.elapsed_s) > 0.000001) throw new Error('Timing tuple differs from measured monotonic interval');
-    artifacts.validateCanonicalTiming({ encodeTimerBoundary: info.encodeTimerBoundary, physicalSourceId: receipt.physicalSourceId, inputHash: source.sourceSha256, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count, sourceFps: timing.source_fps, encodeWallTimeMs: Math.round(timing.elapsed_s * 1000), encodeFps: timing.encode_fps, realTimeRatio: timing.realtime_multiple }, clip);
+    artifacts.validateCanonicalTiming({ encodeTimerBoundary: info.encodeTimerBoundary, physicalSourceId: receipt.physicalSourceId, inputHash: source.sourceSha256, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count, sourceFps: timing.source_fps, encodeWallTimeMs: timing.elapsed_s * 1000, encodeFps: timing.encode_fps, realTimeRatio: timing.realtime_multiple }, clip);
     const immutable = { schedule: record.schedule, timing, recipe: recipe.fingerprint, environment: environment.fingerprint, source: hash(source), physicalSourceId: receipt.physicalSourceId, artifact: info.artifactSha256 };
     const id = `validation_${hash(record.schedule)}`;
     const existing = await db.benchmarkRun.findUnique({ where: { id } });
@@ -78,8 +78,8 @@ try {
     const run = await db.benchmarkRun.upsert({ where: { id }, create: { id, benchmarkProtocolId: protocol.id, testClipId: clip.id, workloadId: source.workloadId, recipeId: recipe.id, environmentId: environment.id,
       payloadHash: hash(immutable), immutablePayloadHash: hash(immutable), physicalSourceId: receipt.physicalSourceId, encodeTimerBoundary: 'ffmpeg-process-v1', inputHash: source.sourceSha256,
       campaignId: record.schedule.campaign_id, repetitionGroupId: `${record.schedule.campaign_id}:${record.schedule.recipe_id}`, repetitionIndex: record.schedule.repetition_index,
-      encodeWallTimeMs: Math.round(timing.elapsed_s * 1000), encodeFps: timing.encode_fps, sourceFps: timing.source_fps, realTimeRatio: timing.realtime_multiple, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count,
-      preRunEnvironmentCheck: record.environmentSnapshot, clientQualityDebug: { validationOnly: true, rawJournalRecord: record }, status: 'PENDING' }, update: {} });
+      encodeWallTimeMs: timing.elapsed_s * 1000, encodeFps: timing.encode_fps, sourceFps: timing.source_fps, realTimeRatio: timing.realtime_multiple, sourceFrameCount: timing.source_frame_count, encodedFrameCount: timing.encoded_frame_count,
+      preRunEnvironmentCheck: { snapshot: record.environmentSnapshot, overallValidity: record.overallValidity, environmentValidity: record.environmentValidity, structuralValidity: record.structuralValidity }, clientQualityDebug: { validationOnly: true, rawJournalRecord: record }, status: 'PENDING' }, update: {} });
     const key = path.join('objects', info.artifactSha256.slice(0, 2), info.artifactSha256); const destination = path.join(root, key);
     await mkdir(path.dirname(destination), { recursive: true });
     const temporary = `${destination}.${process.pid}.partial`; await copyFile(info.artifactPath, temporary);

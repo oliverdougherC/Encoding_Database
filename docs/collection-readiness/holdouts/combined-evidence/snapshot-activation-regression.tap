@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: activation plan rejects the checked-in draft calibration for production activation
+ok 1 - activation plan rejects the checked-in draft calibration for production activation
+  ---
+  duration_ms: 22.691792
+  type: 'test'
+  ...
+# Subtest: buildProductionEnvBindings emits hash-bound PL v7 env keys
+ok 2 - buildProductionEnvBindings emits hash-bound PL v7 env keys
+  ---
+  duration_ms: 5.097875
+  type: 'test'
+  ...
+# Subtest: buildActivationPersistencePayloads uses exact analysis membership for workload and general derived results
+ok 3 - buildActivationPersistencePayloads uses exact analysis membership for workload and general derived results
+  ---
+  duration_ms: 0.274208
+  type: 'test'
+  ...
+# Subtest: persistActivationState upserts score contexts and derived results idempotently
+ok 4 - persistActivationState upserts score contexts and derived results idempotently
+  ---
+  duration_ms: 1.303792
+  type: 'test'
+  ...
+# Subtest: validateProductionEnv rejects mismatched or unsafe production env contracts
+ok 5 - validateProductionEnv rejects mismatched or unsafe production env contracts
+  ---
+  duration_ms: 0.551083
+  type: 'test'
+  ...
+# Subtest: parseEnvText ignores comments and preserves explicit values
+ok 6 - parseEnvText ignores comments and preserves explicit values
+  ---
+  duration_ms: 0.0925
+  type: 'test'
+  ...
+# Subtest: production activation doc and deployment wiring mention env validation, activation, backup volume, and migration rehearsal
+ok 7 - production activation doc and deployment wiring mention env validation, activation, backup volume, and migration rehearsal
+  ---
+  duration_ms: 4.374958
+  type: 'test'
+  ...
+# Subtest: activation plan loader accepts repository-relative temp file paths
+ok 8 - activation plan loader accepts repository-relative temp file paths
+  ---
+  duration_ms: 4.231
+  type: 'test'
+  ...
+# Subtest: reactivating a parsed production context still requires COMPLETE calibration
+ok 9 - reactivating a parsed production context still requires COMPLETE calibration
+  ---
+  duration_ms: 0.469958
+  type: 'test'
+  ...
+# Subtest: first promotion without a promoted artifact output fails before any database call
+ok 10 - first promotion without a promoted artifact output fails before any database call
+  ---
+  duration_ms: 0.561833
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 152.364875

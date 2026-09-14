@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -18,9 +18,10 @@ function parseArgs(argv) {
     flags.set(key, value);
     index += 1;
   }
-  for (const required of ['--benchmark-protocol-id', '--quality-model-id', '--calibration-version', '--output']) {
+  for (const required of ['--quality-model-id', '--calibration-version', '--output']) {
     if (!flags.get(required)) throw new Error(`${required} is required`);
   }
+  if (!flags.get('--benchmark-protocol-id') && !flags.get('--benchmark-protocol-ids')) throw new Error('Explicit --benchmark-protocol-id or --benchmark-protocol-ids JSON list is required');
   return flags;
 }
 
@@ -47,6 +48,8 @@ function numeric(value, field, evidenceId) {
 }
 
 const flags = parseArgs(process.argv.slice(2));
+const protocolIds = flags.has('--benchmark-protocol-ids') ? JSON.parse(readFileSync(path.resolve(flags.get('--benchmark-protocol-ids')), 'utf8')) : [flags.get('--benchmark-protocol-id')];
+if (!Array.isArray(protocolIds) || !protocolIds.length || protocolIds.some(id => typeof id !== 'string' || !id)) throw new Error('Invalid protocol ID list');
 const outputPath = path.resolve(process.cwd(), flags.get('--output'));
 const since = flags.get('--since') ? new Date(flags.get('--since')) : null;
 if (since && Number.isNaN(since.getTime())) throw new Error('--since must be an ISO-8601 timestamp');
@@ -59,7 +62,7 @@ const [{ prisma }, calibration] = await Promise.all([
 try {
   const runs = await prisma.benchmarkRun.findMany({
     where: {
-      benchmarkProtocolId: flags.get('--benchmark-protocol-id'),
+      benchmarkProtocolId: { in: protocolIds },
       ...(since ? { createdAt: { gte: since } } : {}),
       status: { in: ['ACCEPTED', 'SUSPECT'] },
       artifacts: {
@@ -144,13 +147,14 @@ try {
 
   if (!corpus.length) throw new Error('No retained authoritative calibration evidence matched the requested scope');
   const generatedAt = new Date(Math.max(...timestamps.map((value) => value.getTime()))).toISOString();
-  const firstRun = runs[0];
+  const firstRun = runs.find(run => run.testClip.suiteVersion !== 'encodingdb-validation-holdouts-v1') ?? runs[0];
+  if (new Set(runs.map(run => run.benchmarkProtocol.protocolVersion)).size !== 1) throw new Error('Selected evidence protocol versions differ');
   const document = {
     schemaVersion: calibration.CALIBRATION_EVIDENCE_SCHEMA_VERSION,
     calibrationVersion: flags.get('--calibration-version'),
     status: 'DRAFT',
     benchmarkProtocolVersion: firstRun.benchmarkProtocol.protocolVersion,
-    sourceSuiteVersion: firstRun.benchmarkProtocol.sourceSuiteVersion,
+    sourceSuiteVersion: flags.get('--source-suite-version') ?? (firstRun.testClip.suiteVersion === 'encodingdb-validation-holdouts-v1' ? 'encodingdb-test-suite-v1' : firstRun.benchmarkProtocol.sourceSuiteVersion),
     qualityModelId: flags.get('--quality-model-id'),
     scoreFormulaVersion: '7.0',
     generatedAt,
