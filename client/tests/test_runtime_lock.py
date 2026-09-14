@@ -5,6 +5,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+from contextlib import contextmanager
 
 from client import config
 from client import runtime_lock
@@ -16,11 +18,71 @@ CLIENT_DIR = ROOT_DIR / "client"
 class RuntimeLockTests(unittest.TestCase):
     def _runtime_paths(self) -> tuple[str, str, str]:
         platform_key = config._platform_key()
-        ffmpeg_path = config.ffmpeg_exe()
-        ffprobe_path = config.ffprobe_exe()
+        # Runtime integration tests must use the explicitly selected candidate,
+        # even if an earlier test populated config's cached legacy helper paths.
+        ffmpeg_path = os.environ.get("FFMPEG_EXE") or config.ffmpeg_exe()
+        ffprobe_path = os.environ.get("FFPROBE_EXE") or config.ffprobe_exe()
         self.assertTrue(os.path.exists(ffmpeg_path), ffmpeg_path)
         self.assertTrue(os.path.exists(ffprobe_path), ffprobe_path)
         return platform_key, ffmpeg_path, ffprobe_path
+
+    @contextmanager
+    def _mock_runtime(self, *, include_svt=True):
+        """Real files for hashing, mocked capability subprocess output only."""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ffmpeg_path, ffprobe_path = root / "ffmpeg", root / "ffprobe"
+            ffmpeg_path.write_bytes(b"mock-ffmpeg-executable")
+            ffprobe_path.write_bytes(b"mock-ffprobe-executable")
+            (root / "lib").mkdir()
+            (root / "lib" / "codec.dylib").write_bytes(b"trusted-dependency")
+            encoders = ["libaom-av1", "libvpx-vp9", "libx264", "libx265"]
+            if include_svt:
+                encoders.append("libsvtav1")
+            def output(command):
+                if command[-1] == "-version":
+                    return f"{Path(command[0]).name} version test-1.0\nconfiguration: mocked-test-runtime"
+                if command[-1] == "-filters":
+                    return " ... libvmaf\n ... xpsnr\n"
+                if command[-1] == "-encoders":
+                    return "\n".join(f" V..... {encoder}" for encoder in encoders)
+                self.fail(f"Unexpected mocked runtime command: {command}")
+            with mock.patch.object(runtime_lock, "_run_text", side_effect=output) as runner:
+                yield root, str(ffmpeg_path), str(ffprobe_path), runner
+
+    def test_mock_runtime_requires_svt_without_substitution(self):
+        with self._mock_runtime(include_svt=False) as (_, ffmpeg_path, ffprobe_path, _):
+            with self.assertRaisesRegex(runtime_lock.RuntimeLockError, "libsvtav1"):
+                runtime_lock.build_runtime_lock_payload(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path)
+        with self._mock_runtime() as (_, ffmpeg_path, ffprobe_path, _):
+            payload = runtime_lock.build_runtime_lock_payload(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path)
+            capabilities = payload["platforms"]["mac"]["capabilities"]
+            self.assertIn("libsvtav1", capabilities["requiredEncoders"])
+            self.assertIn("libsvtav1", capabilities["smokeTestEncoders"])
+
+    def test_dependency_hash_and_membership_are_verified_before_runtime_execution(self):
+        for mutation in ("same-size-tamper", "missing", "unexpected", "unbound"):
+            with self.subTest(mutation=mutation), self._mock_runtime() as (root, ffmpeg_path, ffprobe_path, runner):
+                payload = runtime_lock.build_runtime_lock_payload(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path)
+                expected = payload["platforms"]["mac"]["runtimeDependencies"]
+                self.assertEqual([entry["relativePath"] for entry in expected], ["lib/codec.dylib"])
+                self.assertEqual(expected[0]["sha256"], runtime_lock._sha256_path(str(root / "lib" / "codec.dylib")))
+                lock_path = root / "runtime-lock.json"
+                runtime_lock.write_runtime_lock(payload, str(lock_path))
+                runtime_lock.verify_runtime_lock(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path, lock_path=str(lock_path))
+                if mutation == "same-size-tamper":
+                    (root / "lib" / "codec.dylib").write_bytes(b"changed-dependency")
+                elif mutation == "missing":
+                    (root / "lib" / "codec.dylib").unlink()
+                elif mutation == "unexpected":
+                    (root / "lib" / "extra.dylib").write_bytes(b"extra")
+                else:
+                    del payload["platforms"]["mac"]["runtimeDependencies"]
+                    runtime_lock.write_runtime_lock(payload, str(lock_path))
+                runner.reset_mock()
+                with self.assertRaisesRegex(runtime_lock.RuntimeLockError, "dependenc"):
+                    runtime_lock.verify_runtime_lock(platform_key="mac", ffmpeg_path=ffmpeg_path, ffprobe_path=ffprobe_path, lock_path=str(lock_path))
+                runner.assert_not_called()
 
     def test_current_platform_runtime_can_be_registered_and_verified(self) -> None:
         platform_key, ffmpeg_path, ffprobe_path = self._runtime_paths()

@@ -791,6 +791,9 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
                               host_gpu_vendors=host_gpu_vendors)
     monitor.start()
     proc = None
+    receipt_writer = None
+    receipt_errors = []
+    hw_metrics = None
     try:
         start_ns = time.perf_counter_ns()
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
@@ -800,8 +803,19 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
             from pathlib import Path
             from .campaign import atomic_json
             import psutil
-            atomic_json(Path(checkpoint_path + ".active.json"), {"pid": proc.pid,
-                        "createdAt": psutil.Process(proc.pid).create_time(), "command": cmd})
+            import threading
+            def write_process_receipt():
+                try:
+                    created_at = psutil.Process(proc.pid).create_time()
+                    atomic_json(Path(checkpoint_path + ".active.json"), {"pid": proc.pid,
+                                "createdAt": created_at, "command": cmd})
+                except psutil.NoSuchProcess:
+                    # An already exited process cannot become an orphan.
+                    return
+                except Exception as exc:
+                    receipt_errors.append(exc)
+            receipt_writer = threading.Thread(target=write_process_receipt, daemon=True)
+            receipt_writer.start()
         while True:
             try:
                 stdout, stderr = proc.communicate(timeout=0.2)
@@ -818,8 +832,19 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
                         "returncode": proc.returncode, "elapsed": (end_ns-start_ns)/1e9,
                         "hardwareMetrics": empty_metrics,
                         "artifactSha256": None, "artifactByteSize": os.path.getsize(cmd[-1]) if os.path.isfile(cmd[-1]) else None})
+                hw_metrics = monitor.stop()
+                # A slow receipt write must not extend a completed encode's
+                # interval. Join before checkpoint cleanup or another attempt.
+                if receipt_writer is not None:
+                    receipt_writer.join(timeout=10)
+                    if receipt_writer.is_alive():
+                        raise TimeoutError("Process receipt persistence did not finish")
+                    if receipt_errors:
+                        raise receipt_errors[0]
                 break
             except subprocess.TimeoutExpired:
+                if receipt_errors:
+                    raise receipt_errors[0]
                 if cancel_event is not None and cancel_event.is_set():
                     raise KeyboardInterrupt
                 if max_output_bytes is not None and os.path.exists(cmd[-1]) and os.path.getsize(cmd[-1]) >= max_output_bytes:
@@ -831,7 +856,10 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
             _terminate_owned_process(proc)
         raise
     finally:
-        hw_metrics = monitor.stop()
+        if receipt_writer is not None:
+            receipt_writer.join(timeout=10)
+        if hw_metrics is None:
+            hw_metrics = monitor.stop()
         if checkpoint_path and proc is not None and proc.poll() is not None:
             from pathlib import Path
             Path(checkpoint_path + ".active.json").unlink(missing_ok=True)

@@ -41,7 +41,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.cancel_event = threading.Event()
             self.running = False
 
-            self.mode_var = tk.StringVar(value="Medium")
+            self.mode_var = tk.StringVar(value="Single")
             self.no_submit_var = tk.BooleanVar(value=bool(getattr(base_args, "no_submit", False)))
             self.base_url_var = tk.StringVar(value=str(getattr(base_args, "base_url", "")))
             self.retries_var = tk.IntVar(value=max(1, int(getattr(base_args, "retries", 3))))

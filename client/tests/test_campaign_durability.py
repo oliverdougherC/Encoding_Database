@@ -211,3 +211,65 @@ def test_orphan_after_client_kill_is_fenced_before_resume(tmp_path):
         if process.poll() is None:
             process.kill()
         process.wait()
+
+
+def test_process_interval_waits_for_exit_after_both_pipes_close():
+    import sys
+    # EOF must not end the measurement: the owned process still has work to do.
+    command = [sys.executable, '-c',
+               'import os,time;os.close(1);os.close(2);time.sleep(0.4);os._exit(23)']
+    monitor = SimpleNamespace(start=lambda: None, stop=lambda: SimpleNamespace())
+    with mock.patch.object(ffmpeg, 'HardwareMonitor', return_value=monitor):
+        stdout, stderr, returncode, elapsed, metrics = ffmpeg._run_monitored(command, encoder_name='libx264')
+    assert stdout == stderr == ''
+    assert returncode == 23
+    assert elapsed >= 0.4
+    assert metrics.encode_end_monotonic_ns - metrics.encode_start_monotonic_ns >= 400_000_000
+
+
+def test_slow_active_process_journal_does_not_extend_encode_interval(tmp_path):
+    import sys
+    import time
+    import client.campaign as campaign
+    original = campaign.atomic_json
+    writer_started = tmp_path / "writer-started"
+    def slow_active_receipt(path, payload):
+        if str(path).endswith('.active.json'):
+            writer_started.write_text('ready')
+            time.sleep(2)
+        return original(path, payload)
+    monitor = SimpleNamespace(start=lambda: None, stop=lambda: SimpleNamespace())
+    child = f"import pathlib,time; p=pathlib.Path({str(writer_started)!r})\nwhile not p.exists(): time.sleep(0.01)\ntime.sleep(0.15)"
+    command = [sys.executable, '-c', child]
+    started = time.perf_counter()
+    with mock.patch.object(ffmpeg, 'HardwareMonitor', return_value=monitor), mock.patch.object(campaign, 'atomic_json', side_effect=slow_active_receipt):
+        _, _, returncode, elapsed, _ = ffmpeg._run_monitored(command, encoder_name='libx264', checkpoint_path=str(tmp_path / 'process.json'))
+    whole_call = time.perf_counter() - started
+    assert returncode == 0
+    assert whole_call >= 2
+    assert elapsed >= 0.15
+    assert whole_call - elapsed >= 1
+    assert not list(tmp_path.glob('*.active.json'))
+
+
+def test_process_receipt_disk_failure_cancels_owned_encode(tmp_path):
+    import subprocess
+    import sys
+    import client.campaign as campaign
+    processes = []
+    real_popen = subprocess.Popen
+    def launch(*args, **kwargs):
+        process = real_popen(*args, **kwargs)
+        processes.append(process)
+        return process
+    monitor = SimpleNamespace(start=lambda: None, stop=lambda: SimpleNamespace())
+    try:
+        with mock.patch.object(ffmpeg, 'HardwareMonitor', return_value=monitor), mock.patch.object(ffmpeg.subprocess, 'Popen', side_effect=launch), mock.patch.object(campaign, 'atomic_json', side_effect=OSError('disk full')):
+            with pytest.raises(OSError, match='disk full'):
+                ffmpeg._run_monitored([sys.executable, '-c', 'import time;time.sleep(30)'], encoder_name='libx264', checkpoint_path=str(tmp_path/'process.json'))
+        assert len(processes) == 1 and processes[0].poll() is not None
+    finally:
+        for process in processes:
+            if process.poll() is None:
+                process.kill()
+            process.wait()
