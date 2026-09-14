@@ -77,7 +77,11 @@ async function validateCohort(env, extraPairs = 0) {
   return { environmentId: env, rawAccepted: row.sampleCounts.accepted, sources: row.sampleCounts.independentSources, exactQualifiedMemberCount: persisted.members.length, memberHash: hash(persisted.members.map(m => m.benchmarkRunId).sort().join('\n')), centerBasis: row.status.centerBasis, fps: row.fps, pl: row.pl.total };
 }
 if (mode === 'rebuild-fixture') {
-  await client.$executeRawUnsafe(`UPDATE "QualityAnalysis" SET id = encode(sha256(convert_to("benchmarkRunId" || '-analysis', 'UTF8')), 'hex') WHERE id LIKE 'SYNTHETIC-PROJECTION-ONLY%'`);
+  while (true) {
+    const batch = await client.qualityAnalysis.findMany({ where: { id: { startsWith: id } }, select: { id: true }, take: 250 });
+    if (!batch.length) break;
+    await client.$executeRawUnsafe(`UPDATE "QualityAnalysis" SET id = encode(sha256(convert_to("benchmarkRunId" || '-analysis', 'UTF8')), 'hex') WHERE id = ANY($1::text[])`, batch.map(row => row.id));
+  }
   for (let index = 0; index <= 980; index++) { await rebuild(environmentId(index)); if (index % 25 === 0) console.log(JSON.stringify({ rebuiltCohorts: index + 1, at: new Date() })); }
   await drain();
   const checks = []; for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
