@@ -88,7 +88,7 @@ try {
   clearInterval(monitor);
   samples.sort((a, b) => a - b);
   const report = { schema: 'encodingdb-isolated-corpus-scale/v1', sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-    sourceDirty: execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim().length > 0, fixtureOnly: true, backfillMs, backfilledIdentities, prefix, metadataRuns: count + 20, groups: first.totalCount, concurrentBrowsers: 25,
+    sourceDirty: execFileSync('git', ['status', '--porcelain', '--untracked-files=no'], { encoding: 'utf8' }).trim().length > 0, fixtureOnly: true, backfillMs, backfilledIdentities, prefix, metadataRuns: await db.benchmarkRun.count({ where: { benchmarkProtocolId: `${prefix}-protocol` } }), groups: first.totalCount, concurrentBrowsers: 25,
     predeclaredP95TargetMs: 1000, requests: samples.length + failures.length, successes: samples.length, failures, elapsedMs: performance.now() - started,
     p50Ms: samples[Math.floor(samples.length * .5)], p95Ms: samples[Math.floor(samples.length * .95)], maxMs: samples.at(-1),
     peakNodeRssBytes: peakRss, uniqueGroupsInspected: seenGroups.size,
