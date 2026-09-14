@@ -1142,7 +1142,7 @@ def _materialize_clip_from_suite_pack(clip: SuiteClip, pack_metadata: Mapping[st
     return target_path
 
 
-def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
+def _verify_suite_clip_bytes(path: str, clip: SuiteClip) -> ClipVerificationResult:
     preparation_progress("validate", clipId=clip.clip_id, path=path)
     if not os.path.exists(path):
         return ClipVerificationResult(False, f"{clip.file_name} not found", {"path": path})
@@ -1161,6 +1161,13 @@ def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
             {"path": path, "expected": clip.sha256, "actual": actual_hash, "field": "sha256"},
         )
 
+    return ClipVerificationResult(True, "ok", {"path": path})
+
+
+def verify_suite_clip(path: str, clip: SuiteClip) -> ClipVerificationResult:
+    result = _verify_suite_clip_bytes(path, clip)
+    if not result.ok:
+        return result
     probe = _probe_clip(path)
     expected_container = str(clip.acquisition.get("container") or "").strip()
     if expected_container and not _container_matches(expected_container, str(probe.get("containerFormat") or "")):
@@ -1242,7 +1249,9 @@ def ensure_suite_clip(
         result = verify_suite_clip(path, clip)
         if not result.ok and regenerate_on_mismatch:
             path = _materialize_clip_from_suite_pack(clip, load_suite_pack_metadata(), resolved_cache_root)
-            result = verify_suite_clip(path, clip)
+            # That exact staged stream passed this clip's complete media contract.
+            # Recheck the renamed bytes, including SHA, before reusing that result.
+            result = _verify_suite_clip_bytes(path, clip)
         if not result.ok:
             raise RuntimeError(result.message)
     elif cache_root is not None:
@@ -1262,7 +1271,7 @@ def ensure_suite_clip(
                     pass
             result = verify_suite_clip(path, clip)
     else:
-        result = verify_suite_clip(path, clip)
+        result = _verify_suite_clip_bytes(path, clip)
     if not result.ok:
         raise RuntimeError(result.message)
 

@@ -895,7 +895,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
     output_metrics = probe_video_stream_metrics(path)
     return ArtifactProbe(
         decodable=decodable,
-        duration_s=duration_s,
+        duration_s=duration_s if duration_s is not None else _safe_float(output_metrics.get("sourceDurationSeconds")),
         frame_count=frame_count,
         width=_safe_int(video_stream.get("width")),
         height=_safe_int(video_stream.get("height")),
@@ -919,7 +919,7 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
             if output_metrics.get("bFrameReordering") is not None
             else None
         ),
-        avg_frame_rate=avg_frame_rate,
+        avg_frame_rate=avg_frame_rate if avg_frame_rate is not None else _safe_float(output_metrics.get("sourceFps")),
         time_base=time_base,
         video_stream_count=video_stream_count,
         auxiliary_stream_count=auxiliary_stream_count,
@@ -954,9 +954,8 @@ def _build_protocol_recipe_specs(
         rate_control = task.get("rateControl")
         effective_input, input_hash, prepared_clip = _resolve_input_for_task(default_input_path, default_input_hash, task)
         source_probe = _probe_artifact_contract(effective_input)
-        source_metrics = probe_video_stream_metrics(effective_input)
-        source_duration = source_probe.duration_s if source_probe.duration_s is not None else _safe_float(source_metrics.get("sourceDurationSeconds"))
-        source_fps = source_probe.avg_frame_rate if source_probe.avg_frame_rate is not None else _safe_float(source_metrics.get("sourceFps"))
+        source_duration = source_probe.duration_s
+        source_fps = source_probe.avg_frame_rate
         source_frame_count = source_probe.frame_count
         if source_frame_count is None and source_duration is not None and source_fps is not None:
             source_frame_count = int(round(source_duration * source_fps))

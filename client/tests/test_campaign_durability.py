@@ -144,7 +144,7 @@ def test_default_single_and_full_route_through_authoritative_campaign():
     fixture = MainRoutingTests()
     args = main.build_arg_parser().parse_args(['--codec','libx264','--presets','fast','--submit'])
     clips = [dataclasses.replace(fixture._quick_clip(),clip_id=f'clip-{n}') for n in range(7)]
-    with mock.patch.object(main,'_prepare_quick_suite_clip',return_value=clips[0]), mock.patch.object(main,'_prepare_full_suite',return_value=clips), mock.patch.object(main,'has_encoder',return_value=True), mock.patch.object(main,'run_benchmark_batch',return_value=0) as run, mock.patch.object(main,'detect_hardware',return_value=main.HardwareInfo('CPU',None,16,'OS')):
+    with mock.patch.object(main,'check_compatibility',return_value={}), mock.patch.object(main,'_prepare_quick_suite_clip',return_value=clips[0]), mock.patch.object(main,'_prepare_full_suite',return_value=clips), mock.patch.object(main,'has_encoder',return_value=True), mock.patch.object(main,'run_benchmark_batch',return_value=0) as run, mock.patch.object(main,'detect_hardware',return_value=main.HardwareInfo('CPU',None,16,'OS')):
         assert main.run_with_args(args,interactive=False) == 0
         assert len(run.call_args.kwargs['tasks']) == 1
         assert run.call_args.kwargs['args'].strict_authoritative
