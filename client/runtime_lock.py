@@ -217,8 +217,8 @@ def probe_runtime_identity(
 
     observed_filters = _normalize_filters(filter_output)
     observed_encoders = _normalize_encoders(encoder_output)
-    requested_filters = sorted(_dedupe_strings(required_filters or requirements["filters"]))
-    requested_encoders = sorted(_dedupe_strings(required_encoders or requirements["requiredEncoders"]))
+    requested_filters = sorted(_dedupe_strings([*requirements["filters"], *(required_filters or [])]))
+    requested_encoders = sorted(_dedupe_strings([*requirements["requiredEncoders"], *(required_encoders or [])]))
     declared_optional_encoders = sorted(
         encoder for encoder in _dedupe_strings(optional_encoders or requirements["optionalEncoders"])
         if encoder not in requested_encoders

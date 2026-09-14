@@ -60,6 +60,30 @@ class RuntimeLockTests(unittest.TestCase):
             self.assertIn("libsvtav1", capabilities["requiredEncoders"])
             self.assertIn("libsvtav1", capabilities["smokeTestEncoders"])
 
+    def test_old_lock_cannot_weaken_current_platform_requirements(self):
+        for platform in ("linux", "win", "mac"):
+            for missing in ("libsvtav1", "xpsnr"):
+                with self.subTest(platform=platform, missing=missing), self._mock_runtime() as (root, ffmpeg, ffprobe, runner):
+                    payload = runtime_lock.build_runtime_lock_payload(
+                        platform_key=platform, ffmpeg_path=ffmpeg, ffprobe_path=ffprobe)
+                    caps = payload["platforms"][platform]["capabilities"]
+                    for key in ("requiredEncoders", "smokeTestEncoders", "encoders", "filters"):
+                        caps[key] = [value for value in caps[key] if value != missing]
+                    lock_path = root / "old-lock.json"
+                    runtime_lock.write_runtime_lock(payload, str(lock_path))
+                    observed = runtime_lock.verify_runtime_lock(
+                        platform_key=platform, ffmpeg_path=ffmpeg, ffprobe_path=ffprobe,
+                        lock_path=str(lock_path))
+                    observed_caps = observed["identity"]["capabilities"]
+                    self.assertIn(missing, observed_caps["requiredEncoders"] + observed_caps["filters"])
+                    output = runner.side_effect
+                    runner.side_effect = lambda command: "\n".join(
+                        line for line in output(command).splitlines() if missing not in line)
+                    with self.assertRaisesRegex(runtime_lock.RuntimeLockError, missing):
+                        runtime_lock.verify_runtime_lock(
+                            platform_key=platform, ffmpeg_path=ffmpeg, ffprobe_path=ffprobe,
+                            lock_path=str(lock_path))
+
     def test_dependency_hash_and_membership_are_verified_before_runtime_execution(self):
         for mutation in ("same-size-tamper", "missing", "unexpected", "unbound"):
             with self.subTest(mutation=mutation), self._mock_runtime() as (root, ffmpeg_path, ffprobe_path, runner):
