@@ -12,7 +12,7 @@ Publisher PNGs are checked against the retained publisher checksum manifest.
 
 Preparation runs serially on authorized P910 under
 `/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts`, with two
-FFmpeg decoder/filter/encoder threads, a 20 GiB download/storage limit and 5 GiB free
+FFmpeg decoder/filter/encoder threads, an 80 GiB total download allowance, a 20 GiB working-storage limit and 5 GiB free
 space reserve. The Mac's constrained disk is used only for small receipts/images.
 `media/PAUSE` prevents starting the next scene; coordinate native benchmark timing
 with the integrator after all active preparation/worker/build jobs finish.
@@ -34,9 +34,11 @@ scene from fitting. Source-group experiments exclude the entire master, includin
 both frozen Nocturne classes when holding out Nocturne. These are distinct claims;
 a different frame range in the same movie never establishes master independence.
 
-The plan explicitly names remaining grain/natural/screen-source coverage gaps.
-Do not count one ballet scene twice to manufacture independent class coverage.
-Perceptual scene suitability and downstream codec comparisons remain PENDING.
+All seven content classes now have distinct 30-second validation references; see
+`source-readiness.json` and the final registered manifest. The ballet, grain and
+dark cases use different Nocturne ranges and settings; source-level folds still
+exclude the entire Nocturne master. Perceptual suitability and downstream codec
+comparisons remain PENDING.
 
 ## Controlled measurement and authoritative retention
 
@@ -53,7 +55,10 @@ VALIDATION_DATABASE_URL='<isolated encodingdb_validation_* PostgreSQL URL>' node
 
 Measurement reuses the corrected client `encode_to_artifact`, `EncodeTiming`,
 `execute_protocol_campaign`, environment sampling and fsynced CampaignJournal.
-One warmup, two measured attempts and at most two variance-driven additions are
+A positive finite `--max-duration-minutes` (default 60) wraps the shared MeasurementBudget.
+Exhaustion preserves the journal and returns exit 11; resume with the same saved
+seed/recipe/source and an explicit new allowance. One warmup, two measured attempts
+and at most two variance-driven additions are
 retained; metrics/upload never run between timed attempts. The initial runner
 supports explicit libx264/libx265/libsvtav1 CRF cells only. Hardware holdout cells
 remain separate required work; no substitute encoder is chosen. Unstable timing
@@ -79,3 +84,30 @@ mismatch and absent operator registry rejected. Full native runner execution is
 still pending the integrator's quiet host window and final integrated code.
 
 The cross-database path is now implemented and rehearsed; see `combined-evidence/README.md`. It preserves measured identities and uses an explicit read-only activation binding. The controlled importer also retains exact fractional milliseconds and the complete observed environment-validity wrapper. Native controlled-runner execution still awaits the coordinated quiet window.
+
+
+## Executed source results
+
+Seven references total 210seconds/5,040frames, each 30seconds/720frames at 1920×1080,
+24 fps YUV420P SDR BT.709. Total normalized reference bytes: 5,499,942,827. Every
+reference passed complete decode, exact frame/cadence/duration checks and retained
+SHA-256 verification. Final registry hash:
+`023d5490161da7c22d0534b7af968630ffaa8fb263b864c7270a7cbee9c5df76`.
+The Mac authored screen capture used 329MiB total and no frozen screen PNG hash was
+reused. Exact metadata, source records and contacts are in per-scene directories.
+Full lossless references are on P910 in the task-owned media tree.
+
+The natural-source pipeline was corrected to match the canonical acquisition order:
+resize P3/PQ RGB to 1920×1012 with 16-bit preservation, then the existing tone map.
+Earlier 384-frame linear-first intermediates remain quarantined and unregistered.
+All 384 original TIFF hashes match the corresponding final acquisition hashes;
+this correction changed processing order, not the selected source material.
+The authoritative native frame-rate field and executed commands use 24000/1001;
+a descriptive typo in the archived plan text is recorded in `visual-inspection.json`.
+
+Attribution: Nocturne and Chimera © Netflix, Inc.; Sol Levante © Netflix, Inc. and
+Production I.G, distributed under CC-BY-4.0 via Netflix Open Content. Tears of Steel
+© Blender Foundation/Mango Open Movie Project, CC-BY-3.0 via the publisher-checksummed
+Xiph archive. Original URLs and license URLs accompany every source receipt.
+Authored Atlas content is CC0; the reused IBM Plex Mono font is SIL-OFL-1.1.
+These modified excerpts are validation-only and do not imply endorsement.

@@ -1,0 +1,29 @@
+{
+  "objectsInspected": 5000,
+  "completeListing": false,
+  "boundedPages": 5,
+  "first": [
+    {
+      "key": "Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_00000.tif",
+      "bytes": 53101658
+    },
+    {
+      "key": "Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_00001.tif",
+      "bytes": 53101658
+    }
+  ],
+  "last": [
+    {
+      "key": "Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_04998.tif",
+      "bytes": 53101658
+    },
+    {
+      "key": "Chimera/tif_DCI4k2398p/Chimera_DCI4k2398p_HDR_P3PQ_04999.tif",
+      "bytes": 53101658
+    }
+  ],
+  "totalBytesInInspectedObjects": 265508290000,
+  "rawInventorySha256": "453698741eb436e394eb8ce1d8f415ff4d63b58aa9e2a42b1b8a10000f89b4e3",
+  "rawInventoryPath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/holdouts/chimera-object-inventory.full.json",
+  "conclusion": "At least5000frames available; not a complete master-duration claim. Each chosen endpoint is fetched independently."
+}

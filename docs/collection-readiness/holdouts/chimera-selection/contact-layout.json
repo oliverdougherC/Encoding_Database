@@ -1,0 +1,18 @@
+{
+  "layout": "4columns by2rows, row-major",
+  "sourceFrameIndexes": [
+    1200,
+    1800,
+    2400,
+    3000,
+    3600,
+    4200,
+    4800,
+    null
+  ],
+  "unusedTileIndex": 7,
+  "unusedTileIsSource": false,
+  "blackSourceFrameIndex": 3600,
+  "blackFrameIncludedInSelectedRange": false,
+  "note": "Initialunusedtilegreen was renderer padding, not source. Corrected contact uses explicitblackpadding; initialcontact retained separately. Selectedrange4200\u20134919 is shown in labelled endpoint metadata with all4samples displayingfountain."
+}

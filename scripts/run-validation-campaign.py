@@ -8,6 +8,7 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import math
 from pathlib import Path
 import platform
 import secrets
@@ -24,6 +25,12 @@ def digest(path):
 def canonical_hash(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=False).encode()).hexdigest()
 
+def positive_minutes(value):
+    number = float(value)
+    if not math.isfinite(number) or not math.isfinite(number * 60) or number <= 0:
+        raise argparse.ArgumentTypeError('--max-duration-minutes must be positive and finite')
+    return number
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--registry', type=Path, required=True)
@@ -34,9 +41,10 @@ def main():
     parser.add_argument('--preset', default='fast')
     parser.add_argument('--crf', type=int, default=23)
     parser.add_argument('--seed', type=int)
+    parser.add_argument('--max-duration-minutes', type=positive_minutes, default=60.0)
     args = parser.parse_args()
     from client import config
-    from client.campaign import CampaignJournal, atomic_json, physical_source_id
+    from client.campaign import CampaignJournal, MeasurementBudget, MeasurementBudgetExceeded, atomic_json, physical_source_id
     from client.ffmpeg import encode_to_artifact
     from client.runtime_lock import verify_runtime_lock
     from client.hardware import detect_hardware
@@ -79,10 +87,19 @@ def main():
         timing = EncodeTiming.from_measurement(start_monotonic_ns=info['encodeStartMonotonicNs'], end_monotonic_ns=info['encodeEndMonotonicNs'],
             source_frame_count=source['frameCount'], encoded_frame_count=probe.frame_count or 0, source_fps=24)
         return EncodeOutcome(timing, probe, artifact_path=info['artifactPath'], metadata={'info': info})
-    with journal.measurement_lock():
-        campaign = execute_protocol_campaign(recipes=[spec], config=protocol, encode_runner=encode,
-            environment_sampler=lambda schedule, recipe: _capture_protocol_environment_snapshot(hardware=hardware, encoder=args.encoder),
-            seed=seed, record_sink=journal.save, resumed_records=journal.records)
+    try:
+        with journal.measurement_lock():
+            budget = MeasurementBudget(args.max_duration_minutes)
+            with budget.activate():
+                campaign = execute_protocol_campaign(recipes=[spec], config=protocol, encode_runner=encode,
+                    environment_sampler=lambda schedule, recipe: _capture_protocol_environment_snapshot(hardware=hardware, encoder=args.encoder),
+                    seed=seed, record_sink=journal.save, resumed_records=journal.records)
+    except MeasurementBudgetExceeded:
+        paused = journal.root / 'validation-pause.json'
+        atomic_json(paused, {'status': 'PAUSED_MEASUREMENT_BUDGET', 'maximumMinutes': args.max_duration_minutes,
+            'campaignId': campaign_id, 'seed': seed, 'completedAttempts': len(journal.records), 'journalPath': str(journal.root.resolve())})
+        print(paused)
+        return 11
     receipt = {**manifest, 'campaign': campaign.to_dict(), 'journalPath': str(journal.root.resolve())}
     atomic_json(journal.root / 'validation-campaign.json', receipt)
     print(journal.root / 'validation-campaign.json')
