@@ -1,0 +1,11 @@
+{
+  "fixtureOnly": true,
+  "protocol": "corpus-scale-1789346954183-protocol",
+  "runs": 100622,
+  "artifacts": 100622,
+  "analyses": 100622,
+  "publicMembers": 100622,
+  "acceptedMembers": 80614,
+  "suspectMembers": 20008,
+  "pendingGroups": 0
+}
