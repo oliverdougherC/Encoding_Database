@@ -11,6 +11,9 @@ import struct
 import subprocess
 import sys
 import tempfile
+import time
+import signal
+import psutil
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
@@ -162,6 +165,108 @@ def select_smoke_encoder(capabilities: Mapping[str, Any]) -> str:
     return available[0]
 
 
+# Hosted Windows receipts show source preparation still progressing at 600s.
+# Bound that stage separately; the client's own 10-minute measurement allowance
+# starts after preparation. The extra 30s is for journaling and clean shutdown.
+SMOKE_ACQUISITION_SECONDS = 900
+SMOKE_MEASUREMENT_SECONDS = 630
+
+
+def _smoke_children(process, observed):
+    try:
+        for child in psutil.Process(process.pid).children(recursive=True):
+            observed[(child.pid, child.create_time())] = child
+    except psutil.NoSuchProcess:
+        pass
+
+
+def _smoke_survivors(observed):
+    alive = []
+    for child in observed.values():
+        try:
+            if child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
+                alive.append(child)
+        except psutil.NoSuchProcess:
+            pass
+    return alive
+
+
+def _stop_smoke_tree(process, observed):
+    _smoke_children(process, observed)
+    if os.name == "nt":
+        if process.poll() is None:
+            try:
+                subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                               capture_output=True, timeout=10, check=False)
+            except (OSError, subprocess.SubprocessError):
+                pass  # Fall through to creation-time-bound child and parent cleanup.
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    # Retained psutil Process identities check creation time, avoiding PID reuse.
+    # They also cover a PyInstaller parent that exited before its helper did.
+    for child in _smoke_survivors(observed):
+        try:
+            child.kill()
+        except psutil.NoSuchProcess:
+            pass
+    if process.poll() is None:
+        process.kill()
+    process.wait(timeout=10)
+    psutil.wait_procs(list(observed.values()), timeout=5)
+    return [child.pid for child in _smoke_survivors(observed)]
+
+
+def _run_smoke_command(command, *, env, queue_dir, stdout_path, stderr_path,
+                       acquisition_seconds, measurement_seconds):
+    started = time.monotonic()
+    stage = "help" if "--help" in command else "preparation"
+    deadline = started + (60 if stage == "help" else acquisition_seconds)
+    measurement_started = None
+    observed = {}
+    timed_out = False
+    survivors = []
+    cleanup_forced = False
+    with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
+        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, env=env,
+                                   start_new_session=os.name != "nt")
+        try:
+            while True:
+                _smoke_children(process, observed)
+                now = time.monotonic()
+                if stage == "preparation" and any((queue_dir / "campaigns").glob("*/manifest.json")):
+                    stage = "measurement"
+                    measurement_started = now
+                    deadline = now + measurement_seconds
+                if now >= deadline:
+                    timed_out = True
+                    break
+                try:
+                    process.wait(timeout=min(0.25, deadline - now))
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+        finally:
+            # Cleanup also executes on interruption or a diagnostic exception.
+            if process.poll() is None or _smoke_survivors(observed):
+                cleanup_forced = True
+                survivors = _stop_smoke_tree(process, observed)
+    return {
+        "returnCode": process.returncode,
+        "timedOut": timed_out,
+        "stageAtExit": stage,
+        "elapsedSeconds": time.monotonic() - started,
+        "preparationSeconds": None if measurement_started is None else measurement_started - started,
+        "acquisitionLimitSeconds": acquisition_seconds,
+        "measurementLimitSeconds": measurement_seconds,
+        "cleanupForced": cleanup_forced,
+        "observedOwnedProcessCount": len(observed),
+        "survivingOwnedPids": survivors,
+    }
+
+
 def run_smoke_check(
     *,
     artifact_path: Path,
@@ -206,34 +311,27 @@ def run_smoke_check(
             "--crf",
             "24",
             "--no-submit",
+            "--max-duration-minutes",
+            "10",
         ),
     )
     for index, command in enumerate(smoke_specs):
-        proc = subprocess.run(
-            list(command),
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=base_env,
-            timeout=300,
-        )
-        commands.append(
-            {
-                "name": "help" if index == 0 else "no-submit-suite",
-                "argv": [os.path.basename(part) if part == str(artifact_path) else part for part in command],
-                "returnCode": proc.returncode,
-            }
-        )
-        name = commands[-1]['name']
-        (evidence_dir / f'{name}.stdout.log').write_text(proc.stdout, encoding='utf-8')
-        (evidence_dir / f'{name}.stderr.log').write_text(proc.stderr, encoding='utf-8')
-        atomic_write_json(evidence_dir / 'commands.json', commands)
-        if proc.returncode != 0:
-            shutil.copytree(queue_dir, evidence_dir / 'queue', dirs_exist_ok=True)
-            print(proc.stdout[-12000:], file=sys.stderr)
-            print(proc.stderr[-12000:], file=sys.stderr)
-            raise RuntimeError(f"packaged smoke check failed for {' '.join(command)}")
+        name = "help" if index == 0 else "no-submit-suite"
+        stdout_path = evidence_dir / f"{name}.stdout.log"
+        stderr_path = evidence_dir / f"{name}.stderr.log"
+        result = _run_smoke_command(list(command), env=base_env, queue_dir=queue_dir,
+                                    stdout_path=stdout_path, stderr_path=stderr_path,
+                                    acquisition_seconds=SMOKE_ACQUISITION_SECONDS,
+                                    measurement_seconds=SMOKE_MEASUREMENT_SECONDS)
+        commands.append({"name": name,
+            "argv": [os.path.basename(part) if part == str(artifact_path) else part for part in command],
+            **result})
+        atomic_write_json(evidence_dir / "commands.json", commands)
+        if result["returnCode"] != 0 or result["timedOut"] or result["cleanupForced"] or result["survivingOwnedPids"]:
+            shutil.copytree(queue_dir, evidence_dir / "queue", dirs_exist_ok=True)
+            print(stdout_path.read_text(encoding="utf-8", errors="replace")[-12000:], file=sys.stderr)
+            print(stderr_path.read_text(encoding="utf-8", errors="replace")[-12000:], file=sys.stderr)
+            raise RuntimeError(f"packaged smoke check failed during {result['stageAtExit']} for {' '.join(command)}; diagnostics: {evidence_dir}")
     try:
         embedded_runtime = json.loads(runtime_evidence_path.read_text())
         if embedded_runtime.get("frozen") is not True:

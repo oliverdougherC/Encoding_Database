@@ -108,12 +108,14 @@ def test_smoke_strips_overrides_preserves_state_and_requires_embedded_proof(tmp_
                 'ffprobePath':str((tmp_path/'external') if receipt_kind == 'external' else root/'bin/mac/ffprobe'),
                 'lockPath':str(root/'resources/runtime/ffmpeg-lock.json')}
             Path(env['ENCODINGDB_RUNTIME_EVIDENCE_PATH']).write_text(json.dumps(payload))
-        return subprocess.CompletedProcess(command,0,'ok','')
+        kwargs['stdout_path'].write_text('ok')
+        kwargs['stderr_path'].write_text('')
+        return {'returnCode':0, 'timedOut':False, 'cleanupForced':False, 'survivingOwnedPids':[]}
     overridden={'FFMPEG_EXE':'/unreviewed/ffmpeg','FFPROBE_EXE':'/unreviewed/ffprobe',
         'ENCODINGDB_RUNTIME_LOCK_PATH':'/unreviewed/lock','ENCODINGDB_FFMPEG_PATH':'/unreviewed/ffmpeg',
         'ENCODINGDB_FFPROBE_PATH':'/unreviewed/ffprobe','ENCODINGDB_RUNTIME_BUNDLE_DIR':'/unreviewed',
         'LD_LIBRARY_PATH':'/unreviewed','DYLD_LIBRARY_PATH':'/unreviewed','ENCODINGDB_STATE_DIR':'/shared-state'}
-    with mock.patch.dict(os.environ,overridden), mock.patch.object(release,'ROOT_DIR',tmp_path), mock.patch.object(release.subprocess,'run',side_effect=run):
+    with mock.patch.dict(os.environ,overridden), mock.patch.object(release,'ROOT_DIR',tmp_path), mock.patch.object(release,'_run_smoke_command',side_effect=run):
         args=dict(artifact_path=artifact,smoke_encoder='libx264',queue_dir=tmp_path/'queue',suite_cache_dir=tmp_path/'cache',suite_pack_path=tmp_path/'actual-pack.tar.gz')
         if receipt_kind == 'embedded': assert release.run_smoke_check(**args)['embeddedRuntime']['frozen']
         else:
