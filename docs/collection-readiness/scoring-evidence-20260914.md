@@ -6,7 +6,7 @@ Implemented PLA-550/556/557 gates; this is not a validated PL activation receipt
 - Fresh isolated PostgreSQL 16 database `encodingdb_scoring`, local test container:
   `npx prisma migrate deploy`: all 25 migrations applied, exit 0.
 - `CALIBRATION_TEST_DATABASE_URL=<isolated DB> REVIEW_TEST_DATABASE_URL=<isolated DB> node --test test/*.test.js`
-  from server: 180 tests passed, zero failures/skips, exit 0. Full TAP retained beside
+  from server: 183 tests passed, zero failures/skips, exit 0. Full TAP retained beside
   this document. Real DB tests used synthetic test-only metadata/object bytes;
   they are never calibration evidence or production records.
 - The DB/object negative test verifies a real retained object, then rejects altered
@@ -24,3 +24,8 @@ Missing configuration remains uncalibrated. Runtime calibrated JSON is embedded 
 the hash-bound context and copied through the existing Docker `/app/config` path;
 this lane did not build/deploy a final integrated container or invent a calibrated
 policy. Physical IDs are pseudonyms, not Sybil-proof hardware attestation.
+
+Follow-up protects immutable context versions from different-content upserts, checks
+per-workload reference bytes/bitrate on policy load and adds exact frontier,
+constant-mismatch and mandatory-reactivation regressions. Final full server run:
+183 passed, zero failures/skips.

@@ -351,3 +351,11 @@ test('activation plan loader accepts repository-relative temp file paths', async
     /not ready for production freeze/,
   );
 });
+
+
+test('reactivating a parsed production context still requires COMPLETE calibration', async () => {
+  await assert.rejects(loadProductionActivationPlan({
+    referenceContextPath: contextFixturePath.pathname,
+    modules: { parseReferenceContext: () => productionContextFixture() },
+  }), /required for activation and reactivation/);
+});

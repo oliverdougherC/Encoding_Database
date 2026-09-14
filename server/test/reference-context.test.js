@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   activateReferenceContextForProduction,
+  assertReferenceContextCalibrationBinding,
   buildReferenceContextFromRetainedEvidence,
   buildGeneralScopeWorkloadId,
   buildReferenceContextFromSweep,
@@ -555,4 +556,50 @@ test('persistGeneralDerivedResultFromWorkloadEvidence persists GENERAL only with
   assert.equal(calls[0][1].create.kind, 'GENERAL');
   assert.equal(calls[0][1].create.workloadId, 'general-suite:encodingdb-test-suite-v1');
   assert.equal(calls[2][1].data.length, 7);
+});
+
+
+test('exact retained frontier binding rejects holdouts, relabeled samples and mismatched applied constants', () => {
+  const synthetic = loadReferenceContext(contextFixturePath);
+  const context = buildReferenceContextFromRetainedEvidence({
+    benchmarkProtocolId: 'proto-1', benchmarkProtocolVersion: 'EDB-2026.1',
+    sourceSuiteVersion: synthetic.sourceSuiteVersion, qualityModelId: 'vmaf-v1-sdr-sd', contextVersion: 'test-binding', formulaVersion: '7.0',
+    targetMetricValue: 90, qualityExponent: 2.4, speedCurveRate: 1.2, speedSaturationRealtime: 4,
+    requiredWorkloads: synthetic.workloads.map(({ workloadId, contentClass }) => ({ workloadId, contentClass })),
+    requiredContentClasses: synthetic.generalPolicy.requiredContentClasses, evidence: buildRetainedReferenceEvidenceFixture(),
+  });
+  const calibration = {
+    freeze: { bitrateReferenceVmafAnchor: 90, ...context.transformConstants }, metricSanityReviews: [],
+    corpus: context.workloads.flatMap(workload => workload.referenceFrontier.flatMap(point => point.evidence.map(ref => ({
+      evidenceId: ref.qualityAnalysisId, partition: 'CALIBRATION', qualityAnalysisId: ref.qualityAnalysisId,
+      benchmarkRunId: ref.benchmarkRunId, artifactId: ref.artifactId, artifactSha256: ref.artifactSha256,
+      analysisWorkerVersion: ref.analysisWorkerVersion, workloadId: workload.workloadId, contentClass: workload.contentClass,
+      videoBitrateBps: point.bitrateBps, vmafMean: point.vmafMean,
+    })))),
+  };
+  assert.doesNotThrow(() => assertReferenceContextCalibrationBinding(context, calibration));
+  for (const mutate of [
+    (ctx, doc) => doc.corpus[0].partition = 'HOLDOUT',
+    (ctx) => ctx.workloads[0].referenceFrontier[0].evidence[0].kind = 'synthetic-sample',
+    (ctx) => ctx.transformConstants.qualityExponent = 3,
+    (ctx) => ctx.workloads[0].referenceFrontier[0].vmafMean += 1,
+    (ctx) => ctx.workloads[0].workloadReferenceBitrateBps += 10,
+  ]) {
+    const ctx = structuredClone(context); const doc = structuredClone(calibration); mutate(ctx, doc);
+    assert.throws(() => assertReferenceContextCalibrationBinding(ctx, doc));
+  }
+});
+
+test('persisted context version cannot be rewritten with different reviewed constants', async () => {
+  const context = loadReferenceContext(contextFixturePath);
+  let writes = 0;
+  const client = {
+    async $executeRawUnsafe() {},
+    scoreContext: {
+      async findUnique() { return { benchmarkProtocolId: 'proto-1', workloadReferenceBitrateBps: 1, transformConstants: {}, referenceFrontier: {} }; },
+      async upsert() { writes += 1; },
+    },
+  };
+  await assert.rejects(persistScoreContextsFromReferenceContext(client, context, 'proto-1', { allowTestOnlyActivation: true }), /Immutable score context/);
+  assert.equal(writes, 0);
 });

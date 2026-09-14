@@ -1361,10 +1361,24 @@ export async function persistScoreContextsFromReferenceContext(
     throw new Error(`Reference context ${context.contextVersion} is ${context.activation.stage} and cannot be activated in production persistence`);
   }
 
+  if (options.allowTestOnlyActivation !== true) parseReferenceContext(JSON.stringify(context));
   const seeds = buildScoreContextSeedRecords(context, benchmarkProtocolId);
   const write = async (tx: Prisma.TransactionClient): Promise<PersistedScoreContextRecord[]> => {
     const persisted: PersistedScoreContextRecord[] = [];
+    await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(714555)');
     for (const seed of seeds) {
+      const existing = await tx.scoreContext.findUnique({ where: {
+        formulaVersion_contextVersion_workloadId_qualityModelId: {
+          formulaVersion: seed.formulaVersion, contextVersion: seed.contextVersion,
+          workloadId: seed.workloadId, qualityModelId: seed.qualityModelId,
+        },
+      } });
+      if (existing && (existing.benchmarkProtocolId !== seed.benchmarkProtocolId
+        || existing.workloadReferenceBitrateBps !== seed.workloadReferenceBitrateBps
+        || canonicalJsonString(existing.transformConstants as never) !== canonicalJsonString(seed.transformConstants as never)
+        || canonicalJsonString(existing.referenceFrontier as never) !== canonicalJsonString(seed.referenceFrontier as never))) {
+        throw new Error(`Immutable score context ${seed.contextVersion}/${seed.workloadId} already exists with different reviewed contents; use a new context version`);
+      }
       const record = await tx.scoreContext.upsert({
         where: {
           formulaVersion_contextVersion_workloadId_qualityModelId: {
@@ -1757,7 +1771,7 @@ function buildGeneralDerivedResultFromWorkloadEvidence(input: {
     sourceDerivedResultIds: [...new Set(contributingDerivedResultIds)].sort(compareText),
     sourceWorkloadIds: [...new Set(contributingWorkloadIds)].sort(compareText),
     coverageComplete: true,
-    eligibleForDefaultRecommendation: input.workloadResults.length > 0 && input.workloadResults.every((row) => {
+    eligibleForDefaultRecommendation: input.workloadResults.length > 0 && new Set(input.workloadResults.map((row) => (row.evidenceSummary as Record<string, unknown> | undefined)?.policyVersion)).size === 1 && input.workloadResults.every((row) => {
       const summary = row.evidenceSummary as Record<string, unknown> | undefined;
       return summary?.eligibleForDefaultRecommendation === true && summary?.policyStatus === 'CALIBRATED';
     }),

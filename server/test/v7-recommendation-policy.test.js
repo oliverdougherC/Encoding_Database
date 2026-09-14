@@ -11,10 +11,10 @@ test('deployed hash-bound policy survives reload and rejects mismatch without pr
   const root = mkdtempSync(path.join(os.tmpdir(), 'encodingdb-policy-test-'));
   try {
     const policy = { ...DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, policyStatus: 'CALIBRATED', policyVersion: 'TEST ONLY policy' };
-    const context = { scoringBehaviorHash: buildScoringBehaviorHash(), contextVersion: 'test-context', formulaVersion: '7.0', qualityModelId: 'test-model', transformConstants: { qualityExponent: 2.4 }, provenance: { sourceMode: 'retained-benchmark-evidence' }, activation: { stage: 'PRODUCTION', productionActivationAllowed: true, calibrationReviewHash: 'a'.repeat(64) }, recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: sha256Hex(canonicalJsonString(policy)) };
+    const context = { workloads: [{ workloadId: 'test-workload', workloadReferenceBitrateBps: 1000000, referenceFrontier: [] }], scoringBehaviorHash: buildScoringBehaviorHash(), contextVersion: 'test-context', formulaVersion: '7.0', qualityModelId: 'test-model', transformConstants: { qualityExponent: 2.4 }, provenance: { sourceMode: 'retained-benchmark-evidence' }, activation: { stage: 'PRODUCTION', productionActivationAllowed: true, calibrationReviewHash: 'a'.repeat(64) }, recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: sha256Hex(canonicalJsonString(policy)) };
     context.hash = sha256Hex(canonicalJsonString(context));
     const filename = path.join(root, 'context.json'); writeFileSync(filename, JSON.stringify(context));
-    const record = { ...context, workloadId: 'test-workload', referenceFrontier: { contextHash: context.hash, recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: context.recommendationEvidencePolicyHash } };
+    const record = { ...context, workloadReferenceBitrateBps: 1000000, workloadId: 'test-workload', referenceFrontier: { referenceFrontier: [], contextHash: context.hash, recommendationEvidencePolicy: policy, recommendationEvidencePolicyHash: context.recommendationEvidencePolicyHash } };
     assert.equal(loadRecommendationEvidencePolicyForContext(record, {}).policyStatus, 'PROVISIONAL_UNCALIBRATED');
     assert.deepEqual(loadRecommendationEvidencePolicyForContext(record, { PL_V7_REFERENCE_CONTEXT_PATH: filename }), policy);
     assert.deepEqual(loadRecommendationEvidencePolicyForContext(record, { PL_V7_REFERENCE_CONTEXT_PATH: filename }), policy);

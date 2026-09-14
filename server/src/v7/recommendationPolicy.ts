@@ -7,7 +7,7 @@ export function buildScoringBehaviorHash(): string {
 
 interface ContextIdentity {
   contextVersion: string; formulaVersion: string; qualityModelId: string; workloadId: string;
-  transformConstants?: unknown; referenceFrontier?: unknown;
+  transformConstants?: unknown; referenceFrontier?: unknown; workloadReferenceBitrateBps?: number;
   benchmarkProtocol?: { protocolVersion: string; sourceSuiteVersion: string };
 }
 /** Restarts reload the exact deployed artifact; never cache only by policy version. */
@@ -24,6 +24,14 @@ export function loadRecommendationEvidencePolicyForContext(record: ContextIdenti
     || (record.benchmarkProtocol && (record.benchmarkProtocol.protocolVersion !== context.benchmarkProtocolVersion || record.benchmarkProtocol.sourceSuiteVersion !== context.sourceSuiteVersion))
     || canonicalJsonString(record.transformConstants as never) !== canonicalJsonString(context.transformConstants)
     || persisted?.contextHash !== hash || context.scoringBehaviorHash !== buildScoringBehaviorHash()) throw new Error('Recommendation evidence policy is incompatible with the persisted score context');
+  const workload = context.workloads?.find((entry: { workloadId: string }) => entry.workloadId === record.workloadId);
+  const general = record.workloadId === `general-suite:${context.sourceSuiteVersion}`;
+  const expectedBitrate = workload?.workloadReferenceBitrateBps ?? (general && context.workloads?.length
+    ? Number(Math.exp(context.workloads.reduce((sum: number, entry: { workloadReferenceBitrateBps: number }) => sum + Math.log(entry.workloadReferenceBitrateBps), 0) / context.workloads.length).toFixed(6)) : null);
+  if (expectedBitrate == null || record.workloadReferenceBitrateBps !== expectedBitrate
+    || (!general && canonicalJsonString(persisted?.referenceFrontier as never) !== canonicalJsonString(workload.referenceFrontier))) {
+    throw new Error('Recommendation policy workload reference differs from the reviewed context');
+  }
   const policy = normalizeEvidencePolicy(context.recommendationEvidencePolicy);
   if (policy.policyStatus !== 'CALIBRATED' || sha256Hex(canonicalJsonString(policy as never)) !== context.recommendationEvidencePolicyHash
     || canonicalJsonString(persisted?.recommendationEvidencePolicy as never) !== canonicalJsonString(policy as never)
