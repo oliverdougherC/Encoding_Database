@@ -1,4 +1,14 @@
 // Build the server receipt from completed local measurements, never a claimed threshold.
+export function assertObservedValidationCpu(record) {
+  const snapshot = record.environmentSnapshot;
+  const markers = typeof snapshot?.telemetry_sources === 'string' ? snapshot.telemetry_sources.split(',').map(value => value.trim()) : [];
+  const observed = snapshot?.background_cpu_pct;
+  if (typeof observed !== 'number' || !Number.isFinite(observed) || observed < 0 || observed > 100
+    || !markers.some(value => ['cpu_psutil_thread_window_v1', 'cpu_psutil_blocking_window_v1'].includes(value))) {
+    throw new Error('Validation observation lacks corrected fresh CPU sampler provenance; historical flags cannot be reconstructed');
+  }
+}
+
 export function validationMeasurementGroup(result) {
   const counted = result.runs.filter(run => run.countedForStability === true);
   const measured = result.runs.filter(run => run.schedule.phase === 'measured');

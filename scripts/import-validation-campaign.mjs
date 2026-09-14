@@ -5,7 +5,7 @@ import { createReadStream } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { validationMeasurementGroup } from './validation-measurement-group.mjs';
+import { assertObservedValidationCpu, validationMeasurementGroup } from './validation-measurement-group.mjs';
 import { resolveValidationPath } from './validation-path-bindings.mjs';
 
 const args = new Map();
@@ -38,7 +38,10 @@ if (await hashFile(referencePath) !== source.sourceSha256 || (await stat(referen
 const measured = receipt.campaign.recipeResults.flatMap(result => {
   if (!result.stability.stable || result.measuredRunsCounted < 2) throw new Error('Campaign timing is not stable enough for authoritative analysis');
   const measurementGroup = validationMeasurementGroup(result);
-  return result.runs.filter(run => run.countedForStability === true).map(record => ({ record, measurementGroup }));
+  return result.runs.filter(run => run.countedForStability === true).map(record => {
+    assertObservedValidationCpu(record);
+    return { record, measurementGroup };
+  });
 });
 if (measured.length < 2) throw new Error('Two valid measured attempts are required');
 const db = new PrismaClient({ datasources: { db: { url } } });

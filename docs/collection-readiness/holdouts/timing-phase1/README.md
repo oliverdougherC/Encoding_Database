@@ -1,5 +1,7 @@
 # Actual P910 timing, first pair
 
+**Qualification:** this source is affected by the subsequently confirmed background-sampler defect. All observations below are exploratory and ineligible for final calibration, including groups that passed timing spread. See `../affected-background-sampler-v1.json`; original receipts and flags remain unchanged.
+
 Two of the declared 42 validation-only cells completed using source commit `0185a001e268b35aad492a8d35c487f5527ac3f5`, the pinned Linux FFmpeg runtime and the shared physical-host state directory. The audited receipt contains exact commands, runtime hashes, environment samples, artifact hashes and frame checks. All eight attempts produced valid 720-frame artifacts; no upload, database import, quality analysis, human judgment or PL activation occurred in this phase.
 
 | Screen source / libx264 fast | Warmup | Counted measurements | Relative spread | Outcome |
