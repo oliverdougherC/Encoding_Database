@@ -1,0 +1,253 @@
+{
+  "status": "CORRECTED_CPU_PROVENANCE_INSPECTED_TIMING_ONLY",
+  "sourceCommit": "f3ef468c831e60f7a02576cd57ebc6ec0f1b2c59",
+  "planHash": "7c488c7d1b5cd95d38f3b2c41815970af746be41ff86feb17ae1a80a96ce4730",
+  "inspectionAt": "2026-09-14T06:23:09Z",
+  "cells": [
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf18",
+      "campaignId": "campaign-8f63e85863ec69c2",
+      "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+      "stability": {
+        "elapsed_mean_s": 4.856062077000001,
+        "elapsed_relative_spread": 0.023680415978339683,
+        "sample_count": 2,
+        "stable": true
+      },
+      "receipt": {
+        "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf18/campaigns/campaign-8f63e85863ec69c2/validation-campaign.json",
+        "sha256": "69e0b03f94d96efbbaf67cda40fdba281a79294045a4c74ce8354f062a4b20ab"
+      },
+      "attempts": [
+        {
+          "phase": "warmup",
+          "repetitionIndex": 1,
+          "timing": {
+            "elapsed_s": 4.688765705,
+            "encode_fps": 153.55853657439258,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722353812696534,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.398272357266357,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722349123930829
+          },
+          "countedForStability": false,
+          "environmentSnapshot": null,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf18/campaigns/campaign-8f63e85863ec69c2/001-warmup.mp4",
+          "artifactSha256": "7b60dca205c742bdb138ad46816b9ff9ea9f9830587977f72be86b9d4e4c7305"
+        },
+        {
+          "phase": "measured",
+          "repetitionIndex": 1,
+          "timing": {
+            "elapsed_s": 4.798565292,
+            "encode_fps": 150.04484802996404,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722368405920790,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.2518686679151685,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722363607355498
+          },
+          "countedForStability": true,
+          "environmentSnapshot": {
+            "accelerator_is_hardware": false,
+            "background_cpu_pct": 4.25,
+            "background_gpu_pct": null,
+            "cpu_frequency_mhz": 1257.5744318181817,
+            "cpu_temp_c": 57.0,
+            "free_memory_mb": 90271.25,
+            "gpu_load_trustworthy": true,
+            "gpu_memory_mb": null,
+            "gpu_power_w": null,
+            "gpu_sample_count": 0,
+            "gpu_temp_c": null,
+            "memory_pressure_pct": 29.89732515260897,
+            "power_source": "ac",
+            "selected_accelerator": "software",
+            "telemetry_missing": "battery_unavailable,energy_linux-powercap-rapl_unsupported,ffmpeg_unavailable",
+            "telemetry_sources": "cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,cpu_temp_psutil",
+            "thermal_throttle": false
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf18/campaigns/campaign-8f63e85863ec69c2/002-measured.mp4",
+          "artifactSha256": "7b60dca205c742bdb138ad46816b9ff9ea9f9830587977f72be86b9d4e4c7305"
+        },
+        {
+          "phase": "measured",
+          "repetitionIndex": 2,
+          "timing": {
+            "elapsed_s": 4.913558862,
+            "encode_fps": 146.5333010596994,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722383056487357,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.1055542108208085,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722378142928495
+          },
+          "countedForStability": true,
+          "environmentSnapshot": {
+            "accelerator_is_hardware": false,
+            "background_cpu_pct": 6.75,
+            "background_gpu_pct": null,
+            "cpu_frequency_mhz": 1499.6457784090903,
+            "cpu_temp_c": 58.0,
+            "free_memory_mb": 90155.765625,
+            "gpu_load_trustworthy": true,
+            "gpu_memory_mb": null,
+            "gpu_power_w": null,
+            "gpu_sample_count": 0,
+            "gpu_temp_c": null,
+            "memory_pressure_pct": 29.987007787895166,
+            "power_source": "ac",
+            "selected_accelerator": "software",
+            "telemetry_missing": "battery_unavailable,energy_linux-powercap-rapl_unsupported,ffmpeg_unavailable",
+            "telemetry_sources": "cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,cpu_temp_psutil",
+            "thermal_throttle": false
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf18/campaigns/campaign-8f63e85863ec69c2/003-measured.mp4",
+          "artifactSha256": "7b60dca205c742bdb138ad46816b9ff9ea9f9830587977f72be86b9d4e4c7305"
+        }
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf28",
+      "campaignId": "campaign-92e3e8c570112037",
+      "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+      "stability": {
+        "elapsed_mean_s": 4.7016856444999995,
+        "elapsed_relative_spread": 0.0005518435718976083,
+        "sample_count": 2,
+        "stable": true
+      },
+      "receipt": {
+        "path": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf28/campaigns/campaign-92e3e8c570112037/validation-campaign.json",
+        "sha256": "123ac46cfd7c28e52aa7e773bcb501db177364581569d1df1234726bc754b7a2"
+      },
+      "attempts": [
+        {
+          "phase": "warmup",
+          "repetitionIndex": 1,
+          "timing": {
+            "elapsed_s": 4.690473831,
+            "encode_fps": 153.50261528833587,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722402978244551,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.395942303680662,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722398287770720
+          },
+          "countedForStability": false,
+          "environmentSnapshot": null,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf28/campaigns/campaign-92e3e8c570112037/001-warmup.mp4",
+          "artifactSha256": "d50b0dd3fe9379e109249c1d3b8457dd2a29b9571a1cd75a287584723d36dd2b"
+        },
+        {
+          "phase": "measured",
+          "repetitionIndex": 1,
+          "timing": {
+            "elapsed_s": 4.702982942,
+            "encode_fps": 153.09432521433118,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722417600106147,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.378930217263799,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722412897123205
+          },
+          "countedForStability": true,
+          "environmentSnapshot": {
+            "accelerator_is_hardware": false,
+            "background_cpu_pct": 6.699999999999999,
+            "background_gpu_pct": null,
+            "cpu_frequency_mhz": 1362.0087670454545,
+            "cpu_temp_c": 59.0,
+            "free_memory_mb": 90235.90625,
+            "gpu_load_trustworthy": true,
+            "gpu_memory_mb": null,
+            "gpu_power_w": null,
+            "gpu_sample_count": 0,
+            "gpu_temp_c": null,
+            "memory_pressure_pct": 29.924772334454104,
+            "power_source": "ac",
+            "selected_accelerator": "software",
+            "telemetry_missing": "battery_unavailable,energy_linux-powercap-rapl_unsupported,ffmpeg_unavailable",
+            "telemetry_sources": "cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,cpu_temp_psutil",
+            "thermal_throttle": false
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf28/campaigns/campaign-92e3e8c570112037/002-measured.mp4",
+          "artifactSha256": "d50b0dd3fe9379e109249c1d3b8457dd2a29b9571a1cd75a287584723d36dd2b"
+        },
+        {
+          "phase": "measured",
+          "repetitionIndex": 2,
+          "timing": {
+            "elapsed_s": 4.700388347,
+            "encode_fps": 153.17883265103757,
+            "encoded_frame_count": 720,
+            "end_monotonic_ns": 722432008877784,
+            "ffmpeg_cpu_time_s": null,
+            "realtime_multiple": 6.382451360459899,
+            "source_fps": 24.0,
+            "source_frame_count": 720,
+            "start_monotonic_ns": 722427308489437
+          },
+          "countedForStability": true,
+          "environmentSnapshot": {
+            "accelerator_is_hardware": false,
+            "background_cpu_pct": 8.5,
+            "background_gpu_pct": null,
+            "cpu_frequency_mhz": 1269.169982954545,
+            "cpu_temp_c": 59.0,
+            "free_memory_mb": 90301.12890625,
+            "gpu_load_trustworthy": true,
+            "gpu_memory_mb": null,
+            "gpu_power_w": null,
+            "gpu_sample_count": 0,
+            "gpu_temp_c": null,
+            "memory_pressure_pct": 29.874121848681753,
+            "power_source": "ac",
+            "selected_accelerator": "software",
+            "telemetry_missing": "battery_unavailable,energy_linux-powercap-rapl_unsupported,ffmpeg_unavailable",
+            "telemetry_sources": "cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,cpu_temp_psutil",
+            "thermal_throttle": false
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifactPath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/corrected-cpu-window-software-v1/campaigns/validation-atlas-receipts-30s--libx264--fast--crf28/campaigns/campaign-92e3e8c570112037/003-measured.mp4",
+          "artifactSha256": "d50b0dd3fe9379e109249c1d3b8457dd2a29b9571a1cd75a287584723d36dd2b"
+        }
+      ]
+    }
+  ],
+  "qualification": "Fresh observed CPU markers and retained timing verified; quality analysis, human review and calibration remain pending"
+}
