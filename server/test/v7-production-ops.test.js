@@ -328,7 +328,8 @@ test('production activation doc and deployment wiring mention env validation, ac
   assert.match(serverEnv, /ALLOW_TEST_ONLY_REFERENCE_CONTEXTS=0/);
   assert.match(backupScript, /--compose-file/);
   assert.match(backupScript, /Quiescing writer services for backup consistency/);
-  assert.match(backupScript, /Restarting quiesced writer services/);
+  assert.match(backupScript, /Restarting exact quiesced writer containers/);
+  assert.ok(backupScript.includes('docker start "${QUIESCED_CONTAINER_IDS[@]}"'));
   assert.match(migrationScript, /qualityAnalysisId backfill failed/);
   assert.match(migrationScript, /legacy Benchmark row did not survive migration/);
   assert.match(migrationScript, /npx tsx src\/index\.ts/);
