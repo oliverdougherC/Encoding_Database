@@ -1,0 +1,30 @@
+{
+  "startedAt": "2026-09-14T03:45:02.370148+00:00",
+  "ancestry": [
+    {
+      "pid": 3684222,
+      "ppid": 3684220,
+      "command": "python3"
+    },
+    {
+      "pid": 3684220,
+      "ppid": 3684218,
+      "command": "bash"
+    },
+    {
+      "pid": 3684218,
+      "ppid": 3684216,
+      "command": "sh"
+    },
+    {
+      "pid": 3684216,
+      "ppid": 1900577,
+      "command": "cron"
+    },
+    {
+      "pid": 1900577,
+      "ppid": 1,
+      "command": "cron"
+    }
+  ]
+}

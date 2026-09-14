@@ -1,0 +1,8 @@
+{
+  "mode": "install",
+  "marker": "encodingdb-isolated-candidate-backup-20260914",
+  "beforeSha256": "6cc24965f012244737b7c64798af7ea2511c9291171a801dee9aad25e99b4f70",
+  "afterSha256": "3c3458df9c1a22e950bccde1c6874fb7122eda432d4846b0438fadf03bca3218",
+  "unrelatedLinesPreserved": true,
+  "ownEntryCount": 1
+}

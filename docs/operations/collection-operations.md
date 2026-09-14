@@ -372,3 +372,20 @@ queried, no values were rewritten, and no recovery was inferred from retained
 pixels. These existing timings remain incompatible/unrecovered under the corrected
 process-boundary contract; the explicit legacy-table counts are not an inference
 from the four V7 rows.
+
+## Actual unattended P910 scheduler proof
+
+The [unattended cron receipt](evidence/p910-unattended-cron/verification.json)
+passed on the real isolated candidate topology. The installer SSH exited before
+the job fired at 03:45 UTC; captured ancestry is Python → bash → sh → cron → cron,
+with no SSH ancestor. Backup and isolated restore both exited zero (26.1/6.3 s),
+the exact original candidate containers resumed healthy, and snapshot staging
+was removed. The corpus was empty, so this establishes unattended orchestration
+and recovery, not a retained native-client epoch; full-object integrity is covered
+separately by the full-size fixture.
+
+The one-shot claim prevented duplicate runs. Only the uniquely marked cron entry
+was removed afterward, and the final crontab SHA256 exactly matched the original;
+unrelated entries were preserved. The private original crontab/environment were
+not copied into this repository. No production schedule, notification destination,
+root setting or linger setting was changed.
