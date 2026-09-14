@@ -55,6 +55,8 @@ export class ReviewConflict extends Error {}
 export async function appendEvidenceReview(client: PrismaClient, analysisId: string, reviewerId: string, raw: unknown) {
   const input = decisionInput.parse(raw);
   if (!reviewerId.trim()) throw new ReviewConflict('An authenticated reviewer identity is required');
+  const activePath = process.env.PL_V7_REFERENCE_CONTEXT_PATH;
+  const activeContext = activePath ? (await import('./referenceContext.js')).loadReferenceContext(activePath) : null;
   const id = `review_${crypto.createHash('sha256').update(JSON.stringify({ analysisId, reviewerId, ...input })).digest('hex')}`;
   return client.$transaction(async (tx) => {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(714555)`;
@@ -93,7 +95,17 @@ export async function appendEvidenceReview(client: PrismaClient, analysisId: str
     }
     const run = analysis.benchmarkRun;
     await tx.derivedResult.updateMany({
-      where: { benchmarkProtocolId: run.benchmarkProtocolId, recipeId: run.recipeId, environmentId: run.environmentId },
+      where: { OR: [
+        // A historical result is withdrawn only when its exact selected analysis
+        // receives a new decision. Unrelated historical contexts remain intact.
+        { members: { some: { qualityAnalysisId: analysisId } } },
+        ...(activeContext?.activation.stage === 'PRODUCTION' ? [{
+          benchmarkProtocolId: run.benchmarkProtocolId, recipeId: run.recipeId, environmentId: run.environmentId,
+          scoreContext: { contextVersion: activeContext.contextVersion, formulaVersion: activeContext.formulaVersion,
+            qualityModelId: activeContext.qualityModelId,
+            referenceFrontier: { path: ['contextHash'], equals: activeContext.hash } },
+        }] : []),
+      ] },
       data: { invalidatedAt: new Date(), invalidationReason: `Evidence review ${review.id}; rebuild pending` },
     });
     await tx.qualityAnalysis.update({ where: { id: analysisId }, data: { recomputePending: true, recomputeLastError: null } });

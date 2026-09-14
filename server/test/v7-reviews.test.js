@@ -55,6 +55,22 @@ test('PostgreSQL review append, supersession, dedupe, identity binding and immut
       benchmarkRunId: run.id, artifactId: artifact.id, status: 'SUSPECT', metricModelId: 'test-model',
       analysisWorkerVersion: 'test-worker', analysisProvenance: { testOnly: true }, completedAt: new Date(), vmafMean: 92.4,
     } });
+    const oldAnalysis = await db.qualityAnalysis.create({ data: {
+      benchmarkRunId: run.id, artifactId: artifact.id, status: 'COMPLETE', metricModelId: 'test-model',
+      analysisWorkerVersion: 'historical-test-worker', analysisProvenance: { testOnly: true }, completedAt: new Date(), vmafMean: 93,
+    } });
+    async function historicalResult(label, selectedAnalysisId) {
+      const context = await db.scoreContext.create({ data: { benchmarkProtocolId: protocol.id,
+        formulaVersion: '7.0', contextVersion: `${suffix}-${label}`, workloadId: suffix,
+        qualityModelId: 'test-model', workloadReferenceBitrateBps: 1000000, transformConstants: {} } });
+      return db.derivedResult.create({ data: { kind: 'WORKLOAD', scopeKey: `workload:${suffix}`,
+        benchmarkProtocolId: protocol.id, workloadId: suffix, recipeId: recipe.id, environmentId: environment.id,
+        scoreContextId: context.id, aggregatorVersion: 'test-only', acceptedRunCount: 1, repetitionCount: 1,
+        evidenceSummary: {}, confidenceIntervals: {}, dispersion: {}, recomputationSpec: {},
+        members: { create: { benchmarkRunId: run.id, qualityAnalysisId: selectedAnalysisId } } } });
+    }
+    const untouchedHistory = await historicalResult('A', oldAnalysis.id);
+    const directlyAffected = await historicalResult('B', analysis.id);
     const input = {
       benchmarkRunId: run.id, artifactId: artifact.id, artifactSha256: hash, metricModelId: 'test-model', analysisWorkerVersion: 'test-worker',
       decision: 'EXPECTED', rationale: 'Synthetic operator fixture: not a human calibration review.', evidenceLinks: ['https://example.invalid/test-only'],
@@ -69,6 +85,9 @@ test('PostgreSQL review append, supersession, dedupe, identity binding and immut
     assert.equal(original.status, 'SUSPECT');
     assert.equal(original.vmafMean, 92.4);
     assert.equal(original.recomputePending, true);
+    assert.equal((await db.derivedResult.findUnique({ where: { id: untouchedHistory.id } })).invalidatedAt, null);
+    assert.ok((await db.derivedResult.findUnique({ where: { id: directlyAffected.id } })).invalidatedAt);
+    assert.equal(await db.derivedResultMember.count({ where: { derivedResultId: untouchedHistory.id, qualityAnalysisId: oldAnalysis.id } }), 1);
     await assert.rejects(appendEvidenceReview(db, analysis.id, 'test-operator', { ...input, artifactSha256: 'b'.repeat(64) }), /identity/);
     await assert.rejects(db.evidenceReview.update({ where: { id: first.id }, data: { rationale: 'mutated' } }), /append-only/);
     await assert.rejects(db.evidenceReview.delete({ where: { id: first.id } }), /append-only/);
