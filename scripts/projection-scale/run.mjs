@@ -9,16 +9,16 @@ const execFileAsync = promisify(execFile);
 import { performance } from 'node:perf_hooks';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../../server/package.json', import.meta.url));
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient, Prisma } = require('@prisma/client');
 const { CANONICAL_MEASUREMENT_RULES, createMeasurementGroupVerifier } = await import('../../server/dist/v7/measurementGroup.js');
 const { persistDerivedResultAggregate, DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } = await import('../../server/dist/v7/aggregation.js');
-const { loadPublicCorpusPage, refreshPublicCorpusGroups } = await import('../../server/dist/v7/corpusQuery.js');
+const { loadPublicCorpusPage, refreshPublicCorpusGroups, buildPublicCorpusPageSql } = await import('../../server/dist/v7/corpusQuery.js');
 const mode = process.argv[2];
 const url = new URL(process.env.PROJECTION_SCALE_DATABASE_URL ?? 'http://missing');
 assert.equal(url.hostname, '127.0.0.1'); assert.equal(url.pathname, '/encodingdb_projection_synthetic');
 const output = process.env.PROJECTION_SCALE_OUTPUT;
 assert.ok(output, 'Explicit evidence output directory required'); await mkdir(output, { recursive: true });
-const client = new PrismaClient({ datasources: { db: { url: url.toString() } } });
+const client = new PrismaClient({ datasources: { db: { url: url.toString() } }, transactionOptions: { timeout: 30000, maxWait: 30000 } });
 const id = 'SYNTHETIC-PROJECTION-ONLY';
 const model = `${id}-model`, worker = 'authoritative-analysis/SYNTHETIC-NO-MEDIA';
 const hash = value => crypto.createHash('sha256').update(value).digest('hex');
@@ -118,6 +118,18 @@ if (mode === 'rebuild-fixture') {
   const counts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
   assert.equal(counts.runs, 100000); assert.equal(counts.artifacts, 100000); assert.equal(counts.analyses, 100000); assert.equal(counts.derived, 981); assert.equal(counts.members, 80000);
   await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), counts, checks }, null, 2));
+  await client.$disconnect();
+} else if (mode === 'diagnose') {
+  for (let index = 0; index < 25; index++) await rebuild(environmentId(index));
+  await drain();
+  for (const [name, options] of [['hot', { id: publicId(environmentId(0)), take: 1 }], ['scored-page', { take: 25 }]]) {
+    const plan = await client.$transaction(async tx => {
+      await tx.$executeRawUnsafe("SELECT set_config('jit','off',true), set_config('max_parallel_workers_per_gather','0',true), set_config('statement_timeout','30000',true)");
+      return tx.$queryRaw(Prisma.sql`EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) ${buildPublicCorpusPageSql({ sort: 'fps', dir: 'desc' }, options.take, 0, [id], options.id)}`);
+    }, { timeout: 30000 });
+    await writeFile(`${output}/plan-${name}.json`, JSON.stringify(plan, null, 2));
+  }
+  console.log(JSON.stringify({ diagnosed: true, hot: await validateCohort(environmentId(0), 5) }));
   await client.$disconnect();
 } else if (mode === 'serve') {
   const port = Number(process.env.PROJECTION_SCALE_PORT ?? 55442);
