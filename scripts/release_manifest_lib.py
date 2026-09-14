@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import struct
 import subprocess
@@ -160,6 +161,8 @@ def run_smoke_check(
     suite_cache_dir: Path,
     suite_pack_path: Optional[Path],
 ) -> Dict[str, Any]:
+    evidence_dir = ROOT_DIR / '.test-reports' / 'native-smoke' / artifact_path.name
+    evidence_dir.mkdir(parents=True, exist_ok=True)
     base_env = dict(os.environ)
     base_env.update(
         {
@@ -203,7 +206,14 @@ def run_smoke_check(
                 "returnCode": proc.returncode,
             }
         )
+        name = commands[-1]['name']
+        (evidence_dir / f'{name}.stdout.log').write_text(proc.stdout, encoding='utf-8')
+        (evidence_dir / f'{name}.stderr.log').write_text(proc.stderr, encoding='utf-8')
+        atomic_write_json(evidence_dir / 'commands.json', commands)
         if proc.returncode != 0:
+            shutil.copytree(queue_dir, evidence_dir / 'queue', dirs_exist_ok=True)
+            print(proc.stdout[-12000:], file=sys.stderr)
+            print(proc.stderr[-12000:], file=sys.stderr)
             raise RuntimeError(f"packaged smoke check failed for {' '.join(command)}")
     return {
         "schemaVersion": SMOKE_SCHEMA_VERSION,

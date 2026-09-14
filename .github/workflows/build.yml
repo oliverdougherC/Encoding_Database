@@ -362,7 +362,7 @@ jobs:
         run: ./scripts/build_windows_client.ps1
 
       - name: Retain windows candidate binaries and verified sidecars
-        if: ${{ !inputs.runtime_lock_evidence }}
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
         uses: actions/upload-artifact@v4
         with:
           name: candidate-windows-${{ github.sha }}
@@ -373,6 +373,7 @@ jobs:
           path: |
             encodingdb-client-windows*
             .test-reports/runtime-model/
+            .test-reports/native-smoke/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/
             client/resources/test_suite_v1/suite-lock.json
