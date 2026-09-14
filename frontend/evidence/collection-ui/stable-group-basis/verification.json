@@ -1,0 +1,33 @@
+{
+  "score": 95,
+  "verdict": "pass",
+  "category_match": true,
+  "differences": [
+    "The new stable-group basis is distinct from the raw accepted/suspect counts; the intended label change fits the existing desktop row and mobile detail layout."
+  ],
+  "suggestions": [],
+  "reasoning": "Actual Chromium screenshots show the stable measurement basis without clipping or added page overflow. Existing retained-byte and unavailable-PL labels remain distinct.",
+  "viewportChecks": {
+    "desktop": [
+      1440,
+      1000
+    ],
+    "mobile": [
+      390,
+      844
+    ],
+    "mobilePageWidth": 390
+  },
+  "fixtureOnly": true,
+  "fixtureSha256": "3fdbd49c0f42d90412a5b5d80d7ef4b57abe3499e80c28c5979604ffde211eb3",
+  "tests": {
+    "frontend": 58,
+    "lint": "passed",
+    "typecheck": "passed",
+    "productionBuild": "passed"
+  },
+  "consoleErrors": 0,
+  "consoleWarnings": [
+    "Existing stylesheet preload warning"
+  ]
+}
