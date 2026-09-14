@@ -61,6 +61,7 @@ def test_sampler_excludes_old_thread_work_but_retains_fresh_background(fresh_per
     assert len(monitor._cpu_samples) == 1
     assert monitor._cpu_samples[0].overall_pct == fresh_percent
     assert monitor._aggregate().cpu_util_avg == fresh_percent
+    assert telemetry.CPU_THREAD_WINDOW_SOURCE in monitor._sources
     assert len(set(observed_calls) - {caller}) == 1
 
 
@@ -86,6 +87,7 @@ def test_stop_before_fresh_interval_does_not_manufacture_a_zero_sample():
     wait.assert_called_once_with(0.1)
     assert monitor._cpu_samples == []
     assert monitor._aggregate().cpu_util_avg is None
+    assert telemetry.CPU_THREAD_WINDOW_SOURCE not in monitor._sources
 
 
 def test_start_primes_system_cpu_on_actual_sampler_thread_only():

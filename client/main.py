@@ -33,9 +33,9 @@ from .config import (
     HardwareInfo, sanitize_payload_for_server, validate_queue_dir, QueueDirError,
 )
 from .hardware import (
-    detect_hardware, resolve_batch_size, measure_background_cpu_load,
+    detect_hardware, resolve_batch_size, measure_background_cpu_load, CPU_BLOCKING_WINDOW_SOURCE,
 )
-from .hardware_monitor import HardwareMonitor
+from .hardware_monitor import HardwareMonitor, CPU_THREAD_WINDOW_SOURCE
 from .encoders import (
     ensure_ffmpeg_and_ffprobe, has_encoder, has_libvmaf,
     is_codec_family_selector, normalize_codec_family, pick_software_encoder_for_family,
@@ -1029,9 +1029,14 @@ def _capture_protocol_environment_snapshot(
         check_measurement_budget()
     finally:
         environment_metrics = monitor.stop()
-    background_cpu_pct = environment_metrics.cpu_util_avg
+    background_cpu_pct = _safe_float(environment_metrics.cpu_util_avg)
+    sources = set(filter(None, (environment_metrics.telemetry_sources or "").split(",")))
     if background_cpu_pct is None:
-        background_cpu_pct = measure_background_cpu_load(background_cpu_seconds, background_cpu_interval)
+        sources.discard(CPU_THREAD_WINDOW_SOURCE)
+        sources.discard(CPU_BLOCKING_WINDOW_SOURCE)
+        background_cpu_pct = _safe_float(measure_background_cpu_load(background_cpu_seconds, background_cpu_interval))
+        if background_cpu_pct is not None:
+            sources.add(CPU_BLOCKING_WINDOW_SOURCE)
     power_source: Optional[str] = None
     try:
         battery = psutil.sensors_battery()
@@ -1092,7 +1097,7 @@ def _capture_protocol_environment_snapshot(
             or (selected_device(encoder)["deviceId"] != "unknown" and int(environment_metrics.gpu_sample_count or 0) > 0)
         ),
         gpu_sample_count=int(environment_metrics.gpu_sample_count or 0),
-        telemetry_sources=environment_metrics.telemetry_sources,
+        telemetry_sources=",".join(sorted(sources)) or None,
         telemetry_missing=environment_metrics.telemetry_missing,
     )
 

@@ -12,6 +12,7 @@ error text so submissions stay deterministic across retries.
 from __future__ import annotations
 
 import json
+import math
 import os
 import platform
 import subprocess
@@ -43,6 +44,8 @@ except Exception:
 
 _NVML_INITIALIZED = False
 _NVML_INIT_LOCK = threading.Lock()
+CPU_THREAD_WINDOW_SOURCE = "cpu_psutil_thread_window_v1"
+
 _DARWIN = platform.system() == "Darwin"
 _WINDOWS = platform.system() == "Windows"
 
@@ -259,6 +262,9 @@ class HardwareMonitor:
         self._gpu_samples: List[_GpuSample] = []
         self._cpu_samples: List[_CpuSample] = []
         self._cpu_baseline_ready = False
+        self._cpu_sampler_ident: Optional[int] = None
+        self._cpu_baseline_mono: Optional[float] = None
+        self._cpu_sample_is_fresh = False
         self._proc_samples: List[_ProcSample] = []
         self._battery_samples: List[_BatterySample] = []
         self._memory_peak_bytes: float = 0.0
@@ -358,6 +364,8 @@ class HardwareMonitor:
         # psutil keeps system CPU baselines by thread ID. A caller-thread prime
         # cannot reset a recycled sampler ID's history from a previous encode.
         self._cpu_baseline_ready = False
+        self._cpu_sampler_ident = threading.get_ident()
+        self._cpu_baseline_mono = None
         self._read_cpu_percent()
         # The discarded baseline is not a zero-utilization sample. Give the
         # first retained delta the >=100ms interval recommended by psutil.
@@ -565,15 +573,29 @@ class HardwareMonitor:
             with self._lock:
                 self._cpu_samples.append(_CpuSample(overall_pct=overall, temp_c=cpu_temp))
             self._record_source("cpu_temp_powermetrics")
+            if self._cpu_sample_is_fresh:
+                self._record_source(CPU_THREAD_WINDOW_SOURCE)
 
     def _read_cpu_percent(self) -> Optional[float]:
+        self._cpu_sample_is_fresh = False
         try:
             overall = float(psutil.cpu_percent(interval=None))
+            if not math.isfinite(overall) or not 0 <= overall <= 100:
+                raise ValueError("invalid CPU counter")
         except Exception:
+            self._cpu_baseline_ready = False
+            self._cpu_baseline_mono = None
             self._record_missing("cpu_unavailable")
             return None
+        now = time.monotonic()
+        previous = self._cpu_baseline_mono
+        self._cpu_baseline_mono = now
         if not self._cpu_baseline_ready:
             self._cpu_baseline_ready = True
+            return None
+        self._cpu_sample_is_fresh = (self._cpu_sampler_ident == threading.get_ident()
+            and previous is not None and now >= previous + 0.1)
+        if self._cpu_sampler_ident is not None and not self._cpu_sample_is_fresh:
             return None
         return overall
 
@@ -611,6 +633,8 @@ class HardwareMonitor:
         with self._lock:
             self._cpu_samples.append(_CpuSample(overall_pct=overall, freq_mhz=freq, temp_c=temp))
         self._record_source("cpu_psutil")
+        if self._cpu_sample_is_fresh:
+            self._record_source(CPU_THREAD_WINDOW_SOURCE)
 
     def _sample_ffmpeg_process(self) -> None:
         total_pct = 0.0

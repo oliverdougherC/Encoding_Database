@@ -1,4 +1,5 @@
 import os
+import math
 import platform
 import re
 import subprocess
@@ -175,16 +176,25 @@ def resolve_batch_size(requested: Optional[int]) -> int:
     return max(1, int(get_physical_core_count()))
 
 
-def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> float:
+CPU_BLOCKING_WINDOW_SOURCE = "cpu_psutil_blocking_window_v1"
+
+
+def measure_background_cpu_load(seconds: float = 3.0, interval: float = 0.5) -> Optional[float]:
+    """Return only successful fresh blocking observations; failure is unknown."""
     samples: List[float] = []
     elapsed: float = 0.0
     try:
+        if not all(math.isfinite(value) and value > 0 for value in (seconds, interval)):
+            return None
         while elapsed < seconds:
-            samples.append(psutil.cpu_percent(interval=interval))
+            sample = float(psutil.cpu_percent(interval=interval))
+            if not math.isfinite(sample) or not 0 <= sample <= 100:
+                return None
+            samples.append(sample)
             elapsed += interval
-        return float(sum(samples) / max(1, len(samples)))
+        return sum(samples) / len(samples) if samples else None
     except Exception:
-        return 0.0
+        return None
 
 
 def detect_virtualization(hardware: config.HardwareInfo) -> Tuple[bool, str]:
