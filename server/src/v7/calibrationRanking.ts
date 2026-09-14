@@ -33,6 +33,20 @@ export function verifyCalibrationRanking(document: CalibrationEvidenceDocument, 
     if (predicted !== comparison.selectedEvidenceId) throw new Error(`Production ranking disagrees with golden decision ${comparison.comparisonId}`);
     results.push({ id: comparison.comparisonId, predicted });
   }
+  for (const review of document.topResultReviews) {
+    const selected = byId.get(review.evidenceId);
+    if (!selected) throw new Error(`Unknown top-result evidence ${review.evidenceId}`);
+    const excluded = new Set(document.metricSanityReviews.filter((entry) => entry.disposition === 'EXCLUDE' || entry.disposition === 'INVESTIGATE').flatMap((entry) => entry.evidenceIds));
+    const candidates = document.corpus.filter((row) => !excluded.has(row.evidenceId)
+      && row.workloadId === selected.workloadId && row.environmentFingerprint === selected.environmentFingerprint
+      && (review.familyKey === `encoder:${row.encoderImplementation}` || review.familyKey === `hardware:${row.hardwareFamily}`));
+    if (candidates.length !== new Set(review.candidateEvidenceIds).size || candidates.some((row) => !review.candidateEvidenceIds.includes(row.evidenceId))) {
+      throw new Error(`Top-result comparison omits compatible tested family choices ${review.reviewId}`);
+    }
+    const predicted = rankCalibrationChoices(candidates, context, review.scenario.toLowerCase() as PlFitMode);
+    if (predicted !== review.evidenceId) throw new Error(`Production ranking disagrees with top-result review ${review.reviewId}`);
+    results.push({ id: review.reviewId, predicted });
+  }
   for (const fold of document.holdoutEvaluations) {
     if (!fold.fittedContextArtifactPath) throw new Error(`Missing independently fitted context artifact for ${fold.evaluationId}`);
     const fitted = parseReferenceContext(readFileSync(fold.fittedContextArtifactPath, 'utf8'));

@@ -206,6 +206,7 @@ unchanged; a later DB failure can leave prepared hash-identical files for recove
 Retry without output flags using the same context, or choose fresh output names.
 The deployed path in env bindings must be updated for the container mount.
 
-`scoringBehaviorHash` binds compiled scorer and PL Fit code, including fixed
+`scoringBehaviorHash` binds the compiled scoring module closure, including aggregation,
+reference construction, persistence and review eligibility as well as fixed
 weights/constraints. Changes require a new reviewed context; old context identity
 and old-protocol timing are never silently relabeled.

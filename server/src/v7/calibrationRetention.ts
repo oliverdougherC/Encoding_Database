@@ -21,6 +21,8 @@ export async function verifyCalibrationRetainedEvidence(
       include: { evidenceReviews: true, artifact: true, benchmarkRun: { include: { benchmarkProtocol: true, recipe: true, environment: true, testClip: true } } },
     });
     if (!analysis?.artifact) throw new Error(`Missing retained analysis/artifact ${evidence.qualityAnalysisId}`);
+    const newest = await client.qualityAnalysis.findFirst({ where: { benchmarkRunId: analysis.benchmarkRunId, metricModelId: analysis.metricModelId }, orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true } });
+    if (newest?.id !== analysis.id) throw new Error(`Calibration analysis has been superseded ${analysis.id}`);
     const run = analysis.benchmarkRun;
     const artifact = analysis.artifact;
     const actual = {

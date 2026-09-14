@@ -111,6 +111,7 @@ export async function loadProductionActivationPlan(options) {
     calibration,
     promotedContext,
     referenceContextPath,
+    requiresPromotedContextOutput: context.activation?.stage !== 'PRODUCTION',
   };
 }
 
@@ -320,11 +321,10 @@ export async function persistActivationState(client, {
   return { scoreContexts, derivedResults };
 }
 
-async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext, modules) {
+export async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext, modules) {
   const analyses = await prisma.qualityAnalysis.findMany({
     where: {
       metricModelId: promotedContext.qualityModelId,
-      status: { in: ['COMPLETE', 'SUSPECT', 'REJECTED'] },
       benchmarkRun: {
         benchmarkProtocolId,
         status: { in: ['ACCEPTED', 'SUSPECT', 'REJECTED'] },
@@ -341,7 +341,7 @@ async function loadRecomputeInputs(prisma, benchmarkProtocolId, promotedContext,
         },
       },
     },
-    orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
   });
 
   return latestAnalysesByRun(analyses).filter((analysis) => modules.applyEffectiveReview({ runStatus: analysis.benchmarkRun.status, analysisStatus: analysis.status, artifactState: analysis.artifact?.storageState ?? 'MISSING', analysisId: analysis.id, reviews: analysis.evidenceReviews }).eligible).map((analysis) => ({
@@ -386,6 +386,9 @@ export async function runProductionActivation(options) {
     recomputeReferenceScores,
   } = modules;
 
+  if (options.apply === true && plan.requiresPromotedContextOutput && !options.promotedContextOutputPath) {
+    throw new Error('First production promotion requires --promoted-context-output before database writes');
+  }
   const envBindings = buildProductionEnvBindings(
     promotedContext,
     options.promotedContextOutputPath

@@ -83,20 +83,21 @@ try {
       environment: true,
       artifacts: {
         where: { role: 'ENCODED', storageState: { in: ['RETAINED', 'VERIFIED'] }, sha256: { not: null } },
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       },
       qualityAnalyses: {
         include: { evidenceReviews: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } },
-        where: { metricModelId: flags.get('--quality-model-id'), status: { in: ['COMPLETE', 'SUSPECT'] } },
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        where: { metricModelId: flags.get('--quality-model-id') },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       },
     },
     orderBy: [{ workloadId: 'asc' }, { id: 'asc' }],
   });
 
   const timestamps = [];
-  const corpus = runs.map((run) => {
+  const corpus = runs.flatMap((run) => {
     const analysis = run.qualityAnalyses[0];
+    if (!analysis || !['COMPLETE', 'SUSPECT'].includes(analysis.status)) return [];
     const artifact = run.artifacts.find((item) => item.id === analysis?.artifactId);
     if (!artifact?.sha256 || !analysis) throw new Error(`Run ${run.id} lost required retained evidence during generation`);
     timestamps.push(analysis.updatedAt, artifact.updatedAt, run.updatedAt);
@@ -105,7 +106,7 @@ try {
     const realTimeRatio = run.realTimeRatio ?? (
       run.encodeFps != null && run.sourceFps != null && run.sourceFps > 0 ? run.encodeFps / run.sourceFps : null
     );
-    return {
+    return [{
       evidenceId,
       partition: 'CALIBRATION',
       benchmarkRunId: run.id,
@@ -132,7 +133,7 @@ try {
       xpsnr: numeric(analysis.xpsnr, 'xpsnr', evidenceId),
       videoBitrateBps: numeric(analysis.videoBitrateBps, 'videoBitrateBps', evidenceId),
       realTimeRatio: numeric(realTimeRatio, 'realTimeRatio', evidenceId),
-    };
+    }];
   }).sort((left, right) => left.workloadId.localeCompare(right.workloadId)
     || left.encoderImplementation.localeCompare(right.encoderImplementation)
     || left.videoBitrateBps - right.videoBitrateBps

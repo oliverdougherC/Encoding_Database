@@ -1180,12 +1180,9 @@ export async function loadRetainedReferenceEvidence(
         include: { evidenceReviews: true },
         where: {
           metricModelId: options.qualityModelId,
-          status: { in: ['COMPLETE', 'SUSPECT'] },
-          videoBitrateBps: { not: null },
-          vmafMean: { not: null },
         },
         orderBy: [
-          { updatedAt: 'desc' },
+          { createdAt: 'desc' },
           { id: 'desc' },
         ],
       },

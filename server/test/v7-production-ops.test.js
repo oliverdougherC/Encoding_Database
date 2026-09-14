@@ -11,6 +11,7 @@ import {
   buildProductionEnvBindings,
   loadProductionActivationPlan,
   persistActivationState,
+  runProductionActivation,
 } from '../../scripts/activate-pl-v7-production.mjs';
 import {
   buildReferenceContextBindings,
@@ -358,4 +359,14 @@ test('reactivating a parsed production context still requires COMPLETE calibrati
     referenceContextPath: contextFixturePath.pathname,
     modules: { parseReferenceContext: () => productionContextFixture() },
   }), /required for activation and reactivation/);
+});
+
+
+test('first promotion without a promoted artifact output fails before any database call', async () => {
+  let databaseCalls = 0;
+  await assert.rejects(runProductionActivation({ apply: true, benchmarkProtocolId: 'test-only', plan: {
+    modules: { prisma: { async $transaction() { databaseCalls += 1; } } },
+    promotedContext: productionContextFixture(), referenceContextPath: contextFixturePath.pathname, requiresPromotedContextOutput: true,
+  } }), /requires --promoted-context-output before database writes/);
+  assert.equal(databaseCalls, 0);
 });

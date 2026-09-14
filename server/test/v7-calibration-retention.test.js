@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID, createHash } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { applyEffectiveReview, appendEvidenceReview } from '../dist/v7/reviews.js';
+import { loadRetainedReferenceEvidence } from '../dist/v7/referenceContext.js';
+import { loadRecomputeInputs } from '../../scripts/activate-pl-v7-production.mjs';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -40,7 +46,7 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     } });
     const artifact = await db.artifact.create({ data: { benchmarkRunId: run.id, role: 'ENCODED', sha256: hash, byteSize: bytes.length, storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin' } });
     const analysis = await db.qualityAnalysis.create({ data: {
-      benchmarkRunId: run.id, artifactId: artifact.id, status: 'COMPLETE', metricModelId: 'test-model',
+      createdAt: new Date('2001-01-01T00:00:00Z'), benchmarkRunId: run.id, artifactId: artifact.id, status: 'COMPLETE', metricModelId: 'test-model',
       analysisWorkerVersion: 'test-worker', analysisProvenance: { testOnly: true }, completedAt: new Date(), vmafMean: 92.4, vmafP5: 88, xpsnr: 37, videoBitrateBps: 1000000,
     } });
 
@@ -59,5 +65,30 @@ test('live PostgreSQL and retained object verification rejects relabeled measure
     }
     await writeFile(path.join(root, 'retained.bin'), Buffer.alloc(bytes.length, 1));
     await assert.rejects(verifyCalibrationRetainedEvidence(db, document, root), /SHA-256 mismatch/);
+    await writeFile(path.join(root, 'retained.bin'), bytes);
+    const newer = await db.qualityAnalysis.create({ data: {
+      createdAt: new Date('2002-01-01T00:00:00Z'), benchmarkRunId: run.id, artifactId: artifact.id, status: 'SUSPECT', metricModelId: 'test-model',
+      analysisWorkerVersion: 'test-worker-newer', analysisProvenance: { testOnly: true }, completedAt: new Date(), vmafMean: 91, vmafP5: 80, xpsnr: 36, videoBitrateBps: 1000000,
+    } });
+    await appendEvidenceReview(db, analysis.id, 'test-operator-not-human-review', {
+      benchmarkRunId: run.id, artifactId: artifact.id, artifactSha256: hash, metricModelId: 'test-model', analysisWorkerVersion: 'test-worker',
+      decision: 'EXPECTED', rationale: 'Synthetic regression fixture: this is not a genuine perceptual review.', evidenceLinks: ['https://example.invalid/test-only'],
+    });
+    const reviewedOld = await db.qualityAnalysis.findUnique({ where: { id: analysis.id } });
+    assert.ok(reviewedOld.updatedAt > newer.createdAt);
+    assert.deepEqual(await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'test-only' }), []);
+    assert.deepEqual(await loadRecomputeInputs(db, protocol.id, { qualityModelId: 'test-model' }, { applyEffectiveReview }), []);
+    await assert.rejects(verifyCalibrationRetainedEvidence(db, document, root), /superseded/);
+    const exported = path.join(root, 'newest-draft.json');
+    execFileSync(process.execPath, [fileURLToPath(new URL('../../scripts/generate-calibration-evidence.mjs', import.meta.url)), '--benchmark-protocol-id', protocol.id, '--quality-model-id', 'test-model', '--calibration-version', 'test-only-newest', '--output', exported], { env: { ...process.env, DATABASE_URL: process.env.CALIBRATION_TEST_DATABASE_URL } });
+    const draft = JSON.parse(readFileSync(exported, 'utf8'));
+    assert.equal(draft.corpus.length, 1);
+    assert.equal(draft.corpus[0].qualityAnalysisId, newer.id);
+    assert.equal(draft.corpus[0].analysisStatus, 'SUSPECT');
+    for (const status of ['PENDING', 'FAILED', 'REJECTED']) {
+      await db.qualityAnalysis.update({ where: { id: newer.id }, data: { status } });
+      assert.deepEqual(await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'test-only' }), []);
+      assert.deepEqual(await loadRecomputeInputs(db, protocol.id, { qualityModelId: 'test-model' }, { applyEffectiveReview }), []);
+    }
   } finally { await db.$disconnect(); await rm(root, { recursive: true, force: true }); }
 });

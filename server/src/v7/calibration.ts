@@ -83,6 +83,8 @@ export interface HoldoutEvaluation {
 }
 
 export interface TopResultReview {
+  scenario: CalibrationScenario;
+  candidateEvidenceIds: readonly string[];
   reviewId: string;
   familyKey: string;
   evidenceId: string;
@@ -384,6 +386,14 @@ export function assessCalibrationEvidence(
   }
   for (const evaluation of holdouts) {
     const referenced = evaluation.evidenceIds.map((id) => evidenceById.get(id));
+    const choices = referenced.filter((entry): entry is CalibrationEvidenceRecord => Boolean(entry));
+    const nativeChoices = new Set(choices.map((entry) => canonicalJsonString({ implementation: entry.encoderImplementation, preset: entry.preset, nativeRateControl: entry.nativeRateControl } as never)));
+    if (new Set(evaluation.evidenceIds).size < 2 || nativeChoices.size < 2) {
+      addFinding(errors, 'holdout_candidate_count', `${evaluation.evaluationId} must compare at least two distinct native recipe choices`);
+    }
+    if (new Set(choices.map((entry) => entry.workloadId)).size !== 1 || new Set(choices.map((entry) => entry.environmentFingerprint)).size !== 1) {
+      addFinding(errors, 'holdout_candidate_comparability', `${evaluation.evaluationId} choices must share one workload and exact environment cohort`);
+    }
     if (!referenced.length || referenced.some((entry) => !entry || entry.partition !== 'HOLDOUT')) {
       addFinding(errors, 'holdout_partition', `${evaluation.evaluationId} must reference only known HOLDOUT evidence`);
     }
@@ -419,6 +429,11 @@ export function assessCalibrationEvidence(
   for (const familyKey of requiredFamilyKeys) {
     const review = topReviews.find((entry) => entry.familyKey === familyKey);
     const reviewed = review ? evidenceById.get(review.evidenceId) : null;
+    if (review && (!CALIBRATION_SCENARIOS.includes(review.scenario) || !review.candidateEvidenceIds?.includes(review.evidenceId)
+      || new Set(review.candidateEvidenceIds ?? []).size < 2
+      || (review.candidateEvidenceIds ?? []).some((id) => !evidenceById.has(id) || blockedIds.has(id)))) {
+      addFinding(errors, 'top_result_candidates', `${familyKey} requires an explicit scenario and actual candidate comparison`);
+    }
     if (reviewed && familyKey !== `encoder:${reviewed.encoderImplementation}` && familyKey !== `hardware:${reviewed.hardwareFamily}`) addFinding(errors, 'top_result_family', `${familyKey} review references a different family`);
     if (!review || review.wouldChooseFirst !== true || !evidenceById.has(review.evidenceId) || blockedIds.has(review.evidenceId)
       || !validReviewer(review.reviewer) || !validRationale(review.rationale)) {

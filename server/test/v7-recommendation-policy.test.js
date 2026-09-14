@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } from '../dist/v7/aggregation.js';
 import { canonicalJsonString, sha256Hex } from '../dist/v7/persistence.js';
-import { buildScoringBehaviorHash, loadRecommendationEvidencePolicyForContext } from '../dist/v7/recommendationPolicy.js';
+import { buildScoringBehaviorManifest, buildScoringBehaviorHash, loadRecommendationEvidencePolicyForContext } from '../dist/v7/recommendationPolicy.js';
 
 test('deployed hash-bound policy survives reload and rejects mismatch without promoting sparse fallback', () => {
   const root = mkdtempSync(path.join(os.tmpdir(), 'encodingdb-policy-test-'));
@@ -23,4 +23,15 @@ test('deployed hash-bound policy survives reload and rejects mismatch without pr
     writeFileSync(filename, JSON.stringify(context));
     assert.throws(() => loadRecommendationEvidencePolicyForContext(record, { PL_V7_REFERENCE_CONTEXT_PATH: filename }), /hash mismatch/);
   } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+
+test('aggregation-only implementation changes invalidate the reviewed behavior manifest', () => {
+  const baseline = buildScoringBehaviorManifest((module) => `compiled original ${module}`);
+  const changed = buildScoringBehaviorManifest((module) => module === './aggregation.js' ? 'different source bootstrap and center rule' : `compiled original ${module}`);
+  assert.notEqual(sha256Hex(canonicalJsonString(baseline)), sha256Hex(canonicalJsonString(changed)));
+  assert.deepEqual(baseline.filter(entry => entry.module !== './aggregation.js'), changed.filter(entry => entry.module !== './aggregation.js'));
+  for (const module of ['./referenceContext.js', './reviews.js', './persistence.js', './recommendationPolicy.js', './calibrationRanking.js']) {
+    assert.ok(baseline.some(entry => entry.module === module));
+  }
 });

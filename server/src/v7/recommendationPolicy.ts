@@ -1,8 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, normalizeEvidencePolicy, type RecommendationEvidencePolicy } from './aggregation.js';
 import { canonicalJsonString, sha256Hex } from './persistence.js';
+export const SCORING_BEHAVIOR_MODULES = [
+  '../plScore.js', './decision.js', './aggregation.js', './referenceContext.js',
+  './persistence.js', './reviews.js', './recommendationPolicy.js', './calibrationRanking.js',
+  './calibration.js', './calibrationRetention.js', './suite.js',
+] as const;
+
+/** Exact reviewed implementation manifest, including centers, confidence and review eligibility. */
+export function buildScoringBehaviorManifest(readModule: (relativePath: string) => string = (relativePath) => readFileSync(new URL(relativePath, import.meta.url), 'utf8')) {
+  return SCORING_BEHAVIOR_MODULES.map((module) => ({ module, sha256: sha256Hex(readModule(module)) }));
+}
+
 export function buildScoringBehaviorHash(): string {
-  return sha256Hex(readFileSync(new URL('../plScore.js', import.meta.url), 'utf8') + '\n' + readFileSync(new URL('./decision.js', import.meta.url), 'utf8'));
+  return sha256Hex(canonicalJsonString(buildScoringBehaviorManifest()));
 }
 
 interface ContextIdentity {

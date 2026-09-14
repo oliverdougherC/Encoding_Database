@@ -32,7 +32,8 @@ A production-ready document must contain all of the following:
 
 For COMPLETE evidence the review hash covers corpus, review/fold decisions,
 the exact evidence policy, transform constants and scoringBehaviorHash.
-The latter hashes the deployed scorer and PL Fit implementation, including fixed
+The latter hashes the deployed scoring module closure (scorer, PL Fit, aggregation, reference
+construction, persistence, review eligibility and calibration validation), including fixed
 weights, quality-tail blend and constraints. Final context path/hash and freeze
 metadata are excluded to avoid a circular digest. Historical DRAFT hashes retain
 their original interpretation. The canonical evidence hash then covers

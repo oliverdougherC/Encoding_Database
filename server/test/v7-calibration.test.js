@@ -129,11 +129,15 @@ function completeDocument() {
     evidenceHash: '',
   };
   document.corpus[3].contentClass = 'validation-only-content';
+  document.corpus[3].workloadId = 'validation-only-workload';
+  document.corpus.push({ ...structuredClone(document.corpus[1]), evidenceId: 'evidence-9', benchmarkRunId: 'run-9', artifactId: 'artifact-9', qualityAnalysisId: 'analysis-9', nativeRateControl: { mode: 'crf', qualityValue: 24 } });
+  document.corpus.push({ ...structuredClone(document.corpus[3]), evidenceId: 'evidence-10', benchmarkRunId: 'run-10', artifactId: 'artifact-10', qualityAnalysisId: 'analysis-10', nativeRateControl: { mode: 'crf', qualityValue: 18 } });
+  document.topResultReviews.forEach((review, index) => { review.scenario = 'BALANCED'; review.candidateEvidenceIds = index === 0 ? ['evidence-4', 'evidence-10'] : ['evidence-6', 'evidence-8']; });
   document.holdoutEvaluations.forEach((evaluation, index) => {
     evaluation.fittingEvidenceIds = ['evidence-1'];
     evaluation.frontierEvidenceIds = ['evidence-1'];
     evaluation.fittedContextHash = 'f'.repeat(64);
-    evaluation.evidenceIds = [[ 'evidence-6' ], [ 'evidence-6' ], [ 'evidence-4' ], [ 'evidence-2' ]][index];
+    evaluation.evidenceIds = [[ 'evidence-6', 'evidence-8' ], [ 'evidence-6', 'evidence-8' ], [ 'evidence-4', 'evidence-10' ], [ 'evidence-2', 'evidence-9' ]][index];
     evaluation.predictedTopEvidenceId = evaluation.evidenceIds[0];
   });
   document.freeze.scoringBehaviorHash = buildScoringBehaviorHash();
@@ -249,6 +253,8 @@ test('checked-in Apple pilot binds exact retained evidence while remaining impos
 });
 
 for (const [name, mutate, code] of [
+  ['single candidate holdout', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-6'], 'holdout_candidate_count'],
+  ['duplicate native holdout choices', d => d.corpus[7].nativeRateControl = structuredClone(d.corpus[5].nativeRateControl), 'holdout_candidate_count'],
   ['empty fitting corpus', d => d.corpus.forEach(e => e.partition = 'HOLDOUT'), 'empty_fitting_corpus'],
   ['overlapping holdout groups', d => d.holdoutEvaluations[0].evidenceIds = ['evidence-2'], 'holdout_group_leakage'],
   ['identical native RC disguised with fingerprints', d => d.corpus.filter(e => e.encoderImplementation === 'libx264').forEach(e => e.nativeRateControl = { mode: 'crf', qualityValue: 20 }), 'rate_quality_coverage'],
