@@ -1,0 +1,24 @@
+{
+ "reviewedCommit": "b4d494d (cherry-picked as 3d22d7a on codex/local-release-integration)",
+ "focusedTests": "node --test test/v7-failure-alerts.test.js: 17/17 pass in integrated tree (after tsc build)",
+ "codeReviewFindings": {
+  "redaction": "URL/JWT/hash/base64/path scrubbing + literal webhook/health-URL secrets in every error path; webhook never returned/logged; 200/1900-char bounds; body snippets redacted",
+  "limits": "cross-process 0600 state: unchanged-episode suppression, 300s all-key send floor counted at attempt time (broken webhook cannot burst), renotify 3600s, delivery-failure backoff, 429 retry_after bounded, max 5 attempts, 2xx-only success",
+  "classification": "transport error->health_unreachable; non-200/503->health_http_<n>; 503+body->degraded with contract reasons; 503 non-JSON->evidence_health_unavailable",
+  "secretFile": "lstat regular-file + reject group/world bits + https-only (loopback http only for tests) + single-line URL; path referenced only (V7_ALERT_WEBHOOK_FILE)",
+  "noFalseAlerts": "live candidate /health/v7-evidence: status ok, reasons [], derivations.unresolvedSelectedAnalyses=0 — intentional PL provisional/unscored state is NOT part of the operational-health vocabulary; the real contract emits no backup* reasons at all, and the default filter additionally drops any backup*/^backup reason class per owner policy (user-operations-policy.json)"
+ },
+ "systemdWiringCheck": "uninstalled units harden correctly (ProtectSystem=strict, PrivateTmp, UMask 0077, StateDirectory 0700, User encodingdb, EnvironmentFile). Deployment note: webhook file must be owned by the poller user with mode 0600 (the loader rejects group/world bits), placed outside home readable by User=encodingdb (ProtectHome=read-only), and failure-alert.env must set PATH to the inspected node binary (P910 node is outside default PATH).",
+ "livePollValidation": {
+  "sinks": "loopback-only mock health (real-shape payload incl. bait tokens/URLs/paths + backupScheduleMissing/backup_artifacts_stale) + 0600 mock webhook file; NO real Discord message sent or received",
+  "ticks": [
+   {"tick": "real candidate health (read-only ssh-loopback GET)", "result": "action=none, 0 sends"},
+   {"tick": "mock ok", "result": "action=none"},
+   {"tick": "mock degraded", "result": "action=sent attempts=1 httpStatus=204; reasons delivered exactly [stale_pending_analyses, missing_retained_objects]; backup* filtered; no bait strings present; allowed_mentions.parse=[]"},
+   {"tick": "same degraded", "result": "action=suppressed_unchanged"},
+   {"tick": "back to ok", "result": "action=recovered, silent"}
+  ],
+  "deliveredContent": "[EncodingDB candidate-validation] FAILURE (degraded) / reasons: stale_pending_analyses, missing_retained_objects / captured: 2026-09-20T22:05:00.000Z / context: pending_analyses=12 missing_retained=2 disk_available_mib=9214"
+ },
+ "policy": "no-new-backups accepted (user-operations-policy.json); backup destination removed as release blocker; existing backups/evidence preserved; no backup jobs created; no further Discord test sent"
+}
