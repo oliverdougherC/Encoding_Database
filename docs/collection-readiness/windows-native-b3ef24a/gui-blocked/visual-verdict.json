@@ -1,0 +1,23 @@
+{
+  "score": 93,
+  "verdict": "pass",
+  "category_match": true,
+  "differences": [
+    "Long current-task and telemetry text extends past the right edge; primary controls and completion/cancellation states remain visible."
+  ],
+  "suggestions": [
+    "Address telemetry wrapping in a separate product polish change; this harness correction only targets the observed native Exit confirmation."
+  ],
+  "reasoning": "Actual screenshots show readable local completion and interrupted states with usable Start/Stop controls, plus a genuine native Exit dialog with one Yes button. Close automation is blocked by duplicate UIA enumeration, not a visually missing control.",
+  "threshold": 90,
+  "next_actions": [
+    "Scope Close confirmation to the observed owned native Exit dialog and its single enabled Yes Button."
+  ],
+  "screenshots": [
+    "prepare-stop/preparation-cancelled.png",
+    "complete/locally-complete.png",
+    "stop/cancelled.png",
+    "close/failure.png"
+  ],
+  "source": "CI35485094474 merge14403ea1c1519acce543dc9d76bacb13a2032159"
+}

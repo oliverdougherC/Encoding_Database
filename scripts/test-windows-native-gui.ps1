@@ -56,6 +56,10 @@ public static class EdbWindows {
  [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h,int command);
  [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+ [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
+ [DllImport("user32.dll")] public static extern IntPtr GetParent(IntPtr h);
+ [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
+ [DllImport("user32.dll",SetLastError=true)] public static extern IntPtr SendMessageTimeout(IntPtr h,uint m,IntPtr w,IntPtr l,uint flags,uint timeout,out UIntPtr result);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l);
  public static IntPtr[] Windows(IntPtr parent) { var a=new List<IntPtr>(); EnumProc f=(h,p)=>{a.Add(h);return true;}; if(parent==IntPtr.Zero)EnumWindows(f,IntPtr.Zero);else EnumChildWindows(parent,f,IntPtr.Zero);return a.ToArray(); }
  public static string Text(IntPtr h) { var s=new StringBuilder(4096);GetWindowText(h,s,s.Capacity);return s.ToString(); }
@@ -141,14 +145,30 @@ function Capture-Ui([string]$Label) {
     Record-Event 'ui-observed' @{ snapshot=$Label; controls=$controls.Count; screenshot="$base.png" }
     return $elements
 }
-function Invoke-Observed([string]$Name) {
-    $observed = @(Capture-Ui ("before-action-" + ($Name -replace '\W','')))
-    $matches = @($observed | Where-Object { $_.Current.Name.Replace('&','') -eq $Name -and $_.Current.IsEnabled -and -not $_.Current.IsOffscreen })
-    if ($matches.Count -ne 1) { throw "BLOCKED_GUI_AUTOMATION: expected one observed enabled '$Name'; found $($matches.Count). Screenshots and trees retained." }
-    $element = $matches[0]; $observedProcessId = $element.Current.ProcessId; $pattern = $null
-    if ($element.TryGetCurrentPattern([Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) { $pattern.Invoke() }
-    else { throw "BLOCKED_GUI_AUTOMATION: '$Name' exposes no invoke pattern." }
-    Record-Event 'observed-control-invoked' @{name=$Name; processId=$observedProcessId}
+function Confirm-ObservedExit {
+    [void](Capture-Ui 'before-action-Yes')
+    # UIA can expose this same native dialog/button twice, without InvokePattern.
+    # Select the actual owned dialog and its observed native IDYES button instead.
+    $dialogs=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'Exit' -and [EdbWindows]::Class($_) -eq '#32770' })
+    if ($dialogs.Count -ne 1) { throw "BLOCKED_GUI_AUTOMATION: expected one owned native Exit dialog; found $($dialogs.Count)." }
+    $dialog=$dialogs[0]
+    $buttons=@([EdbWindows]::Windows($dialog) | Where-Object {
+        [EdbWindows]::GetParent($_) -eq $dialog -and [EdbWindows]::Class($_) -eq 'Button' -and
+        [EdbWindows]::Text($_).Replace('&','') -eq 'Yes' -and [EdbWindows]::GetDlgCtrlID($_) -eq 6 -and
+        [EdbWindows]::IsWindowVisible($_) -and [EdbWindows]::IsWindowEnabled($_)
+    })
+    if ($buttons.Count -ne 1) { throw "BLOCKED_GUI_AUTOMATION: expected one observed enabled native Yes button; found $($buttons.Count)." }
+    [uint32]$dialogOwner=0; [uint32]$buttonOwner=0
+    [void][EdbWindows]::GetWindowThreadProcessId($dialog,[ref]$dialogOwner)
+    [void][EdbWindows]::GetWindowThreadProcessId($buttons[0],[ref]$buttonOwner)
+    if ($dialogOwner -ne $buttonOwner) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button owner differs from its dialog.' }
+    [void][EdbWindows]::SetForegroundWindow($dialog)
+    Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $dialog } 5 'BLOCKED_GUI_FOCUS: Exit dialog did not receive foreground focus.'
+    [UIntPtr]$result=[UIntPtr]::Zero
+    # BM_CLICK, bounded by SMTO_ABORTIFHUNG. Normal close/cancellation checks follow.
+    $sent=[EdbWindows]::SendMessageTimeout($buttons[0],0x00F5,[IntPtr]::Zero,[IntPtr]::Zero,2,2000,[ref]$result)
+    if ($sent -eq [IntPtr]::Zero) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button did not accept the bounded click.' }
+    Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$buttons[0].ToInt64(); controlId=6 }
 }
 function Send-RunShortcut([ValidateSet('Start','Stop')][string]$Action) {
     [void](Capture-Ui "before-shortcut-$Action")
@@ -278,7 +298,7 @@ try {
                         $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
                         [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
                         Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name.Replace('&','') -eq 'Yes' }).Count -gt 0 } 10 'Native Close confirmation did not appear.'
-                        Invoke-Observed 'Yes'; $phase.action='Close confirmed'
+                        Confirm-ObservedExit; $phase.action='Close confirmed'
                         $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                     }
                 }

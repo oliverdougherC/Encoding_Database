@@ -1,0 +1,9 @@
+# Close confirmation blocked by duplicate UIA observations
+
+The actual hosted Windows GUI receipt records clean exit 0 and no owned survivors for preparation Stop, completed Single run, and measured Stop. Screenshots visibly show Interrupted/Run cancelled, Complete/Locally complete, and the genuine active-run Exit confirmation. The overall receipt is **BLOCKED**, with forced cleanup of the unconfirmed Close phase; the full evidence verifier therefore did not run and this is not a GUI acceptance pass.
+
+The precise error is `expected one observed enabled 'Yes'; found 2`. Both UIA records identify the same native handle 7078450, process 1908, automation ID 6, and bounds. Neither exposes InvokePattern. The Win32 capture records a single `&Yes` child of native `Exit` / `#32770`, with class `Button`. The screenshot confirms one Yes control. This establishes a harness selection/invocation defect; it does not establish a client Close defect or explain the prior lost-runner incident.
+
+The narrow harness correction selects exactly one owned native Exit dialog, then exactly one visible/enabled native Yes Button with direct parent and IDYES 6, checks matching process ownership, focuses the observed dialog and invokes a two-second bounded BM_CLICK. Existing process exit, survivor, retained-media and whole-receipt checks remain mandatory. It does not use guessed coordinates, bypass confirmation, or convert the old blocked result into a pass. The fixed harness still requires actual Windows execution.
+
+Visual review score 93: essential actions and local completion/cancellation status are readable. Long current-task/telemetry text overflows horizontally; that polish issue is recorded separately from this automation correction. Six existing fail-closed verifier tests and diff checks pass; these are not native Win32 execution evidence.
