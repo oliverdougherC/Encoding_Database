@@ -108,7 +108,13 @@ def audit(queue, phase, manifest):
             if campaign.resolve() not in target.parents or sha(target) != info['artifactSha256']:
                 raise ValueError('Retained artifact differs from immutable attempt record')
         attempts.append({'record': str(path), 'recordSha256': sha(path), 'schedule': record['schedule'],
-                         'countedForStability': record.get('countedForStability'), 'metadata': record['metadata']})
+                         'countedForStability': record.get('countedForStability'), 'metadata': record['metadata'],
+                         'environmentSnapshot': record.get('environmentSnapshot'),
+                         'environmentValidity': record.get('environmentValidity'),
+                         'structuralValidity': record.get('structuralValidity'),
+                         'overallValidity': record.get('overallValidity'),
+                         'timing': record.get('timing'), 'probe': record.get('probe'),
+                         'skippedBeforeEncode': record.get('skippedBeforeEncode')})
     # Keep complete metadata and every group outcome, including SUSPECT/unstable.
     return {'campaignId': campaign.name, 'attempts': attempts, 'completion': read(campaign / 'campaign-complete.json'),
             'manifestSha256': sha(campaign / 'manifest.json'), 'runtime': runtime}

@@ -92,6 +92,8 @@ class OperatorChecks(unittest.TestCase):
         artifact = campaign / 'encoded.mkv'
         artifact.write_bytes(b'fixture bytes')
         operator.save(campaign / 'attempt-000001.json', {'schedule': {'phase': 'measured'}, 'countedForStability': False,
+            'overallValidity': {'state': 'suspect', 'reasons': [{'code': 'fixture-background-load'}]},
+            'environmentSnapshot': {'background_cpu_pct': 47.0},
             'metadata': {'integrity': 'SUSPECT', 'info': {'artifactPath': str(artifact), 'artifactSha256': operator.sha(artifact)}}})
         extraction = phase / '_MEIfixture'
         runtime = {'frozen': True, 'platform': 'win', 'extractionRoot': str(extraction),
@@ -105,6 +107,8 @@ class OperatorChecks(unittest.TestCase):
         result = operator.audit(phase / 'queue', phase, self.manifest)
         self.assertFalse(result['attempts'][0]['countedForStability'])
         self.assertEqual(result['attempts'][0]['metadata']['integrity'], 'SUSPECT')
+        self.assertEqual(result['attempts'][0]['overallValidity']['state'], 'suspect')
+        self.assertEqual(result['attempts'][0]['environmentSnapshot']['background_cpu_pct'], 47.0)
         artifact.write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError, 'Retained artifact differs'):
             operator.audit(phase / 'queue', phase, self.manifest)

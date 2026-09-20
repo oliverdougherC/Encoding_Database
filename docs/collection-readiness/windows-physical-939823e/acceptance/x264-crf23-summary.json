@@ -1,0 +1,102 @@
+{
+  "status": "PASSED_PLATFORM_EXECUTION_AND_RETENTION",
+  "scope": "Physical Windows x264 acceptance only; not calibration fitting or authoritative quality validation",
+  "campaignId": "campaign-c51ac555622c3656",
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "exitCode": 0,
+  "wallSeconds": 359.75,
+  "attempts": 21,
+  "warmups": 7,
+  "measured": 14,
+  "validityCounts": {
+    "valid": 21
+  },
+  "artifactsHashVerifiedByOperator": 21,
+  "sourceAndArtifactFramesVerified": 4896,
+  "measuredCpuBackgroundRangePct": [
+    0.0,
+    7.7
+  ],
+  "cpuWindowSources": {
+    "cpu_psutil_thread_window_v1": 12,
+    "cpu_psutil_blocking_window_v1": 2
+  },
+  "groups": [
+    {
+      "clipId": "animation-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        1.4686595,
+        1.4683631
+      ],
+      "relativeSpread": 0.00020183705770604932,
+      "timingStable": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        1.3262718,
+        1.3198806
+      ],
+      "relativeSpread": 0.0048305607794924665,
+      "timingStable": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        1.822467,
+        1.8157143
+      ],
+      "relativeSpread": 0.003712129464246356,
+      "timingStable": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        1.8218087,
+        1.8577322
+      ],
+      "relativeSpread": 0.019526077288609563,
+      "timingStable": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        1.2908307,
+        1.293881
+      ],
+      "relativeSpread": 0.002360263235547663,
+      "timingStable": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.4845411,
+        0.4851699
+      ],
+      "relativeSpread": 0.001296881235749589,
+      "timingStable": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.9976814,
+        1.0058055
+      ],
+      "relativeSpread": 0.008109960689036556,
+      "timingStable": true
+    }
+  ],
+  "limitations": [
+    "Windows GPU performance-counter timeout retained; NVML remained available",
+    "CPU temperature, battery and FFmpeg CPU-time telemetry unavailable; no values fabricated",
+    "Warmups have no pre-measurement environment snapshot",
+    "Unsigned candidate; GUI and authoritative backend quality validation remain separate"
+  ]
+}
