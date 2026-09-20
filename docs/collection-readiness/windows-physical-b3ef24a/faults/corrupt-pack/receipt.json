@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "case": "corrupt-pack",
+  "status": "PASSED_EXPECTED_NATIVE_FAILURE_AND_RETENTION",
+  "scope": "Physical native fault acceptance; local files/loopback only; no production or P910 contact",
+  "startedAt": "2026-09-20T04:03:49.094488+00:00",
+  "sourceRevision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "executableSha256": "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\fault-corrupt-pack-b3ef24a\\isolated-package\\encodingdb-client-windows-console.exe",
+        "--cli",
+        "--api-key",
+        "",
+        "--retries",
+        "1",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--campaign",
+        "quick",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--crf",
+        "23",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\fault-corrupt-pack-b3ef24a\\queue-\u5ba2\u6237",
+        "--max-duration-minutes",
+        "1",
+        "--max-storage-mb",
+        "128"
+      ],
+      "startedAt": "2026-09-20T04:03:50.610821+00:00",
+      "pid": 33852,
+      "exitCode": 3,
+      "wallSeconds": 4.2189999999973224
+    }
+  ],
+  "networkEvents": [
+    {
+      "method": "CONNECT",
+      "target": "github.com:443",
+      "at": 1789877034.3872309,
+      "forwarded": false
+    }
+  ],
+  "forcedCleanup": false,
+  "fixtureUrl": "http://127.0.0.1:64179",
+  "corruptPackSha256": "dbb1613ece77f32531c16bfd10686cc1b961d0870b07d0adf39a3dac21b06dc1",
+  "corruptPackBytes": 1506890018,
+  "newAttempts": 0,
+  "originalImmutableFilesUnchanged": 44,
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "finishedAt": "2026-09-20T04:03:55.923813+00:00"
+}

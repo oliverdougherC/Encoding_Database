@@ -1,0 +1,290 @@
+{
+  "schemaVersion": 1,
+  "case": "backpressure",
+  "status": "PASSED_EXPECTED_NATIVE_FAILURE_AND_RETENTION",
+  "scope": "Physical native fault acceptance; local files/loopback only; no production or P910 contact",
+  "startedAt": "2026-09-20T04:01:41.169519+00:00",
+  "sourceRevision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "executableSha256": "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows-console.exe",
+        "--cli",
+        "--api-key",
+        "",
+        "--retries",
+        "1",
+        "--upload-only",
+        "--base-url",
+        "http://127.0.0.1:64148",
+        "--resume-campaign",
+        "campaign-48cfe70dd43b036c",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\acceptance-x264-crf23-b3ef24a-\u00e9\\queue-\u5ba2\u6237",
+        "--max-storage-mb",
+        "4096"
+      ],
+      "startedAt": "2026-09-20T04:01:41.292182+00:00",
+      "pid": 22708,
+      "exitCode": 10,
+      "wallSeconds": 2.7340000000003783
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows-console.exe",
+        "--cli",
+        "--api-key",
+        "",
+        "--retries",
+        "1",
+        "--upload-only",
+        "--base-url",
+        "http://127.0.0.1:64148",
+        "--resume-campaign",
+        "campaign-48cfe70dd43b036c",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\acceptance-x264-crf23-b3ef24a-\u00e9\\queue-\u5ba2\u6237",
+        "--max-storage-mb",
+        "4096"
+      ],
+      "startedAt": "2026-09-20T04:01:44.035334+00:00",
+      "pid": 16404,
+      "exitCode": 10,
+      "wallSeconds": 2.2659999999996217
+    }
+  ],
+  "networkEvents": [
+    {
+      "method": "GET",
+      "target": "/v7/compatibility",
+      "at": 1789876903.1381812,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.281912,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.3095016,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.3405547,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.3715909,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.3871076,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.4180107,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.4490478,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.4804468,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.496049,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.5276399,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.5583146,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.5653267,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.5763338,
+      "forwarded": false
+    },
+    {
+      "method": "POST",
+      "target": "/v7/benchmark-runs",
+      "at": 1789876903.6048846,
+      "forwarded": false
+    },
+    {
+      "method": "GET",
+      "target": "/v7/compatibility",
+      "at": 1789876905.862357,
+      "forwarded": false
+    }
+  ],
+  "forcedCleanup": false,
+  "fixtureUrl": "http://127.0.0.1:64148",
+  "pendingEntries": [
+    {
+      "localHash": "171e94c42b40bec4fc00aba5925acd0181198e359aead588a527539fdff1ee9d",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.282909,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "1b60d5d0e28ed552c63eca18203631ea0d05b58384690f7fc2c329a687841b34",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.3105056,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "1cf39940010c34f9defa87222e7137715223426a1106a86cbfdd2cc90836738b",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.3415575,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "48e08c8a2c18a2abbe29963705a08874277b70b71e780cd11315cd0b570c57f7",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.3735933,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "4a7f1b7c1915ad15bafea87c8b893dab44a24ab7ce4690bd247f962149ece041",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.3876085,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "7bea129c03552ad996b1f1ae0f7b247101d224c732b1d1dd60cbeef27dd3b9f2",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.4190109,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "a4cd98cfe515634fbf3d05612ff96a5e9ee511a173fac3f836ebf4e555c0552b",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.4495482,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "b015af903c1914707748268b1886e197b5f6a8f500f8e892dbe91c63b6cd1527",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.4814498,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "b2a4d0be4af2cbcbf433d1247f2b4cae9cbc8e8f4327b1939d106bf1ef36039f",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.4970489,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "bc4e69ef1550c9c57ca25867a84cf9b73c5d636190b9fd8263e17efe8bf5bb4b",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.5286438,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "cd1f785fb4532e9f55fd708500e8888dfc8439ce6a666ce3e8df36cdebb9d3c6",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.5593154,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "d11f443f1641cede6fe4b7d35aa3823ebb83431a6a78f7613d737860e5947fad",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.5663269,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "f10bb27fe749202ed6127dad14af265f0b2bda0ad2d441093540d6553bc3d79a",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.5773373,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    },
+    {
+      "localHash": "f750bebd6ba30a7182ef952fdefbe52b2db525bb8d877a67cddbfe2c89dbeb57",
+      "attempts": 1,
+      "queuedAt": 1789876903,
+      "lastAttemptAt": 1789876903,
+      "nextAttemptAt": 1789876963.6058857,
+      "retryDeadlineAt": 1790481703,
+      "lastError": "run create failed (429)"
+    }
+  ],
+  "firstReplayPosts": 14,
+  "immediateReplayPosts": 0,
+  "originalImmutableFilesUnchanged": 44,
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "finishedAt": "2026-09-20T04:01:46.885992+00:00"
+}

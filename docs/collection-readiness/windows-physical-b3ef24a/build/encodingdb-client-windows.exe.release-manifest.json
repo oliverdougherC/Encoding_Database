@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "projectVersion": "1.3.0-rc.1",
+  "source": {
+    "revision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+    "trackedChanges": false,
+    "buildPythonVersion": "3.12.10"
+  },
+  "platform": "win",
+  "artifact": {
+    "fileName": "encodingdb-client-windows.exe",
+    "sha256": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e",
+    "byteSize": 180167459,
+    "mode": 511,
+    "executableIdentity": {
+      "format": "PE",
+      "architecture": "x86_64",
+      "minimumOsFromHeader": null
+    }
+  },
+  "protocol": {
+    "benchmarkProtocolVersion": "7.1",
+    "minimumClientVersion": "client/0.3.0"
+  },
+  "suite": {
+    "suiteId": "encodingdb-test-suite",
+    "suiteVersion": "encodingdb-test-suite-v1",
+    "manifestVersion": 2,
+    "distribution": "reviewed-final",
+    "isFrozen": true,
+    "finalLockPath": "suite-lock.json",
+    "distributionMode": "external-suite-pack",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "pack": {
+      "fileName": "encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "byteSize": 1506890018,
+      "format": "tar.gz",
+      "downloadUrls": [
+        "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz"
+      ]
+    }
+  },
+  "qualityModel": {
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "metricModelVersion": "v1.0.16_3d0h",
+    "sha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+    "bundleRelativePath": "resources/vmaf/vmaf_v1.0.16_3d0h.json"
+  },
+  "runtime": {
+    "fingerprint": "8965c93d6c37e6ba9d4a6c7fb7afbb8b01eada6c0ce63178abbee91407f9e36e",
+    "payload": {
+      "schemaVersion": 1,
+      "runtimeId": "encodingdb-ffmpeg-runtime",
+      "source": "native-arm64-ffmpeg9-vmaf3.2-20260914",
+      "platforms": {
+        "win": {
+          "ffmpeg": {
+            "relativePath": "bin\\win\\ffmpeg.exe",
+            "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+            "byteSize": 162800128,
+            "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers",
+            "buildFingerprint": "9f370f6777633234c8b8fb331a6de63191717038c8af9d5faada990987f60ed1"
+          },
+          "ffprobe": {
+            "relativePath": "bin\\win\\ffprobe.exe",
+            "sha256": "70be4ea32723b313df89603ba7cfbd818862e8785c20eb9008c27ef161ae84c0",
+            "byteSize": 162594816,
+            "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers",
+            "buildFingerprint": "ebb9edb3653a16a94d65b82565d9519ac5dbc7a1fda317791d5d3d73f8690e82"
+          },
+          "capabilities": {
+            "ffprobe": true,
+            "filters": [
+              "libvmaf",
+              "xpsnr"
+            ],
+            "requiredEncoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "optionalEncoders": [
+              "av1_amf",
+              "av1_nvenc",
+              "av1_qsv",
+              "h264_amf",
+              "h264_nvenc",
+              "h264_qsv",
+              "hevc_amf",
+              "hevc_nvenc",
+              "hevc_qsv",
+              "libopenh264",
+              "vp9_qsv"
+            ],
+            "smokeTestEncoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "encoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ]
+          }
+        }
+      }
+    },
+    "checkedInLockPath": "ffmpeg-lock.json",
+    "executableIdentities": {
+      "ffmpeg": {
+        "format": "PE",
+        "architecture": "x86_64",
+        "minimumOsFromHeader": null
+      },
+      "ffprobe": {
+        "format": "PE",
+        "architecture": "x86_64",
+        "minimumOsFromHeader": null
+      }
+    },
+    "minimumOsFromHeaders": null
+  },
+  "signing": {
+    "schemaVersion": 1,
+    "status": "unsigned",
+    "evidence": null,
+    "note": "Build is unsigned; no signing evidence was supplied."
+  }
+}
