@@ -1,0 +1,51 @@
+{
+  "schemaVersion": "encodingdb-canonical-budget-proposal/v1",
+  "status": "PROPOSAL_NO_ALLOCATION",
+  "referenceArchiveSha256": "28e44e80b9792a1e8d367f9e6d8a5ab64a9a4de7f343cbe0446ec073f5eb4252",
+  "referenceDurationSeconds": 30,
+  "sourceCommit": "f3ef468c831e60f7a02576cd57ebc6ec0f1b2c59",
+  "includedAll42CellsIncludingUnstable": true,
+  "observedP910ByRecipe": [
+    {
+      "encoder": "libsvtav1",
+      "preset": "6",
+      "cells": 14,
+      "maximumAttemptSeconds": 26.9920005,
+      "maximumCellEncodeSumSeconds": 83.04754905600001
+    },
+    {
+      "encoder": "libx264",
+      "preset": "fast",
+      "cells": 14,
+      "maximumAttemptSeconds": 22.340733595,
+      "maximumCellEncodeSumSeconds": 109.421566383
+    },
+    {
+      "encoder": "libx265",
+      "preset": "fast",
+      "cells": 14,
+      "maximumAttemptSeconds": 41.968205229,
+      "maximumCellEncodeSumSeconds": 159.299367992
+    }
+  ],
+  "proposedCellMinutes": 30,
+  "proposedInvocationMinutes": 45,
+  "initialMaxCells": 1,
+  "reason": "Observed fast/software preset6 cell encode sums are below three minutes, but canonical slow presets, native hardware and Mac timing are not bounded by those observations. Propose one fixed 30-minute cell allowance and 45-minute invocation, retaining deadline exits for resume; this is an administrative limit, not a predicted duration.",
+  "perCellRunnerHardSeconds": 1830,
+  "runnerInterruptGraceSeconds": 20,
+  "initialStorageMiB": {
+    "Mac": 8192,
+    "P910": 16384
+  },
+  "cellStorageMiB": 1024,
+  "diskReserveMiB": 5120,
+  "fullMatrixConservativeCellCapGiB": {
+    "Mac": 392,
+    "P910": 448
+  },
+  "publicationAdditionalHeadroom": "Retain enough per-cell and total capacity for exact additional managed upload copies; up to one cell allocation plus ledger/metadata overhead. Raise declared caps on the same immutable execution identity if needed; do not delete or re-encode observations.",
+  "MacReportedFreeGiBApprox": 16,
+  "MacFreeIsNotFreshlyProbed": true,
+  "fullMatrixCapacityConfirmed": false
+}
