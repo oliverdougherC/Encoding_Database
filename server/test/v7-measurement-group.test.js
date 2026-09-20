@@ -132,6 +132,30 @@ test('live complete-group verification is independent of frontier subset, valida
     const replay = await persistence.createOrFetchRun(sealedInput(0, 1458.0055));
     assert.equal(replay.created, true, 'sealed receipt remains valid against its stored round trip');
     await assert.rejects(persistence.createOrFetchRun({ ...sealedInput(0, 1458.0055), payloadHash: hash(`unbound-${suffix}`), repetitionIndex: 3, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 } } }), /must all carry the completed group receipt/);
+    // Regression (observed live on 2026-09-20): a group member measured before an
+    // interruption submits without a receipt while a sealing replay already stored the
+    // completed receipt on a sibling. The sealed receipt counts that member's exact
+    // repetition and elapsed time, so it must admit the late member and materialize the
+    // canonical receipt on it; attempts the receipt does not count stay refused.
+    const g3 = `${suffix}-late-member`;
+    const sealed3 = receipt([1458.0055, 1473.9108999999999], g3, g3);
+    const lateInput = (index, wall, withReceipt) => ({ ...input(index), payloadHash: hash(`late-${index}-${wall}-${suffix}`),
+      physicalSourceId: g3, campaignId: g3, repetitionGroupId: g3, repetitionIndex: index + 1,
+      encodeWallTimeMs: wall, encodeFps: 240000 / wall, realTimeRatio: 10000 / wall,
+      preRunEnvironmentCheck: withReceipt
+        ? { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: sealed3 }
+        : { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 } } });
+    const sealedSibling3 = await persistence.createOrFetchRun(lateInput(1, 1473.9108999999999, true));
+    assert.equal(sealedSibling3.created, true);
+    await assert.rejects(persistence.createOrFetchRun(lateInput(0, 999.5, false)), /must all carry the completed group receipt/,
+      'a receipt-less attempt whose elapsed time the sealed receipt does not count stays refused');
+    const admitted = await persistence.createOrFetchRun(lateInput(0, 1458.0055, false));
+    assert.equal(admitted.created, true, 'the sealed receipt admits the exact attempt it counted');
+    const storedLate = await db.benchmarkRun.findUnique({ where: { id: admitted.bundle.run.id } });
+    assert.equal(storedLate.preRunEnvironmentCheck.measurementGroup.completed, true, 'the canonical sealed receipt is materialized on the admitted row');
+    assert.deepEqual(storedLate.preRunEnvironmentCheck.measurementGroup.countedAttempts.map(a => a.repetitionIndex), [1, 2]);
+    await assert.rejects(persistence.createOrFetchRun({ ...lateInput(0, 1458.0055, false), payloadHash: hash(`late-extra-${suffix}`), repetitionIndex: 3 }),
+      /must all carry the completed group receipt/, 'a repetition outside the sealed receipt stays refused');
     const loaded = await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'TEST ONLY' });
     assert.equal(loaded.length, 2);
     const evidence = { evidenceId: analyses[0].id, qualityAnalysisId: analyses[0].id, benchmarkRunId: runs[0].id, artifactId: artifacts[0].id, artifactSha256: sha, artifactStorageState: 'RETAINED', analysisWorkerVersion: 'authoritative-analysis/test-worker', recipeFingerprint: suffix, environmentFingerprint: suffix, machineSourceId: suffix, workloadId: suffix, contentClass: 'talking-head', hardwareFamily: 'software', encoderFamily: 'h264', encoderImplementation: 'libx264', nativeRateControl: {}, preset: 'unspecified', runStatus: 'ACCEPTED', analysisStatus: 'COMPLETE', vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000, realTimeRatio: 10000 / 24000 };

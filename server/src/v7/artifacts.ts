@@ -5,7 +5,7 @@ import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
 import { loadActiveRecommendationContextIdentity, loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
 import { installedWorkerProvenance } from './workerProvenance.js';
-import { MEASUREMENT_GROUP_STATE_VERSION, CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, receiptWallTimesEqual, receiptsEquivalent, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
+import { MEASUREMENT_GROUP_STATE_VERSION, CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, receiptWallTimesEqual, receiptsEquivalent, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility, type MeasurementGroupReceipt } from './measurementGroup.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -3320,6 +3320,7 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           if ((existing as any).immutablePayloadHash !== contentHash) throw new HttpError(409, 'Idempotency key conflicts with immutable run contents');
           return { run: existing, created: false };
         }
+        let sealedReceipt: MeasurementGroupReceipt | null = null;
         if (input.physicalSourceId && input.campaignId && input.repetitionGroupId) {
           const siblings = await tx.benchmarkRun.findMany({ where: { physicalSourceId: input.physicalSourceId, campaignId: input.campaignId, repetitionGroupId: input.repetitionGroupId }, take: 5 });
           const receipt = parseMeasurementGroupReceipt(receiptFromRun(input), input);
@@ -3327,11 +3328,28 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
             if (sibling.repetitionIndex === input.repetitionIndex) throw new HttpError(409, 'A measurement group repetition already has an immutable run');
             if (['benchmarkProtocolId', 'testClipId', 'workloadId', 'recipeId', 'environmentId'].some(key => (sibling as any)[key] !== (input as any)[key])) throw new HttpError(409, 'Measurement group identity cannot span different experiment contexts');
             const prior = parseMeasurementGroupReceipt(receiptFromRun(sibling));
-            if (!prior !== !receipt) throw new HttpError(409, 'Measurement group members must all carry the completed group receipt');
-            if (prior && receipt) {
+            if (prior && !receipt) {
+              // Observed live: a group member measured before the campaign was interrupted
+              // submits receipt-less, while a sealing replay already stored the completed
+              // receipt on a sibling. Rejecting that member forever strands the group with a
+              // receipt demanding a member it will never accept. The stored sealed receipt is
+              // the group's immutable proof; it admits this exact attempt only when it counted
+              // the very repetition and elapsed time being submitted within one identical
+              // experiment context, and the canonical sealed receipt is then materialized on
+              // the admitted row so later siblings still see homogeneous group evidence.
+              const inputWall = input.encodeWallTimeMs;
+              const counted = inputWall != null && prior.countedAttempts.some(attempt => attempt.repetitionIndex === input.repetitionIndex && receiptWallTimesEqual(attempt.encodeWallTimeMs, inputWall));
+              if (!counted) throw new HttpError(409, 'Measurement group members must all carry the completed group receipt');
+              if (sealedReceipt && !receiptsEquivalent(sealedReceipt, prior)) throw new HttpError(409, 'Measurement group sealed receipts disagree across siblings');
+              sealedReceipt = prior;
+            } else if (!prior && receipt) {
+              throw new HttpError(409, 'Measurement group members must all carry the completed group receipt');
+            } else if (prior && receipt) {
               const inputWall = input.encodeWallTimeMs;
               const counted = inputWall != null && prior.countedAttempts.some(attempt => attempt.repetitionIndex === input.repetitionIndex && receiptWallTimesEqual(attempt.encodeWallTimeMs, inputWall));
               if (!counted || !receiptsEquivalent(prior, receipt)) throw new HttpError(409, 'Measurement group completed receipt is immutable');
+              if (sealedReceipt && !receiptsEquivalent(sealedReceipt, prior)) throw new HttpError(409, 'Measurement group sealed receipts disagree across siblings');
+              sealedReceipt = prior;
             }
           }
         }
@@ -3364,7 +3382,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
             telemetryMissing: input.telemetryMissing as any,
             energyDomains: input.energyDomains as any,
             decodeBenchmark: input.decodeBenchmark as any,
-            preRunEnvironmentCheck: input.preRunEnvironmentCheck as any,
+            preRunEnvironmentCheck: (sealedReceipt
+              ? { ...((input.preRunEnvironmentCheck as Record<string, unknown> | null) ?? {}), measurementGroup: sealedReceipt }
+              : input.preRunEnvironmentCheck) as any,
             ffmpegProgressTelemetry: input.ffmpegProgressTelemetry as any,
             clientQualityDebug: input.clientQualityDebug as any,
             artifacts: {
