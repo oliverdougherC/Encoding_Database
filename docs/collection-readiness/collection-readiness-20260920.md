@@ -100,6 +100,13 @@ defect. All evidence below is in
    legacy `POST /submit` still 400 with schema validation.
 7. **Config restored** to the exact digest-asserted pre-gopfix private compose
    (image `3e6bb08` kept, analysis concurrency 0, pending max 500).
+8. **REJECTED recontribution attempt** (integration demand, live client probe):
+   the real packaged Mac client replayed the sealed REJECTED submissions
+   through loopback TLS; the server idempotently fetched the old run, 409'd
+   out-of-order repetitions, and refused mismatched bytes — final states
+   byte-identical (117 runs; 61/47/9). Re-scoring those bytes would require an
+   operator requeue that mutates sealed evidence; deferred to integration.
+   Details and the sha-lead code audit: `rejected-recontribution-probe.json`.
 
 ## Honest observations (retained, not repaired, not hidden)
 

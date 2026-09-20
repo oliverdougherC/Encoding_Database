@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-20T11:52:00Z",
+  "purpose": "Integration revision asked that post-fix re-contribution of the 9 REJECTED artifact rows be attempted and reconciled. This probe drives the real packaged Mac client (SHA 443e293e82f0…, --upload-only --resume-campaign --submit) over loopback TLS (13098 -> candidate 3094) against a THROWAWAY queue copy seeded with the two sealed Mac submission payloads whose artifacts are REJECTED (submission-000008 f803df85, submission-000010 cfe056ef). Sealed originals untouched (copy).",
+  "observations": {
+    "serverDecisions": {
+      "runCreateExistingPayload": "idempotent fetch: client printed 'Authoritative benchmark run recorded as cmu9hnyrr0046o3dwc9f4x2x8' — a row created 2026-09-20T07:22:27Z (verified by DB query after the probe)",
+      "runCreateOutOfOrder": "13 × HTTP 409 'run create rejected' — group repetition/receipt immutability (artifacts.ts:3287-3291)",
+      "artifactStatesAfter": "VERIFIED 61 / RETAINED 47 / REJECTED 9 — byte-identical to the pre-probe membership; BenchmarkRun count still 117, newest createdAt still 10:58:55.935. Zero mutation."
+    },
+    "contractConclusion": "REJECTED rows are unrecoverable through every client-reachable path without violating declared invariants: same-payload create re-fetches the old run; other repetitions 409 on receipt immutability; re-uploading sealed bytes to the REJECTED artifact returns 'artifact-already-bound' without re-validation (artifacts.ts:1836-1844); uploading different bytes 409s on immutable artifact metadata (artifacts.ts:1846-1848). Only an operator state mutation (requeue) or a brand-new measurement group could rescore these bytes; that is an integration/Oliver decision, not something this lane performs.",
+    "shaLeadAudit": "Root's sha-keying lead is code-disproved: artifact sha participates in run-create only via the run's own payloadHash idempotency; sha-keyed server paths are authorizeUpload's already-bound short-circuit (1836) and storage.linkExistingObject dedup-reuse (1851-1873, marked reusedExistingObject). Neither throws 409; all 18 sealed 409 receipts are group/receipt rules or the idempotency-content conflict.",
+    "clientHonestNote": "--upload-only did NOT prevent encoding: with a throwaway queue lacking local artifacts/ledgers, --resume-campaign planned the full 35-encode suite and re-encoded 14 tasks on the Mac in ~2m07s before 409/fetch outcomes discarded them. The flag's name overpromises for the resume path; logged as a real client UX/contract wart for integration (fixing it would force a full client rebuild+retest, outside the demonstrated-defect scope here). Zero server effect."
+  },
+  "sealedEvidenceIntegrity": "Sealed Mac ledgers re-assert byte-identical before/after by construction (probe used a copy under /Users/ofhd/tmp, deleted afterwards)."
+}
