@@ -210,3 +210,18 @@ The deployed path in env bindings must be updated for the container mount.
 reference construction, persistence and review eligibility as well as fixed
 weights/constraints. Changes require a new reviewed context; old context identity
 and old-protocol timing are never silently relabeled.
+
+## Rollback
+
+Rollback is an image-tag revert, the mechanism proven on the isolated
+candidate (each rollout kept the compose file backed up and reverted by
+retagging with identical volumes; nothing else was touched). Before any
+production rollout, record the running server image tag and digest, the
+compose file hash, container names and volume identities. To roll back:
+restore the backed-up compose file, run
+`docker compose -p encodingdb up -d --no-build --pull never` with the prior
+image tag pinned, then re-check health, the protocol endpoint and worker
+state. Migrations are forward-only and additive; the prior release runs
+against the newer schema, so never drop or rewrite tables during a revert.
+Volumes are never substituted or deleted; restored data goes through the
+section 4 isolated rehearsal first, with originals retained.
