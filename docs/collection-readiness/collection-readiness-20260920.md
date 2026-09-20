@@ -51,16 +51,67 @@ verdict belongs to Oliver's quality review and root integration.
    database (14-table counts and payload-hash set matched, scratch dropped) and
    scratch directory (all 27 restored files sha256-matched the live volume);
    teardown restored the exact private pre-test compose (analysis concurrency 0)
-   with digest assertion and stopped the fault proxy.
+  with digest assertion and stopped the fault proxy.
+
+## Post-checkpoint repair and re-verification (same day)
+
+After this checkpoint sealed, the Windows upload attempt exposed a real server
+defect. All evidence below is in
+`docs/operations/evidence/native-linux-b3ef24a/gopfix-results.json`
+(phases: rollout, drain, verify, membership, restore).
+
+1. **Defect and fix** (`3e6bb0846ec3f1b396c9c8de513a5e6b6a2ed3c8`, server):
+   `validateProbeAgainstRun` bounded the maximum keyframe interval with
+   `recipe.keyframeInterval ?? gopSize`, but for software recipes that column
+   holds the *observed minimum* scene-cut gap — so ordinary scene-cut output
+   was rejected at artifact upload (the 400s behind the Mac/Linux/Windows
+   REJECTED artifacts). Injected-fault terminal entries and protocol rejections
+   were separately audited as correct-by-design.
+2. **Rollout**: fixed source built to `encodingdb-candidate-server:3e6bb08`
+   (digest-verified private compose swap; protocol still 7.1, suite
+   fingerprint unchanged). Candidate source is now `3e6bb08`, a b3ef24a-derived
+   tree; the original `b3ef24a…730de3c` package/binary identities above are
+   unchanged.
+3. **Drain**: every UPLOADED artifact left from the defect era completed
+   analysis afterwards — final states VERIFIED 61 / RETAINED 47 / REJECTED 9
+   (tombstones retained), zero open.
+4. **Fresh ordinary-path verification** (pre-declared seeds, packaged Linux
+   binary, embedded-runtime receipts asserted against `ffmpeg-lock.json`): two
+   full campaigns, 30 fresh artifacts, all VERIFIED/RETAINED with analyses
+   COMPLETE/SUSPECT — real keyframe lists (e.g. animation `[0, 38, 152]`,
+   athletic `[0, 39, 88, 117, 148, 178, 227]`) now accepted at upload; zero
+   REJECTED among new contributions. Seven clips contributed (the campaign
+   planner ignores `--v7-suite-clip` for attempt counting; both campaigns ran
+   full 15-attempt plans).
+5. **Exact recorded-or-terminal membership, post-rollout**: 117 DB runs, 108
+   payload-proven identities (Linux software/nvenc + verify queues + Mac
+   sealed payloads), 42 terminal receipts (12 Linux, 15 Mac 409-group-rejects
+   newly sealed from the Mac queues, 7+7 Windows), sha/size/frame-coverage
+   match on every payload-proven run, every stored object size+sha256-verified
+   on disk, zero ghosts, zero unaccounted, zero open artifacts, zero
+   `DerivedResult` rows. **Exception (honest gap):** the 35 Windows r3 rows are
+   receipt-attested (r3 receipt: exit 0, dueUploadsAfter 0, byte-identical
+   campaign dirs, per-campaign row counts 9/14/14, timestamps inside the r3
+   window) but not payload-proven — the submission files live on the Windows
+   host; `operations-windows-submissions-request.json` specifies the copy-only
+   export that closes this mechanically.
+6. **Old-protocol rejection re-probed against the fixed build**
+   (`old-protocol-receipt.json`): protocol 7.1 / `client/0.3.0` required,
+   legacy `POST /submit` still 400 with schema validation.
+7. **Config restored** to the exact digest-asserted pre-gopfix private compose
+   (image `3e6bb08` kept, analysis concurrency 0, pending max 500).
 
 ## Honest observations (retained, not repaired, not hidden)
 
-- Analysis tiers across the candidate: COMPLETE 19 / SUSPECT 24 — SUSPECT is the
-  server's own environment-telemetry verdict; Oliver decides usability.
-- Terminal artifacts: REJECTED 7; RETAINED 18 keeps bytes for audit. Two Mac
-  software attempts recorded a run then got `artifact upload rejected (400)`
-  (sha/size-vs-authorization check); the exact bytes are retained in each
-  queue's `dead-letter/artifacts/` and the rows remain honestly incomplete.
+- Analysis tiers across the candidate (post-rollout): COMPLETE 48 / SUSPECT 60
+  — SUSPECT is the server's own environment-telemetry verdict; Oliver decides
+  usability.
+- Terminal artifacts: REJECTED 9 (defect-era tombstones, retained honestly);
+  RETAINED 47 keeps bytes for audit. The two Mac software attempts that
+  recorded a run then hit `artifact upload rejected (400)` were downstream of
+  the keyframe-interval defect fixed in `3e6bb08`; their bytes remain in each
+  queue's `dead-letter/artifacts/` and the rows stay honestly incomplete —
+  no re-encode was performed for them.
 - First Mac driver invocation used `--resume-campaign --submit` without
   `--upload-only` (fell into the campaign-resume publication path). It uploaded
   the same ledger bytes with the same packaged binary — ledgers verified
@@ -75,24 +126,24 @@ verdict belongs to Oliver's quality review and root integration.
 
 ## Remaining blockers (external, concrete)
 
-1. **Windows lane completion**: `windows-ready.json` not yet written
-   (resume2 campaign still running). `windows-upload-ready.json` was written —
-   endpoint, CA/tunnel, pass-through mode, serial finite allocation, expected
-   terminal-receipt semantics — so Windows publication can proceed the moment
-   its campaigns seal.
+1. **Windows submission export** (payload-level proof for the 35 Windows r3
+   rows): copy-only export specified in
+   `operations-windows-submissions-request.json`; membership re-runs in
+   seconds once `windows-submissions-ready.json` lands. Rows are
+   receipt-attested meanwhile.
 2. **Oliver's review**: Mac 6 GPU-suspect groups, 2 unstable software groups,
    Linux unstable groups, and the SUSPECT analysis tier — none may be silently
    promoted to scored collection.
-3. **Root integration**: candidate commits (operator harness + evidence) are
-   local, unpushed; CI avoidance respected.
+3. **Root integration**: candidate commits (operator harness + evidence +
+   server fix `3e6bb08`) are local, unpushed; CI avoidance respected. The
+   deployed candidate now runs the fixed server image `3e6bb08`; decide at
+   integration whether the release cuts from it or rebases the fix.
 
 ## Actions reserved for explicit approval
 
-- Publish candidate release artifacts (exact hashes above) and switch the public
-  collection endpoint from the 1.2.0 assets to the 7.1 client.
-- Production migration: apply candidate migrations forward on `b0f0bc7` data,
-  enable analysis workers, flip ACTIVE protocol 7.1 atomically with client
-  re-signup guidance.
+- Publish candidate release artifacts (exact hashes above, plus the
+  `3e6bb08` server build/image) and switch the public collection endpoint from
+  the 1.2.0 assets to the 7.1 client.
 - Rollback: restore legacy dump
   `20260913-release-1.2.0/legacy-final/database.dump`, redeploy
   `b0f0bc7` images (verified baseline), revert protocol ACTIVE row; retained
