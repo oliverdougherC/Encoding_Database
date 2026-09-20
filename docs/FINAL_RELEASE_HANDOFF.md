@@ -48,8 +48,9 @@ no accepted corrected-protocol production epoch in this snapshot.
   `65a07d8` package also executed both seven-clip software and VideoToolbox campaigns.
   Those observations predate corrected CPU sampler provenance and remain exploratory,
   ineligible for final calibration. Final-source rebuild and contribution/recovery
-  acceptance are still required. The helpers declare macOS 26.5 minimum; execution
-  was on macOS 27.0 build26A428, not a verified minimum-version host. Signing is
+  acceptance are still required. The full helper/library scan declares macOS 27.0
+  minimum (correcting the earlier incomplete 26.5 claim); execution was on macOS
+  27.0 build26A428. Older macOS support is not established. Signing is
   ad hoc, with no Developer ID signature/notarization. The bounded nonprivileged
   [AGX collector](operations/agx-system-gpu.md) observes system GPU load, not media-engine occupancy.
 - **Linux/Windows:** [P910 native evidence](operations/evidence/p910-native-84/)

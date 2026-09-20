@@ -135,7 +135,7 @@ These historical builds do not implement the corrected campaign interface below
 and cannot establish the protocol 7.1 epoch. Their unsigned/notarization and
 translated-helper limits remain in the published release notes.
 
-The candidate Mac runtime is native arm64, requires macOS **26.5 or newer** from
+The candidate Mac runtime is native arm64, requires macOS **27.0 or newer** from
 its library load commands, and is ad-hoc signed, not Developer ID signed or
 notarized. Local package/model smoke is not seven-clip certification. Final native
 CI and runtime acceptance remain pending on Windows and Linux; Intel macOS is not

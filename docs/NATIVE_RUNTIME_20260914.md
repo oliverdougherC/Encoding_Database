@@ -5,9 +5,12 @@ The original 1.2.0 macOS helper is Intel-only and has no SVT-AV1. It remains
 historical evidence; it is not relabeled as the new runtime.
 
 On the available Mac, FFmpeg 9.0 is arm64 and exposes libx264, libx265,
-libsvtav1 and VideoToolbox. FFmpeg's executable header requires macOS 26.0;
-the rebuilt VMAF library requires macOS 26.5, so the complete bundle requires
-at least macOS 26.5 according to its load commands.
+libsvtav1 and VideoToolbox. The complete bundle requires **macOS 27.0** according
+to its load commands. The September 19 full-library scan corrected the earlier
+26.5 claim: FFmpeg requires 26.0 and the rebuilt VMAF library requires 26.5,
+but `libpcre2-8.0.dylib` and `libharfbuzz.0.dylib` both declare `minos 27.0`.
+The exact `939823e` package manifest records the complete runtime floor; its
+embedded-only smoke passed on macOS 27.0 build 26A428.
 This is a restricted native candidate, not proof of compatibility with older
 macOS, Intel macOS, Windows or Linux. The bundle contains 102 executable/library
 files, approximately 93 MB. Every relocated library is ad-hoc signed. This is
@@ -19,8 +22,9 @@ CI uses the reviewed 36 MiB archive at
 Keeping this candidate input alongside its lock avoids a dependency on an
 unpublished release asset or broader CI credentials. The archive contains the
 dependency hash manifest, installed package notices and pinned Homebrew formula
-provenance. The macOS 26 arm64 CI image supports the declared 26.5 floor; actual
-native CI results remain required. The old Intel runtime release asset is retained.
+provenance. The macOS 26 CI job is an additional compatibility probe, not proof of
+support below the bundle's declared 27.0 floor. Actual native CI results remain
+required. The old Intel runtime release asset is retained.
 
 The first native model test failed: the installed Homebrew libvmaf exposed the
 filter but lacked the frozen model's Speed_chroma extractor. The replacement
