@@ -124,6 +124,7 @@ export interface StoredRecipe {
   level: string | null;
   gopSize: number | null;
   keyframeInterval: number | null;
+  requestedGopFrames?: number | null;
   bFrames: number | null;
   frameReordering: boolean | null;
 }
@@ -995,6 +996,12 @@ function asJsonObject(value: unknown): JsonObject | null {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as JsonObject : null;
 }
 
+function requestedGopFramesFrom(raw: unknown): number | null {
+  const settings = asJsonObject(raw);
+  const value = Number(settings?.gopFrames);
+  return Number.isInteger(value) && value > 0 ? value : null;
+}
+
 function nowIso(): string {
   return new Date().toISOString();
 }
@@ -1170,11 +1177,15 @@ export function validateProbeAgainstRun(bundle: RunArtifactBundle, probePayload:
   const keyframeIndexes = frames
     .map((frame, index) => Number(frame.key_frame ?? 0) === 1 ? index : null)
     .filter((index): index is number => index != null);
-  const expectedKeyframeInterval = bundle.run.recipe.keyframeInterval ?? bundle.run.recipe.gopSize;
+  // The suite-specified GOP (requested recipe) is the only max-interval bound.
+  // gopSize/keyframeInterval columns carry OBSERVED effective keyframe
+  // intervals (max/min scene-cut gaps); keyframeInterval is a minimum and must
+  // never cap intervals — that rejected valid scene-cut software output.
+  const expectedKeyframeInterval = bundle.run.recipe.requestedGopFrames ?? null;
   if (expectedKeyframeInterval != null && keyframeIndexes.length > 1) {
     const intervals = keyframeIndexes.slice(1).map((index, offset) => index - keyframeIndexes[offset]!);
     if (intervals.some((interval) => interval > expectedKeyframeInterval)) {
-      throw new Error(`Encoded keyframe interval exceeds recipe maximum ${expectedKeyframeInterval}`);
+      throw new Error(`Encoded keyframe interval exceeds recipe GOP ${expectedKeyframeInterval}`);
     }
   }
 
@@ -1407,7 +1418,7 @@ export class FfmpegArtifactAnalyzer implements ArtifactAnalyzer {
     const ffmpegVersion = await readFfmpegVersion();
     const validation = validateProbeAgainstRun(input.bundle, probePayload);
     const referencePath = await ensureCanonicalReferencePath(input.bundle.run.testClip);
-    validateProbeAgainstRun({ ...input.bundle, run: { ...input.bundle.run, recipe: { ...input.bundle.run.recipe, pixelFormat: input.bundle.run.testClip.pixelFormat, bitDepth: input.bundle.run.testClip.bitDepth, chromaSubsampling: input.bundle.run.testClip.chromaSubsampling, containerFormat: null, codecFamily: 'ffv1', profile: null, level: null, videoCodecTag: null, bFrames: null, frameReordering: null, keyframeInterval: null, gopSize: null } } }, await probeMedia(referencePath));
+    validateProbeAgainstRun({ ...input.bundle, run: { ...input.bundle.run, recipe: { ...input.bundle.run.recipe, pixelFormat: input.bundle.run.testClip.pixelFormat, bitDepth: input.bundle.run.testClip.bitDepth, chromaSubsampling: input.bundle.run.testClip.chromaSubsampling, containerFormat: null, codecFamily: 'ffv1', profile: null, level: null, videoCodecTag: null, bFrames: null, frameReordering: null, keyframeInterval: null, gopSize: null, requestedGopFrames: null } } }, await probeMedia(referencePath));
     const referenceStats = await stat(referencePath);
     if (!referenceStats.isFile()) {
       throw new Error(`Canonical reference path ${referencePath} is not a file`);
@@ -2716,6 +2727,7 @@ function normalizeBundle(rawRun: any, role: ArtifactRoleValue): RunArtifactBundl
         level: rawRun.recipe.level,
         gopSize: rawRun.recipe.gopSize,
         keyframeInterval: rawRun.recipe.keyframeInterval,
+        requestedGopFrames: requestedGopFramesFrom(rawRun.recipe.requestedOutputSettings),
         bFrames: rawRun.recipe.bFrames,
         frameReordering: rawRun.recipe.frameReordering,
       },

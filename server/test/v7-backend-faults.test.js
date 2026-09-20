@@ -85,6 +85,24 @@ test('real media rejects truncated/extra/wrong cadence/timestamp sequences befor
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test('max keyframe interval is capped only by the suite-specified GOP, never by observed recipe intervals', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'gop-contract-'));
+  try {
+    const file = path.join(root, 'forced.mp4');
+    await runNativeProcess('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=64x64:rate=24', '-frames:v', '24', '-c:v', 'libx264', '-x264-params', 'scenecut=0', '-g', '16', '-pix_fmt', 'yuv420p', file]);
+    const probe = await probeMedia(file);
+    const base = mediaBundle();
+    const withRecipe = (extra) => ({ ...base, run: { ...base.run, recipe: { ...base.run.recipe, ...extra } } });
+    // Observed effective intervals (min=8 keyframeInterval, max=16 gopSize) describe the
+    // reference encode; they are not an upper bound. The pre-fix server capped the max
+    // interval at the observed MINIMUM and rejected valid scene-cut software output.
+    assert.equal(validateProbeAgainstRun(withRecipe({ gopSize: 16, keyframeInterval: 8 }), probe).durationSeconds, 1);
+    // Only the suite-requested GOP bounds the upload.
+    assert.throws(() => validateProbeAgainstRun(withRecipe({ gopSize: 16, keyframeInterval: 8, requestedGopFrames: 12 }), probe), /exceeds recipe GOP 12/);
+    assert.equal(validateProbeAgainstRun(withRecipe({ requestedGopFrames: 16 }), probe).durationSeconds, 1);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test('VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams', () => {
   const options = { source: { width: 64, height: 64, frameRate: 24, expectedFrameCount: 2 }, metricModelPath: 'test-model.json', analysisWorkerVersion: DEFAULT_ANALYZER_VERSION };
   assert.throws(() => buildAuthoritativeQualityAnalysisRecord({ ...options, vmafReport: { frames: [{ frameNum: 0, metrics: { vmaf: 95 } }] } }), /coverage/);
