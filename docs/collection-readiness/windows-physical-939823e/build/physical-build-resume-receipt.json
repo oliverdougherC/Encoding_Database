@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "status": "BUILT_PENDING_INDEPENDENT_PINS_AND_ACCEPTANCE",
+  "kind": "physical-built-candidate-distinct-from-CI",
+  "actualSource": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "trackedStatusBefore": "",
+  "sourceTree": "532898f45d3e71fd0138d4911889dd7ff1a2ccdc",
+  "startedAt": "2026-09-20T02:23:36.702016+00:00",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "-m",
+        "PyInstaller",
+        "--clean",
+        "--onefile",
+        "--name",
+        "encodingdb-client-windows",
+        "--distpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\dist",
+        "--workpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\work\\encodingdb-client-windows",
+        "--specpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\spec\\encodingdb-client-windows",
+        "--paths",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\presets.json;.",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\suite_resources\\test_suite_v1;resources/test_suite_v1",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\runtime_resources;resources/runtime",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\resources\\vmaf;resources/vmaf",
+        "--windowed",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\_pyinstaller_gui_entry.py"
+      ],
+      "startedAt": "2026-09-20T02:23:36.703530+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:24:23.156520+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "-m",
+        "PyInstaller",
+        "--clean",
+        "--onefile",
+        "--name",
+        "encodingdb-client-windows-console",
+        "--distpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\dist",
+        "--workpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\work\\encodingdb-client-windows-console",
+        "--specpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\spec\\encodingdb-client-windows-console",
+        "--paths",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\presets.json;.",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\suite_resources\\test_suite_v1;resources/test_suite_v1",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\runtime_resources;resources/runtime",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\resources\\vmaf;resources/vmaf",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\_pyinstaller_entry.py"
+      ],
+      "startedAt": "2026-09-20T02:24:23.157519+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:24:58.015973+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\scripts\\release_manifest_lib.py",
+        "--artifact-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\encodingdb-client-windows.exe",
+        "--platform",
+        "win",
+        "--ffmpeg-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+        "--ffprobe-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe",
+        "--runtime-lock-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\resources\\runtime\\ffmpeg-lock.json",
+        "--suite-pack-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\encodingdb-test-suite-v1.tar.gz",
+        "--output-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e",
+        "--skip-smoke"
+      ],
+      "startedAt": "2026-09-20T02:24:58.016974+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:25:03.695745+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\scripts\\release_manifest_lib.py",
+        "--artifact-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\encodingdb-client-windows-console.exe",
+        "--platform",
+        "win",
+        "--ffmpeg-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+        "--ffprobe-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe",
+        "--runtime-lock-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\client\\resources\\runtime\\ffmpeg-lock.json",
+        "--suite-pack-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\encodingdb-test-suite-v1.tar.gz",
+        "--output-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e"
+      ],
+      "startedAt": "2026-09-20T02:25:03.696246+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:26:53.054229+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "-m",
+        "pip",
+        "freeze",
+        "--all"
+      ],
+      "startedAt": "2026-09-20T02:26:53.055232+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:26:53.399170+00:00"
+    }
+  ],
+  "buildDeviation": "Unmodified source build script stopped because Windows PowerShell 5.1 treated normal PyInstaller stderr INFO as terminating. This operator executes its exact PyInstaller and finalizer arguments via subprocess, leaving tracked source untouched.",
+  "trackedStatusAfter": "",
+  "artifacts": [
+    {
+      "name": "encodingdb-client-windows-console.exe",
+      "bytes": 180169707,
+      "sha256": "66538edcf81cd04216bac51e7bf9051e8b862cde5629e6ad56cfeb146e0aa0fc"
+    },
+    {
+      "name": "encodingdb-client-windows-console.exe.release-manifest.json",
+      "bytes": 4463,
+      "sha256": "4f179d8281705a134948075779f3264ca4e6b954c857241f6fe6252ed05e695e"
+    },
+    {
+      "name": "encodingdb-client-windows-console.exe.runtime-lock.json",
+      "bytes": 1834,
+      "sha256": "fb49e7f4e34f984fd95e61025d854dbde888d25c573d9effb2982c78a33db586"
+    },
+    {
+      "name": "encodingdb-client-windows-console.exe.SHA256SUMS",
+      "bytes": 688,
+      "sha256": "df079469f9985d007896265e3673f8371a31530ae0baa97084abdb5bc3f48b8d"
+    },
+    {
+      "name": "encodingdb-client-windows-console.exe.signing.json",
+      "bytes": 141,
+      "sha256": "0966aa4a88336e8f9cb479f93a988c59782368afee762fa19d62b51e379ce5d6"
+    },
+    {
+      "name": "encodingdb-client-windows-console.exe.smoke.json",
+      "bytes": 3570,
+      "sha256": "2634b252a39944f33c1ce77304ba8aae8075de9f4a7dd82f9be6fc94ba8f1f06"
+    },
+    {
+      "name": "encodingdb-client-windows.exe",
+      "bytes": 180168021,
+      "sha256": "0a955f1ea649833f443e482e02b369a4be427738c4a694842ae1d8288383f446"
+    },
+    {
+      "name": "encodingdb-client-windows.exe.release-manifest.json",
+      "bytes": 4455,
+      "sha256": "e3d46547c7d3b1fbab1d78c914c36e9917cb642022d263060b50f68525efbf6e"
+    },
+    {
+      "name": "encodingdb-client-windows.exe.runtime-lock.json",
+      "bytes": 1834,
+      "sha256": "fb49e7f4e34f984fd95e61025d854dbde888d25c573d9effb2982c78a33db586"
+    },
+    {
+      "name": "encodingdb-client-windows.exe.SHA256SUMS",
+      "bytes": 648,
+      "sha256": "2218de1d44e2bb8a460f448eca48845cef25dcd133ed887647396ee03b4d4631"
+    },
+    {
+      "name": "encodingdb-client-windows.exe.signing.json",
+      "bytes": 141,
+      "sha256": "0966aa4a88336e8f9cb479f93a988c59782368afee762fa19d62b51e379ce5d6"
+    },
+    {
+      "name": "encodingdb-client-windows.exe.smoke.json",
+      "bytes": 154,
+      "sha256": "3f9e0fa3e9e3989368b3a53e9dd3fdabd2eb13f5d65d9cae12d009f9e7dc3e9f"
+    }
+  ],
+  "finishedAt": "2026-09-20T02:26:53.640036+00:00"
+}

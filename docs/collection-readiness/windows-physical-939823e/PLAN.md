@@ -31,3 +31,16 @@ Remaining verification: exact CI binary availability, all native phases, physica
 A bounded identity-only probe passed at `2026-09-20T02:01:01Z`. The temporary task `EncodingDB-Interactive-Probe-20260920T020058Z-1e777430` used the existing `DESKTOP-4ELVRAT\ofhd` interactive token with **Limited** run level. Its own process reported session **1**, equal to the active console session, `userInteractive=true`, and `administratorRole=false`; task result was **0**. The exact owned task was removed, and its absence was verified. Creation, result and cleanup are recorded in `interactive-session-receipt.json`, with the original process result in `interactive-session-result.json`.
 
 This establishes a non-elevated path for later GUI acceptance. It does not certify the GUI. The probe captured no screenshots, enumerated no windows, interacted with no user application, ran no benchmark, installed nothing, changed no global policy and contacted no P910 service. The reusable bounded probe is `scripts/windows-interactive-session-probe.ps1`; its script-file transport avoids the Windows command-line length limit encountered by the initial encoded-command invocation before any probe was created.
+
+## Separate physical native candidate
+
+Hosted CI lost runner communication and published no Windows binary. The separately labeled physical candidate was built from exact clean source `939823ead2c052572f9deb5c9f91c85435d5661d`, tree `532898f45d3e71fd0138d4911889dd7ff1a2ccdc`, using existing Python **3.12.10** and only project-declared dependencies in local venvs. It is not the unavailable CI binary.
+
+The unmodified reviewed PowerShell build stopped when Windows PowerShell 5.1 converted PyInstaller's first normal stderr INFO message into a terminating error. No child remained, and tracked source stayed clean. The retained PS5 receipt records that preparation failure. A separate Python operator then executed the reviewed script's exact PyInstaller/finalizer arguments with direct subprocess stream redirection, preserved all resources/windowed flags, recorded command exits, and held the physical allocation lock. No source edit, new dependency or global install was needed.
+
+Both binaries are native PE x86_64 and unsigned. Independent rehashing and reviewed source/tree/model/pack checks produced `build/physical-candidate-pins.json`:
+
+- Console SHA-256: `66538edcf81cd04216bac51e7bf9051e8b862cde5629e6ad56cfeb146e0aa0fc`.
+- GUI SHA-256: `0a955f1ea649833f443e482e02b369a4be427738c4a694842ae1d8288383f446`.
+
+The console's actual embedded-only help and no-submit smoke exited 0, with no forced cleanup or surviving owned child. No-submit smoke took 104.469 seconds, including 86.485 seconds preparation. The `_MEI` receipt verifies the reviewed embedded helper hashes. The GUI sidecar explicitly marks smoke as not run; interactive GUI acceptance remains pending. Detailed build, model/runtime/suite identities and smoke receipts are in `build/`. The three authorized seven-clip acceptance campaigns follow independently; no fitting-data or release-readiness claim follows from the build smoke.

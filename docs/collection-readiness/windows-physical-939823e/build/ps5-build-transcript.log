@@ -1,0 +1,51 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20260919191723
+Username: DESKTOP-4ELVRAT\ofhd
+RunAs User: DESKTOP-4ELVRAT\ofhd
+Configuration Name: 
+Machine: DESKTOP-4ELVRAT (Microsoft Windows NT 10.0.26200.0)
+Host Application: powershell -NoProfile -File C:\Users\ofhd\EncodingDB-validation-20260919-939823e\windows-physical-build.ps1 -Root C:\Users\ofhd\EncodingDB-validation-20260919-939823e
+Process ID: 21408
+PSVersion: 5.1.26100.9444
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.9444
+BuildVersion: 10.0.26100.9444
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is C:\Users\ofhd\EncodingDB-validation-20260919-939823e\physical-build-transcript.log
+PHYSICAL_BUILD_STEP=fetch-exact-public-source
+
+
+
+
+
+PHYSICAL_BUILD_STEP=provision-reviewed-runtime
+
+PHYSICAL_BUILD_STEP=isolated-declared-bootstrap-dependencies
+
+
+PHYSICAL_BUILD_STEP=materialize-frozen-canonical-suite
+
+PHYSICAL_BUILD_STEP=execute-pinned-model
+
+PHYSICAL_BUILD_STEP=unmodified-native-build-and-embedded-smoke
+[Windows] Preparing build directories...
+[Windows] Using Python command: python.exe
+
+
+
+
+
+[Windows] Running PyInstaller for encodingdb-client-windows...
+PS>TerminatingError(python.exe): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: 130 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7"
+PS>TerminatingError(python.exe): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: 130 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7"
+>> TerminatingError(python.exe): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: 130 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7"
+PHYSICAL_BUILD_ERROR=130 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7
+**********************
+Windows PowerShell transcript end
+End time: 20260919192046
+**********************

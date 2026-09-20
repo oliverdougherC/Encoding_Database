@@ -1,0 +1,43 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "FAILED",
+    "kind":  "physical-built-candidate-distinct-from-CI",
+    "requestedSource":  "939823ead2c052572f9deb5c9f91c85435d5661d",
+    "startedAt":  "2026-09-20T02:17:23.6665556Z",
+    "step":  "unmodified-native-build-and-embedded-smoke",
+    "events":  [
+                   {
+                       "at":  "2026-09-20T02:17:23.7001053Z",
+                       "step":  "fetch-exact-public-source"
+                   },
+                   {
+                       "at":  "2026-09-20T02:17:25.8523011Z",
+                       "step":  "provision-reviewed-runtime"
+                   },
+                   {
+                       "at":  "2026-09-20T02:17:33.7082440Z",
+                       "step":  "isolated-declared-bootstrap-dependencies"
+                   },
+                   {
+                       "at":  "2026-09-20T02:17:40.3852145Z",
+                       "step":  "materialize-frozen-canonical-suite"
+                   },
+                   {
+                       "at":  "2026-09-20T02:19:11.0350347Z",
+                       "step":  "execute-pinned-model"
+                   },
+                   {
+                       "at":  "2026-09-20T02:19:24.5193756Z",
+                       "step":  "unmodified-native-build-and-embedded-smoke"
+                   }
+               ],
+    "error":  "130 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7",
+    "actualSource":  "939823ead2c052572f9deb5c9f91c85435d5661d",
+    "sourceTree":  "532898f45d3e71fd0138d4911889dd7ff1a2ccdc",
+    "runtimeArchive":  {
+                           "url":  "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1.zip",
+                           "sha256":  "4e40699fa864811312d6c1895ea4873beaf8475e1188563fee57fac860554601",
+                           "bytes":  191851425
+                       },
+    "finishedAt":  "2026-09-20T02:20:46.1455529Z"
+}
