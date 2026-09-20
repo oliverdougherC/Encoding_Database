@@ -99,12 +99,19 @@ if (mode === 'reset-arrivals') {
   await client.$transaction(async tx => {
     const current = await tx.benchmarkRun.findMany({ where: { id: { in: runIds } }, include: { artifacts: true, qualityAnalyses: true } });
     assert.equal(current.length, 20);
+    const assertField = async (actual, expected, label) => {
+      // Compare through the same PostgreSQL/Prisma float serialization used on reads.
+      // No numeric tolerance: the serialized database values must be identical.
+      const normalized = typeof expected === 'number' && !Number.isInteger(expected)
+        ? (await tx.$queryRaw(Prisma.sql`SELECT ${expected}::double precision AS value`))[0].value : expected;
+      assert.deepEqual(actual, normalized, label);
+    };
     for (const row of expected) {
       const actual = current.find(run => run.id === row.id);
-      for (const [key, value] of Object.entries(row)) if (key !== 'artifact' && key !== 'analysis') assert.deepEqual(actual[key], value, `${row.id}.${key}`);
+      for (const [key, value] of Object.entries(row)) if (key !== 'artifact' && key !== 'analysis') await assertField(actual[key], value, `${row.id}.${key}`);
       assert.equal(actual.artifacts.length, 1); assert.equal(actual.qualityAnalyses.length, 1);
-      for (const [key, value] of Object.entries(row.artifact)) assert.deepEqual(actual.artifacts[0][key], value, `artifact.${key}`);
-      for (const [key, value] of Object.entries(row.analysis)) assert.deepEqual(actual.qualityAnalyses[0][key], value, `analysis.${key}`);
+      for (const [key, value] of Object.entries(row.artifact)) await assertField(actual.artifacts[0][key], value, `artifact.${key}`);
+      for (const [key, value] of Object.entries(row.analysis)) await assertField(actual.qualityAnalyses[0][key], value, `analysis.${key}`);
     }
     assert.equal((await tx.derivedResultMember.deleteMany({ where: { benchmarkRunId: { in: runIds } } })).count, 20);
     assert.equal((await tx.qualityAnalysis.deleteMany({ where: { benchmarkRunId: { in: runIds } } })).count, 20);
