@@ -8,7 +8,6 @@ import os
 from pathlib import Path
 import re
 import subprocess
-import sys
 import time
 from datetime import datetime, timezone
 
@@ -127,7 +126,10 @@ def main():
     parser.add_argument('--root', type=Path, required=True)
     parser.add_argument('--recipe', choices=RECIPES, required=True)
     parser.add_argument('--execute', action='store_true')
+    parser.add_argument('--phase-label', default='', help='Create a distinct candidate phase while reusing physical host-state')
     args = parser.parse_args()
+    if args.phase_label and not re.fullmatch(r'[a-z0-9][a-z0-9-]{0,39}', args.phase_label):
+        parser.error('Phase label must be 1–40 lowercase ASCII letters, digits or hyphens')
     if os.name != 'nt':
         parser.error('Only actual Windows is supported')
     payload = args.payload.resolve(strict=True)
@@ -135,13 +137,13 @@ def main():
     command = ['--cli', '--campaign', 'full', '--no-submit', '--base-url', 'http://127.0.0.1:9',
                '--max-duration-minutes', '20', '--max-storage-mb', '4096', '--max-attempts', '100'] + RECIPES[args.recipe]
     if not args.execute:
-        print(json.dumps({'mode': 'plan-only', 'recipe': args.recipe, 'arguments': command, 'scope': 'physical acceptance; not calibration fitting data'}))
+        print(json.dumps({'mode': 'plan-only', 'recipe': args.recipe, 'phaseLabel': args.phase_label, 'arguments': command, 'scope': 'physical acceptance; not calibration fitting data'}))
         return
-    exe, manifest = verify_payload(payload, pins)
     root = args.root.resolve()
     state = root / 'host-state'
     with host_lock(state):
-        phase = root / ('acceptance-' + args.recipe + '-é')
+        exe, manifest = verify_payload(payload, pins)
+        phase = root / ('acceptance-' + args.recipe + ('-' + args.phase_label if args.phase_label else '') + '-é')
         phase.mkdir(parents=True, exist_ok=False)
         queue = phase / 'queue-客户'
         (phase / 'tmp').mkdir()

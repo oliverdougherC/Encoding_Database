@@ -4,9 +4,9 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
-import sys
 from datetime import datetime, timezone
 
 REVISION = '939823ead2c052572f9deb5c9f91c85435d5661d'
@@ -24,18 +24,23 @@ def sha(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--revision', default=REVISION)
+    parser.add_argument('--label', default='939823e')
     args = parser.parse_args()
+    if not re.fullmatch('[0-9a-f]{40}', args.revision) or not re.fullmatch('[a-z0-9-]{1,40}', args.label):
+        parser.error('Exact revision and bounded ASCII label are required')
     root = args.root.resolve(strict=True)
-    source = root / 'source-939823e'
-    receipt_path = root / 'physical-build-resume-receipt.json'
-    log_path = root / 'physical-build-resume.log'
+    source = root / ('source-' + args.label)
+    suffix = '' if args.label == '939823e' else '-' + args.label
+    receipt_path = root / ('physical-build-resume' + suffix + '-receipt.json')
+    log_path = root / ('physical-build-resume' + suffix + '.log')
     if receipt_path.exists() or log_path.exists():
         raise RuntimeError('Create-only resume evidence already exists')
     if os.name != 'nt':
         raise RuntimeError('Actual Windows is required')
     revision = subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip()
     changes = subprocess.check_output(['git', '-C', str(source), 'status', '--porcelain', '--untracked-files=no'], text=True).strip()
-    if revision != REVISION or changes:
+    if revision != args.revision or changes:
         raise RuntimeError('Reviewed source is not clean and exact')
     if sha(root / 'runtime-939823e' / 'ffmpeg-win.zip') != ARCHIVE:
         raise RuntimeError('Reviewed runtime archive changed')
@@ -55,7 +60,7 @@ def main():
     env['ENCODINGDB_SUITE_CACHE_DIR'] = str(root / 'suite-cache')
     receipt = {'schemaVersion': 1, 'status': 'RUNNING', 'kind': 'physical-built-candidate-distinct-from-CI',
         'actualSource': revision, 'trackedStatusBefore': changes, 'sourceTree': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD^{tree}'], text=True).strip(), 'startedAt': datetime.now(timezone.utc).isoformat(), 'commands': [],
-        'buildDeviation': 'Unmodified source build script stopped because Windows PowerShell 5.1 treated normal PyInstaller stderr INFO as terminating. This operator executes its exact PyInstaller and finalizer arguments via subprocess, leaving tracked source untouched.'}
+        'buildDeviation': 'The retained source939 attempt established that Windows PowerShell 5.1 treats normal PyInstaller stderr INFO as terminating. This operator executes the unchanged reviewed PyInstaller and finalizer arguments via subprocess, leaving tracked source untouched.'}
 
     def save():
         receipt_path.write_text(json.dumps(receipt, indent=2) + '\n')

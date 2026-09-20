@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -19,11 +20,15 @@ def sha(path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--revision', default='939823ead2c052572f9deb5c9f91c85435d5661d')
+    parser.add_argument('--tree', default='532898f45d3e71fd0138d4911889dd7ff1a2ccdc')
+    parser.add_argument('--label', default='939823e')
     args = parser.parse_args()
     root = args.root.resolve(strict=True)
-    source = root / 'source-939823e'
-    revision = '939823ead2c052572f9deb5c9f91c85435d5661d'
-    tree = '532898f45d3e71fd0138d4911889dd7ff1a2ccdc'
+    if not re.fullmatch('[0-9a-f]{40}', args.revision) or not re.fullmatch('[0-9a-f]{40}', args.tree) or not re.fullmatch('[a-z0-9-]{1,40}', args.label):
+        parser.error('Exact revision/tree and bounded ASCII label required')
+    source = root / ('source-' + args.label)
+    revision, tree = args.revision, args.tree
     if subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip() != revision:
         raise ValueError('Source revision differs')
     if subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD^{tree}'], text=True).strip() != tree:
@@ -61,7 +66,7 @@ def main():
     pins = {'kind': 'physical-built-candidate-not-CI', 'actualBuildRevision': revision, 'sourceTree': tree,
         'buildPythonVersion': manifest['source']['buildPythonVersion'], 'suiteFingerprint': 'd40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e',
         'modelSha256': model_sha, 'files': files}
-    path = root / 'physical-candidate-pins.json'
+    path = root / ('physical-candidate-pins' + ('' if args.label == '939823e' else '-' + args.label) + '.json')
     with path.open('x', encoding='utf-8') as output:
         json.dump(pins, output, indent=2)
         output.write('\n')

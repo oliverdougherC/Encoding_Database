@@ -83,6 +83,14 @@ class OperatorChecks(unittest.TestCase):
         self.assertEqual(plan['arguments'][-2:], ['--target-bitrate-kbps', '6000'])
         self.assertFalse(target.exists())
 
+    def test_phase_label_rejects_path_traversal_before_execution(self):
+        argv = ['operator', '--payload', str(self.payload), '--pins', str(self.root / 'missing-pins'),
+                '--root', str(self.root / 'must-not-exist'), '--recipe', 'x264-crf23', '--phase-label', '../escape']
+        with patch.object(sys, 'argv', argv), contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as error:
+            operator.main()
+        self.assertEqual(error.exception.code, 2)
+        self.assertFalse((self.root / 'must-not-exist').exists())
+
     def make_campaign(self):
         phase = self.root / 'phase'
         campaign = phase / 'queue' / 'campaigns' / 'campaign-fixture'
