@@ -51,6 +51,13 @@ describe("fetchCorpusResult", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(String(fetchMock.mock.calls[0][0])).toBe("http://backend.test/corpus/protocol%3A%3Aworkload%2Fa");
   });
+  it("accepts a still-encoded id from Next page params without double-escaping", async () => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "ctx::clip::recipe::run::model" })));
+    const { fetchCorpusResult } = await import("./api");
+    await expect(fetchCorpusResult("ctx%3A%3Aclip%3A%3Arecipe%3A%3Arun%3A%3Amodel")).resolves.toEqual({ id: "ctx::clip::recipe::run::model" });
+    expect(String(fetchMock.mock.calls[0][0])).toBe("http://backend.test/corpus/ctx%3A%3Aclip%3A%3Arecipe%3A%3Arun%3A%3Amodel");
+  });
   it("treats a withdrawn or missing result as unavailable", async () => {
     process.env.INTERNAL_API_BASE_URL = "http://backend.test";
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 404 }));

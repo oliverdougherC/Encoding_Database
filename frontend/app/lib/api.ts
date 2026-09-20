@@ -162,7 +162,26 @@ export async function fetchEncoderAnalytics(filters: AnalyticsSearchState): Prom
   return data;
 }
 
+
+// Next.js may hand dynamic segments to page components still percent-encoded
+// (e.g. "%3A%3A" for "::"). Re-encoding such a value double-escapes it and the
+// corpus API 404s every detail lookup. Normalize to a fully decoded id first,
+// then encode exactly once.
+export function encodeCorpusIdPathSegment(id: string): string {
+  let segment = id;
+  for (let i = 0; i < 3; i++) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      break;
+    }
+    if (decoded === segment) break;
+    segment = decoded;
+  }
+  return encodeURIComponent(segment);
+}
 export async function fetchCorpusResult(id: string): Promise<Benchmark | null> {
-  const { data } = await fetchJson<Benchmark | null>(`/corpus/${encodeURIComponent(id)}`, undefined, true);
+  const { data } = await fetchJson<Benchmark | null>(`/corpus/${encodeCorpusIdPathSegment(id)}`, undefined, true);
   return data;
 }
