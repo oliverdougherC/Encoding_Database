@@ -9,19 +9,20 @@ if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
 foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-ObservedRunControl','Invoke-RunAction','Wait-Until')) {
     $definitions=@($ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true))
     if ($definitions.Count -ne 1) { throw "Expected one real $name definition." }
-    if ($name -ne 'Get-ObservedRunControl') { Invoke-Expression $definitions[0].Extent.Text }
+    Invoke-Expression $definitions[0].Extent.Text
 }
 Add-Type @'
 using System; using System.Collections.Generic;
 public static class EdbWindows {
- public sealed class Window { public long Parent; public string Text,Class; public int Control; public bool Visible=true,Enabled=true; public uint Owner=42; }
+ public struct Rect { public int Left, Top, Right, Bottom; }
+ public sealed class Window { public long Parent; public string Text="",Class=""; public int Control; public bool Visible=true,Enabled=true; public uint Owner=42; public int[] Bounds=new int[]{0,0,0,0}; }
  public static Dictionary<long,Window> Data=new Dictionary<long,Window>();
  public sealed class ClickReceipt { public string Error; public uint InsertedCount; public long Root,Child; public int X,Y,Left,Top,Right,Bottom; }
  public static int Clicks; public static ClickReceipt LastClick; public static bool NextClickFails=false; public static bool DeferOnce=false;
  public static bool ActivateSucceeds=true; public static IntPtr Foreground=IntPtr.Zero;
+ public static bool GetWindowRect(IntPtr h, out Rect r){ var b=Data[h.ToInt64()].Bounds; r=new Rect{Left=b[0],Top=b[1],Right=b[2],Bottom=b[3]}; return true; }
+ public static IntPtr SetThreadDpiAwarenessContext(IntPtr c){ return new IntPtr(-1); }
  public static bool ShowWindow(IntPtr h,int mode){return true;}
- public static bool SetForegroundWindow(IntPtr h){if(ActivateSucceeds)Foreground=h;return true;}
- public static IntPtr GetForegroundWindow(){return Foreground;}
  public static ClickReceipt SendOwnedControlClick(IntPtr root,uint owner,IntPtr child,int x,int y,int left,int top,int right,int bottom){
   Clicks++;var r=new ClickReceipt();r.Root=root.ToInt64();r.Child=child.ToInt64();r.X=x;r.Y=y;r.Left=left;r.Top=top;r.Right=right;r.Bottom=bottom;
   if(NextClickFails){r.Error="synthetic native rejection";}else if(DeferOnce){DeferOnce=false;r.Error="Secure desktop or held mouse/modifier input; no click.";}else{r.InsertedCount=3;}LastClick=r;return r;}
@@ -33,7 +34,7 @@ public static class EdbWindows {
  public static bool IsWindowVisible(IntPtr h){return Data[h.ToInt64()].Visible;}
  public static bool IsWindowEnabled(IntPtr h){return Data[h.ToInt64()].Enabled;}
  public static uint GetWindowThreadProcessId(IntPtr h,out uint owner){owner=Data[h.ToInt64()].Owner;return 7;}
- public static IntPtr[] Windows(IntPtr h){var result=new List<IntPtr>();foreach(var item in Data)if(item.Value.Parent==h.ToInt64())result.Add(new IntPtr(item.Key));return result.ToArray();}
+ public static IntPtr[] Windows(IntPtr h){var result=new List<IntPtr>();foreach(var item in Data){long p=item.Value.Parent;var seen=new HashSet<long>();bool found=false;while(p!=0&&seen.Add(p)){if(p==h.ToInt64()){found=true;break;}p=Data.ContainsKey(p)?Data[p].Parent:0;}if(found)result.Add(new IntPtr(item.Key));}return result.ToArray();}
 }
 '@
 $script:roots=@()
@@ -44,6 +45,35 @@ function Assert-Throws([scriptblock]$Action,[string]$Pattern) {
     try { & $Action | Out-Null } catch { $caught=$_.Exception.Message -like $Pattern }
     Assert-True $caught "Expected error matching $Pattern"
 }
+function Run-Window([long]$Handle,[long]$Parent,[int[]]$Bounds,[string]$Class) {
+    $w=[EdbWindows+Window]::new();$w.Parent=$Parent;$w.Bounds=$Bounds;$w.Class=$Class
+    [EdbWindows]::Data.Add($Handle,$w)
+}
+function Run-Fixture {
+    # Exact hosted-runner geometry from CI 35523106378 prepare-stop dumps: the real two-button run row
+    # plus a decoy log frame whose Text child and ScrollBar child match every purely geometric rule.
+    $clear=[EdbWindows]::Data.Clear()
+    Run-Window 1 0 @(8,8,1016,703) 'TkTopLevel'; $t=[EdbWindows]::Data[1];$t.Text='EncodingDB Windows Client'
+    Run-Window 10 1 @(38,490,986,673) 'TkChild'
+    Run-Window 11 10 @(38,490,969,673) 'TkChild'
+    Run-Window 12 10 @(969,490,986,673) 'ScrollBar'
+    Run-Window 20 1 @(40,167,984,192) 'TkChild'
+    Run-Window 21 20 @(40,167,139,192) 'TkChild'
+    Run-Window 22 20 @(147,167,223,192) 'TkChild'
+    $script:roots=@([IntPtr]1)
+}
+Run-Fixture
+$obs=Get-ObservedRunControl 'Start'
+Assert-True ($obs.child -eq [IntPtr]21 -and $obs.owner -eq 42 -and $obs.x -eq 89 -and $obs.y -eq 179) 'Real observer picked the wrong Start control with the hosted decoy row present.'
+$obs=Get-ObservedRunControl 'Stop'
+Assert-True ($obs.child -eq [IntPtr]22 -and $obs.x -eq 185 -and $obs.y -eq 179) 'Real observer picked the wrong Stop control with the hosted decoy row present.'
+Run-Fixture
+$rm1=[EdbWindows]::Data.Remove(20); $rm2=[EdbWindows]::Data.Remove(21); $rm3=[EdbWindows]::Data.Remove(22)
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Run-Fixture;$flipped=[EdbWindows]::Data[12];$flipped.Class='TkChild'
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*observed 2 candidate*'
+Run-Fixture;$flipped2=[EdbWindows]::Data[21];$flipped2.Class='ScrollBar'
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
 function Ready-Fixture {
     [EdbWindows]::Data.Clear()
     $dialog=[EdbWindows+Window]::new();$dialog.Text='Exit';$dialog.Class='#32770'

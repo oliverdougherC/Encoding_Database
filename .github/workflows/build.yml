@@ -421,6 +421,10 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
+      - name: Guard Windows GUI harness functions
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        shell: powershell
+        run: ./scripts/test-windows-gui-harness-guards.ps1
       - name: Exercise actual packaged Windows GUI
         if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
         timeout-minutes: 31
