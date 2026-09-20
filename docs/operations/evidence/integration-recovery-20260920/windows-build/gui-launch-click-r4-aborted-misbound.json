@@ -1,0 +1,29 @@
+{
+ "preservedAt": "2026-09-20T19:35:00Z",
+ "note": "click-r4 launched with driver still bound to source-b3ef24a (replace miss); task ended within seconds before phase progress; repo binding fixed (driver da31ee83) and relaunched as click-r5.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "RUNNING",
+  "startedAt": "2026-09-20T19:24:23.136318+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r4\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r4",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 36716
+ }
+}

@@ -1,0 +1,33 @@
+{
+ "preservedAt": "2026-09-20T19:16:00Z",
+ "note": "Attempt 5 (click-r3) used the exact reviewed lane harness (e7c37181, driver 1f312b8b) and blocked identically at ~20s: environmental foreground/desktop loss, not harness version. Isolating with a bare GUI window probe next.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:13:10.826023+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r3\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r3",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 18172,
+  "exitCode": 1,
+  "error": "GUI harness did not pass; preserve diagnostic receipt and screenshots",
+  "wallSeconds": 20.014999999999418,
+  "finishedAt": "2026-09-20T19:13:32.844515+00:00"
+ }
+}

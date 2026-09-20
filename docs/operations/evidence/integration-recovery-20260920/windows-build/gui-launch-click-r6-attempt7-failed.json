@@ -1,0 +1,33 @@
+{
+ "preservedAt": "2026-09-20T20:00:00Z",
+ "note": "click-r6 (clean machine, click6-exact driver) blocked identically: GUI never received foreground. Timelines show the only divergence from the accepted click6 run: click6 GUI self-grabbed foreground at creation (no owned-app-activation event was needed); the rebuilt GUI under the pythonw chain never does. Probes: (a) task->pythonw->powershell->GUI launch gives no foreground (CreateProcess path, last-input-owner stale); (b) an injected keybd_event Alt tap before Start-Process makes the GUI foreground within 3 seconds, window held. Foreground-lock policy, not the executable or harness. Fix applied at launcher level only: new wrapper performs one real input tap (as an operator keyboard touch) then runs the UNCHANGED windows-physical-run-gui.py; harness/driver/verifier untouched.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:37:42.228935+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r6\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r6",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 18828,
+  "exitCode": 1,
+  "error": "GUI harness did not pass; preserve diagnostic receipt and screenshots",
+  "wallSeconds": 13.421000000002095,
+  "finishedAt": "2026-09-20T19:37:57.725156+00:00"
+ }
+}

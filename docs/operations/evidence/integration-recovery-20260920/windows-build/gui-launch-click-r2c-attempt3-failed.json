@@ -1,0 +1,33 @@
+{
+ "preservedAt": "2026-09-20T19:15:00Z",
+ "note": "Attempt 3 (click-r2c): GUI launched, preparation ffprobe observed (owned helper), 47 controls observed; at first Stop click the harness observed root window bounds {0,0,0,0} and blocked without clicking (BLOCKED_GUI_INPUT: foreground/identity lost). Console probe after the run shows console active/unlocked with normal foreground; suspected transient foreground theft. Retried as click-r2d with zero concurrent Windows-host operations.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:01:31.548772+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r2c\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r2c",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 12808,
+  "exitCode": 1,
+  "error": "GUI harness did not pass; preserve diagnostic receipt and screenshots",
+  "wallSeconds": 21.047000000005937,
+  "finishedAt": "2026-09-20T19:01:54.674746+00:00"
+ }
+}
