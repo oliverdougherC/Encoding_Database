@@ -1,0 +1,662 @@
+{
+  "status": "PASS_ORIGINAL_RECEIPT_MATHEMATICAL_AUDIT",
+  "planHash": "7c488c7d1b5cd95d38f3b2c41815970af746be41ff86feb17ae1a80a96ce4730",
+  "originalReceiptArchiveSha256": "28e44e80b9792a1e8d367f9e6d8a5ab64a9a4de7f343cbe0446ec073f5eb4252",
+  "cells": [
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf18",
+      "seed": 202609160001,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.023680415978339683,
+      "countedElapsedSeconds": [
+        4.798565292,
+        4.913558862
+      ],
+      "backgroundCpuPercent": [
+        4.25,
+        6.75
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libx264--fast--crf28",
+      "seed": 202609160002,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0005518435718976083,
+      "countedElapsedSeconds": [
+        4.702982942,
+        4.700388347
+      ],
+      "backgroundCpuPercent": [
+        6.699999999999999,
+        8.5
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libsvtav1--6--crf20",
+      "seed": 202609160003,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.010096861547798387,
+      "countedElapsedSeconds": [
+        10.027403863,
+        9.926667117
+      ],
+      "backgroundCpuPercent": [
+        5.25,
+        7.1
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx264--fast--crf28",
+      "seed": 202609160004,
+      "countedSamples": 4,
+      "stable": false,
+      "relativeSpread": 0.06175978585704353,
+      "countedElapsedSeconds": [
+        7.818053566,
+        8.097573556,
+        7.6152725,
+        7.706323714
+      ],
+      "backgroundCpuPercent": [
+        4.75,
+        6.3,
+        5.85,
+        3.55
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libsvtav1--6--crf36",
+      "seed": 202609160005,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.02220662012444317,
+      "countedElapsedSeconds": [
+        26.9920005,
+        26.39918165
+      ],
+      "backgroundCpuPercent": [
+        3.9,
+        6.050000000000001
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx265--fast--crf18",
+      "seed": 202609160006,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0021463206276418115,
+      "countedElapsedSeconds": [
+        41.079639074,
+        41.167903873
+      ],
+      "backgroundCpuPercent": [
+        4.7,
+        4.3
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libx265--fast--crf28",
+      "seed": 202609160007,
+      "countedSamples": 4,
+      "stable": false,
+      "relativeSpread": 0.0308768751131727,
+      "countedElapsedSeconds": [
+        32.435806682,
+        31.454510641,
+        31.756571879,
+        31.476861165
+      ],
+      "backgroundCpuPercent": [
+        4.55,
+        5.7,
+        7.45,
+        5.199999999999999
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libx265--fast--crf18",
+      "seed": 202609160008,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0030183611740539997,
+      "countedElapsedSeconds": [
+        33.316273478,
+        33.215864467
+      ],
+      "backgroundCpuPercent": [
+        4.55,
+        4.6
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx264--fast--crf18",
+      "seed": 202609160009,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.005700874939610671,
+      "countedElapsedSeconds": [
+        21.698417017,
+        21.575068652
+      ],
+      "backgroundCpuPercent": [
+        3.7,
+        5.0
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libsvtav1--6--crf36",
+      "seed": 202609160010,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.013882502091832657,
+      "countedElapsedSeconds": [
+        17.898313497,
+        18.148523643
+      ],
+      "backgroundCpuPercent": [
+        5.800000000000001,
+        7.0
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libsvtav1--6--crf36",
+      "seed": 202609160011,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.02123097262784507,
+      "countedElapsedSeconds": [
+        15.06571107,
+        14.749211171
+      ],
+      "backgroundCpuPercent": [
+        5.15,
+        6.55
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libx265--fast--crf28",
+      "seed": 202609160012,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.014079625325298379,
+      "countedElapsedSeconds": [
+        20.523185775,
+        20.236247004
+      ],
+      "backgroundCpuPercent": [
+        6.6,
+        7.85
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx264--fast--crf18",
+      "seed": 202609160013,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0030068672622975117,
+      "countedElapsedSeconds": [
+        9.21783218,
+        9.19015699
+      ],
+      "backgroundCpuPercent": [
+        5.45,
+        5.75
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libsvtav1--6--crf36",
+      "seed": 202609160014,
+      "countedSamples": 4,
+      "stable": false,
+      "relativeSpread": 0.04300395622508826,
+      "countedElapsedSeconds": [
+        17.026584771,
+        16.400554574,
+        16.313351682,
+        16.600669332
+      ],
+      "backgroundCpuPercent": [
+        4.55,
+        7.1000000000000005,
+        4.85,
+        6.85
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libsvtav1--6--crf20",
+      "seed": 202609160015,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0011958571385800023,
+      "countedElapsedSeconds": [
+        20.2700694,
+        20.245843778
+      ],
+      "backgroundCpuPercent": [
+        3.85,
+        3.75
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libsvtav1--6--crf20",
+      "seed": 202609160016,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.020237812198034145,
+      "countedElapsedSeconds": [
+        20.31307302,
+        19.906098995
+      ],
+      "backgroundCpuPercent": [
+        5.300000000000001,
+        5.550000000000001
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libx265--fast--crf28",
+      "seed": 202609160017,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.01971711812343451,
+      "countedElapsedSeconds": [
+        19.839586517,
+        19.452225864
+      ],
+      "backgroundCpuPercent": [
+        5.9,
+        4.0
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libx264--fast--crf28",
+      "seed": 202609160018,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.005410129291422127,
+      "countedElapsedSeconds": [
+        19.929867744,
+        20.037983365
+      ],
+      "backgroundCpuPercent": [
+        4.1,
+        4.3
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libx265--fast--crf18",
+      "seed": 202609160019,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.006550939915839673,
+      "countedElapsedSeconds": [
+        41.968205229,
+        41.694171627
+      ],
+      "backgroundCpuPercent": [
+        4.25,
+        4.4
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libsvtav1--6--crf20",
+      "seed": 202609160020,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.008137910640226625,
+      "countedElapsedSeconds": [
+        19.200010473,
+        19.356896806
+      ],
+      "backgroundCpuPercent": [
+        5.15,
+        6.75
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libsvtav1--6--crf36",
+      "seed": 202609160021,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.011412777387147618,
+      "countedElapsedSeconds": [
+        16.424218747,
+        16.237836365
+      ],
+      "backgroundCpuPercent": [
+        3.85,
+        5.2
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libsvtav1--6--crf20",
+      "seed": 202609160022,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.004293317987717581,
+      "countedElapsedSeconds": [
+        21.848329091,
+        21.942332709
+      ],
+      "backgroundCpuPercent": [
+        3.6500000000000004,
+        3.8
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libsvtav1--6--crf20",
+      "seed": 202609160023,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0056498638166309146,
+      "countedElapsedSeconds": [
+        15.806192643,
+        15.895748468
+      ],
+      "backgroundCpuPercent": [
+        5.050000000000001,
+        4.949999999999999
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libx264--fast--crf18",
+      "seed": 202609160024,
+      "countedSamples": 4,
+      "stable": false,
+      "relativeSpread": 0.0483085281714531,
+      "countedElapsedSeconds": [
+        21.286871584,
+        22.340733595,
+        21.936295112,
+        21.69704935
+      ],
+      "backgroundCpuPercent": [
+        4.6,
+        7.0,
+        10.7,
+        3.7
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libx264--fast--crf18",
+      "seed": 202609160025,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0013247987289875102,
+      "countedElapsedSeconds": [
+        13.524693442,
+        13.506787806
+      ],
+      "backgroundCpuPercent": [
+        10.95,
+        6.1
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libsvtav1--6--crf36",
+      "seed": 202609160026,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.004033925154373357,
+      "countedElapsedSeconds": [
+        11.192568379,
+        11.237809612
+      ],
+      "backgroundCpuPercent": [
+        5.5,
+        4.7
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx265--fast--crf28",
+      "seed": 202609160027,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.011676998760572451,
+      "countedElapsedSeconds": [
+        32.554590044,
+        32.1766567
+      ],
+      "backgroundCpuPercent": [
+        6.3,
+        4.9
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libx264--fast--crf18",
+      "seed": 202609160028,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.005782779385838889,
+      "countedElapsedSeconds": [
+        17.294753535,
+        17.19503013
+      ],
+      "backgroundCpuPercent": [
+        4.55,
+        5.65
+      ]
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--libx264--fast--crf28",
+      "seed": 202609160029,
+      "countedSamples": 4,
+      "stable": false,
+      "relativeSpread": 0.06092271416189932,
+      "countedElapsedSeconds": [
+        20.367476357,
+        19.50930874,
+        19.638849669,
+        19.169055139
+      ],
+      "backgroundCpuPercent": [
+        6.55,
+        4.35,
+        4.1,
+        10.55
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libx265--fast--crf28",
+      "seed": 202609160030,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.003725823155781202,
+      "countedElapsedSeconds": [
+        19.09997607,
+        19.028945261
+      ],
+      "backgroundCpuPercent": [
+        5.7,
+        6.95
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libx264--fast--crf28",
+      "seed": 202609160031,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.009460246151645566,
+      "countedElapsedSeconds": [
+        9.510909912,
+        9.601313079
+      ],
+      "backgroundCpuPercent": [
+        4.25,
+        5.8
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libx264--fast--crf28",
+      "seed": 202609160032,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.008547525276779348,
+      "countedElapsedSeconds": [
+        12.911427503,
+        13.022261936
+      ],
+      "backgroundCpuPercent": [
+        4.35,
+        4.05
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libx265--fast--crf28",
+      "seed": 202609160033,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.017168051284980015,
+      "countedElapsedSeconds": [
+        9.485519264,
+        9.649777139
+      ],
+      "backgroundCpuPercent": [
+        5.9,
+        4.800000000000001
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libsvtav1--6--crf36",
+      "seed": 202609160034,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0065834306035621615,
+      "countedElapsedSeconds": [
+        21.408888254,
+        21.268406749
+      ],
+      "backgroundCpuPercent": [
+        3.65,
+        4.75
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--libx265--fast--crf18",
+      "seed": 202609160035,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.0042687152648571616,
+      "countedElapsedSeconds": [
+        34.432741053,
+        34.286070533
+      ],
+      "backgroundCpuPercent": [
+        7.6,
+        6.15
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--libx265--fast--crf18",
+      "seed": 202609160036,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.00041701542460725356,
+      "countedElapsedSeconds": [
+        35.670464197,
+        35.685342433
+      ],
+      "backgroundCpuPercent": [
+        5.1,
+        10.75
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx265--fast--crf28",
+      "seed": 202609160037,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.020670822474142137,
+      "countedElapsedSeconds": [
+        17.403851639,
+        17.767360581
+      ],
+      "backgroundCpuPercent": [
+        5.55,
+        4.35
+      ]
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--libx265--fast--crf18",
+      "seed": 202609160038,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.021151627066621315,
+      "countedElapsedSeconds": [
+        9.871531594,
+        10.082562371
+      ],
+      "backgroundCpuPercent": [
+        5.1,
+        6.1
+      ]
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--libx265--fast--crf18",
+      "seed": 202609160039,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.003616831909741731,
+      "countedElapsedSeconds": [
+        25.91835741,
+        25.824784287
+      ],
+      "backgroundCpuPercent": [
+        3.25,
+        5.550000000000001
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libx264--fast--crf18",
+      "seed": 202609160040,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.004750556565147068,
+      "countedElapsedSeconds": [
+        13.04232032,
+        12.980508859
+      ],
+      "backgroundCpuPercent": [
+        5.0,
+        4.75
+      ]
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--libx264--fast--crf28",
+      "seed": 202609160041,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.019312432940864523,
+      "countedElapsedSeconds": [
+        12.313058656,
+        12.077537777
+      ],
+      "backgroundCpuPercent": [
+        5.2,
+        6.050000000000001
+      ]
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--libsvtav1--6--crf20",
+      "seed": 202609160042,
+      "countedSamples": 2,
+      "stable": true,
+      "relativeSpread": 0.015246361933240483,
+      "countedElapsedSeconds": [
+        19.670224172,
+        19.972427278
+      ],
+      "backgroundCpuPercent": [
+        3.85,
+        5.699999999999999
+      ]
+    }
+  ],
+  "stableCells": 37,
+  "unstableCells": 5,
+  "stableMeasuredAttempts": 74,
+  "unstableMeasuredAttempts": 20,
+  "nativeRequestedEffectiveAndExecutedRecipeChecks": 136
+}

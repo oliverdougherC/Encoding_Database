@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "encodingdb-evidence-files/v1",
+  "files": {
+    "README.md": {
+      "sha256": "355afcfd45b6ae8bf1652fbf42b0866cfa1b3984d399ec4f71e8188a0b86f5c9",
+      "bytes": 4675
+    },
+    "audit.json": {
+      "sha256": "952558f8f8a58a55d159a32c53ff36949e539b2928c81324d3621d8e81d6e7f3",
+      "bytes": 301252
+    },
+    "audit.log": {
+      "sha256": "6ec5224a4289009c5d41db8de5e637c4f8ffb44a5e54790296369fa88a5ed8d4",
+      "bytes": 2869
+    },
+    "audit.py": {
+      "sha256": "323f0998d05ee405daee3332dd3b752860b27b4fb87754851a11fbf8e832544e",
+      "bytes": 7190
+    },
+    "host-handoff.json": {
+      "sha256": "eb4b72b13c22f397625ddac309fbaccc7a727cdb6247465adeab3c4df0fd9870",
+      "bytes": 219
+    },
+    "original-receipts.tar.gz": {
+      "sha256": "28e44e80b9792a1e8d367f9e6d8a5ab64a9a4de7f343cbe0446ec073f5eb4252",
+      "bytes": 1166352
+    },
+    "receipt-mathematical-audit.json": {
+      "sha256": "bde9eddd3baa2a27a59bc3dd0b708511f9e804bcae7e98f48cc0403aeb569439",
+      "bytes": 16050
+    },
+    "serial-audit-incomplete.log": {
+      "sha256": "40f0d63c21f4ef2044d883b4ac9f7143ea841308b39e063b69e6852491e967e9",
+      "bytes": 404
+    },
+    "serial-audit.py": {
+      "sha256": "cfd34f75596ec77623a84eea9e8a658b497bab2e422ccc8016c70d39fdae11ea",
+      "bytes": 6334
+    }
+  }
+}

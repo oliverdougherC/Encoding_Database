@@ -1,0 +1,7 @@
+{
+  "observedAt": "2026-09-20T01:09:47.199816+00:00",
+  "outerLock": "available",
+  "auditStatus": "completed",
+  "timingAllocation": "handed_back_to_parent_for_native_staging_and_acceptance",
+  "activeAuditPids": []
+}
