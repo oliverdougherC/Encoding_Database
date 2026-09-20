@@ -1,0 +1,11 @@
+test_changed_package_bytes_fail_before_any_frame_probe (test_post_timing_helpers.PostTimingSafetyTests.test_changed_package_bytes_fail_before_any_frame_probe) ... ok
+test_forced_cleanup_cannot_pass_corrupt_or_resume_natural_exit (test_post_timing_helpers.PostTimingSafetyTests.test_forced_cleanup_cannot_pass_corrupt_or_resume_natural_exit) ... ok
+test_missing_extra_or_duplicate_cases_fail (test_post_timing_helpers.PostTimingSafetyTests.test_missing_extra_or_duplicate_cases_fail) ... ok
+test_shared_lock_prevents_any_audit_work (test_post_timing_helpers.PostTimingSafetyTests.test_shared_lock_prevents_any_audit_work) ... ok
+test_source_package_queue_and_completion_mismatches_fail (test_post_timing_helpers.PostTimingSafetyTests.test_source_package_queue_and_completion_mismatches_fail) ... ok
+test_symlinked_queue_cannot_impersonate_its_owned_location (test_post_timing_helpers.PostTimingSafetyTests.test_symlinked_queue_cannot_impersonate_its_owned_location) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.005s
+
+OK
