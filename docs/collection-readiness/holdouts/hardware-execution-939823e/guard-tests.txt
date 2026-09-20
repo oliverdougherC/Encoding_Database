@@ -1,0 +1,16 @@
+test_actual_frozen_cells_keep_original_commands_and_order (__main__.OperatorGuards.test_actual_frozen_cells_keep_original_commands_and_order) ... ok
+test_allocation_cannot_transfer_hosts (__main__.OperatorGuards.test_allocation_cannot_transfer_hosts) ... ok
+test_allocation_cannot_transfer_source (__main__.OperatorGuards.test_allocation_cannot_transfer_source) ... ok
+test_current_exact_allocation (__main__.OperatorGuards.test_current_exact_allocation) ... ok
+test_expired_allocation_is_rejected (__main__.OperatorGuards.test_expired_allocation_is_rejected) ... ok
+test_failed_observation_is_never_automatically_retried (__main__.OperatorGuards.test_failed_observation_is_never_automatically_retried) ... ok
+test_interrupted_resume_is_explicit (__main__.OperatorGuards.test_interrupted_resume_is_explicit) ... ok
+test_runtime_helpers_are_bound_to_actual_bytes (__main__.OperatorGuards.test_runtime_helpers_are_bound_to_actual_bytes) ... ok
+test_source_or_command_change_cannot_resume (__main__.OperatorGuards.test_source_or_command_change_cannot_resume) ... ok
+test_tampered_seal_is_rejected (__main__.OperatorGuards.test_tampered_seal_is_rejected) ... ok
+test_unstable_completed_receipt_is_reused (__main__.OperatorGuards.test_unstable_completed_receipt_is_reused) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.004s
+
+OK

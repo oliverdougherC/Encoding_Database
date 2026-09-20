@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "runtimeId": "encodingdb-ffmpeg-runtime",
+  "source": "native-arm64-ffmpeg9-vmaf3.2-20260914",
+  "platforms": {
+    "linux": {
+      "ffmpeg": {
+        "relativePath": "bin/linux/ffmpeg",
+        "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+        "byteSize": 171156936,
+        "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers",
+        "buildFingerprint": "a5fc1fc557ede4f0e9a25d559b4575497a203924ff549fc81be28f06c1e4301c"
+      },
+      "ffprobe": {
+        "relativePath": "bin/linux/ffprobe",
+        "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+        "byteSize": 170923400,
+        "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers",
+        "buildFingerprint": "8c25df00aab8caad2c2ff8e584280d4d96ca9725e5671198dc6bd837aaf7478f"
+      },
+      "capabilities": {
+        "ffprobe": true,
+        "filters": [
+          "libvmaf",
+          "xpsnr"
+        ],
+        "requiredEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "optionalEncoders": [
+          "av1_nvenc",
+          "av1_qsv",
+          "av1_vaapi",
+          "h264_nvenc",
+          "h264_qsv",
+          "h264_v4l2m2m",
+          "h264_vaapi",
+          "hevc_nvenc",
+          "hevc_qsv",
+          "hevc_v4l2m2m",
+          "hevc_vaapi",
+          "libopenh264",
+          "vp9_qsv",
+          "vp9_vaapi"
+        ],
+        "smokeTestEncoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ],
+        "encoders": [
+          "libaom-av1",
+          "libvpx-vp9",
+          "libx264",
+          "libx265"
+        ]
+      }
+    }
+  }
+}
