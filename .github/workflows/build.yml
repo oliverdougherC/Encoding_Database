@@ -306,7 +306,8 @@ jobs:
   client-native-windows-build:
     name: client-native-windows-build
     runs-on: windows-latest
-    timeout-minutes: 60
+    # Build plus two independently bounded 31-minute acceptance steps and evidence upload.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v7
@@ -369,11 +370,37 @@ jobs:
         timeout-minutes: 31
         shell: powershell
         run: ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 600
+      - name: Retain Windows gui diagnostics before the next step
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-gui-diagnostics-${{ github.sha }}
+          path: |
+            .test-reports/windows-native-gui/gui/**/*.json
+            .test-reports/windows-native-gui/gui/**/*.jsonl
+            .test-reports/windows-native-gui/gui/**/*.log
+            .test-reports/windows-native-gui/gui/**/*.png
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: warn
       - name: Exercise packaged Windows seven-clip software campaign
         if: ${{ always() && !inputs.runtime_lock_evidence && hashFiles('encodingdb-client-windows-console.exe') != '' }}
         timeout-minutes: 31
         shell: powershell
         run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 20 -AcquisitionSeconds 600
+      - name: Retain Windows console diagnostics before the next step
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-console-diagnostics-${{ github.sha }}
+          path: |
+            .test-reports/windows-native-gui/console/**/*.json
+            .test-reports/windows-native-gui/console/**/*.jsonl
+            .test-reports/windows-native-gui/console/**/*.log
+            .test-reports/windows-native-gui/console/**/*.png
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: warn
       - name: Retain Windows GUI and seven-clip acceptance evidence
         if: ${{ always() && !inputs.runtime_lock_evidence }}
         uses: actions/upload-artifact@v4

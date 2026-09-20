@@ -34,6 +34,9 @@ function Save-Json($Value, [string]$Path) { $Value | ConvertTo-Json -Depth 30 | 
 function Record-Event([string]$Kind, $Data) {
     $event = @{ at = [DateTime]::UtcNow.ToString('o'); kind = $Kind; data = $Data }
     $event | ConvertTo-Json -Depth 12 -Compress | Add-Content -LiteralPath (Join-Path $modeRoot 'events.jsonl') -Encoding utf8
+    # Preserve progress in the live runner log even if the outer job is cancelled.
+    Write-Host ($event | ConvertTo-Json -Depth 12 -Compress)
+    Save-Json $receipt (Join-Path $modeRoot 'receipt.json')
 }
 Save-Json $receipt (Join-Path $modeRoot 'receipt.json')
 try {
@@ -203,8 +206,8 @@ function Start-Owned([string]$Name, [bool]$Gui) {
     $record = Get-CimInstance Win32_Process -Filter "ProcessId=$($script:process.Id)" | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine
     $script:owned[[string]$record.ProcessId] = $record
     $script:stdoutTask=$script:process.StandardOutput.ReadToEndAsync(); $script:stderrTask=$script:process.StandardError.ReadToEndAsync()
-    Record-Event 'packaged-process-started' $phase
     $receipt.phases += $phase
+    Record-Event 'packaged-process-started' $phase
     return $phase
 }
 function Save-ProcessOutput {
@@ -288,6 +291,7 @@ try {
             Save-ProcessOutput; $phase.survivors=@(Observe-Processes)
             if ($phase.survivors.Count) { throw 'GUI left owned children running.' }
             $phase.status='PASSED'
+            Record-Event 'phase-completed' @{ name=$phase.name; status=$phase.status }
             # Keep journals/encodes under output; discard only this phase's clean source cache.
             Remove-Item -LiteralPath $phase.state -Recurse -Force
         }
