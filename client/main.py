@@ -2853,7 +2853,11 @@ def main(argv: List[str]) -> int:
         parser.error("--max-duration-minutes must be positive and finite")
     if args.max_attempts < 1 or args.max_storage_mb < 1:
         parser.error("Campaign budgets must be positive")
-    if args.resume_campaign and args.submit and not args.no_submit:
+    if args.resume_campaign and args.submit and not args.no_submit and not args.upload_only:
+        # An explicit --upload-only is a never-encode contract; the completion-marker
+        # inference may only upgrade an implicit publish request, never downgrade the
+        # flag the operator actually typed (a resume without the marker must fail
+        # visibly, not silently re-encode throwaway attempts).
         try:
             args.upload_only = (journal_path(args.queue_dir, args.resume_campaign) / "campaign-complete.json").exists()
         except ValueError as exc:

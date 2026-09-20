@@ -65,6 +65,22 @@ class PreparationTests(unittest.TestCase):
         runtime.assert_not_called()
         prepare.assert_not_called()
 
+    def test_explicit_upload_only_with_resume_and_submit_never_falls_through_to_encoding(self):
+        # Without campaign-complete.json the marker inference must not silently
+        # downgrade the typed --upload-only contract into an encoding resume.
+        with tempfile.TemporaryDirectory() as directory, \
+             mock.patch.object(main, 'check_compatibility'), \
+             mock.patch.object(main, 'replay_spool', return_value=mock.Mock(dead_lettered=0, corrupt=0)), \
+             mock.patch.object(main, 'count_pending_entries', return_value=0), \
+             mock.patch.object(main, 'run_benchmark_batch') as batch, \
+             mock.patch.object(main, '_prepare_quick_suite_clip') as prepare, \
+             mock.patch.object(main, '_preparation_runtime_integrity') as runtime:
+            self.assertEqual(main.main(['prog', '--upload-only', '--resume-campaign', 'campaign-0123456789abcdef',
+                                        '--submit', '--queue-dir', directory]), 0)
+        batch.assert_not_called()
+        prepare.assert_not_called()
+        runtime.assert_not_called()
+
     def test_menu_exit_does_not_prepare_sources_or_discover_helpers(self):
         with mock.patch.object(main, 'prompt_choice', return_value=4), \
              mock.patch.object(main, 'build_mode_estimates', return_value={'smallMinutes': 1, 'mediumHours': 1, 'fullHours': 1}), \
