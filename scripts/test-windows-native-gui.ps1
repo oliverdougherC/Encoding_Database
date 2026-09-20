@@ -302,8 +302,10 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
     # the TkTopLevel carries window text). The frozen client packs Start then Stop as exact native
     # child HWNDs inside one row container, so the control is reobserved from that live Win32 structure:
-    # the unique row whose two visible same-owner children share one height tightly equal to the row
-    # height, ordered left to right with the first child wider than the second. Start is the first.
+    # the unique row whose two visible same-owner same-class children share one height tightly equal to
+    # the row height, ordered left to right with the first child wider than the second. Start is the
+    # first. Requiring the same class rejects the log Text+ScrollBar row, which satisfies every pure
+    # geometric predicate on the hosted runner (CI 35523106378: two candidate rows -> blocked).
     $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
     if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_POINT: expected one observed owned client window.' }
     $handle=$roots[0]
@@ -323,7 +325,7 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
             if ($childOwner -ne $ownerId) { throw 'BLOCKED_GUI_POINT: an owned-tree child belongs to another process.' }
             if ($rect.Right -le $rect.Left -or $rect.Bottom -le $rect.Top) { continue }
             if ($rect.Left -lt $rootRect.Left -or $rect.Top -lt $rootRect.Top -or $rect.Right -gt $rootRect.Right -or $rect.Bottom -gt $rootRect.Bottom) { continue }
-            $byHandle[$child.ToInt64()]=@{ handle=$child; rect=$rect; parent=[int64]([EdbWindows]::GetParent($child).ToInt64()); visible=[EdbWindows]::IsWindowVisible($child); enabled=[EdbWindows]::IsWindowEnabled($child) }
+            $byHandle[$child.ToInt64()]=@{ handle=$child; rect=$rect; parent=[int64]([EdbWindows]::GetParent($child).ToInt64()); visible=[EdbWindows]::IsWindowVisible($child); enabled=[EdbWindows]::IsWindowEnabled($child); class=[EdbWindows]::Class($child) }
         }
         $rows=@()
         foreach ($key in @($byHandle.Keys)) {
@@ -343,6 +345,7 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
             if ($second.rect.Right -gt $pRect.Right) { continue }
             if (($second.rect.Left-$first.rect.Right) -gt 32) { continue }
             if (($first.rect.Right-$first.rect.Left) -le ($second.rect.Right-$second.rect.Left)) { continue }
+            if ($first.class -ne $second.class) { continue }
             $rows+=,@{ row=$candidate; first=$first; second=$second }
         }
         if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate Start/Stop rows on this fresh instance; the unique two-button run-control row is not established." }
