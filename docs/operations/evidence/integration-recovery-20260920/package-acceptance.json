@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "ACCEPTED_PENDING_WINDOWS_GUI_VISUAL_REVIEW",
+  "status": "ACCEPTED_PENDING_PARENT_VISUAL_REVIEW",
   "identity": {
     "applicationCandidate": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
     "sourceTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
@@ -47,7 +47,7 @@
     }
   },
   "windowsGuiInteraction": {
-    "status": "RUNNING_ATTEMPT10_click-r9",
+    "status": "PASSED_AUTOMATED_GUI_CHECKS_VISUAL_REVIEW_PENDING",
     "attempt1Failure": "windows-build/gui-launch-click-r2-attempt1-failed.json (pins declared candidate revision while rebuilt manifests record a350d45; guard correctly rejected; pins corrected to declare the true build revision)",
     "attempt2Failure": "windows-build/gui-launch-click-r2b-attempt2-failed.json (prepared driver folder for the new run label omitted; WinError 267; create-only receipts preserved then cleaned)",
     "attempt3Failure": "windows-build/gui-launch-click-r2c-attempt3-failed.json + gui-attempt3-events.jsonl (BLOCKED_GUI_INPUT at first Stop click; harness-refused-to-click)",
@@ -58,7 +58,7 @@
     "launcherFix": "windows-physical-run-gui-tapped.py (R root): one operator-equivalent keyboard tap via keybd_event, then the UNCHANGED reviewed windows-physical-run-gui.py -> UNCHANGED driver/verifier. Only the task action line in the operator-side windows-physical-gui-task.ps1 copy points to it.",
     "attempt7Failure": "windows-build/gui-launch-click-r7-attempt8-lockheld.json (leaked powershell from the blocked attempt r6 held the operator lock; cleared)",
     "attempt8": "windows-build/gui-launch-click-r8-attempt9-died-midcomplete.json + R\\preserved-click-r8\\: with the tap fix, prepare-stop PASSED via native clicks and the complete phase began real encoding; the driver powershell exited rc=1 without writing phase-failed at t=119.47s, orphaning the GUI. Retried as click-r9 (same stack) with strictly zero concurrent operations against the Windows host; receipt evidence retained either way",
-    "attempt9": "run-label click-r9, driver da31ee83, tapped launcher; result recorded on completion"
+    "result": "run-label click-r9, driver da31ee83, tapped launcher: windows-physical-run-gui exit 0 in 360s; prepare-stop/complete/stop/close all PASSED with zero surviving owned processes, journals intact, deterministic artifact bytes (c4f55a17...) pinned across phases, 16 owned-window screenshots + UIA/Win32 dumps committed under windows-build/gui-click-r9/"
   },
   "cleanup": {
     "relayProcesses": "host acc-relay.py killed and Windows acc-tcp-relay process stopped after window replay",

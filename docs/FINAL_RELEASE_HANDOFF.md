@@ -35,9 +35,11 @@ production epoch, 1.3 download URL or production approval is implied by this pac
   and 21 stable groups**. Four controlled cases passed: offline upload,
   backpressure, corrupt pack and storage-budget exhaustion. Original evidence is
   retained; a queue budget is not physical disk-full, and loopback backpressure is
-  not candidate/production ingestion. Final GUI acceptance remains pending the
-  corrected SendInput harness; three campaigns do not establish three independent
-  machines.
+  not candidate/production ingestion. The corrected physical GUI acceptance
+  has since passed every automated gate via observed native-control clicks; the
+  receipt intentionally stays
+  [PENDING_PARENT_INSPECTION](collection-readiness/windows-physical-b3ef24a/gui/receipt.json).
+  Three campaigns do not establish three independent machines.
 - **Hosted Windows:** [b3 console acceptance](collection-readiness/windows-native-b3ef24a/README.md)
   passed all seven clips with seven warmups and fourteen measured artifacts, whose
   hashes were independently audited. The first three GUI phases passed; the prior
@@ -106,11 +108,12 @@ production epoch, 1.3 download URL or production approval is implied by this pac
   uploaded artifacts, including the two Windows uploads and one Mac payload
   that had ended as terminal dead-letters; the server gained the operator-audited
   requeue path that made this possible without deleting observations.
-- **Held analyses:** the review-gated analysis hold was lifted to concurrency 2
-  only to drain the ten held analyses, then restored to 0 with the hold
-  configuration preserved. The candidate now holds COMPLETE 56 and SUSPECT 62
-  with zero pending; the 62 SUSPECT verdicts are Oliver's review queue, not a
-  passed gate.
+- **Held analyses / final membership:** after draining the review-gated hold
+  (concurrency 2 for the drain only, restored to 0 with the hold configuration
+  preserved) and settling every re-contribution, the candidate holds 150 runs,
+  150 artifacts (81 VERIFIED, 69 RETAINED, none pending or rejected) and 150
+  analyses: COMPLETE 70, SUSPECT 80, zero pending. The 80 SUSPECT verdicts are
+  Oliver's review queue, not a passed gate.
 - **Windows GUI:** the four-phase physical GUI acceptance (preparation Stop,
   complete single run, measured Stop, Close) passed every automated gate via
   ordinary observed-control clicks; the receipt deliberately stays
@@ -118,6 +121,18 @@ production epoch, 1.3 download URL or production approval is implied by this pac
   dumps for visual review. The interrupted-then-resumed campaign receipts and
   the coordinated r3 upload replay (35 recorded, 7 honest terminal receipts)
   are bound into the [GUI acceptance directory](collection-readiness/windows-physical-b3ef24a/gui/).
+  The acceptance was repeated end-to-end against the rebuilt release
+  executables (`9af36d25`) — all four phases passed with zero survivors; see
+  [gui-click-r9](operations/evidence/integration-recovery-20260920/windows-build/gui-click-r9/receipt.json)
+  and [package acceptance](operations/evidence/integration-recovery-20260920/package-acceptance.json).
+- **Packaged clients:** rebuilt Linux/macOS/Windows executables (built revision
+  `a350d45` = candidate + the recorded upload-only-contract delta) carry the
+  exact pinned suite/model/runtime identity, and all 32 proven-but-unrecorded
+  payload identities were replayed upload-only through the packaged binaries
+  into a fresh isolated acceptance stack — 32/32 accepted with verified
+  artifacts and sealed measurement-group receipts, zero encodes, originals
+  byte-identical. See the
+  [package acceptance receipt](operations/evidence/integration-recovery-20260920/package-acceptance.json).
 
 ## Remaining release gates
 
@@ -175,9 +190,9 @@ without replacing services. Only applicable production authority permits
 `./deploy.sh --skip-pull`; that flag prevents advancing the checkout and does not
 itself prove approval or cleanliness. Rollback uses recorded prior images and a
 schema-compatible plan, with isolated restore verification and originals retained.
-The candidate stack itself now carries the reconciled totals: 118 runs,
-118 artifacts (63 VERIFIED, 55 RETAINED, all byte-verified on the candidate
-volume) and 118 analyses (56 COMPLETE, 62 SUSPECT, zero pending under the
+The candidate stack itself now carries the reconciled totals: 150 runs,
+150 artifacts (81 VERIFIED, 69 RETAINED, all byte-verified on the candidate
+volume) and 150 analyses (70 COMPLETE, 80 SUSPECT, zero pending under the
 restored concurrency-0 review hold in the candidate `.env`; prior value backed
 up as `.env.bak-postdrain`). Production remains untouched; these IDs describe
 the isolated candidate only.
