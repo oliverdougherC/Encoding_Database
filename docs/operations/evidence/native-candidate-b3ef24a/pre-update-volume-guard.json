@@ -1,0 +1,1 @@
+{"ok":true,"project":"encodingdb-candidate-730de3c","checked":[{"service":"db","target":"/var/lib/postgresql/data","volume":"encodingdb-candidate-730de3c_db_data"},{"service":"server","target":"/app/artifacts","volume":"encodingdb-candidate-730de3c_artifact_data"}]}

@@ -1,0 +1,305 @@
+{
+  "at": "2026-09-20T03:54:40.983Z",
+  "passed": true,
+  "migrationCount": 29,
+  "expected": [
+    {
+      "name": "20251001180225_init_postgres",
+      "sha256": "700ffc407ae902469865e47e46194acdfdd99ab67b8721c530a1674e932a91a2"
+    },
+    {
+      "name": "20251003172300_add_submission_metadata",
+      "sha256": "c8232ecbfa849d8f00471171eccbe62f2b210e836ba65c6681fa038694932ef7"
+    },
+    {
+      "name": "20251004120000_harden_ingest",
+      "sha256": "ca11fe8e36a9cf8fef3c27b931ee020ef760a95ce54763829fd6ed5f906281ef"
+    },
+    {
+      "name": "20251004143000_add_crf_column",
+      "sha256": "7ba66832ac8fbf16e5e57470d454f06e0d56b0c17af8d2e0ab708df1670aa6f7"
+    },
+    {
+      "name": "20251008045500_sync_schema_columns",
+      "sha256": "0cd213478553cc18c1aed0b544813b56cb20c36af7712913caa8d81dfb73772f"
+    },
+    {
+      "name": "20251009000000_create_submission_table",
+      "sha256": "6039ea06d176d9cea9a935b7a994099df7029d2af2a2129cbb6c4a4345666a3e"
+    },
+    {
+      "name": "20251010120000_data_integrity_sprint1",
+      "sha256": "432788e65c1cf8da3c863b78d4fe21597f1d227aabba17cb3aee4d71df3e8e00"
+    },
+    {
+      "name": "20251012120000_sprint2_optimizations",
+      "sha256": "002063a809662bcf49dc1f96daef2aa7614530d4d2f810141d92bae0eec62304"
+    },
+    {
+      "name": "20260218120000_sprint3_ssim_psnr",
+      "sha256": "efad65c771d1feaa8367965ffdf65b6a0919452644de34b26b68f6f371fe104b"
+    },
+    {
+      "name": "20260218130000_sprint5_multi_content",
+      "sha256": "37d322f342f4de9739df10a60d6a656947ddb85be21dba6a3b643cb3e2b021cc"
+    },
+    {
+      "name": "20260218130000_sprint5_multi_content_resolution",
+      "sha256": "3cdd06ee25b06840b927efaa0b287ead80b50564cd9cb604059c6dfec62bc0cd"
+    },
+    {
+      "name": "20260218130000_sprint6_hardware_metrics",
+      "sha256": "6ed28a8b791d9f3b4003fd4410a31cde89c49ccd5e3969962278d98c52edbf00"
+    },
+    {
+      "name": "20260218140000_sprint4_query_indexes",
+      "sha256": "2107a7c2a0e2669d3ca8c70cf49478699b664d541e9e3330f36690fce44ca4d7"
+    },
+    {
+      "name": "20260219170000_sprint7_extended_telemetry",
+      "sha256": "f89176273695cf4c139d4fe94d52cedefb24e8e855b9d3806f7c59761e7a1578"
+    },
+    {
+      "name": "20260314120000_reliable_client_telemetry",
+      "sha256": "688d6125b5f79d9d4b994435d8a6008ddbedaf1e036284a869ed87cded1d5b07"
+    },
+    {
+      "name": "20260811060000_invalidate_reversed_vmaf",
+      "sha256": "62fe088fdee31417beff039acb28358564ca4f780f1517701753e5a6e8cd1a90"
+    },
+    {
+      "name": "20260811230000_pl_score_v7_contract",
+      "sha256": "3f7b02c69cf81938f560434191e0445631a1ac6030ca924fb1bbbb45238879c1"
+    },
+    {
+      "name": "20260812010000_v7_evidence_epoch",
+      "sha256": "d17102b2970caf106b8b0b4d07aa252b94b22cf3f72b529beedc3eab4c4e46d9"
+    },
+    {
+      "name": "20260812023000_v7_artifact_lifecycle",
+      "sha256": "faf2df11de08a70e20ac1528ef6682f2db14e7b56409cdfd6c663bfb3926714d"
+    },
+    {
+      "name": "20260812030000_legacy_aggregate_null_identity",
+      "sha256": "667864afae087787fb32a8ca8921f98051d5288508647d8aa4b1217da613ef34"
+    },
+    {
+      "name": "20260812040000_exact_analysis_membership",
+      "sha256": "34c1e16abf62248395ee9c4db008860fdfe4ae134b426327870e92e1e44a84e5"
+    },
+    {
+      "name": "20260812120000_v7_authoritative_analysis_queue",
+      "sha256": "5d035605e2360252590695f55e903e36dc406036dad9488058705f26aca43729"
+    },
+    {
+      "name": "20260812153000_v7_environment_physical_memory",
+      "sha256": "f6902be9c146fda87baa0efc84c216b58fcbff1b931157d080ea3de79150f059"
+    },
+    {
+      "name": "20260914010000_collection_integrity",
+      "sha256": "59a775205723bedaf8d96468c561b5f1d5d27caa10210e35d867709bdec6cf99"
+    },
+    {
+      "name": "20260914011000_review_derivation_invalidation",
+      "sha256": "d23b3d420ad43c5a28d9aee7c5aa93f3062f6581c04932ccaaa97b00b6d82d8e"
+    },
+    {
+      "name": "20260914012000_corpus_groups",
+      "sha256": "348acba4b4fbb96242d79038d46994b648ee032c921f48de7e811b1d242db87e"
+    },
+    {
+      "name": "20260914013000_precise_process_interval",
+      "sha256": "eff25b81e4e24a14db9e9c698ccd7a530028439d892a3d56d4a9e833b199b21d"
+    },
+    {
+      "name": "20260914014000_measurement_group_lookup",
+      "sha256": "97b511fc7a57400e1c085a2cbeafd51ab01d190fefbdb43c2ac92fd09d7505f6"
+    },
+    {
+      "name": "20260914015000_group_projection_dependencies",
+      "sha256": "a9eb728726e66bc4890fec8eb1d1da1cd4caf02685b5e1175bcc31ea25fc7ef3"
+    }
+  ],
+  "actual": [
+    {
+      "migration_name": "20251001180225_init_postgres",
+      "checksum": "700ffc407ae902469865e47e46194acdfdd99ab67b8721c530a1674e932a91a2",
+      "finished_at": "2026-09-14T01:47:54.974Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251003172300_add_submission_metadata",
+      "checksum": "c8232ecbfa849d8f00471171eccbe62f2b210e836ba65c6681fa038694932ef7",
+      "finished_at": "2026-09-14T01:47:54.991Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251004120000_harden_ingest",
+      "checksum": "ca11fe8e36a9cf8fef3c27b931ee020ef760a95ce54763829fd6ed5f906281ef",
+      "finished_at": "2026-09-14T01:47:55.040Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251004143000_add_crf_column",
+      "checksum": "7ba66832ac8fbf16e5e57470d454f06e0d56b0c17af8d2e0ab708df1670aa6f7",
+      "finished_at": "2026-09-14T01:47:55.049Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251008045500_sync_schema_columns",
+      "checksum": "0cd213478553cc18c1aed0b544813b56cb20c36af7712913caa8d81dfb73772f",
+      "finished_at": "2026-09-14T01:47:55.063Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251009000000_create_submission_table",
+      "checksum": "6039ea06d176d9cea9a935b7a994099df7029d2af2a2129cbb6c4a4345666a3e",
+      "finished_at": "2026-09-14T01:47:55.112Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251010120000_data_integrity_sprint1",
+      "checksum": "432788e65c1cf8da3c863b78d4fe21597f1d227aabba17cb3aee4d71df3e8e00",
+      "finished_at": "2026-09-14T01:47:55.138Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20251012120000_sprint2_optimizations",
+      "checksum": "002063a809662bcf49dc1f96daef2aa7614530d4d2f810141d92bae0eec62304",
+      "finished_at": "2026-09-14T01:47:55.152Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260218120000_sprint3_ssim_psnr",
+      "checksum": "efad65c771d1feaa8367965ffdf65b6a0919452644de34b26b68f6f371fe104b",
+      "finished_at": "2026-09-14T01:47:55.168Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260218130000_sprint5_multi_content",
+      "checksum": "37d322f342f4de9739df10a60d6a656947ddb85be21dba6a3b643cb3e2b021cc",
+      "finished_at": "2026-09-14T01:47:55.263Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260218130000_sprint5_multi_content_resolution",
+      "checksum": "3cdd06ee25b06840b927efaa0b287ead80b50564cd9cb604059c6dfec62bc0cd",
+      "finished_at": "2026-09-14T01:47:55.270Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260218130000_sprint6_hardware_metrics",
+      "checksum": "6ed28a8b791d9f3b4003fd4410a31cde89c49ccd5e3969962278d98c52edbf00",
+      "finished_at": "2026-09-14T01:47:55.294Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260218140000_sprint4_query_indexes",
+      "checksum": "2107a7c2a0e2669d3ca8c70cf49478699b664d541e9e3330f36690fce44ca4d7",
+      "finished_at": "2026-09-14T01:47:55.313Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260219170000_sprint7_extended_telemetry",
+      "checksum": "f89176273695cf4c139d4fe94d52cedefb24e8e855b9d3806f7c59761e7a1578",
+      "finished_at": "2026-09-14T01:47:55.401Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260314120000_reliable_client_telemetry",
+      "checksum": "688d6125b5f79d9d4b994435d8a6008ddbedaf1e036284a869ed87cded1d5b07",
+      "finished_at": "2026-09-14T01:47:55.429Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260811060000_invalidate_reversed_vmaf",
+      "checksum": "62fe088fdee31417beff039acb28358564ca4f780f1517701753e5a6e8cd1a90",
+      "finished_at": "2026-09-14T01:47:55.439Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260811230000_pl_score_v7_contract",
+      "checksum": "3f7b02c69cf81938f560434191e0445631a1ac6030ca924fb1bbbb45238879c1",
+      "finished_at": "2026-09-14T01:47:55.482Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812010000_v7_evidence_epoch",
+      "checksum": "d17102b2970caf106b8b0b4d07aa252b94b22cf3f72b529beedc3eab4c4e46d9",
+      "finished_at": "2026-09-14T01:47:55.841Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812023000_v7_artifact_lifecycle",
+      "checksum": "faf2df11de08a70e20ac1528ef6682f2db14e7b56409cdfd6c663bfb3926714d",
+      "finished_at": "2026-09-14T01:47:55.851Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812030000_legacy_aggregate_null_identity",
+      "checksum": "667864afae087787fb32a8ca8921f98051d5288508647d8aa4b1217da613ef34",
+      "finished_at": "2026-09-14T01:47:55.865Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812040000_exact_analysis_membership",
+      "checksum": "34c1e16abf62248395ee9c4db008860fdfe4ae134b426327870e92e1e44a84e5",
+      "finished_at": "2026-09-14T01:47:55.892Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812120000_v7_authoritative_analysis_queue",
+      "checksum": "5d035605e2360252590695f55e903e36dc406036dad9488058705f26aca43729",
+      "finished_at": "2026-09-14T01:47:55.908Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260812153000_v7_environment_physical_memory",
+      "checksum": "f6902be9c146fda87baa0efc84c216b58fcbff1b931157d080ea3de79150f059",
+      "finished_at": "2026-09-14T01:47:55.918Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914010000_collection_integrity",
+      "checksum": "59a775205723bedaf8d96468c561b5f1d5d27caa10210e35d867709bdec6cf99",
+      "finished_at": "2026-09-14T01:47:56.009Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914011000_review_derivation_invalidation",
+      "checksum": "d23b3d420ad43c5a28d9aee7c5aa93f3062f6581c04932ccaaa97b00b6d82d8e",
+      "finished_at": "2026-09-14T01:47:56.018Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914012000_corpus_groups",
+      "checksum": "348acba4b4fbb96242d79038d46994b648ee032c921f48de7e811b1d242db87e",
+      "finished_at": "2026-09-14T01:47:56.086Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914013000_precise_process_interval",
+      "checksum": "eff25b81e4e24a14db9e9c698ccd7a530028439d892a3d56d4a9e833b199b21d",
+      "finished_at": "2026-09-14T01:47:56.131Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914014000_measurement_group_lookup",
+      "checksum": "97b511fc7a57400e1c085a2cbeafd51ab01d190fefbdb43c2ac92fd09d7505f6",
+      "finished_at": "2026-09-20T01:24:57.959Z",
+      "rolled_back_at": null
+    },
+    {
+      "migration_name": "20260914015000_group_projection_dependencies",
+      "checksum": "a9eb728726e66bc4890fec8eb1d1da1cd4caf02685b5e1175bcc31ea25fc7ef3",
+      "finished_at": "2026-09-20T01:24:58.009Z",
+      "rolled_back_at": null
+    }
+  ],
+  "counts": {
+    "benchmarkRun": 0,
+    "artifact": 0,
+    "qualityAnalysis": 0
+  },
+  "analysisConcurrency": "0"
+}

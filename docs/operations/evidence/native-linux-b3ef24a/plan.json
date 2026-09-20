@@ -1,0 +1,54 @@
+{
+  "status": "prepared-not-executed",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "packageSha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+  "candidateRoot": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c",
+  "caseRoot": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a",
+  "physicalStateRoot": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/host-state",
+  "baseUrl": "https://127.0.0.1:3094",
+  "tracingEnabled": false,
+  "uploadsEnabled": false,
+  "analysisConcurrency": 0,
+  "seedDerivation": "first13 hex digits of SHA256(sourceCommit + :native-acceptance: + phase + :1), declared before execution",
+  "seeds": {
+    "smoke": 1475357489832528,
+    "software": 2545623485977148,
+    "nvenc": 3052776800534175
+  },
+  "smoke": {
+    "codec": "libx264",
+    "preset": "fast",
+    "crf": 24,
+    "campaign": "quick",
+    "maxAttempts": 5,
+    "measurementBudgetMinutes": 10,
+    "acquisitionDeadlineSeconds": 900,
+    "supervisorMeasurementDeadlineSeconds": 630,
+    "freshCache": true,
+    "packSource": "advertised frozen URL; no local override"
+  },
+  "campaigns": [
+    {
+      "name": "software",
+      "codec": "libx264",
+      "preset": "medium",
+      "crf": 24
+    },
+    {
+      "name": "nvenc",
+      "codec": "h264_nvenc",
+      "preset": "p4",
+      "targetBitrateKbps": 4000,
+      "gpuDevice": 0
+    }
+  ],
+  "campaignLimits": {
+    "coverage": "all-seven-final-canonical-clips",
+    "maxAttempts": 35,
+    "measurementBudgetMinutes": 45,
+    "storageMiB": 2048,
+    "acquisitionDeadlineSeconds": 900,
+    "supervisorMeasurementDeadlineSeconds": 2760
+  },
+  "executionGate": "explicit completed/drained capacity handback plus root allocation; all roots/recipes/seeds preserved once started"
+}

@@ -1,0 +1,18 @@
+{
+  "at": "2026-09-20T03:56:31.032449+00:00",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "measurementLockAvailable": true,
+  "ownedBuildAndRolloutSessionsExited": true,
+  "ownedBackupContainersRemaining": false,
+  "observedMediaProcesses": [
+    {
+      "pid": 2002588,
+      "parent": 13696,
+      "command": "ffmpeg",
+      "taskOwnedCandidate": false
+    }
+  ],
+  "nativeAcceptanceRunYet": false,
+  "uploadsStarted": false,
+  "serverImageId": "sha256:589c89b95e471fb32782a374c88b91d8ea2526080b7cdb7bc48608f97eba399a"
+}

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-20T03:46:36Z",
+  "finishedAt": "2026-09-20T03:47:09.850965+00:00",
+  "bundle": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/operation-evidence/native-b3ef24a/pre-update-backups/backup-20260920T034636Z-1932911",
+  "exitCode": 0,
+  "restoreRequired": true
+}
