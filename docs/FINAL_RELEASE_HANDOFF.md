@@ -80,10 +80,16 @@ production epoch, 1.3 download URL or production approval is implied by this pac
   are complete and audited: 37 stable cells and five unstable/ineligible cells,
   all 136 retained attempts preserved. Their authoritative quality/ranking and
   human review are still pending. The [28 hardware holdouts](collection-readiness/holdouts/hardware-execution-939823e/README.md)
-  and [840 canonical cell/sessions](collection-readiness/canonical-execution-b3ef24a/README.md)
-  have **not run**. Their manifests/dry plans are not execution evidence or host
-  allocations. Approximately 16 GiB free on Mac is not a full-matrix retention
-  capacity proof.
+  remain unexecuted: the first Mac hardware cell was refused before encoding
+  because background CPU/GPU load exceeded the unchanged gates. Of the
+  [840 canonical cell/sessions](collection-readiness/canonical-execution-b3ef24a/README.md),
+  nine Mac cells have finished, retaining 29 attempts (27 VALID, two CPU-SUSPECT),
+  eight stable groups and one unstable group. No authoritative calibration
+  quality analysis or human review has occurred. The
+  [first-cell audit](collection-readiness/canonical-progress-b3ef24a/README.md)
+  is archived; later progress remains in the preserved host ledger. Execution
+  was stopped at the user's request to limit usage. Remaining work is checkpointed,
+  not certified complete.
 
 Each receipt binds its actual source, binary and scope. Earlier test receipts and
 failed/suspect observations stay historical; passing later checks does not rewrite
