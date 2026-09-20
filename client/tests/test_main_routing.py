@@ -598,7 +598,7 @@ class MainRoutingTests(unittest.TestCase):
             "recipeFingerprint": "f" * 64,
         }
 
-        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token):
+        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token, max_storage_mb):
             captured_submission.update(payload)
             return "submitted", "", 0
 

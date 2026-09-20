@@ -162,7 +162,7 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
     atomic_json(root/'submission-000001.json',payload)
     with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',return_value=spool.ReplayStats(submitted=1)), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
         assert main.main(['prog','--resume-campaign',campaign_id,'--submit','--queue-dir',str(tmp_path)]) == 0
-    save.assert_called_once_with(str(tmp_path),payload)
+    save.assert_called_once_with(str(tmp_path),payload,max_storage_mb=2048)
     source.assert_not_called()
     encode.assert_not_called()
 

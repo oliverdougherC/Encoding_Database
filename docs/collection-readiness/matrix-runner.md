@@ -199,3 +199,26 @@ of the dead-letter artifact rename. `compileall` and `git diff --check` passed.
 No matrix campaign was started and no production upload was made by this review.
 The packaged client must be rebuilt from the integrated commit to include ordinary
 upload-only tombstone handling; source-level test success is not native certification.
+
+
+## Publication storage admission
+
+Both ordinary publication and `--upload-only --resume-campaign` enforce the client
+`--max-storage-mb` limit across the entire queue, including retained campaign
+originals, managed upload copies, receipts, terminal/dead-letter evidence and
+unfinished temporary files. Before copying a new artifact, admission checks its
+immutable size, available filesystem bytes, the new queue envelope and 64 KiB of
+metadata headroom. An OS lock serializes publishers for the same queue. An existing
+managed artifact is reused without charging another copy; existing pending,
+receipted and terminal identities keep their original retry state and deadlines.
+
+A capacity refusal creates no artifact copy and no permanent rejection. Ordinary
+campaign execution pauses with exit 6 and retains its attempt journal. Upload-only
+reports a recoverable exit 10 and can still replay previously queued work. Free
+space or raise the declared cap, then resume the same campaign; do not create a
+replacement campaign or delete prior evidence. The matrix runner passes its
+`--cell-storage-mb` value as the upload CLI's `--max-storage-mb`, so publication may
+require increasing both the cell and total runner allowances after timing. The
+runner's separate filesystem reserve remains in effect. These admission checks do
+not reserve filesystem space against unrelated applications; a later ENOSPC or
+quota failure also leaves publication recoverable.

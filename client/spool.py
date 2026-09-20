@@ -1,10 +1,12 @@
 import hashlib
+import errno
 import json
 import os
 import shutil
 import time
 import random
 from pathlib import Path
+from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -13,6 +15,67 @@ from .network import SubmitError, submit
 
 SPOOL_VERSION = 1
 MANAGED_ARTIFACT_DIRNAME = "artifacts"
+SPOOL_METADATA_RESERVE_BYTES = 64 * 1024
+
+
+class SpoolCapacityError(OSError):
+    """Recoverable publication pause; immutable campaign artifacts remain owned."""
+
+
+@contextmanager
+def _spool_write_lock(queue_dir: str):
+    # Serialize admission and the managed copy across CLI processes. Never unlink
+    # this inode: the OS releases ownership after a process exits or crashes.
+    os.makedirs(queue_dir, exist_ok=True)
+    with open(os.path.join(queue_dir, "publication.lock"), "a+b") as handle:
+        if os.name == "nt":
+            import msvcrt
+            if os.fstat(handle.fileno()).st_size == 0:
+                handle.write(b"0")
+                handle.flush()
+            handle.seek(0)
+            acquire = lambda: msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            release = lambda: msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+        else:
+            import fcntl
+            acquire = lambda: fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            release = lambda: fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        try:
+            acquire()
+        except OSError as exc:
+            raise SpoolCapacityError("Another publisher owns this queue; retry publication later") from exc
+        try:
+            yield
+        finally:
+            release()
+
+
+def _check_spool_capacity(queue_dir: str, payload: Dict[str, Any], max_storage_mb: int) -> None:
+    staged = dict(payload)
+    copy_bytes = 0
+    if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
+        source = str(payload.get("artifactPath") or "").strip()
+        sha = str(payload.get("artifactSha256") or "").strip().lower()
+        if source and sha and os.path.exists(source):
+            size = int(payload.get("artifactByteSize", -1))
+            if size < 0 or os.path.getsize(source) != size:
+                raise ValueError("Retained artifact size differs from immutable upload metadata")
+            destination = _managed_artifact_path(queue_dir, sha, source)
+            if not os.path.exists(destination):
+                copy_bytes = size
+            staged.update(artifactPath=destination, artifactManaged=True)
+    metadata_bytes = len(json.dumps(_envelope_for_payload(staged), sort_keys=True).encode("utf-8"))
+    # Count campaign originals, managed copies, pending records, receipts, terminal
+    # evidence and temporary files. Stat errors fail closed rather than undercount.
+    def fail_scan(error):
+        raise error
+    used = sum(os.stat(os.path.join(root, name)).st_size
+               for root, _, names in os.walk(queue_dir, onerror=fail_scan) for name in names)
+    required = copy_bytes + metadata_bytes + SPOOL_METADATA_RESERVE_BYTES
+    if used + required > max_storage_mb * 1024 * 1024:
+        raise SpoolCapacityError("Publication storage budget reached; increase --max-storage-mb and resume the retained campaign")
+    if shutil.disk_usage(queue_dir).free < required:
+        raise SpoolCapacityError("Insufficient free disk for publication staging; free space and resume the retained campaign")
 
 
 @dataclass
@@ -272,7 +335,17 @@ def terminal_spool_entry(queue_dir: str, local_hash: str) -> Optional[Tuple[str,
     return None
 
 
-def spool_payload(queue_dir: str, payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+def spool_payload(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int = 2048) -> Tuple[str, Dict[str, Any]]:
+    try:
+        with _spool_write_lock(queue_dir):
+            return _spool_payload_locked(queue_dir, payload, max_storage_mb=max_storage_mb)
+    except OSError as exc:
+        if exc.errno in (errno.ENOSPC, errno.EDQUOT):
+            raise SpoolCapacityError("Publication ran out of disk space; free space and resume the retained campaign") from exc
+        raise
+
+
+def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int) -> Tuple[str, Dict[str, Any]]:
     receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash_for_payload(payload)}.json")
     if os.path.isfile(receipt_path):
         return receipt_path, _envelope_for_payload(payload)
@@ -290,6 +363,7 @@ def spool_payload(queue_dir: str, payload: Dict[str, Any]) -> Tuple[str, Dict[st
             if terminal is None:
                 raise ValueError("Corrupt upload could not retain terminal identity")
             return terminal
+    _check_spool_capacity(queue_dir, payload, max_storage_mb)
     spool_payload_value = _preserve_artifact_for_spool(queue_dir, payload)
     envelope = _envelope_for_payload(spool_payload_value)
     _write_json_atomic(path, envelope)

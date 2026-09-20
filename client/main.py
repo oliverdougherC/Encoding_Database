@@ -85,6 +85,7 @@ from .spool import (
     inspect_spool,
     replay_spool,
     spool_payload,
+    SpoolCapacityError,
     submit_spooled_path,
 )
 from .stats import should_skip_submission
@@ -1167,8 +1168,9 @@ def _submit_payload_with_spool(
     api_key: str,
     retries: int,
     use_token: bool,
+    max_storage_mb: int = 2048,
 ) -> Tuple[str, str, int]:
-    path, _entry = spool_payload(queue_dir, payload)
+    path, _entry = spool_payload(queue_dir, payload, max_storage_mb=max_storage_mb)
     status, message = submit_spooled_path(
         path,
         queue_dir=queue_dir,
@@ -1981,6 +1983,7 @@ def run_benchmark_batch(
                             queue_dir=args.queue_dir,
                             base_url=base_url,
                             payload=authoritative_submission,
+                            max_storage_mb=getattr(args, "max_storage_mb", 2048),
                             api_key=args.api_key,
                             retries=max(1, args.retries),
                             use_token=use_token,
@@ -2031,6 +2034,8 @@ def run_benchmark_batch(
                                 repetitionIndex=record.schedule.repetition_index,
                                 executionOrder=record.schedule.execution_order,
                             )
+                    except SpoolCapacityError:
+                        raise
                     except Exception as e:
                         failed_count += 1
                         error_text = str(e)
@@ -2492,6 +2497,7 @@ def run_legacy_diagnostic(
                     queue_dir=args.queue_dir,
                     base_url=base_url,
                     payload=clean_payload,
+                    max_storage_mb=getattr(args, "max_storage_mb", 2048),
                     api_key=args.api_key,
                     retries=max(1, args.retries),
                     use_token=use_token,
@@ -2517,6 +2523,9 @@ def run_legacy_diagnostic(
                     print(f"Failed to submit {effective_preset}: {message}", file=sys.stderr)
                     progress.advance(description=f"{effective_preset} (failed)")
                     _emit_event(event_sink, "submit_result", scope="single", index=task_index, total=len(combos), status="failed", preset=effective_preset, error=message)
+            except SpoolCapacityError as exc:
+                print_warning(f"Upload deferred: {exc}")
+                return 10
             except Exception as e:
                 failed_count += 1
                 print(f"Failed to submit {effective_preset}: {e}", file=sys.stderr)
@@ -2851,6 +2860,7 @@ def main(argv: List[str]) -> int:
         try:
             check_compatibility(args.base_url, CLIENT_VERSION)
             campaign_failures = False
+            publication_deferred = False
             if args.resume_campaign:
                 root = journal_path(args.queue_dir, args.resume_campaign)
                 marker = root / "campaign-complete.json"
@@ -2858,13 +2868,19 @@ def main(argv: List[str]) -> int:
                     result = json.loads(marker.read_text())
                     campaign_failures = bool(result.get("skipped") or result.get("failed"))
                 for path in sorted(root.glob("submission-*.json")):
-                    _spooled_path, entry = spool_payload(args.queue_dir, json.loads(path.read_text()))
+                    try:
+                        _spooled_path, entry = spool_payload(args.queue_dir, json.loads(path.read_text()),
+                                                            max_storage_mb=args.max_storage_mb)
+                    except SpoolCapacityError as exc:
+                        print_warning(f"Upload deferred: {exc}")
+                        publication_deferred = True
+                        break
                     if entry.get("terminal") is True:
                         campaign_failures = True
                         print_warning(f"Retained upload is terminal ({entry.get('lastError') or 'terminal_upload'}); see {_spooled_path}.")
             stats = replay_spool(args.queue_dir, base_url=args.base_url, api_key=args.api_key,
                                  retries=1, use_token=False)
-            return 1 if campaign_failures or stats.dead_lettered or stats.corrupt else (10 if count_pending_entries(args.queue_dir) else 0)
+            return 1 if campaign_failures or stats.dead_lettered or stats.corrupt else (10 if publication_deferred or count_pending_entries(args.queue_dir) else 0)
         except Exception as exc:
             print(f"Upload deferred: {exc}", file=sys.stderr)
             return 10

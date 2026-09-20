@@ -59,6 +59,13 @@ class MatrixRunnerTests(unittest.TestCase):
         self.assertEqual([x['session'] for x in mac], sorted(x['session'] for x in mac))
         self.assertEqual(len(runner.plan(MATRIX, ['source-b', 'nvenc-host'], [1, 2], 9, Path('/tmp/test'))), 448)
 
+    def test_upload_command_preserves_declared_cell_storage_cap(self):
+        item = runner.plan(MATRIX, ['source-a'], [1], 9, Path('/tmp/test'))[0]
+        cmd = runner.command('/fake/cli', item, 37, 2, 'campaign-0123456789abcdef', True, 'http://unused')
+        self.assertEqual(cmd[cmd.index('--max-storage-mb') + 1], '37')
+        self.assertEqual(cmd.count('--max-storage-mb'), 1)
+        self.assertIn('--upload-only', cmd)
+
     def test_exact_native_commands_all_cells(self):
         for slot in MATRIX['sourceSlots']:
             for item in runner.plan(MATRIX, [slot], [1, 2], 9, Path('/tmp/test')):

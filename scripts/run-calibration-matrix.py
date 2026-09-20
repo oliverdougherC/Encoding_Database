@@ -76,11 +76,11 @@ def plan(matrix, slots, sessions, seed, root):
 
 
 def command(cli, item, storage_mb, minutes, campaign=None, upload=False, base_url=None):
-    args = [str(cli), '--cli', '--queue-dir', item['queueDir']]
+    args = [str(cli), '--cli', '--queue-dir', item['queueDir'], '--max-storage-mb', str(storage_mb)]
     if upload:
         args += ['--upload-only', '--resume-campaign', campaign, '--base-url', base_url, '--retries', '0']
     else:
-        args += ['--no-submit', '--max-attempts', '5', '--max-storage-mb', str(storage_mb),
+        args += ['--no-submit', '--max-attempts', '5',
                  '--max-duration-minutes', str(minutes)]
         if campaign:
             args += ['--resume-campaign', campaign]
