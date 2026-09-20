@@ -1,0 +1,46 @@
+TAP version 13
+# Subtest: only explicit loopback TLS targets are allowed
+ok 1 - only explicit loopback TLS targets are allowed
+  ---
+  duration_ms: 0.431833
+  type: 'test'
+  ...
+# Subtest: real TLS streaming, injected retry responses, and one lost committed response
+ok 2 - real TLS streaming, injected retry responses, and one lost committed response
+  ---
+  duration_ms: 44.755917
+  type: 'test'
+  ...
+# Subtest: body and wall-clock budgets terminate owned proxy work
+ok 3 - body and wall-clock budgets terminate owned proxy work
+  ---
+  duration_ms: 207.681041
+  type: 'test'
+  ...
+# Subtest: TLS verification rejects an untrusted upstream certificate
+ok 4 - TLS verification rejects an untrusted upstream certificate
+  ---
+  duration_ms: 6.894167
+  type: 'test'
+  ...
+# Subtest: active concurrency and streamed response sizes remain bounded
+ok 5 - active concurrency and streamed response sizes remain bounded
+  ---
+  duration_ms: 506.561208
+  type: 'test'
+  ...
+# Subtest: a rejected upload does not consume the once-only successful-response fault
+ok 6 - a rejected upload does not consume the once-only successful-response fault
+  ---
+  duration_ms: 7.489083
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 869.304
