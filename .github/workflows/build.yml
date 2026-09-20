@@ -362,11 +362,67 @@ jobs:
         run: python scripts/verify_runtime_model.py
       - name: Run native Windows client build
         if: ${{ !inputs.runtime_lock_evidence }}
+        id: windows-native-build
         shell: pwsh
         run: ./scripts/build_windows_client.ps1
 
+      - name: Retain unverified Windows candidate binaries and build-verified sidecars
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-windows-${{ github.sha }}
+          retention-days: 90
+          if-no-files-found: error
+          compression-level: 0
+          include-hidden-files: true
+          path: |
+            encodingdb-client-windows*
+            .test-reports/runtime-model/
+            .test-reports/native-smoke/
+            encodingdb-test-suite-v1.tar.gz
+            client/resources/test_suite_v1/notices/
+            client/resources/test_suite_v1/suite-lock.json
+            client/resources/test_suite_v1/suite-pack.json
+            release.json
+      - name: Capture pre-GUI Windows resource snapshot
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $output = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-pre-gui'
+          New-Item -ItemType Directory -Force $output | Out-Null
+          $memory = Get-CimInstance Win32_OperatingSystem
+          $drives = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP | ForEach-Object { [IO.Path]::GetPathRoot($_).TrimEnd('\') } | Select-Object -Unique)
+          $disks = @(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DeviceID -in $drives } | ForEach-Object {
+            @{ drive = $_.DeviceID; freeBytes = [int64]$_.FreeSpace; totalBytes = [int64]$_.Size }
+          })
+          $snapshot = [ordered]@{
+            schemaVersion = 1; capturedAt = [DateTime]::UtcNow.ToString('o')
+            status = 'CANDIDATE_GUI_AND_CONSOLE_ACCEPTANCE_UNVERIFIED'
+            sourceCommit = (git rev-parse HEAD); workflowCommit = $env:GITHUB_SHA
+            totalRamBytes = [int64]$memory.TotalVisibleMemorySize * 1024
+            availableRamBytes = [int64]$memory.FreePhysicalMemory * 1024
+            disks = $disks
+            phasePaths = @{
+              gui = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-native-gui/gui'
+              console = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-native-gui/console'
+              nativeSmoke = Join-Path $env:GITHUB_WORKSPACE '.test-reports/native-smoke'
+              extractionParent = $env:RUNNER_TEMP
+            }
+          }
+          $snapshot | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $output 'resources.json')
+      - name: Retain pre-GUI Windows resource snapshot
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-pre-gui-${{ github.sha }}
+          path: .test-reports/windows-pre-gui/resources.json
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: error
+
       - name: Exercise actual packaged Windows GUI
-        if: ${{ !inputs.runtime_lock_evidence }}
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
         timeout-minutes: 31
         shell: powershell
         run: ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 600
@@ -411,24 +467,6 @@ jobs:
           include-hidden-files: true
           compression-level: 0
           if-no-files-found: error
-      - name: Retain windows candidate binaries and verified sidecars
-        if: ${{ always() && !inputs.runtime_lock_evidence }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: candidate-windows-${{ github.sha }}
-          retention-days: 90
-          if-no-files-found: error
-          compression-level: 0
-          include-hidden-files: true
-          path: |
-            encodingdb-client-windows*
-            .test-reports/runtime-model/
-            .test-reports/native-smoke/
-            encodingdb-test-suite-v1.tar.gz
-            client/resources/test_suite_v1/notices/
-            client/resources/test_suite_v1/suite-lock.json
-            client/resources/test_suite_v1/suite-pack.json
-            release.json
 
   migration:
     name: migration
