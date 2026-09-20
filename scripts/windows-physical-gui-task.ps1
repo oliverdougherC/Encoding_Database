@@ -4,6 +4,8 @@ param(
  [Parameter(Mandatory=$true)][ValidatePattern('^[a-z0-9-]{1,40}$')][string]$Label,
  [ValidatePattern('^[a-z0-9-]{1,40}$')][string]$RunLabel='',
  [switch]$Direct,
+ [ValidatePattern('\\queue-[^\\]*$')][string]$ResumeQueueDir='',
+ [ValidatePattern('^campaign-[0-9a-f]{16}$')][string]$ResumeCampaign='',
  [ValidateSet('Start','Cleanup')][string]$Action='Start'
 )
 $ErrorActionPreference='Stop'
@@ -26,10 +28,14 @@ if ($Action -eq 'Cleanup') {
 if (Test-Path -LiteralPath $receiptPath) { throw 'Create-only GUI task receipt already exists' }
 $name='EncodingDB-PhysicalGUI-'+$RunLabel+'-'+[Guid]::NewGuid().ToString('N').Substring(0,8)
 if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) { throw 'Create-only task collision' }
-if ($Direct) {
- $execute='powershell.exe'
- $launcher=Join-Path $Root 'windows-physical-run-gui-direct.ps1'
- $arguments='-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launcher+'" -Root "'+$Root+'" -Label '+$Label+' -RunLabel '+$RunLabel
+ if ($Direct -and $ResumeQueueDir -and $ResumeCampaign) {
+  $execute='powershell.exe'
+  $launcher=Join-Path $Root 'windows-physical-resume-direct.ps1'
+  $arguments='-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launcher+'" -Root "'+$Root+'" -Label '+$Label+' -RunLabel '+$RunLabel+' -QueuePath "'+$ResumeQueueDir+'" -CampaignId '+$ResumeCampaign
+ } elseif ($Direct) {
+  $execute='powershell.exe'
+  $launcher=Join-Path $Root 'windows-physical-run-gui-direct.ps1'
+  $arguments='-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launcher+'" -Root "'+$Root+'" -Label '+$Label+' -RunLabel '+$RunLabel
 } else {
  $execute=Join-Path $Root ('source-'+$Label+'\.build\clients\windows\venv\Scripts\pythonw.exe')
  $launcher=Join-Path $Root 'windows-physical-run-gui.py'
