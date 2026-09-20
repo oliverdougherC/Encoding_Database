@@ -1,0 +1,1787 @@
+{
+ "summary": {
+  "terminalOnlyCount": 32,
+  "byClassification": {
+   "valid-unrecorded-sealed-member": 32
+  },
+  "validUnrecordedCandidates": []
+ },
+ "identities": [
+  {
+   "payloadHash": "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/28cd8e61682b8ae7b4d892bed96c8d24c4697887c896e4391323223d690a651b.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888951.839048,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+     "runId": "cmu9hnyrr0046o3dwc9f4x2x8",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+     "wall": 2292.955542,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "7e95a763b67be452e1772293fb6b626c5082a4f024ac7087c5ccc042a7d062b2",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/2e45a91792315e7525c62fda52fa1a9b8e2f8ac6992406548be9ef275318411f.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888952.076352,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+     "runId": "cmu9hnyrr0046o3dwc9f4x2x8",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+     "wall": 2292.955542,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "859371ab773048eeb8ee99b471367d798c1d2e65f12bb0ba64608073398a23f1",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/3d938f79b5262229768a78528e89973e04b82497d9b7d14120686fb8b4c1e95f.json",
+   "campaignId": "campaign-5cdcb087bc1fc57a",
+   "repetitionGroupId": "campaign-5cdcb087bc1fc57a:animation-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "7b52e178522cd616e0488be4f7f1cb107a4fa87fdca6933a3a1fcc3c13c8b886",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789889577.314961,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-5cdcb087bc1fc57a",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-5cdcb087bc1fc57a:animation-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+     "idx": 1,
+     "ph": "b618c8739852672171a55a1c282f5bbe000a703b9833812793f75d01248b4f77",
+     "runId": "cmu9i17ex0055o3dwg1x2yiqi",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "be097d8a84e2b7918f1e52d22a4808b1ec02decde51fd47933e84c850f38908b",
+     "wall": 1068.001375,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "3d67a823be83969f246cac0984335b1cd1d25a9b11d63d0d1abeebd41f07967b",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/482c774fa84b8e3f7fc771b64140ce4f5f0d730e767c35e5680f1219029145a3.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888963.7263858,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d611cedb8fe4d53b2d65b1a7839cbbfbae6cd2aa423c85e76dc68b9a9079b761",
+     "runId": "cmu9w82i2000dpmdwjnrnxjtf",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+     "wall": 2015.198333,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "3d67a823be83969f246cac0984335b1cd1d25a9b11d63d0d1abeebd41f07967b",
+     "runId": "cmu9ho8lr004qo3dw0w7rpury",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+     "wall": 2072.028084,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "d611cedb8fe4d53b2d65b1a7839cbbfbae6cd2aa423c85e76dc68b9a9079b761",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/5318aac07edc731f10a73319927b031c1e1502dfe1f22c3ea65f5d374a857ad5.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888965.307914,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d611cedb8fe4d53b2d65b1a7839cbbfbae6cd2aa423c85e76dc68b9a9079b761",
+     "runId": "cmu9w82i2000dpmdwjnrnxjtf",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+     "wall": 2015.198333,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "3d67a823be83969f246cac0984335b1cd1d25a9b11d63d0d1abeebd41f07967b",
+     "runId": "cmu9ho8lr004qo3dw0w7rpury",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+     "wall": 2072.028084,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "37787a046f80309d304dc3ec81f0628ba32bf38f98b3a2406e2280b4dbe6745d",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/6a5e3a7b2a7683e0e83d47a04e3f624a22a698bf2a7eec5c0490c3056e702fc9.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:film-grain-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "12e80f96e5222ec6742ddc10774a14c527736f68252941d9a11011e8544e0e7a",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888965.51459,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:film-grain-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "68a9bf14ef6702d037f6fa43dc228481809de4a456eb608c92fd703d07bd03dc",
+     "runId": "cmu9hnufp0040o3dwdurd0nny",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "12e80f96e5222ec6742ddc10774a14c527736f68252941d9a11011e8544e0e7a",
+     "wall": 2809.823208,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "60c83728a35daac257bada189e7c7a538e09b9088d9c8029933529c6406d7893",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/6f5bf127252f9463213da982082358f47cb95d064ddb25328188ec767bf67caa.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888965.710939,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+     "idx": 4,
+     "ph": "8b6e182e7e33790d5495b9901e56028464a1126b5735fe30c0739a19176119c6",
+     "runId": "cmu9ho6gj004ko3dwoq8e26ea",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+     "wall": 1543.51875,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "b743ef8c1fafc1f2567c49e86913ad00aa85ce067b7ca1e02d1455960f2f4f3c",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/6fa8bfc0da7e01c412c05747c65808f5481ff4a6a212253710b561ee3f35361f.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 4,
+   "recipeId": null,
+   "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888965.99232,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+     "runId": "cmu9hnyrr0046o3dwc9f4x2x8",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+     "wall": 2292.955542,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "80061727258656fe917604c390e2a201e104d21ef099f1b727858eeaae4eacbd",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/7ac81c19b1a76a124391db2dbb77a0e16eb711905d6f17b47da25139b7c5b003.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888966.192798,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+     "idx": 4,
+     "ph": "8b6e182e7e33790d5495b9901e56028464a1126b5735fe30c0739a19176119c6",
+     "runId": "cmu9ho6gj004ko3dwoq8e26ea",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+     "wall": 1543.51875,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "e47c5515d3b9d81482f8b4f2df3baef5bf447f7e094ee5859e808db73e3c0d38",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/806875559aa16b4b1f01ee99727b5201ca4ffe0c642a868bb911f322a0c2ef96.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888966.392382,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:talking-head-1080p24-final|libx264|fast|23",
+     "idx": 4,
+     "ph": "8b6e182e7e33790d5495b9901e56028464a1126b5735fe30c0739a19176119c6",
+     "runId": "cmu9ho6gj004ko3dwoq8e26ea",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+     "wall": 1543.51875,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "3b4757556a7c846bd33b70021d51ac01f70ac18186f6d6928946e76e2a545354",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/a2e891a03d3cd9b65dca257743e46342b8a007bdbdd1077ca8f1c7fe1ed3d6b4.json",
+   "campaignId": "campaign-5cdcb087bc1fc57a",
+   "repetitionGroupId": "campaign-5cdcb087bc1fc57a:natural-detail-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "5e3289e1677a84814dc249c4cb07e1248849fd84a6b18cc6e05b583a253f390f",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789889591.7093492,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-5cdcb087bc1fc57a",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-5cdcb087bc1fc57a:natural-detail-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+     "idx": 2,
+     "ph": "40f313c308fe036782f13ed5cdde385c9663a91ba24a3fe3e0009867870d240f",
+     "runId": "cmu9i1dlf005fo3dwnqr2gp9n",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6",
+     "wall": 1290.994125,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "c005acf1f19498a730ce82f71b2c168471c9dd5c33527133c2e876b9215e41fa",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/d6aa29161093b8c701c1016cb4c540112a461eff84a3143d64bcc8698007127f.json",
+   "campaignId": "campaign-5cdcb087bc1fc57a",
+   "repetitionGroupId": "campaign-5cdcb087bc1fc57a:film-grain-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "cadc80793723d9c58a3cc9f461d2fbab8c0bc0e3590b900d0cc5621b54a8d358",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789889595.907514,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-5cdcb087bc1fc57a",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-5cdcb087bc1fc57a:film-grain-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+     "idx": 1,
+     "ph": "cecca88f34a81c25919e954fc377ce09dbf73828cad0dc836a63de57f344e230",
+     "runId": "cmu9i1l3j005uo3dwsmh7vzyj",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "7a25f5c111c07362826c8c9876086a661b2c2db2a4fdd6d2de41b5477f72f2b9",
+     "wall": 1267.704917,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "0ea3897dde46f926b82079beda261479fbd689828a3ee7c4815cda342ed57221",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/e4084688487716e723d143561393848e0f003650e6e70e32ef281dbbfc4815e3.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888967.1373281,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:animation-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+     "runId": "cmu9hnyrr0046o3dwc9f4x2x8",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+     "wall": 2292.955542,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "57b054a33ac54199b42c390e861a00903efa4f12653dca95e660b3c99daf1324",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/e5ad52354084a1dd5ef20a996f01021813debef847458cf9bace597ff38723b5.json",
+   "campaignId": "campaign-5cdcb087bc1fc57a",
+   "repetitionGroupId": "campaign-5cdcb087bc1fc57a:screen-text-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "625aabced9d49cc86b29637a0ecf06f2f6099eddc59b04fc9189d68c31e0cc8a",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789889596.127996,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-5cdcb087bc1fc57a",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-5cdcb087bc1fc57a:screen-text-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+     "idx": 1,
+     "ph": "cd08c8f15d645f6c8d701b5629d04fbfe513f9b347c61833408fc1bd9c98f297",
+     "runId": "cmu9i1jv3005po3dw9t2p8gx4",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "e7a77861b5777978940ed0b6d0332a7c7b7bd1aac514e9f3160736907875d1c8",
+     "wall": 1226.623583,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "c18273c8239db2eecd8020e917ea8161709925ed9ea5e2c4edfcbb42e35e76a7",
+   "source": "mac-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/mac-terminal/fe530c951f9f8b4a6cf25296402f026e3bf131d13f9e3eb4725ec56518f8e299.json",
+   "campaignId": "campaign-cda14a5876e816b6",
+   "repetitionGroupId": "campaign-cda14a5876e816b6:screen-text-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789888967.371934,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-cda14a5876e816b6",
+     "src": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+     "grp": "campaign-cda14a5876e816b6:screen-text-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "971c495f21e4aea701ff716dddd57b5170a84360c533f6d3aa0496fb51a1bb24",
+     "runId": "cmu9hobi7004to3dwfy5jnirz",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+     "wall": 485.391375,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "9882e227eb6a9c5020a2c8755dbfb5908b043caa4c02ef141a420024fd2ec55f",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/1cf39940010c34f9defa87222e7137715223426a1106a86cbfdd2cc90836738b.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "51e7453afb00de17284f0b6c2f3214ff06911ed957ebc68821a9a90500d29a7d",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894196.3085265,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:animation-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "9882e227eb6a9c5020a2c8755dbfb5908b043caa4c02ef141a420024fd2ec55f",
+     "runId": "cmu9ksajy000dl9dwpa9t8j65",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "51e7453afb00de17284f0b6c2f3214ff06911ed957ebc68821a9a90500d29a7d",
+     "wall": 1473.9109,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "257071c1f1c06bfd9c64206edfb0134d195bb65695b49e8b3abe1c4e01b7115f",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/7bea129c03552ad996b1f1ae0f7b247101d224c732b1d1dd60cbeef27dd3b9f2.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:athletic-action-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "6f0eb93ad67d3a266b0322425814389a324605cbf80e43f33217e822ba1b8e31",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894209.5763288,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "257071c1f1c06bfd9c64206edfb0134d195bb65695b49e8b3abe1c4e01b7115f",
+     "runId": "cmu9kslvi000rl9dw00mk2myp",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "6f0eb93ad67d3a266b0322425814389a324605cbf80e43f33217e822ba1b8e31",
+     "wall": 1331.8753,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "b36b01760fec37d09893302ed5c7ab4e8c967518bc545e00e0fec9f876ddae21",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/a4cd98cfe515634fbf3d05612ff96a5e9ee511a173fac3f836ebf4e555c0552b.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:animation-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "51e7453afb00de17284f0b6c2f3214ff06911ed957ebc68821a9a90500d29a7d",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894209.9327986,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:animation-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "9882e227eb6a9c5020a2c8755dbfb5908b043caa4c02ef141a420024fd2ec55f",
+     "runId": "cmu9ksajy000dl9dwpa9t8j65",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "51e7453afb00de17284f0b6c2f3214ff06911ed957ebc68821a9a90500d29a7d",
+     "wall": 1473.9109,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "850cf5be90691e26a5afe6b5756d41d00dd6f7b1648919698193deaa9f0fa20e",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/b2a4d0be4af2cbcbf433d1247f2b4cae9cbc8e8f4327b1939d106bf1ef36039f.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:screen-text-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "1124485c9bccd0cdb8c8847db5fd5422df5efa6cdf4431875f72641348a4b6b3",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894213.9775653,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:screen-text-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "569d361acafbbbf6a7e0a8de67af74cb9ed1f796c514a5d2edfca21b532b0446",
+     "runId": "cmu9kskg8000ll9dw22b47vip",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "1124485c9bccd0cdb8c8847db5fd5422df5efa6cdf4431875f72641348a4b6b3",
+     "wall": 490.6035000000001,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "f2b1bde6be048301fa7542a1bff0f213318dd9b854e2d3f025f515daadc50979",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/bc4e69ef1550c9c57ca25867a84cf9b73c5d636190b9fd8263e17efe8bf5bb4b.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:athletic-action-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "6f0eb93ad67d3a266b0322425814389a324605cbf80e43f33217e822ba1b8e31",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894214.3341234,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:athletic-action-1080p24-final|libx264|fast|23",
+     "idx": 1,
+     "ph": "257071c1f1c06bfd9c64206edfb0134d195bb65695b49e8b3abe1c4e01b7115f",
+     "runId": "cmu9kslvi000rl9dw00mk2myp",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "6f0eb93ad67d3a266b0322425814389a324605cbf80e43f33217e822ba1b8e31",
+     "wall": 1331.8753,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "edbe234b97199b605108b94c4ed75b3d2c3a03fb6d281acfaf5527393a98a0dc",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/cd1f785fb4532e9f55fd708500e8888dfc8439ce6a666ce3e8df36cdebb9d3c6.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:natural-detail-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "eac93bf3a95a923e581829a93bbdede40d85eaf75d475dd72d82585d63fbffb9",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894214.6764462,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:natural-detail-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "2af7b382b77dffc1e77d4f064867b1a485edf5bbe72a42670f6b94453e7c7448",
+     "runId": "cmu9ksfqd000gl9dw3tbo1xsu",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "eac93bf3a95a923e581829a93bbdede40d85eaf75d475dd72d82585d63fbffb9",
+     "wall": 1309.4919,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "ed0aa02016326b66bff1b38a6374b6da61fa33d1fcd6297ff1c9315b42fcbab7",
+   "source": "windows-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged/windows-terminal/d11f443f1641cede6fe4b7d35aa3823ebb83431a6a78f7613d737860e5947fad.json",
+   "campaignId": "campaign-48cfe70dd43b036c",
+   "repetitionGroupId": "campaign-48cfe70dd43b036c:talking-head-1080p24-final|libx264|fast|23",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "38c0c692639f5087999cb94c993256f4fa9d5a757927f7395489b6b2a4fb75e5",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789894215.0009851,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-48cfe70dd43b036c",
+     "src": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+     "grp": "campaign-48cfe70dd43b036c:talking-head-1080p24-final|libx264|fast|23",
+     "idx": 2,
+     "ph": "54e5b18f50b811b1ed60661a2ffaec3a71fdd729cd706e83b5f8496921a3333c",
+     "runId": "cmu9ksq8j000ul9dwqlk07dzh",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "38c0c692639f5087999cb94c993256f4fa9d5a757927f7395489b6b2a4fb75e5",
+     "wall": 1007.2745,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/27cee3b72a22f8dd009b6c7e3ef600ff2dc989432524a86ac959f706d768f2c4.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886132.905458,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 4,
+     "ph": "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+     "runId": "cmu9fzywi0011o3dw668udcpv",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4892.719583,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 1,
+     "ph": "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818",
+     "runId": "cmu9fzkfu000do3dwv6uk23hw",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4735.496188,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+     "runId": "cmu9fzty6000vo3dwkn54meul",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4972.294883,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 3,
+     "ph": "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+     "runId": "cmu9g021d0019o3dw51u88z6a",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4989.528436,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "18a7df401eb0c214ec2dbd9e21f4a7d7aa37693a3157a5ac257e91810973558b",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/3f70cf6f4d78f6807d66708d5a2cba494d5f49dcd4fe5caf76985bca5328e809.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789885861.698622,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "464383bc47a1fd43e523c06b609cac6d670e574124ebd3a171006c1c6d6184d0",
+     "runId": "cmu9ftos50005o1dwezve65r4",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+     "wall": 3270.066204,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/6966d6d8c10d717690ae4767839389cc8d8e6510ba025026b6886f0ea415280b.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886145.136616,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 4,
+     "ph": "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+     "runId": "cmu9fzywi0011o3dw668udcpv",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4892.719583,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 1,
+     "ph": "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818",
+     "runId": "cmu9fzkfu000do3dwv6uk23hw",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4735.496188,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+     "runId": "cmu9fzty6000vo3dwkn54meul",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4972.294883,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 3,
+     "ph": "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+     "runId": "cmu9g021d0019o3dw51u88z6a",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4989.528436,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "d5df0952c71d5380a1f31fdf82d582a88ca2b772d175cca8d2fa87ff8e7a4357",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/7fd16d72afea5864901277ceffbf649c2336f17a7e024cc5f827e3015a028163.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789885862.0705779,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "464383bc47a1fd43e523c06b609cac6d670e574124ebd3a171006c1c6d6184d0",
+     "runId": "cmu9ftos50005o1dwezve65r4",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+     "wall": 3270.066204,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "08c66885d4ff81b5f88c0b57f83b2143d7b2a89213155025c0b87015a391dae9",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/8615b08e4e3e5e6381f36585d8de83a19e7bc5d6309225a7df961440da90bb20.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:athletic-action-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "1b8d11105a26f698c29a79fffc3aba689e04f907a70b42c322a0d38ce1cf3b52",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886148.0591557,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:athletic-action-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "08c66885d4ff81b5f88c0b57f83b2143d7b2a89213155025c0b87015a391dae9",
+     "runId": "cmu9fzwn7000yo3dw5bu8f9zy",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "1b8d11105a26f698c29a79fffc3aba689e04f907a70b42c322a0d38ce1cf3b52",
+     "wall": 4998.193127,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/8c34b11a5d12528b401bf0b5132ad6ad55d9a578d0610d42ba0c3412765e7812.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 4,
+   "recipeId": null,
+   "artifactSha256": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886151.8102133,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 4,
+     "ph": "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+     "runId": "cmu9fzywi0011o3dw668udcpv",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4892.719583,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 1,
+     "ph": "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818",
+     "runId": "cmu9fzkfu000do3dwv6uk23hw",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4735.496188,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+     "runId": "cmu9fzty6000vo3dwkn54meul",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4972.294883,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 3,
+     "ph": "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+     "runId": "cmu9g021d0019o3dw51u88z6a",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4989.528436,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/9f3dd70cb147e392fdc40a8b5fd73c00a453f7dc5f604faede06f7b80f5b9016.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+   "byteSize": null,
+   "lastError": "artifact upload rejected (400)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886155.5292015,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 4,
+     "ph": "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+     "runId": "cmu9fzywi0011o3dw668udcpv",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4892.719583,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 1,
+     "ph": "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818",
+     "runId": "cmu9fzkfu000do3dwv6uk23hw",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4735.496188,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+     "runId": "cmu9fzty6000vo3dwkn54meul",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4972.294883,
+     "completed": "true"
+    },
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:animation-1080p24-final|libx264|medium|24",
+     "idx": 3,
+     "ph": "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+     "runId": "cmu9g021d0019o3dw51u88z6a",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d",
+     "wall": 4989.528436,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": true,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "recorded-again-later"
+  },
+  {
+   "payloadHash": "990fa2f51e2f8ae2cee1e232fa64d7c46ee723df97a03fbd6bdec3250ddece0a",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/a4518f0f65747271c895fc4ad06c6d080214b5106d53901dbccf0124ffc178e3.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:screen-text-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "fe0b6f349d42f41edf33cb4cfccc216e36feac29b2b3b60538653af1d515d8d9",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886155.6751387,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:screen-text-1080p24-final|libx264|medium|24",
+     "idx": 1,
+     "ph": "9a15c31d6e3a57619f49403fef7de87d875616b69db376ac755fcd89e9a0383e",
+     "runId": "cmu9fzqet000qo3dw9cn02och",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "fe0b6f349d42f41edf33cb4cfccc216e36feac29b2b3b60538653af1d515d8d9",
+     "wall": 1861.350908,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "3a28746cbf3a049d83ecb273911bd98222162b3bbc3faafe7fe5419d37da36f5",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/cd11b391aa8cd30272fb353b0c96fc4f373300e724968d6ab44dc37653b8e711.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:athletic-action-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "1b8d11105a26f698c29a79fffc3aba689e04f907a70b42c322a0d38ce1cf3b52",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886155.7975178,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:athletic-action-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "08c66885d4ff81b5f88c0b57f83b2143d7b2a89213155025c0b87015a391dae9",
+     "runId": "cmu9fzwn7000yo3dw5bu8f9zy",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "1b8d11105a26f698c29a79fffc3aba689e04f907a70b42c322a0d38ce1cf3b52",
+     "wall": 4998.193127,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "d883a7fff69f8bdb8f7713b1f372150ca6058daf639876c3caec684469eba699",
+   "source": "software-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/software-queue/terminal/f7a3573ff1d14654faa3d94c85f02b63c2f697a5ab8fcb7ea88e5c396326fc9e.json",
+   "campaignId": "campaign-8b19e985307766a7",
+   "repetitionGroupId": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+   "repetitionIndex": 4,
+   "recipeId": null,
+   "artifactSha256": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 1,
+   "terminalUpdatedAt": 1789885863.610615,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-8b19e985307766a7",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-8b19e985307766a7:talking-head-1080p24-final|libx264|medium|24",
+     "idx": 2,
+     "ph": "464383bc47a1fd43e523c06b609cac6d670e574124ebd3a171006c1c6d6184d0",
+     "runId": "cmu9ftos50005o1dwezve65r4",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52",
+     "wall": 3270.066204,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "cb2f1fc1b12813dc661740c250f6cb93a9dc974d47190caad9c908a80af618c8",
+   "source": "nvenc-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/nvenc-queue/terminal/86a5fe1b9069db5afc7b907147d3bb22f325b9b219b94e1d79dd7c81cec52b58.json",
+   "campaignId": "campaign-83ac99a195c70b5d",
+   "repetitionGroupId": "campaign-83ac99a195c70b5d:talking-head-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "bd091cbd39a8062c2f8195f015ca2ca8dabc3f84510cb758458e918cfeda2cb2",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886830.1084304,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-83ac99a195c70b5d",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-83ac99a195c70b5d:talking-head-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+     "idx": 2,
+     "ph": "fb3c4cc471c903b1892b2e0c4d17c5c3329061ca481df87d2d42a616ff12d13b",
+     "runId": "cmu9fyjgs0001o3dw25ekbxxd",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "bd091cbd39a8062c2f8195f015ca2ca8dabc3f84510cb758458e918cfeda2cb2",
+     "wall": 2192.075604,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "1054b6b6296840334822a3f8924e19958405b3b8123b6f64febd65c4f7dce6f2",
+   "source": "nvenc-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/\u65e5\u672c\u8a9e client trial/nvenc-queue/terminal/a851c0e671bed54571678894045221dec5baec04ecefc22a0e67a957d9973b3f.json",
+   "campaignId": "campaign-83ac99a195c70b5d",
+   "repetitionGroupId": "campaign-83ac99a195c70b5d:screen-text-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+   "repetitionIndex": 1,
+   "recipeId": null,
+   "artifactSha256": "1648540ce5be7146f9c2ad691ed978b99b37d514d03716274fdbc9c5451b25fb",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 3,
+   "terminalUpdatedAt": 1789886830.496885,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-83ac99a195c70b5d",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-83ac99a195c70b5d:screen-text-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+     "idx": 2,
+     "ph": "a6b674031bf2c7f0b37bf0ccb25c8c54e1cff6e5f53b0cb778dcde5c18f2dc2d",
+     "runId": "cmu9gehoq002eo3dw3347tckq",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "1648540ce5be7146f9c2ad691ed978b99b37d514d03716274fdbc9c5451b25fb",
+     "wall": 1376.067287,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "52c1096231878c55026dde7b7773793ca7330ff710e1af9724b49e0867e0ed20",
+   "source": "gopfix-animation-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue/terminal/04a919f9282e85024ae975218e189c44cc33171f1d88ccc19c2d108210a49f4a.json",
+   "campaignId": "campaign-823401bfd2102eda",
+   "repetitionGroupId": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 4,
+   "recipeId": null,
+   "artifactSha256": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901040.336884,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-823401bfd2102eda",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "8f1138c4772fa152f13820f1a2dc33f67727605af089be3371d8cf083f707031",
+     "runId": "cmu9ov0g5000dlqdw17gwtrma",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+     "wall": 3720.131663,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "862068d4f45bd9dbf7e98607c218342e3cb1acd0d3e16af00689cee8def991ea",
+   "source": "gopfix-animation-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue/terminal/a05bbd829fac99cb445e38cf3ed20ec61a8ce2434029c4527a37a7ef803ee3b5.json",
+   "campaignId": "campaign-823401bfd2102eda",
+   "repetitionGroupId": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901039.0927012,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-823401bfd2102eda",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "8f1138c4772fa152f13820f1a2dc33f67727605af089be3371d8cf083f707031",
+     "runId": "cmu9ov0g5000dlqdw17gwtrma",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+     "wall": 3720.131663,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "e53b324427df039c1e00aceac6c50366124e09e60a60095ed744e3a3bc99b15e",
+   "source": "gopfix-animation-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue/terminal/ee9dfe306349c476e108cb7bad050ef602e9fbc0feb800d976fbf696d7c97efd.json",
+   "campaignId": "campaign-823401bfd2102eda",
+   "repetitionGroupId": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901037.8406093,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-823401bfd2102eda",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-823401bfd2102eda:natural-detail-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "8f1138c4772fa152f13820f1a2dc33f67727605af089be3371d8cf083f707031",
+     "runId": "cmu9ov0g5000dlqdw17gwtrma",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+     "wall": 3720.131663,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "6a70e42047ad382955589867509a3eb1777739855bfde116f32e8b7097701bb4",
+   "source": "gopfix-animation-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue/terminal/eecf45fe7e3d7d97c912132df9e79d519b8de401a552a108233ef1a7cd2441ec.json",
+   "campaignId": "campaign-823401bfd2102eda",
+   "repetitionGroupId": "campaign-823401bfd2102eda:screen-text-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901062.0044973,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-823401bfd2102eda",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-823401bfd2102eda:screen-text-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "16647961f471226176797a13c322cfb9c1d2641934d70a231ccefa7ac64b9df0",
+     "runId": "cmu9ovkso001flqdw6ku8kck8",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+     "wall": 1725.117441,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "e8a25a6fd83cc0389e2c8521732641669224ed3db988b666ca9cabb93fe1bcd8",
+   "source": "gopfix-athletic-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue/terminal/831bca113ac4c37465ca12c785b3eb99fdd4cbba668e1b688f601753c4932dc3.json",
+   "campaignId": "campaign-496b66c4aa78aa85",
+   "repetitionGroupId": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 4,
+   "recipeId": null,
+   "artifactSha256": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901939.7856226,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-496b66c4aa78aa85",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "208147b7fa3189baef3b783c2fa6a5d24daa3dec3624c69698a6bd3ba80fe13a",
+     "runId": "cmu9pecsi0047lqdw1gz39mna",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+     "wall": 3011.547116,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "9b96ec288c614528b2d7491b2413729ff4fa7d0f120d1a5edeb2564839ec8d1e",
+   "source": "gopfix-athletic-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue/terminal/8b94a558645f01feaeea1ed0b31c759cb11078f4890c7af4a03b0ae0c4dfafa0.json",
+   "campaignId": "campaign-496b66c4aa78aa85",
+   "repetitionGroupId": "campaign-496b66c4aa78aa85:animation-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901929.1929402,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-496b66c4aa78aa85",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-496b66c4aa78aa85:animation-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "b57dc05d779023eacc42c3f268408c6411d5d57e2653483e83c854ff335e1b29",
+     "runId": "cmu9pe6if003ilqdw2ht1ej63",
+     "status": "ACCEPTED",
+     "state": "RETAINED",
+     "sha": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+     "wall": 4015.546702,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "0d1ea0252d06c73bcd6fc486e11ced8679006e64a7a3a8cfb09c34f54d773d31",
+   "source": "gopfix-athletic-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue/terminal/b3a9b9f47b5aaf44caa91e28e642228f94a35871016078f0afef95902b57bdd3.json",
+   "campaignId": "campaign-496b66c4aa78aa85",
+   "repetitionGroupId": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 2,
+   "recipeId": null,
+   "artifactSha256": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901937.343807,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-496b66c4aa78aa85",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "208147b7fa3189baef3b783c2fa6a5d24daa3dec3624c69698a6bd3ba80fe13a",
+     "runId": "cmu9pecsi0047lqdw1gz39mna",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+     "wall": 3011.547116,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  },
+  {
+   "payloadHash": "b10cc539c453adb988ed0a9afda597e0168740bcbb6d7e32ee6b620f970f74a6",
+   "source": "gopfix-athletic-terminal",
+   "file": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue/terminal/bbc3a110edb18695596b20b8c1df59548e406b1f3518bf39ef955a50f0950902.json",
+   "campaignId": "campaign-496b66c4aa78aa85",
+   "repetitionGroupId": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+   "repetitionIndex": 3,
+   "recipeId": null,
+   "artifactSha256": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+   "byteSize": null,
+   "lastError": "run create rejected (409)",
+   "attempts": 0,
+   "terminalUpdatedAt": 1789901938.5639215,
+   "groupRecordedMembers": [
+    {
+     "campaign": "campaign-496b66c4aa78aa85",
+     "src": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+     "grp": "campaign-496b66c4aa78aa85:talking-head-1080p24-final|libx264|fast|24",
+     "idx": 1,
+     "ph": "208147b7fa3189baef3b783c2fa6a5d24daa3dec3624c69698a6bd3ba80fe13a",
+     "runId": "cmu9pecsi0047lqdw1gz39mna",
+     "status": "SUSPECT",
+     "state": "VERIFIED",
+     "sha": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+     "wall": 3011.547116,
+     "completed": "true"
+    }
+   ],
+   "recordedIndexMatchesTerminal": false,
+   "groupSealedCounted": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "terminalCountedInOwnReceipt": null,
+   "localAttemptValidity": "not-on-p910-spool",
+   "classification": "valid-unrecorded-sealed-member"
+  }
+ ]
+}

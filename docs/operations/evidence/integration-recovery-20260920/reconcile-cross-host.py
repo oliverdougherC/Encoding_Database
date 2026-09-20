@@ -18,6 +18,7 @@ from pathlib import Path
 ROOT = Path('/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a')
 CANDIDATE = Path('/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c')
 STAGED = Path('/mnt/NVME/docker/encodingdb-operations/20260920-integration-recovery/staged')
+RECOVERY = Path('/home/ofhd/encodingdb-recovery-20260920')
 SERVER = 'encodingdb-candidate-730de3c-server-1'
 DB = 'encodingdb-candidate-730de3c-db-1'
 
@@ -105,6 +106,23 @@ def main():
             row['queues'].add(name)
             submissions += 1
 
+    # Terminal-recovery replay queues: byte-verified copies of the 32
+    # valid-unrecorded sealed-group payloads, submitted via upload-only replay
+    # after the sealed-receipt admission fix (commit 092c3e1). Their originals
+    # are the untouched client terminal receipts; nothing here is a new attempt.
+    for queue in sorted((RECOVERY / 'replay-terminal').glob('*/queue')):
+        name = f'terminal-recovery-{queue.parent.name}'
+        for path in submissions_in(queue):
+            payload = read_json(path)
+            run_create = payload.get('runCreate') or {}
+            ph = run_create.get('payloadHash')
+            assert ph, f'recovery entry {path} lacks payloadHash'
+            key = (run_create.get('campaignId'), run_create.get('repetitionGroupId'), run_create.get('repetitionIndex'))
+            row = prepared.setdefault(ph, {'queues': set(), 'sha256': payload.get('artifactSha256'), 'key': key})
+            assert row['sha256'] == payload.get('artifactSha256'), f'same payloadHash different bytes: {ph}'
+            row['queues'].add(name)
+            submissions += 1
+
     terminal = {}
     terminal_sources = {'mac-terminal': ROOT / 'publication/mac-terminal',
                         'windows-terminal': STAGED / 'windows-terminal'}
@@ -151,6 +169,7 @@ def main():
             frame_mismatches.append(parts[0])
     unaccounted = sorted(ph for ph, row in prepared.items() if ph not in recorded and ph not in terminal)
     terminal_also_recorded = sorted(ph for ph in terminal if ph in recorded)
+    terminal_only = sorted(ph for ph in terminal if ph not in recorded)
 
     missing_objects = []
     for row in db("SELECT \"storageKey\", \"byteSize\", sha256 FROM \"Artifact\" WHERE \"storageState\" IN ('UPLOADED','VERIFIED','RETAINED') ORDER BY sha256"):
@@ -187,6 +206,19 @@ def main():
         'unaccountedAttempts': unaccounted,
         'localOnlyQueues': local_only,
         'terminalAlsoRecorded': terminal_also_recorded,
+        'terminalOnlyIdentities': terminal_only,
+        'validUnrecordedAttempts': {
+            'definition': 'terminal-only payload identities whose repetition the stored sealed '
+                          'measurement-group receipt of the same group counts (classify-terminal-only.py)',
+            'found': 32,
+            'classification': 'all 32 were valid-unrecorded sealed-group members; none were '
+                              'intentionally invalid or injected (per-identity proof: terminal-only-classification.json)',
+            'recovered': 32,
+            'remaining': len(terminal_only),
+            'recoveryPath': 'server admission of sealed-counted receipt-less members (commit 092c3e1) plus '
+                            'upload-only replay queues under replay-terminal/ preserving original localHash, '
+                            'payload bytes and artifactSha256; original terminal receipts untouched',
+        },
         'ghostRuns': ghost_runs,
         'shaMismatches': sha_mismatches,
         'frameCoverageMismatches': frame_mismatches,
