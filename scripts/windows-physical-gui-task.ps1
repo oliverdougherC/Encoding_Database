@@ -6,6 +6,7 @@ param(
  [switch]$Direct,
  [ValidatePattern('\\queue-[^\\]*$')][string]$ResumeQueueDir='',
  [ValidatePattern('^campaign-[0-9a-f]{16}$')][string]$ResumeCampaign='',
+ [string]$ResumeSuiteCacheDir='',
  [ValidateSet('Start','Cleanup')][string]$Action='Start'
 )
 $ErrorActionPreference='Stop'
@@ -31,7 +32,7 @@ if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) { throw 'Cr
  if ($Direct -and $ResumeQueueDir -and $ResumeCampaign) {
   $execute='powershell.exe'
   $launcher=Join-Path $Root 'windows-physical-resume-direct.ps1'
-  $arguments='-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launcher+'" -Root "'+$Root+'" -Label '+$Label+' -RunLabel '+$RunLabel+' -QueuePath "'+$ResumeQueueDir+'" -CampaignId '+$ResumeCampaign
+  $arguments='-NoProfile -NonInteractive -WindowStyle Hidden -File "'+$launcher+'" -Root "'+$Root+'" -Label '+$Label+' -RunLabel '+$RunLabel+' -QueuePath "'+$ResumeQueueDir+'" -CampaignId '+$ResumeCampaign+$(if ($ResumeSuiteCacheDir) { ' -SuiteCacheDir "'+$ResumeSuiteCacheDir+'"' } else { '' })
  } elseif ($Direct) {
   $execute='powershell.exe'
   $launcher=Join-Path $Root 'windows-physical-run-gui-direct.ps1'
