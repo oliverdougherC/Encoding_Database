@@ -6,7 +6,8 @@ param(
     [Parameter(Mandatory=$true)][ValidatePattern('^[a-z0-9-]{1,40}$')][string]$Label,
     [Parameter(Mandatory=$true)][ValidatePattern('^[a-z0-9-]{1,40}$')][string]$RunLabel,
     [Parameter(Mandatory=$true)][string]$QueuePath,
-    [Parameter(Mandatory=$true)][ValidatePattern('^campaign-[0-9a-f]{16}$')][string]$CampaignId
+    [Parameter(Mandatory=$true)][ValidatePattern('^campaign-[0-9a-f]{16}$')][string]$CampaignId,
+    [string]$SuiteCacheDir=''
 )
 $ErrorActionPreference='Stop'
 $rootPath=Join-Path $Root ('source-'+$Label)
@@ -57,24 +58,35 @@ try {
         if ($key -match '^(FFMPEG_EXE|FFPROBE_EXE|ENCODINGDB_(FFMPEG_PATH|FFPROBE_PATH|RUNTIME_.*|QUICK_CLIP_ID|SUITE_PACK_URL|SUITE_CACHE_DIR|STATE_DIR)|TCL_LIBRARY|TK_LIBRARY|PYTHONPATH|PYTHONHOME|LD_LIBRARY_PATH|DYLD_.*|V7_OPERATOR_.*)$') { [void]$info.EnvironmentVariables.Remove($key) }
     }
     $info.EnvironmentVariables['ENCODINGDB_RUNTIME_EVIDENCE_PATH']=Join-Path $state 'embedded-runtime.json'
-    $info.EnvironmentVariables['ENCODINGDB_SUITE_CACHE_DIR']=Join-Path $state 'suite-cache'
+    $info.EnvironmentVariables['ENCODINGDB_SUITE_CACHE_DIR']=if ($SuiteCacheDir) { $SuiteCacheDir } else { Join-Path $state 'suite-cache' }
     $info.EnvironmentVariables['ENCODINGDB_SUITE_PACK_PATH']=Join-Path $rootPath 'encodingdb-test-suite-v1.tar.gz'
     $info.EnvironmentVariables['ENCODINGDB_STATE_DIR']=Join-Path $Root 'host-state'
     $info.EnvironmentVariables['LOCALAPPDATA']=Join-Path $state 'localappdata'
     $info.EnvironmentVariables['TEMP']=Join-Path $state 'tmp';$info.EnvironmentVariables['TMP']=Join-Path $state 'tmp'
-    $info.Arguments=[string]::Join(' ',$quoted)
+    $info.EnvironmentVariables['PYTHONUNBUFFERED']='1'
     $receipt.command=@($exe)+$arguments
     $receipt.executableSha256=(Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    $receipt.suiteCacheDir=$info.EnvironmentVariables['ENCODINGDB_SUITE_CACHE_DIR']
     Save-Receipt
     $process=[Diagnostics.Process]::new();$process.StartInfo=$info
     [void]$process.Start()
     $stdoutTask=$process.StandardOutput.ReadToEndAsync();$stderrTask=$process.StandardError.ReadToEndAsync()
-    if (-not $process.WaitForExit(1500000)) {
-        $receipt.forcedCleanup=$true
-        $process.Kill();$process.WaitForExit(30000)
-        throw 'Resume exceeded its 25-minute bound; forced cleanup is failure'
+    $watchPath=Join-Path $Root ('gui-resume-'+$RunLabel+'.watch.log')
+    $startedAt=Get-Date
+    while (-not $process.WaitForExit(2000)) {
+        if (((Get-Date)-$startedAt).TotalMilliseconds -gt 1500000) {
+            $receipt.forcedCleanup=$true
+            $process.Kill();$process.WaitForExit(30000)
+            # Killing the PyInstaller bootloader can orphan the real Python child; sweep owned binaries.
+            foreach ($orphan in @(Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'encodingdb-client-*' -and $_.ExecutablePath -and ($_.ExecutablePath -like ('*'+$Root+'*')) })) {
+                try { Stop-Process -Id $orphan.ProcessId -Force; Start-Sleep -Seconds 1 } catch { }
+            }
+            throw 'Resume exceeded its 25-minute bound; forced cleanup is failure'
+        }
+        $cacheEnv=$info.EnvironmentVariables['ENCODINGDB_SUITE_CACHE_DIR']
+        $snapshot=[ordered]@{at=[DateTime]::UtcNow.ToString('o');cpuSeconds=[Math]::Round($process.TotalProcessorTime.TotalSeconds,1);mediaChildren=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') }).Count;cacheFiles=@(Get-ChildItem -LiteralPath $cacheEnv -Recurse -File -ErrorAction SilentlyContinue).Count}
+        $snapshot | ConvertTo-Json -Compress | Add-Content -LiteralPath $watchPath
     }
-    $receipt.exitCode=$process.ExitCode
     $stdoutTask.GetAwaiter().GetResult() | Set-Content -LiteralPath (Join-Path $Root ('gui-resume-'+$RunLabel+'.stdout.log'))
     $stderrTask.GetAwaiter().GetResult() | Set-Content -LiteralPath (Join-Path $Root ('gui-resume-'+$RunLabel+'.stderr.log'))
     if ($process.ExitCode -ne 0) { throw ('Packaged console resume returned '+$process.ExitCode) }
