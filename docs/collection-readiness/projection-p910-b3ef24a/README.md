@@ -1,0 +1,11 @@
+# Optimized P910 capacity repeat preparation
+
+The unchanged repeat is **not yet measured**. The earlier `939823e` trial's p95 failure remains the current P910 verdict.
+
+The complete failed synthetic database was preserved first as `/mnt/NVME/docker/encodingdb-operations/20260920-projection-b3ef24a/failed-939823e-before-reset.dump`, SHA256 `b7d094721595480f35ea3ce6158403844e10557046d7eab2c4137942b394a833`. Original full interval receipts remain under `docs/collection-readiness/projection-p910-20260920`.
+
+A bounded reset ran under the shared host lock on the old immutable `939823e` runtime from **03:49:20.072 to 03:49:52.161 UTC on 20 September 2026**. It verified and removed only the 20 documented arrival rows from the completed prior trial, their matching analyses/artifacts and memberships, then rebuilt the two affected cohorts through production persistence. No production, candidate or calibration database was touched. The original 100,000 runs/artifacts/analyses, 981 derived cohorts and 80,000 qualified members are restored. All original hot/normal/distant member hashes, centers, PL values and raw/source counts matched exactly. Independent global SQL set reconciliation found zero missing/extra members or dirty groups. `reset-seed.json` records every removed run ID and all checks.
+
+The first reset attempt failed before any delete statement and rolled back: JavaScript and Prisma/PostgreSQL rendered one generated floating-point value one ULP differently. The retained assertion is in `reset-assertion-serialization.txt`. The corrected guard round-trips expected fractional scalars through the identical PostgreSQL/Prisma path and requires exact equality; no numeric tolerance or measurement criterion changed. This was a fixture-guard correction, not a repeated capacity trial.
+
+Preparation overlaps only the root-authorized image/package build phase. The optimized image must be identified and operations must explicitly hand back a quiet host before the root grants the measured interval. The repeat retains 25 readers, 600 seconds, five writer cycles, the 1 GiB database cap, 30 connections, zero-error requirement and p95 ≤1,000 ms. The retained database container's lifetime counters include the prior trial; before/after counters and interval samples must distinguish that history from the new run.
