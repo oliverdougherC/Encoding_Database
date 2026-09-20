@@ -205,3 +205,187 @@ def test_canonical_publication_capacity_pause_keeps_completed_attempts_for_resum
         assert encode.call_count == prior_calls
         assert {p.name: p.read_bytes() for p in root.glob('attempt-*.json')} == attempts
         assert json.loads((root / 'campaign-complete.json').read_text())['failed'] == 0
+
+
+@pytest.mark.parametrize('mutation', ['cleanup', 'replay', 'dead_letter'])
+def test_shared_artifact_cannot_be_removed_between_admission_and_entry_commit(tmp_path, mutation):
+    import threading
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    first_path, first_entry = spool.spool_payload(queue, payload)
+    second = dict(payload, runCreate={'payloadHash': 'second-shared-measurement'})
+    staged, release = threading.Event(), threading.Event()
+    admitted, failures = [], []
+    preserve = spool._preserve_artifact_for_spool
+    def pause_after_preserve(*args, **kwargs):
+        value = preserve(*args, **kwargs)
+        staged.set()
+        if not release.wait(5):
+            raise AssertionError('test admission was not released')
+        return value
+    def admission():
+        try:
+            admitted.append(spool.spool_payload(queue, second))
+        except BaseException as exc:
+            failures.append(exc)
+    thread = threading.Thread(target=admission)
+    with mock.patch.object(spool, '_preserve_artifact_for_spool', side_effect=pause_after_preserve), \
+         mock.patch.object(spool, 'submit_artifact_submission', return_value={}) as send:
+        thread.start()
+        try:
+            assert staged.wait(5)
+            if mutation == 'cleanup':
+                with pytest.raises(spool.SpoolCapacityError):
+                    spool.cleanup_spool(queue)
+            elif mutation == 'dead_letter':
+                with pytest.raises(spool.SpoolCapacityError):
+                    spool.move_to_dead_letter(queue, first_path, first_entry, 'fixture-rejection')
+            else:
+                assert spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
+                    api_key='', retries=0, use_token=False)[0] == 'retained'
+                send.assert_not_called()
+            assert Path(first_entry['payload']['artifactPath']).read_bytes() == b'X' * 5
+        finally:
+            release.set()
+            thread.join(5)
+    assert not thread.is_alive()
+    assert not failures
+    new_path, new_entry = admitted[0]
+    if mutation == 'cleanup':
+        spool.cleanup_spool(queue)
+    elif mutation == 'dead_letter':
+        spool.move_to_dead_letter(queue, first_path, first_entry, 'fixture-rejection')
+    else:
+        with mock.patch.object(spool, 'submit_artifact_submission', return_value={}):
+            assert spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
+                api_key='', retries=0, use_token=False)[0] == 'submitted'
+    assert Path(new_path).is_file()
+    assert Path(new_entry['payload']['artifactPath']).read_bytes() == b'X' * 5
+    spool._validate_managed_artifact_for_replay(queue, new_entry['payload'])
+
+
+def test_cleanup_cannot_delete_new_staged_artifact_before_its_queue_entry(tmp_path):
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    preserve = spool._preserve_artifact_for_spool
+    def concurrent_cleanup(*args, **kwargs):
+        value = preserve(*args, **kwargs)
+        # Separate OS lock acquisition fails even in the same calling thread.
+        with pytest.raises(spool.SpoolCapacityError):
+            spool.cleanup_spool(queue)
+        return value
+    with mock.patch.object(spool, '_preserve_artifact_for_spool', side_effect=concurrent_cleanup):
+        path, entry = spool.spool_payload(queue, payload)
+    assert Path(path).is_file()
+    assert Path(entry['payload']['artifactPath']).read_bytes() == b'X' * 5
+
+
+def test_replay_finishing_during_admission_defers_commit_without_deleting_shared_media(tmp_path):
+    import threading
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    first_path, first = spool.spool_payload(queue, payload)
+    second = dict(payload, runCreate={'payloadHash': 'second'})
+    sending, finish = threading.Event(), threading.Event()
+    results = []
+    def network(*args, **kwargs):
+        sending.set()
+        if not finish.wait(5):
+            raise AssertionError('test network was not released')
+        return {'benchmarkRun': {'id': 'first'}}
+    def replay():
+        results.append(spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
+                       api_key='', retries=0, use_token=False))
+    preserve = spool._preserve_artifact_for_spool
+    def pause_for_network_finish(*args, **kwargs):
+        value = preserve(*args, **kwargs)
+        finish.set()
+        thread.join(5)
+        assert not thread.is_alive()
+        assert results[0][0] == 'retained'
+        assert Path(first['payload']['artifactPath']).read_bytes() == b'X' * 5
+        return value
+    thread = threading.Thread(target=replay)
+    with mock.patch.object(spool, 'submit_artifact_submission', side_effect=network):
+        thread.start()
+        try:
+            assert sending.wait(5)
+            with mock.patch.object(spool, '_preserve_artifact_for_spool', side_effect=pause_for_network_finish):
+                second_path, second_entry = spool.spool_payload(queue, second)
+        finally:
+            finish.set()
+            thread.join(5)
+    assert spool.load_spool_entry(first_path)['retryDeadlineAt'] == first['retryDeadlineAt']
+    with mock.patch.object(spool, 'submit_artifact_submission', return_value={}):
+        assert spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
+            api_key='', retries=0, use_token=False)[0] == 'submitted'
+    assert Path(second_path).is_file()
+    assert Path(second_entry['payload']['artifactPath']).read_bytes() == b'X' * 5
+
+
+@pytest.mark.parametrize('verdict', ['receipt', 'terminal'])
+def test_stale_network_response_cannot_replace_committed_publication_verdict(tmp_path, verdict):
+    from client.network import SubmitError
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    path, entry = spool.spool_payload(queue, payload)
+    calls = []
+    def network(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            if verdict == 'terminal':
+                spool.move_to_dead_letter(queue, path, entry, 'fixture-terminal')
+            else:
+                assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
+                    api_key='', retries=0, use_token=False)[0] == 'submitted'
+            raise SubmitError('stale failure', retryable=True)
+        return {'benchmarkRun': {'id': 'fixture-receipt'}}
+    with mock.patch.object(spool, 'submit_artifact_submission', side_effect=network):
+        status, _ = spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
+            api_key='', retries=0, use_token=False)
+    assert status == ('submitted' if verdict == 'receipt' else 'dead_lettered')
+    assert not Path(path).exists()
+    if verdict == 'receipt':
+        assert not (Path(queue) / 'terminal').exists()
+    else:
+        assert not (Path(queue) / 'receipts').exists()
+        assert spool.terminal_spool_entry(queue, entry['localHash'])[1]['retryDeadlineAt'] == entry['retryDeadlineAt']
+
+
+def test_replay_recovers_receipt_committed_before_pending_cleanup(tmp_path):
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    path, entry = spool.spool_payload(queue, payload)
+    receipt = Path(queue) / 'receipts' / Path(path).name
+    atomic_json(receipt, {'response': {'benchmarkRun': {'id': 'committed-before-crash'}}})
+    with mock.patch.object(spool, 'submit_artifact_submission') as send:
+        assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
+            api_key='', retries=0, use_token=False) == ('submitted', 'committed-before-crash')
+    send.assert_not_called()
+    assert not Path(path).exists()
+    assert not Path(entry['payload']['artifactPath']).exists()
+    assert receipt.exists()
+
+
+def test_stale_retry_failure_cannot_shorten_concurrent_server_backoff(tmp_path):
+    from client.network import SubmitError
+    queue = str(tmp_path / 'queue')
+    payload = payload_at(tmp_path / 'source.mp4', 5)
+    path, entry = spool.spool_payload(queue, payload)
+    calls = []
+    server_deadline = []
+    def network(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
+                api_key='', retries=0, use_token=False)[0] == 'retained'
+            server_deadline.append(spool.load_spool_entry(path)['nextAttemptAt'])
+            raise SubmitError('older generic failure', retryable=True)
+        raise SubmitError('server requires backoff', retryable=True, retry_after=1000)
+    with mock.patch.object(spool, 'submit_artifact_submission', side_effect=network):
+        assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
+            api_key='', retries=0, use_token=False)[0] == 'retained'
+    retained = spool.load_spool_entry(path)
+    assert retained['nextAttemptAt'] >= server_deadline[0]
+    assert retained['attempts'] == 2
+    assert retained['retryDeadlineAt'] == entry['retryDeadlineAt']

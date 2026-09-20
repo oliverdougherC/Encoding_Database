@@ -208,7 +208,11 @@ Both ordinary publication and `--upload-only --resume-campaign` enforce the clie
 originals, managed upload copies, receipts, terminal/dead-letter evidence and
 unfinished temporary files. Before copying a new artifact, admission checks its
 immutable size, available filesystem bytes, the new queue envelope and 64 KiB of
-metadata headroom. An OS lock serializes publishers for the same queue. An existing
+metadata headroom. An OS lock serializes admission, replay state commits, dead-letter movement and
+cleanup for the same queue. Replay releases the lock for network I/O and re-reads
+the durable state before committing its result. A concurrent receipt or terminal
+verdict cannot be overwritten by an older response, and cleanup cannot delete a
+managed artifact between its admission check and queue entry commit. An existing
 managed artifact is reused without charging another copy; existing pending,
 receipted and terminal identities keep their original retry state and deadlines.
 

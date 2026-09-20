@@ -2839,7 +2839,11 @@ def main(argv: List[str]) -> int:
         print("--submit and --no-submit cannot be used together.", file=sys.stderr)
         return 1
     if args.queue_cleanup:
-        _cleanup_queue(args.queue_dir)
+        try:
+            _cleanup_queue(args.queue_dir)
+        except SpoolCapacityError as exc:
+            print_warning(f"Queue cleanup deferred: {exc}")
+            return 10
         if not args.queue_status:
             return 0
     if args.queue_status:

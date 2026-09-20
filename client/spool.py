@@ -24,7 +24,7 @@ class SpoolCapacityError(OSError):
 
 @contextmanager
 def _spool_write_lock(queue_dir: str):
-    # Serialize admission and the managed copy across CLI processes. Never unlink
+    # Serialize all queue/managed-file mutations across CLI processes. Never unlink
     # this inode: the OS releases ownership after a process exits or crashes.
     os.makedirs(queue_dir, exist_ok=True)
     with open(os.path.join(queue_dir, "publication.lock"), "a+b") as handle:
@@ -189,6 +189,11 @@ def inspect_spool(queue_dir: str) -> QueueStatus:
 
 
 def cleanup_spool(queue_dir: str) -> CleanupStats:
+    with _spool_write_lock(queue_dir):
+        return _cleanup_spool_locked(queue_dir)
+
+
+def _cleanup_spool_locked(queue_dir: str) -> CleanupStats:
     stats = CleanupStats(pending_entries_retained=count_pending_entries(queue_dir))
 
     dead_letter_root = _dead_letter_dir(queue_dir)
@@ -196,7 +201,7 @@ def cleanup_spool(queue_dir: str) -> CleanupStats:
     for old in Path(dead_letter_root).glob("*.json"):
         local_hash = old.stem.rsplit("-", 1)[-1]
         if len(local_hash) == 64 and all(c in "0123456789abcdef" for c in local_hash):
-            terminal_spool_entry(queue_dir, local_hash)
+            _terminal_spool_entry_locked(queue_dir, local_hash)
     for path in _iter_files(dead_letter_root):
         try:
             file_size = int(os.path.getsize(path))
@@ -318,6 +323,11 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
 
 
 def terminal_spool_entry(queue_dir: str, local_hash: str) -> Optional[Tuple[str, Dict[str, Any]]]:
+    with _spool_write_lock(queue_dir):
+        return _terminal_spool_entry_locked(queue_dir, local_hash)
+
+
+def _terminal_spool_entry_locked(queue_dir: str, local_hash: str) -> Optional[Tuple[str, Dict[str, Any]]]:
     """Durable terminal identity; legacy dead letters are indexed before reuse."""
     path = os.path.join(queue_dir, "terminal", f"{local_hash}.json")
     if os.path.isfile(path):
@@ -350,7 +360,7 @@ def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storag
     if os.path.isfile(receipt_path):
         return receipt_path, _envelope_for_payload(payload)
     local_hash = local_hash_for_payload(payload)
-    terminal = terminal_spool_entry(queue_dir, local_hash)
+    terminal = _terminal_spool_entry_locked(queue_dir, local_hash)
     if terminal is not None:
         return terminal
     path = _queue_path(queue_dir, local_hash)
@@ -358,8 +368,8 @@ def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storag
         try:
             return path, load_spool_entry(path)
         except Exception:
-            move_to_dead_letter(queue_dir, path, None, "corrupt_existing_spool")
-            terminal = terminal_spool_entry(queue_dir, local_hash)
+            _move_to_dead_letter_locked(queue_dir, path, None, "corrupt_existing_spool")
+            terminal = _terminal_spool_entry_locked(queue_dir, local_hash)
             if terminal is None:
                 raise ValueError("Corrupt upload could not retain terminal identity")
             return terminal
@@ -416,6 +426,16 @@ def move_to_dead_letter(
     entry: Optional[Dict[str, Any]],
     reason: str,
 ) -> Tuple[str, Dict[str, Any]]:
+    with _spool_write_lock(queue_dir):
+        return _move_to_dead_letter_locked(queue_dir, source_path, entry, reason)
+
+
+def _move_to_dead_letter_locked(
+    queue_dir: str,
+    source_path: str,
+    entry: Optional[Dict[str, Any]],
+    reason: str,
+) -> Tuple[str, Dict[str, Any]]:
     os.makedirs(_dead_letter_dir(queue_dir), exist_ok=True)
     basename = os.path.basename(source_path)
     dead_name = f"{int(time.time() * 1000)}-{basename}"
@@ -424,7 +444,7 @@ def move_to_dead_letter(
     # A crash in either operation must not make resume assign a fresh deadline.
     local_hash = str((entry or {}).get("localHash") or Path(basename).stem)
     if len(local_hash) == 64 and all(c in "0123456789abcdef" for c in local_hash):
-        terminal = terminal_spool_entry(queue_dir, local_hash)
+        terminal = _terminal_spool_entry_locked(queue_dir, local_hash)
         if terminal is None:
             terminal_value = dict(entry or {})
             terminal_value.update(terminal=True, localHash=local_hash, lastError=reason[:500],
@@ -554,7 +574,7 @@ def _cleanup_managed_artifact_if_unreferenced(queue_dir: str, entry: Dict[str, A
 def _retain_entry(path: str, entry: Dict[str, Any], error: str, retry_after: float = 0.0) -> None:
     updated = _update_entry_for_attempt(entry, error=error)
     delay = max(retry_after, min(3600.0, 2 ** min(updated["attempts"], 12)) * random.uniform(0.75, 1.25))
-    updated["nextAttemptAt"] = time.time() + delay
+    updated["nextAttemptAt"] = max(float(entry.get("nextAttemptAt") or 0), time.time() + delay)
     _write_json_atomic(path, updated)
 
 
@@ -570,6 +590,42 @@ def _submission_success_message(payload: Dict[str, Any], response: Any) -> str:
     return ""
 
 
+def _current_spooled_entry_locked(path: str, queue_dir: str):
+    # A different replay may have finished while our network transaction was in
+    # progress. Its receipt/terminal verdict wins; never recreate stale entries.
+    receipt_path = os.path.join(queue_dir, "receipts", os.path.basename(path))
+    if os.path.isfile(receipt_path):
+        receipt = json.loads(Path(receipt_path).read_text())
+        pending_path = _queue_path(queue_dir, Path(path).stem)
+        if os.path.isfile(pending_path):
+            try:
+                pending = load_spool_entry(pending_path)
+            except ValueError:
+                pending = None
+            if pending is not None:
+                _cleanup_managed_artifact_if_unreferenced(queue_dir, pending, excluding_entry_path=pending_path)
+            os.remove(pending_path)
+        return None, ("submitted", _submission_success_message(
+            {"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, receipt.get("response")))
+    terminal = _terminal_spool_entry_locked(queue_dir, Path(path).stem)
+    if terminal is not None:
+        reason = str(terminal[1].get("lastError") or "terminal_upload")
+        if os.path.dirname(os.path.abspath(path)) == os.path.abspath(queue_dir) and os.path.exists(path):
+            try:
+                entry = load_spool_entry(path)
+            except (OSError, ValueError):
+                entry = None
+            _move_to_dead_letter_locked(queue_dir, path, entry, reason)
+        return None, ("dead_lettered", reason)
+    if not os.path.exists(path):
+        return None, ("retained", "spool_entry_no_longer_pending")
+    try:
+        return load_spool_entry(path), None
+    except Exception as exc:
+        _move_to_dead_letter_locked(queue_dir, path, None, f"corrupt_spool:{exc}")
+        return None, ("corrupt", str(exc))
+
+
 def submit_spooled_path(
     path: str,
     *,
@@ -579,65 +635,63 @@ def submit_spooled_path(
     retries: int,
     use_token: bool,
 ) -> Tuple[str, str]:
-    if os.path.dirname(os.path.abspath(path)) == os.path.abspath(os.path.join(queue_dir, "receipts")):
-        receipt = json.loads(Path(path).read_text())
-        return "submitted", _submission_success_message({"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, receipt.get("response"))
-    if os.path.dirname(os.path.abspath(path)) == os.path.abspath(os.path.join(queue_dir, "terminal")):
-        return "dead_lettered", str(json.loads(Path(path).read_text()).get("lastError") or "terminal_upload")
     try:
-        entry = load_spool_entry(path)
-    except Exception as exc:
-        move_to_dead_letter(queue_dir, path, None, f"corrupt_spool:{exc}")
-        return "corrupt", str(exc)
-    terminal = terminal_spool_entry(queue_dir, entry["localHash"])
-    if terminal is not None:
-        reason = str(terminal[1].get("lastError") or "terminal_upload")
-        move_to_dead_letter(queue_dir, path, entry, reason)
-        return "dead_lettered", reason
-    if time.time() >= entry.get("retryDeadlineAt", float("inf")):
-        move_to_dead_letter(queue_dir, path, entry, "retry_deadline_expired")
-        return "dead_lettered", "retry_deadline_expired"
-    if time.time() < entry.get("nextAttemptAt", 0):
-        return "retained", "retry_backoff_pending"
-    try:
-        payload = entry["payload"]
+        with _spool_write_lock(queue_dir):
+            entry, outcome = _current_spooled_entry_locked(path, queue_dir)
+            if outcome is not None:
+                return outcome
+            if time.time() >= entry.get("retryDeadlineAt", float("inf")):
+                _move_to_dead_letter_locked(queue_dir, path, entry, "retry_deadline_expired")
+                return "dead_lettered", "retry_deadline_expired"
+            if time.time() < entry.get("nextAttemptAt", 0):
+                return "retained", "retry_backoff_pending"
+            payload = entry["payload"]
+            if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
+                artifact_path = str(payload.get("artifactPath") or "").strip()
+                if not artifact_path or not os.path.exists(artifact_path):
+                    _move_to_dead_letter_locked(queue_dir, path, entry, "missing_spooled_artifact")
+                    return "dead_lettered", "missing_spooled_artifact"
+                try:
+                    _validate_managed_artifact_for_replay(queue_dir, payload)
+                except SubmitError as exc:
+                    _move_to_dead_letter_locked(queue_dir, path, entry, str(exc))
+                    return "dead_lettered", str(exc)
+                except Exception as exc:
+                    _retain_entry(path, entry, str(exc))
+                    return "retained", str(exc)
+        # The pending entry remains a managed-artifact reference. Network calls
+        # hold no queue lock, so other admissions and cleanup remain responsive.
         response: Any = None
-        if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
-            artifact_path = str(payload.get("artifactPath") or "").strip()
-            if not artifact_path or not os.path.exists(artifact_path):
-                move_to_dead_letter(queue_dir, path, entry, "missing_spooled_artifact")
-                return "dead_lettered", "missing_spooled_artifact"
-            _validate_managed_artifact_for_replay(queue_dir, payload)
-            response = submit_artifact_submission(
-                base_url,
-                payload,
-                retries=retries,
-            )
-        else:
-            submit(
-                base_url,
-                payload,
-                api_key=api_key,
-                retries=retries,
-                use_token=use_token,
-            )
-        _write_json_atomic(os.path.join(queue_dir, "receipts", os.path.basename(path)),
-                           {"localHash": entry["localHash"], "uploadedAt": time.time(), "response": response,
-                            "status": "uploaded_analysis_pending"})
-        _cleanup_managed_artifact_if_unreferenced(queue_dir, entry, excluding_entry_path=path)
+        error: Optional[Exception] = None
         try:
-            os.remove(path)
-        except Exception:
-            pass
-        return "submitted", _submission_success_message(payload, response)
-    except SubmitError as exc:
-        if exc.retryable:
-            _retain_entry(path, entry, str(exc), exc.retry_after)
-            return "retained", str(exc)
-        move_to_dead_letter(queue_dir, path, entry, str(exc))
-        return "dead_lettered", str(exc)
-    except Exception as exc:
-        _retain_entry(path, entry, str(exc))
+            if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
+                response = submit_artifact_submission(base_url, payload, retries=retries)
+            else:
+                submit(base_url, payload, api_key=api_key, retries=retries, use_token=use_token)
+        except Exception as exc:
+            error = exc
+        with _spool_write_lock(queue_dir):
+            entry, outcome = _current_spooled_entry_locked(path, queue_dir)
+            if outcome is not None:
+                return outcome
+            if error is not None:
+                if isinstance(error, SubmitError) and not error.retryable:
+                    _move_to_dead_letter_locked(queue_dir, path, entry, str(error))
+                    return "dead_lettered", str(error)
+                _retain_entry(path, entry, str(error), getattr(error, "retry_after", 0.0))
+                return "retained", str(error)
+            _write_json_atomic(os.path.join(queue_dir, "receipts", os.path.basename(path)),
+                               {"localHash": entry["localHash"], "uploadedAt": time.time(), "response": response,
+                                "status": "uploaded_analysis_pending"})
+            _cleanup_managed_artifact_if_unreferenced(queue_dir, entry, excluding_entry_path=path)
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+            return "submitted", _submission_success_message(payload, response)
+    except OSError as exc:
+        # Busy ownership or failed persistence is recoverable. Do not turn a
+        # publication race into a terminal rejection or replace retry identity.
         return "retained", str(exc)
 
 
