@@ -90,16 +90,43 @@ production epoch, 1.3 download URL or production approval is implied by this pac
   is archived; later progress remains in the preserved host ledger. Execution
   was stopped at the user's request to limit usage. Remaining work is checkpointed,
   not certified complete.
-
-Each receipt binds its actual source, binary and scope. Earlier test receipts and
-failed/suspect observations stay historical; passing later checks does not rewrite
-them. Synthetic capacity/recovery fixtures remain outside calibration and production.
+- **Live candidate membership:** the [cross-host reconciliation](operations/evidence/integration-recovery-20260920/cross-host-reconcile.json)
+  (tool: [reconcile-cross-host.py](operations/evidence/integration-recovery-20260920/reconcile-cross-host.py),
+  run on the candidate) scanned 173 submission originals from the P910 queues,
+  the Mac sealed copies and the Windows export into 150 distinct payload
+  identities; every identity is recorded or terminal (42 terminal receipts,
+  dead-letters indexed), the 118 candidate runs match those identities
+  byte-for-byte including disk verification, frame coverage agrees per row,
+  no run or object belongs to an unknown payload (the 59 ghost objects are
+  byte-twins of known bytes), every queue ends with an empty spool, and the
+  smoke queue is declared local-only with its payloads asserted absent from
+  any server. `DerivedResult` is empty: PL remains inactive.
+- **Defect recovery:** the [recovery receipt](operations/evidence/integration-recovery-20260920/receipt.json)
+  records all nine defect-rejected payloads recovered to recorded runs with
+  uploaded artifacts, including the two Windows uploads and one Mac payload
+  that had ended as terminal dead-letters; the server gained the operator-audited
+  requeue path that made this possible without deleting observations.
+- **Held analyses:** the review-gated analysis hold was lifted to concurrency 2
+  only to drain the ten held analyses, then restored to 0 with the hold
+  configuration preserved. The candidate now holds COMPLETE 56 and SUSPECT 62
+  with zero pending; the 62 SUSPECT verdicts are Oliver's review queue, not a
+  passed gate.
+- **Windows GUI:** the four-phase physical GUI acceptance (preparation Stop,
+  complete single run, measured Stop, Close) passed every automated gate via
+  ordinary observed-control clicks; the receipt deliberately stays
+  PENDING_PARENT_INSPECTION with 16 owned-window screenshots and UIA/Win32
+  dumps for visual review. The interrupted-then-resumed campaign receipts and
+  the coordinated r3 upload replay (35 recorded, 7 honest terminal receipts)
+  are bound into the [GUI acceptance directory](collection-readiness/windows-physical-b3ef24a/gui/).
 
 ## Remaining release gates
 
-1. **Finish exact-candidate acceptance.** Close the corrected Windows GUI gate and
-   ongoing Mac/Linux native campaigns, then complete retained-artifact publication
-   and recovery against the actual candidate topology. Bind support claims to
+1. **Finish exact-candidate acceptance.** Retained-artifact publication and
+   recovery against the actual candidate topology is complete and reconciled
+   across all three contributing hosts (Live candidate membership above). The
+   corrected Windows GUI acceptance passed its automated gates and awaits
+   parent visual inspection; ongoing Mac/Linux native campaigns remain open.
+   Bind support claims to
    executable/helper/model hashes, architecture, OS floor, signing and observed
    outcomes. Reconcile full preflight, migrations and affected checks with the final
    integrated application/operator revisions; a successful console or build does
@@ -148,6 +175,12 @@ without replacing services. Only applicable production authority permits
 `./deploy.sh --skip-pull`; that flag prevents advancing the checkout and does not
 itself prove approval or cleanliness. Rollback uses recorded prior images and a
 schema-compatible plan, with isolated restore verification and originals retained.
-The final handoff must add actual deployment/run/artifact/analysis IDs, published
-URLs/checksums, accepted epoch time and reviewed PL context/policy. Until those
-gates close, the verdict remains BLOCKED.
+The candidate stack itself now carries the reconciled totals: 118 runs,
+118 artifacts (63 VERIFIED, 55 RETAINED, all byte-verified on the candidate
+volume) and 118 analyses (56 COMPLETE, 62 SUSPECT, zero pending under the
+restored concurrency-0 review hold in the candidate `.env`; prior value backed
+up as `.env.bak-postdrain`). Production remains untouched; these IDs describe
+the isolated candidate only.
+The final handoff must add actual deployment IDs, published URLs/checksums,
+accepted epoch time and reviewed PL context/policy. Until those gates close,
+the verdict remains BLOCKED.
