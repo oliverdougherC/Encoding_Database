@@ -1,0 +1,12 @@
+[
+  {
+    "method": "GET",
+    "target": "/corrupt-pack",
+    "time": 1789869915.624972
+  },
+  {
+    "method": "CONNECT",
+    "target": "github.com:443",
+    "time": 1789869915.627307
+  }
+]

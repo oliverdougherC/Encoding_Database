@@ -1,0 +1,249 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-20T02:14:37.569229+00:00",
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "executableSha256": "ad01bfd36ad84e0e0d9f45730bd195c1b940a240493d093f6a875faa97a6f2c0",
+  "passed": true,
+  "diagnosticNotCalibration": true,
+  "noSubmission": true,
+  "noRemoteHostContact": true,
+  "exitCodes": {
+    "corrupt-pack": 3,
+    "cancel": 130,
+    "kill-after-resume": -9,
+    "resume-after-kill": 0,
+    "disk-full": 6,
+    "disk-full-freed-resume": 0,
+    "live-orphan-kill": -9,
+    "live-orphan-resume": 0
+  },
+  "volumeCapacity": {
+    "totalBytes": 67067904,
+    "availableBytes": 0,
+    "tinyFiles": 165,
+    "osError": {
+      "errno": 28,
+      "message": "[Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/owned-tail-165.bin'",
+      "freshOneByteWriteFailed": true
+    }
+  },
+  "volumeDetached": {
+    "device": "/dev/disk4s1",
+    "detached": true,
+    "imageSha256": "bed5f1fc0cfc6c8edceeac93d9c8a09e181e458b475f3e05eba0c87dac88ef0f",
+    "originalHostQueueRestored": true,
+    "originalRecordsUnchanged": true
+  },
+  "matchingMountedFaultImages": [],
+  "sharedProtectedInputsUnchanged": true,
+  "campaigns": [
+    {
+      "queue": "recovery-queue",
+      "campaignId": "campaign-250b62ed5aa9b145",
+      "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+      "attempts": [
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000001.json",
+          "recordSha256": "9aebb2f89ac61d6718c8c72c0b1d4a4c392ffaf4c01f32324628f41d49686cbf",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/001-libx264-veryslow-24-warmup-r1.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 1,
+            "phase": "warmup",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 1
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          }
+        },
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000002.json",
+          "recordSha256": "0cdc3e9c84ff0a6b728b27aa1ee7743736010860f82c41cc39e9567b67ec4314",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/002-libx264-veryslow-24-measured-r1.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 2,
+            "phase": "measured",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 1
+          },
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              }
+            ],
+            "state": "suspect"
+          }
+        },
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000003.json",
+          "recordSha256": "a1ec56ecab9b82ac4510b9be176b6a41787706369f5645c0aab7e56b66b9d53a",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue/campaigns/campaign-250b62ed5aa9b145/003-libx264-veryslow-24-measured-r2.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 3,
+            "phase": "measured",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 2
+          },
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              }
+            ],
+            "state": "suspect"
+          }
+        }
+      ]
+    },
+    {
+      "queue": "live-orphan-queue",
+      "campaignId": "campaign-250b62ed5aa9b145",
+      "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+      "attempts": [
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000001.json",
+          "recordSha256": "cb0ff90340d8e18e31adef1c23885f2032ed447fef15d2f78d6de5a9c10b397c",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/001-libx264-veryslow-24-warmup-r1.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 1,
+            "phase": "warmup",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 1
+          },
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          }
+        },
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000002.json",
+          "recordSha256": "f339d302d0605bac0b41173f883c65a322f6bb376cd39aaa32b2d5a4cd36a61d",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/002-libx264-veryslow-24-measured-r1.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 2,
+            "phase": "measured",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 1
+          },
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              }
+            ],
+            "state": "suspect"
+          }
+        },
+        {
+          "record": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000003.json",
+          "recordSha256": "124c8a1e7583ae9e4885f6eaf9352a41b85b3fe628c473414276c7a079e8f8a9",
+          "artifact": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/003-libx264-veryslow-24-measured-r2.mp4",
+          "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b",
+          "schedule": {
+            "campaign_id": "campaign-250b62ed5aa9b145",
+            "execution_order": 3,
+            "phase": "measured",
+            "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+            "repetition_index": 2
+          },
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              }
+            ],
+            "state": "suspect"
+          }
+        }
+      ]
+    }
+  ],
+  "packagedRuntimes": [
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/cancel-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEILZB0aO",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/corrupt-pack-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEINsSKU7",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/disk-full-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIzSdnS0",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/disk-full-freed-resume-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIXR1Pnm",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/kill-after-resume-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIW2xbCq",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/receipts/resume-after-kill-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIfqj0y1",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/live-orphan-receipts/live-orphan-kill-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIbbEeWq",
+      "removedAfterExit": true,
+      "frozen": true
+    },
+    {
+      "receipt": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/live-orphan-receipts/live-orphan-resume-embedded-runtime.json",
+      "extractionRoot": "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEI4hXTCL",
+      "removedAfterExit": true,
+      "frozen": true
+    }
+  ],
+  "liveTaskClientOrMediaProcesses": [],
+  "limitations": [
+    "Fault tests on battery; preserve all suspect flags.",
+    "Not calibration, throughput, eligibility, server, upload, or PL evidence.",
+    "Corrupt-pack network fallback uses an intentionally failing localhost proxy, not a real-server recovery test."
+  ]
+}

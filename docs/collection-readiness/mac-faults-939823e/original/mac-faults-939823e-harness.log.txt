@@ -1,0 +1,6 @@
+{"case": "corrupt-pack", "exit": 3, "seconds": 21.687701333023142}
+{"case": "cancel", "exit": 130, "seconds": 47.29553104197839}
+{"case": "kill-after-resume", "exit": -9, "seconds": 51.705134416988585}
+{"case": "resume-after-kill", "exit": 0, "seconds": 49.68837645900203}
+{"case": "disk-full", "exit": 6, "seconds": 30.833865833003074}
+{"case": "disk-full-freed-resume", "exit": 0, "seconds": 32.756209833023604}

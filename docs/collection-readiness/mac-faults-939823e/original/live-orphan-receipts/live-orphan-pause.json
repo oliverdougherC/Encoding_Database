@@ -1,0 +1,8 @@
+{
+  "signal": "SIGSTOP",
+  "pid": 35205,
+  "createdAt": 1789870200.382139,
+  "status": "stopped",
+  "at": "2026-09-20T02:10:00.432107+00:00",
+  "purpose": "Keep the owned orphan live until native recovery; no timing/calibration claim."
+}
