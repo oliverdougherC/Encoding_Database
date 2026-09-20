@@ -17,14 +17,15 @@ public static class EdbWindows {
  public sealed class Window { public long Parent; public string Text,Class; public int Control; public bool Visible=true,Enabled=true; public uint Owner=42; }
  public static Dictionary<long,Window> Data=new Dictionary<long,Window>();
  public sealed class ClickReceipt { public string Error; public uint InsertedCount; public long Root,Child; public int X,Y,Left,Top,Right,Bottom; }
- public static int Clicks; public static ClickReceipt LastClick; public static bool NextClickFails=false;
+ public static int Clicks; public static ClickReceipt LastClick; public static bool NextClickFails=false; public static bool DeferOnce=false;
  public static bool ActivateSucceeds=true; public static IntPtr Foreground=IntPtr.Zero;
  public static bool ShowWindow(IntPtr h,int mode){return true;}
  public static bool SetForegroundWindow(IntPtr h){if(ActivateSucceeds)Foreground=h;return true;}
  public static IntPtr GetForegroundWindow(){return Foreground;}
  public static ClickReceipt SendOwnedControlClick(IntPtr root,uint owner,IntPtr child,int x,int y,int left,int top,int right,int bottom){
   Clicks++;var r=new ClickReceipt();r.Root=root.ToInt64();r.Child=child.ToInt64();r.X=x;r.Y=y;r.Left=left;r.Top=top;r.Right=right;r.Bottom=bottom;
-  if(NextClickFails){r.Error="synthetic native rejection";}else{r.InsertedCount=3;}LastClick=r;return r;}
+  if(NextClickFails){r.Error="synthetic native rejection";}else if(DeferOnce){DeferOnce=false;r.Error="Secure desktop or held mouse/modifier input; no click.";}else{r.InsertedCount=3;}LastClick=r;return r;}
+ public static string DesktopName(){return "Default";}
  public static string Text(IntPtr h){return Data[h.ToInt64()].Text;}
  public static string Class(IntPtr h){return Data[h.ToInt64()].Class;}
  public static IntPtr GetParent(IntPtr h){return new IntPtr(Data[h.ToInt64()].Parent);}
@@ -102,7 +103,7 @@ function Click-Fixture {
     Ready-Fixture
     [EdbWindows]::Data[1].Text='EncodingDB Windows Client';[EdbWindows]::Data[1].Class='TkTopLevel'
     [EdbWindows]::ActivateSucceeds=$true;[EdbWindows]::Foreground=[IntPtr]::Zero
-    [EdbWindows]::Clicks=0;[EdbWindows]::LastClick=$null;[EdbWindows]::NextClickFails=$false
+    [EdbWindows]::Clicks=0;[EdbWindows]::LastClick=$null;[EdbWindows]::NextClickFails=$false;[EdbWindows]::DeferOnce=$false
     $script:observeCalls=0;$script:observeFail=$false;$script:failAfter=$null
     $script:events=@()
     $script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(5)
@@ -125,4 +126,8 @@ Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-native-cont
 Click-Fixture;[EdbWindows]::NextClickFails=$true
 Assert-Throws {Invoke-RunAction 'Stop'} '*BLOCKED_GUI_INPUT*synthetic native rejection*'
 Assert-True ([EdbWindows]::Clicks -eq 1) 'A rejected native click must be preserved without retry.'
+Click-Fixture;[EdbWindows]::DeferOnce=$true
+Invoke-RunAction 'Start'
+Assert-True ([EdbWindows]::Clicks -eq 2) 'A transient input-desktop refusal must be reobserved and retried within bounds.'
+Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-click-deferred-for-desktop' }).Count -eq 1) 'The input-desktop deferral was not recorded.'
 Write-Output 'PASS: real native readiness, primary-error preservation and observe-before-click functions; synthetic observations only, no Windows interaction.'

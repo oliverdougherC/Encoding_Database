@@ -58,6 +58,7 @@ public static class EdbWindows {
  [DllImport("user32.dll")] static extern bool CloseDesktop(IntPtr h);
  [DllImport("user32.dll",CharSet=CharSet.Unicode,SetLastError=true)] static extern bool GetUserObjectInformation(IntPtr h, int index, StringBuilder value, int bytes, out int required);
  [DllImport("user32.dll")] public static extern IntPtr SetThreadDpiAwarenessContext(IntPtr context);
+ [DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint flags);
  public delegate bool EnumProc(IntPtr h, IntPtr p);
  [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc f, IntPtr p);
  [DllImport("user32.dll")] static extern bool EnumChildWindows(IntPtr h, EnumProc f, IntPtr p);
@@ -128,6 +129,7 @@ public static class EdbWindows {
   try { var name=new StringBuilder(256); int needed; if(GetUserObjectInformation(desktop,2,name,512,out needed)) return name.ToString(); return null; }
   finally { CloseDesktop(desktop); }
  }
+ public static string DesktopName() { return InputDesktopName(); }
  public static ClickReceipt SendOwnedControlClick(IntPtr root, uint owner, IntPtr expectedChild, int x, int y, int observedLeft, int observedTop, int observedRight, int observedBottom) {
   var r=new ClickReceipt();r.Root=root.ToInt64();r.Owner=owner;r.Point.X=x;r.Point.Y=y;r.InputSize=Marshal.SizeOf(typeof(Input));
   IntPtr oldDpi=SetThreadDpiAwarenessContext(new IntPtr(-4));
@@ -382,9 +384,21 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     try { $observation=Get-ObservedRunControl $Action } catch { throw "BLOCKED_GUI_POINT: control observation changed before dispatch: $($_.Exception.Message)" }
     if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
     $script:operationStage="run-action:${Action}:click"
-    $native=[EdbWindows]::SendOwnedControlClick($observation.handle,$observation.owner,[IntPtr]$observation.child,[int]$observation.x,[int]$observation.y,[int]$observation.rootBounds.left,[int]$observation.rootBounds.top,[int]$observation.rootBounds.right,[int]$observation.rootBounds.bottom)
-    Record-Event 'observed-native-control-click' @{ action=$Action; control=$observation.label; processId=$observation.owner; observedHandle=$observation.handle.ToInt64(); childHandle=$observation.child.ToInt64(); controlBounds=$observation.controlBounds; rootBounds=$observation.rootBounds; point=@{ x=$observation.x; y=$observation.y }; attempts=$attempts; childEnabled=$observation.childEnabled; lastObservationError=$lastError; input=$native }
-    if ($native.Error) { throw "BLOCKED_GUI_INPUT: $($native.Error)" }
+    $desktopWaits=0
+    $clickDeadline=[DateTime]::UtcNow.AddSeconds(120); if ($clickDeadline -gt $script:harnessDeadline) { $clickDeadline=$script:harnessDeadline }
+    while ($true) {
+        $native=[EdbWindows]::SendOwnedControlClick($observation.handle,$observation.owner,[IntPtr]$observation.child,[int]$observation.x,[int]$observation.y,[int]$observation.rootBounds.left,[int]$observation.rootBounds.top,[int]$observation.rootBounds.right,[int]$observation.rootBounds.bottom)
+        Record-Event 'observed-native-control-click' @{ action=$Action; control=$observation.label; processId=$observation.owner; observedHandle=$observation.handle.ToInt64(); childHandle=$observation.child.ToInt64(); controlBounds=$observation.controlBounds; rootBounds=$observation.rootBounds; point=@{ x=$observation.x; y=$observation.y }; attempts=$attempts; desktopWaits=$desktopWaits; childEnabled=$observation.childEnabled; lastObservationError=$lastError; input=$native }
+        if (-not $native.Error) { break }
+        # A console screensaver lock swaps the input desktop off Default; the native guard refuses every click.
+        # Wait only for the same session to return to Default, reobserve, then allow one fresh click.
+        if ($native.Error -notlike 'Secure desktop or held mouse*' -or [DateTime]::UtcNow -ge $clickDeadline) { throw "BLOCKED_GUI_INPUT: $($native.Error)" }
+        Record-Event 'observed-click-deferred-for-desktop' @{ action=$Action; inputDesktop=[EdbWindows]::DesktopName(); waitedSeconds=$desktopWaits }
+        Start-Sleep -Seconds 2
+        $desktopWaits++
+        try { $observation=Get-ObservedRunControl $Action } catch { throw "BLOCKED_GUI_POINT: control observation changed while awaiting the input desktop: $($_.Exception.Message)" }
+        if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
+    }
     Record-Event 'observed-control-clicked' @{ action=$Action; control=$observation.label; backend='normal mouse click on visibly observed control'; insertedCount=$native.InsertedCount }
 }
 function Get-CompletionMarkers {
@@ -458,6 +472,10 @@ try {
         if ($phase.exitCode -ne 0) { throw "Seven-clip console returned $($phase.exitCode); not accepted as PASS." }
         $phase.survivors=@(Observe-Processes); if ($phase.survivors.Count) { throw 'Console left owned children running.' }; $phase.status='PASSED'
     } else {
+        # A console screensaver lock interrupted the previous evidence run mid-phase. This per-thread
+        # ES_CONTINUOUS|ES_DISPLAY_REQUIRED request lasts only for this harness process; it changes no
+        # system power or lock setting.
+        [void][EdbWindows]::SetThreadExecutionState([uint32]2147483650) # ES_DISPLAY_REQUIRED(0x80000002)|ES_CONTINUOUS(0x2)
         foreach ($name in @('prepare-stop','complete','stop','close')) {
             $phase=Start-Owned $name $true
             Wait-Until { return @(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' }).Count -eq 1 } 90 'BLOCKED_GUI_DESKTOP: no packaged GUI window appeared.'
