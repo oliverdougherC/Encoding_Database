@@ -14,7 +14,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Prisma } from '@prisma/client';
 import { prisma } from '../db.js';
 import {
   buildAuthoritativeQualityAnalysisRecord,
@@ -427,6 +427,11 @@ export interface ArtifactPipelinePersistence {
     stateReason?: string | null;
     stateDetails?: JsonObject | null;
   }): Promise<RunArtifactBundle>;
+  requeueRejectedArtifact(input: {
+    artifactId: string;
+    operator: string;
+    reason: string;
+  }): Promise<RunArtifactBundle>;
   getQualityAnalysis(
     benchmarkRunId: string,
     metricModelId: string,
@@ -608,6 +613,10 @@ const REANALYZE_SCHEMA = z.object({
   reason: z.string().trim().min(8).max(2000),
   analysisWorkerVersion: z.string().min(1).max(200).optional().nullable(),
   metricModelId: z.string().min(1).max(200).optional().nullable(),
+}).strict();
+
+const REQUEUE_SCHEMA = z.object({
+  reason: z.string().trim().min(8).max(2000),
 }).strict();
 
 const DEFAULT_ALLOWED_MIME_TYPES = new Set(['video/mp4', 'video/x-matroska', 'application/octet-stream']);
@@ -2127,6 +2136,13 @@ export class ArtifactPipelineService {
       availableBytes: disk.availableBytes, reservationMs: Number(process.env.ARTIFACT_RESERVATION_MS || 900_000) };
   }
 
+  async operatorRequeueArtifact(benchmarkRunId: string, role: ArtifactRoleValue, audit: { operator: string; reason: string }): Promise<RunArtifactBundle> {
+    if (role !== 'ENCODED') throw new HttpError(400, 'Only encoded artifacts support operator requeue');
+    const bundle = await this.requireBundle(benchmarkRunId, role);
+    if (bundle.artifact.storageState !== 'REJECTED') throw new HttpError(409, 'Only REJECTED artifacts can be requeued by an operator');
+    return await this.persistence.requeueRejectedArtifact({ artifactId: bundle.artifact.id, operator: audit.operator, reason: audit.reason });
+  }
+
   private async resolveCreateRunInput(input: CreateRunRequestInput): Promise<CreateRunInput> {
     const canonicalBenchmarkProtocol = assertCanonicalProtocolRules(input.benchmarkProtocol, this.suiteManifest.suiteVersion);
     const benchmarkProtocol = await this.persistence.resolveOrBootstrapBenchmarkProtocol(canonicalBenchmarkProtocol);
@@ -2592,6 +2608,24 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         String(req.params.benchmarkRunId),
         payload.analysisWorkerVersion,
         payload.metricModelId,
+        { operator: operatorIdentity(req), reason: payload.reason },
+      );
+      res.status(202).json(bundleToResponse(bundle));
+    } catch (error) {
+      const serialized = serializeError(error);
+      if ([429, 503, 507].includes(serialized.status)) res.setHeader('Retry-After', '30');
+      res.status(serialized.status).json(serialized.body);
+    }
+  });
+
+  router.post('/v7/benchmark-runs/:benchmarkRunId/artifacts/:role/operator-requeue', requireOperator, async (req, res) => {
+    try {
+      const role = String(req.params.role || '');
+      assertArtifactRole(role);
+      const payload = REQUEUE_SCHEMA.parse(req.body ?? {});
+      const bundle = await service.operatorRequeueArtifact(
+        String(req.params.benchmarkRunId),
+        role,
         { operator: operatorIdentity(req), reason: payload.reason },
       );
       res.status(202).json(bundleToResponse(bundle));
@@ -3440,6 +3474,38 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           where: { id: artifact.benchmarkRunId },
           include: PRISMA_RUN_INCLUDE,
         });
+      }, { timeout: 30_000, maxWait: 30_000 });
+      return normalizeBundle(run, 'ENCODED');
+    },
+    async requeueRejectedArtifact(input) {
+      // Audited recovery for artifacts rejected by an upload-time validation defect:
+      // the run keeps its immutable identity (payloadHash, sha256, byteSize); only the
+      // mutable storage state returns to PENDING so a re-upload passes the full current
+      // validation pipeline. The prior rejection evidence is preserved in stateDetails.
+      const run = await client.$transaction(async (tx) => {
+        await tx.$queryRawUnsafe('SELECT id FROM "Artifact" WHERE id = $1 FOR UPDATE', input.artifactId);
+        const bound = await tx.artifact.findUniqueOrThrow({ where: { id: input.artifactId } });
+        if (bound.storageState !== 'REJECTED') throw new HttpError(409, 'Only REJECTED artifacts can be requeued by an operator');
+        const now = await databaseNow(tx);
+        await tx.artifact.update({
+          where: { id: input.artifactId },
+          data: {
+            storageState: 'PENDING',
+            stateReason: 'OPERATOR_REQUEUED',
+            stateDetails: {
+              operatorRequeue: { operator: input.operator, reason: input.reason, at: now.toISOString(),
+                priorStateReason: bound.stateReason ?? null, priorStateDetails: bound.stateDetails ?? null },
+            } satisfies Prisma.InputJsonObject,
+            reservationExpiresAt: new Date(now.getTime() + 86_400_000),
+            uploadLeaseToken: null, uploadLeaseExpiresAt: null,
+            storageKey: null, storageUrl: null, uploadedAt: null, verifiedAt: null, retainedAt: null,
+          } satisfies Prisma.ArtifactUncheckedUpdateInput,
+        });
+        await tx.benchmarkRun.update({
+          where: { id: bound.benchmarkRunId },
+          data: { status: 'PENDING', statusReason: 'Encoded artifact requeued by operator for validated reupload', decidedAt: null },
+        });
+        return await tx.benchmarkRun.findUniqueOrThrow({ where: { id: bound.benchmarkRunId }, include: PRISMA_RUN_INCLUDE });
       }, { timeout: 30_000, maxWait: 30_000 });
       return normalizeBundle(run, 'ENCODED');
     },

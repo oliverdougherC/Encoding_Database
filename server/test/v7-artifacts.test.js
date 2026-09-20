@@ -368,6 +368,21 @@ class MemoryPersistence {
     return this.cloneBundle(record);
   }
 
+  async requeueRejectedArtifact(input) {
+    const record = this.runs.get(this.findRunIdByArtifactId(input.artifactId));
+    const artifact = record.artifacts.find((entry) => entry.id === input.artifactId);
+    if (artifact.storageState !== 'REJECTED') throw new Error('Only REJECTED artifacts can be requeued by an operator');
+    artifact.stateDetails = { operatorRequeue: { operator: input.operator, reason: input.reason,
+      priorStateReason: artifact.stateReason, priorStateDetails: artifact.stateDetails } };
+    artifact.storageState = 'PENDING';
+    artifact.stateReason = 'OPERATOR_REQUEUED';
+    artifact.storageKey = null;
+    artifact.storageUrl = null;
+    record.run.status = 'PENDING';
+    record.run.statusReason = 'Encoded artifact requeued by operator for validated reupload';
+    return this.cloneBundle(record);
+  }
+
   async getQualityAnalysis(benchmarkRunId, metricModelId, analysisWorkerVersion) {
     const record = this.runs.get(benchmarkRunId);
     return structuredClone(
@@ -1774,4 +1789,62 @@ test('default derived recompute callback leaves historical results untouched wit
   });
 
   assert.deepEqual(calls, []);
+});
+
+test('operator requeue returns a defect-rejected run to PENDING preserving immutable identity', async (t) => {
+  if (!CAN_BIND_LOOPBACK) return t.skip('loopback bind unavailable');
+  const previousToken = process.env.V7_OPERATOR_TOKEN;
+  const previousId = process.env.V7_OPERATOR_ID;
+  process.env.V7_OPERATOR_TOKEN = 'operator-test-token';
+  process.env.V7_OPERATOR_ID = 'release-operator';
+  t.after(() => {
+    if (previousToken === undefined) delete process.env.V7_OPERATOR_TOKEN; else process.env.V7_OPERATOR_TOKEN = previousToken;
+    if (previousId === undefined) delete process.env.V7_OPERATOR_ID; else process.env.V7_OPERATOR_ID = previousId;
+  });
+  const harness = await createHarness();
+  t.after(() => harness.close());
+  const created = await createRun(harness.baseUrl, harness.fixtures, { payloadHash: 'e'.repeat(64) });
+  assert.equal(created.response.status, 201);
+  const runId = created.json.benchmarkRun.id;
+  const artifactId = created.json.artifact.id;
+  const rejectedBundle = await harness.persistence.markArtifactState({
+    artifactId, storageState: 'REJECTED', stateReason: 'failed-media-contract-validation',
+    stateDetails: { phase: 'media-contract', failedAt: 'fixture' },
+  });
+  assert.equal(rejectedBundle.run.status, 'REJECTED');
+
+  const requeuePath = `/v7/benchmark-runs/${runId}/artifacts/ENCODED/operator-requeue`;
+  const auth = { authorization: 'Bearer operator-test-token', 'content-type': 'application/json' };
+  const post = (path, body, headers) => requestJson(harness.baseUrl, path, {
+    method: 'POST',
+    headers: { ...(headers ?? {}), 'content-length': String(Buffer.byteLength(body)) },
+    body,
+  });
+
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'defect repaired, requeue please' }))).status, 401);
+  assert.equal((await post(`/v7/benchmark-runs/${runId}/artifacts/METADATA/operator-requeue`, JSON.stringify({ reason: 'defect repaired, requeue please' }), auth)).status, 400);
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'nope' }), auth)).status, 400);
+
+  const requeued = await post(requeuePath, JSON.stringify({ reason: 'server-side media validation defect repaired; requeued for validated reupload' }), auth);
+  assert.equal(requeued.status, 202);
+  assert.equal(requeued.json.artifact.storageState, 'PENDING');
+  assert.equal(requeued.json.artifact.stateReason, 'OPERATOR_REQUEUED');
+  assert.equal(requeued.json.benchmarkRun.status, 'PENDING');
+  assert.equal(requeued.json.benchmarkRun.statusReason, 'Encoded artifact requeued by operator for validated reupload');
+
+  const stored = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.deepEqual(stored.artifact.stateDetails.operatorRequeue.priorStateReason, 'failed-media-contract-validation');
+  assert.deepEqual(stored.artifact.stateDetails.operatorRequeue.priorStateDetails, { phase: 'media-contract', failedAt: 'fixture' });
+  assert.equal(stored.artifact.sha256, created.json.artifact.sha256);
+  assert.equal(stored.artifact.byteSize, created.json.artifact.byteSize);
+
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'second attempt must be refused' }), auth)).status, 409);
+
+  // A re-authorized upload must be issued for the requeued artifact; frozen-REJECTED
+  // previously short-circuited with uploadRequired:false for the identical payload.
+  const authorization = await post(`/v7/benchmark-runs/${runId}/artifacts/ENCODED/upload-authorizations`, JSON.stringify({
+    sha256: created.json.artifact.sha256, byteSize: created.json.artifact.byteSize,
+  }), { 'content-type': 'application/json' });
+  assert.equal(authorization.status, 200, JSON.stringify(authorization.json));
+  assert.equal(authorization.json.uploadRequired, true);
 });
