@@ -1,0 +1,218 @@
+{
+ "generatedAt": "2026-09-20T21:56:48.261Z",
+ "browser": "headless Chrome (--headless=new --disable-gpu software decode)",
+ "entryOrigin": "http://127.0.0.1:8777/index.html",
+ "targets": [
+  {
+   "label": "REF athletic-action LOSSLESS H.264 preview",
+   "url": "http://127.0.0.1:8777/media/previews/athletic-action-1080p24-final-lossless-h264-preview.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.511,
+    "wallMs": 603,
+    "decodedFramesDelta": 14,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 19
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 225.5,
+    "stdev": 154.6
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "ENC athletic-action libx264 CRF23 artifact",
+   "url": "http://127.0.0.1:8777/media/cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.541,
+    "wallMs": 553,
+    "decodedFramesDelta": 16,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 47
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 226.3,
+    "stdev": 154.9
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "REF film-grain LOSSLESS H.264 preview",
+   "url": "http://127.0.0.1:8777/media/previews/film-grain-1080p24-final-lossless-h264-preview.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.537,
+    "wallMs": 702,
+    "decodedFramesDelta": 16,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 20
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 21.4,
+    "stdev": 45.8
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "REF natural-detail LOSSLESS H.264 preview",
+   "url": "http://127.0.0.1:8777/media/previews/natural-detail-1080p24-final-lossless-h264-preview.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.538,
+    "wallMs": 702,
+    "decodedFramesDelta": 16,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 20
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 417.2,
+    "stdev": 144.6
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "REF screen-text LOSSLESS H.264 preview",
+   "url": "http://127.0.0.1:8777/media/previews/screen-text-1080p24-final-lossless-h264-preview.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.543,
+    "wallMs": 553,
+    "decodedFramesDelta": 15,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 19
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 703.1,
+    "stdev": 158.2
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "REF animation LOSSLESS H.264 preview",
+   "url": "http://127.0.0.1:8777/media/previews/animation-1080p24-final-lossless-h264-preview.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 8,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.512,
+    "wallMs": 603,
+    "decodedFramesDelta": 15,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 5,
+    "landed": 5,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 20
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 597,
+    "stdev": 45.3
+   },
+   "error": null,
+   "PASS": true
+  },
+  {
+   "label": "ENC natural-detail videotoolbox artifact",
+   "url": "http://127.0.0.1:8777/media/3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6.mp4",
+   "metadata": {
+    "w": 1920,
+    "h": 1080,
+    "dur": 10,
+    "readyState": 1
+   },
+   "playback": {
+    "advancedBySec": 0.534,
+    "wallMs": 552,
+    "decodedFramesDelta": 16,
+    "droppedFramesDelta": 0
+   },
+   "seek": {
+    "target": 6,
+    "landed": 6,
+    "delta": 0,
+    "readyState": 4,
+    "decodedTotal": 44
+   },
+   "pixels": {
+    "samples": 57600,
+    "meanLumaSum": 418.6,
+    "stdev": 144.7
+   },
+   "error": null,
+   "PASS": true
+  }
+ ],
+ "allPass": true
+}
