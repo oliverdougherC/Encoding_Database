@@ -16,14 +16,14 @@ using System; using System.Collections.Generic;
 public static class EdbWindows {
  public sealed class Window { public long Parent; public string Text,Class; public int Control; public bool Visible=true,Enabled=true; public uint Owner=42; }
  public static Dictionary<long,Window> Data=new Dictionary<long,Window>();
- public sealed class ClickReceipt { public string Error; public uint InsertedCount; public long Root; public int X,Y,Left,Top,Right,Bottom; }
+ public sealed class ClickReceipt { public string Error; public uint InsertedCount; public long Root,Child; public int X,Y,Left,Top,Right,Bottom; }
  public static int Clicks; public static ClickReceipt LastClick; public static bool NextClickFails=false;
  public static bool ActivateSucceeds=true; public static IntPtr Foreground=IntPtr.Zero;
  public static bool ShowWindow(IntPtr h,int mode){return true;}
  public static bool SetForegroundWindow(IntPtr h){if(ActivateSucceeds)Foreground=h;return true;}
  public static IntPtr GetForegroundWindow(){return Foreground;}
- public static ClickReceipt SendOwnedControlClick(IntPtr root,uint owner,int x,int y,int left,int top,int right,int bottom){
-  Clicks++;var r=new ClickReceipt();r.Root=root.ToInt64();r.X=x;r.Y=y;r.Left=left;r.Top=top;r.Right=right;r.Bottom=bottom;
+ public static ClickReceipt SendOwnedControlClick(IntPtr root,uint owner,IntPtr child,int x,int y,int left,int top,int right,int bottom){
+  Clicks++;var r=new ClickReceipt();r.Root=root.ToInt64();r.Child=child.ToInt64();r.X=x;r.Y=y;r.Left=left;r.Top=top;r.Right=right;r.Bottom=bottom;
   if(NextClickFails){r.Error="synthetic native rejection";}else{r.InsertedCount=3;}LastClick=r;return r;}
  public static string Text(IntPtr h){return Data[h.ToInt64()].Text;}
  public static string Class(IntPtr h){return Data[h.ToInt64()].Class;}
@@ -87,16 +87,16 @@ $receipt=@{status='PENDING_EVIDENCE_VALIDATION';error=$null;primaryError=$null;c
 Record-CleanupFailure 'capture-owned-output' 'pipe still open' $null
 Assert-True ($receipt.error -eq 'Process cleanup/evidence failed: pipe still open') 'Cleanup-only failure was not reported.'
 function Capture-Ui([string]$Label) { return @() }
-# The real Get-ObservedRunControl performs live UIA; this synthetic double supplies
+# The real Get-ObservedRunControl enumerates live Win32 child windows; this synthetic double supplies
 # observation outcomes so the extracted Invoke-RunAction dispatch discipline is testable.
 $script:observeCalls=0; $script:observeFail=$false; $script:failAfter=$null
 function Get-ObservedRunControl([string]$Action) {
     $script:observeCalls++
     if ($script:observeFail -and ($null -eq $script:failAfter -or $script:observeCalls -gt $script:failAfter)) { throw 'BLOCKED_GUI_POINT: synthetic observation refused.' }
-    return @{ handle=$script:roots[0]; owner=42; label=$Action; x=134; y=270
+    return @{ handle=$script:roots[0]; owner=42; child=[IntPtr]55; label=$Action; x=134; y=270
               controlBounds=@{ x=60; y=251; width=149; height=38 }
               rootBounds=@{ left=12; top=12; right=1686; bottom=1211 }
-              patterns=@('InvokePattern') }
+              childEnabled=$true }
 }
 function Click-Fixture {
     Ready-Fixture
@@ -120,7 +120,7 @@ Click-Fixture
 Invoke-RunAction 'Start'
 Assert-True ([EdbWindows]::Clicks -eq 1) 'One prepared action must dispatch exactly one native click.'
 $click=[EdbWindows]::LastClick
-Assert-True ($click.X -eq 134 -and $click.Y -eq 270 -and $click.Left -eq 12 -and $click.Top -eq 12 -and $click.Right -eq 1686 -and $click.Bottom -eq 1211) 'The dispatch lost the exact observed point or pinned root geometry.'
+Assert-True ($click.Child -eq 55 -and $click.X -eq 134 -and $click.Y -eq 270 -and $click.Left -eq 12 -and $click.Top -eq 12 -and $click.Right -eq 1686 -and $click.Bottom -eq 1211) 'The dispatch lost the exact child handle, observed point or pinned root geometry.'
 Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-native-control-click' }).Count -eq 1 -and (@($script:events | Where-Object { $_.kind -eq 'observed-control-clicked' })[0].data.backend -like 'normal mouse click*')) 'Click receipts were not recorded.'
 Click-Fixture;[EdbWindows]::NextClickFails=$true
 Assert-Throws {Invoke-RunAction 'Stop'} '*BLOCKED_GUI_INPUT*synthetic native rejection*'

@@ -128,7 +128,7 @@ public static class EdbWindows {
   try { var name=new StringBuilder(256); int needed; if(GetUserObjectInformation(desktop,2,name,512,out needed)) return name.ToString(); return null; }
   finally { CloseDesktop(desktop); }
  }
- public static ClickReceipt SendOwnedControlClick(IntPtr root, uint owner, int x, int y, int observedLeft, int observedTop, int observedRight, int observedBottom) {
+ public static ClickReceipt SendOwnedControlClick(IntPtr root, uint owner, IntPtr expectedChild, int x, int y, int observedLeft, int observedTop, int observedRight, int observedBottom) {
   var r=new ClickReceipt();r.Root=root.ToInt64();r.Owner=owner;r.Point.X=x;r.Point.Y=y;r.InputSize=Marshal.SizeOf(typeof(Input));
   IntPtr oldDpi=SetThreadDpiAwarenessContext(new IntPtr(-4));
   if(oldDpi==IntPtr.Zero){r.Error="Cannot establish physical click coordinates; no input.";return r;}
@@ -149,7 +149,7 @@ public static class EdbWindows {
    r.ClientHit=SendMessageTimeout(root,0x0084,IntPtr.Zero,new IntPtr(packed),2,1000,out hit)!=IntPtr.Zero && hit.ToUInt64()==1;
    if(!r.ClientHit){r.Error="Observed point is not an unoccluded client hit-test inside the owned window; no click.";return r;}
    IntPtr at=WindowFromPoint(r.Point);r.PointWindow=at.ToInt64();GetWindowThreadProcessId(at,out r.PointOwner);
-   r.ExactPointRoot=GetAncestor(at,2)==root;r.PointOwnerMatches=r.PointOwner==owner;
+   r.ExactPointRoot=(expectedChild==IntPtr.Zero ? GetAncestor(at,2)==root : at==expectedChild && GetAncestor(at,2)==root);r.PointOwnerMatches=r.PointOwner==owner;
    if(!r.ExactPointRoot || !r.PointOwnerMatches){r.Error="Observed point is not an unoccluded exact owned client target; no click.";return r;}
    int left=GetSystemMetrics(76),top=GetSystemMetrics(77),width=GetSystemMetrics(78),height=GetSystemMetrics(79);
    if(width<=1 || height<=1 || x<left || x>=left+width || y<top || y>=top+height){r.Error="Observed point is outside the physical virtual desktop; no click.";return r;}
@@ -297,7 +297,11 @@ function Confirm-ObservedExit {
     Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$button.ToInt64(); controlId=6 }
 }
 function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
-    $label=if ($Action -eq 'Start') {'Start Run (Alt+R)'} else {'Stop (Alt+S)'}
+    # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
+    # the TkTopLevel carries window text). The frozen client packs Start then Stop as exact native
+    # child HWNDs inside one row container, so the control is reobserved from that live Win32 structure:
+    # the unique row whose two visible same-owner children share one height tightly equal to the row
+    # height, ordered left to right with the first child wider than the second. Start is the first.
     $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
     if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_POINT: expected one observed owned client window.' }
     $handle=$roots[0]
@@ -307,35 +311,49 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     try {
         $rootRect=[EdbWindows+Rect]::new()
         if (-not [EdbWindows]::GetWindowRect($handle,[ref]$rootRect)) { throw 'BLOCKED_GUI_POINT: cannot observe physical root bounds.' }
-        $rootElement=[Windows.Automation.AutomationElement]::FromHandle($handle)
-        if ($null -eq $rootElement) { throw 'BLOCKED_GUI_POINT: UIA cannot observe the owned root.' }
-        $rootBox=$rootElement.Current.BoundingRectangle
-        if ([Math]::Abs($rootBox.X-$rootRect.Left) -gt 2 -or [Math]::Abs($rootBox.Y-$rootRect.Top) -gt 2 -or
-            [Math]::Abs($rootBox.Width-($rootRect.Right-$rootRect.Left)) -gt 2 -or [Math]::Abs($rootBox.Height-($rootRect.Bottom-$rootRect.Top)) -gt 2) {
-            throw 'BLOCKED_GUI_POINT: UIA and Win32 physical coordinates disagree; refusing to click a guessed location.'
+        $rootWidth=$rootRect.Right-$rootRect.Left
+        $children=@([EdbWindows]::Windows($handle))
+        $byHandle=@{}
+        foreach ($child in $children) {
+            $rect=[EdbWindows+Rect]::new()
+            if (-not [EdbWindows]::GetWindowRect($child,[ref]$rect)) { continue }
+            [uint32]$childOwner=0; [void][EdbWindows]::GetWindowThreadProcessId($child,[ref]$childOwner)
+            if ($childOwner -ne $ownerId) { throw 'BLOCKED_GUI_POINT: an owned-tree child belongs to another process.' }
+            if ($rect.Right -le $rect.Left -or $rect.Bottom -le $rect.Top) { continue }
+            if ($rect.Left -lt $rootRect.Left -or $rect.Top -lt $rootRect.Top -or $rect.Right -gt $rootRect.Right -or $rect.Bottom -gt $rootRect.Bottom) { continue }
+            $byHandle[$child.ToInt64()]=@{ handle=$child; rect=$rect; parent=[int64]([EdbWindows]::GetParent($child).ToInt64()); visible=[EdbWindows]::IsWindowVisible($child); enabled=[EdbWindows]::IsWindowEnabled($child) }
         }
-        $nameCondition=New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::NameProperty,$label)
-        $typeCondition=New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button)
-        # The WindowsDesktop managed assembly exposes instance And only; no static Condition.AndCondition.
-        $condition=$nameCondition.And($typeCondition)
-        $control=$rootElement.FindFirst([Windows.Automation.TreeScope]::Descendants,$condition)
-        if ($null -eq $control) {
-            $candidates=@($rootElement.FindAll([Windows.Automation.TreeScope]::Descendants,(New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Button))) | ForEach-Object { $_.Current.Name } | Select-Object -First 12)
-            throw "BLOCKED_GUI_POINT: no owned '$label' Button control was observed on this fresh instance. Observed button names: $($candidates -join ' | ')"
+        $rows=@()
+        foreach ($key in @($byHandle.Keys)) {
+            $candidate=$byHandle[$key]
+            $pRect=$candidate.rect
+            $pWidth=$pRect.Right-$pRect.Left; $pHeight=$pRect.Bottom-$pRect.Top
+            if ($pWidth -lt [Math]::Floor($rootWidth*0.5)) { continue }
+            $kids=@($byHandle.Values | Where-Object { $_.parent -eq $key -and $_.visible })
+            if ($kids.Count -ne 2) { continue }
+            $heights=@($kids | ForEach-Object { $_.rect.Bottom-$_.rect.Top } | Select-Object -Unique)
+            if ($heights.Count -ne 1) { continue }
+            if ([Math]::Abs($heights[0]-$pHeight) -gt 1) { continue }
+            $ordered=@($kids | Sort-Object { $_.rect.Left })
+            $first=$ordered[0]; $second=$ordered[1]
+            if ($first.rect.Left -ne $pRect.Left) { continue }
+            if ($second.rect.Left -lt $first.rect.Right) { continue }
+            if ($second.rect.Right -gt $pRect.Right) { continue }
+            if (($second.rect.Left-$first.rect.Right) -gt 32) { continue }
+            if (($first.rect.Right-$first.rect.Left) -le ($second.rect.Right-$second.rect.Left)) { continue }
+            $rows+=,@{ row=$candidate; first=$first; second=$second }
         }
-        $current=$control.Current
-        if ($current.ProcessId -ne [int]$ownerId) { throw 'BLOCKED_GUI_POINT: observed control belongs to a different process.' }
-        if (-not $current.IsEnabled) { throw "BLOCKED_GUI_POINT: '$label' control is disabled; the client state is not ready." }
-        if ($current.IsOffscreen) { throw "BLOCKED_GUI_POINT: '$label' control is offscreen." }
-        $box=$current.BoundingRectangle
-        if ($box.Width -lt 8 -or $box.Height -lt 8) { throw 'BLOCKED_GUI_POINT: observed control is too small for a reliable click.' }
-        if ($box.Left -lt $rootRect.Left -or $box.Top -lt $rootRect.Top -or $box.Right -gt $rootRect.Right -or $box.Bottom -gt $rootRect.Bottom) { throw 'BLOCKED_GUI_POINT: observed control is outside the owned root window.' }
+        if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate Start/Stop rows on this fresh instance; the unique two-button run-control row is not established." }
+        $control=if ($Action -eq 'Start') { $rows[0].first } else { $rows[0].second }
+        $rect=$control.rect
+        $width=$rect.Right-$rect.Left; $height=$rect.Bottom-$rect.Top
+        if ($width -lt 24 -or $height -lt 16) { throw 'BLOCKED_GUI_POINT: observed control is too small for a reliable click.' }
         return @{
-            handle=$handle; owner=$ownerId; label=$label
-            x=[int][Math]::Floor($box.Left+$box.Width/2.0); y=[int][Math]::Floor($box.Top+$box.Height/2.0)
-            controlBounds=@{ x=$box.X; y=$box.Y; width=$box.Width; height=$box.Height }
+            handle=$handle; owner=$ownerId; child=$control.handle; label=$Action
+            x=[int][Math]::Floor(($rect.Left+$rect.Right)/2.0); y=[int][Math]::Floor(($rect.Top+$rect.Bottom)/2.0)
+            controlBounds=@{ x=$rect.Left; y=$rect.Top; width=$width; height=$height }
             rootBounds=@{ left=$rootRect.Left; top=$rootRect.Top; right=$rootRect.Right; bottom=$rootRect.Bottom }
-            patterns=@($control.GetSupportedPatterns() | ForEach-Object { $_.ProgrammaticName })
+            childEnabled=$control.enabled
         }
     } finally { [void][EdbWindows]::SetThreadDpiAwarenessContext($previousDpi) }
 }
@@ -353,7 +371,7 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     $observation=$null; $attempts=0; $lastError=$null
     $observeDeadline=[DateTime]::UtcNow.AddSeconds(10)
     if ($observeDeadline -gt $script:harnessDeadline) { $observeDeadline=$script:harnessDeadline }
-    # In-scope polling keeps the dynamic UIA observation (a child scope cannot publish observations).
+    # In-scope polling keeps the dynamic observation (a child scope cannot publish observations).
     do {
         $attempts++
         try { $observation=Get-ObservedRunControl $Action; break } catch { $observation=$null; $lastError=$_.Exception.Message }
@@ -364,8 +382,8 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     try { $observation=Get-ObservedRunControl $Action } catch { throw "BLOCKED_GUI_POINT: control observation changed before dispatch: $($_.Exception.Message)" }
     if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
     $script:operationStage="run-action:${Action}:click"
-    $native=[EdbWindows]::SendOwnedControlClick($observation.handle,$observation.owner,[int]$observation.x,[int]$observation.y,[int]$observation.rootBounds.left,[int]$observation.rootBounds.top,[int]$observation.rootBounds.right,[int]$observation.rootBounds.bottom)
-    Record-Event 'observed-native-control-click' @{ action=$Action; control=$observation.label; processId=$observation.owner; observedHandle=$observation.handle.ToInt64(); controlBounds=$observation.controlBounds; rootBounds=$observation.rootBounds; point=@{ x=$observation.x; y=$observation.y }; attempts=$attempts; lastObservationError=$lastError; patterns=$observation.patterns; input=$native }
+    $native=[EdbWindows]::SendOwnedControlClick($observation.handle,$observation.owner,[IntPtr]$observation.child,[int]$observation.x,[int]$observation.y,[int]$observation.rootBounds.left,[int]$observation.rootBounds.top,[int]$observation.rootBounds.right,[int]$observation.rootBounds.bottom)
+    Record-Event 'observed-native-control-click' @{ action=$Action; control=$observation.label; processId=$observation.owner; observedHandle=$observation.handle.ToInt64(); childHandle=$observation.child.ToInt64(); controlBounds=$observation.controlBounds; rootBounds=$observation.rootBounds; point=@{ x=$observation.x; y=$observation.y }; attempts=$attempts; childEnabled=$observation.childEnabled; lastObservationError=$lastError; input=$native }
     if ($native.Error) { throw "BLOCKED_GUI_INPUT: $($native.Error)" }
     Record-Event 'observed-control-clicked' @{ action=$Action; control=$observation.label; backend='normal mouse click on visibly observed control'; insertedCount=$native.InsertedCount }
 }
