@@ -1,0 +1,141 @@
+{
+  "phases": [
+    {
+      "name": "smoke",
+      "at": "2026-09-20T07:47:35.963921+00:00",
+      "detail": {
+        "api": "https://127.0.0.1:3094",
+        "app": "https://127.0.0.1:3094",
+        "exitCode": 0,
+        "httpFrontendRedirect": "301 -> https://127.0.0.1/",
+        "output": "[production-smoke] Checking non-mutating production API surfaces at https://127.0.0.1:3094\n[production-smoke] Checking frontend at https://127.0.0.1:3094\n[production-smoke] Production smoke checks passed (API and frontend)\n"
+      }
+    },
+    {
+      "name": "restart",
+      "at": "2026-09-20T07:47:53.733844+00:00",
+      "detail": {
+        "before": {
+          "runs": "50",
+          "artifacts": [
+            "VERIFIED|25",
+            "RETAINED|18",
+            "REJECTED|7"
+          ],
+          "members": "e1f3b0341f4431ca6b05c2f53c55dcc9"
+        },
+        "after": {
+          "runs": "50",
+          "artifacts": [
+            "VERIFIED|25",
+            "RETAINED|18",
+            "REJECTED|7"
+          ],
+          "members": "e1f3b0341f4431ca6b05c2f53c55dcc9"
+        },
+        "identical": true
+      }
+    },
+    {
+      "name": "backup",
+      "at": "2026-09-20T07:48:30.103026+00:00",
+      "detail": {
+        "dumpSha256": "354ecf6710031cc2b662c1688ee2fc0f77c473f9f57305d9d3c15f79730e5b49",
+        "dumpBytes": 341348,
+        "objectsTarSha256": "e7082928bb70e233d90968b7f9a2321145100d5fcc3a47f2cf7202ec031f1688",
+        "objectsTarBytes": 156825600,
+        "objectFiles": 27,
+        "storedExpectations": 24
+      }
+    },
+    {
+      "name": "restore",
+      "at": "2026-09-20T07:49:48.083644+00:00",
+      "detail": {
+        "tables": {
+          "BenchmarkRun": {
+            "live": "50",
+            "restored": "50",
+            "match": true
+          },
+          "Artifact": {
+            "live": "50",
+            "restored": "50",
+            "match": true
+          },
+          "QualityAnalysis": {
+            "live": "43",
+            "restored": "43",
+            "match": true
+          },
+          "DerivedResult": {
+            "live": "0",
+            "restored": "0",
+            "match": true
+          },
+          "DerivedResultMember": {
+            "live": "0",
+            "restored": "0",
+            "match": true
+          },
+          "TestClip": {
+            "live": "7",
+            "restored": "7",
+            "match": true
+          },
+          "Benchmark": {
+            "live": "0",
+            "restored": "0",
+            "match": true
+          },
+          "Recipe": {
+            "live": "12",
+            "restored": "12",
+            "match": true
+          },
+          "Environment": {
+            "live": "4",
+            "restored": "4",
+            "match": true
+          },
+          "BenchmarkProtocol": {
+            "live": "1",
+            "restored": "1",
+            "match": true
+          },
+          "Submission": {
+            "live": "0",
+            "restored": "0",
+            "match": true
+          },
+          "ScoreContext": {
+            "live": "0",
+            "restored": "0",
+            "match": true
+          },
+          "PublicCorpusGroup": {
+            "live": "24",
+            "restored": "24",
+            "match": true
+          },
+          "_prisma_migrations": {
+            "live": "29",
+            "restored": "29",
+            "match": true
+          }
+        },
+        "membersMatch": true,
+        "objectFiles": 27,
+        "objectShaMismatches": []
+      }
+    },
+    {
+      "name": "teardown",
+      "at": "2026-09-20T07:52:31.230842+00:00",
+      "detail": {
+        "restored": true,
+        "via": "run-publication.py phase_teardown (shared lock)"
+      }
+    }
+  ]
+}
