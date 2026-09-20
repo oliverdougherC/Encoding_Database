@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "runId": 35480963919,
+  "jobId": 105998569660,
+  "jobUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/35480963919/job/105998569660",
+  "headSha": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "mergeSha": "3c89891971af08e401b76a7a6988ad127b59a662",
+  "status": "completed",
+  "conclusion": "failure",
+  "startedAt": "2026-09-20T01:16:30Z",
+  "completedAt": "2026-09-20T02:23:33Z",
+  "annotations": [
+    "The hosted runner lost communication with the server. Anything in your workflow that terminates the runner process, starves it for CPU/Memory, or blocks its network access can cause this error."
+  ],
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:31Z",
+      "completed_at": "2026-09-20T01:16:32Z"
+    },
+    {
+      "name": "Run actions/checkout@v6",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:32Z",
+      "completed_at": "2026-09-20T01:16:39Z"
+    },
+    {
+      "name": "Run actions/setup-python@v7",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:39Z",
+      "completed_at": "2026-09-20T01:16:39Z"
+    },
+    {
+      "name": "Provision pinned FFmpeg runtime",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:39Z",
+      "completed_at": "2026-09-20T01:16:50Z"
+    },
+    {
+      "name": "Install runtime and canonical-suite validation dependencies",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:50Z",
+      "completed_at": "2026-09-20T01:16:57Z"
+    },
+    {
+      "name": "Generate proposed windows runtime lock for review",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-20T01:16:57Z",
+      "completed_at": "2026-09-20T01:16:57Z"
+    },
+    {
+      "name": "Retain proposed windows runtime lock (not a candidate)",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-20T01:16:57Z",
+      "completed_at": "2026-09-20T01:16:57Z"
+    },
+    {
+      "name": "Materialize frozen canonical references",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:16:57Z",
+      "completed_at": "2026-09-20T01:19:26Z"
+    },
+    {
+      "name": "Execute pinned model on frozen quick reference",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:19:26Z",
+      "completed_at": "2026-09-20T01:20:06Z"
+    },
+    {
+      "name": "Run native Windows client build",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T01:20:06Z",
+      "completed_at": "2026-09-20T01:29:58Z"
+    },
+    {
+      "name": "Exercise actual packaged Windows GUI",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-09-20T01:29:58Z",
+      "completed_at": null
+    },
+    {
+      "name": "Retain Windows gui diagnostics before the next step",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Exercise packaged Windows seven-clip software campaign",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Retain Windows console diagnostics before the next step",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Retain Windows GUI and seven-clip acceptance evidence",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Retain windows candidate binaries and verified sidecars",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Post Run actions/setup-python@v7",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Post Run actions/checkout@v6",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 10595892903,
+      "name": "candidate-macos-3c89891971af08e401b76a7a6988ad127b59a662",
+      "size_in_bytes": 1641643788
+    },
+    {
+      "id": 10595798066,
+      "name": "candidate-linux-3c89891971af08e401b76a7a6988ad127b59a662",
+      "size_in_bytes": 1714728584
+    },
+    {
+      "id": 10595707778,
+      "name": "clean-deployment-3c89891971af08e401b76a7a6988ad127b59a662",
+      "size_in_bytes": 60650
+    }
+  ],
+  "acceptance": {
+    "nativeBuild": "GitHub step metadata PASSED; artifacts unavailable",
+    "gui": "UNRESOLVED after hosted-runner communication loss",
+    "consoleSevenClip": "NOT STARTED",
+    "screenshots": "UNAVAILABLE",
+    "physicalWindowsGpu": "Outside this hosted run"
+  },
+  "jobLogRetrieval": "log not found: 105998569660"
+}
