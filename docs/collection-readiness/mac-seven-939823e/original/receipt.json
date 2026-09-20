@@ -1,0 +1,73 @@
+{
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "executableSha256": "ad01bfd36ad84e0e0d9f45730bd195c1b940a240493d093f6a875faa97a6f2c0",
+  "purpose": "Actual packaged seven-clip native acceptance; no publication and not the predeclared calibration matrix",
+  "cases": [
+    {
+      "name": "software",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos",
+        "--cli",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--crf",
+        "23",
+        "--campaign",
+        "full",
+        "--no-submit",
+        "--max-attempts",
+        "35",
+        "--max-storage-mb",
+        "2048",
+        "--max-duration-minutes",
+        "20",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue"
+      ],
+      "startedAt": "2026-09-20T01:24:58.138933+00:00",
+      "exitCode": 0,
+      "seed": 20260919,
+      "finishedAt": "2026-09-20T01:30:27.573215+00:00",
+      "wallSeconds": 329.4343297909945,
+      "logSha256": "96cd7cc39446b71068881fec85ee49a9cd74ccc52877c0e2a271b2e66ae2bc97",
+      "campaigns": [
+        "campaign-fd91ad0daa0d83ea"
+      ]
+    },
+    {
+      "name": "videotoolbox",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos",
+        "--cli",
+        "--codec",
+        "h264_videotoolbox",
+        "--presets",
+        "default",
+        "--target-bitrate-kbps",
+        "6000",
+        "--campaign",
+        "full",
+        "--no-submit",
+        "--max-attempts",
+        "35",
+        "--max-storage-mb",
+        "2048",
+        "--max-duration-minutes",
+        "20",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue"
+      ],
+      "startedAt": "2026-09-20T01:30:27.573961+00:00",
+      "exitCode": 0,
+      "seed": 20260920,
+      "finishedAt": "2026-09-20T01:35:36.541300+00:00",
+      "wallSeconds": 308.96416145801777,
+      "logSha256": "241ecd6acd1029b3ceb09d9e5d561ef01770905143a2cb6e9c490ece3741def7",
+      "campaigns": [
+        "campaign-69ebca2da8fe37b8"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,974 @@
+[
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/receipt.json",
+    "packetPath": "original/receipt.json",
+    "sha256": "df9bfe636d053588f5b72df74691d5b9fe455589ad991688e1c09c09cd304760",
+    "byteSize": 2324
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/run.py",
+    "packetPath": "original/run.py",
+    "sha256": "66d285f31f83460054a5a2a29fcf0c56163d0905690efec46264e9a0f7affbae",
+    "byteSize": 2931
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.runtime-lock.json",
+    "packetPath": "original/package/encodingdb-client-macos.runtime-lock.json",
+    "sha256": "5db0f9c3d5178f2bad9a84cced0141df44b82532314c7e5e30f401f47e7262b0",
+    "byteSize": 20777
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.signing.json",
+    "packetPath": "original/package/encodingdb-client-macos.signing.json",
+    "sha256": "e89b4c2fe2aed95af2c65bf5c255619cefa7748cf98929b2f3f3bb9fc96d16d0",
+    "byteSize": 135
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.embedded-runtime.json",
+    "packetPath": "original/package/encodingdb-client-macos.embedded-runtime.json",
+    "sha256": "fa687faa6d2e981803b7ac0d34a7d57d9ba29e5827ff349b8db17d8e43fcdd2e",
+    "byteSize": 20389
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.release-manifest.json",
+    "packetPath": "original/package/encodingdb-client-macos.release-manifest.json",
+    "sha256": "13f701218c7bd334ac534b104208511fdadd20c547897c44d077274b8b12913e",
+    "byteSize": 39879
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.smoke.json",
+    "packetPath": "original/package/encodingdb-client-macos.smoke.json",
+    "sha256": "c0462166b0210ac4989e30fc59a127e1e32ccf88956c4d42be48ca52e9d08b5b",
+    "byteSize": 22417
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos.SHA256SUMS",
+    "packetPath": "original/package/encodingdb-client-macos.SHA256SUMS",
+    "sha256": "487b9cf89c4526c9b2ee635f275be0b92509f69d8ed95da701417b8502942213",
+    "byteSize": 612
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/client.log",
+    "packetPath": "original/software/client-log.txt",
+    "sha256": "96cd7cc39446b71068881fec85ee49a9cd74ccc52877c0e2a271b2e66ae2bc97",
+    "byteSize": 1658
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/before-upload.json",
+    "packetPath": "original/software/before-upload.json",
+    "sha256": "8b7f75234b8ce02f48e024b094c55293001aa2438984fe1c86586868d9c093bc",
+    "byteSize": 6339
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/embedded-runtime.json",
+    "packetPath": "original/software/embedded-runtime.json",
+    "sha256": "3835a6ff3919a7f4dff7ea2eee7d0a1f2e295f6c348543717440ebb0ca89ef90",
+    "byteSize": 15914
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/protocol-attempts/campaign-fd91ad0daa0d83ea.json",
+    "packetPath": "original/software/queue/protocol-attempts/campaign-fd91ad0daa0d83ea.json",
+    "sha256": "2a7ccd875bb53977afcde7e4ebb0357c6af73f4944ea82db98175f84de9f262e",
+    "byteSize": 256698
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/011-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/011-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "69f76aee450f950cb58f84cc69abb30dae9bb78df7f48a88ae9e55939f93c89c",
+    "byteSize": 31801
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000006.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000006.json",
+    "sha256": "336171f8786e4c314b787ad4433b01980ba411d459f37b948e656bd04ffc070d",
+    "byteSize": 12281
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000010.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000010.json",
+    "sha256": "aff203a5e87ba2136e94ec49cb9aa65f9f1a9a9722e1cca52dbfff6d55fc8724",
+    "byteSize": 12866
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000011.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000011.json",
+    "sha256": "90cd6e4a942236708f7919342841fd7d4734606160105218cacdb75f150c6a2a",
+    "byteSize": 858
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/009-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/009-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "f4503a85b19d5641c8733027a853a01ba766778595afa5c77f090e5330c1bef8",
+    "byteSize": 32215
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000014.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000014.json",
+    "sha256": "5238324877f0f6a10c468a53d3b80b1e07e287dac3d64c16f25f8261f1dbad0c",
+    "byteSize": 39134
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/018-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/018-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "f165e05b464b3d65683add85f1c1eb60ae1d8d4e79f85d4e966a516fe7d72268",
+    "byteSize": 31791
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000018.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000018.json",
+    "sha256": "be158a2f2fddefabf62a68b902c7562aa44214282471f9466762860bffc2e372",
+    "byteSize": 39441
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/015-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/015-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "57a73c88a9a8a13031e5f2e494d86612a2844ea5a1972bef93e5420c9ba632be",
+    "byteSize": 31101
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000019.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000019.json",
+    "sha256": "4c0d3daed1f7c2e0babb9dd69a08aa304b6dcd096833ad4907fe7aa0358c274e",
+    "byteSize": 39399
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/014-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/014-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "7f31236ec5bcc55a1b8fb40cc187e35550395df3c4aca6be14d2a02db3c2c0aa",
+    "byteSize": 31103
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000015.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000015.json",
+    "sha256": "70224cb2fbe8e6075babbb1111c58fbdc61b60d6570956e6ebcbf59309ef9dcf",
+    "byteSize": 39127
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/002-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/002-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "a1429d40da9af7cd0fdd14b0b4c8414cf0461694c8e95051e847618dd4ba4660",
+    "byteSize": 32200
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000010.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000010.json",
+    "sha256": "48db94777c030111f939bc6f682423dfe8ad2ba52fadc3b5eaa0bf83e9d26fdc",
+    "byteSize": 855
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000011.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000011.json",
+    "sha256": "4364dd34ef8a025cbd35f7472f64fe38ab0b5ea44f53a8ce01c04bb869d7d94c",
+    "byteSize": 12942
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000007.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000007.json",
+    "sha256": "9be5e270a226adaa9c3e8c9e61da07511d37248b850f0620e330c8f2994b5e8d",
+    "byteSize": 11780
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/001-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/001-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "7cde4e14dc02dcdb0b44255d0cf2380f1b80288f9c62699d29eac0e4ce9f8cd1",
+    "byteSize": 31563
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000021.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000021.json",
+    "sha256": "60a5adf69cbace2743d29c8f6db9041e64c0c3b9dcd230d5ba5b7c47c879a218",
+    "byteSize": 874
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000008.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000008.json",
+    "sha256": "00e8db5216531bf43a9258d3392fd65ad42f4bfe16d1cc92927f1b06f927d986",
+    "byteSize": 39337
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000020.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000020.json",
+    "sha256": "77fc4c76709674627d6a586fda918e94cb0a35a9b64af527a812113c7d019484",
+    "byteSize": 12883
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000016.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000016.json",
+    "sha256": "076d5b90b8d412cd1062cddc24d6b95567794ab15456195c61576ff6191d9b88",
+    "byteSize": 12951
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/020-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/020-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "c685ad0c4905cb8dc7e4dffd78182b5027cf4fa6fd35c1825ed0d4f2ff28bee4",
+    "byteSize": 32215
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000017.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000017.json",
+    "sha256": "4bc3adabe324eb7c995e71b7740888dc3b8d87748f63898df66271936897d846",
+    "byteSize": 856
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000012.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000012.json",
+    "sha256": "846a2e8160c71ff1d5a8cecbec418a76cb4f83c2773d17829e025ff0950c8e54",
+    "byteSize": 39385
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000013.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000013.json",
+    "sha256": "5fc2c59cd2e8c5eefb4f729f3f431a326c7736bd1fef4834653dcc23ac4559cf",
+    "byteSize": 39409
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/013-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/013-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "f352d27cc10d0bad3f52bc95ace7601fc3d322120956bd10f8f31ed5678fdd33",
+    "byteSize": 31789
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000016.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000016.json",
+    "sha256": "0450112f62a31d60b8fcbd8a3ef67fd02a031b6cf9f3e7e72b22642f5b1d4428",
+    "byteSize": 863
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000017.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000017.json",
+    "sha256": "dd4ed3488ebd6e98486079f0067965723abdc1a72c838e15353a71616bb87e49",
+    "byteSize": 12858
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000001.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000001.json",
+    "sha256": "fa9b31f3a7f86b55d883cd9f162da3cd3620c38055c2afe513ae66362a914033",
+    "byteSize": 12167
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000021.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000021.json",
+    "sha256": "80b90b5305506046e81c38e2f5504def8d372ceb7cfa3f3c21a82fab55b96c12",
+    "byteSize": 12846
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000009.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000009.json",
+    "sha256": "73f6fa1361a2c539d283df0b35d188fb4d38de3c3681c27601a4d229d4ee3cc6",
+    "byteSize": 39344
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/003-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/003-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "4486401a410d7e7b3645d92bb78f6f74dd3ecef4acf9567590d8c4f277bf4d1b",
+    "byteSize": 31983
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/017-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/017-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "b709d989b20d8ddb7c0ea134f979b6d149b20ea10992859b5b6400f10f0568f5",
+    "byteSize": 32203
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000020.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000020.json",
+    "sha256": "5f8cb51525ca5b45b02bf80c638cab5627e78cdba752b0fba5d5c23355b262ec",
+    "byteSize": 862
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/campaign-complete.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/campaign-complete.json",
+    "sha256": "54bea35b4f4ebf891f167b3126bf03d2eb6c918cfc8b992935b03d7cacdd47eb",
+    "byteSize": 70
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000019.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000019.json",
+    "sha256": "f11246811a0fb32ec24ecd519cb05f33915698cbabd7118fd90167cf6cbb88b6",
+    "byteSize": 856
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000018.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000018.json",
+    "sha256": "b3d53ac4e4b7797e97de5c0669be861c53b68d6a99c7dc362ab3ed7ea9923e94",
+    "byteSize": 12958
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/012-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/012-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "0ae9183e22424f765552ae121d1cda8ee0ed1f21bd7a54f04110a4352442805b",
+    "byteSize": 32203
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000010.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000010.json",
+    "sha256": "9f7f8b0c3e6f4f4ed4b90788e0e7eb89953029fd1995ae69a5404d5c5e3a418f",
+    "byteSize": 39390
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/016-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/016-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "8618364923a8586f3b1fa73d0183b44d0607e3c0964bef5419e7d2c5b66f85c4",
+    "byteSize": 31793
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000015.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000015.json",
+    "sha256": "fcf982d3a8083c3a11ac9c54549587b95d95466599e53d06951ab5bb005cbe85",
+    "byteSize": 858
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000014.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000014.json",
+    "sha256": "0b92da37a8815613b5819a8390644e2ac1d921ccb27c710937777348323a3483",
+    "byteSize": 12458
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/005-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/005-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "944af3ef196f7fc3034ab3440ec7a79b17d45244aac932012022f2cd1403bec5",
+    "byteSize": 32196
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000002.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000002.json",
+    "sha256": "0180ad010046a967c7471eb7b7c0f8398a4d402862da846877b270073aad5f41",
+    "byteSize": 12219
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000003.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000003.json",
+    "sha256": "a81bd038a4bcbf3b3b4f524b77ec5b0762976f1e686b88274254ea77bc96c3da",
+    "byteSize": 12201
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000015.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000015.json",
+    "sha256": "4305d326f0efb5edf4e80720e1e89896b191f5e65d9c260e6834a0ff8bfca062",
+    "byteSize": 12441
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000014.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000014.json",
+    "sha256": "614eaff138868ea488e7789e262947c9f08bc9b6806e65cee146e08a13101ca8",
+    "byteSize": 872
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/007-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/007-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "410fdf5adbe863595e9af3666e81b796ec377209bef8fa8adfa2d2a6c98c40b8",
+    "byteSize": 31102
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000011.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000011.json",
+    "sha256": "5eaf9b913ca8f2b8f2595c9edaeefb26b6d45d8c10c163dc7ce384eafe6a4920",
+    "byteSize": 39418
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/manifest.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/manifest.json",
+    "sha256": "c23bdc351bfe91a921f8f99fbfb9b32385dccc85b1ccc2a648be141ed61c07f5",
+    "byteSize": 16663
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000019.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000019.json",
+    "sha256": "229dcfab64f52092e86525d8dfdb95b0d85dfddc7800c278fa766f0f75576e06",
+    "byteSize": 12867
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000018.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000018.json",
+    "sha256": "9ae5376e737f0fb876d59f7a489186b6a2ed2aa2359c90e6c13ddf27161cb78b",
+    "byteSize": 874
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/021-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/021-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "c530a3a1f2e66f07e6bd7dd646970b18336f2630b165965b19841b905c1d6da6",
+    "byteSize": 31578
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/in-flight.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/in-flight.json",
+    "sha256": "ba3019b4681e697624b3b4fe05678ddcfad7d69e4d98f1e41b181908439cf8e8",
+    "byteSize": 170
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000016.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000016.json",
+    "sha256": "512b10baa5ad3e79a002b8c27d0ca33fd2b47328dbcc131eb2d948ed90a36c8d",
+    "byteSize": 39411
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000013.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000013.json",
+    "sha256": "b63f11d34b06c7367c6f1ccb0f99dc3fd6fe3bed9da5245d60a24c265ad388f2",
+    "byteSize": 862
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000012.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000012.json",
+    "sha256": "d2e95f9702048ae39856627526e8522daff329d8ea3425c6f3abeeeeaa57a9d1",
+    "byteSize": 12859
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000004.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000004.json",
+    "sha256": "502b750a0c3f3571e79836c2da2c3bcddddaad897d04167d2c657b13e66098ef",
+    "byteSize": 12273
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000009.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000009.json",
+    "sha256": "e0db48c07200071160babed18b7a044d5e34b36d01b6783d1f9be0bdfea90d19",
+    "byteSize": 860
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000020.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000020.json",
+    "sha256": "76624e45b56da5ada1b8757becf2e01316dc775ca398ba8a9324f9c126e1d972",
+    "byteSize": 39347
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000008.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000008.json",
+    "sha256": "0b189d53acbcc91608386c306c8770ffa3433e17002f034312714aeb5c50f661",
+    "byteSize": 12824
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/004-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/004-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "4e5d2a73ba1b8b3d49308d9d7e5bb691a198e090f60af77317423c808b3be9d9",
+    "byteSize": 31785
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000009.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000009.json",
+    "sha256": "6b3d00de15e0426186924cf0a104f2a03dbb278173231e48b6e7eac6841a572d",
+    "byteSize": 12879
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000021.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000021.json",
+    "sha256": "06fb5b14bcd2c141305b4ef33e5028b70b5855a2c4d180d2b81c0e51dc01b188",
+    "byteSize": 39362
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/008-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/008-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "80f4dcd316d5157f33d9cefd84339a0262ad7d02c47b08e6010c55f235d51065",
+    "byteSize": 31564
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/006-libx264-fast-23-warmup-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/006-libx264-fast-23-warmup-r1.mp4.process.json",
+    "sha256": "6d9173363ebb5c7bc0381966182f9860eaf0dd4923e285759169ff2a1069298e",
+    "byteSize": 31786
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/010-libx264-fast-23-measured-r1.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/010-libx264-fast-23-measured-r1.mp4.process.json",
+    "sha256": "7b3ba424101bc2b863d8bf8357436348a007744095d707607c17856dc7ca8879",
+    "byteSize": 31996
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000008.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000008.json",
+    "sha256": "943ed785336c1b004f4d14a48d0fdd42b4b0b36a70219e899db1529ec4a7967d",
+    "byteSize": 858
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000005.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000005.json",
+    "sha256": "b19a0f613cf296ec62b220d2ac5a0350e624252597f9725867bde3a54df05d9e",
+    "byteSize": 12190
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000013.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/attempt-000013.json",
+    "sha256": "84907724900aa1438fab42c1d00a61ea148a581dd5c59186a798595741b1f103",
+    "byteSize": 12947
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000012.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/environment-000012.json",
+    "sha256": "9fc804f1bc0237df6acc526593fb3ea48d8560a504c5648e49348c621600e027",
+    "byteSize": 858
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/019-libx264-fast-23-measured-r2.mp4.process.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/019-libx264-fast-23-measured-r2.mp4.process.json",
+    "sha256": "1b3ecd6303e9ba93d20375f55f1e2c71eae9657a336d81221721eca8acfecf3c",
+    "byteSize": 32010
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000017.json",
+    "packetPath": "original/software/queue/campaigns/campaign-fd91ad0daa0d83ea/submission-000017.json",
+    "sha256": "ab0d04c944584103fef436c4dd6644112163e00fb98e93591f07f4adbd362ec9",
+    "byteSize": 39384
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/client.log",
+    "packetPath": "original/videotoolbox/client-log.txt",
+    "sha256": "241ecd6acd1029b3ceb09d9e5d561ef01770905143a2cb6e9c490ece3741def7",
+    "byteSize": 2172
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/before-upload.json",
+    "packetPath": "original/videotoolbox/before-upload.json",
+    "sha256": "21407eacaeec5701d3e10c7d42059882f3e080038da7e6c925f434eff37624bc",
+    "byteSize": 6616
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/embedded-runtime.json",
+    "packetPath": "original/videotoolbox/embedded-runtime.json",
+    "sha256": "d2bec6929961701512137054ebe3030745eb7ed5be1005fa2988e065ed6dcaa4",
+    "byteSize": 15914
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/protocol-attempts/campaign-69ebca2da8fe37b8.json",
+    "packetPath": "original/videotoolbox/queue/protocol-attempts/campaign-69ebca2da8fe37b8.json",
+    "sha256": "a035a52f0d314e91418a191694351f763d301d6c0c78683b34fb9a6b86edf220",
+    "byteSize": 273624
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000006.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000006.json",
+    "sha256": "81cfd097551f6872cb9c078e66653b7b06c769589bb691575bba44b00a984e12",
+    "byteSize": 12760
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000010.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000010.json",
+    "sha256": "d8db4d021120f441cd0f90c02f5c2a239e7b6060f292fb445ae981b6dde73afd",
+    "byteSize": 13522
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000011.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000011.json",
+    "sha256": "313a8f7705bf6210079bba1edf5bd7ed61463dd40d202d310f4bb68e03c984fc",
+    "byteSize": 919
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000014.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000014.json",
+    "sha256": "ac269d44e14d4e7dab26911868985e786759a346a577244c3697dfb9ca56f413",
+    "byteSize": 39823
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000018.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000018.json",
+    "sha256": "3d2cefa586360d6e3cca2fb109843d644f4bed5c9a6ae24c32dec57d3dd3b4b8",
+    "byteSize": 39866
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000019.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000019.json",
+    "sha256": "c4f76f1c15ef14da994d4ce283002fe9deef2cc06887029ed1de6c666f464d0c",
+    "byteSize": 40595
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000015.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000015.json",
+    "sha256": "b8fa0361209f57207f36ad70390b3eb23d1c3314ae5a37bb4cabc8e9286035d4",
+    "byteSize": 39828
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000010.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000010.json",
+    "sha256": "df16a775eb36714054a76ecba43924825b4ff37a4dba7327db3ae11d52a7c16a",
+    "byteSize": 920
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000011.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000011.json",
+    "sha256": "578a50388d2b89aed90ecd0c30179ea3d2d42ee714c203daf09cef9f4c106063",
+    "byteSize": 13516
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000007.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000007.json",
+    "sha256": "95341b2ffb73af2e9acb0d8962895866d4cd885f274d7e7dff69f0157a33f7b8",
+    "byteSize": 12773
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000021.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000021.json",
+    "sha256": "c4b3871f8c573ae16a45a58599b30b3986faa72f4e4b2b6503ca5066cebba2d5",
+    "byteSize": 925
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/020-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/020-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "01486b41386d057fe2daf5afdcf3405f106fe17bec9e70830145809dfabea915",
+    "byteSize": 31618
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000008.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000008.json",
+    "sha256": "e28d23f30fc09c4a6da733694ecc6c55c894bd51e3353ac17d9757c766edac75",
+    "byteSize": 40256
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000020.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000020.json",
+    "sha256": "91faa9c8f368524d6c99f96d335518c921b48a17789a4ff252f1447a65911d96",
+    "byteSize": 14227
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000016.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000016.json",
+    "sha256": "a0bbe2ae8159b4569fc752a7338674d42622db13d11fa28ce405c88c5706b8e6",
+    "byteSize": 13518
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000017.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000017.json",
+    "sha256": "05263f226ffc0bb467600233e4e069eaa9ea4735ee2b2f40a9354db21bc177e3",
+    "byteSize": 915
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/014-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/014-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "4168d254e889d4424dcd29e0796cdf13df244482be7a23e1167df14bc1b0f6c9",
+    "byteSize": 31383
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000012.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000012.json",
+    "sha256": "c932ffd2a599ecbc3c30d02242484010d43a910072cf45e1a41ac1787709d4ae",
+    "byteSize": 39822
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/002-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/002-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "92bb215ae1562b6015a0eaaecbae8405b84e47082250c71d0e8c22d9cd5c37ea",
+    "byteSize": 31627
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/008-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/008-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "5615dba25d3c12812cb9f58f6573f251764e39ed884bf3a595e1239740166fa5",
+    "byteSize": 31631
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000013.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000013.json",
+    "sha256": "e6df62b88095d5dc9818eb7010920c63b1889d50c3d1a2d6f3998d0827a73884",
+    "byteSize": 39902
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/004-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/004-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "33a09a2aeca07e1122ac7b2ab05ce34e35c60154a416b9df321dbcde3ab14cfc",
+    "byteSize": 31612
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000016.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000016.json",
+    "sha256": "bf354f7467b6b4324c6f20f7502b4317f6c2cd277bd4ed7a91f9d5e50dd47f77",
+    "byteSize": 915
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/009-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/009-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "83615c2efe0643a2e3e29355b02f09a17ce62d0101f835539cc7bc69f45dc04b",
+    "byteSize": 31636
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000017.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000017.json",
+    "sha256": "bfeaacd0cfb7828cf28e8316d60c9809933a8996130a7759b6562b699f0af05b",
+    "byteSize": 13825
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000001.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000001.json",
+    "sha256": "cd4056744d2b2d744e209931039cd01fd056a14558b7125dd4eda56c53b2f6e3",
+    "byteSize": 12865
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/021-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/021-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "acd09e2bebc5c7e92c4f7803c7326aabdaea63a6e1fdc8b4aa0f5866c894dcfd",
+    "byteSize": 31623
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/006-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/006-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "0687f8231791b182b50406f8291e03fc039eb9964a43a215b77adfe13d29acc1",
+    "byteSize": 31619
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000021.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000021.json",
+    "sha256": "ecbbf5a74cc4d010d164e5dd946e10c5edb44a58a5cf8ed6e8e4beb4b5f31d72",
+    "byteSize": 14283
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000009.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000009.json",
+    "sha256": "f147c5bd46c2ad80cfaa5293d874136e206aea5e251261917c41744b057dcad2",
+    "byteSize": 39831
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000020.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000020.json",
+    "sha256": "c2a0c47095765192a3e75912cf21f7ffb0553eb5c78defbf5548a76830a0b616",
+    "byteSize": 920
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/campaign-complete.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/campaign-complete.json",
+    "sha256": "b55931289e50456940e705e6db1015a09e772c76bfe3654b69029ebc3b2873b0",
+    "byteSize": 70
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000019.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000019.json",
+    "sha256": "e71fdbf1dc75628bb429063a18687e2879763cd47cff15ed252c29cf2a3be957",
+    "byteSize": 920
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/010-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/010-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "8053e22342e1fe10edb637fa03e9d1c8d32ce3b2c038717c159dcf61e3f250aa",
+    "byteSize": 31604
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000018.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000018.json",
+    "sha256": "8b57d8e5e8b1f4f2bb27172e69f7e34a64ea76811e03fe44269a461385b8bd1c",
+    "byteSize": 13523
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000010.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000010.json",
+    "sha256": "6968bd9fe580484c27e27f28db840dc290269a48881b93ddfd9d017cd9d4bd45",
+    "byteSize": 39848
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000015.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000015.json",
+    "sha256": "9201c68e7d8be320016b6c34dd298e729a8d1c0bae8caa9c724ba4b6eaf17668",
+    "byteSize": 928
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000014.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000014.json",
+    "sha256": "5d600e2db9cdc8d529c71b68294deba4cee2f103e1b64bb669ce126e10e4bc31",
+    "byteSize": 13435
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000002.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000002.json",
+    "sha256": "6bcd61ed0e52e9713da13287d1fc237d14a1d75ea971f63e00f2bd2588889fa4",
+    "byteSize": 12810
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000003.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000003.json",
+    "sha256": "70b3de0ade879a988c5838b499f32122a1c6bb46aa79c89fe55c035c212fd443",
+    "byteSize": 12857
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000015.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000015.json",
+    "sha256": "79fd0eb3580ba96f7aabcf9457fff9ec7766886f1278ec6c930dcd768fec6e5a",
+    "byteSize": 13448
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000014.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000014.json",
+    "sha256": "495c842f97234bcfed859f8d14e701363bfa6bc75e79db1e6ebe6e202ddd7e3b",
+    "byteSize": 912
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000011.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000011.json",
+    "sha256": "eb19de221c747277d3b91c5172474287885ab6dadab7b603af3aea8625f3101a",
+    "byteSize": 39862
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/manifest.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/manifest.json",
+    "sha256": "67614b3b416a03cece63aba5f626422150efd5cdb287ee1f2240659d18f339ca",
+    "byteSize": 17068
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/011-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/011-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "15ece2c8ca1c97d45515c557ca1ef400215d1fe1cff9227b4b16a77ef26fdd48",
+    "byteSize": 31629
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000019.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000019.json",
+    "sha256": "34fddb310f293e040c6b7cf11c44e5988f76255dc60c837ae1e3823f017ff2d2",
+    "byteSize": 14272
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000018.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000018.json",
+    "sha256": "6492976addfca581c7366b4226d38153525134fcce46f3d6a8489acad7f29763",
+    "byteSize": 919
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/in-flight.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/in-flight.json",
+    "sha256": "f26f10f41247dc6427d8491c523526b6db5579fde181ed7a61b3711bb89c634f",
+    "byteSize": 229
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/015-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/015-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "ef1c1e5ce27216d5ce4fecc9b5c2a37bef8ef916c9e4e7fe62d8ebb8073d7905",
+    "byteSize": 31389
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/001-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/001-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "33f10cfedbfc8f07605460dfb90d02db4ee143b35588a9e1a05f00001c3adb8a",
+    "byteSize": 31616
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000016.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000016.json",
+    "sha256": "da4df7e6f86164d5d1d35cc0e1398704c7a1f9a62b251f1d98b1000c657ea7ae",
+    "byteSize": 39888
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000013.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000013.json",
+    "sha256": "fa6aae4a9c144255fdf55d1ba87a8831d437229550bfdbf85a92937b4261e3a9",
+    "byteSize": 929
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000012.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000012.json",
+    "sha256": "30e8eca6c518e088f2348cb78c5ebd165e2e73d1affc5bcb4a8effa21cffd125",
+    "byteSize": 13440
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000004.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000004.json",
+    "sha256": "9a0eb6e820f365569d69c423e01db4847ac20c2555c26ebb8a07c40326707843",
+    "byteSize": 12848
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000009.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000009.json",
+    "sha256": "1128c9c5268f36a955d55d523f92b59ba8dd1cdc9e5fcf09eb294a2aa9ccf28f",
+    "byteSize": 914
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/017-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/017-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "9aa18f4786f20cc4c97747d1bda536b151833c637aebb3972bd71d0e62bb4630",
+    "byteSize": 31626
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/003-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/003-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "69487271e3a8a65cb66ff3aa4c54f34bbc824f3b4c8ff428c87e06d1a006c0dc",
+    "byteSize": 31623
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000020.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000020.json",
+    "sha256": "5dde017fa10ad8f9b3c321bbf292310f7a364cda36cfc16c4b5246071341f0c5",
+    "byteSize": 40572
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/019-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/019-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "cc339914db704d380544dbb8c1e06a970f0e74b6ec9e554965c1d919559f911f",
+    "byteSize": 31631
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000008.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000008.json",
+    "sha256": "3a9883120874e9a658fd2a068c874b81fe0029e4da59de499ba45e7a07bc55cc",
+    "byteSize": 13926
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/013-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/013-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "d7b3a5f4e4c723ace0112c9fda92da6a7adc4828f3a2d6bfd6d783f260e739e8",
+    "byteSize": 31633
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000009.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000009.json",
+    "sha256": "3f39eca1539e3881cc540459f2c5cc884d4ba6ef8dbc010ce9080d50a5037149",
+    "byteSize": 13477
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000021.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000021.json",
+    "sha256": "3d260ea9df3aa198ce145991e8ace5cd88b8baec40626df948df96e2607edb96",
+    "byteSize": 40596
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/016-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/016-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "91526f2e2875067ba734d5a3d8699c44aef5ae657f29ed905643800845b463fa",
+    "byteSize": 31633
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/012-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/012-h264_videotoolbox-default-24-measured-r1.mp4.process.json",
+    "sha256": "c1d2a69ec3753fb3555a57ea6ae97ed65736df167bd74ed07f61005c68bae202",
+    "byteSize": 31612
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/018-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/018-h264_videotoolbox-default-24-measured-r2.mp4.process.json",
+    "sha256": "11b86c52144c300f85073db1e50d0df2c9fbd150b5be762609adf2b73a75d2f1",
+    "byteSize": 31641
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/005-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/005-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "3a00a9549b6f22d2622e585ac54544e146f17d772a1c53eac10058b3ae30a3b1",
+    "byteSize": 31633
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000008.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000008.json",
+    "sha256": "774198dc5c067cc4679c70bc324375177a3be036a1ddc871b696cec2fd12bb2c",
+    "byteSize": 933
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000005.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000005.json",
+    "sha256": "2a2545f1fc9bc829e6954abb58360fdb6b55dfc682dc47959923009f11d1c249",
+    "byteSize": 12782
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000013.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/attempt-000013.json",
+    "sha256": "bfe2a5b98c765952266ec5bdee43e21d99ac373a7185a531976ba9ea63e31dcd",
+    "byteSize": 13532
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000012.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/environment-000012.json",
+    "sha256": "a6c0901283ef0a5c8238d565d577ea71285ce882ed1dd0090e6333e55e6883ae",
+    "byteSize": 916
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/007-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/007-h264_videotoolbox-default-24-warmup-r1.mp4.process.json",
+    "sha256": "3096ac260faa9f3c801de34db788baf80849a3c5748ad05b53908801ee032612",
+    "byteSize": 31382
+  },
+  {
+    "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac-939823e/\u00e9preuve \u5ba2\u6237\u7aef/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000017.json",
+    "packetPath": "original/videotoolbox/queue/campaigns/campaign-69ebca2da8fe37b8/submission-000017.json",
+    "sha256": "8b59dd730666b42ce954667bfdd003d2e90f6dbb164939acfc34945e22d46d73",
+    "byteSize": 40204
+  }
+]
