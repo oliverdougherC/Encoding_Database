@@ -12,18 +12,72 @@
     "endpoint": "POST /v7/benchmark-runs/:id/artifacts/ENCODED/operator-requeue (requireOperator + reason >= 8 chars)",
     "unauthenticatedProbe": "401 before rollout the route did not exist (404); after rollout 401 without token",
     "rows": [
-      {"run": "cmu9fzkfu000do3dwv6uk23hw", "sha": "7a8e3eea", "rep": 1, "installation": "3569f9d4 (P910 native)", "requeueHttp": 202},
-      {"run": "cmu9fzty6000vo3dwkn54meul", "sha": "7a8e3eea", "rep": 2, "installation": "3569f9d4 (P910 native)", "requeueHttp": 202},
-      {"run": "cmu9g021d0019o3dw51u88z6a", "sha": "7a8e3eea", "rep": 3, "installation": "3569f9d4 (P910 native)", "requeueHttp": 202},
-      {"run": "cmu9fzywi0011o3dw668udcpv", "sha": "7a8e3eea", "rep": 4, "installation": "3569f9d4 (P910 native)", "requeueHttp": 202},
-      {"run": "cmu9fzwn7000yo3dw5bu8f9zy", "sha": "1b8d1110", "rep": 2, "installation": "3569f9d4 (P910 native)", "requeueHttp": 202},
-      {"run": "cmu9hnyrr0046o3dwc9f4x2x8", "sha": "f803df85", "rep": 1, "installation": "17a3f0bd (Mac)", "requeueHttp": 202},
-      {"run": "cmu9ho8lr004qo3dw0w7rpury", "sha": "cfe056ef", "rep": 2, "installation": "17a3f0bd (Mac)", "requeueHttp": 202},
-      {"run": "cmu9kslvi000rl9dw00mk2myp", "sha": "6f0eb93a", "rep": 1, "installation": "9e7cd0a8 (Windows physical)", "requeueHttp": 202},
-      {"run": "cmu9ksajy000dl9dwpa9t8j65", "sha": "51e7453a", "rep": 2, "installation": "9e7cd0a8 (Windows physical)", "requeueHttp": 202}
+      {
+        "run": "cmu9fzkfu000do3dwv6uk23hw",
+        "sha": "7a8e3eea",
+        "rep": 1,
+        "installation": "3569f9d4 (P910 native)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9fzty6000vo3dwkn54meul",
+        "sha": "7a8e3eea",
+        "rep": 2,
+        "installation": "3569f9d4 (P910 native)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9g021d0019o3dw51u88z6a",
+        "sha": "7a8e3eea",
+        "rep": 3,
+        "installation": "3569f9d4 (P910 native)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9fzywi0011o3dw668udcpv",
+        "sha": "7a8e3eea",
+        "rep": 4,
+        "installation": "3569f9d4 (P910 native)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9fzwn7000yo3dw5bu8f9zy",
+        "sha": "1b8d1110",
+        "rep": 2,
+        "installation": "3569f9d4 (P910 native)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9hnyrr0046o3dwc9f4x2x8",
+        "sha": "f803df85",
+        "rep": 1,
+        "installation": "17a3f0bd (Mac)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9ho8lr004qo3dw0w7rpury",
+        "sha": "cfe056ef",
+        "rep": 2,
+        "installation": "17a3f0bd (Mac)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9kslvi000rl9dw00mk2myp",
+        "sha": "6f0eb93a",
+        "rep": 1,
+        "installation": "9e7cd0a8 (Windows physical)",
+        "requeueHttp": 202
+      },
+      {
+        "run": "cmu9ksajy000dl9dwpa9t8j65",
+        "sha": "51e7453a",
+        "rep": 2,
+        "installation": "9e7cd0a8 (Windows physical)",
+        "requeueHttp": 202
+      }
     ],
     "gateNegative": "requeue of recovered run cmu9hnyrr0046o3dwc9f4x2x8 returned 409 'Only REJECTED artifacts can be requeued by an operator'",
-    "stateDetailsPreserved": "each artifact's prior rejection reason/details are retained under stateDetails.operatorRequeue; sha256/byteSize/payloadHash untouched"
+    "stateDetailsPreserved": "each artifact's prior rejection reason/details are retained under stateDetails.operatorRequeue at requeue time; sha256/byteSize/payloadHash untouched. Correction (2026-09-20 review): builds through a9bf6f9 replace Artifact.stateDetails on upload completion, so on those builds the operatorRequeue block lived in the DB only until each row's re-upload finished; the durable audit record for all nine requeues is this receipt itself. The follow-up server fix (mergeRetainedStateDetails in artifacts.ts) preserves operatorRequeue across completion."
   },
   "replay": {
     "linux5": "packaged Linux client (SHA-256 3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a, digest-verified) run on P910 over loopback TLS https://127.0.0.1:3094 against a throwaway queue seeded with the five sealed submission-*.json files from 日本語 client trial/software-queue campaign-8b19e985307766a7; the completion marker was seeded from the ORIGINAL campaign ledgers (27 attempts, skipped 0, failed 0) so the pre-fix packaged client takes its upload-only branch without re-encoding; result: 5/5 UPLOADED, stateReason cleared",
@@ -33,6 +87,11 @@
     "validation": "all uploads passed the candidate's full media-contract validation under the fixed validator; zero rejections; run statuses returned to PENDING for re-decision; exactly one new QualityAnalysis PENDING row per recovered artifact (10 PENDING total) under the standing analysis-concurrency-0 review hold; zero new object-store ghosts (existing objects dedup-reused for the repeated 7a8e3eea payload)"
   },
   "sideEffectReviewed": "submission-000010 (athletic rep1, sealed payloadHash d611cedb) had never existed as a candidate row: the candidate only held the athletic rep2 row (3d67a823, originally dead-lettered then row-created by the ops probe). The replay therefore legitimately added run cmu9w82i2000dpmdwjnrnxjtf as the group's missing rep1 contribution (allowed by the group gate: rep1 vs existing rep2, receipts consistent). No duplicate repetition was created; run count 117 -> 118 with that single accounted addition.",
-  "membershipAfter": {"artifacts": "UPLOADED 10 / VERIFIED 61 / RETAINED 47 / REJECTED 0 / PENDING 0", "runs": 118, "analyses": "COMPLETE 48 / SUSPECT 60 / PENDING 10", "production": "untouched"},
+  "membershipAfter": {
+    "artifacts": "UPLOADED 10 / VERIFIED 61 / RETAINED 47 / REJECTED 0 / PENDING 0",
+    "runs": 118,
+    "analyses": "COMPLETE 48 / SUSPECT 60 / PENDING 10",
+    "production": "untouched"
+  },
   "rollback": "candidate.compose.json image reverts to encodingdb-candidate-server:3e6bb08 (or the private pre-recovery compose copy) with docker compose up -d --no-build; no schema or data-destructive change was made — requeue only transitions mutable state edges through the audited API"
 }

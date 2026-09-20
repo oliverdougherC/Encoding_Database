@@ -346,7 +346,10 @@ class MemoryPersistence {
       storageKey: input.storageKey,
       storageUrl: input.storageUrl,
       stateReason: null,
-      stateDetails: input.stateDetails ?? null,
+      stateDetails: {
+        ...(artifact.stateDetails && typeof artifact.stateDetails === 'object' && !Array.isArray(artifact.stateDetails) ? artifact.stateDetails : {}),
+        ...(input.stateDetails ?? {}),
+      },
       uploadedAt: new Date(),
     });
     return this.cloneBundle(record);
@@ -1847,4 +1850,23 @@ test('operator requeue returns a defect-rejected run to PENDING preserving immut
   }), { 'content-type': 'application/json' });
   assert.equal(authorization.status, 200, JSON.stringify(authorization.json));
   assert.equal(authorization.json.uploadRequired, true);
+
+  // Audit survival: completing the requeued upload must not erase the operatorRequeue block.
+  await harness.persistence.markArtifactUploaded({
+    artifactId: stored.artifact.id,
+    sha256: stored.artifact.sha256,
+    byteSize: stored.artifact.byteSize,
+    mediaContainer: stored.artifact.mediaContainer,
+    storageProvider: 'localfs',
+    storageBucket: null,
+    storageKey: 'shard/requeued-completion',
+    storageUrl: '/isolated/requeued-completion',
+    stateDetails: { uploadedAt: 'fixture-completion', contentType: 'video/mp4', deduplicated: false },
+  });
+  const completed = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.equal(completed.artifact.storageState, 'UPLOADED');
+  assert.equal(completed.artifact.stateDetails.operatorRequeue.priorStateReason, 'failed-media-contract-validation');
+  assert.equal(completed.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
+  assert.equal(completed.artifact.stateDetails.contentType, 'video/mp4');
+  assert.equal(completed.artifact.stateDetails.deduplicated, false);
 });

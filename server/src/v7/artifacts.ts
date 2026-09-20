@@ -2923,6 +2923,12 @@ function immutableRunHash(input: CreateRunInput): string {
   return sha256Hex(Buffer.from(canonicalJsonString(JSON.parse(JSON.stringify(immutable)) as JsonValue)));
 }
 
+function mergeRetainedStateDetails(prior: unknown, next: unknown): Record<string, unknown> {
+  const base = prior !== null && typeof prior === 'object' && !Array.isArray(prior) ? prior as Record<string, unknown> : {};
+  const update = next !== null && typeof next === 'object' && !Array.isArray(next) ? next as Record<string, unknown> : {};
+  return { ...base, ...update };
+}
+
 export function createPrismaArtifactPipelinePersistence(client: PrismaClient, config = mergeArtifactPipelineConfig(undefined)): ArtifactPipelinePersistence {
   return {
     async getCompatibilityProtocols() {
@@ -3432,7 +3438,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
             storageKey: input.storageKey,
             storageUrl: input.storageUrl,
             stateReason: null,
-            stateDetails: input.stateDetails as any,
+            // Upload completion must not erase prior lifecycle audit (e.g. operatorRequeue);
+            // completion fields win same-named keys but retention of the prior trail is required.
+            stateDetails: mergeRetainedStateDetails(bound.stateDetails, input.stateDetails) as any,
             uploadedAt: new Date(),
           } as any,
         });

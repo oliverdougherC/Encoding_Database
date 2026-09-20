@@ -230,6 +230,31 @@ test('PostgreSQL admission, upload slots, monotonic retries, lease fencing and d
   }
   await assert.rejects(service.acceptUploadStream('test', authorization.token, 'video/mp4', String(body.artifact.byteSize), Readable.from([Buffer.from('evil-video')])), /sha256/);
   assert.equal((await service.getBundle(first.run.id, 'ENCODED')).artifact.storageState, 'REJECTED');
+  // Operator requeue audit must survive the exact re-upload completions it enables, on Prisma.
+  const priorRejection = await client.artifact.findUniqueOrThrow({ where: { id: first.artifact.id } });
+  await persistence.requeueRejectedArtifact({ artifactId: first.artifact.id, operator: 'TEST OPERATOR', reason: 'audit preservation regression' });
+  const requeuedRow = await client.artifact.findUniqueOrThrow({ where: { id: first.artifact.id } });
+  assert.equal(requeuedRow.storageState, 'PENDING');
+  assert.equal(requeuedRow.stateReason, 'OPERATOR_REQUEUED');
+  assert.equal(requeuedRow.stateDetails.operatorRequeue.priorStateReason, priorRejection.stateReason);
+  const reauth = await service.authorizeUpload('test', first.run.id, 'ENCODED', { ...body.artifact, contentType: 'video/mp4' });
+  assert.equal(reauth.uploadRequired, false, 'sealed bytes dedup onto the stored object');
+  const dedupCompleted = await client.artifact.findUniqueOrThrow({ where: { id: first.artifact.id } });
+  assert.equal(dedupCompleted.storageState, 'UPLOADED');
+  assert.equal(dedupCompleted.stateDetails.reusedExistingObject, true);
+  assert.equal(dedupCompleted.stateDetails.operatorRequeue.reason, 'audit preservation regression', 'requeue audit survives dedup completion');
+  assert.equal(dedupCompleted.sha256, priorRejection.sha256);
+  assert.equal(dedupCompleted.byteSize, priorRejection.byteSize);
+  await client.artifact.update({ where: { id: third.artifact.id }, data: { storageState: 'REJECTED', stateReason: 'fixture-rejection', stateDetails: { failedAt: 'fixture' } } });
+  await persistence.requeueRejectedArtifact({ artifactId: third.artifact.id, operator: 'TEST OPERATOR', reason: 'stream completion preserves audit' });
+  await rm(path.join(root, dedupCompleted.storageKey), { force: true });
+  const streamAuth = await service.authorizeUpload('test', third.run.id, 'ENCODED', { ...body.artifact, contentType: 'video/mp4' });
+  assert.equal(streamAuth.uploadRequired, true, 'stream path after the stored object was removed');
+  await service.acceptUploadStream('test', streamAuth.token, 'video/mp4', String(body.artifact.byteSize), Readable.from([Buffer.from('test-video')]));
+  const streamCompleted = await client.artifact.findUniqueOrThrow({ where: { id: third.artifact.id } });
+  assert.equal(streamCompleted.storageState, 'UPLOADED');
+  assert.equal(streamCompleted.stateDetails.deduplicated, false);
+  assert.equal(streamCompleted.stateDetails.operatorRequeue.reason, 'stream completion preserves audit', 'requeue audit survives stream completion');
   await persistence.retryDerivedRecomputes(async () => { throw new Error('aggregate storage unavailable'); });
   assert.equal((await client.qualityAnalysis.findUnique({ where: { id: owner.analysis.id } })).status, 'COMPLETE');
   assert.equal((await client.qualityAnalysis.findUnique({ where: { id: owner.analysis.id } })).recomputePending, true);
