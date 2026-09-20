@@ -141,8 +141,10 @@ three campaigns, plus four controlled recovery/failure cases. Hosted Windows
 seven-clip console acceptance also passed; final GUI acceptance remains pending.
 The [Mac package smoke](docs/collection-readiness/mac-build-b3ef24a/README.md) passed
 with native ARM64 helpers and a **macOS 27.0** runtime floor; signing is ad hoc,
-with no Developer ID signature or notarization. Fresh b3 Mac seven-clip acceptance
-is in progress after AC/environment checks. The Linux candidate build, migrations,
+with no Developer ID signature or notarization. Both b3 Mac seven-clip campaigns
+finished: 46 artifacts verified, with two unstable software groups and six
+GPU-suspect hardware measurements retained. Publication remains unverified.
+The Linux candidate build, migrations,
 trusted TLS and isolated restore passed; final native acceptance is now running
 after the capacity trial. These results do not establish collection readiness or validated
 PL. See the [current evidence and open gates](docs/FINAL_RELEASE_HANDOFF.md).

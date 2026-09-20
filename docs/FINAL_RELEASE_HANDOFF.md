@@ -47,8 +47,10 @@ production epoch, 1.3 download URL or production approval is implied by this pac
 - **Mac:** the [b3 package/embedded smoke](collection-readiness/mac-build-b3ef24a/README.md)
   passed. It is native ARM64, has a complete-runtime **macOS 27.0** minimum, and is
   ad-hoc signed without Developer ID signing/notarization. The coordinator reports
-  current AC power and valid fresh software/VideoToolbox preflights; fresh b3
-  seven-clip acceptance is **in progress**, with no outcome assumed. The separate
+  current AC power. The [b3 seven-clip packet](collection-readiness/mac-seven-b3ef24a/README.md)
+  verifies 46 retained artifacts and 10,656 frames. Both campaigns exited 0;
+  two software groups remain unstable and six VideoToolbox measured attempts
+  remain GPU-suspect. Native publication is still unverified. The separate
   [939 software/VideoToolbox packet](collection-readiness/mac-seven-939823e/README.md)
   verifies 42 retained artifacts and fourteen stable groups; **five VideoToolbox
   measured attempts remain SUSPECT**. Their GPU/battery flags are unchanged.
