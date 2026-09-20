@@ -20,6 +20,8 @@ public static class EdbWindows {
  public sealed class ClickReceipt { public string Error; public uint InsertedCount; public long Root,Child; public int X,Y,Left,Top,Right,Bottom; }
  public static int Clicks; public static ClickReceipt LastClick; public static bool NextClickFails=false; public static bool DeferOnce=false;
  public static bool ActivateSucceeds=true; public static IntPtr Foreground=IntPtr.Zero;
+ public static bool SetForegroundWindow(IntPtr h){if(ActivateSucceeds){Foreground=h;return true;}return false;}
+ public static IntPtr GetForegroundWindow(){return Foreground;}
  public static bool GetWindowRect(IntPtr h, out Rect r){ var b=Data[h.ToInt64()].Bounds; r=new Rect{Left=b[0],Top=b[1],Right=b[2],Bottom=b[3]}; return true; }
  public static IntPtr SetThreadDpiAwarenessContext(IntPtr c){ return new IntPtr(-1); }
  public static bool ShowWindow(IntPtr h,int mode){return true;}

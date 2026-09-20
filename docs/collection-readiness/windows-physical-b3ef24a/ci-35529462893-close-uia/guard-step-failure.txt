@@ -1,0 +1,21 @@
+##[group]Run ./scripts/test-windows-gui-harness-guards.ps1
+./scripts/test-windows-gui-harness-guards.ps1
+shell: C:\Windows\System32\WindowsPowerShell\v1.0\powershell.EXE -command ". '{0}'"
+env:
+  pythonLocation: C:\hostedtoolcache\windows\Python\3.11.9\x64
+  PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.11.9\x64/lib/pkgconfig
+  Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+  Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+  Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.11.9\x64
+  ENCODINGDB_FFMPEG_PATH: D:\a\_temp\ffmpeg-runtime\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\bin\\ffmpeg.exe
+  ENCODINGDB_FFPROBE_PATH: D:\a\_temp\ffmpeg-runtime\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\bin\\ffprobe.exe
+##[endgroup]
+Expected error matching *foreground focus*
+At D:\a\Encoding_Database\Encoding_Database\scripts\test-windows-gui-harness-guards.ps1:42 char:74
++ ... bool]$Value,[string]$Message) { if (-not $Value) { throw $Message } }
++                                                        ~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (Expected error ...reground focus*:String) [], RuntimeException
+    + FullyQualifiedErrorId : Expected error matching *foreground focus*
+ 
+##[error]Process completed with exit code 1.
+##[group]Run ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 600

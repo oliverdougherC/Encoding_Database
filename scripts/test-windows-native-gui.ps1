@@ -235,6 +235,11 @@ function Get-Elements {
     }
     return $elements.ToArray()
 }
+function Get-UiaProgrammaticName($value) {
+    if ($null -eq $value) { return $null }
+    try { $name=$value.ProgrammaticName; if ($name) { return [string]$name } } catch { }
+    try { return "unregistered:$($value.Id)" } catch { return 'unregistered' }
+}
 function Capture-Ui([string]$Label) {
     # Observe owned windows in physical pixels so captures and click coordinates share one space.
     $previousDpi=[EdbWindows]::SetThreadDpiAwarenessContext([IntPtr]::new(-4))
@@ -255,8 +260,20 @@ function Capture-Ui([string]$Label) {
     finally { $graphics.Dispose(); $bitmap.Dispose() }
     $elements = @(Get-Elements)
     $controls = @(foreach ($element in $elements) {
-        $c = $element.Current
-        @{ name = $c.Name; automationId = $c.AutomationId; type = $c.ControlType.ProgrammaticName; enabled = $c.IsEnabled; offscreen = $c.IsOffscreen; processId = $c.ProcessId; handle = $c.NativeWindowHandle; bounds = @{ x=$c.BoundingRectangle.X; y=$c.BoundingRectangle.Y; width=$c.BoundingRectangle.Width; height=$c.BoundingRectangle.Height }; patterns = @($element.GetSupportedPatterns() | ForEach-Object { $_.ProgrammaticName }) }
+        # A spawned encoder's ConPTY root can expose a control type or pattern this managed UIA
+        # wrapper cannot name (strict-mode PropertyNotFound on ProgrammaticName). Evidence capture
+        # records what UIA really exposes; an unnameable identifier is preserved numerically and
+        # never aborts the acceptance run.
+        $row=@{ name=$null; automationId=$null; type=$null; enabled=$null; offscreen=$null; processId=$null; handle=$null; bounds=$null; patterns=@() }
+        try {
+            $c = $element.Current
+            $row.name=$c.Name; $row.automationId=$c.AutomationId; $row.enabled=$c.IsEnabled; $row.offscreen=$c.IsOffscreen
+            $row.processId=$c.ProcessId; $row.handle=$c.NativeWindowHandle
+            $row.bounds=@{ x=$c.BoundingRectangle.X; y=$c.BoundingRectangle.Y; width=$c.BoundingRectangle.Width; height=$c.BoundingRectangle.Height }
+            $row.type=Get-UiaProgrammaticName $c.ControlType
+            $row.patterns=@(foreach ($pattern in @($element.GetSupportedPatterns())) { Get-UiaProgrammaticName $pattern })
+        } catch { $row.error=$_.Exception.Message }
+        $row
     })
     Save-Json $controls "$base.uia.json"
     Record-Event 'ui-observed' @{ snapshot=$Label; controls=$controls.Count; screenshot="$base.png" }
