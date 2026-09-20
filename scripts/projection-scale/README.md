@@ -22,3 +22,35 @@ node scripts/projection-scale/run.mjs measure
 ```
 
 NodeRSS is sampled in the server every200ms and includes the process resourceUsage maximum; DBcgroup memory is sampled every5seconds with its lifetime memory.peak high-water mark separately retained (including seeding). The latter includes PostgreSQL processes and pagecache within the1GiBcontainer and is not directly comparable to processRSS. Docker Desktop VM memory and load-generator RSS are outside these two series. The exact source SHA, image digest, platform, commands, seed proof and measured receipt must accompany any result claim. No existing database or P910workload is used.
+
+## Repeat on the P910 candidate runtime (operator allocation required)
+
+The local ARM64 trial does not certify P910 latency. A repeat must use a **new, isolated synthetic database**, the final reviewed candidate image and a quiet host interval before calibration timing. Do not point this harness at candidate, production or calibration databases, and do not reuse their volumes. Do not run while the timing lock is owned. This paragraph is preparation, not a record that a remote trial ran.
+
+The harness accepts `PROJECTION_SCALE_SERVER_ROOT` for the image's `/app` layout, and `PROJECTION_SCALE_SOURCE_SHA` for an explicitly verified full source SHA when the runtime image lacks git. These affect only module/provenance resolution. Record the image ID/digest independently; the explicit SHA is not proof of image provenance. Disk sampling uses the evidence output filesystem on either host. Readers, writer cycles, database limits and assertions remain unchanged.
+
+After the root allocates the remote work and the final image/source identity is recorded:
+
+1. Verify loopback ports 55441/55442 are unused, no timing campaign is active, and sufficient disk is available. Create a uniquely named task directory and task-owned PostgreSQL container beginning `encodingdb-projection-synthetic-`. Use a freshly created volume; retain it until evidence is audited. Resolve and record the PostgreSQL 16 AMD64 image digest.
+2. Start that PostgreSQL container with exactly `--memory=1g --memory-swap=1g --shm-size=256m -p127.0.0.1:55441:5432`, the same synthetic user/database/password shown above, and `-c shared_buffers=128MB -c work_mem=4MB -c max_connections=100`. Record image, kernel, CPU, Node version and cgroup version/limits. Require cgroup-v2 `memory.current`, `memory.peak`, `memory.events` and `memory.stat`; preserve before/after counters.
+3. Mount only the reviewed harness and its fresh evidence directory into a **separate container from the final candidate image**, with Linux host networking and the production server's 16 GiB memory cap. Use `PROJECTION_SCALE_SERVER_ROOT=/app`, the verified `PROJECTION_SCALE_SOURCE_SHA`, and the synthetic loopback URL with `connection_limit=30`. Invoke the image's existing Prisma CLI to migrate the empty synthetic DB; invoke the harness `seed` and then `serve`. Do not run the normal API entrypoint or analysis workers.
+4. Run `measure` from the host with Node, Docker CLI access and matching server modules/dist in a task-local checkout. Those modules may be copied from a stopped, disposable container created from the same final candidate image; record the copy/image provenance and do not borrow modules from a running service. This process is the load generator, not the measured API runtime. Sample `/memory` once before measurement and verify its `sourceSha` matches the reviewed pin.
+5. After explicit quiet-window allocation, run the unchanged 600-second measurement and full drain. Preserve every failure. Capture the exact-interval database logs and cgroup counters; run `docs/collection-readiness/projection-20260914/trial-2/reconcile.sql` against the synthetic DB. Save actual commands, source/image hashes, seed, complete receipt, all-cohort reconciliation and resource inventory. Stop only the disposable API container. Any failed trial is retained before a fix/repeat.
+
+Image-side command shape (variables must be resolved and recorded by the operator):
+
+```sh
+# Linux only. The runtime image, mount paths and source must already be verified.
+docker run --rm --network host --memory=16g --memory-swap=16g \
+  --name "$PROJECTION_API_CONTAINER" \
+  --mount "type=bind,src=$PROJECTION_HARNESS_DIRECTORY,dst=/projection,readonly" \
+  --mount "type=bind,src=$PROJECTION_EVIDENCE_DIRECTORY,dst=/evidence" \
+  -e PROJECTION_SCALE_SERVER_ROOT=/app \
+  -e "PROJECTION_SCALE_SOURCE_SHA=$PROJECTION_REVIEWED_SOURCE_SHA" \
+  -e PROJECTION_SCALE_OUTPUT=/evidence \
+  -e "PROJECTION_SCALE_DATABASE_URL=$PROJECTION_SCALE_DATABASE_URL" \
+  -e PROJECTION_SCALE_PORT=55442 \
+  "$PROJECTION_CANDIDATE_IMAGE_ID" node /projection/run.mjs serve
+```
+
+Use the same shape with `seed` after migration. The host measurement process uses the same database URL, port, explicit source SHA, output directory and PostgreSQL container name. Building/pulling/copying/migrating/seeding occurs before the quiet interval; no P910 operation has been performed merely by documenting these commands.

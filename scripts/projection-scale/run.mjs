@@ -8,11 +8,18 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 import { performance } from 'node:perf_hooks';
 import { createRequire } from 'node:module';
-const require = createRequire(new URL('../../server/package.json', import.meta.url));
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+const serverRoot = process.env.PROJECTION_SCALE_SERVER_ROOT
+  ? pathToFileURL(`${resolve(process.env.PROJECTION_SCALE_SERVER_ROOT)}/`)
+  : new URL('../../server/', import.meta.url);
+const require = createRequire(new URL('package.json', serverRoot));
+const runSourceSha = process.env.PROJECTION_SCALE_SOURCE_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+assert.match(runSourceSha, /^[a-f0-9]{40}$/, 'Explicit image source must be a full reviewed commit SHA');
 const { PrismaClient, Prisma } = require('@prisma/client');
-const { CANONICAL_MEASUREMENT_RULES, createMeasurementGroupVerifier } = await import('../../server/dist/v7/measurementGroup.js');
-const { persistDerivedResultAggregate, DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } = await import('../../server/dist/v7/aggregation.js');
-const { loadPublicCorpusPage, refreshPublicCorpusGroups, buildPublicCorpusPageSql } = await import('../../server/dist/v7/corpusQuery.js');
+const { CANONICAL_MEASUREMENT_RULES, createMeasurementGroupVerifier } = await import(new URL('dist/v7/measurementGroup.js', serverRoot));
+const { persistDerivedResultAggregate, DEFAULT_RECOMMENDATION_EVIDENCE_POLICY } = await import(new URL('dist/v7/aggregation.js', serverRoot));
+const { loadPublicCorpusPage, refreshPublicCorpusGroups, buildPublicCorpusPageSql } = await import(new URL('dist/v7/corpusQuery.js', serverRoot));
 const mode = process.argv[2];
 const url = new URL(process.env.PROJECTION_SCALE_DATABASE_URL ?? 'http://missing');
 assert.equal(url.hostname, '127.0.0.1'); assert.equal(url.pathname, '/encodingdb_projection_synthetic');
@@ -90,7 +97,7 @@ if (mode === 'rebuild-fixture') {
   const checks = []; for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
   const counts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
   assert.equal(counts.runs, 100000); assert.equal(counts.members, 80000);
-  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), completed: new Date(), counts, checks, fixtureAdjustment: 'Alphanumeric SHA analysis IDs match CUID character ordering; initial hyphenated synthetic IDs exposed locale certificate mismatch separately reported.' }, null, 2));
+  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: runSourceSha, completed: new Date(), counts, checks, fixtureAdjustment: 'Alphanumeric SHA analysis IDs match CUID character ordering; initial hyphenated synthetic IDs exposed locale certificate mismatch separately reported.' }, null, 2));
   await client.$disconnect();
 } else if (mode === 'seed') {
   assert.equal(await client.benchmarkRun.count(), 0, 'Seed requires empty isolated database');
@@ -117,7 +124,7 @@ if (mode === 'rebuild-fixture') {
   for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
   const counts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
   assert.equal(counts.runs, 100000); assert.equal(counts.artifacts, 100000); assert.equal(counts.analyses, 100000); assert.equal(counts.derived, 981); assert.equal(counts.members, 80000);
-  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), counts, checks }, null, 2));
+  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: runSourceSha, started, completed: new Date(), counts, checks }, null, 2));
   await client.$disconnect();
 } else if (mode === 'diagnose') {
   for (let index = 0; index < 25; index++) await rebuild(environmentId(index));
@@ -140,7 +147,7 @@ if (mode === 'rebuild-fixture') {
     try {
       const req = new URL(request.url, `http://127.0.0.1:${port}`);
       let result;
-      if (req.pathname === '/memory') result = { peakRss: Math.max(peakRss, process.resourceUsage().maxRSS * 1024), ...process.memoryUsage(), mutations };
+      if (req.pathname === '/memory') result = { sourceSha: runSourceSha, peakRss: Math.max(peakRss, process.resourceUsage().maxRSS * 1024), ...process.memoryUsage(), mutations };
       else if (req.pathname === '/mutate' && request.method === 'POST') {
         const started = new Date(); const cycle = ++cycles;
         const env = environmentId(0), group = `${env}-block-0-stable-0`;
@@ -163,7 +170,7 @@ if (mode === 'rebuild-fixture') {
       response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify(result));
     } catch (error) { response.writeHead(503, { 'content-type': 'application/json' }); response.end(JSON.stringify({ error: String(error), code: error.code })); }
   });
-  server.listen(port, '127.0.0.1', () => console.log(JSON.stringify({ ready: true, port, pid: process.pid, syntheticOnly: true })));
+  server.listen(port, '127.0.0.1', () => console.log(JSON.stringify({ ready: true, port, pid: process.pid, syntheticOnly: true, sourceSha: runSourceSha })));
   const close = () => server.close(async () => { await client.$disconnect(); process.exit(0); }); process.on('SIGTERM', close); process.on('SIGINT', close);
 } else if (mode === 'measure') {
   const databaseStartBytes = Number((await client.$queryRawUnsafe('SELECT pg_database_size(current_database()) AS bytes'))[0].bytes);
@@ -201,7 +208,7 @@ if (mode === 'rebuild-fixture') {
     const node = await (await fetch(base + '/memory')).json();
     const { stdout } = await execFileAsync('docker', ['exec', container, 'cat', '/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory.peak']);
     const [dbBytes, dbPeak] = stdout.trim().split(/\s+/).map(Number);
-    const disk = await statfs('/System/Volumes/Data');
+    const disk = await statfs(output);
     resources.push({ hostAvailableDiskBytes: disk.bavail * disk.bsize, at: new Date(), nodeRss: node.rss, nodePeakRss: node.peakRss, dbCgroupBytes: dbBytes, dbLifetimePeakBytes: dbPeak }); await sleep(5000);
   } })();
   const writer = (async () => { for (let cycle = 0; cycle < 5; cycle++) {
@@ -216,7 +223,7 @@ if (mode === 'rebuild-fixture') {
   catch (error) { failures.push({ finalMembership: true, error: String(error) }); }
   await client.$disconnect();
   latencies.sort((a, b) => a - b); const quantile = p => latencies[Math.floor((latencies.length - 1) * p)];
-  const report = { syntheticOnly: true, sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(), started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources, finalCounts, databaseStartBytes, databaseEndBytes, minimumHostAvailableDiskBytes: Math.min(...resources.map(r => r.hostAvailableDiskBytes)) };
+  const report = { syntheticOnly: true, sourceSha: runSourceSha, started, completed: new Date(), durationMs, readers: 25, targetP95Ms: 1000, requests, failures, scoredRows, diagnosticRows, latencyMs: { p50: quantile(.5), p95: quantile(.95), p99: quantile(.99), max: latencies.at(-1) }, peakNodeRss: Math.max(...resources.map(r => r.nodePeakRss)), peakDbCgroupBytes: Math.max(...resources.map(r => r.dbCgroupBytes)), dbLifetimePeakBytes: Math.max(...resources.map(r => r.dbLifetimePeakBytes)), mutations, resources, finalCounts, databaseStartBytes, databaseEndBytes, minimumHostAvailableDiskBytes: Math.min(...resources.map(r => r.hostAvailableDiskBytes)) };
   report.passed = failures.length === 0 && report.latencyMs.p95 <= 1000 && mutations.length === 5 && scoredRows > 0;
   await writeFile(`${output}/measurement.json`, JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, resources: undefined, mutations: mutations.length, failures: failures.slice(0, 5) }));
   process.exitCode = report.passed ? 0 : 1;
