@@ -1,0 +1,26 @@
+{
+  "preservedAt": "2026-09-20T19:05:00Z",
+  "note": "First click-r2 GUI launch failed closed because physical-candidate-pins-b3ef24a-r2.json declared actualBuildRevision b3ef24a while the rebuilt release manifests record a350d45 (candidate plus recorded test-only client tip deltas). The clean-revision guard did its job. Pins were corrected to declare a350d45 truthfully before attempt 2; the create-only launch/task receipts for this failed attempt were removed to permit a fresh attempt.",
+  "receipt": {
+    "sessionId": 1,
+    "activeConsoleSessionId": 1,
+    "administratorRole": false,
+    "status": "FAILED",
+    "startedAt": "2026-09-20T18:55:00.875285+00:00",
+    "forcedCleanup": false,
+    "scope": "Actual interactive physical GUI acceptance",
+    "error": "Build source is not the reviewed clean revision",
+    "finishedAt": "2026-09-20T18:55:02.274748+00:00"
+  },
+  "taskReceipt": {
+    "schemaVersion": 1,
+    "status": "STARTED",
+    "createdAt": "2026-09-20T18:55:00.4463371Z",
+    "taskName": "EncodingDB-PhysicalGUI-click-r2-1aafaae6",
+    "principal": "DESKTOP-4ELVRAT\\ofhd",
+    "requestedLogonType": "Interactive",
+    "requestedRunLevel": "Limited",
+    "launcherSha256": "427211974996ab4ced53a92c50986221f3a534231a2da628f7dbdf17066140c7",
+    "cleanupVerified": true
+  }
+}

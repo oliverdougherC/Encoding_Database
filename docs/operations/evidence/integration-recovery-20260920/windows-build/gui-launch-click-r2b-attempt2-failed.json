@@ -1,0 +1,31 @@
+{
+ "preservedAt": "2026-09-20T19:06:00Z",
+ "note": "Attempt 2 failed closed: driver folder gui-driver-click-r2b was never prepared (run-gui launches powershell with cwd=driver). Prepare step skipped during relaunch. Corrected before attempt 3.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:00:33.371528+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r2b\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r2b",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "error": "[WinError 267] The directory name is invalid",
+  "wallSeconds": 0.0,
+  "finishedAt": "2026-09-20T19:00:35.456103+00:00"
+ }
+}

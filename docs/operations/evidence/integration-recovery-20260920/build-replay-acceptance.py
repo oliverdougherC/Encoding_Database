@@ -37,7 +37,26 @@ def main():
         sha = payload['artifactSha256']
         staged = queue / 'artifacts' / f'{sha}.mp4'
         if not staged.is_file():
-            os.link(HOST_STAGED / group / 'queue' / 'artifacts' / f'{sha}.mp4', staged)
+            # The successful recovery replay cleaned its managed queue copies
+            # (unreferenced-after-upload). Re-adopt the sealed campaign original from
+            # the source queue, adopted only when its bytes hash to the payload's
+            # artifactSha256 exactly.
+            import hashlib
+            def _sha(path):
+                h = hashlib.sha256()
+                with path.open('rb') as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b''):
+                        h.update(chunk)
+                return h.hexdigest()
+            source = Path(HOST_STAGED / group / 'queue' / 'artifacts' / f'{sha}.mp4')
+            if not source.is_file():
+                original_queue = Path(str(payload.get('artifactPath') or '')).parent.parent
+                campaigns = original_queue / 'campaigns'
+                source = next((c for c in (campaigns.rglob('*.mp4') if campaigns.is_dir() else []) if _sha(c) == sha), None)
+            assert source is not None, f'no bytes for {sha} in {group}'
+            import shutil
+            shutil.copyfile(source, staged)
+            assert _sha(staged) == sha, f'staged copy failed verification for {sha}'
         payload['artifactPath'] = str(staged)
         envelope = {'version': int(entry.get('version') or 1), 'localHash': entry['localHash'],
                     'payload': payload, 'queuedAt': int(time.time()), 'attempts': 0,

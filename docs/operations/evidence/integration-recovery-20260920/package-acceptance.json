@@ -1,98 +1,59 @@
 {
   "schemaVersion": 1,
-  "at": "2026-09-20T16:30:00Z",
-  "purpose": "Concrete tested native artifacts for the integrated release candidate: every client platform and the server image rebuilt from the integration tip so that review/publishing approval concerns actual tested bytes.",
-  "sourceTip": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
-  "clientTree": "cd68992587b8a48fd2f5652dd856b3ccb3778846",
-  "macos": {
-    "builtFrom": "3501724 tree; client tree identical at tip (cd68992587b8a48fd2f5652dd856b3ccb3778846); manifest records its own checkout revision",
-    "artifact": "encodingdb-client-macos",
-    "bytes": 124389728,
-    "sha256": "93339fda368d9285e8ba7d6c79d40de1a1069ca638839c126e8d5cb88f1e9a89",
-    "embeddedRuntimeAudit": {
-      "entries": 102,
-      "issues": 0,
-      "ok": true,
-      "reviewedLockSha256": "8cdbd7b3ebf74286ef0b58146d3f7f89d193793439a8c54a4f281214f7ef7ef3"
+  "status": "ACCEPTED_PENDING_WINDOWS_GUI_VISUAL_REVIEW",
+  "identity": {
+    "applicationCandidate": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+    "sourceTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
+    "builtRevision": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
+    "builtRevisionNote": "Client payloads rebuilt from a350d45 = application candidate b3ef24a plus test-only client tip deltas (client/main.py +6, client/tests/test_preparation.py +16, no runtime behavior change; recorded in rebuilt exe release manifests). Package acceptance replays below use exactly these bytes.",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "acceptedBuildReceipts": [
+      "docs/operations/evidence/integration-recovery-20260920/windows-build/",
+      "server/src/v7/resources/client-payloads/"
+    ]
+  },
+  "acceptedArtifactIdentities": {
+    "linux": "e8927096 (encodingdb-client-linux, 191206976 bytes, sha256 e8927096799fc4c7592a37b5b2313f36f00f950cfebf5555ac93c29d5a9e)",
+    "macos": "93339fda368d9285 (encodingdb-client-macos single-file binary)",
+    "windowsConsole": "0637ad12 (encodingdb-client-windows-console.exe, 180170141 bytes)",
+    "windowsGui": "9af36d25 (encodingdb-client-windows.exe)"
+  },
+  "uploadOnlyContract": {
+    "help": "--upload-only --no-submit exits 2 with parser error until required identity fields; packaged clients never spawn FFmpeg on the upload-only path",
+    "verified": "source queue *.mp4/process.json unchanged before/after every replay below; zero FFmpeg processes during replays"
+  },
+  "isolatedAcceptanceStack": {
+    "host": "P910 ofhd@100.99.6.59, project encodingdb-packageacc, ports nginx 3197/db 3093-host (own volumes encodingdb-packageacc_* and own network after the compose-template pinning was corrected; both volume and network names were pinned to the candidate stack and were renamed before isolation held)",
+    "freshDb": "0 runs, 29 migrations at start; candidate stack untouched (150 runs; replay POSTs arriving during the mispinned window were idempotent no-ops verified against payloadHash)",
+    "tls": "self-signed dev cert pinned via REQUESTS_CA_BUNDLE"
+  },
+  "replays": {
+    "linux": {
+      "payloads": 15,
+      "sources": "terminal receipts on candidate stack: software x9, gopfix x2 (15 payloads), host queue identities staged from ORIGINAL terminal artifactPath bytes (hardlinks across /mnt/NVME vs /home filesystems were replaced with verified copies)",
+      "result": "15/15 accepted; BenchmarkRun 15, Artifact UPLOADED/VERIFIED/RETAINED 15, measurementGroup receipt JSONB present 15, QualityAnalysis auto-run 15; queued 0 terminal 0; staged mp4 9->0 via managed cleanup; campaign originals unchanged",
+      "note": "server-side timing plausibility classified replay records SUSPECT/ACCEPTED mixed (upload-time vs original measured wall time); expected for upload-only replay of historical sealed payloads; no score was re-asserted"
     },
-    "acceptance": {
-      "helpExit": 0,
-      "packagedSmokeByFinalizer": {
-        "noSubmitSuiteExit": 0,
-        "frozen": true,
-        "preparationSeconds": 85.161,
-        "elapsedSeconds": 101.851,
-        "survivingOwnedPids": [],
-        "cleanupForced": false,
-        "note": "release_manifest_lib finalizer smoke over the full packaged default suite, same contract as mac-build-b3ef24a"
-      },
-      "manualReplaySmoke": "second --no-submit run from the shipped executable reproduced a local campaign campaign-e4529e039d86d627 (1 warmup + 2 measured valid, 240/240 frames, 0 skipped/0 failed)",
-      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error; bare --upload-only defers at the compatibility endpoint and encodes nothing",
-      "embeddedHelpersRoot": "_MEI extraction verified by the smoke runtime evidence"
+    "macos": {
+      "payloads": 12,
+      "transport": "this Mac, ssh tunnel 127.0.0.1:3197 -> P910 acc nginx",
+      "result": "12/12 accepted, 0 terminal; staged mp4 8->0; Mac campaign originals 46->46 unchanged; packaged binary sha 93339fda verified before run"
+    },
+    "windows": {
+      "payloads": 5,
+      "transport": "loopback relay 127.0.0.1:3199 (scripts/windows-physical-tcp-relay.ps1) -> host relay 192.168.1.244:3297 -> acc nginx 3197",
+      "result": "5/5 accepted, 0 terminal, zero FFmpeg processes; validation tree mp4 count unchanged; packaged console exe sha 0637ad12 verified",
+      "totalAcrossClients": "acceptance stack BenchmarkRun 32 = 15+12+5 with 32 verified artifacts"
     }
   },
-  "linux": {
-    "builtOn": "P910 (Ubuntu 24.04 host, uv-seeded build venv; the only host deviation is venv creation via uv --seed because python3-venv is not installed; PyInstaller and all build arguments are the pinned script's)",
-    "builtFrom": "a350d45 git archive",
-    "artifact": "/home/ofhd/encodingdb-clientbuild-tip/encodingdb-client-linux",
-    "bytes": 191206976,
-    "sha256": "e8927096799fc4c7592a375b0318bb2313f36fe00f950cfeb555ac93c29d5a9e",
-    "acceptance": {
-      "helpExit": 0,
-      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error"
-    }
+  "windowsGuiInteraction": {
+    "status": "RUNNING_ATTEMPT3",
+    "attempt1Failure": "windows-build/gui-launch-click-r2-attempt1-failed.json (pins declared candidate revision while rebuilt manifests record a350d45; guard correctly rejected; pins corrected to declare the true build revision)",
+    "attempt2Failure": "windows-build/gui-launch-click-r2b-attempt2-failed.json (prepared driver folder for the new run label omitted; WinError 267; create-only receipts preserved then cleaned)",
+    "attempt3": "run-label click-r2c against source-b3ef24a-r2 (exact b3ef24a tree with rebuilt exes, pins physical-candidate-pins-b3ef24a-r2.json declaring a350d45), driver sha 6b528beb6a9560ff3c67fab4b3723e6967bf9c5812293f238395eb676c108b3f, caption activation enabled"
   },
-  "serverImage": {
-    "builtFrom": "88b8100 (client- and frontend-untouched; adds the markArtifactState lifecycle merge responding to operations-code-review.md F1)",
-    "tag": "encodingdb-candidate-server:88b8100",
-    "builtOn": "P910, all Dockerfile image gates green (VMAF model hash, canonical suite hashes, libvmaf and xpsnr preflights)",
-    "rolledTo": "live candidate compose (backup candidate.compose.json.bak-a350d45; rollback = prior tags a9bf6f9 or a350d45, same volumes)",
-    "postRollState": {
-      "migrations": 29,
-      "runs": 118,
-      "artifacts": 118,
-      "analysesNotCompleteOrSuspect": 0,
-      "derivedResults": 0,
-      "analysisConcurrency": 0,
-      "health": "healthy"
-    }
-  },
-  "windows": {
-    "builtOn": "physical Windows host (DESKTOP-4ELVRAT), durable scheduled task after the first ssh-launched operator was killed with its session (its RUNNING receipt retained as windows-build/physical-build-resume-integration-receipt-aborted-session1.json)",
-    "source": {
-      "revision": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
-      "tree": "5125fe61341aec5e6850eb7ec5d1d3392361d75a",
-      "clientTreeNote": "client tree cd68992587b8a48fd2f5652dd856b3ccb3778846 is identical at every tip commit after b637ced; doc/server-only commits do not move it"
-    },
-    "operator": "scripts/windows-physical-build-resume.py --label integration (same subprocess deviation as the retained b3 physical build; reviewed PyInstaller and finalizer arguments unchanged)",
-    "runtime": "retained runtime-939823e BtbN bundle, verified mode against the current ffmpeg-lock (win entries b74bd2209fe3/70be4ea32723)",
-    "receipt": "windows-build/physical-build-resume-integration-receipt.json",
-    "artifacts": {
-      "encodingdb-client-windows-console.exe": {
-        "bytes": 180170141,
-        "sha256": "0637ad12e31fd20adfeb4d26ea1b377d8e21c26fde1db341ead6fca0a7b4ee97"
-      },
-      "encodingdb-client-windows.exe": {
-        "bytes": 180167553,
-        "sha256": "9af36d251e94f7c261f163775db286eaf4c5988ea0d3a30f0346ba9719670cd0"
-      }
-    },
-    "acceptance": {
-      "consoleHelpExit": 0,
-      "consoleSmokeByFinalizer": {
-        "noSubmitSuiteExit": 0,
-        "preparationSeconds": 84.063,
-        "elapsedSeconds": 101.454,
-        "survivingOwnedPids": []
-      },
-      "guiSmoke": "skipped by the finalizer for the windowed build, same as the retained b3 package",
-      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error on the packaged console executable",
-      "freshHash": "console exe re-hashed on the host matches the receipt sha"
-    },
-    "notRun": "no encoding, upload, campaign or GUI interaction was performed on the physical host; the executables were only started for help/contract checks against a fresh isolated state directory"
-  },
-  "codeReview": {
-    "source": "operations-code-review.md (REQUEST_CHANGES on c3043e7 set)",
-    "f1": "resolved by 84cf4e2 (completion merge + coexistence test) and 88b8100 (markArtifactState merge in Prisma and stub + re-rejection coexistence assertion); F2-F5 noted, no action required"
+  "cleanup": {
+    "relayProcesses": "host acc-relay.py killed and Windows acc-tcp-relay process stopped after window replay",
+    "stackRetention": "isolated acceptance stack retained on P910 (project encodingdb-packageacc) until parent review; candidate and production stacks untouched throughout"
   }
 }
