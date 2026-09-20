@@ -5,11 +5,11 @@
     "applicationCandidate": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
     "sourceTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
     "builtRevision": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
-    "builtRevisionNote": "Client payloads rebuilt from a350d45 = application candidate b3ef24a plus test-only client tip deltas (client/main.py +6, client/tests/test_preparation.py +16, no runtime behavior change; recorded in rebuilt exe release manifests). Package acceptance replays below use exactly these bytes.",
+    "builtRevisionNote": "Client payloads rebuilt from a350d45 = application candidate b3ef24a plus the recorded client tip deltas: client/main.py +6 (b637ced: an explicit --upload-only resume is a never-encode contract and completion-marker inference may not downgrade it) and client/tests/test_preparation.py +16 covering it; GUI/encode paths untouched. The delta is the upload-only contract this acceptance gate itself exercises; recorded in the rebuilt exe release manifests.",
     "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
     "acceptedBuildReceipts": [
-      "docs/operations/evidence/integration-recovery-20260920/windows-build/",
-      "server/src/v7/resources/client-payloads/"
+      "docs/operations/evidence/integration-recovery-20260920/windows-build/ (SHA256SUMS, smoke, physical-build-resume-integration-receipt.json covering both Windows executables built from the a350d45 checkout)",
+      "docs/operations/evidence/integration-recovery-20260920/macos-packaged-embedded-runtime.json (packaged macOS binary embedded-runtime identity)"
     ]
   },
   "acceptedArtifactIdentities": {
@@ -47,10 +47,18 @@
     }
   },
   "windowsGuiInteraction": {
-    "status": "RUNNING_ATTEMPT3",
+    "status": "RUNNING_ATTEMPT10_click-r9",
     "attempt1Failure": "windows-build/gui-launch-click-r2-attempt1-failed.json (pins declared candidate revision while rebuilt manifests record a350d45; guard correctly rejected; pins corrected to declare the true build revision)",
     "attempt2Failure": "windows-build/gui-launch-click-r2b-attempt2-failed.json (prepared driver folder for the new run label omitted; WinError 267; create-only receipts preserved then cleaned)",
-    "attempt3": "run-label click-r2c against source-b3ef24a-r2 (exact b3ef24a tree with rebuilt exes, pins physical-candidate-pins-b3ef24a-r2.json declaring a350d45), driver sha 6b528beb6a9560ff3c67fab4b3723e6967bf9c5812293f238395eb676c108b3f, caption activation enabled"
+    "attempt3Failure": "windows-build/gui-launch-click-r2c-attempt3-failed.json + gui-attempt3-events.jsonl (BLOCKED_GUI_INPUT at first Stop click; harness-refused-to-click)",
+    "attempt4Failure": "windows-build/gui-launch-click-r2d-attempt4-failed.json (identical block with exclusivity; not concurrency)",
+    "attempt5Failure": "windows-build/gui-launch-click-r3-attempt5-failed.json (lane-final harness e7c37181 blocks identically; rule-out of harness version)",
+    "abortedAttempt": "windows-build/gui-launch-click-r4-aborted-misbound.json (replace miss left driver bound to original tree; ended before phase progress)",
+    "probeFindings": "windows-build/gui-launch-click-r6-attempt7-failed.json: the click6-era GUI self-grabbed foreground at window creation (no owned-app-activation event exists in the accepted click6 timeline); the rebuilt GUI under the task->pythonw->powershell chain never does because the CreateProcess launch path grants no foreground and the last-input-owner is stale. Probes: bare task->powershell->GUI Start-Process takes foreground; task->pythonw->powershell->GUI never does; injecting one keybd_event Alt tap before launch makes foreground arrive within 3s and hold. Root cause: Windows foreground-grant policy state on the console session, not the executable or harness.",
+    "launcherFix": "windows-physical-run-gui-tapped.py (R root): one operator-equivalent keyboard tap via keybd_event, then the UNCHANGED reviewed windows-physical-run-gui.py -> UNCHANGED driver/verifier. Only the task action line in the operator-side windows-physical-gui-task.ps1 copy points to it.",
+    "attempt7Failure": "windows-build/gui-launch-click-r7-attempt8-lockheld.json (leaked powershell from the blocked attempt r6 held the operator lock; cleared)",
+    "attempt8": "windows-build/gui-launch-click-r8-attempt9-died-midcomplete.json + R\\preserved-click-r8\\: with the tap fix, prepare-stop PASSED via native clicks and the complete phase began real encoding; the driver powershell exited rc=1 without writing phase-failed at t=119.47s, orphaning the GUI. Retried as click-r9 (same stack) with strictly zero concurrent operations against the Windows host; receipt evidence retained either way",
+    "attempt9": "run-label click-r9, driver da31ee83, tapped launcher; result recorded on completion"
   },
   "cleanup": {
     "relayProcesses": "host acc-relay.py killed and Windows acc-tcp-relay process stopped after window replay",
