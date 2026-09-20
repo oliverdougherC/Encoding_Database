@@ -48,6 +48,7 @@ except Exception:
 _NVML_INITIALIZED = False
 _NVML_INIT_LOCK = threading.Lock()
 CPU_THREAD_WINDOW_SOURCE = "cpu_psutil_thread_window_v1"
+FFMPEG_PROCESS_WINDOW_SOURCE = "ffmpeg_psutil_process_window_v1"
 
 _DARWIN = platform.system() == "Darwin"
 _WINDOWS = platform.system() == "Windows"
@@ -324,6 +325,7 @@ class HardwareMonitor:
         self._cpu_baseline_mono: Optional[float] = None
         self._cpu_sample_is_fresh = False
         self._proc_samples: List[_ProcSample] = []
+        self._proc_cpu_windows: Dict[Tuple[int, float], Tuple[psutil.Process, float]] = {}
         self._battery_samples: List[_BatterySample] = []
         self._memory_peak_bytes: float = 0.0
         self._lock = threading.Lock()
@@ -365,6 +367,7 @@ class HardwareMonitor:
         self._gpu_samples.clear()
         self._cpu_samples.clear()
         self._proc_samples.clear()
+        self._proc_cpu_windows.clear()
         self._battery_samples.clear()
         self._sources.clear()
         self._missing.clear()
@@ -388,11 +391,7 @@ class HardwareMonitor:
         )
         self._energy_collector.start()
 
-        for proc in self._collect_process_tree():
-            try:
-                proc.cpu_percent(interval=None)
-            except Exception:
-                continue
+        self._sample_ffmpeg_process()  # Prime the retained per-process objects; retain no first-read zeros.
 
         self._capture_battery_snapshot(is_end=False)
         self._build_collectors()
@@ -718,22 +717,42 @@ class HardwareMonitor:
             self._record_source(CPU_THREAD_WINDOW_SOURCE)
 
     def _sample_ffmpeg_process(self) -> None:
+        # psutil's nonblocking process CPU baseline belongs to the Process
+        # object. Discovery creates fresh objects; reuse only an exact PID and
+        # creation-time match so a recycled PID cannot inherit an old baseline.
+        processes = self._collect_process_tree(require_complete=True)
+        next_windows: Dict[Tuple[int, float], Tuple[psutil.Process, float]] = {}
         total_pct = 0.0
-        any_sample = False
-        for proc in self._collect_process_tree():
+        complete = bool(processes)
+        for discovered in processes:
             try:
-                pct = proc.cpu_percent(interval=None)
-                if pct >= 0:
-                    total_pct += float(pct)
-                    any_sample = True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
+                created = float(discovered.create_time())
+                if not math.isfinite(created) or created <= 0:
+                    raise ValueError("invalid process identity")
+                identity = (discovered.pid, created)
+                previous = self._proc_cpu_windows.get(identity)
+                proc = previous[0] if previous is not None else discovered
+                pct = float(proc.cpu_percent(interval=None))
+                if not math.isfinite(pct) or pct < 0:
+                    raise ValueError("invalid process CPU counter")
+                now = time.monotonic()
+                next_windows[identity] = (proc, now)
+                if previous is None or now < previous[1] + 0.1:
+                    complete = False
+                else:
+                    # Keep psutil's existing units: one busy CPU is 100%, so
+                    # a multithreaded encode may legitimately exceed 100%.
+                    total_pct += pct
             except Exception:
-                continue
-        if any_sample:
+                complete = False
+                self._record_missing("ffmpeg_cpu_unavailable")
+        self._proc_cpu_windows = next_windows
+        # A partial tree is not a zero or a complete process-utilization sample.
+        if complete:
             with self._lock:
                 self._proc_samples.append(_ProcSample(cpu_pct=total_pct))
             self._record_source("ffmpeg_psutil")
+            self._record_source(FFMPEG_PROCESS_WINDOW_SOURCE)
 
     def _sample_memory(self) -> None:
         rss = 0.0
@@ -889,7 +908,7 @@ class HardwareMonitor:
             return None
         return throttled
 
-    def _collect_process_tree(self) -> List[psutil.Process]:
+    def _collect_process_tree(self, *, require_complete: bool = False) -> List[psutil.Process]:
         pid = self._ffmpeg_pid
         if pid is None:
             return []
@@ -903,7 +922,9 @@ class HardwareMonitor:
         try:
             procs.extend(root.children(recursive=True))
         except Exception:
-            pass
+            if require_complete:
+                self._record_missing("ffmpeg_cpu_unavailable")
+                return []
         return procs
 
     def _read_ffmpeg_io_totals(self) -> Optional[Tuple[float, float]]:
