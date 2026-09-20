@@ -1,0 +1,550 @@
+{
+  "at": "2026-09-20T03:14:15.093527+00:00",
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "packageSha256": "46a6dcad789f824909911455b19979a33e4053dae1440f09524da5142ca18dc3",
+  "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+  "instrumented": false,
+  "ordinaryCampaigns": [
+    {
+      "name": "software",
+      "campaignId": "campaign-7fda61d90a423692",
+      "execution": {
+        "name": "software",
+        "startedAt": "2026-09-20T02:38:51.351191+00:00",
+        "argv": [
+          "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/encodingdb-client-linux",
+          "--cli",
+          "--campaign",
+          "full",
+          "--codec",
+          "libx264",
+          "--presets",
+          "medium",
+          "--crf",
+          "24",
+          "--no-submit",
+          "--max-attempts",
+          "35",
+          "--max-duration-minutes",
+          "45",
+          "--max-storage-mb",
+          "2048",
+          "--queue-dir",
+          "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue",
+          "--base-url",
+          "https://127.0.0.1:3094"
+        ],
+        "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue",
+        "returnCode": 0,
+        "timedOut": false,
+        "stageAtExit": "measurement",
+        "elapsedSeconds": 986.2380689529236,
+        "preparationSeconds": 516.3436503899284,
+        "acquisitionLimitSeconds": 900,
+        "measurementLimitSeconds": 2760,
+        "cleanupForced": false,
+        "observedOwnedProcessCount": 232,
+        "survivingOwnedPids": [],
+        "finishedAt": "2026-09-20T02:55:17.590003+00:00",
+        "immutableLedgerCaptured": true
+      },
+      "checks": {
+        "allSevenClipsObserved": true,
+        "allRetainedAttemptsHaveFullFrameCoverage": true,
+        "allEncodeHelpersMatchEmbeddedReceipt": true,
+        "freshCpuSourceOnEveryMeasuredSnapshot": true,
+        "softwareMediumCrf24OnEveryCommand": true
+      },
+      "attemptCount": 29,
+      "warmupCount": 7,
+      "measuredCount": 22,
+      "countedMeasuredCount": 22,
+      "measuredValidityCounts": {
+        "valid": 22
+      },
+      "measuredReasons": {},
+      "knownMeasuredCpuSecondsCount": 0,
+      "positiveMeasuredCpuSecondsCount": 0,
+      "finiteMeasuredProcessCpuUtilizationCount": 22,
+      "positiveMeasuredProcessCpuUtilizationCount": 22,
+      "freshProcessCpuSourceCount": 22,
+      "processCpuUtilizationPercentRange": [
+        1198.7,
+        2380.33
+      ],
+      "groups": [
+        {
+          "recipeId": "athletic-action-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 5.24404056625,
+            "elapsed_relative_spread": 0.03053203783938206,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        },
+        {
+          "recipeId": "natural-detail-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 4.1851979845,
+            "elapsed_relative_spread": 0.010242758206126084,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "film-grain-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 6.26683053675,
+            "elapsed_relative_spread": 0.0423066325864774,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        },
+        {
+          "recipeId": "dark-gradients-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 6.40943638375,
+            "elapsed_relative_spread": 0.049624060675036975,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        },
+        {
+          "recipeId": "animation-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 4.8437128995,
+            "elapsed_relative_spread": 0.03719049740099078,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        },
+        {
+          "recipeId": "screen-text-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 1.860130967,
+            "elapsed_relative_spread": 0.005169469338768258,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "talking-head-1080p24-final|libx264|medium|24",
+          "stability": {
+            "elapsed_mean_s": 3.1796749159999997,
+            "elapsed_relative_spread": 0.027781445063926814,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        }
+      ],
+      "stableGroupCount": 3,
+      "runtime": {
+        "extractionRoot": "/tmp/_MEI4hSHeJ",
+        "ffmpegPath": "/tmp/_MEI4hSHeJ/bin/linux/ffmpeg",
+        "ffprobePath": "/tmp/_MEI4hSHeJ/bin/linux/ffprobe",
+        "frozen": true,
+        "identity": {
+          "capabilities": {
+            "encoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "ffprobe": true,
+            "filters": [
+              "libvmaf",
+              "xpsnr"
+            ],
+            "optionalEncoders": [
+              "av1_nvenc",
+              "av1_qsv",
+              "av1_vaapi",
+              "h264_nvenc",
+              "h264_qsv",
+              "h264_v4l2m2m",
+              "h264_vaapi",
+              "hevc_nvenc",
+              "hevc_qsv",
+              "hevc_v4l2m2m",
+              "hevc_vaapi",
+              "libopenh264",
+              "vp9_qsv",
+              "vp9_vaapi"
+            ],
+            "requiredEncoders": [
+              "libaom-av1",
+              "libsvtav1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "smokeTestEncoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ]
+          },
+          "ffmpeg": {
+            "buildFingerprint": "a5fc1fc557ede4f0e9a25d559b4575497a203924ff549fc81be28f06c1e4301c",
+            "byteSize": 171156936,
+            "relativePath": null,
+            "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+            "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers"
+          },
+          "ffprobe": {
+            "buildFingerprint": "8c25df00aab8caad2c2ff8e584280d4d96ca9725e5671198dc6bd837aaf7478f",
+            "byteSize": 170923400,
+            "relativePath": null,
+            "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+            "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers"
+          },
+          "runtimeDependencies": []
+        },
+        "lockPath": "/tmp/_MEI4hSHeJ/resources/runtime/ffmpeg-lock.json",
+        "platform": "linux",
+        "runtimeLockFingerprint": "494132ca850dadf47226fbb267bcde9d454b37b4a68892d9759d48db3a89fe7b",
+        "schemaVersion": 1
+      },
+      "manifestProvenance": [
+        {
+          "seed": 5058032615262009152,
+          "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+          "hardware": {
+            "cpuModel": "Intel(R) Xeon(R) CPU E5-2699 v4 @ 2.20GHz",
+            "gpuModel": "NVIDIA GeForce GTX 1070",
+            "gpuVendors": [
+              "nvidia",
+              "intel"
+            ],
+            "os": "Linux 6.8.0-139-generic",
+            "physicalMemoryBytes": 135025184768,
+            "ramGB": 126
+          },
+          "selectedDevices": {
+            "libx264": {
+              "deviceId": "cpu",
+              "driverVersion": "not-applicable",
+              "model": "x86_64",
+              "selection": "software"
+            }
+          },
+          "runtime": {
+            "clientExecutionArchitecture": "x86_64",
+            "ffmpeg": {
+              "architectures": [
+                "x86_64"
+              ],
+              "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782"
+            },
+            "ffprobe": {
+              "architectures": [
+                "x86_64"
+              ],
+              "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719"
+            },
+            "runtimeDependencies": []
+          }
+        }
+      ],
+      "observedGpuSelections": [
+        "software"
+      ],
+      "gpuTrustworthyMeasuredCount": 0
+    },
+    {
+      "name": "nvenc",
+      "campaignId": "campaign-d1f98ff0e4f350a2",
+      "execution": {
+        "name": "nvenc",
+        "startedAt": "2026-09-20T02:55:18.444845+00:00",
+        "argv": [
+          "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/encodingdb-client-linux",
+          "--cli",
+          "--campaign",
+          "full",
+          "--codec",
+          "h264_nvenc",
+          "--presets",
+          "p4",
+          "--target-bitrate-kbps",
+          "4000",
+          "--no-submit",
+          "--max-attempts",
+          "35",
+          "--max-duration-minutes",
+          "45",
+          "--max-storage-mb",
+          "2048",
+          "--queue-dir",
+          "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue",
+          "--base-url",
+          "https://127.0.0.1:3094"
+        ],
+        "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue",
+        "returnCode": 0,
+        "timedOut": false,
+        "stageAtExit": "measurement",
+        "elapsedSeconds": 813.3420990670566,
+        "preparationSeconds": 511.7707247789949,
+        "acquisitionLimitSeconds": 900,
+        "measurementLimitSeconds": 2760,
+        "cleanupForced": false,
+        "observedOwnedProcessCount": 205,
+        "survivingOwnedPids": [],
+        "finishedAt": "2026-09-20T03:08:51.787608+00:00",
+        "immutableLedgerCaptured": true
+      },
+      "checks": {
+        "allSevenClipsObserved": true,
+        "allRetainedAttemptsHaveFullFrameCoverage": true,
+        "allEncodeHelpersMatchEmbeddedReceipt": true,
+        "freshCpuSourceOnEveryMeasuredSnapshot": true,
+        "nativeDevice0Vbr4000OnEveryCommand": true
+      },
+      "attemptCount": 25,
+      "warmupCount": 7,
+      "measuredCount": 18,
+      "countedMeasuredCount": 18,
+      "measuredValidityCounts": {
+        "valid": 18
+      },
+      "measuredReasons": {},
+      "knownMeasuredCpuSecondsCount": 0,
+      "positiveMeasuredCpuSecondsCount": 0,
+      "finiteMeasuredProcessCpuUtilizationCount": 18,
+      "positiveMeasuredProcessCpuUtilizationCount": 18,
+      "freshProcessCpuSourceCount": 18,
+      "processCpuUtilizationPercentRange": [
+        656.8,
+        1330.45
+      ],
+      "groups": [
+        {
+          "recipeId": "athletic-action-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 1.9646630075,
+            "elapsed_relative_spread": 0.012947887196374668,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "natural-detail-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 2.3917349415,
+            "elapsed_relative_spread": 0.116768224251826,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        },
+        {
+          "recipeId": "film-grain-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 2.4680955625000003,
+            "elapsed_relative_spread": 0.013637972334387648,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "dark-gradients-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 2.4819952560000003,
+            "elapsed_relative_spread": 0.006372017819843899,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "animation-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 2.2032731595,
+            "elapsed_relative_spread": 0.0006831295491030599,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "screen-text-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 1.3631358489999998,
+            "elapsed_relative_spread": 0.000730452508259209,
+            "sample_count": 2,
+            "stable": true
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 2,
+          "measuredRunsCounted": 2
+        },
+        {
+          "recipeId": "talking-head-1080p24-final|h264_nvenc|p4|{\"mode\":\"vbr\",\"targetBitrateKbps\":4000}",
+          "stability": {
+            "elapsed_mean_s": 2.08480958325,
+            "elapsed_relative_spread": 0.13593266036230464,
+            "sample_count": 4,
+            "stable": false
+          },
+          "measuredRunsRequired": 2,
+          "measuredRunsCompleted": 4,
+          "measuredRunsCounted": 4
+        }
+      ],
+      "stableGroupCount": 5,
+      "runtime": {
+        "extractionRoot": "/tmp/_MEIR0t2ne",
+        "ffmpegPath": "/tmp/_MEIR0t2ne/bin/linux/ffmpeg",
+        "ffprobePath": "/tmp/_MEIR0t2ne/bin/linux/ffprobe",
+        "frozen": true,
+        "identity": {
+          "capabilities": {
+            "encoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "ffprobe": true,
+            "filters": [
+              "libvmaf",
+              "xpsnr"
+            ],
+            "optionalEncoders": [
+              "av1_nvenc",
+              "av1_qsv",
+              "av1_vaapi",
+              "h264_nvenc",
+              "h264_qsv",
+              "h264_v4l2m2m",
+              "h264_vaapi",
+              "hevc_nvenc",
+              "hevc_qsv",
+              "hevc_v4l2m2m",
+              "hevc_vaapi",
+              "libopenh264",
+              "vp9_qsv",
+              "vp9_vaapi"
+            ],
+            "requiredEncoders": [
+              "libaom-av1",
+              "libsvtav1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ],
+            "smokeTestEncoders": [
+              "libaom-av1",
+              "libvpx-vp9",
+              "libx264",
+              "libx265"
+            ]
+          },
+          "ffmpeg": {
+            "buildFingerprint": "a5fc1fc557ede4f0e9a25d559b4575497a203924ff549fc81be28f06c1e4301c",
+            "byteSize": 171156936,
+            "relativePath": null,
+            "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+            "versionLine": "ffmpeg version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2000-2026 the FFmpeg developers"
+          },
+          "ffprobe": {
+            "buildFingerprint": "8c25df00aab8caad2c2ff8e584280d4d96ca9725e5671198dc6bd837aaf7478f",
+            "byteSize": 170923400,
+            "relativePath": null,
+            "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+            "versionLine": "ffprobe version n8.1.2-51-g7ba069f4f1-20260909 Copyright (c) 2007-2026 the FFmpeg developers"
+          },
+          "runtimeDependencies": []
+        },
+        "lockPath": "/tmp/_MEIR0t2ne/resources/runtime/ffmpeg-lock.json",
+        "platform": "linux",
+        "runtimeLockFingerprint": "494132ca850dadf47226fbb267bcde9d454b37b4a68892d9759d48db3a89fe7b",
+        "schemaVersion": 1
+      },
+      "manifestProvenance": [
+        {
+          "seed": 5058032615262009152,
+          "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+          "hardware": {
+            "cpuModel": "Intel(R) Xeon(R) CPU E5-2699 v4 @ 2.20GHz",
+            "gpuModel": "NVIDIA GeForce GTX 1070",
+            "gpuVendors": [
+              "nvidia",
+              "intel"
+            ],
+            "os": "Linux 6.8.0-139-generic",
+            "physicalMemoryBytes": 135025184768,
+            "ramGB": 126
+          },
+          "selectedDevices": {
+            "h264_nvenc": {
+              "deviceId": "nvenc:0",
+              "driverVersion": "580.173.02",
+              "model": "NVIDIA GeForce GTX 1070",
+              "pciBusId": "00000000:01:00.0",
+              "selection": "ffmpeg:-gpu=0"
+            }
+          },
+          "runtime": {
+            "clientExecutionArchitecture": "x86_64",
+            "ffmpeg": {
+              "architectures": [
+                "x86_64"
+              ],
+              "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782"
+            },
+            "ffprobe": {
+              "architectures": [
+                "x86_64"
+              ],
+              "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719"
+            },
+            "runtimeDependencies": []
+          }
+        }
+      ],
+      "observedGpuSelections": [
+        "nvenc:0"
+      ],
+      "gpuTrustworthyMeasuredCount": 18
+    }
+  ],
+  "analysisPerformed": false,
+  "uploadsAttempted": false
+}

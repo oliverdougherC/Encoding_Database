@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-20T03:12:07.644489+00:00",
+  "ownedDriverAndClientSurvivors": [],
+  "measurementLockAvailable": true,
+  "allSupervisedChildrenDrained": true,
+  "uploadsAttempted": false,
+  "analysisStarted": false,
+  "physicalSourceIdUnchanged": true,
+  "packageBytesUnchanged": true,
+  "campaigns": [
+    {
+      "name": "software",
+      "finishedAt": "2026-09-20T02:55:17.590003+00:00",
+      "returnCode": 0
+    },
+    {
+      "name": "nvenc",
+      "finishedAt": "2026-09-20T03:08:51.787608+00:00",
+      "returnCode": 0
+    }
+  ]
+}

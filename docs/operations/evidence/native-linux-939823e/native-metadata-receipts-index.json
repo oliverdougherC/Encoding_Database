@@ -1,0 +1,1510 @@
+{
+  "at": "2026-09-20T03:15:12.858693+00:00",
+  "archive": "native-metadata-receipts.tar.gz",
+  "files": 300,
+  "bytes": 216817,
+  "sha256": "0ba3337fe9831ef578a75802671e020e81220084730a3ad04375cef39d9dc131",
+  "includesEncodedMedia": false,
+  "entries": [
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/commands.json",
+      "bytes": 980,
+      "sha256": "82e5e0f36644eb412bc5629f5b3cf1f6736743d5292259a79072c96be82ffd98"
+    },
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/embedded-runtime-lripgfh9.json",
+      "bytes": 1565,
+      "sha256": "7c7d30a6c5c478272c2d29e6277ee4284cdf331277e5d92e4287e5127c96c109"
+    },
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/help.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/help.stdout.log",
+      "bytes": 4096,
+      "sha256": "924531d2461f4eeea3a77edb9f37aa307d49835adf5ad4f6f392af6e0f896cd4"
+    },
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/no-submit-suite.stderr.log",
+      "bytes": 446,
+      "sha256": "ab18deecafa22bfbec3cc12ffa7109ebd17061dd1ab9322e75fff239b772cdcd"
+    },
+    {
+      "path": "20260920-native-939823e/ca-only-failure-smoke/no-submit-suite.stdout.log",
+      "bytes": 143,
+      "sha256": "73699f91b37c180f0cff5ca1f1d426a233f748d171708b9aee5bf4a72f91007b"
+    },
+    {
+      "path": "20260920-native-939823e/driver.stderr.log",
+      "bytes": 1676,
+      "sha256": "d3bbe699d52c4f27a75ffd58e6cf283c52dcfb2048a64ce27c56af6cba98c6ed"
+    },
+    {
+      "path": "20260920-native-939823e/driver.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e/execution.json",
+      "bytes": 423,
+      "sha256": "d0cd17328fdd2c414696e82bb9ec22e397f5452614a19055efd775810b07469a"
+    },
+    {
+      "path": "20260920-native-939823e/helper-execve.log",
+      "bytes": 9153,
+      "sha256": "0b0f27d37701699bd6933c86a4fa169726ec92f6d713250b45a41c3a580f3768"
+    },
+    {
+      "path": "20260920-native-939823e/preparation-failure.json",
+      "bytes": 344,
+      "sha256": "99e8cdbe624dae65569cae68ca640c3d7e36d0ae1b5242e1e233aad1f44ebc5f"
+    },
+    {
+      "path": "20260920-native-939823e/run-native.py",
+      "bytes": 6421,
+      "sha256": "431c014d476d7ec8c0d825582fd00c3791975fd87a237425f5b6ea8c497cad61"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/driver.stderr.log",
+      "bytes": 1360,
+      "sha256": "28ea4a6ef7b92bbaebc09eb4bb6053ba50e1fe6753fe49a90fc5f03c50f56dcb"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/driver.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/embedded-smoke.json",
+      "bytes": 3361,
+      "sha256": "ff66f0d2413c05cf134226a8bf47ef2ce45664177c8d3ac58655e4666313f8e3"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/execution.json",
+      "bytes": 1672,
+      "sha256": "865ed230ade9a5fc074197f81fada854ee14401b507305edc9e13d2eb77366c6"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/helper-execve.log",
+      "bytes": 287599,
+      "sha256": "79f1bd30c75f0f634dcc65aa7f61a7758d67048e709eaa26473c4e4459821557"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/interruption-cleanup.json",
+      "bytes": 185,
+      "sha256": "c3c9b2aae6f5c0b6a254295cb8cbed2f59d95e4b3b5cd8c7e15157f40ba90101"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/operator-instrumentation-interruption.json",
+      "bytes": 3718,
+      "sha256": "20136a5e24536c2b27141bb1e0dc45d1ab2b0f7bbb3071612fa10654be2d9236"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/run-native.py",
+      "bytes": 6991,
+      "sha256": "aa67227be55d89fd4e05313136584c5ccd7dca882635e85753ab51aa3f9d070c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/commands.json",
+      "bytes": 993,
+      "sha256": "5a29955225bd30e8cb9e9c727cf92c19f459d634b321e04c91a600867f4bc26b"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/embedded-runtime-fw5t8q6l.json",
+      "bytes": 1565,
+      "sha256": "1af161e5a7fd8f2e73d2a4e2e0d8cc66fd25baf64f2c4625ff46cc33b034a118"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/embedded-runtime-lripgfh9.json",
+      "bytes": 1565,
+      "sha256": "7c7d30a6c5c478272c2d29e6277ee4284cdf331277e5d92e4287e5127c96c109"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/help.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/help.stdout.log",
+      "bytes": 4096,
+      "sha256": "924531d2461f4eeea3a77edb9f37aa307d49835adf5ad4f6f392af6e0f896cd4"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/no-submit-suite.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/smoke-evidence/no-submit-suite.stdout.log",
+      "bytes": 9963,
+      "sha256": "5b86a54f9d5488d4ce6891602ba631be0a748822fc72e4bb85bf7258e879c2ef"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/software-embedded-runtime.json",
+      "bytes": 1565,
+      "sha256": "c59d3f928a6e69bcfc9a1bad228c0174ce676157718a43f7c296dda600e28d8b"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/software.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/software.stdout.log",
+      "bytes": 12605,
+      "sha256": "570f85a009e519a06f51ebbb45cb870ed83676ad22dd8cf778c1c6e4a5b3cd24"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/tracer-preparation-race-observation.json",
+      "bytes": 4445,
+      "sha256": "3cf56ac2b64ee397a6f32b2405646c9f6f6088cd744d2f51501708443fe1b9c3"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/clean-suite-cache/.suite-pack/d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e/finalization-status.json",
+      "bytes": 302,
+      "sha256": "684313262e7611eb0b800da4e596f3ee432260553930aec63065938549de3594"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/clean-suite-cache/.suite-pack/d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e/manifest.json",
+      "bytes": 15791,
+      "sha256": "e0fa76d96f75f5e88c3c95ff452d155159ba1ac0c282e80e4c60245658309a76"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/clean-suite-cache/.suite-pack/d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e/suite-lock.json",
+      "bytes": 3230,
+      "sha256": "2389f33c9acae479196788037ef96765aae0197fde38c483c7cc370f912d15cb"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/001-libx264-fast-24-warmup-r1.mp4.process.json",
+      "bytes": 5812,
+      "sha256": "1aaf25ba5ddfa5376e7013a773310f79f27ee2ebf80bb400474b1c07d7279ee9"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/002-libx264-fast-24-measured-r1.mp4.process.json",
+      "bytes": 5814,
+      "sha256": "912892c5df02ce6c5087f99ebad92eca3d12c7a431cde55675d07a101cca20bc"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/003-libx264-fast-24-measured-r2.mp4.process.json",
+      "bytes": 5814,
+      "sha256": "e1988238f059ade298472a807cf7a5258b0656fb727107cef994bb27aacf7bc4"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/attempt-000001.json",
+      "bytes": 13198,
+      "sha256": "33779424dbf746ef974defe3f00d0eb510bcb938b430cf2df3ed5dec34cdcef3"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/attempt-000002.json",
+      "bytes": 13844,
+      "sha256": "3bb27ad4f73ef9993ee450d96f23da58e577fc443d5e7d38c8928f38bf7402a3"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/attempt-000003.json",
+      "bytes": 13831,
+      "sha256": "1b56d12fe0b1ab1e64ed69d09ee941e28f090b0ec7749b1d214de7616eb7de56"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/campaign-complete.json",
+      "bytes": 70,
+      "sha256": "eff2fc48de2262ebd0dce1a6c47b10efd0f250fc1534be7473dda3b62ac327a0"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/environment-000002.json",
+      "bytes": 840,
+      "sha256": "53dc8ec663b49c423a02c4448fabdfff9fbc423dbec2a6832ec5535ce0404a9e"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/environment-000003.json",
+      "bytes": 824,
+      "sha256": "94ba5e78db885d09665082d0695f62b6c0de6e60a62d1952d67c5374a3df7083"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/in-flight.json",
+      "bytes": 172,
+      "sha256": "d12b2fcd671aa3c3423699498d5826f7ae1e3d98fc41c19ffcb838d846a3c654"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/manifest.json",
+      "bytes": 1709,
+      "sha256": "1b6c7f49f66a58de0d39e22736077e68bb02990e3fdac3bf4ade318fa819c3d8"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/submission-000002.json",
+      "bytes": 11644,
+      "sha256": "027a86a7ac4c30313989c179be94992aa9adc7988b8b9e719a720c2b083b4493"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/campaigns/campaign-065d1c9b664aadca/submission-000003.json",
+      "bytes": 11629,
+      "sha256": "2b46c92ad7b64898c36849a638af9ff3c4986b6315f2ea331a82b16030b453aa"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/smoke-queue/protocol-attempts/campaign-065d1c9b664aadca.json",
+      "bytes": 39520,
+      "sha256": "4ea9083c00667a31728c16565a4bc1a63ebbf41afcdfa94c662939fb0920734a"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/001-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 5343,
+      "sha256": "9998e95b093596f4b114578b9ec3a467786a65bef046ca42e6cf5ecc62338fdf"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/002-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6025,
+      "sha256": "41239b5a7e5c94ada44d695adfc1870532664e35a4b0d15aa6a27813da69d49c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/003-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6894,
+      "sha256": "b593ff4f3f34d944b49d04ea1c0a3eca757aadfbef6431da2d6299469be9b421"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/004-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6848,
+      "sha256": "ee1199bed56a5c0ce2b0900bf158b62b67a6141a611838e1f4065af44efba40c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/005-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6249,
+      "sha256": "992d93ddc7a2689543f67dc4bee8aa448bd1cc29e60bff2909c65a08a0aaa9dc"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/006-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 5820,
+      "sha256": "ae4cd67362fac27baecb3613ccff62e570ab46f4f3a1f26d9820a0aeedeac8bb"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/007-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 4734,
+      "sha256": "fbf52d34b715536dca7497b33047783d081a2983616c727409268e21581b1f8d"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/008-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 5348,
+      "sha256": "67d63d4a4e2bd4a5493049ebccf21334642967f941da46b0207d96b678e56215"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/009-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6024,
+      "sha256": "81409ae5b16928aa328475c6f0420e05ab31e6af0d65a144d4cc40a3d44b119c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/010-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6874,
+      "sha256": "b77e15bbbdbd48a2b33e3a4b2895a8a2b870df03792f7c3e9219d3d03f1394bd"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/011-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6884,
+      "sha256": "b582bdf163b5f3c20fb2792a09caf73d0b1369534113f65f86039128ae318140"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/012-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6250,
+      "sha256": "6c9e337e7f1f2ef425edbbdce62f3885916fcbc41f215da1af944541f30610ee"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/013-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 5821,
+      "sha256": "6bc522448912cbe39a24bc5fb048a102263d67503482d63d94888d8020a1c11d"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/014-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 4739,
+      "sha256": "5976619f584fbd247f35a52bd2e16c0e495d7652e571046f14d3b026f10b553f"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/015-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 4737,
+      "sha256": "a3a28726735b10bfa89531c430a6ba38faa1db1338e63e0d670713b4f2ce8fd9"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/016-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 5835,
+      "sha256": "b3ccd868236d6057a3f9f503bc3e2697870340e0fa65029b421c7ca381464e63"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000001.json",
+      "bytes": 12869,
+      "sha256": "e3324e82988a104d6c697469e38a792548641271e78e88aeaa456526d0924cd7"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000002.json",
+      "bytes": 13396,
+      "sha256": "1ffe1d21295c7e38e1fe0da462a9e54e1e6d9d97527316d7abb4bf5d533e961e"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000003.json",
+      "bytes": 13415,
+      "sha256": "6f504b8856a8e06e78e7d25af174fef8903aed895298f9251c88383bff77060c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000004.json",
+      "bytes": 13392,
+      "sha256": "81b7e8bd22b3702eeb450c37ea4c1383b2374f999a2c999913bc7dc4f0f1379e"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000005.json",
+      "bytes": 13483,
+      "sha256": "1302bb6161b713319ef05416348a8d238b6ecdb60aad6002c96a52969b0e894c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000006.json",
+      "bytes": 13233,
+      "sha256": "9e104f738a48f0aad055236ba04b258be7779561ca237127b3f9fb926d2b283c"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000007.json",
+      "bytes": 12821,
+      "sha256": "091ed95659534d53459ccc04e2df9cc4685e37019c8954b30ea5810d63efffad"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000008.json",
+      "bytes": 13501,
+      "sha256": "e4d817de573b9b7a3966ac917383e7a34597e3efd9143c988ff783ab637f087a"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000009.json",
+      "bytes": 13776,
+      "sha256": "f48c9fe68c681d19f3762902c5d89f0f619f240e1b2735aecc14a1251e06cc49"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000010.json",
+      "bytes": 14039,
+      "sha256": "0de263c4ea12c1e3659c0868414d4ae5ed85905c9802813c72f5eef6526bc820"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000011.json",
+      "bytes": 14006,
+      "sha256": "25f8242e02c1b98d0687c39502f1f0a36339dc873e2558ef1f194be906e003c5"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000012.json",
+      "bytes": 14111,
+      "sha256": "8e001219afe7c62066c994fdd5a216351cec293a7c7ba7b7adb36e1170bd7980"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000013.json",
+      "bytes": 13861,
+      "sha256": "03c95e5c3fc6d442b757032c922b58e8d2c204c3cdcb68ea212ea42447687c48"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000014.json",
+      "bytes": 13455,
+      "sha256": "3f100f7e93e0cf0ffd3097521728f1194a01e8986262ac8ef4ac23db85f03794"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000015.json",
+      "bytes": 13446,
+      "sha256": "62d46082d46686ce101e2389d5b130febc0eb407259a4bdb1b7b077c74502210"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000008.json",
+      "bytes": 822,
+      "sha256": "d1d41e75ea609ebf08a916adbcd4ef90e64a6b3fd117cd6f901b0e02af777845"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000009.json",
+      "bytes": 816,
+      "sha256": "d14d7cd8bd396fee95dc562a6f9ec2f9a8ef2990c760886926c371da32fb0e72"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000010.json",
+      "bytes": 828,
+      "sha256": "6b98cffca0aec58520e324de59110174da6329b9d63a94ad5e29cd2a61d8e3e1"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000011.json",
+      "bytes": 819,
+      "sha256": "2586e2d06542c528615291af677c796886f81c0324e79ada5fd39e8e874cae91"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000012.json",
+      "bytes": 827,
+      "sha256": "1dd3af35608e5ee17a51d5c001e818863b6c3ae42ff1ce9db10f6e09ba2fb3c9"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000013.json",
+      "bytes": 828,
+      "sha256": "10698e35b1846c0b555361157ed16edfb9633900b1f28f7b96a44ebcab05d17d"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000014.json",
+      "bytes": 823,
+      "sha256": "016f9c430b8106f69eede13cdccd6fe83591e439e58a808ec6e5677c738bcc4b"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000015.json",
+      "bytes": 822,
+      "sha256": "d7a83d39a4e911633b326301298bf36f727a003062a05fd97aadfc532b3e63a5"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000016.json",
+      "bytes": 829,
+      "sha256": "c475a60f93a33a6ed2c6b944d34055aa128922079ff9bbb223c76ed7d7df64c8"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/in-flight.json",
+      "bytes": 174,
+      "sha256": "c65ecd6ef7ee0ae7aed91b89759058dfb9cdd07992d323b9e1f45e1326b604b1"
+    },
+    {
+      "path": "20260920-native-939823e-trusted-roots/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/manifest.json",
+      "bytes": 2405,
+      "sha256": "e939bb0d9006473a7d55486c65d8e26c8a71e62ea77a16de785115af8248c31b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/driver.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/driver.stdout.log",
+      "bytes": 4039,
+      "sha256": "ceddb364825c0aab65c908d62a92e22548054cc94ec3bfd9a6282ee591d23062"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/embedded-smoke.instrumented.json",
+      "bytes": 3361,
+      "sha256": "ff66f0d2413c05cf134226a8bf47ef2ce45664177c8d3ac58655e4666313f8e3"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/execution.json",
+      "bytes": 4039,
+      "sha256": "ceddb364825c0aab65c908d62a92e22548054cc94ec3bfd9a6282ee591d23062"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/nvenc-embedded-runtime.json",
+      "bytes": 1565,
+      "sha256": "d37addebe771a4712066cc11e54861b45eff2fcd1f6211fb820b1056d816f3be"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/nvenc-immutable-ledger.json",
+      "bytes": 7473,
+      "sha256": "ecdedff60271f32ffa7e5c9847707a94f0d8b4be9ae0aad29244f6034d8a337e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/nvenc.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/nvenc.stdout.log",
+      "bytes": 1885,
+      "sha256": "f31526a55488ff45ced087d1ea3b0677b09003119aca929f1fa66e5431443313"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/run-native.py",
+      "bytes": 7593,
+      "sha256": "2ec233751852ab0826d8aed10b6b020d660c6a201eb88b55a792beaa054d2d71"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/software-embedded-runtime.json",
+      "bytes": 1565,
+      "sha256": "c4d2c345ea972534f79550b8fc2c201b8fa5a8c03aeda35ae91433b7e3b5b674"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/software-immutable-ledger.json",
+      "bytes": 8621,
+      "sha256": "cdff2832285a798c170b00cf08f4c231369ec77bbdc1e7e0ecb08a0c69ee91a7"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/software.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/software.stdout.log",
+      "bytes": 1886,
+      "sha256": "f74c73a8174666f2377ac1dcf428a7d18602e1ce0a4caa2dd34b4e25d408241e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/timing-handback.json",
+      "bytes": 541,
+      "sha256": "aa00fd1512777b50dc461bf176ad99eea825ce74bdb08102302a9ed9dbb8f2f8"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/001-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 5118,
+      "sha256": "615422c750893dd278dac67b3098b2171286eb3a683d6ff5e600e9b42c055a0a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/002-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 4921,
+      "sha256": "5ba05b6ea9e3accd718d6854a8b591ad019cd3011c6f3608ebfb7886263e9fc2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/003-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 5302,
+      "sha256": "7db492d9c82fbd4b8360ea87ee3264eecd94f5903aaf982dc1fce5840238d8f9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/004-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 5304,
+      "sha256": "a78ef55267ad7ecd07966f2be60386b57c9c80d59aad7aaf517f2a0ba650082b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/005-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 5122,
+      "sha256": "5a62c8b72c298898c8542267f2500cd144a467f4077fd8a4aa5d52623eee93a1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/006-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 5326,
+      "sha256": "0bc57fda71b94142bb6dbcef489dc090e3902859c5d92fb3e5d72decfa7395d3"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/007-h264_nvenc-p4-24-warmup-r1.mp4.process.json",
+      "bytes": 4895,
+      "sha256": "03fdae631fa67467b91278d07aa92a10d653b2a0976f0ba81cb918f845a0c304"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/008-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5107,
+      "sha256": "ad6accd7a07edbe0705117f85a8b10df53261d8b1bc4e92ce99e27f8355ecd79"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/009-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5096,
+      "sha256": "ea64de23077a26da775fb0813ab9b496e47c64611d292bbd8daa3861abe14e13"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/010-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5326,
+      "sha256": "9454fc4cea517cb054d3b889d83bec1eb2b604583e7e960a3792ecafcaf64db5"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/011-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5311,
+      "sha256": "612b97e3ac74a623d76c9883b665fafa0c4dbb5e77892e33bc3976f4c4da0300"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/012-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5121,
+      "sha256": "c55d00a068165400685528ec8c1d7d23ce0dcc57dd74567b620b45d86c15f9d4"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/013-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 5336,
+      "sha256": "cbe9f3098346c91f5f677605edb33ca44f4587336d99e8017fc8ac56f2aa6b61"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/014-h264_nvenc-p4-24-measured-r1.mp4.process.json",
+      "bytes": 4902,
+      "sha256": "d3f9f0eb7d245652eeda418c09cd61c23de487e6d0f82b19a3887d120f71a163"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/015-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 4898,
+      "sha256": "9fa6b425efae8907f5e605aeb4b26fc2d4db0180da06ed76324e42513eb28eaf"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/016-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5314,
+      "sha256": "2150bd9831094467a1695adec1d65126449539aa8b55e22658f6154d9b26a851"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/017-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5125,
+      "sha256": "55b18d4dded7c3675307ed91af993396426105fd8a951bca81a84aa50e5f5f64"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/018-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5308,
+      "sha256": "3066d77a89091519138897f45470e0672bbf9aa145f21151ec0bdfde8ddb1503"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/019-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5348,
+      "sha256": "a5954852bd306c24e06635b08c7b0c77aa07225fea8eb0c4fe915813fc54ac78"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/020-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5089,
+      "sha256": "8a688963d934459b423b54437fa8306388409b5f70c34df34db98586716b6fc9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/021-h264_nvenc-p4-24-measured-r2.mp4.process.json",
+      "bytes": 5108,
+      "sha256": "25de921a378d1f5e23c05b74d351941ecb4f51e4c0ff7c2f3122ff57936d1d81"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/022-h264_nvenc-p4-24-measured-r3.mp4.process.json",
+      "bytes": 5095,
+      "sha256": "2dd8952d9361fd68a243e6c708fbf186f0936dedd9d4d313a4ab707369f6d859"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/023-h264_nvenc-p4-24-measured-r3.mp4.process.json",
+      "bytes": 5345,
+      "sha256": "d668217cba744f9a9d053c6306cfdf7b830ed76a40dc0d168a3ca6fe4089c7a5"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/024-h264_nvenc-p4-24-measured-r4.mp4.process.json",
+      "bytes": 5308,
+      "sha256": "c81ec8c905c99c93d88427dc5e48d9d73274967a9b2da7dce4fe74868a44bd71"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/025-h264_nvenc-p4-24-measured-r4.mp4.process.json",
+      "bytes": 5095,
+      "sha256": "db55244449fa9e1c9e8e0336a8b353f93af6dd5f05f303dc48b1ac4eb71db397"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000001.json",
+      "bytes": 14282,
+      "sha256": "0e30136270b56984905b99cb3d3f38e2ae2ee06c7ed57f20fd23e6ffb0a0b7f1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000002.json",
+      "bytes": 14246,
+      "sha256": "fc9e68e873f6612063362bc6ed6f6a31ed04fc04db9a970e6766413d4fd73a17"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000003.json",
+      "bytes": 14329,
+      "sha256": "9ad88b70ad66566b104b13a401f6d43c2456d80ffc4d90ef4fb5abf608a8b7ea"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000004.json",
+      "bytes": 14241,
+      "sha256": "709a1c6eef7a362ab629a76059926aea164781c2617f6fc6e7e9a02b1bbd0d73"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000005.json",
+      "bytes": 14334,
+      "sha256": "d314783a433ca0ac6180d1545b7882701bbc2956aa0670e62bd3be4e434117c9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000006.json",
+      "bytes": 14411,
+      "sha256": "026de6aed5faac19f0664a284ba361148c75a89459c40f02bd690289f0991199"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000007.json",
+      "bytes": 14222,
+      "sha256": "f82378eb950d4684611a180e7ee6760368a67bc583d677aeca7d2fca85919767"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000008.json",
+      "bytes": 14970,
+      "sha256": "9ef3e9bcd39502501e9bb3d72d1a92f81f8f28d67158626eaaf6c2953c38cd1b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000009.json",
+      "bytes": 14957,
+      "sha256": "ba5503495d644b19c18c8dfd928ed287d7e5b71c4a8e304505c204efbf73e5be"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000010.json",
+      "bytes": 15112,
+      "sha256": "69ee4fe1eff14ee21b9f1d91f12a84e21ccdc9c3acc858755379e34617297ef4"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000011.json",
+      "bytes": 14952,
+      "sha256": "86ad2f4d26d231f93b56fc06374e268c5935f9a18e4c3d6a7efb02a7e75ed5e2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000012.json",
+      "bytes": 15053,
+      "sha256": "29c8b00d4f8606f1e9c4615b75dd9b12ef8b57cc21953034828b441e9d46705b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000013.json",
+      "bytes": 15102,
+      "sha256": "10110f71c898b83f6370584c14063ef1fba02519278bc4ed4bf2f9806f8c06d9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000014.json",
+      "bytes": 14915,
+      "sha256": "ccdb3d2ef38bf59d23fe9220b00345a32db1b36810034bcb2ca28ec925356739"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000015.json",
+      "bytes": 14914,
+      "sha256": "77885f5a161238bc56abd441ff0ff112753322832585f8c33e752c976e100788"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000016.json",
+      "bytes": 15035,
+      "sha256": "22d348587ef45d6ed044a1349210200f142f1fe3468a9022a37a1285cb016fe3"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000017.json",
+      "bytes": 15029,
+      "sha256": "029b810b24135b4e8f8fc5edfd571eb023b389743ca73330c5ef4ac19b930ed9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000018.json",
+      "bytes": 14940,
+      "sha256": "21e8ef0e0728c89eef7644f2424472e16454980d03f4a18fb060915a6c25de56"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000019.json",
+      "bytes": 15109,
+      "sha256": "edf0a52cae7a201774bb8658ce9fa82c826810e903dc60ba7b6ee60b789a3251"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000020.json",
+      "bytes": 14934,
+      "sha256": "4ef54ff2d4f3c51034b6363c0a341ae413d600fff7a47146137c08b44fa95d14"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000021.json",
+      "bytes": 14961,
+      "sha256": "fda05a1b36f0d61c9554f8c94014b331c8e68fafba9fea0c998b836109ab14d5"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000022.json",
+      "bytes": 14964,
+      "sha256": "14eea8a2c6e664ef74a2b4bb8b5c6444d148ad8bf21f473628af456a588e789b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000023.json",
+      "bytes": 15109,
+      "sha256": "656d584b5b0bde461bb32ae13bcbe9276c13c615cfbf5b40184163dcf2b2c55e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000024.json",
+      "bytes": 15006,
+      "sha256": "cca15980c446ee1cd342211d01b38fe7d7ef0fb2f4ca4f25faaade708f341dd3"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/attempt-000025.json",
+      "bytes": 14965,
+      "sha256": "65924c6541e401e3ca6c3c8e5736e0257482431d5792ecaa589abd6105f61ecd"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/campaign-complete.json",
+      "bytes": 70,
+      "sha256": "5c20431d578670950ba53da19216b6d5e5e7977b37d2a6b8fd718e65a3782889"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000008.json",
+      "bytes": 928,
+      "sha256": "a4d00ea0a65d92b9986a4894a89e45b20e2500b347e33b4faf0144f905b18aa9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000009.json",
+      "bytes": 952,
+      "sha256": "adc4788979b9e0c7a8ca24f7f804fd80510b29062e2c5448874e6db0c6e9e1ef"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000010.json",
+      "bytes": 931,
+      "sha256": "0770e8e2ce5135608cddb2b0c6eecf1aa3f3e034896f3ac769fd85416aebbb19"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000011.json",
+      "bytes": 940,
+      "sha256": "f1e3487d9d530c6a27822b15c73c38717c0e01e896e86405a7dc7b3c4745bccb"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000012.json",
+      "bytes": 957,
+      "sha256": "d39975b548baff412c77e87a9b4d0d4b1b2e7d93ad7c064213396f04061c2161"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000013.json",
+      "bytes": 932,
+      "sha256": "70899add796366da8b036bc4b7f169afd60608d720f28b9bdb72d393958a6a0b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000014.json",
+      "bytes": 928,
+      "sha256": "bde31ea3537f60eaf5f13119dacf3ccec5a4b2215ae56f693ac20ae31e573d9a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000015.json",
+      "bytes": 928,
+      "sha256": "f0e833e27d5be0090532a2e38c2ff157bac1ad2f7dbda46d6dd8c76561ac7bd7"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000016.json",
+      "bytes": 955,
+      "sha256": "169d5d7f2a839faa2a65550533428504ae7b5bafcb86bce01a05a5ed528ebf2f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000017.json",
+      "bytes": 933,
+      "sha256": "e4f9d3c3936468d769bf1aa4c860fd87544ccb91571b8c219d0bc270be5a0d3a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000018.json",
+      "bytes": 939,
+      "sha256": "4b0d6f207d74233d896b7ee9b357016e4482ac88256a80dd57ade7e4540aabad"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000019.json",
+      "bytes": 944,
+      "sha256": "9cf846fc5bccff742904d16c859521fd5331b8b248be2720d89cb385f0f77cd2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000020.json",
+      "bytes": 928,
+      "sha256": "5f77050e6cfa9d73710424c71eb2a544a71e15384b00d10c2bd1d5c618e0985f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000021.json",
+      "bytes": 925,
+      "sha256": "8095c7d689fe7959a7a23405d332f25762d6cef67c305ec13a725b290a409ee2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000022.json",
+      "bytes": 927,
+      "sha256": "3e2917a6317d8ebf95374235696a6d6c9fc9359e0be5bbfec2cc0a8419447b95"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000023.json",
+      "bytes": 944,
+      "sha256": "4e78b8c1b9818a9c1f2d6e3c14a8a83be4c66909dd3c91f008f53c4603491293"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000024.json",
+      "bytes": 932,
+      "sha256": "43f8b9df874198604155c71026b29f8c0495bcb207ccee2dab12262003f55834"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/environment-000025.json",
+      "bytes": 930,
+      "sha256": "de75104323b1fb0889a38b1b516f8df46de84ad507e6595adf437ffdba74147f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/in-flight.json",
+      "bytes": 214,
+      "sha256": "d7c78deded55f005d412e2f4aee962e4d351fe18517f76cc4cbd277a51725d73"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/manifest.json",
+      "bytes": 2721,
+      "sha256": "7eef437bc61d70aed139a734153c13fbda6b5a928d92ae282750f46e285c061f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000008.json",
+      "bytes": 12754,
+      "sha256": "b5898acc367b03b29185fec81a64f5103192e172e24b1aa1d89db225586a92a8"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000009.json",
+      "bytes": 12641,
+      "sha256": "8be7b33f41a289aa91d70238fa3f823c18a88a4d1573a06f2b42a4e47e1f0f88"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000010.json",
+      "bytes": 12691,
+      "sha256": "649bb411513f0e8a8dcb8f6593bc625137de08b19bcdf535eca577d1e1339635"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000011.json",
+      "bytes": 12640,
+      "sha256": "c800cc2ca0552fc36180a57a7497451131dbcd458e6313e8526d67b42c8bea5f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000012.json",
+      "bytes": 12674,
+      "sha256": "724210f65d87b6e4d927a5fdf7c2b1205653446f946ddd7ab0c7e13c8bb069da"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000013.json",
+      "bytes": 12819,
+      "sha256": "4bf89682efa4da43b996b117883409aead43be839d216dbd0fe28152969cc42f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000014.json",
+      "bytes": 12621,
+      "sha256": "8dac5b05a36dd15f701dcea490a5b91554babbbdab3493d8fa7fbf00d114eadf"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000015.json",
+      "bytes": 12621,
+      "sha256": "fa0dc8ce5d4e2cdc71c85a25b203ec5f87123381a6a2817f6327f394effb1b2d"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000016.json",
+      "bytes": 12788,
+      "sha256": "cd9b73dd46827ed6959219a7fda55717a35ac763625e4e67101be12917f2edcb"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000017.json",
+      "bytes": 12650,
+      "sha256": "b72a9bea7ac04932115ee7abd60517a580b3a432ddcb02cde914aa00b8edf13b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000018.json",
+      "bytes": 12633,
+      "sha256": "9abd598bc223105ef175402e38589a69a2a408340ba02e1ba0a7655982328639"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000019.json",
+      "bytes": 12698,
+      "sha256": "7186f97c0eec25dd6d05de91b516c2773c22ff46fe2cbbb89441e5f353cab72a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000020.json",
+      "bytes": 12617,
+      "sha256": "747cb180609af13dc0c5c02b91e930ab17a121c295dd32160b4a03590e2014e9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000021.json",
+      "bytes": 12747,
+      "sha256": "f22b4e9f59b3169338690dfcb3719603781a8fbb38bd54a1abb2f4a97c08cb39"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000022.json",
+      "bytes": 12750,
+      "sha256": "c037c2f7683d003cc20280fb5053e268f9bd73aebfcf7e407f4e1a236766d9bf"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000023.json",
+      "bytes": 12820,
+      "sha256": "587495cf58bffe4613d3c77d880caa288f6374d585c400e61e513486060158e0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000024.json",
+      "bytes": 12762,
+      "sha256": "2adc1163dca6672796f24fb939d74238d4d48c8d4de99d1dd12942c3031217fe"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/campaigns/campaign-d1f98ff0e4f350a2/submission-000025.json",
+      "bytes": 12759,
+      "sha256": "930d92401c5cc9cc84c09322cca065df905e498c9139d1ed753968c634d835c0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/nvenc-queue/protocol-attempts/campaign-d1f98ff0e4f350a2.json",
+      "bytes": 356384,
+      "sha256": "b857c23abfa4e4aba3a1914bf3a51a50401da3f59b565192a586fe75a1dffae2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/001-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 5197,
+      "sha256": "86217f940b3fc9b0db0cda8c74665fe9a2995a144b559c8907db1120c2c2c909"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/002-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 5820,
+      "sha256": "21e8b8fb8098f10834862896ad4cf16c76ef5e7c7f028886cdee1d7a32572c0f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/003-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6482,
+      "sha256": "a1fc341b02fc5824811d3cf125dbf889cec950930c03eb6dbef8433e5cf656f4"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/004-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6468,
+      "sha256": "1271616f3a02ad4dec63a6256bf9326cb4cd7d3f573f5e9e400ad394a83aaf9f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/005-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 6061,
+      "sha256": "bcef1e2f8f740557d7b5daf9d0c06d35e000bd06bf671ab44eae8e4c9be8640c"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/006-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 5612,
+      "sha256": "c473305ed97ab82050a9c26cdba1e66e5cdbf205575536640dc87415e8a2e471"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/007-libx264-medium-24-warmup-r1.mp4.process.json",
+      "bytes": 4591,
+      "sha256": "f57a676db68fe036de6b0d1a0220561ec1efb194709efe41d74d62444928b3c5"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/008-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 5197,
+      "sha256": "3f2d9c6541561b7471a495939035cb3dab24e6cfe876f40c7bef53dd72dd5100"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/009-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 5837,
+      "sha256": "84b850777b5dd5f527f998c47e06a9663e968c7862479ba4e94e7f785a8735f8"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/010-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6457,
+      "sha256": "dca1c1b3c03ba3e6c3aa4acd5e06f1c3ff2c39824a89a5328694af7222dae1f9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/011-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6484,
+      "sha256": "7b04999d186d65da0d00eab0c4e4dd3c7daa0125c5139bac3abbbb4a0a5ab2fc"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/012-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 6063,
+      "sha256": "65c3b03d3d90465ee84b28e1311bcd7c53df3f4897bcd80042063afadecad092"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/013-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 5658,
+      "sha256": "67adb733dc0172279e35fa8fff4b00dd518a00cad7ae9a41531f23a97e63bd77"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/014-libx264-medium-24-measured-r1.mp4.process.json",
+      "bytes": 4615,
+      "sha256": "270933f34601251298ed4a41fa8d11e4dcd3b04570e38b5b98c6751a2267c499"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/015-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 4616,
+      "sha256": "8b172870061bff38daf35d1647a8c0db0b26b736a00d5cad53338658fea5925b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/016-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 5649,
+      "sha256": "97848e38a9e63a6e7a75cf93970b0f38f682a3c1a3445346008b4cfef2c562cb"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/017-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 6049,
+      "sha256": "a6c21cd39c66bbc585d681a8e74cf7b7ceb05fc1a25b11fe12ef3bd8ee623916"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/018-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 6468,
+      "sha256": "12c4d7f037f8fb41e8fa5638372c1a2faad7879a376d7810dae579e3b7c52aaa"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/019-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 6504,
+      "sha256": "c8f7f67eee5b4b10d1c97616ca7da0ce2086f65511ab6bc55f8e8916b30232da"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/020-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 5842,
+      "sha256": "268fdb416c38d95faa0b01d988c1d1a1c806e84054cfb4a350d456aee9c1f7b6"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/021-libx264-medium-24-measured-r2.mp4.process.json",
+      "bytes": 5199,
+      "sha256": "d1834b62b097a1f9328db7f5f49e694f1c9adec137c8c12745320a610259ffa9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/022-libx264-medium-24-measured-r3.mp4.process.json",
+      "bytes": 5854,
+      "sha256": "f0ce7ada9b2ebe6617914625ab70cd892a3e37c840b9c8649be8ca2927a94105"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/023-libx264-medium-24-measured-r3.mp4.process.json",
+      "bytes": 6471,
+      "sha256": "6bed100e9b3cd67bc322d27aa63b8dbc428b704114f58f0377da8b847e7b0850"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/024-libx264-medium-24-measured-r3.mp4.process.json",
+      "bytes": 6483,
+      "sha256": "e618f7ebb5fab8a8fbc5841c42680e0773b17f04e298347d317699e0edc97f34"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/025-libx264-medium-24-measured-r3.mp4.process.json",
+      "bytes": 6058,
+      "sha256": "f2f33f628ec3b5e8d63efc200def067ff5f46003a8fc8eaacae5ea44909bba58"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/026-libx264-medium-24-measured-r4.mp4.process.json",
+      "bytes": 6049,
+      "sha256": "efa70983a3b6870f53a07428af2db62dfa83531f9e9dd6d7a222a01da6fa21f0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/027-libx264-medium-24-measured-r4.mp4.process.json",
+      "bytes": 6482,
+      "sha256": "d119efb154001298c23e5a8d0986fb9554fd1ad6b45fcffc8c84307672b182d4"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/028-libx264-medium-24-measured-r4.mp4.process.json",
+      "bytes": 6504,
+      "sha256": "ef2652ec49c2de6f7efbe417e9118f8e31a3c417e9bd4d373329ac8768e11930"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/029-libx264-medium-24-measured-r4.mp4.process.json",
+      "bytes": 5833,
+      "sha256": "d9e08929615350211c47f16423a3e174e21f55ebee1bbfe2e2a185486f11ac39"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000001.json",
+      "bytes": 13350,
+      "sha256": "99f59a11e8bf2a5a6a11fe2434054c5fea5c8b49b703405e4fc1a645fcc7afe1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000002.json",
+      "bytes": 13389,
+      "sha256": "175591f7edc2c0911c9d9c054f7f7e47c293d9a477c14ff61006f40e8a571b95"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000003.json",
+      "bytes": 13409,
+      "sha256": "55b477e71f9fc1a916e8c3884973f42ff3c865df258f8dba55f3f7957017037e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000004.json",
+      "bytes": 13382,
+      "sha256": "5c2039ceeecacb0aaf89a94a13668294590ca09057ca995df46d1ca1debf34ec"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000005.json",
+      "bytes": 13474,
+      "sha256": "b2ea110b314168e4ee692b0964f616259f93f74282d1ab4415304a586ac96737"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000006.json",
+      "bytes": 13467,
+      "sha256": "76b54ab219a97ac7afa605a452ee654e4053325ca57e6bd81adafaad637153ea"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000007.json",
+      "bytes": 13317,
+      "sha256": "02a3135642207c1647c684bab156ec3adb3d2a228d46d10d0cdc6b6eb07b3b59"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000008.json",
+      "bytes": 13983,
+      "sha256": "be3ae4ef7e03e6dfc55ddf8b3d9e628460e18e676e02e00f5a00c8dd977f7f69"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000009.json",
+      "bytes": 14016,
+      "sha256": "5c2d4d771cc86f554aa5c552d318818f9bab0fd0fc2e44111f313e8b72afdc14"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000010.json",
+      "bytes": 14033,
+      "sha256": "14a66d3712ce6e5648f024d0b7e0c8665fd0e74463cd3ab90d4a40493f1dfac1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000011.json",
+      "bytes": 14010,
+      "sha256": "aeaea4a2de97e0bfa688ffb375edf0997c8142c25ca2592977f3c6075bdfa695"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000012.json",
+      "bytes": 14095,
+      "sha256": "396af41f27a754f4b46b7507d7efa09d4b87c6532cf10c63ccc8ed1fd4c776a1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000013.json",
+      "bytes": 14197,
+      "sha256": "c5c9f4441e8d4fbbb3c0652e1629c07df92b80f29772f9036a36cf53f89a8647"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000014.json",
+      "bytes": 14029,
+      "sha256": "c5518220f667322147aebe22c20c578fff9774516efcb293d561043ffdc2d92f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000015.json",
+      "bytes": 14032,
+      "sha256": "bdb0a147437f68b9939c7b6fee95b0c2c537036c61013d7e6139d72354011d22"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000016.json",
+      "bytes": 14199,
+      "sha256": "b6179db6d0adb143865d41311907272affd025055ead7d89c3cb33b993829fe0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000017.json",
+      "bytes": 14110,
+      "sha256": "99ccde7fb39777392f3ad46062c24862e07da8d9cbfb132d013525589e55c565"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000018.json",
+      "bytes": 14014,
+      "sha256": "5ce6fe6bcc255402db22fbc733ce93d84dcb34ea4f3bcb505e5da8434cab8658"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000019.json",
+      "bytes": 14129,
+      "sha256": "4baa27a66aac0f02b832addb9853e28b19193b4558d5eeb84f99c727faefc7ba"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000020.json",
+      "bytes": 14010,
+      "sha256": "59caa17763d028435153ffb111c7f5f11bd70d66d4d22816add8b76a30c62a60"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000021.json",
+      "bytes": 13989,
+      "sha256": "47263c43fd13087054c66f4162183ef41ca181e4a309c9b1924338913abb1c4a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000022.json",
+      "bytes": 14127,
+      "sha256": "440753b186b36a8db198be065d06197dbbfd6a34f057a2b0b1d668a13b5a8901"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000023.json",
+      "bytes": 14039,
+      "sha256": "9e234696981dddf686409b25a930981ade9ae2ebf05494358c25f60fb19a3ae0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000024.json",
+      "bytes": 14008,
+      "sha256": "e3a4e6005cf0c8b654f6236e26c59f1f1134f3bbabfc6bc255731a8190a33fa9"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000025.json",
+      "bytes": 14096,
+      "sha256": "b349bc7d2e309554eded2973a1607f51816ab69a7c8ca42b144801cd58e95333"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000026.json",
+      "bytes": 14117,
+      "sha256": "46e73177ac8406bc2ba396b2d4eaab56817698a7071b37409a435ec88b7cbd6a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000027.json",
+      "bytes": 14014,
+      "sha256": "021a30345a2729699d48392fa95173d9668601a4bc7e6b7b591fc4fa99b2fec7"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000028.json",
+      "bytes": 14121,
+      "sha256": "9f6b5c187f87fec3279cb920d63b28348bd32cdb365670ec304fbeedd1b1749b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/attempt-000029.json",
+      "bytes": 14019,
+      "sha256": "2ea119aa9d104c3e4f586b5825292d8edcf249ef9a998cffd18b4a4ada43add2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/campaign-complete.json",
+      "bytes": 70,
+      "sha256": "a35b051b7a0b35e690b6790177f754c9c76df60caf1f402603c6b3003cf8b672"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000008.json",
+      "bytes": 826,
+      "sha256": "fb65a2d2860c74972b47a9d152d5493cdb7f0b44bc8c09137cb2d5f9c3946cb1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000009.json",
+      "bytes": 822,
+      "sha256": "4f44a20522812f4398fb67d8863bde02026cdfe46f4fbc553a8b7d50a952ce19"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000010.json",
+      "bytes": 826,
+      "sha256": "f0954f8714d41e9b820e3d37b6a7662898077092bd27426cb44b7ed11fe7ed0c"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000011.json",
+      "bytes": 821,
+      "sha256": "720d5b6a228adfe4b3256cb268be2c4398441c453afadd5d5ce67f36104327eb"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000012.json",
+      "bytes": 827,
+      "sha256": "e4c70a0b540112516b33bfb19fe48af503f77e9f0993102132e973a53880e5be"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000013.json",
+      "bytes": 839,
+      "sha256": "dafc431bac4b53a4e98388d5da7c057e1fdb0e01176f2bec2dbc455e4969e471"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000014.json",
+      "bytes": 823,
+      "sha256": "adb256c127c5ea2d8f54fa28dbf9a89e1537baa6cb10b85058cc19b8c2c1515b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000015.json",
+      "bytes": 823,
+      "sha256": "ac988319942553c6ccb5da60750a8706cb8287440866a3dd155d326bdd531fbf"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000016.json",
+      "bytes": 842,
+      "sha256": "ad50e91e9d8db7f3faa15cd0c5f43acea81b9fbc6fd357aebc6c771f5fdd0097"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000017.json",
+      "bytes": 842,
+      "sha256": "2f7da2ba03b0f56cc94e7209232421ad6ab2b7b52ddf49dc7574abb53ad1240c"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000018.json",
+      "bytes": 824,
+      "sha256": "82970cf04b96f91f8ae26fd4d77561563e47caebd983de202c3264a15ac65222"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000019.json",
+      "bytes": 829,
+      "sha256": "87e2eeda7aec61c275753d71afdff68ae91e888aa72d3d0ef40e313891ed849b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000020.json",
+      "bytes": 822,
+      "sha256": "ca185df4f896f7ce78540a09e7c138e0793fb2dc1dff6ad7c0fd80abc95b66ed"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000021.json",
+      "bytes": 825,
+      "sha256": "9c3f209aea8d8b8a99d0c57918d9bbd198635329e29a03a2e3debf4d6b21f027"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000022.json",
+      "bytes": 836,
+      "sha256": "6ac78c36ae7e01d67cc1a7d0f0aba45e5ce3b92471d475876034ed2127b0c28e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000023.json",
+      "bytes": 828,
+      "sha256": "a6454e8e151f6125f84729e7c7f0f397d694aeabbe5fc5912d79b79ce185a5de"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000024.json",
+      "bytes": 822,
+      "sha256": "73796d9ff1732aed1e9d23d55e0fb17933e2165d3704036bd60384268bb20711"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000025.json",
+      "bytes": 829,
+      "sha256": "2b09abd54d3a469a5b9955d0e5d54a3cf118008b95630b846100ead3c556267a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000026.json",
+      "bytes": 843,
+      "sha256": "a6214247cb9816799d9c4b7d01cc6c5c9f8369ddb20fa3aae1ec1938b48137a0"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000027.json",
+      "bytes": 825,
+      "sha256": "83d8b903b39305868f43b2a8ae0f4cfe23971c75d423090b649b18ab1f6b881e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000028.json",
+      "bytes": 820,
+      "sha256": "090fbdf6ad1607e968ddb9e6a506ecb63def69013eea5235beb84c859cefdc4e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/environment-000029.json",
+      "bytes": 823,
+      "sha256": "f1d3eecc54294c512af095a2ceb1573274e0820e4e0efc32a01b8c29abaa8f2f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/in-flight.json",
+      "bytes": 169,
+      "sha256": "8176981d13fa9333298cb2699c42d4af805c23efcbcd4b6c4f35411c75a31acd"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/manifest.json",
+      "bytes": 2405,
+      "sha256": "e939bb0d9006473a7d55486c65d8e26c8a71e62ea77a16de785115af8248c31b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000008.json",
+      "bytes": 11706,
+      "sha256": "46f6cdea0fbc4c7a7a21b5324bf1f503560bb53ce8e99fefbcda57caf430cff2"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000009.json",
+      "bytes": 11874,
+      "sha256": "2e1d54bd9ca494fde917a9076934c45004279db8a90c9c18245fa8a4df0e1c88"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000010.json",
+      "bytes": 11829,
+      "sha256": "fc634af7c7b3e16d43c3fd4d58cfbfe516d73dd56b01d5367aaebcaa16c1f4af"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000011.json",
+      "bytes": 11886,
+      "sha256": "079719b9ab77743569b75925231cfc4f74e5bffee867f29001dbd9bd8e3ab577"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000012.json",
+      "bytes": 11902,
+      "sha256": "d9b4ecf5e4655b4915e347e9500dfd5aa3635fc16ef4e734da874422ee141cba"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000013.json",
+      "bytes": 11846,
+      "sha256": "73e04396b3cb47a59edf27136107f3d00bd2f3c669fe96742f4c7f3235a5099b"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000014.json",
+      "bytes": 11749,
+      "sha256": "d45d4b2dfd26049268a4e8f3ead3dc69c589ee8688915945fc7b84c853b08a5e"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000015.json",
+      "bytes": 11758,
+      "sha256": "09a481e94179a07e405596b89ba0b9802ea455eb497f68512853a6d0363d3941"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000016.json",
+      "bytes": 11855,
+      "sha256": "4ab4025d8d619818e1d47f7925fc8f798c2b69cde5e675b516f82df0fbb4694a"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000017.json",
+      "bytes": 11924,
+      "sha256": "4404a7d6a4561d3d088a53f13c20f8755e35656ebd043cb24490787be25d5753"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000018.json",
+      "bytes": 11890,
+      "sha256": "656f81bf6315092892fddf6b772ff4250130f33d75fc630fea4649e959013e4c"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000019.json",
+      "bytes": 11878,
+      "sha256": "ae7652e7868131791475e9b69502cf40f8f9d69e057e0c6afe59c7c8f04df081"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000020.json",
+      "bytes": 11869,
+      "sha256": "6a5ce850936d2cc959a2aa29cc4c0a4646240ea5c90481aee0626ef65fb79044"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000021.json",
+      "bytes": 11707,
+      "sha256": "151de7c8953cece1cd4c9867881c1a1f9da5866424c8fd05b3596ad4d3c31326"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000022.json",
+      "bytes": 11935,
+      "sha256": "3d39ee407dc75dbeb67320f429aac954caa05941ddb096736839f7f1e09467f1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000023.json",
+      "bytes": 11833,
+      "sha256": "80802d6de0cf0597e53d96a1a8c0ec4f525faa1ca5eba67749177071fc04d454"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000024.json",
+      "bytes": 11880,
+      "sha256": "55a2a2dd1b05591084f8ebd09637e4ca130f6b545c9aaa2d443185e9b914d0f1"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000025.json",
+      "bytes": 11904,
+      "sha256": "92e8a1dd1ebff8c6d095814c3b38c31bdbb878024e833f0850deb14ebd3b9fce"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000026.json",
+      "bytes": 11928,
+      "sha256": "bad24bacccf7e667561c95a4a6900ee830b4121a98b350996e2256e1c2484aa3"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000027.json",
+      "bytes": 11884,
+      "sha256": "6c6776eb2f794ceadb21b5863e1924244bf5c70230652032d8a858ed04b8d010"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000028.json",
+      "bytes": 11870,
+      "sha256": "b394aa105d69276e948635695d5b86fe05c630ed9a56a4ffc083df259f912316"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/campaigns/campaign-7fda61d90a423692/submission-000029.json",
+      "bytes": 11882,
+      "sha256": "b590afa43b1d65d86c68538a83164855d035513b9e47db0d3269b3323954350f"
+    },
+    {
+      "path": "20260920-native-939823e-untraced/\u65e5\u672c\u8a9e client trial/software-queue/protocol-attempts/campaign-7fda61d90a423692.json",
+      "bytes": 388104,
+      "sha256": "3c65b1427541faea2e770612f58324e990d606df3ff7ab283e08b9c4434b24c0"
+    }
+  ]
+}

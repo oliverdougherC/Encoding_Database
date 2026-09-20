@@ -1,0 +1,3 @@
+[production-smoke] Checking non-mutating production API surfaces at https://127.0.0.1:3094
+[production-smoke] Checking frontend at https://127.0.0.1:3094
+[production-smoke] Production smoke checks passed (API and frontend)

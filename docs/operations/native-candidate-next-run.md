@@ -62,7 +62,7 @@ steps concern the existing isolated candidate only, never production.
 7. Start only the candidate with `docker compose -f candidate.compose.json up -d
    --no-build --pull never --wait`. Verify image IDs/mounts and bounded `/health/ready`,
    `/health/v7-evidence`, corpus and actual frontend. Run
-   `scripts/production_smoke.sh` with API_BASE_URL and APP_BASE_URL both
+   `scripts/production_smoke.sh` with API_BASE_URL and APP_URL both
    `https://127.0.0.1:3094`, and CURL_CA_BUNDLE set to the existing public cert.
    Production IDs/start times must remain unchanged.
 8. Build the Linux executable from the same final checkout with
@@ -82,12 +82,19 @@ with a Japanese/space path. Use that working directory as parent of both queues;
 otherwise the client correctly rejects unsafe sibling queue paths. Start with an
 empty suite cache, preserve the existing physical state, and scrub FFMPEG_EXE,
 FFPROBE_EXE, ENCODINGDB_FFMPEG_PATH, ENCODINGDB_FFPROBE_PATH, runtime-lock overrides,
-PYTHONPATH/PYTHONHOME and loader overrides. Set REQUESTS_CA_BUNDLE to the candidate
-public cert, ENCODINGDB_STATE_DIR to the existing host-state, and a new
+PYTHONPATH/PYTHONHOME and loader overrides. Set REQUESTS_CA_BUNDLE to an owned bundle
+containing the existing certifi public roots plus the candidate public cert:
+a candidate-only bundle replaces public trust and fails the advertised GitHub
+download. Set ENCODINGDB_STATE_DIR to the existing host-state, and a new
 ENCODINGDB_SUITE_CACHE_DIR. First verify actual clean acquisition from the frozen
 advertised URL; a later explicit local pack fallback must be labeled separately.
-Capture `strace -f -e trace=execve` so executed helpers must resolve from the
-package's `_MEI.../bin/linux/` tree. Do not upload while any timing is active.
+Use execve tracing only for a separate runtime-path smoke diagnostic. Ordinary
+full campaigns must run **without a tracer**: `strace -f -e trace=execve` without
+seccomp filtering still imposes syscall interception overhead. Prove the ordinary
+campaign helper paths and hashes through the packaged runtime receipt plus saved
+executed-command/process receipts, which must resolve into `_MEI.../bin/linux/`.
+Instrumented smoke timings are not ordinary performance or calibration evidence.
+Do not upload while any timing is active.
 
 Under the outer shared `flock -n`, use the real final executable for these two
 predeclared complete campaigns (replace queue names only with owned absolute paths):
