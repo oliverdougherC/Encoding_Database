@@ -135,12 +135,17 @@ These historical builds do not implement the corrected campaign interface below
 and cannot establish the protocol 7.1 epoch. Their unsigned/notarization and
 translated-helper limits remain in the published release notes.
 
-The candidate Mac runtime is native arm64, requires macOS **27.0 or newer** from
-its library load commands, and is ad-hoc signed, not Developer ID signed or
-notarized. Local package/model smoke is not seven-clip certification. Final native
-CI and runtime acceptance remain pending on Windows and Linux; Intel macOS is not
-certified by this candidate. See [native runtime evidence](docs/NATIVE_RUNTIME_20260914.md)
-and [Linux preparation](docs/native-linux/20260914-discovery/README.md).
+Application candidate `b3ef24a` now has physical Windows seven-clip software and
+NVENC evidence: 63 VALID attempts, 42 measured runs and 21 stable groups across
+three campaigns, plus four controlled recovery/failure cases. Hosted Windows
+seven-clip console acceptance also passed; final GUI acceptance remains pending.
+The [Mac package smoke](docs/collection-readiness/mac-build-b3ef24a/README.md) passed
+with native ARM64 helpers and a **macOS 27.0** runtime floor; signing is ad hoc,
+with no Developer ID signature or notarization. Fresh b3 Mac seven-clip acceptance
+is in progress after AC/environment checks. The Linux candidate build, migrations,
+trusted TLS and isolated restore passed; final native acceptance is now running
+after the capacity trial. These results do not establish collection readiness or validated
+PL. See the [current evidence and open gates](docs/FINAL_RELEASE_HANDOFF.md).
 
 From the corrected source checkout with client requirements installed and a
 compatible local staging server, run one clip without publication:
