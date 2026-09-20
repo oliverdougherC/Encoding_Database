@@ -1,0 +1,93 @@
+{
+  "baselineSource": "35b8fae413850c80c1d3e904dc6fd80cd5d63b55",
+  "candidateSource": "e28a75f75f8cc2d8595e72b7cfd7180ea876e6ca",
+  "receiptProvenance": "Both diagnostic runs recorded the pre-commit HEAD; the after run applied precisely the production.patch committed in candidateSource. No capacity verdict is derived from these bounded diagnostics.",
+  "equivalence": [
+    {
+      "environment": "SYNTHETIC-PROJECTION-ONLY-env-0000",
+      "oldCount": 1610,
+      "proposedCount": 1610,
+      "missing": 0,
+      "extra": 0,
+      "oldHash": "b0927d191c85f24ac578f3a59d2b59e9d2774d4b24a597c1364903ac627924fe",
+      "proposedHash": "b0927d191c85f24ac578f3a59d2b59e9d2774d4b24a597c1364903ac627924fe"
+    },
+    {
+      "environment": "SYNTHETIC-PROJECTION-ONLY-env-0001",
+      "oldCount": 90,
+      "proposedCount": 90,
+      "missing": 0,
+      "extra": 0,
+      "oldHash": "a1cea00ca74594067d947a75c88c89bdc9b01e2d8bfe59ae6273dc8e2057633f",
+      "proposedHash": "a1cea00ca74594067d947a75c88c89bdc9b01e2d8bfe59ae6273dc8e2057633f"
+    },
+    {
+      "environment": "SYNTHETIC-PROJECTION-ONLY-env-0500",
+      "oldCount": 80,
+      "proposedCount": 80,
+      "missing": 0,
+      "extra": 0,
+      "oldHash": "0672ce9685966208298f5b5745fd5f6290c8592a683f78a464e36dd9537d94ed",
+      "proposedHash": "0672ce9685966208298f5b5745fd5f6290c8592a683f78a464e36dd9537d94ed"
+    },
+    {
+      "environment": "SYNTHETIC-PROJECTION-ONLY-env-0980",
+      "oldCount": 80,
+      "proposedCount": 80,
+      "missing": 0,
+      "extra": 0,
+      "oldHash": "a7fb0bf5ce0a06c737d04e9e35beddc00021dd2a244686a74fc57a5c60d208f1",
+      "proposedHash": "a7fb0bf5ce0a06c737d04e9e35beddc00021dd2a244686a74fc57a5c60d208f1"
+    }
+  ],
+  "plans": [
+    {
+      "route": "fps-desc",
+      "before": 154.641,
+      "after": 131.22,
+      "improvementPercent": 15.145401284264842
+    },
+    {
+      "route": "vmaf-asc-page",
+      "before": 96.717,
+      "after": 79.026,
+      "improvementPercent": 18.291510282577008
+    },
+    {
+      "route": "fps-asc-page",
+      "before": 88.409,
+      "after": 75.801,
+      "improvementPercent": 14.260991528011857
+    },
+    {
+      "route": "filtered-fps",
+      "before": 135.226,
+      "after": 112.122,
+      "improvementPercent": 17.085471728809548
+    },
+    {
+      "route": "hot-detail",
+      "before": 62.666,
+      "after": 51.403,
+      "improvementPercent": 17.97306354322918
+    },
+    {
+      "route": "created-desc",
+      "before": 145.195,
+      "after": 125.577,
+      "improvementPercent": 13.511484555253277
+    },
+    {
+      "route": "cpu-asc",
+      "before": 145.793,
+      "after": 124.893,
+      "improvementPercent": 14.33539333164144
+    }
+  ],
+  "focusedTests": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "archiveSha256": "e6302a2e047dc5bd389257f19789c5ac090657f9f63c100d69136868985b8893"
+}
