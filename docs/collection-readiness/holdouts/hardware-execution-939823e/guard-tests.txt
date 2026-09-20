@@ -9,8 +9,14 @@ test_runtime_helpers_are_bound_to_actual_bytes (__main__.OperatorGuards.test_run
 test_source_or_command_change_cannot_resume (__main__.OperatorGuards.test_source_or_command_change_cannot_resume) ... ok
 test_tampered_seal_is_rejected (__main__.OperatorGuards.test_tampered_seal_is_rejected) ... ok
 test_unstable_completed_receipt_is_reused (__main__.OperatorGuards.test_unstable_completed_receipt_is_reused) ... ok
+test_actual_failure_does_not_become_resumable_when_pause_exists (__main__.RecoveryGuards.test_actual_failure_does_not_become_resumable_when_pause_exists) ... ok
+test_budget_exit_without_matching_pause_is_not_resumable (__main__.RecoveryGuards.test_budget_exit_without_matching_pause_is_not_resumable) ... ok
+test_budget_pause_rejects_changed_recipe_or_attempt_count (__main__.RecoveryGuards.test_budget_pause_rejects_changed_recipe_or_attempt_count) ... ok
+test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes (__main__.RecoveryGuards.test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes) ... ok
+test_interrupted_status_requires_operator_observation_and_explicit_resume (__main__.RecoveryGuards.test_interrupted_status_requires_operator_observation_and_explicit_resume) ... ok
+test_live_child_keeps_host_lock_after_operator_parent_is_killed (__main__.RecoveryGuards.test_live_child_keeps_host_lock_after_operator_parent_is_killed) ... ok
 
 ----------------------------------------------------------------------
-Ran 11 tests in 0.004s
+Ran 17 tests in 0.095s
 
 OK

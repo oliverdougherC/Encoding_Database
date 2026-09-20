@@ -72,6 +72,16 @@ def validate_previous(previous, execution_hash, command, resume_interrupted):
         return 'reuse'
     if previous.get('status') == 'FAILED':
         raise ValueError('Failed observation is retained; no automatic new attempt or replacement')
+    status = previous.get('status')
+    if status not in ('RUNNING', 'INTERRUPTED', 'PAUSED_MEASUREMENT_BUDGET'):
+        raise ValueError('Unknown state is not an interrupted observation')
+    if status == 'INTERRUPTED' and previous.get('operatorInterrupted') is not True:
+        raise ValueError('Interruption was not observed by this operator')
+    if status == 'PAUSED_MEASUREMENT_BUDGET' and (previous.get('exitCode') != 11 or not previous.get('resumeEvidence')):
+        raise ValueError('Budget pause lacks verified retained evidence')
+    for saved in previous.get('resumeEvidence', []):
+        if digest(saved['path']) != saved['sha256']:
+            raise ValueError('Retained resume evidence changed; refusing replacement attempts')
     if not resume_interrupted:
         raise ValueError('Interrupted cell requires --resume-interrupted after verifying no owned process remains')
     return 'resume'
@@ -115,6 +125,66 @@ def validate_receipt(receipt, cell, host, plan):
                 for key in ('rateControlRequested', 'rateControlEffective'):
                     if effective[key]['mode'] != 'vbr' or effective[key]['targetBitrateKbps'] != cell['targetBitrateKbps']:
                         raise ValueError('Native VBR target changed')
+
+
+def journal_evidence(cell, host, plan, *, budget_pause=False):
+    output = Path(host['outputRoot']) / cell['cellId']
+    manifests = list(output.rglob('manifest.json'))
+    if not manifests and not budget_pause:
+        return []  # interrupted before the runner created its journal
+    if len(manifests) != 1:
+        raise ValueError('Resume requires exactly one retained campaign manifest')
+    manifest_path = manifests[0]
+    journal = manifest_path.parent
+    manifest = json.loads(manifest_path.read_text())
+    validate_receipt({**manifest, 'campaign': {'recipeResults': []}}, cell, host, plan)
+    recipe = manifest['recipe']
+    rc = recipe.get('rateControl', {})
+    if (recipe.get('encoder'), recipe.get('preset'), recipe.get('crf'), rc.get('mode'), rc.get('targetBitrateKbps')) != (
+            cell['encoder'], cell['preset'], None, 'vbr', cell['targetBitrateKbps']):
+        raise ValueError('Retained recipe differs from the frozen hardware cell')
+    recipe_id = canonical_hash(recipe)
+    campaign_id = 'campaign-' + canonical_hash({'protocolVersion': '7.1', 'recipeIds': [recipe_id], 'seed': cell['seed']})[:16]
+    if journal.name != campaign_id or manifest.get('sourceRegistrationHash') != recipe.get('sourceRegistrationHash'):
+        raise ValueError('Retained campaign or recipe identity differs')
+    paths = [manifest_path]
+    attempts = sorted(journal.glob('attempt-*.json'))
+    for path in attempts:
+        record = json.loads(path.read_text())
+        schedule = record['schedule']
+        if schedule['campaign_id'] != campaign_id or schedule['recipe_id'] != recipe_id:
+            raise ValueError('Completed attempt belongs to another recipe or campaign')
+        info = record['metadata'].get('info', {})
+        if info.get('artifactPath'):
+            artifact = Path(info['artifactPath'])
+            if journal.resolve() not in artifact.resolve().parents:
+                raise ValueError('Completed attempt artifact left its owned journal')
+            if artifact.exists():
+                if digest(artifact) != info.get('artifactSha256'):
+                    raise ValueError('Completed attempt artifact changed')
+                paths.append(artifact)
+            elif not info.get('error'):
+                raise ValueError('Completed attempt artifact is missing')
+        paths.append(path)
+    if budget_pause:
+        pauses = list(output.rglob('validation-pause.json'))
+        if pauses != [journal / 'validation-pause.json']:
+            raise ValueError('Budget exit requires exactly one owned validation pause')
+        pause = json.loads(pauses[0].read_text())
+        expected = {'status': 'PAUSED_MEASUREMENT_BUDGET', 'maximumMinutes': cell['maximumMeasurementMinutes'],
+                    'campaignId': campaign_id, 'seed': cell['seed'], 'completedAttempts': len(attempts),
+                    'journalPath': str(journal.resolve())}
+        if pause != expected:
+            raise ValueError('Budget pause differs from its retained journal or frozen cell')
+        paths.append(pauses[0])
+    return [{'path': str(path), 'sha256': digest(path)} for path in paths]
+
+
+def run_timing_child(command, checkout, env, stream, lock):
+    # The child keeps the same flock open if this operator dies. Its per-cell
+    # journal lock alone cannot protect the host from other timing work.
+    return subprocess.run(command, cwd=checkout, env=env, stdout=stream, stderr=stream,
+                          pass_fds=(lock.fileno(),))
 
 
 def environment_gate(host, encoder, env):
@@ -194,6 +264,8 @@ def main():
                     validate_receipt(json.loads(Path(saved['path']).read_text()), cell, host, plan)
                 print(json.dumps({'cellId': cell['cellId'], 'status': 'REUSED_UNCHANGED_COMPLETED_RECEIPT'}), flush=True)
                 continue
+            if previous and previous.get('status') == 'PAUSED_MEASUREMENT_BUDGET':
+                journal_evidence(cell, host, plan, budget_pause=True)
             if shutil.disk_usage(state).free < plan['minimumFreeBytes'] + base['maximumCellJournalBytes']:
                 raise ValueError('Insufficient free space to preserve the reserve after one maximum-size cell')
             budget_root = Path(host['budgetRoot'])
@@ -205,13 +277,25 @@ def main():
                 raise ValueError('Pre-staged reference differs')
             snapshot = environment_gate(host, cell['encoder'], env)
             report = {'executionHash': plan['executionHash'], 'cell': cell, 'command': command, 'status': 'RUNNING', 'startedAt': now(), 'preflight': snapshot,
-                      'resumedFrom': previous, 'outerLockPath': str(state / 'measurement.lock')}
+                      'resumedFrom': previous, 'outerLockPath': str(state / 'measurement.lock'),
+                      'resumeEvidence': journal_evidence(cell, host, plan)}
             atomic_json(report_path, report)
-            with report_path.with_suffix('.log').open('a') as stream:
-                result = subprocess.run(command, cwd=checkout, env=env, stdout=stream, stderr=stream)
+            try:
+                with report_path.with_suffix('.log').open('a') as stream:
+                    result = run_timing_child(command, checkout, env, stream, lock)
+            except KeyboardInterrupt:
+                report.update(status='INTERRUPTED', operatorInterrupted=True, interruptedAt=now())
+                atomic_json(report_path, report)
+                return 130
+
             receipt_paths = list((Path(host['outputRoot']) / cell['cellId']).rglob('validation-campaign.json'))
             report.update(completedAt=now(), exitCode=result.returncode, status='FAILED', receipts=[])
             try:
+                if result.returncode == 11:
+                    if receipt_paths:
+                        raise ValueError('Budget pause conflicts with a completed receipt')
+                    report['resumeEvidence'] = journal_evidence(cell, host, plan, budget_pause=True)
+                    report['status'] = 'PAUSED_MEASUREMENT_BUDGET'
                 for path in receipt_paths:
                     receipt = json.loads(path.read_text())
                     validate_receipt(receipt, cell, host, plan)
@@ -226,7 +310,7 @@ def main():
             atomic_json(report_path, report)
             print(json.dumps({'cellId': cell['cellId'], 'exitCode': result.returncode, 'status': report['status']}), flush=True)
             if report['status'] != 'COMPLETE':
-                return 12
+                return 11 if report['status'] == 'PAUSED_MEASUREMENT_BUDGET' else 12
         atomic_json(evidence / 'phase-complete.json', {'executionHash': plan['executionHash'], 'host': args.host, 'cellCount': len(cells), 'completedAt': now()})
     return 0
 

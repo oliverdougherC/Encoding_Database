@@ -2,6 +2,11 @@
 import datetime
 import importlib.util
 import json
+import fcntl
+import os
+import subprocess
+import sys
+import time
 from pathlib import Path
 import tempfile
 import unittest
@@ -92,6 +97,7 @@ class OperatorGuards(unittest.TestCase):
         base = Path(__file__).parent
         plan = operator.read_sealed(base / 'execution.json', 'executionHash')
         original = operator.read_sealed(base.parent / 'timing-hardware-extension-v1.json', 'planHash')
+        self.assertEqual(operator.digest(base / 'run.py'), plan['operatorSha256'])
         self.assertEqual(plan['cells'], original['cells'])
         for host_name in ('Mac', 'P910'):
             cells = [cell for cell in plan['cells'] if cell['host'] == host_name]
@@ -102,6 +108,139 @@ class OperatorGuards(unittest.TestCase):
                 self.assertNotIn('--crf', command)
                 self.assertEqual(command[command.index('--target-bitrate-kbps') + 1], str(cell['targetBitrateKbps']))
                 self.assertEqual(command[command.index('--seed') + 1], str(cell['seed']))
+
+
+class RecoveryGuards(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temporary.cleanup)
+        self.root = Path(self.temporary.name)
+        self.cell = {'cellId': 'synthetic-cell', 'encoder': 'h264_nvenc', 'preset': 'p4',
+                     'targetBitrateKbps': 4000, 'seed': 42, 'sourceRegistrationHash': 'registered',
+                     'maximumMeasurementMinutes': 60}
+        self.host = {'outputRoot': str(self.root), 'physicalSourceId': 'test-source', 'runtimeLockFingerprint': 'test-runtime'}
+        self.plan = {'runnerSha256': 'test-runner'}
+        recipe = {'encoder': 'h264_nvenc', 'preset': 'p4', 'crf': None,
+                  'sourceRegistrationHash': 'registered', 'rateControl': {'mode': 'vbr', 'targetBitrateKbps': 4000}}
+        recipe_id = operator.canonical_hash(recipe)
+        campaign_id = 'campaign-' + operator.canonical_hash({'protocolVersion': '7.1', 'recipeIds': [recipe_id], 'seed': 42})[:16]
+        self.journal = self.root / 'synthetic-cell' / 'campaigns' / campaign_id
+        self.journal.mkdir(parents=True)
+        manifest = {'seed': 42, 'runnerSha256': 'test-runner', 'physicalSourceId': 'test-source',
+                    'sourceRegistrationHash': 'registered', 'runtimeVerification': {'fingerprint': 'test-runtime'},
+                    'recipe': recipe, 'protocolConfig': {'warmup_runs': 1, 'minimum_measured_runs': 2,
+                    'max_adaptive_repeats': 2, 'stability_threshold_ratio': .03}}
+        operator.atomic_json(self.journal / 'manifest.json', manifest)
+        artifact = self.journal / 'synthetic-artifact.bin'
+        artifact.write_bytes(b'SYNTHETIC FIXTURE ONLY')
+        attempt = {'schedule': {'campaign_id': campaign_id, 'recipe_id': recipe_id},
+                   'metadata': {'info': {'artifactPath': str(artifact), 'artifactSha256': operator.digest(artifact)}}}
+        self.attempt = self.journal / 'attempt-000001.json'
+        operator.atomic_json(self.attempt, attempt)
+        self.pause = {'status': 'PAUSED_MEASUREMENT_BUDGET', 'maximumMinutes': 60,
+                      'campaignId': campaign_id, 'seed': 42, 'completedAttempts': 1,
+                      'journalPath': str(self.journal.resolve())}
+        operator.atomic_json(self.journal / 'validation-pause.json', self.pause)
+
+    def paused_record(self):
+        return {'executionHash': 'sealed', 'command': ['same-source', '--seed', '42'],
+                'status': 'PAUSED_MEASUREMENT_BUDGET', 'exitCode': 11,
+                'resumeEvidence': operator.journal_evidence(self.cell, self.host, self.plan, budget_pause=True)}
+
+    def test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes(self):
+        before = {p.name: p.read_bytes() for p in self.journal.iterdir()}
+        previous = self.paused_record()
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], False)
+        self.assertEqual(operator.validate_previous(previous, 'sealed', previous['command'], True), 'resume')
+        self.assertEqual(before, {p.name: p.read_bytes() for p in self.journal.iterdir()})
+        self.attempt.write_text('changed completed attempt')
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], True)
+
+    def test_budget_exit_without_matching_pause_is_not_resumable(self):
+        (self.journal / 'validation-pause.json').unlink()
+        with self.assertRaises(ValueError):
+            self.paused_record()
+        self.pause['seed'] = 43
+        operator.atomic_json(self.journal / 'validation-pause.json', self.pause)
+        with self.assertRaises(ValueError):
+            self.paused_record()
+
+    def test_budget_pause_rejects_changed_recipe_or_attempt_count(self):
+        self.pause['completedAttempts'] = 0
+        operator.atomic_json(self.journal / 'validation-pause.json', self.pause)
+        with self.assertRaises(ValueError):
+            self.paused_record()
+        self.pause['completedAttempts'] = 1
+        operator.atomic_json(self.journal / 'validation-pause.json', self.pause)
+        manifest_path = self.journal / 'manifest.json'
+        manifest = json.loads(manifest_path.read_text())
+        manifest['recipe']['rateControl']['targetBitrateKbps'] = 8000
+        operator.atomic_json(manifest_path, manifest)
+        with self.assertRaises(ValueError):
+            self.paused_record()
+
+    def test_actual_failure_does_not_become_resumable_when_pause_exists(self):
+        previous = self.paused_record()
+        previous.update(status='FAILED', exitCode=1)
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], True)
+
+    def test_interrupted_status_requires_operator_observation_and_explicit_resume(self):
+        previous = self.paused_record()
+        previous.update(status='INTERRUPTED', exitCode=None)
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], True)
+        previous['operatorInterrupted'] = True
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], False)
+        self.assertEqual(operator.validate_previous(previous, 'sealed', previous['command'], True), 'resume')
+        previous['status'] = 'UNRECOGNIZED'
+        with self.assertRaises(ValueError):
+            operator.validate_previous(previous, 'sealed', previous['command'], True)
+
+    def test_live_child_keeps_host_lock_after_operator_parent_is_killed(self):
+        lock_path, ready, release = (self.root / name for name in ('host.lock', 'child-ready', 'release-child'))
+        child_code = "import os,pathlib,sys,time; pathlib.Path(sys.argv[1]).write_text(str(os.getpid())); " + \
+                     "exec('while not pathlib.Path(sys.argv[2]).exists():\\n time.sleep(.02)')"
+        parent_code = """import fcntl,importlib.util,os,pathlib,sys
+spec=importlib.util.spec_from_file_location('operator_under_test',sys.argv[1])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+with open(sys.argv[2],'a+b') as lock, open(os.devnull,'w') as log:
+ fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ module.run_timing_child([sys.executable,'-c',sys.argv[3],sys.argv[4],sys.argv[5]],pathlib.Path.cwd(),dict(os.environ),log,lock)
+"""
+        parent = subprocess.Popen([sys.executable, '-c', parent_code, str(Path(operator.__file__).resolve()),
+                                   str(lock_path), child_code, str(ready), str(release)])
+        try:
+            deadline = time.monotonic() + 5
+            while not ready.exists() and time.monotonic() < deadline:
+                self.assertIsNone(parent.poll())
+                time.sleep(.02)
+            self.assertTrue(ready.exists(), 'synthetic child did not start')
+            child_pid = int(ready.read_text())
+            parent.kill()
+            parent.wait(timeout=5)
+            os.kill(child_pid, 0)
+            with lock_path.open('a+b') as contender:
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                release.touch()
+                deadline = time.monotonic() + 5
+                while True:
+                    try:
+                        fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() >= deadline:
+                            self.fail('host lock remained held after synthetic child exit')
+                        time.sleep(.02)
+        finally:
+            release.touch()
+            if parent.poll() is None:
+                parent.kill()
+            parent.wait(timeout=5)
 
 
 if __name__ == '__main__':
