@@ -4,6 +4,7 @@ import importlib.util
 import json
 import fcntl
 import os
+import signal
 import subprocess
 import sys
 import time
@@ -199,6 +200,98 @@ class RecoveryGuards(unittest.TestCase):
         previous['status'] = 'UNRECOGNIZED'
         with self.assertRaises(ValueError):
             operator.validate_previous(previous, 'sealed', previous['command'], True)
+
+    def test_parent_only_sigint_keeps_host_lock_until_detached_media_cleanup(self):
+        lock_path, ready, cleanup_started, allow_cleanup, media_release, cleaned, interrupted = (
+            self.root / name for name in ('sigint.lock', 'media-ready', 'cleanup-started',
+                                         'allow-cleanup', 'media-release', 'media-cleaned', 'interrupted'))
+        media_code = """import pathlib,sys,time
+release=pathlib.Path(sys.argv[1]); deadline=time.monotonic()+30
+while not release.exists() and time.monotonic()<deadline: time.sleep(.02)
+pathlib.Path(str(release)+'.done').touch()
+"""
+        runner_code = """import os,pathlib,subprocess,sys,time
+ready,started,allow,release,cleaned=map(pathlib.Path,sys.argv[1:6])
+media=subprocess.Popen([sys.executable,'-c',sys.argv[6],str(release)],start_new_session=True)
+try:
+ ready.write_text(str(media.pid))
+ while True: time.sleep(.02)
+except KeyboardInterrupt:
+ started.touch(); deadline=time.monotonic()+10
+ while not allow.exists() and time.monotonic()<deadline: time.sleep(.02)
+finally:
+ release.touch(); media.wait(timeout=5); cleaned.touch()
+"""
+        parent_code = """import fcntl,importlib.util,os,pathlib,signal,sys
+spec=importlib.util.spec_from_file_location('operator_under_test',sys.argv[1])
+module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+original=signal.getsignal(signal.SIGINT)
+with open(sys.argv[2],'a+b') as lock, open(os.devnull,'w') as log:
+ fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ try: module.run_timing_child([sys.executable,'-c',sys.argv[3],*sys.argv[4:10]],pathlib.Path.cwd(),dict(os.environ),log,lock)
+ except KeyboardInterrupt:
+  assert signal.getsignal(signal.SIGINT)==original
+  pathlib.Path(sys.argv[10]).touch()
+  sys.exit(130)
+"""
+        parent = subprocess.Popen([sys.executable, '-c', parent_code, str(Path(operator.__file__).resolve()),
+                                   str(lock_path), runner_code, str(ready), str(cleanup_started),
+                                   str(allow_cleanup), str(media_release), str(cleaned), media_code, str(interrupted)],
+                                  start_new_session=True)
+        try:
+            deadline = time.monotonic() + 5
+            while not ready.exists() and time.monotonic() < deadline:
+                self.assertIsNone(parent.poll())
+                time.sleep(.02)
+            self.assertTrue(ready.exists(), 'synthetic detached media did not start')
+            media_pid = int(ready.read_text())
+            self.assertEqual(os.getpgid(media_pid), media_pid)
+            os.kill(parent.pid, signal.SIGINT)  # Parent only, not its process group.
+            deadline = time.monotonic() + 3
+            while not cleanup_started.exists() and parent.poll() is None and time.monotonic() < deadline:
+                time.sleep(.02)
+            with lock_path.open('a+b') as contender:
+                os.kill(media_pid, 0)
+                with self.assertRaises(BlockingIOError, msg='host lock released while detached media remains alive'):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.assertTrue(cleanup_started.exists(), 'runner never received graceful interruption')
+                self.assertIsNone(parent.poll())
+                os.kill(parent.pid, signal.SIGINT)  # A second Ctrl+C cannot interrupt cleanup.
+                time.sleep(.05)
+                self.assertIsNone(parent.poll())
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                allow_cleanup.touch()
+                self.assertEqual(parent.wait(timeout=5), 130)
+                self.assertTrue(cleaned.exists())
+                self.assertTrue(interrupted.exists())
+                fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        finally:
+            allow_cleanup.touch()
+            media_release.touch()
+            try:
+                parent.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                parent.kill()
+                parent.wait(timeout=5)
+            if ready.exists():
+                deadline = time.monotonic() + 5
+                done = Path(str(media_release) + '.done')
+                while not done.exists() and time.monotonic() < deadline:
+                    time.sleep(.02)
+                self.assertTrue(done.exists(), 'detached synthetic media did not exit during cleanup')
+
+    def test_normal_child_preserves_exit_status_and_parent_lock(self):
+        command = [sys.executable, '-c', 'raise SystemExit(4)']
+        path = self.root / 'normal.lock'
+        with path.open('a+b') as lock, open(os.devnull, 'w') as log:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            result = operator.run_timing_child(command, self.root, dict(os.environ), log, lock)
+            self.assertEqual(result.args, command)
+            self.assertEqual(result.returncode, 4)
+            with path.open('a+b') as contender:
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
 
     def test_live_child_keeps_host_lock_after_operator_parent_is_killed(self):
         lock_path, ready, release = (self.root / name for name in ('host.lock', 'child-ready', 'release-child'))

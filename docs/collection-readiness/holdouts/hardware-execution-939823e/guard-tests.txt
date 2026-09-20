@@ -1,22 +1,24 @@
-test_actual_frozen_cells_keep_original_commands_and_order (__main__.OperatorGuards.test_actual_frozen_cells_keep_original_commands_and_order) ... ok
-test_allocation_cannot_transfer_hosts (__main__.OperatorGuards.test_allocation_cannot_transfer_hosts) ... ok
-test_allocation_cannot_transfer_source (__main__.OperatorGuards.test_allocation_cannot_transfer_source) ... ok
-test_current_exact_allocation (__main__.OperatorGuards.test_current_exact_allocation) ... ok
-test_expired_allocation_is_rejected (__main__.OperatorGuards.test_expired_allocation_is_rejected) ... ok
-test_failed_observation_is_never_automatically_retried (__main__.OperatorGuards.test_failed_observation_is_never_automatically_retried) ... ok
-test_interrupted_resume_is_explicit (__main__.OperatorGuards.test_interrupted_resume_is_explicit) ... ok
-test_runtime_helpers_are_bound_to_actual_bytes (__main__.OperatorGuards.test_runtime_helpers_are_bound_to_actual_bytes) ... ok
-test_source_or_command_change_cannot_resume (__main__.OperatorGuards.test_source_or_command_change_cannot_resume) ... ok
-test_tampered_seal_is_rejected (__main__.OperatorGuards.test_tampered_seal_is_rejected) ... ok
-test_unstable_completed_receipt_is_reused (__main__.OperatorGuards.test_unstable_completed_receipt_is_reused) ... ok
-test_actual_failure_does_not_become_resumable_when_pause_exists (__main__.RecoveryGuards.test_actual_failure_does_not_become_resumable_when_pause_exists) ... ok
-test_budget_exit_without_matching_pause_is_not_resumable (__main__.RecoveryGuards.test_budget_exit_without_matching_pause_is_not_resumable) ... ok
-test_budget_pause_rejects_changed_recipe_or_attempt_count (__main__.RecoveryGuards.test_budget_pause_rejects_changed_recipe_or_attempt_count) ... ok
-test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes (__main__.RecoveryGuards.test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes) ... ok
-test_interrupted_status_requires_operator_observation_and_explicit_resume (__main__.RecoveryGuards.test_interrupted_status_requires_operator_observation_and_explicit_resume) ... ok
-test_live_child_keeps_host_lock_after_operator_parent_is_killed (__main__.RecoveryGuards.test_live_child_keeps_host_lock_after_operator_parent_is_killed) ... ok
+test_actual_frozen_cells_keep_original_commands_and_order (test_operator.OperatorGuards.test_actual_frozen_cells_keep_original_commands_and_order) ... ok
+test_allocation_cannot_transfer_hosts (test_operator.OperatorGuards.test_allocation_cannot_transfer_hosts) ... ok
+test_allocation_cannot_transfer_source (test_operator.OperatorGuards.test_allocation_cannot_transfer_source) ... ok
+test_current_exact_allocation (test_operator.OperatorGuards.test_current_exact_allocation) ... ok
+test_expired_allocation_is_rejected (test_operator.OperatorGuards.test_expired_allocation_is_rejected) ... ok
+test_failed_observation_is_never_automatically_retried (test_operator.OperatorGuards.test_failed_observation_is_never_automatically_retried) ... ok
+test_interrupted_resume_is_explicit (test_operator.OperatorGuards.test_interrupted_resume_is_explicit) ... ok
+test_runtime_helpers_are_bound_to_actual_bytes (test_operator.OperatorGuards.test_runtime_helpers_are_bound_to_actual_bytes) ... ok
+test_source_or_command_change_cannot_resume (test_operator.OperatorGuards.test_source_or_command_change_cannot_resume) ... ok
+test_tampered_seal_is_rejected (test_operator.OperatorGuards.test_tampered_seal_is_rejected) ... ok
+test_unstable_completed_receipt_is_reused (test_operator.OperatorGuards.test_unstable_completed_receipt_is_reused) ... ok
+test_actual_failure_does_not_become_resumable_when_pause_exists (test_operator.RecoveryGuards.test_actual_failure_does_not_become_resumable_when_pause_exists) ... ok
+test_budget_exit_without_matching_pause_is_not_resumable (test_operator.RecoveryGuards.test_budget_exit_without_matching_pause_is_not_resumable) ... ok
+test_budget_pause_rejects_changed_recipe_or_attempt_count (test_operator.RecoveryGuards.test_budget_pause_rejects_changed_recipe_or_attempt_count) ... ok
+test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes (test_operator.RecoveryGuards.test_budget_pause_requires_explicit_resume_and_preserves_attempt_bytes) ... ok
+test_interrupted_status_requires_operator_observation_and_explicit_resume (test_operator.RecoveryGuards.test_interrupted_status_requires_operator_observation_and_explicit_resume) ... ok
+test_live_child_keeps_host_lock_after_operator_parent_is_killed (test_operator.RecoveryGuards.test_live_child_keeps_host_lock_after_operator_parent_is_killed) ... ok
+test_normal_child_preserves_exit_status_and_parent_lock (test_operator.RecoveryGuards.test_normal_child_preserves_exit_status_and_parent_lock) ... ok
+test_parent_only_sigint_keeps_host_lock_until_detached_media_cleanup (test_operator.RecoveryGuards.test_parent_only_sigint_keeps_host_lock_until_detached_media_cleanup) ... ok
 
 ----------------------------------------------------------------------
-Ran 17 tests in 0.095s
+Ran 19 tests in 0.577s
 
 OK

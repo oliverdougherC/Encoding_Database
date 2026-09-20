@@ -8,6 +8,7 @@ import math
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 
@@ -181,10 +182,24 @@ def journal_evidence(cell, host, plan, *, budget_pause=False):
 
 
 def run_timing_child(command, checkout, env, stream, lock):
-    # The child keeps the same flock open if this operator dies. Its per-cell
-    # journal lock alone cannot protect the host from other timing work.
-    return subprocess.run(command, cwd=checkout, env=env, stdout=stream, stderr=stream,
-                          pass_fds=(lock.fileno(),))
+    # Keep the host flock in the runner if this operator dies. A separate
+    # session lets us forward Ctrl+C once instead of racing terminal delivery.
+    process = subprocess.Popen(command, cwd=checkout, env=env, stdout=stream, stderr=stream,
+                               pass_fds=(lock.fileno(),), start_new_session=True)
+    try:
+        return subprocess.CompletedProcess(command, process.wait())
+    except KeyboardInterrupt:
+        # subprocess.run would SIGKILL the runner here, bypassing its detached
+        # media cleanup. Keep both lock descriptors until graceful cleanup ends;
+        # another Ctrl+C must not interrupt this wait and release exclusivity.
+        previous_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+        try:
+            if process.poll() is None:
+                process.send_signal(signal.SIGINT)
+            process.wait()
+        finally:
+            signal.signal(signal.SIGINT, previous_handler)
+        raise
 
 
 def environment_gate(host, encoder, env):
