@@ -1,0 +1,38 @@
+Numbered excerpts from the original build log; omitted routine dependency-hook chatter.
+1: [macOS] Preparing output directory...
+2: verified 7 canonical suite assets
+3: {
+4:   "ffmpegPath": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffmpeg",
+5:   "ffprobePath": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffprobe",
+6:   "fingerprint": "09d0a493de921e3eb88c245c3e0fbe8312eac87a7032f110d45a3a4a53a53890",
+7:   "lockPath": "/Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/client/resources/runtime/ffmpeg-lock.json",
+8:   "mode": "verified",
+9:   "platform": "mac",
+10:   "stagedRuntimeDir": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build/runtime_resources"
+11: }
+12: staged suite resources: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build/suite_resources/test_suite_v1
+13: suite pack: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/encodingdb-test-suite-v1.tar.gz
+14: [macOS] Running PyInstaller...
+15: Wrote /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build/spec/encodingdb-client-macos.spec.
+16: Now run pyinstaller.py to build the executable.
+17: 41 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7
+18: 41 INFO: Python: 3.14.6
+19: 50 INFO: Platform: macOS-27.0-arm64-arm-64bit-Mach-O
+20: 50 INFO: Python environment: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build/venv
+21: 53 INFO: Removing temporary files and cleaning cache in /Users/ofhd/Library/Application Support/pyinstaller
+76: 6032 WARNING: tkinter installation is broken. It will be excluded from the application
+80: 7716 WARNING: Library libnvidia-ml.so.1 required via ctypes not found
+94: 8537 INFO: EXE target arch: arm64
+95: 8537 INFO: Code signing identity: None
+110: 23092 INFO: Re-signing the EXE
+111: 23185 INFO: Building EXE from EXE-00.toc completed successfully.
+112: 23188 INFO: Build complete! The results are available in: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build/dist
+113: [macOS] Placing executable in repository root...
+114: runtime_lock: /Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/encodingdb-client-macos.runtime-lock.json
+115: release_manifest: /Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/encodingdb-client-macos.release-manifest.json
+116: signing: /Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/encodingdb-client-macos.signing.json
+117: smoke: /Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/encodingdb-client-macos.smoke.json
+118: sha256sums: /Users/ofhd/Developer/EncodingDB-worktrees/native-mac-b3ef24a/encodingdb-client-macos.SHA256SUMS
+119: [macOS] Build complete: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/encodingdb-client-macos
+120: [macOS] Suite pack: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/encodingdb-test-suite-v1.tar.gz
+121: [macOS] Hidden build artifacts: /Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/build

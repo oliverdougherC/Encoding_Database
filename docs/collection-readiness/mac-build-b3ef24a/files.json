@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "encodingdb-evidence-files/v1",
+  "files": {
+    "README.md": {
+      "sha256": "d38a4ee6205a866fb78bc3b1653c50db24eacf65921430be1421f75eca6f7db1",
+      "bytes": 4860
+    },
+    "build-log-excerpts.txt": {
+      "sha256": "6df08857bd15d3640320de6f403ddbdb7611ef6b5c6e96589f3329235c09dc16",
+      "bytes": 3172
+    },
+    "codesign-inspection.txt": {
+      "sha256": "01ac2f2b45727de9de947c1716d76ee42446c852f53333b8aeb8eb43cb93e059",
+      "bytes": 953
+    },
+    "encodingdb-client-macos.SHA256SUMS": {
+      "sha256": "80cca83dc5d2f6cb057916496284866c82fcce61df2abb97a3b2cf0fc8310ba0",
+      "bytes": 612
+    },
+    "encodingdb-client-macos.embedded-runtime.json": {
+      "sha256": "7293f2a74be003122b0d6c606a44b7a8d2cf4c93306182115d6ed2a148d63371",
+      "bytes": 20389
+    },
+    "encodingdb-client-macos.release-manifest.json": {
+      "sha256": "dd0700326317fde1b5480a49ddff205ac91f277085bc5edcd5eb606df0c77b48",
+      "bytes": 39879
+    },
+    "encodingdb-client-macos.runtime-lock.json": {
+      "sha256": "5db0f9c3d5178f2bad9a84cced0141df44b82532314c7e5e30f401f47e7262b0",
+      "bytes": 20777
+    },
+    "encodingdb-client-macos.signing.json": {
+      "sha256": "e89b4c2fe2aed95af2c65bf5c255619cefa7748cf98929b2f3f3bb9fc96d16d0",
+      "bytes": 135
+    },
+    "encodingdb-client-macos.smoke.json": {
+      "sha256": "3c93884456005de3321ca11a7c95914e7ebbe3b08cf1dc59b71b33dbd071bba3",
+      "bytes": 22418
+    },
+    "pack-deduplication.json": {
+      "sha256": "fa537e035b7b43fe5a70a0c1bb6dfebf565c86a7236cb9027b00237a1dc7d22e",
+      "bytes": 1595
+    },
+    "verification.json": {
+      "sha256": "86031053577a8e4ef9a59eac61699508cd7f6c7ec23a759411af81c897da7e04",
+      "bytes": 5333
+    }
+  }
+}
