@@ -1,0 +1,27 @@
+{
+  "capturedAt": "2026-09-14T06:44:13.271316+00:00",
+  "sourceSha": "a3dbd024df4b59f46567b2a8bf7835976eac10fb",
+  "platform": "Darwin ofhds-MacBook-Pro.local 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:05:48 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T6041 arm64",
+  "node": "v22.23.0",
+  "postgresImageDigest": [
+    "postgres@sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94"
+  ],
+  "containerId": "6a981083c832afcdde29f792958f2d134463301d13be6f60a2ff34e1bc8419b8",
+  "databaseMemoryBytes": 1073741824,
+  "databaseSwapLimitBytes": 1073741824,
+  "databaseShmBytes": 268435456,
+  "portBindings": {
+    "5432/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "55441"
+      }
+    ]
+  },
+  "limitations": [
+    "Synthetic metadata only; no retained media bytes or actual worker throughput",
+    "25 concurrent HTTP reader sessions; no Chromium rendering or frontend proxy",
+    "PostgreSQL16 ARM64 under local Docker Desktop; not P910 hardware",
+    "Node server RSS and DB cgroup memory measured separately; Docker VM and load generator memory outside these metrics"
+  ]
+}

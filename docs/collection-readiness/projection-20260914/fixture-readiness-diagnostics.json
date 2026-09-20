@@ -1,0 +1,23 @@
+{
+  "initialSeedExecutionSha": "a3dbd024df4b59f46567b2a8bf7835976eac10fb",
+  "rebuiltFixtureExecutionSha": "e8e762c562143df04caebe505eef75d08c1d975e",
+  "databaseCollation": "en_US.utf8",
+  "postgresVersion": "PostgreSQL16.15 Debian16.15-1.pgdg13+2 aarch64",
+  "hyphenatedAnalysisIds": {
+    "failure": "Scored projection withdrew PL due to qualified membership certificate mismatch",
+    "storedQualifiedMembershipHash": "86991e75cf288a81d7a152f2781461b1232f790af093da92089ceefa93edd9ee",
+    "sqlOrderedQualifiedMembershipHash": "42498e6166ea50491d9a4e299b5766823a00a5060b0e0e3ccc45adb0a1ce48ed",
+    "storedAndObservedFullStateHash": "b2699afb7dd9384f065e21b413ba7ded3d8fecb60a59c7f52cea3edfbca32e28",
+    "qualifiedCount": 1600,
+    "rawAcceptedCount": 2000,
+    "reportedToIntegration": true,
+    "fixtureAdjustment": "Changed synthetic QA IDs to alphanumeric SHA256 strings. Existing synthetic projections rebuilt through production persistence. No production code changed."
+  },
+  "unboundedFixtureRepair": {
+    "failure": "A single100000-row UPDATE exhausted max_locks_per_transaction via group advisory locks",
+    "sqlstate": "53200",
+    "rollbackVerifiedOldIdsRemaining": 100000,
+    "adjustment": "250-row update batches, unchanged1GiBmemory and PostgreSQL lock settings"
+  },
+  "measuredIntervalStarted": false
+}
