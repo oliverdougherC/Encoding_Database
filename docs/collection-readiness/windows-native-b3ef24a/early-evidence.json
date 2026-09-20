@@ -1,0 +1,33 @@
+{
+  "runId": 35485094474,
+  "jobId": 106009886316,
+  "headSha": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "merge": {
+    "message": "Merge b3ef24abb020bc6af5b5fe6b849ba3eae8314be2 into b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+    "parents": [
+      "b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+      "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2"
+    ],
+    "sha": "14403ea1c1519acce543dc9d76bacb13a2032159"
+  },
+  "artifacts": [
+    {
+      "id": 10597299065,
+      "name": "candidate-windows-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 1878178657,
+      "digest": "sha256:92a9045bca34c6614f7a090e74dba2aefe11ff2ebfea2a6e0a6ef7f18ff94650",
+      "created_at": "2026-09-20T03:04:07Z",
+      "expires_at": "2026-12-19T02:51:58Z"
+    },
+    {
+      "id": 10597069416,
+      "name": "windows-pre-gui-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 544,
+      "digest": "sha256:ac1d07e71e05d886e757db2a9bdd6fd38652a68bf824162dbb4d3cd8a9ed9462",
+      "created_at": "2026-09-20T03:04:09Z",
+      "expires_at": "2026-12-19T02:51:58Z"
+    }
+  ],
+  "snapshotSha256": "5230b56950c33f2ae1da2250cfe97e58ef356bc4ef3e7bcc2d2221b3941661a1",
+  "scope": "Pre-GUI resources and retained unverified candidate only; GUI and seven-clip acceptance pending"
+}

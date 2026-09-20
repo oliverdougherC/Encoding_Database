@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-20T03:04:08.2750628Z",
+  "status": "CANDIDATE_GUI_AND_CONSOLE_ACCEPTANCE_UNVERIFIED",
+  "sourceCommit": "14403ea1c1519acce543dc9d76bacb13a2032159",
+  "workflowCommit": "14403ea1c1519acce543dc9d76bacb13a2032159",
+  "totalRamBytes": 17174360064,
+  "availableRamBytes": 14295879680,
+  "disks": [
+    {
+      "freeBytes": 151634374656,
+      "drive": "D:",
+      "totalBytes": 161059172352
+    }
+  ],
+  "phasePaths": {
+    "console": "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\console",
+    "extractionParent": "D:\\a\\_temp",
+    "gui": "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui",
+    "nativeSmoke": "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\native-smoke"
+  }
+}
