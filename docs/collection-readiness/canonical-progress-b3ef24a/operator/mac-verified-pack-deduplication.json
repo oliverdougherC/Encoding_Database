@@ -1,0 +1,27 @@
+{
+  "reason": "Reclaim only task-created byte-identical suite packs; preserve corrupt-pack evidence, encodes and binaries",
+  "time": 1789876661.232245,
+  "rows": [
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-test-suite-v1.tar.gz",
+      "preservedPack": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "bytes": 1506890018,
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "replacement": "relative symlink to byte-verified preserved pack"
+    },
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-test-suite-v1.tar.gz",
+      "preservedPack": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "bytes": 1506890018,
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "replacement": "relative symlink to byte-verified preserved pack"
+    },
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/encodingdb-test-suite-v1.tar.gz",
+      "preservedPack": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "bytes": 1506890018,
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "replacement": "relative symlink to byte-verified preserved pack"
+    }
+  ]
+}

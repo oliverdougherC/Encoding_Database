@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "encodingdb-original-metadata-bindings/v1",
+  "files": [
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-first-canonical-ledger.json",
+      "archivedPath": "mac-first-invocation-ledger.json",
+      "sha256": "ea5daccc0da716d15e7ceacc6350a944f46a1bfc81acc84b9de2d3b77ebba57c",
+      "byteSize": 50224
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-first-canonical-allocation.json",
+      "archivedPath": "operator/mac-first-canonical-allocation.json",
+      "sha256": "0eb285fa69456f7401532e076d587bd389d8c942c94154b90941648679a97d50",
+      "byteSize": 4852
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-calibration-preflight.json",
+      "archivedPath": "operator/mac-calibration-preflight.json",
+      "sha256": "9b87f9b165ef272c0ef49fa9db9361ea6d81d5bebc75805921d334131c98fd95",
+      "byteSize": 2239
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-first-canonical.log",
+      "archivedPath": "operator/mac-first-canonical.log",
+      "sha256": "5b1b1ae7cc2562ddff0a13617379fe8fa4f8db322cfc12152673463235f24b11",
+      "byteSize": 200
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-first-canonical-audit.json",
+      "archivedPath": "operator/mac-first-canonical-audit.json",
+      "sha256": "64d83dc9e06f4f0d98f48ede6230bf25a4c6d3601933bb7bb17d95d0e7b8ad36",
+      "byteSize": 56869
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/run-first-mac-calibration.py",
+      "archivedPath": "operator/run-first-mac-calibration.py",
+      "sha256": "b4ac7d9a773ef1b61a02985af42bdcbf7a6b0dddc4cfc6c93e1a7eb6ee93ff31",
+      "byteSize": 1159
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-verified-pack-deduplication.json",
+      "archivedPath": "operator/mac-verified-pack-deduplication.json",
+      "sha256": "fa537e035b7b43fe5a70a0c1bb6dfebf565c86a7236cb9027b00237a1dc7d22e",
+      "byteSize": 1595
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-canonical-capacity-deduplication.json",
+      "archivedPath": "operator/mac-canonical-capacity-deduplication.json",
+      "sha256": "8f18dd1171218405b48a0a425452c9ed82efc162d64640a911b354585dc72869",
+      "byteSize": 2104
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/001-libsvtav1-6-20-warmup-r1.mp4.process.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/001-libsvtav1-6-20-warmup-r1.mp4.process.json",
+      "sha256": "3cab7eb06fadddb2ea9002c8abde2209037971ebf36628a75e35b6e0ceca63dd",
+      "byteSize": 33528
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/002-libsvtav1-6-20-measured-r1.mp4.process.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/002-libsvtav1-6-20-measured-r1.mp4.process.json",
+      "sha256": "cf1b616b79889e9611b8a319cfdceb5ee2971f29f3360d7c70d63239c7ad6466",
+      "byteSize": 33481
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/003-libsvtav1-6-20-measured-r2.mp4.process.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/003-libsvtav1-6-20-measured-r2.mp4.process.json",
+      "sha256": "0860dc64cb98dd41fc9e58b4c031dbabb4de8b225fecee68bbea4f04e5cb5b85",
+      "byteSize": 33491
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/attempt-000001.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/attempt-000001.json",
+      "sha256": "8c81d38c68b7f025397395424d3a6a83f08b9bf56b67a69ca2e3144b31548afb",
+      "byteSize": 12365
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/attempt-000002.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/attempt-000002.json",
+      "sha256": "19218e65a115ef0b29bbcd7070c9dd5f33a98c42981b200a4d2e78c24a997f1c",
+      "byteSize": 12935
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/attempt-000003.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/attempt-000003.json",
+      "sha256": "d6c52770664d94f6d9b7b2000367d844be9e2075b90d6b7c3a62dfaa2f58b724",
+      "byteSize": 12935
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/campaign-complete.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/campaign-complete.json",
+      "sha256": "5e272961e881f51aa9a9e75c6ed7a846bfdcc565fb7b28edf4af272c32540d52",
+      "byteSize": 70
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/environment-000002.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/environment-000002.json",
+      "sha256": "ccd1c84dee749141b225f550a12e60ad030e75703a617808ffaf0eee2cf3cfa9",
+      "byteSize": 854
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/environment-000003.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/environment-000003.json",
+      "sha256": "f46a02d7a8af0079873d55b2d0a37949f6f5438d3ea4b01a3082c864e9e3c065",
+      "byteSize": 853
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/in-flight.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/in-flight.json",
+      "sha256": "b704216cd8ec80ada208223db959ca9bb4d4d41f7ba7969600a481b8bd87ae93",
+      "byteSize": 165
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/manifest.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/manifest.json",
+      "sha256": "c334b5f897dc630ec61b616ae83aa1bbad8f376f12d92992df1e9d1125c8543d",
+      "byteSize": 15985
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/submission-000002.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/submission-000002.json",
+      "sha256": "495b328d580ec9f63732250a3a6aab08261637369200aaa96efacb383c077da3",
+      "byteSize": 39434
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/campaigns/campaign-c9670ced0b800098/submission-000003.json",
+      "archivedPath": "first-cell/campaigns/campaign-c9670ced0b800098/submission-000003.json",
+      "sha256": "3e2613ef76740e5d19362f44d8b1e90cd4dc6335ced975937ec8c6f66332f3a4",
+      "byteSize": 39434
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/queues/source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20/protocol-attempts/campaign-c9670ced0b800098.json",
+      "archivedPath": "first-cell/protocol-attempts/campaign-c9670ced0b800098.json",
+      "sha256": "0a4bb2390b345ae50a6930d38c63761b2cb56fbda5fd12da6999f0a7d422eeec",
+      "byteSize": 37176
+    },
+    {
+      "originalPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260920/canonical-matrix-b3ef24a/logs/source-a__session-1__fit-animation-1080p24-final-libsvtav1-6-crf20-0.log",
+      "archivedPath": "operator/first-cell-client.log",
+      "sha256": "fcad8c90a8beba9850866b505a056dce8f05546db8c313528e2741e1ab276405",
+      "byteSize": 487
+    }
+  ]
+}

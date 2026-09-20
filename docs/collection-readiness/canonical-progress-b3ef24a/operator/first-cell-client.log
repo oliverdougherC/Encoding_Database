@@ -1,0 +1,17 @@
+Preparing: runtime 
+Preparing: validate animation-1080p24-final
+Preparing: hash animation-1080p24-final.mkv
+Preparing: probe animation-1080p24-final.mkv
+Preparing: runtime 
+Campaign campaign-c9670ced0b800098: at most 5 encodes; resume with --resume-campaign campaign-c9670ced0b800098
+Batch 1/1: 1 protocol recipe(s)
+Batch Summary
+  Planned Tasks: 5
+  Batches: 1
+  Completed Encodes: 2
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 35s
+  Throughput: 205.5 encodes/hour
