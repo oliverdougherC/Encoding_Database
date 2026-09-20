@@ -20,6 +20,7 @@ $script:owned = @{}
 $script:process = $null
 $script:stdoutTask = $null
 $script:stderrTask = $null
+$script:operationStage = 'initializing'
 $script:harnessDeadline = [DateTime]::UtcNow.AddSeconds(($MeasurementMinutes*60)+$AcquisitionSeconds)
 $receipt = [ordered]@{
     schemaVersion = 1; status = 'RUNNING'; mode = $Mode; startedAt = [DateTime]::UtcNow.ToString('o')
@@ -28,7 +29,7 @@ $receipt = [ordered]@{
     computer = (Get-CimInstance Win32_ComputerSystem | Select-Object Manufacturer, Model)
     interactive = [Environment]::UserInteractive; sessionId = (Get-Process -Id $PID).SessionId
     scope = 'GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions'
-    phases = @(); error = $null; cleanupForced = $false
+    phases = @(); error = $null; primaryError = $null; cleanupErrors = @(); cleanupForced = $false
 }
 function Save-Json($Value, [string]$Path) { $Value | ConvertTo-Json -Depth 30 | Set-Content -LiteralPath $Path -Encoding utf8 }
 function Record-Event([string]$Kind, $Data) {
@@ -186,30 +187,40 @@ function Capture-Ui([string]$Label) {
     Record-Event 'ui-observed' @{ snapshot=$Label; controls=$controls.Count; screenshot="$base.png" }
     return $elements
 }
-function Confirm-ObservedExit {
-    [void](Capture-Ui 'before-action-Yes')
-    # UIA can expose this same native dialog/button twice, without InvokePattern.
-    # Select the actual owned dialog and its observed native IDYES button instead.
+function Get-OwnedExitConfirmation {
+    # Use the same native readiness predicate for polling and invocation.
     $dialogs=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'Exit' -and [EdbWindows]::Class($_) -eq '#32770' })
-    if ($dialogs.Count -ne 1) { throw "BLOCKED_GUI_AUTOMATION: expected one owned native Exit dialog; found $($dialogs.Count)." }
+    if ($dialogs.Count -gt 1) { throw "BLOCKED_GUI_AUTOMATION: multiple owned native Exit dialogs were observed." }
+    if ($dialogs.Count -eq 0) { return $null }
     $dialog=$dialogs[0]
     $buttons=@([EdbWindows]::Windows($dialog) | Where-Object {
         [EdbWindows]::GetParent($_) -eq $dialog -and [EdbWindows]::Class($_) -eq 'Button' -and
         [EdbWindows]::Text($_).Replace('&','') -eq 'Yes' -and [EdbWindows]::GetDlgCtrlID($_) -eq 6 -and
         [EdbWindows]::IsWindowVisible($_) -and [EdbWindows]::IsWindowEnabled($_)
     })
-    if ($buttons.Count -ne 1) { throw "BLOCKED_GUI_AUTOMATION: expected one observed enabled native Yes button; found $($buttons.Count)." }
+    if ($buttons.Count -gt 1) { throw "BLOCKED_GUI_AUTOMATION: multiple observed enabled native Yes buttons were found." }
+    if ($buttons.Count -eq 0) { return $null }
     [uint32]$dialogOwner=0; [uint32]$buttonOwner=0
     [void][EdbWindows]::GetWindowThreadProcessId($dialog,[ref]$dialogOwner)
     [void][EdbWindows]::GetWindowThreadProcessId($buttons[0],[ref]$buttonOwner)
     if ($dialogOwner -ne $buttonOwner) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button owner differs from its dialog.' }
+    return @{ dialog=$dialog; button=$buttons[0]; owner=$buttonOwner }
+}
+function Confirm-ObservedExit {
+    $script:operationStage='close:capture-confirmation'
+    [void](Capture-Ui 'before-action-Yes')
+    $script:operationStage='close:validate-native-confirmation'
+    $confirmation=Get-OwnedExitConfirmation
+    if ($null -eq $confirmation) { throw 'BLOCKED_GUI_AUTOMATION: owned native Exit/Yes confirmation is no longer ready.' }
+    $dialog=$confirmation.dialog; $button=$confirmation.button; $buttonOwner=$confirmation.owner
     [void][EdbWindows]::SetForegroundWindow($dialog)
     Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $dialog } 5 'BLOCKED_GUI_FOCUS: Exit dialog did not receive foreground focus.'
     [UIntPtr]$result=[UIntPtr]::Zero
     # BM_CLICK, bounded by SMTO_ABORTIFHUNG. Normal close/cancellation checks follow.
-    $sent=[EdbWindows]::SendMessageTimeout($buttons[0],0x00F5,[IntPtr]::Zero,[IntPtr]::Zero,2,2000,[ref]$result)
+    $script:operationStage='close:click-native-yes'
+    $sent=[EdbWindows]::SendMessageTimeout($button,0x00F5,[IntPtr]::Zero,[IntPtr]::Zero,2,2000,[ref]$result)
     if ($sent -eq [IntPtr]::Zero) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button did not accept the bounded click.' }
-    Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$buttons[0].ToInt64(); controlId=6 }
+    Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$button.ToInt64(); controlId=6 }
 }
 function Send-RunShortcut([ValidateSet('Start','Stop')][string]$Action) {
     [void](Capture-Ui "before-shortcut-$Action")
@@ -230,12 +241,14 @@ function Get-CompletionMarkers {
     return @(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'campaign-complete.json' -ErrorAction SilentlyContinue)
 }
 function Wait-Until([scriptblock]$Condition, [int]$Seconds, [string]$Failure) {
+    $script:operationStage=$Failure
     $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
     if ($deadline -gt $script:harnessDeadline) { $deadline = $script:harnessDeadline }
     do { if (& $Condition) { return }; Start-Sleep -Milliseconds 250 } while ([DateTime]::UtcNow -lt $deadline)
     throw $Failure
 }
 function Start-Owned([string]$Name, [bool]$Gui) {
+    $script:operationStage="phase:${Name}:launch"
     $phasePath = Join-Path $modeRoot $Name; New-Item -ItemType Directory $phasePath | Out-Null
     $state = Join-Path $env:RUNNER_TEMP ("encodingdb-native-$Mode-$Name-" + [Guid]::NewGuid().ToString('N') + '-' + [char]0x00E9)
     New-Item -ItemType Directory -Force (Join-Path $state 'tmp') | Out-Null
@@ -341,7 +354,7 @@ try {
                     } else {
                         $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
                         [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
-                        Wait-Until { return @(Get-Elements | Where-Object { $_.Current.Name.Replace('&','') -eq 'Yes' }).Count -gt 0 } 10 'Native Close confirmation did not appear.'
+                        Wait-Until { return $null -ne (Get-OwnedExitConfirmation) } 10 'Native Close confirmation did not appear.'
                         Confirm-ObservedExit; $phase.action='Close confirmed'
                         $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                     }
@@ -364,22 +377,42 @@ try {
 } catch {
     $receipt.status= if ($_.Exception.Message -like 'BLOCKED_GUI_*') {'BLOCKED'} else {'FAILED'}
     $receipt.error=$_.Exception.Message
+    $receipt.primaryError=@{ message=$_.Exception.Message; type=$_.Exception.GetType().FullName; stage=$script:operationStage; phase=$(if ($script:currentPhase) {$script:currentPhase.name} else {$null}); at=[DateTime]::UtcNow.ToString('o'); scriptStackTrace=$_.ScriptStackTrace }
+    # Persist the initiating failure before diagnostic capture or cleanup can fail.
+    Save-Json $receipt (Join-Path $modeRoot 'receipt.json')
+    Record-Event 'phase-failed' $receipt.primaryError
     if ($script:currentPhase) { $script:currentPhase.status=$receipt.status; try { [void](Capture-Ui 'failure') } catch { Record-Event 'capture-failed' $_.Exception.Message } }
 } finally {
-    try {
-    if ($script:process) {
-        $alive=@(Observe-Processes)
-        if ($alive.Count) {
-            $receipt.cleanupForced=$true
-            foreach ($item in $alive | Sort-Object ProcessId -Descending) {
-                $candidate = Get-Process -Id $item.ProcessId -ErrorAction SilentlyContinue
-                if ($candidate -and [Math]::Abs(($candidate.StartTime.ToUniversalTime() - $item.CreationDate.ToUniversalTime()).TotalMilliseconds) -lt 1) { $candidate.Kill() }
-            }
-            Start-Sleep -Seconds 1
-        }
-        Save-ProcessOutput
+    function Record-CleanupFailure([string]$Stage, [string]$Message, $OwnedProcess) {
+        $failure=@{ stage=$Stage; message=$Message; at=[DateTime]::UtcNow.ToString('o') }
+        if ($OwnedProcess) { $failure.processId=$OwnedProcess.ProcessId; $failure.creationDate=$OwnedProcess.CreationDate; $failure.name=$OwnedProcess.Name }
+        $receipt.cleanupErrors+=@($failure)
+        $receipt.status='FAILED'
+        if (-not $receipt.error) { $receipt.error="Process cleanup/evidence failed: $Message" }
+        Record-Event 'cleanup-failed' $failure
     }
-    } catch { $receipt.status='FAILED'; $receipt.error="Process cleanup/evidence failed: $($_.Exception.Message)" }
+    try {
+        if ($script:process) {
+            $alive=@(Observe-Processes)
+            if ($alive.Count) {
+                $receipt.cleanupForced=$true
+                foreach ($item in $alive | Sort-Object ProcessId -Descending) {
+                    try {
+                        $candidate = Get-Process -Id $item.ProcessId -ErrorAction SilentlyContinue
+                        if ($candidate -and [Math]::Abs(($candidate.StartTime.ToUniversalTime() - $item.CreationDate.ToUniversalTime()).TotalMilliseconds) -lt 1) { $candidate.Kill() }
+                    } catch { Record-CleanupFailure 'kill-owned-process' $_.Exception.Message $item }
+                }
+                Start-Sleep -Seconds 1
+            }
+            $script:currentPhase.survivors=@(Observe-Processes)
+            if ($script:currentPhase.survivors.Count) { Record-CleanupFailure 'verify-owned-exit' 'Owned processes survived cleanup.' $null }
+            if ($script:process.HasExited) {
+                $script:currentPhase.exitCode=$script:process.ExitCode
+                if ($script:stdoutTask.IsCompleted -and $script:stderrTask.IsCompleted) { Save-ProcessOutput }
+                else { Record-CleanupFailure 'capture-owned-output' 'Owned output streams remain open after cleanup; no unbounded read attempted.' $null }
+            }
+        }
+    } catch { Record-CleanupFailure 'cleanup-or-evidence' $_.Exception.Message $null }
     $receipt.finishedAt=[DateTime]::UtcNow.ToString('o')
     Save-Json $receipt (Join-Path $modeRoot 'receipt.json')
 }
