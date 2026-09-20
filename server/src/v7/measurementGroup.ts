@@ -31,11 +31,27 @@ export interface MeasurementGroupEligibility {
 }
 const object = (value: unknown): Record<string, unknown> | null => value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
 export function receiptFromRun(run: MeasurementGroupRun): unknown { return object(run.preRunEnvironmentCheck)?.measurementGroup; }
+// Prisma serializes JSON (jsonb) floats as 15-significant-digit decimal text, so a
+// receipt entry written as 1473.9108999999999 reads back as 1473.9109. Exact double or
+// canonical-text equality then contradicts the byte-identical sealed receipt it was
+// stored from. Receipt elapsed times are therefore compared with a tolerance far above
+// that decimal round-trip error yet orders of magnitude below the difference between
+// two genuine encoding attempts (milliseconds).
+export function receiptWallTimesEqual(a: number, b: number): boolean {
+  if (a === b) return true;
+  return Math.abs(a - b) <= Math.max(1e-9, Math.min(Math.abs(a), Math.abs(b)) * 1e-12);
+}
+export function receiptsEquivalent(a: MeasurementGroupReceipt, b: MeasurementGroupReceipt): boolean {
+  return a.schemaVersion === b.schemaVersion && a.campaignId === b.campaignId && a.repetitionGroupId === b.repetitionGroupId
+    && a.completed === b.completed && a.countedAttempts.length === b.countedAttempts.length
+    && a.countedAttempts.every((attempt, index) => attempt.repetitionIndex === b.countedAttempts[index]!.repetitionIndex
+      && receiptWallTimesEqual(attempt.encodeWallTimeMs, b.countedAttempts[index]!.encodeWallTimeMs));
+}
 export function parseMeasurementGroupReceipt(value: unknown, run?: MeasurementGroupRun): MeasurementGroupReceipt | null {
   if (value == null) return null;
   const receipt = receiptSchema.parse(value);
   if (run && (receipt.campaignId !== run.campaignId || receipt.repetitionGroupId !== run.repetitionGroupId
-    || !receipt.countedAttempts.some(attempt => attempt.repetitionIndex === run.repetitionIndex && attempt.encodeWallTimeMs === run.encodeWallTimeMs))) throw new Error('Measurement group receipt does not bind this exact run identity and elapsed time');
+    || !receipt.countedAttempts.some(attempt => attempt.repetitionIndex === run.repetitionIndex && receiptWallTimesEqual(attempt.encodeWallTimeMs, run.encodeWallTimeMs!)))) throw new Error('Measurement group receipt does not bind this exact run identity and elapsed time');
   return receipt;
 }
 export function measurementGroupKey(run: MeasurementGroupRun): string | null {

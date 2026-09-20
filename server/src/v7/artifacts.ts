@@ -5,7 +5,7 @@ import { pipeline as pipelineAsync } from 'node:stream/promises';
 import { runNativeProcess, nativeProcessSignal, stopNativeProcesses } from './nativeProcess.js';
 import { loadActiveRecommendationContextIdentity, loadRecommendationEvidencePolicyForContext } from './recommendationPolicy.js';
 import { installedWorkerProvenance } from './workerProvenance.js';
-import { MEASUREMENT_GROUP_STATE_VERSION, CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
+import { MEASUREMENT_GROUP_STATE_VERSION, CANONICAL_MEASUREMENT_RULES, parseMeasurementGroupReceipt, receiptFromRun, receiptWallTimesEqual, receiptsEquivalent, createMeasurementGroupVerifier, loadMeasurementGroupEligibility, type MeasurementGroupEligibility } from './measurementGroup.js';
 import { applyEffectiveReview } from './reviews.js';
 import { requireOperator, operatorIdentity } from './operatorAuth.js';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -3287,8 +3287,12 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
             if (sibling.repetitionIndex === input.repetitionIndex) throw new HttpError(409, 'A measurement group repetition already has an immutable run');
             if (['benchmarkProtocolId', 'testClipId', 'workloadId', 'recipeId', 'environmentId'].some(key => (sibling as any)[key] !== (input as any)[key])) throw new HttpError(409, 'Measurement group identity cannot span different experiment contexts');
             const prior = parseMeasurementGroupReceipt(receiptFromRun(sibling));
-            if (prior && (!prior.countedAttempts.some(attempt => attempt.repetitionIndex === input.repetitionIndex && attempt.encodeWallTimeMs === input.encodeWallTimeMs)
-              || (receipt && canonicalJsonString(prior as never) !== canonicalJsonString(receipt as never)))) throw new HttpError(409, 'Measurement group completed receipt is immutable');
+            if (!prior !== !receipt) throw new HttpError(409, 'Measurement group members must all carry the completed group receipt');
+            if (prior && receipt) {
+              const inputWall = input.encodeWallTimeMs;
+              const counted = inputWall != null && prior.countedAttempts.some(attempt => attempt.repetitionIndex === input.repetitionIndex && receiptWallTimesEqual(attempt.encodeWallTimeMs, inputWall));
+              if (!counted || !receiptsEquivalent(prior, receipt)) throw new HttpError(409, 'Measurement group completed receipt is immutable');
+            }
           }
         }
         if (input.admission) await assertAdmission(tx, input.artifact.byteSize, input.admission);

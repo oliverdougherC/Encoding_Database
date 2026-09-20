@@ -5,7 +5,7 @@ import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { PrismaClient, Prisma } from '@prisma/client';
-import { CANONICAL_MEASUREMENT_RULES, evaluateMeasurementGroup, loadMeasurementGroupEligibility, parseMeasurementGroupReceipt, measurementGroupStateHashSql, measurementGroupScopeForDerived } from '../dist/v7/measurementGroup.js';
+import { CANONICAL_MEASUREMENT_RULES, evaluateMeasurementGroup, loadMeasurementGroupEligibility, parseMeasurementGroupReceipt, measurementGroupStateHashSql, measurementGroupScopeForDerived, receiptWallTimesEqual, receiptsEquivalent } from '../dist/v7/measurementGroup.js';
 import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, rebuildDerivedResultAggregateFromAnalyses, persistDerivedResultAggregate } from '../dist/v7/aggregation.js';
 import { loadPublicCorpusPage } from '../dist/v7/corpusQuery.js';
 import { loadRetainedReferenceEvidence } from '../dist/v7/referenceContext.js';
@@ -72,6 +72,27 @@ test('three unstable four-attempt groups cannot manufacture HIGH confidence or P
   assert.ok(legacy.derivedResult.plTotal > 0, 'historical formula evaluation is not retroactively rewritten');
 });
 
+test('receipt comparison survives the 15-significant-digit jsonb round trip and still rejects real differences', () => {
+  // This is the exact observed round trip: Prisma serializes JSON floats as
+  // 15-significant-digit decimal text, so 1473.9108999999999 reads back as 1473.9109.
+  assert.equal(receiptWallTimesEqual(1473.9109, 1473.9108999999999), true);
+  assert.equal(receiptWallTimesEqual(1473.9108999999999, 1473.9109), true);
+  assert.equal(receiptWallTimesEqual(1473.9108999999999, 1473.9108999999999), true);
+  // Genuine attempts differ by milliseconds; a 1 ms difference is not round-trip noise.
+  assert.equal(receiptWallTimesEqual(1473.9109, 1474.9109), false);
+  assert.equal(receiptWallTimesEqual(0.5, 0.5005), false);
+  const exact = receipt([1458.0055, 1473.9108999999999]);
+  const stored = receipt([1458.0055, 1473.9109]);
+  assert.equal(receiptsEquivalent(exact, stored), true, 'sealed receipt equals its stored round trip');
+  assert.equal(receiptsEquivalent(exact, receipt([1458.0055, 1500])), false, 'different measured attempt still contradicts');
+  assert.equal(receiptsEquivalent(exact, receipt([1458.0055, 1473.9108999999999], 'other-group')), false);
+  // A stored round trip still binds the run whose elapsed time it records.
+  const member = group([1458.0055, 1473.9108999999999])[1];
+  member.preRunEnvironmentCheck = { snapshot: member.preRunEnvironmentCheck.snapshot, measurementGroup: stored };
+  assert.doesNotThrow(() => parseMeasurementGroupReceipt(stored, member));
+  assert.throws(() => parseMeasurementGroupReceipt(stored, { ...member, encodeWallTimeMs: 2000 }));
+});
+
 const dbUrl = process.env.MEASUREMENT_GROUP_TEST_DATABASE_URL ?? process.env.CALIBRATION_TEST_DATABASE_URL;
 test('live complete-group verification is independent of frontier subset, validates sibling bytes, and rechecks later reviews', { skip: !dbUrl }, async () => {
   const db = new PrismaClient({ datasources: { db: { url: dbUrl } } });
@@ -98,6 +119,19 @@ test('live complete-group verification is independent of frontier subset, valida
     }
     await assert.rejects(persistence.createOrFetchRun({ ...input(0), payloadHash: hash('different-key') }), /already has an immutable run/);
     await assert.rejects(persistence.createOrFetchRun({ ...input(1), payloadHash: hash('extra-index'), repetitionIndex: 3, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: receipt([1000, 1001, 1002], suffix, suffix) } }), /receipt does not bind|receipt is immutable/);
+    // Regression: a sealed receipt must stay valid after a sibling's elapsed time has
+    // made the 15-significant-digit JSONB round trip (observed live as "Measurement
+    // group completed receipt is immutable" rejections of byte-identical sealed receipts).
+    const g2 = `${suffix}-precision`;
+    const sealed = receipt([1458.0055, 1473.9108999999999], g2, g2);
+    const sealedInput = (index, wall) => ({ ...input(index), payloadHash: hash(`precision-${index}-${suffix}`), physicalSourceId: g2, campaignId: g2, repetitionGroupId: g2, repetitionIndex: index + 1, encodeWallTimeMs: wall, encodeFps: 240000 / wall, realTimeRatio: 10000 / wall, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: sealed } });
+    const sibling = await persistence.createOrFetchRun(sealedInput(1, 1473.9108999999999));
+    assert.equal(sibling.created, true);
+    const storedSibling = await db.benchmarkRun.findUnique({ where: { id: sibling.bundle.run.id } });
+    assert.equal(storedSibling.preRunEnvironmentCheck.measurementGroup.countedAttempts[1].encodeWallTimeMs, 1473.9109, 'documented Prisma 15-significant-digit round trip');
+    const replay = await persistence.createOrFetchRun(sealedInput(0, 1458.0055));
+    assert.equal(replay.created, true, 'sealed receipt remains valid against its stored round trip');
+    await assert.rejects(persistence.createOrFetchRun({ ...sealedInput(0, 1458.0055), payloadHash: hash(`unbound-${suffix}`), repetitionIndex: 3, preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 } } }), /must all carry the completed group receipt/);
     const loaded = await loadRetainedReferenceEvidence(db, { benchmarkProtocolId: protocol.id, qualityModelId: 'test-model', suiteVersion: 'TEST ONLY' });
     assert.equal(loaded.length, 2);
     const evidence = { evidenceId: analyses[0].id, qualityAnalysisId: analyses[0].id, benchmarkRunId: runs[0].id, artifactId: artifacts[0].id, artifactSha256: sha, artifactStorageState: 'RETAINED', analysisWorkerVersion: 'authoritative-analysis/test-worker', recipeFingerprint: suffix, environmentFingerprint: suffix, machineSourceId: suffix, workloadId: suffix, contentClass: 'talking-head', hardwareFamily: 'software', encoderFamily: 'h264', encoderImplementation: 'libx264', nativeRateControl: {}, preset: 'unspecified', runStatus: 'ACCEPTED', analysisStatus: 'COMPLETE', vmafMean: 95, vmafP5: 90, xpsnr: 37, videoBitrateBps: 1000000, realTimeRatio: 10000 / 24000 };
