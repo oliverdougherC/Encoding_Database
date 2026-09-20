@@ -3462,7 +3462,9 @@ export function createPrismaArtifactPipelinePersistence(client: PrismaClient, co
           data: {
             storageState: input.storageState,
             stateReason: input.stateReason ?? null,
-            stateDetails: input.stateDetails as any,
+            // Lifecycle transitions merge over prior stateDetails so the operator requeue audit and
+            // earlier rejection evidence survive re-rejection/retry instead of being replaced.
+            stateDetails: mergeRetainedStateDetails(bound.stateDetails, input.stateDetails) as any,
             verifiedAt: input.storageState === 'VERIFIED' ? new Date() : undefined,
             retainedAt: input.storageState === 'RETAINED' ? new Date() : undefined,
             deletedAt: input.storageState === 'DELETED' ? new Date() : undefined,

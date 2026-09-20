@@ -360,7 +360,10 @@ class MemoryPersistence {
     const artifact = record.artifacts.find((entry) => entry.id === input.artifactId);
     artifact.storageState = input.storageState;
     artifact.stateReason = input.stateReason ?? null;
-    artifact.stateDetails = input.stateDetails ?? null;
+    artifact.stateDetails = {
+      ...(artifact.stateDetails && typeof artifact.stateDetails === 'object' && !Array.isArray(artifact.stateDetails) ? artifact.stateDetails : {}),
+      ...(input.stateDetails ?? {}),
+    };
     if (input.storageState === 'REJECTED') {
       record.run.status = 'REJECTED';
       record.run.statusReason = input.stateReason ?? 'Encoded artifact rejected';
@@ -1869,4 +1872,15 @@ test('operator requeue returns a defect-rejected run to PENDING preserving immut
   assert.equal(completed.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
   assert.equal(completed.artifact.stateDetails.contentType, 'video/mp4');
   assert.equal(completed.artifact.stateDetails.deduplicated, false);
+
+  // A later re-rejection must not erase the operator audit either: the lifecycle
+  // transition merges, so the fresh rejection phase and operatorRequeue coexist.
+  await harness.persistence.markArtifactState({
+    artifactId: stored.artifact.id, storageState: 'REJECTED', stateReason: 'media contract failed again',
+    stateDetails: { failedAt: 'fixture-second', phase: 'upload', quarantineKey: '.quarantine/second' },
+  });
+  const reRejected = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.equal(reRejected.artifact.stateDetails.quarantineKey, '.quarantine/second');
+  assert.equal(reRejected.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
+  assert.equal(reRejected.artifact.stateDetails.uploadedAt, 'fixture-completion');
 });
