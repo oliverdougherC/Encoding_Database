@@ -160,6 +160,8 @@ export function measurementGroupScopeForMembers(runIds: readonly string[]): Pris
     AND counted."physicalSourceId" = r."physicalSourceId" AND counted."campaignId" = r."campaignId" AND counted."repetitionGroupId" = r."repetitionGroupId")`;
 }
 export function measurementGroupScopeForDerived(derivedId: Prisma.Sql): Prisma.Sql {
-  return Prisma.sql`EXISTS (SELECT 1 FROM "DerivedResultMember" member JOIN "BenchmarkRun" counted ON counted.id = member."benchmarkRunId" WHERE member."derivedResultId" = ${derivedId}
-    AND counted."physicalSourceId" = r."physicalSourceId" AND counted."campaignId" = r."campaignId" AND counted."repetitionGroupId" = r."repetitionGroupId")`;
+  // Publication stores these distinct group keys atomically with the members.
+  // Hash every sibling as before; missing/extra coverage fails the stored v3 hash.
+  return Prisma.sql`EXISTS (SELECT 1 FROM "DerivedResultGroupDependency" dependency WHERE dependency."derivedResultId" = ${derivedId}
+    AND dependency."physicalSourceId" = r."physicalSourceId" AND dependency."campaignId" = r."campaignId" AND dependency."repetitionGroupId" = r."repetitionGroupId")`;
 }

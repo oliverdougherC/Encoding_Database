@@ -4,8 +4,8 @@ import crypto from 'node:crypto';
 import { mkdtemp, writeFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { PrismaClient } from '@prisma/client';
-import { CANONICAL_MEASUREMENT_RULES, evaluateMeasurementGroup, loadMeasurementGroupEligibility, parseMeasurementGroupReceipt } from '../dist/v7/measurementGroup.js';
+import { PrismaClient, Prisma } from '@prisma/client';
+import { CANONICAL_MEASUREMENT_RULES, evaluateMeasurementGroup, loadMeasurementGroupEligibility, parseMeasurementGroupReceipt, measurementGroupStateHashSql, measurementGroupScopeForDerived } from '../dist/v7/measurementGroup.js';
 import { DEFAULT_RECOMMENDATION_EVIDENCE_POLICY, rebuildDerivedResultAggregateFromAnalyses, persistDerivedResultAggregate } from '../dist/v7/aggregation.js';
 import { loadPublicCorpusPage } from '../dist/v7/corpusQuery.js';
 import { loadRetainedReferenceEvidence } from '../dist/v7/referenceContext.js';
@@ -191,6 +191,70 @@ test('live complete-group verification is independent of frontier subset, valida
     await db.benchmarkRun.update({ where: { id: runs[1].id }, data: { preRunEnvironmentCheck: input(1).preRunEnvironmentCheck } });
     await rebuildPublic();
     assert.equal((await page()).pl.total, mixed.derivedResult.plTotal);
+    // Two independent qualified groups exercise partial dependency loss while another remains.
+    const coverageRecipe = await db.recipe.create({ data: { fingerprint: `${suffix}-coverage`, canonicalJson: {}, codecFamily: 'h264', encoderImplementation: 'libx264', preset: 'coverage-test', pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0', requestedRateControlMode: 'CRF', effectiveRateControlMode: 'CRF', requestedRateControl: {}, effectiveRateControl: {} } });
+    for (const groupIndex of [0, 1]) for (const repetitionIndex of [1, 2]) {
+      const groupId = `${suffix}-coverage-${groupIndex}`;
+      const created = await persistence.createOrFetchRun({ ...input(repetitionIndex - 1), recipeId: coverageRecipe.id, payloadHash: hash(`${groupId}-${repetitionIndex}`), physicalSourceId: groupId, repetitionGroupId: groupId,
+        preRunEnvironmentCheck: { snapshot: { telemetry_sources: 'cpu_psutil_thread_window_v1', background_cpu_pct: 0 }, measurementGroup: receipt([24000, 24001], groupId, suffix) } });
+      await db.benchmarkRun.update({ where: { id: created.bundle.run.id }, data: { status: 'ACCEPTED' } });
+      await db.artifact.update({ where: { id: created.bundle.artifact.id }, data: { storageState: 'RETAINED', storageProvider: 'localfs', storageKey: 'retained.bin', storageUrl: path.join(root, 'retained.bin') } });
+      await db.qualityAnalysis.create({ data: { benchmarkRunId: created.bundle.run.id, artifactId: created.bundle.artifact.id, status: 'COMPLETE', metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', analysisProvenance: { workerBuildFingerprint: 'b'.repeat(64) }, vmafMean: 95, vmafP5: 90, videoBitrateBps: 1000000 } });
+    }
+    const coverage = await rebuildPublic(coverageRecipe);
+    const coverageId = Prisma.sql`${coverage.derivedResultId}::text`;
+    const oldScope = Prisma.sql`EXISTS (SELECT 1 FROM "DerivedResultMember" member JOIN "BenchmarkRun" counted ON counted.id = member."benchmarkRunId" WHERE member."derivedResultId" = ${coverageId} AND counted."physicalSourceId" = r."physicalSourceId" AND counted."campaignId" = r."campaignId" AND counted."repetitionGroupId" = r."repetitionGroupId")`;
+    const scopeProof = async () => {
+      const newScope = measurementGroupScopeForDerived(coverageId);
+      const [proof] = await db.$queryRaw(Prisma.sql`SELECT
+        (SELECT array_agg(r.id ORDER BY r.id COLLATE "C") FROM "BenchmarkRun" r WHERE ${oldScope}) AS "oldIds",
+        (SELECT array_agg(r.id ORDER BY r.id COLLATE "C") FROM "BenchmarkRun" r WHERE ${newScope}) AS "newIds",
+        ${measurementGroupStateHashSql(oldScope)} AS "oldHash", ${measurementGroupStateHashSql(newScope)} AS "newHash"`);
+      return proof;
+    };
+    const storedCoverage = await db.derivedResult.findUniqueOrThrow({ where: { id: coverage.derivedResultId }, include: { members: true } });
+    const readCoverage = async () => (await loadPublicCorpusPage(db, {}, { take: 1, id: `${protocol.id}::${suffix}::${coverageRecipe.id}::${environment.id}::test-model`, publicReferenceContextVersions: new Set([context.contextVersion]) })).rows[0];
+    const baselineProof = await scopeProof();
+    assert.equal(baselineProof.oldIds.length, 4);
+    assert.deepEqual(baselineProof.newIds, baselineProof.oldIds);
+    assert.equal(baselineProof.newHash, baselineProof.oldHash);
+    assert.equal(baselineProof.newHash, storedCoverage.evidenceSummary.measurementGroupSnapshot.stateHash);
+    assert.equal(storedCoverage.evidenceSummary.measurementGroupSnapshot.version, 'measurement-group-state/v3');
+    assert.equal((await readCoverage()).pl.total, coverage.derivedResult.plTotal);
+    // An empty extra key selects no rows; its only effect is conservative future invalidation.
+    const emptyGroup = `${suffix}-empty-dependency`;
+    await db.$executeRaw(Prisma.sql`INSERT INTO "DerivedResultGroupDependency" ("derivedResultId","physicalSourceId","campaignId","repetitionGroupId") VALUES (${coverageId},${emptyGroup},${suffix},${emptyGroup})`);
+    assert.deepEqual(await scopeProof(), baselineProof);
+    assert.equal((await readCoverage()).pl.total, coverage.derivedResult.plTotal);
+    const emptyRun = { ...input(0) }; delete emptyRun.artifact;
+    const emptyArrival = await db.benchmarkRun.create({ data: { ...emptyRun, recipeId: coverageRecipe.id, payloadHash: hash(emptyGroup), physicalSourceId: emptyGroup, repetitionGroupId: emptyGroup } });
+    assert.equal((await readCoverage()).pl.total, null, 'an arrival under an extra empty key conservatively withdraws eligibility');
+    await db.benchmarkRun.delete({ where: { id: emptyArrival.id } });
+    await db.$executeRaw(Prisma.sql`DELETE FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${coverageId} AND "repetitionGroupId" = ${emptyGroup}`);
+    const dependencies = await db.$queryRaw(Prisma.sql`SELECT * FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${coverageId}`);
+    assert.equal(dependencies.length, 2);
+    const restoreDependency = dependency => db.$executeRaw(Prisma.sql`INSERT INTO "DerivedResultGroupDependency" ("derivedResultId","physicalSourceId","campaignId","repetitionGroupId") VALUES (${coverageId},${dependency.physicalSourceId},${dependency.campaignId},${dependency.repetitionGroupId})`);
+    await db.$executeRaw(Prisma.sql`DELETE FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${coverageId} AND "repetitionGroupId" = ${dependencies[0].repetitionGroupId}`);
+    assert.notEqual((await scopeProof()).newHash, baselineProof.oldHash);
+    assert.equal((await readCoverage()).pl.total, null, 'partial dependency loss cannot publish PL');
+    assert.ok((await db.derivedResult.findUniqueOrThrow({ where: { id: coverage.derivedResultId } })).invalidatedAt);
+    await restoreDependency(dependencies[0]);
+    await db.derivedResult.update({ where: { id: coverage.derivedResultId }, data: { invalidatedAt: null, invalidationReason: null } });
+    assert.equal((await readCoverage()).pl.total, coverage.derivedResult.plTotal);
+    await restoreDependency({ physicalSourceId: suffix, campaignId: suffix, repetitionGroupId: alternateReceipt.repetitionGroupId });
+    assert.equal((await scopeProof()).newIds.length, 6, 'extra dependency includes cross-recipe siblings instead of hiding them');
+    assert.equal((await readCoverage()).pl.total, null, 'extra run coverage cannot publish PL');
+    await db.$executeRaw(Prisma.sql`DELETE FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${coverageId} AND "repetitionGroupId" = ${alternateReceipt.repetitionGroupId}`);
+    await db.derivedResult.update({ where: { id: coverage.derivedResultId }, data: { invalidatedAt: null, invalidationReason: null } });
+    await db.$executeRaw(Prisma.sql`DELETE FROM "DerivedResultGroupDependency" WHERE "derivedResultId" = ${coverageId}`);
+    assert.equal((await readCoverage()).pl.total, null, 'complete dependency loss fails the pre-sort eligibility fence');
+    for (const dependency of dependencies) await restoreDependency(dependency);
+    assert.deepEqual(await scopeProof(), baselineProof);
+    assert.equal((await readCoverage()).pl.total, coverage.derivedResult.plTotal);
+    const afterCoverage = await db.derivedResult.findUniqueOrThrow({ where: { id: coverage.derivedResultId }, include: { members: true } });
+    assert.equal(afterCoverage.plTotal, storedCoverage.plTotal);
+    assert.deepEqual(afterCoverage.evidenceSummary, storedCoverage.evidenceSummary, 'coverage faults never rewrite the version3 certificate');
+    assert.deepEqual(afterCoverage.members, storedCoverage.members, 'coverage faults never rewrite historical members');
     const suspendedReview = await db.evidenceReview.create({ data: { id: crypto.randomUUID(), analysisId: analyses[1].id, benchmarkRunId: runs[1].id, artifactId: artifacts[1].id, artifactSha256: sha, metricModelId: 'test-model', analysisWorkerVersion: 'authoritative-analysis/test-worker', reviewerId: 'SYNTHETIC TEST NOT HUMAN', decision: 'INVESTIGATE', rationale: 'Synthetic sibling-review regression', evidenceLinks: [] } });
     await assert.rejects(verifyCalibrationRetainedEvidence(db, document, root), /ineligible-member/);
     assert.equal((await page()).pl.total, null, 'sibling review immediately invalidates the published group certificate');
