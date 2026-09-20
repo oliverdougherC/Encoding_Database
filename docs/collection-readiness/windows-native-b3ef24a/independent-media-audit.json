@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "sourceMerge": "14403ea1c1519acce543dc9d76bacb13a2032159",
+  "artifactId": 10597512085,
+  "rawFilesRewritten": false,
+  "mapping": "Original Windows artifact paths mapped after .test-reports/windows-native-gui/ to downloaded archive root; original receipts unchanged",
+  "phases": [
+    {
+      "mode": "gui",
+      "phase": "close",
+      "attemptCounts": {
+        "warmup": 1,
+        "measured": 1
+      },
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "verifiedMeasuredArtifacts": [
+        {
+          "relativePath": "gui/close/queue-\u00e9/campaigns/campaign-26d7e5e4d1981fa1/002-libx264-fast-24-measured-r1.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        }
+      ]
+    },
+    {
+      "mode": "gui",
+      "phase": "complete",
+      "attemptCounts": {
+        "warmup": 1,
+        "measured": 4
+      },
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "verifiedMeasuredArtifacts": [
+        {
+          "relativePath": "gui/complete/queue-\u00e9/campaigns/campaign-048cdf259e715a96/002-libx264-fast-24-measured-r1.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "relativePath": "gui/complete/queue-\u00e9/campaigns/campaign-048cdf259e715a96/003-libx264-fast-24-measured-r2.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "relativePath": "gui/complete/queue-\u00e9/campaigns/campaign-048cdf259e715a96/004-libx264-fast-24-measured-r3.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "relativePath": "gui/complete/queue-\u00e9/campaigns/campaign-048cdf259e715a96/005-libx264-fast-24-measured-r4.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        }
+      ]
+    },
+    {
+      "mode": "gui",
+      "phase": "prepare-stop",
+      "attemptCounts": {},
+      "clips": [],
+      "verifiedMeasuredArtifacts": []
+    },
+    {
+      "mode": "gui",
+      "phase": "stop",
+      "attemptCounts": {
+        "warmup": 1,
+        "measured": 1
+      },
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "verifiedMeasuredArtifacts": [
+        {
+          "relativePath": "gui/stop/queue-\u00e9/campaigns/campaign-01818d82bfd9593e/002-libx264-fast-24-measured-r1.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        }
+      ]
+    },
+    {
+      "mode": "console",
+      "phase": "seven-clips",
+      "attemptCounts": {
+        "warmup": 7,
+        "measured": 14
+      },
+      "clips": [
+        "animation-1080p24-final",
+        "athletic-action-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "film-grain-1080p24-final",
+        "natural-detail-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "verifiedMeasuredArtifacts": [
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/010-libx264-fast-24-measured-r1.mp4",
+          "sha256": "67188975be34bae55689dbfba32624332b284fc479daaa2f58785fcea2822438",
+          "bytes": 6281801
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/011-libx264-fast-24-measured-r1.mp4",
+          "sha256": "9a8015c8a6d4ab7ac49eba6d3e56e0165e368adfb7a1cdbb91998b706e449ec0",
+          "bytes": 6914919
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/020-libx264-fast-24-measured-r2.mp4",
+          "sha256": "f83e13a196517d8874dbb23e284c525b97e9722522eb30685b5dc254ba6e7342",
+          "bytes": 8399526
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/016-libx264-fast-24-measured-r2.mp4",
+          "sha256": "2af0b4017d873470a10380c78786f1d6e6fbbccee456964bfe2d72c68a33dbce",
+          "bytes": 226375
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/017-libx264-fast-24-measured-r2.mp4",
+          "sha256": "95a1224b57f568778d318f2b2e0c0fef3ec6cf55e1dca71a4f2223aaf015882f",
+          "bytes": 9035966
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/021-libx264-fast-24-measured-r2.mp4",
+          "sha256": "550421739c4c01d838b05552b3b199b34b7aa0fa0f4979a32722941a2577a79b",
+          "bytes": 2539294
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/018-libx264-fast-24-measured-r2.mp4",
+          "sha256": "9a8015c8a6d4ab7ac49eba6d3e56e0165e368adfb7a1cdbb91998b706e449ec0",
+          "bytes": 6914919
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/014-libx264-fast-24-measured-r1.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/015-libx264-fast-24-measured-r2.mp4",
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/019-libx264-fast-24-measured-r2.mp4",
+          "sha256": "67188975be34bae55689dbfba32624332b284fc479daaa2f58785fcea2822438",
+          "bytes": 6281801
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/012-libx264-fast-24-measured-r1.mp4",
+          "sha256": "95a1224b57f568778d318f2b2e0c0fef3ec6cf55e1dca71a4f2223aaf015882f",
+          "bytes": 9035966
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/008-libx264-fast-24-measured-r1.mp4",
+          "sha256": "550421739c4c01d838b05552b3b199b34b7aa0fa0f4979a32722941a2577a79b",
+          "bytes": 2539294
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/009-libx264-fast-24-measured-r1.mp4",
+          "sha256": "f83e13a196517d8874dbb23e284c525b97e9722522eb30685b5dc254ba6e7342",
+          "bytes": 8399526
+        },
+        {
+          "relativePath": "console/seven-clips/queue-\u00e9/campaigns/campaign-b3528df0d67932da/013-libx264-fast-24-measured-r1.mp4",
+          "sha256": "2af0b4017d873470a10380c78786f1d6e6fbbccee456964bfe2d72c68a33dbce",
+          "bytes": 226375
+        }
+      ]
+    }
+  ]
+}

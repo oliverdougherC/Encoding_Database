@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "runId": 35485094474,
+  "jobId": 106009886316,
+  "headSha": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "mergeSha": "14403ea1c1519acce543dc9d76bacb13a2032159",
+  "conclusion": "failure",
+  "startedAt": "2026-09-20T02:52:01Z",
+  "completedAt": "2026-09-20T03:34:52Z",
+  "steps": [
+    {
+      "name": "Set up job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:03Z",
+      "completed_at": "2026-09-20T02:52:04Z"
+    },
+    {
+      "name": "Run actions/checkout@v6",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:04Z",
+      "completed_at": "2026-09-20T02:52:15Z"
+    },
+    {
+      "name": "Run actions/setup-python@v7",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:15Z",
+      "completed_at": "2026-09-20T02:52:15Z"
+    },
+    {
+      "name": "Provision pinned FFmpeg runtime",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:15Z",
+      "completed_at": "2026-09-20T02:52:20Z"
+    },
+    {
+      "name": "Install runtime and canonical-suite validation dependencies",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:20Z",
+      "completed_at": "2026-09-20T02:52:29Z"
+    },
+    {
+      "name": "Generate proposed windows runtime lock for review",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-20T02:52:29Z",
+      "completed_at": "2026-09-20T02:52:29Z"
+    },
+    {
+      "name": "Retain proposed windows runtime lock (not a candidate)",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-20T02:52:29Z",
+      "completed_at": "2026-09-20T02:52:29Z"
+    },
+    {
+      "name": "Materialize frozen canonical references",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:52:29Z",
+      "completed_at": "2026-09-20T02:54:28Z"
+    },
+    {
+      "name": "Execute pinned model on frozen quick reference",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:54:28Z",
+      "completed_at": "2026-09-20T02:55:08Z"
+    },
+    {
+      "name": "Run native Windows client build",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T02:55:08Z",
+      "completed_at": "2026-09-20T03:03:53Z"
+    },
+    {
+      "name": "Retain unverified Windows candidate binaries and build-verified sidecars",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:03:53Z",
+      "completed_at": "2026-09-20T03:04:07Z"
+    },
+    {
+      "name": "Capture pre-GUI Windows resource snapshot",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:04:07Z",
+      "completed_at": "2026-09-20T03:04:08Z"
+    },
+    {
+      "name": "Retain pre-GUI Windows resource snapshot",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:04:08Z",
+      "completed_at": "2026-09-20T03:04:09Z"
+    },
+    {
+      "name": "Exercise actual packaged Windows GUI",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-20T03:04:09Z",
+      "completed_at": "2026-09-20T03:17:27Z"
+    },
+    {
+      "name": "Retain Windows gui diagnostics before the next step",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:17:27Z",
+      "completed_at": "2026-09-20T03:17:29Z"
+    },
+    {
+      "name": "Exercise packaged Windows seven-clip software campaign",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:17:29Z",
+      "completed_at": "2026-09-20T03:34:43Z"
+    },
+    {
+      "name": "Retain Windows console diagnostics before the next step",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:34:43Z",
+      "completed_at": "2026-09-20T03:34:44Z"
+    },
+    {
+      "name": "Retain Windows GUI and seven-clip acceptance evidence",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:34:44Z",
+      "completed_at": "2026-09-20T03:34:47Z"
+    },
+    {
+      "name": "Post Run actions/setup-python@v7",
+      "status": "completed",
+      "conclusion": "skipped",
+      "started_at": "2026-09-20T03:34:47Z",
+      "completed_at": "2026-09-20T03:34:47Z"
+    },
+    {
+      "name": "Post Run actions/checkout@v6",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:34:47Z",
+      "completed_at": "2026-09-20T03:34:50Z"
+    },
+    {
+      "name": "Complete job",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-20T03:34:50Z",
+      "completed_at": "2026-09-20T03:34:50Z"
+    }
+  ],
+  "artifacts": [
+    {
+      "id": 10598351163,
+      "name": "windows-console-diagnostics-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 187054,
+      "digest": "sha256:0e8051bfd4799522a01f55a46a8c9c1261b2ffc11c5f9ea0aad02e0c6cd6ce42"
+    },
+    {
+      "id": 10597512085,
+      "name": "windows-native-acceptance-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 174375799,
+      "digest": "sha256:a7c799ecb1741c4200f1c02d8a0bfc35be2e4bd4c6ebc4b8e65f401f101dd192"
+    },
+    {
+      "id": 10597379563,
+      "name": "windows-gui-diagnostics-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 1575430,
+      "digest": "sha256:69b10703d6d0c5113d8f3ce8a14a7bf9687ad298c720cca3915d79c207f3b81e"
+    },
+    {
+      "id": 10597299065,
+      "name": "candidate-windows-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 1878178657,
+      "digest": "sha256:92a9045bca34c6614f7a090e74dba2aefe11ff2ebfea2a6e0a6ef7f18ff94650"
+    },
+    {
+      "id": 10597069416,
+      "name": "windows-pre-gui-14403ea1c1519acce543dc9d76bacb13a2032159",
+      "size_in_bytes": 544,
+      "digest": "sha256:ac1d07e71e05d886e757db2a9bdd6fd38652a68bf824162dbb4d3cd8a9ed9462"
+    }
+  ]
+}
