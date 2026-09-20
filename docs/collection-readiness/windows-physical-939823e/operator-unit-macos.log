@@ -1,0 +1,12 @@
+test_audit_rejects_external_helpers_and_incomplete_campaign (test_windows_physical_acceptance.OperatorChecks.test_audit_rejects_external_helpers_and_incomplete_campaign) ... ok
+test_audit_retains_suspect_record_and_detects_changed_artifact (test_windows_physical_acceptance.OperatorChecks.test_audit_retains_suspect_record_and_detects_changed_artifact) ... ok
+test_operator_lock_excludes_second_holder_and_releases (test_windows_physical_acceptance.OperatorChecks.test_operator_lock_excludes_second_holder_and_releases) ... skipped 'Requires actual Windows msvcrt locking'
+test_pin_validation_rejects_path_escape_even_when_hash_matches (test_windows_physical_acceptance.OperatorChecks.test_pin_validation_rejects_path_escape_even_when_hash_matches) ... ok
+test_pin_validation_rejects_source_mismatch_and_missing_pin (test_windows_physical_acceptance.OperatorChecks.test_pin_validation_rejects_source_mismatch_and_missing_pin) ... ok
+test_pin_validation_requires_unchanged_independently_pinned_bytes (test_windows_physical_acceptance.OperatorChecks.test_pin_validation_requires_unchanged_independently_pinned_bytes) ... ok
+test_plan_does_not_verify_execute_or_create_output (test_windows_physical_acceptance.OperatorChecks.test_plan_does_not_verify_execute_or_create_output) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.010s
+
+OK (skipped=1)
