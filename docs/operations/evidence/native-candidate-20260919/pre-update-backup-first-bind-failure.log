@@ -1,0 +1,32 @@
+Backup space preflight: artifactBytes=8192, requiredBytes=1073758208, availableBytes=1583197061120
+Quiescing writer services for backup consistency (downtime begins): server
+ Container encodingdb-candidate-730de3c-server-1 Stopping 
+ Container encodingdb-candidate-730de3c-server-1 Stopped 
+pg_dump: error: could not open output file "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/operation-evidence/native-939823e/pre-update-backups/backup-20260920T011755Z-982813/database.dump": No such file or directory
+Restarting exact quiesced writer containers: server
+Writer quiescence duration seconds: 22
+Backup supervisor: exit=1, elapsedSeconds=23.599
+Command exited with non-zero status 1
+	Command being timed: "bash /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/operation-evidence/native-939823e/backup-tools/scripts/v7-scheduled-backup.sh"
+	User time (seconds): 0.99
+	System time (seconds): 0.72
+	Percent of CPU this job got: 7%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:23.71
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 28160
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 101170
+	Voluntary context switches: 14777
+	Involuntary context switches: 70
+	Swaps: 0
+	File system inputs: 251
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 1

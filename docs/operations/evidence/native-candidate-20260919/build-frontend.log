@@ -1,0 +1,156 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.04kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.7s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/node:20-alpine
+#4 DONE 0.7s
+
+#5 [internal] load .dockerignore
+#5 transferring context:
+#5 transferring context: 2B done
+#5 DONE 0.3s
+
+#6 [internal] load build context
+#6 DONE 0.0s
+
+#7 [builder 1/8] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#7 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#7 DONE 0.1s
+
+#6 [internal] load build context
+#6 transferring context: 244.72kB 0.0s done
+#6 DONE 0.1s
+
+#8 [builder 2/8] WORKDIR /app
+#8 CACHED
+
+#9 [builder 3/8] COPY package.json package-lock.json* ./
+#9 CACHED
+
+#10 [builder 4/8] RUN npm ci
+#10 CACHED
+
+#11 [builder 5/8] COPY . .
+#11 DONE 0.1s
+
+#12 [builder 6/8] RUN mkdir -p public
+#12 DONE 1.1s
+
+#13 [builder 7/8] RUN npm run build
+#13 0.711 
+#13 0.711 > frontend@0.1.0 build
+#13 0.711 > next build --turbopack
+#13 0.711 
+#13 1.594 ▲ Next.js 16.3.4 (Turbopack)
+#13 1.624 ✓ Running next.config.mjs took 28ms
+#13 4.251 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#13 4.251 This information is used to shape Next.js' roadmap and prioritize features.
+#13 4.251 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#13 4.251 https://nextjs.org/telemetry
+#13 4.251 
+#13 4.475 
+#13 4.682   Creating an optimized production build ...
+#13 11.15 ✓ Compiled successfully in 5.8s
+#13 11.25   Running TypeScript ...
+#13 17.91   Finished TypeScript in 6.7s ...
+#13 17.92   Collecting page data using 20 workers ...
+#13 19.26   Generating static pages using 20 workers (0/17) ...
+#13 19.99   Generating static pages using 20 workers (4/17) 
+#13 20.29   Generating static pages using 20 workers (8/17) 
+#13 20.73   Generating static pages using 20 workers (12/17) 
+#13 20.78 ✓ Generating static pages using 20 workers (17/17) in 1524ms
+#13 20.79   Finalizing page optimization ...
+#13 20.82 
+#13 20.82 Route (app)
+#13 20.82 ┌ ƒ /
+#13 20.82 ├ ○ /_not-found
+#13 20.82 ├ ƒ /api/analytics/encoders
+#13 20.82 ├ ƒ /api/analytics/hardware
+#13 20.82 ├ ƒ /api/analytics/leaderboards
+#13 20.82 ├ ƒ /api/corpus
+#13 20.82 ├ ƒ /api/corpus/[id]
+#13 20.82 ├ ƒ /api/hwlink
+#13 20.82 ├ ƒ /api/query
+#13 20.82 ├ ○ /compare-encoders
+#13 20.82 ├ ƒ /encoders
+#13 20.82 ├ ƒ /hardware
+#13 20.82 ├ ƒ /leaderboards
+#13 20.82 ├ ○ /methodology
+#13 20.82 ├ ○ /plove
+#13 20.82 ├ ƒ /results/[id]
+#13 20.82 └ ○ /run
+#13 20.82 
+#13 20.82 
+#13 20.82 ○  (Static)   prerendered as static content
+#13 20.82 ƒ  (Dynamic)  server-rendered on demand
+#13 20.82 
+#13 DONE 21.9s
+
+#14 [builder 8/8] RUN npm prune --omit=dev
+#14 2.296 
+#14 2.296 up to date, audited 36 packages in 2s
+#14 2.296 
+#14 2.296 11 packages are looking for funding
+#14 2.296   run `npm fund` for details
+#14 2.298 
+#14 2.298 found 0 vulnerabilities
+#14 DONE 2.3s
+
+#15 [runner 3/7] COPY --from=builder /app/node_modules ./node_modules
+#15 CACHED
+
+#16 [runner 4/7] COPY --from=builder /app/package.json ./package.json
+#16 CACHED
+
+#17 [runner 5/7] COPY --from=builder /app/.next ./.next
+#17 DONE 4.1s
+
+#18 [runner 6/7] COPY --from=builder /app/public ./public
+#18 DONE 0.1s
+
+#19 [runner 7/7] COPY --from=builder /app/next.config.mjs ./next.config.mjs
+#19 DONE 0.1s
+
+#20 exporting to image
+#20 exporting layers
+#20 exporting layers 6.4s done
+#20 exporting manifest sha256:de8451c19a3e04a7f2be841fac8540c8112f8057b2adc60fb6a40d1d866f2a0a 0.0s done
+#20 exporting config sha256:bfa3a64f574ef01b1659b8cfac209e9647843f9424c97d1e711397335e6aeace 0.0s done
+#20 exporting attestation manifest sha256:8693c50f0ba0ad724cdc614280297fe52b0638aec630fcadd21938c5d2d445bc 0.1s done
+#20 exporting manifest list sha256:92affa067a7a4a101458cb9c787fa9a9c8fe774dd5f9677c746e77029ff377b1 0.0s done
+#20 naming to docker.io/library/encodingdb-candidate-frontend:939823e done
+#20 unpacking to docker.io/library/encodingdb-candidate-frontend:939823e
+#20 unpacking to docker.io/library/encodingdb-candidate-frontend:939823e 1.2s done
+#20 DONE 7.8s
+	Command being timed: "docker build --progress=plain -t encodingdb-candidate-frontend:939823e frontend"
+	User time (seconds): 0.37
+	System time (seconds): 0.22
+	Percent of CPU this job got: 1%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:45.02
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 50688
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 18915
+	Voluntary context switches: 8174
+	Involuntary context switches: 22
+	Swaps: 0
+	File system inputs: 477
+	File system outputs: 37
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
