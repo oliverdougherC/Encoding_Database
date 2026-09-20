@@ -8,6 +8,14 @@ from pathlib import Path
 import statistics
 
 
+CANONICAL_CLIPS = {
+    'animation-1080p24-final', 'athletic-action-1080p24-final',
+    'dark-gradients-1080p24-final', 'film-grain-1080p24-final',
+    'natural-detail-1080p24-final', 'screen-text-1080p24-final',
+    'talking-head-1080p24-final',
+}
+
+
 def require(condition,message):
     if not condition:raise ValueError(message)
 
@@ -16,6 +24,7 @@ def audit(directory,recipe,label):
     receipt=json.loads((directory/(recipe+'-receipt.json')).read_text())
     raw=json.loads((directory/('raw-journals-'+recipe+'-'+label+'.json')).read_text())
     files={x['name']:x for x in raw['files']}
+    require(len(files)==len(raw['files']),'Duplicate journal export names')
     manifest=files['manifest.json']['data'];config=manifest['protocolConfig']
     require(receipt['exitCode']==0 and not receipt['forcedCleanup'],'Native invocation did not finish cleanly')
     require(receipt['evidence']['completion']['failed']==0 and receipt['evidence']['completion']['skipped']==0,'Campaign contains failed or skipped work')
@@ -49,8 +58,18 @@ def audit(directory,recipe,label):
             argv=info['executedCommand']
             require('-gpu' in argv and argv[argv.index('-gpu')+1]=='0','Executed hardware device differs')
         groups[clip].append(record)
-    require(len(groups)==7,'Full-seven coverage missing')
+    require(set(groups)==CANONICAL_CLIPS,'Canonical full-seven coverage missing or substituted')
     measured=[x for x in records if x['schedule']['phase']=='measured']
+    expected_submissions = {'submission-' + name.removeprefix('attempt-'): item['data']
+                            for name, item in files.items() if name.startswith('attempt-') and item['data']['schedule']['phase']=='measured'}
+    submissions_by_name = {name: item['data'] for name, item in files.items() if name.startswith('submission-')}
+    require(set(submissions_by_name)==set(expected_submissions),'Measured attempt/submission export coverage differs')
+    for name, record in expected_submissions.items():
+        payload = submissions_by_name[name]; run = payload['runCreate']; schedule = record['schedule']; info = record['metadata']['info']
+        require(run['workloadId']==record['metadata']['suiteClip']['clip_id'] and run['campaignId']==schedule['campaign_id']
+                and run['repetitionIndex']==schedule['repetition_index'],'Submission does not bind its measured attempt')
+        require(payload['artifactPath']==info['artifactPath'] and payload['artifactSha256']==info['artifactSha256'],'Submission artifact differs from measured attempt')
+        require(math.isclose(run['encodeWallTimeMs'],record['timing']['elapsed_s']*1000,abs_tol=1e-6),'Submission timer differs from measured attempt')
     valid_markers={'cpu_psutil_thread_window_v1','cpu_psutil_blocking_window_v1'}
     cpu_sources=collections.Counter()
     for record in measured:

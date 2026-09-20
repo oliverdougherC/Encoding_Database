@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Bounded physical native faults using only owned files and loopback fixtures."""
 import argparse
+from contextlib import contextmanager
 from datetime import datetime,timezone
 import importlib.util
 import json
@@ -15,6 +16,33 @@ from http.server import BaseHTTPRequestHandler,ThreadingHTTPServer
 
 def module(name,path):
     spec=importlib.util.spec_from_file_location(name,path);value=importlib.util.module_from_spec(spec);spec.loader.exec_module(value);return value
+
+
+@contextmanager
+def owned_native_process(command, receipt, **kwargs):
+    """Keep the live Popen identity owned through receipt failures and interrupts."""
+    process = subprocess.Popen(command, **kwargs)
+    try:
+        yield process
+    finally:
+        if process.poll() is None:
+            receipt['forcedCleanup'] = True
+            cleanup_error = None
+            try:
+                result = subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
+                                        capture_output=True, text=True, timeout=30)
+                receipt['cleanup'] = {'exitCode': result.returncode, 'stdout': result.stdout, 'stderr': result.stderr}
+                if result.returncode:
+                    cleanup_error = RuntimeError('taskkill did not confirm owned tree cleanup')
+            except (OSError, subprocess.SubprocessError) as error:
+                cleanup_error = error
+                receipt['cleanup'] = {'error': str(error)}
+            finally:
+                if process.poll() is None:
+                    process.kill()
+                process.wait(timeout=30)
+            if cleanup_error is not None:
+                raise RuntimeError('Owned native tree cleanup failed; inspect retained receipt') from cleanup_error
 
 
 def main():
@@ -72,14 +100,11 @@ def main():
             env['ENCODINGDB_RUNTIME_EVIDENCE_PATH']=str(phase/(name+'-embedded-runtime.json'))
             command=[str(exe),*arguments];entry={'argv':command,'startedAt':datetime.now(timezone.utc).isoformat()};receipt['commands'].append(entry);save();start=time.monotonic()
             with (phase/(name+'.stdout.log')).open('xb') as out,(phase/(name+'.stderr.log')).open('xb') as err:
-                process=subprocess.Popen(command,cwd=phase,env=env,stdout=out,stderr=err)
-                entry['pid']=process.pid;save()
-                try:entry['exitCode']=process.wait(timeout=timeout)
-                except subprocess.TimeoutExpired:
-                    receipt['forcedCleanup']=True
-                    result=subprocess.run(['taskkill','/PID',str(process.pid),'/T','/F'],capture_output=True,text=True,timeout=30)
-                    receipt['cleanup']={'exitCode':result.returncode,'stdout':result.stdout,'stderr':result.stderr};process.wait(timeout=30)
-                    raise RuntimeError('Native fault exceeded its declared deadline')
+                with owned_native_process(command,receipt,cwd=phase,env=env,stdout=out,stderr=err) as process:
+                    entry['pid']=process.pid;save()
+                    try:entry['exitCode']=process.wait(timeout=timeout)
+                    except subprocess.TimeoutExpired as error:
+                        raise RuntimeError('Native fault exceeded its declared deadline') from error
             entry['wallSeconds']=time.monotonic()-start;save()
             if entry['exitCode']!=expected:raise RuntimeError(f'Expected native exit {expected}, got {entry["exitCode"]}')
         try:
