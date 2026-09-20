@@ -61,6 +61,47 @@ public static class EdbWindows {
  [DllImport("user32.dll")] public static extern int GetDlgCtrlID(IntPtr h);
  [DllImport("user32.dll",SetLastError=true)] public static extern IntPtr SendMessageTimeout(IntPtr h,uint m,IntPtr w,IntPtr l,uint flags,uint timeout,out UIntPtr result);
  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h,uint m,IntPtr w,IntPtr l);
+ [StructLayout(LayoutKind.Sequential)] public struct GuiThreadInfo { public uint cbSize,flags; public IntPtr active,focus,capture,menuOwner,moveSize,caret; public Rect caretRect; }
+ [StructLayout(LayoutKind.Sequential)] struct KeyboardInput { public ushort key,scan; public uint flags,time; public UIntPtr extra; }
+ [StructLayout(LayoutKind.Sequential)] struct MouseInput { public int x,y; public uint data,flags,time; public UIntPtr extra; }
+ [StructLayout(LayoutKind.Explicit)] struct InputUnion { [FieldOffset(0)] public KeyboardInput keyboard; [FieldOffset(0)] public MouseInput mouse; }
+ [StructLayout(LayoutKind.Sequential)] struct Input { public uint type; public InputUnion value; }
+ public sealed class ShortcutReceipt { public string Error; public long Root,Focus,KeyboardLayout; public uint Owner,FocusOwner,InsertedCount,ReleaseCount; public int InputSize,Win32Error; public bool ForegroundBefore,ForegroundAfter,CapsLock; }
+ [DllImport("user32.dll",SetLastError=true)] static extern bool GetGUIThreadInfo(uint thread,ref GuiThreadInfo info);
+ [DllImport("user32.dll")] static extern IntPtr GetKeyboardLayout(uint thread);
+ [DllImport("user32.dll")] static extern bool IsChild(IntPtr parent,IntPtr child);
+ [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
+ [DllImport("user32.dll")] static extern short GetKeyState(int key);
+ [DllImport("user32.dll",SetLastError=true)] static extern uint SendInput(uint count,Input[] input,int size);
+ static Input Key(ushort key,bool up) { var i=new Input();i.type=1;i.value.keyboard.key=key;i.value.keyboard.flags=up?2u:0u;return i; }
+ public static ShortcutReceipt SendOwnedShortcut(IntPtr root,uint owner,ushort key) {
+  var r=new ShortcutReceipt();r.Root=root.ToInt64();r.Owner=owner;r.InputSize=Marshal.SizeOf(typeof(Input));
+  if(key!=0x52 && key!=0x53) {r.Error="Only documented Alt+R/Alt+S shortcuts are allowed.";return r;}
+  uint actualOwner;uint thread=GetWindowThreadProcessId(root,out actualOwner);
+  r.ForegroundBefore=GetForegroundWindow()==root;
+  if(!r.ForegroundBefore || actualOwner!=owner || thread==0 || !IsWindowEnabled(root)) {r.Error="Owned root lost foreground/identity or is disabled.";return r;}
+  var g=new GuiThreadInfo();g.cbSize=(uint)Marshal.SizeOf(typeof(GuiThreadInfo));
+  if(!GetGUIThreadInfo(thread,ref g)) {r.Error="Cannot observe target GUI keyboard focus.";r.Win32Error=Marshal.GetLastWin32Error();return r;}
+  r.Focus=g.focus.ToInt64();GetWindowThreadProcessId(g.focus,out r.FocusOwner);r.KeyboardLayout=GetKeyboardLayout(thread).ToInt64();
+  if(g.active!=root || g.focus==IntPtr.Zero || r.FocusOwner!=owner || (g.focus!=root && !IsChild(root,g.focus))) {r.Error="Keyboard focus is not inside the exact owned active root.";return r;}
+  r.CapsLock=(GetKeyState(0x14)&1)!=0;
+  if(r.CapsLock) {r.Error="Caps Lock is active; user keyboard state was not changed.";return r;}
+  foreach(int k in new int[]{0x10,0x11,0x12,0x5b,0x5c,key}) {
+   if((GetAsyncKeyState(k)&0x8000)!=0) {r.Error="A shortcut key/modifier is already held; no input sent.";return r;}
+  }
+  // One complete normal keyboard-input batch; no WinForms journal-hook backend.
+  if(GetForegroundWindow()!=root) {r.Error="Foreground changed before input; no input sent.";return r;}
+  var input=new Input[]{Key(0x12,false),Key(key,false),Key(key,true),Key(0x12,true)};
+  r.InsertedCount=SendInput((uint)input.Length,input,r.InputSize);r.Win32Error=r.InsertedCount==4?0:Marshal.GetLastWin32Error();
+  if(r.InsertedCount!=4) {
+   // Release only keys this incomplete batch could have pressed; never retry key-downs.
+   if(r.InsertedCount>0 && GetForegroundWindow()==root) {var release=r.InsertedCount==2?new Input[]{Key(key,true),Key(0x12,true)}:new Input[]{Key(0x12,true)};r.ReleaseCount=SendInput((uint)release.Length,release,r.InputSize);}
+   r.Error="SendInput did not insert the complete four-event shortcut.";
+  }
+  r.ForegroundAfter=GetForegroundWindow()==root;
+  if(!r.ForegroundAfter && r.Error==null) r.Error="Foreground changed during input; acceptance is blocked.";
+  return r;
+ }
  public static IntPtr[] Windows(IntPtr parent) { var a=new List<IntPtr>(); EnumProc f=(h,p)=>{a.Add(h);return true;}; if(parent==IntPtr.Zero)EnumWindows(f,IntPtr.Zero);else EnumChildWindows(parent,f,IntPtr.Zero);return a.ToArray(); }
  public static string Text(IntPtr h) { var s=new StringBuilder(4096);GetWindowText(h,s,s.Capacity);return s.ToString(); }
  public static string Class(IntPtr h) { var s=new StringBuilder(256);GetClassName(h,s,s.Capacity);return s.ToString(); }
@@ -178,9 +219,12 @@ function Send-RunShortcut([ValidateSet('Start','Stop')][string]$Action) {
     [void][EdbWindows]::ShowWindow($handle,9)
     [void][EdbWindows]::SetForegroundWindow($handle)
     Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $handle } 5 'BLOCKED_GUI_FOCUS: client did not receive foreground focus; no keys sent.'
-    $keys=if ($Action -eq 'Start') {'%r'} else {'%s'}
-    [Windows.Forms.SendKeys]::SendWait($keys)
-    Record-Event 'documented-shortcut-sent' @{ action=$Action; keys=$keys; observedHandle=$handle.ToInt64() }
+    [uint32]$ownerId=0; [void][EdbWindows]::GetWindowThreadProcessId($handle,[ref]$ownerId)
+    $key=if ($Action -eq 'Start') {0x52} else {0x53}
+    $native=[EdbWindows]::SendOwnedShortcut($handle,$ownerId,[uint16]$key)
+    Record-Event 'native-shortcut-input' @{ action=$Action; input=$native }
+    if ($native.Error) { throw "BLOCKED_GUI_INPUT: $($native.Error)" }
+    Record-Event 'documented-shortcut-sent' @{ action=$Action; keys=$(if ($Action -eq 'Start') {'Alt+R'} else {'Alt+S'}); observedHandle=$handle.ToInt64(); backend='Win32 SendInput'; insertedCount=$native.InsertedCount }
 }
 function Get-CompletionMarkers {
     return @(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'campaign-complete.json' -ErrorAction SilentlyContinue)
