@@ -1,0 +1,273 @@
+{
+ "title": "EncodingDB playable human-review packet",
+ "generatedAt": "2026-09-20T13:30:00Z",
+ "candidateCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+ "rebuildCommit": "a350d45",
+ "metricModel": "vmaf-v1-sdr-1080p",
+ "suiteFingerprint": "41ae332c8e4ac7ae49c2a44917729c65d7a062710e4b44961b8125ffe7fb2660",
+ "plStatus": "inactive / provisional - every public corpus entry reports scoring=UNSCORED_NO_PUBLIC_DERIVED_RESULT, evidenceTier=PROVISIONAL, pl.total=null, eligibleForDefaultRecommendation=false",
+ "playability": "Served over loopback HTTP with Range support (206 Partial Content); encodes are browser-native MP4, references are Matroska (Chrome plays H.264 in Matroska). Original bytes; no remux or re-encode.",
+ "entryPoint": "http://127.0.0.1:8777/index.html",
+ "apiSnapshot": "api/corpus-full.json = live GET /corpus?limit=100&skip=0 (X-Total-Count: 56) from candidate server on 100.99.6.59 (127.0.0.1:3091); per-run api/<runId>.analysis-status.json = live GET /v7/benchmark-runs/<id>/artifacts/ENCODED/analysis-status",
+ "comparisonNote": "Reference MKV is the frozen canonical suite source at full bitrate; the encode MP4 is the exact stored artifact from the candidate artifact volume (sha256 == storage key == manifest value).",
+ "items": [
+  {
+   "benchmarkRunId": "cmu9ho8lr004qo3dw0w7rpury",
+   "contentClass": "athletic-action-1080p24-final",
+   "label": "libx264 fast CRF23",
+   "encodeHost": "macOS (Apple M4 Pro)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/athletic-action-1080p24-final.mkv",
+    "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+    "bytes": 139815565,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0.mp4",
+    "sha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+    "bytes": 7327057,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9ho8lr004ro3dwxenuxvhv",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9wemky000ipmdwppo0p6p4",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 98.12353,
+    "xpsnr": 42.0552,
+    "ssim": 0.984571,
+    "psnr": 45.185018
+   },
+   "publicCorpusEntry": {
+    "id": "cmu9ftoor0000o1dwjprx8akt::athletic-action-1080p24-final::cmu9kslu4000pl9dwwa5qvte9::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p",
+    "scoring": "UNSCORED_NO_PUBLIC_DERIVED_RESULT",
+    "evidenceTier": "PROVISIONAL",
+    "plTotal": null,
+    "eligibleForDefaultRecommendation": false
+   }
+  },
+  {
+   "benchmarkRunId": "cmu9ktk1s0021l9dw5ud9myo2",
+   "contentClass": "athletic-action-1080p24-final",
+   "label": "h264_nvenc p4 CQ24",
+   "encodeHost": "Windows (Ryzen 9 7950X + RTX 5090)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/athletic-action-1080p24-final.mkv",
+    "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+    "bytes": 139815565,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/96bed2cbd77fc887c05a04368ca59f71786be33f340528cd2550eb101f2c68e4.mp4",
+    "sha256": "96bed2cbd77fc887c05a04368ca59f71786be33f340528cd2550eb101f2c68e4",
+    "bytes": 9504723,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9ktk1s0022l9dwdwrilusq",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9ktooe0024l9dw3lnpkfo4",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 99.099692,
+    "xpsnr": 42.9593,
+    "ssim": 0.986745,
+    "psnr": 46.355761
+   },
+   "publicCorpusEntry": null
+  },
+  {
+   "benchmarkRunId": "cmu9hobi7004to3dwfy5jnirz",
+   "contentClass": "screen-text-1080p24-final",
+   "label": "libx264 fast CRF23",
+   "encodeHost": "macOS (Apple M4 Pro)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/screen-text-1080p24-final.mkv",
+    "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+    "bytes": 35313873,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c.mp4",
+    "sha256": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+    "bytes": 238094,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9hobi7004uo3dw7prifa7e",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9hocdo004wo3dwsxyquzub",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 97.094146,
+    "xpsnr": 48.2428,
+    "ssim": 0.997839,
+    "psnr": 50.648504
+   },
+   "publicCorpusEntry": {
+    "id": "cmu9ftoor0000o1dwjprx8akt::screen-text-1080p24-final::cmu9hnqnl003ro3dwatj1pima::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p",
+    "scoring": "UNSCORED_NO_PUBLIC_DERIVED_RESULT",
+    "evidenceTier": "PROVISIONAL",
+    "plTotal": null,
+    "eligibleForDefaultRecommendation": false
+   }
+  },
+  {
+   "benchmarkRunId": "cmu9ktpka002bl9dwao8e0znm",
+   "contentClass": "screen-text-1080p24-final",
+   "label": "h264_nvenc p4 CQ24",
+   "encodeHost": "Windows (Ryzen 9 7950X + RTX 5090)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/screen-text-1080p24-final.mkv",
+    "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+    "bytes": 35313873,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/dd8af3632ab66a6b47b635493d0ea9aa92febb5d47dfab12e4711875533eebe0.mp4",
+    "sha256": "dd8af3632ab66a6b47b635493d0ea9aa92febb5d47dfab12e4711875533eebe0",
+    "bytes": 295938,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9ktpkb002cl9dwr0k7wlil",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9ktqvn002el9dwl1bc25jx",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 97.905259,
+    "xpsnr": 50.5014,
+    "ssim": 0.998396,
+    "psnr": 52.948812
+   },
+   "publicCorpusEntry": null
+  },
+  {
+   "benchmarkRunId": "cmu9i1dlf005fo3dwnqr2gp9n",
+   "contentClass": "natural-detail-1080p24-final",
+   "label": "h264_videotoolbox VBR 6000kbps",
+   "encodeHost": "macOS (Apple M4 Pro)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/natural-detail-1080p24-final.mkv",
+    "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+    "bytes": 283872120,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6.mp4",
+    "sha256": "3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6",
+    "bytes": 7569383,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9i1dlf005go3dw11jvkq82",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9i1gk4005io3dwb4fdi3wm",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 91.030479,
+    "xpsnr": 35.582,
+    "ssim": 0.942581,
+    "psnr": 38.405399
+   },
+   "publicCorpusEntry": null
+  },
+  {
+   "benchmarkRunId": "cmu9fyjxy000ao3dwk9wuaiub",
+   "contentClass": "film-grain-1080p24-final",
+   "label": "h264_nvenc p4 VBR 4000kbps",
+   "encodeHost": "Linux (Xeon E5-2699 v4 + GTX 1070)",
+   "class": "quality",
+   "reference": {
+    "path": "media/canonical/film-grain-1080p24-final.mkv",
+    "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+    "bytes": 336898554,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/e12ddf07e71b27f5546407681be6a038eb14e994706eafe67a46b22a2f766f8e.mp4",
+    "sha256": "e12ddf07e71b27f5546407681be6a038eb14e994706eafe67a46b22a2f766f8e",
+    "bytes": 5302720,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmu9fyjxz000bo3dws77m9bgl",
+    "artifactStorageState": "RETAINED",
+    "benchmarkRunStatus": "ACCEPTED",
+    "benchmarkRunStatusReason": null
+   },
+   "analysis": {
+    "id": "cmu9gedwn0022o3dwcwvnct42",
+    "status": "COMPLETE",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 87.49038,
+    "xpsnr": 29.7296,
+    "ssim": 0.88733,
+    "psnr": 37.820095
+   },
+   "publicCorpusEntry": null
+  },
+  {
+   "benchmarkRunId": "cmua43aoj0029qcdw5norac9s",
+   "contentClass": "animation-1080p24-final",
+   "label": "libx264 fast CRF23",
+   "encodeHost": "macOS (Apple M4 Pro)",
+   "class": "environment-suspect",
+   "reference": {
+    "path": "media/canonical/animation-1080p24-final.mkv",
+    "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+    "bytes": 173819800,
+    "container": "matroska"
+   },
+   "encoded": {
+    "path": "media/f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448.mp4",
+    "sha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+    "bytes": 10360375,
+    "container": "mp4 (browser-native; served with video/mp4 via .mp4 extension)",
+    "artifactId": "cmua43aoj002aqcdwxf8iezew",
+    "artifactStorageState": "VERIFIED",
+    "benchmarkRunStatus": "SUSPECT",
+    "benchmarkRunStatusReason": "Metric disagreement diagnostics flagged the run for review"
+   },
+   "analysis": {
+    "id": "cmua43arp002cqcdw9n3qs09f",
+    "status": "SUSPECT",
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "analysisWorkerVersion": "authoritative-analysis/v2",
+    "vmafMean": 86.625985,
+    "xpsnr": 36.8877,
+    "ssim": 0.964614,
+    "psnr": 42.186465
+   },
+   "publicCorpusEntry": {
+    "id": "cmu9ftoor0000o1dwjprx8akt::animation-1080p24-final::cmu9ksair000bl9dw8k99x9wx::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p",
+    "scoring": "UNSCORED_NO_PUBLIC_DERIVED_RESULT",
+    "evidenceTier": "PROVISIONAL",
+    "plTotal": null,
+    "eligibleForDefaultRecommendation": false
+   }
+  }
+ ],
+ "suitePackSha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+ "suiteReference": "encodingdb-test-suite-v1 (fingerprint field of bundled suite-lock.json; pack archive sha256 == the release-pinned value)"
+}
