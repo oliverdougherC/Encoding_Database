@@ -85,7 +85,45 @@ async function validateCohort(env, extraPairs = 0) {
   assert.equal(row.fps, persisted.centerEncodeFps);
   return { environmentId: env, rawAccepted: row.sampleCounts.accepted, sources: row.sampleCounts.independentSources, exactQualifiedMemberCount: persisted.members.length, memberHash: hash(persisted.members.map(m => m.benchmarkRunId).sort().join('\n')), centerBasis: row.status.centerBasis, fps: row.fps, pl: row.pl.total };
 }
-if (mode === 'rebuild-fixture') {
+if (mode === 'reset-arrivals') {
+  const baseline = JSON.parse(await readFile(process.env.PROJECTION_SCALE_BASELINE_SEED, 'utf8'));
+  assert.equal(baseline.syntheticOnly, true);
+  assert.deepEqual(baseline.counts, { runs: 100000, artifacts: 100000, analyses: 100000, derived: 981, members: 80000 });
+  assert.match(process.env.PROJECTION_SCALE_PRESERVED_DUMP_SHA256, /^[a-f0-9]{64}$/, 'Preserve the failed database dump before resetting');
+  const started = new Date();
+  const expected = [0, 1].flatMap(index => Array.from({ length: 5 }, (_, cycle) => rowsForGroup(environmentId(index), `${environmentId(index)}-arrival-${cycle + 1}`, [24000 + index * 10, 24001 + index * 10])).flat());
+  const runIds = expected.map(row => row.id);
+  assert.equal(new Set(runIds).size, 20);
+  const before = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
+  assert.deepEqual(before, { runs: 100020, artifacts: 100020, analyses: 100020, derived: 981, members: 80020 });
+  await client.$transaction(async tx => {
+    const current = await tx.benchmarkRun.findMany({ where: { id: { in: runIds } }, include: { artifacts: true, qualityAnalyses: true } });
+    assert.equal(current.length, 20);
+    for (const row of expected) {
+      const actual = current.find(run => run.id === row.id);
+      for (const [key, value] of Object.entries(row)) if (key !== 'artifact' && key !== 'analysis') assert.deepEqual(actual[key], value, `${row.id}.${key}`);
+      assert.equal(actual.artifacts.length, 1); assert.equal(actual.qualityAnalyses.length, 1);
+      for (const [key, value] of Object.entries(row.artifact)) assert.deepEqual(actual.artifacts[0][key], value, `artifact.${key}`);
+      for (const [key, value] of Object.entries(row.analysis)) assert.deepEqual(actual.qualityAnalyses[0][key], value, `analysis.${key}`);
+    }
+    assert.equal((await tx.derivedResultMember.deleteMany({ where: { benchmarkRunId: { in: runIds } } })).count, 20);
+    assert.equal((await tx.qualityAnalysis.deleteMany({ where: { benchmarkRunId: { in: runIds } } })).count, 20);
+    assert.equal((await tx.artifact.deleteMany({ where: { benchmarkRunId: { in: runIds } } })).count, 20);
+    assert.equal((await tx.benchmarkRun.deleteMany({ where: { id: { in: runIds } } })).count, 20);
+  });
+  await rebuild(environmentId(0)); await rebuild(environmentId(1)); await drain();
+  const checks = [];
+  for (const index of [0, 1, 500, 980]) checks.push(await validateCohort(environmentId(index)));
+  assert.deepEqual(checks, baseline.checks, 'Original member hashes, centers, scores and raw/source counts must match');
+  const counts = { runs: await client.benchmarkRun.count(), artifacts: await client.artifact.count(), analyses: await client.qualityAnalysis.count(), derived: await client.derivedResult.count(), members: await client.derivedResultMember.count() };
+  assert.deepEqual(counts, baseline.counts);
+  const [reconciliation] = await client.$queryRawUnsafe(`WITH expected AS (SELECT "environmentId", id AS "benchmarkRunId" FROM "BenchmarkRun" WHERE "repetitionGroupId" LIKE '%-stable-%'), actual AS (SELECT d."environmentId", m."benchmarkRunId" FROM "DerivedResultMember" m JOIN "DerivedResult" d ON d.id = m."derivedResultId"), missing AS (SELECT * FROM expected EXCEPT SELECT * FROM actual), extra AS (SELECT * FROM actual EXCEPT SELECT * FROM expected)
+    SELECT (SELECT count(*)::int FROM expected) AS expected, (SELECT count(*)::int FROM actual) AS actual, (SELECT count(*)::int FROM missing) AS missing, (SELECT count(*)::int FROM extra) AS extra, (SELECT count(*)::int FROM "PublicCorpusDirtyGroup") AS dirty`);
+  assert.deepEqual(reconciliation, { expected: 80000, actual: 80000, missing: 0, extra: 0, dirty: 0 });
+  await client.$executeRawUnsafe('ANALYZE');
+  await writeFile(`${output}/seed.json`, JSON.stringify({ syntheticOnly: true, sourceSha: runSourceSha, started, completed: new Date(), counts, checks, reset: { method: 'Delete only the exact 20 verified arrival records from the completed prior trial, then rebuild only the two affected cohorts', preservedDumpSha256: process.env.PROJECTION_SCALE_PRESERVED_DUMP_SHA256, originalSeedSource: baseline.sourceSha, before, deletedRunIds: runIds, reconciliation } }, null, 2));
+  await client.$disconnect();
+} else if (mode === 'rebuild-fixture') {
   while (true) {
     const batch = await client.qualityAnalysis.findMany({ where: { id: { startsWith: id } }, select: { id: true }, take: 250 });
     if (!batch.length) break;
@@ -227,4 +265,4 @@ if (mode === 'rebuild-fixture') {
   report.passed = failures.length === 0 && report.latencyMs.p95 <= 1000 && mutations.length === 5 && scoredRows > 0;
   await writeFile(`${output}/measurement.json`, JSON.stringify(report, null, 2)); console.log(JSON.stringify({ ...report, resources: undefined, mutations: mutations.length, failures: failures.slice(0, 5) }));
   process.exitCode = report.passed ? 0 : 1;
-} else { throw new Error('Expected seed, serve or measure'); }
+} else { throw new Error('Expected seed, reset-arrivals, rebuild-fixture, diagnose, serve or measure'); }

@@ -54,3 +54,9 @@ docker run --rm --network host --memory=16g --memory-swap=16g \
 ```
 
 Use the same shape with `seed` after migration. The host measurement process uses the same database URL, port, explicit source SHA, output directory and PostgreSQL container name. Building/pulling/copying/migrating/seeding occurs before the quiet interval; no P910 operation has been performed merely by documenting these commands.
+
+## Restore the original fixture after one completed trial
+
+`reset-arrivals` is an operator-only synthetic-fixture preparation mode. Preserve the entire prior database with `pg_dump -Fc` and its SHA256 before use. Set `PROJECTION_SCALE_BASELINE_SEED` to the original successful `seed.json` and `PROJECTION_SCALE_PRESERVED_DUMP_SHA256` to that verified dump hash. The wrapper must be stopped and no writer may own the synthetic database.
+
+The mode requires exactly 100,020 runs/artifacts/analyses, 981 derived cohorts and 80,020 members. It reconstructs the exact 20 expected arrival IDs (two cohorts × five cycles × two repetitions), verifies every generated run/artifact/analysis field, and deletes only those records and their memberships in one transaction. It rebuilds only the two affected cohorts, drains summaries, checks original hot/normal/distant member hashes, centers, scores and raw/source counts against the original seed, then proves all 80,000 remaining expected stable members by SQL set comparison. Its new seed receipt records the deleted IDs, prior counts, preserved dump hash and complete checks. Any mismatch fails; this is not a general cleanup or partial-trial recovery command. The measured workload and gates are unchanged.
