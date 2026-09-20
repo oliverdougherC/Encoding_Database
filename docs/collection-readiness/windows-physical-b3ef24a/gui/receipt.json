@@ -1,0 +1,241 @@
+{
+  "schemaVersion": 1,
+  "status": "PASSED_AUTOMATED_GUI_CHECKS_VISUAL_REVIEW_PENDING",
+  "mode": "Gui",
+  "startedAt": "2026-09-20T07:03:05.2818411Z",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "runnerImage": null,
+  "runnerImageVersion": null,
+  "os": {
+    "Caption": "Microsoft Windows 11 Pro",
+    "Version": "10.0.26200",
+    "BuildNumber": "26200",
+    "OSArchitecture": "64-bit"
+  },
+  "computer": {
+    "Manufacturer": "ASUS",
+    "Model": "System Product Name"
+  },
+  "interactive": true,
+  "sessionId": 1,
+  "actionBackend": "normal mouse clicks on dynamically reobserved visible Start/Stop controls; documented Alt+R/Alt+S keyboard primitive retained but not dispatched",
+  "scope": "Physical Windows desktop GUI software acceptance; no submissions; packaged source unchanged",
+  "phases": [
+    {
+      "preparationProbe": {
+        "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-prepare-stop-7026211de99146a4bfb3bc138a363200-\u00e9\\tmp\\_MEI361882\\bin\\win\\ffprobe.exe",
+        "sha256": "70be4ea32723b313df89603ba7cfbd818862e8785c20eb9008c27ef161ae84c0",
+        "commandLine": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-prepare-stop-7026211de99146a4bfb3bc138a363200-\u00e9\\tmp\\_MEI361882\\bin\\win\\ffprobe.exe -v error -count_frames -select_streams v:0 -show_entries format=format_name:stream=codec_name,width,height,pix_fmt,bits_per_raw_sample,color_range,color_space,color_transfer,color_primaries,field_order,avg_frame_rate,r_frame_rate,nb_read_frames:stream_side_data -of json C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-prepare-stop-7026211de99146a4bfb3bc138a363200-\u00e9\\suite-cache\\.suite-pack\\suite-pack-9vu2d_t2\\canonical\\athletic-action-1080p24-final.mkv"
+      },
+      "action": "Stop during preparation",
+      "sourcePackAfter": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "sourcePackPath": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-test-suite-v1.tar.gz",
+      "name": "prepare-stop",
+      "command": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows.exe",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\prepare-stop\\queue-\u00e9",
+        "--max-duration-minutes",
+        "20",
+        "--max-storage-mb",
+        "3072",
+        "--gui"
+      ],
+      "visualStatusReview": "PENDING_PARENT_INSPECTION",
+      "survivors": [],
+      "queue": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\prepare-stop\\queue-\u00e9",
+      "preparationCache": [
+        {
+          "FullName": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-prepare-stop-7026211de99146a4bfb3bc138a363200-\u00e9\\suite-cache\\packs\\encodingdb-test-suite-v1.tar.gz",
+          "Length": 1506890018
+        }
+      ],
+      "encoderObserved": false,
+      "helpers": {},
+      "scope": "Local-pack source preparation Stop; not a network-download resume test",
+      "state": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-prepare-stop-7026211de99146a4bfb3bc138a363200-\u00e9",
+      "status": "PASSED",
+      "executableSha256": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e",
+      "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\prepare-stop",
+      "exitCode": 0,
+      "sourcePackBefore": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150"
+    },
+    {
+      "preparationProbe": null,
+      "action": null,
+      "name": "complete",
+      "command": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows.exe",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\complete\\queue-\u00e9",
+        "--max-duration-minutes",
+        "20",
+        "--max-storage-mb",
+        "3072",
+        "--gui"
+      ],
+      "survivors": [],
+      "queue": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\complete\\queue-\u00e9",
+      "encoderObserved": true,
+      "helpers": {
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-complete-777d92e3871149bf90c34eb353f58c6f-\u00e9\\tmp\\_MEI368522\\bin\\win\\ffmpeg.exe": {
+          "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-complete-777d92e3871149bf90c34eb353f58c6f-\u00e9\\tmp\\_MEI368522\\bin\\win\\ffmpeg.exe",
+          "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+          "commandLine": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-complete-777d92e3871149bf90c34eb353f58c6f-\u00e9\\tmp\\_MEI368522\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-complete-777d92e3871149bf90c34eb353f58c6f-\u00e9\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\complete\\queue-\u00e9\\campaigns\\campaign-d50c9c0434bec752\\001-libx264-fast-24-warmup-r1.mp4"
+        }
+      },
+      "visualStatusReview": "PENDING_PARENT_INSPECTION",
+      "state": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-complete-777d92e3871149bf90c34eb353f58c6f-\u00e9",
+      "status": "PASSED",
+      "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\complete",
+      "exitCode": 0,
+      "executableSha256": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e"
+    },
+    {
+      "preparationProbe": null,
+      "action": "Stop",
+      "name": "stop",
+      "command": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows.exe",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-\u00e9",
+        "--max-duration-minutes",
+        "20",
+        "--max-storage-mb",
+        "3072",
+        "--gui"
+      ],
+      "survivors": [],
+      "queue": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-\u00e9",
+      "encoderObserved": true,
+      "helpers": {
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-\u00e9\\tmp\\_MEI128282\\bin\\win\\ffmpeg.exe": {
+          "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-\u00e9\\tmp\\_MEI128282\\bin\\win\\ffmpeg.exe",
+          "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+          "commandLine": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-\u00e9\\tmp\\_MEI128282\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-\u00e9\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-\u00e9\\campaigns\\campaign-c8125005f0e5f828\\002-libx264-fast-24-measured-r1.mp4"
+        }
+      },
+      "visualStatusReview": "PENDING_PARENT_INSPECTION",
+      "state": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-\u00e9",
+      "status": "PASSED",
+      "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop",
+      "exitCode": 0,
+      "executableSha256": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e"
+    },
+    {
+      "preparationProbe": null,
+      "action": "Close confirmed",
+      "name": "close",
+      "command": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows.exe",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\close\\queue-\u00e9",
+        "--max-duration-minutes",
+        "20",
+        "--max-storage-mb",
+        "3072",
+        "--gui"
+      ],
+      "survivors": [],
+      "queue": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\close\\queue-\u00e9",
+      "encoderObserved": true,
+      "helpers": {
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-close-995bd94ace644ca79d18e6f7aca46919-\u00e9\\tmp\\_MEI60162\\bin\\win\\ffmpeg.exe": {
+          "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-close-995bd94ace644ca79d18e6f7aca46919-\u00e9\\tmp\\_MEI60162\\bin\\win\\ffmpeg.exe",
+          "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+          "commandLine": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-close-995bd94ace644ca79d18e6f7aca46919-\u00e9\\tmp\\_MEI60162\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-close-995bd94ace644ca79d18e6f7aca46919-\u00e9\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\close\\queue-\u00e9\\campaigns\\campaign-ed30f24bb2d38849\\001-libx264-fast-24-warmup-r1.mp4"
+        }
+      },
+      "visualStatusReview": "PENDING_PARENT_INSPECTION",
+      "state": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-close-995bd94ace644ca79d18e6f7aca46919-\u00e9",
+      "status": "PASSED",
+      "path": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\close",
+      "exitCode": 0,
+      "executableSha256": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e"
+    }
+  ],
+  "error": null,
+  "primaryError": null,
+  "cleanupErrors": [],
+  "cleanupForced": false,
+  "finishedAt": "2026-09-20T07:08:50.0412177Z",
+  "journalVerification": [
+    {
+      "preparationCancelled": true,
+      "measuredAttempts": 0,
+      "sourcePackUnchanged": true,
+      "visualStatusReview": "PENDING_PARENT_INSPECTION"
+    },
+    {
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "measuredAttempts": 2,
+      "warmupAttempts": 1,
+      "artifacts": [
+        {
+          "sha256": "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+          "bytes": 6593091
+        },
+        {
+          "sha256": "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+          "bytes": 6593091
+        }
+      ]
+    },
+    {
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "measuredAttempts": 1,
+      "warmupAttempts": 1,
+      "artifacts": [
+        {
+          "sha256": "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+          "bytes": 6593091
+        }
+      ]
+    },
+    {
+      "clips": [
+        "athletic-action-1080p24-final"
+      ],
+      "measuredAttempts": 1,
+      "warmupAttempts": 1,
+      "artifacts": [
+        {
+          "sha256": "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+          "bytes": 6593091
+        }
+      ]
+    }
+  ]
+}

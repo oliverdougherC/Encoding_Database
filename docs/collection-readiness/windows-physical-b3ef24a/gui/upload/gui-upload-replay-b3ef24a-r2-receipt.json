@@ -1,0 +1,18 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "FAILED",
+    "startedAt":  "2026-09-20T08:40:21.7492374Z",
+    "executableSha256":  "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+    "caBundleSha256":  "e83e2d3fa5e020f81870826cbaa97d9749cb597ba21cc1d759053f264954913b",
+    "baseUrl":  "https://127.0.0.1:3199",
+    "proxyMode":  "none",
+    "campaigns":  [
+
+                  ],
+    "tunnel":  {
+                   "chain":  "100.96.210.77:3299",
+                   "pid":  2536
+               },
+    "error":  "curl: (35) Recv failure: Connection was reset",
+    "finishedAt":  "2026-09-20T08:40:25.9244124Z"
+}

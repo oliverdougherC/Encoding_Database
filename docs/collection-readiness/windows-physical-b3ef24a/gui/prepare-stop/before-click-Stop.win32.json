@@ -1,0 +1,519 @@
+﻿[
+    {
+        "handle":  985778,
+        "name":  "EncodingDB Windows Client",
+        "bounds":  {
+                       "y":  12,
+                       "width":  1674,
+                       "height":  1199,
+                       "x":  12
+                   },
+        "class":  "TkTopLevel"
+    },
+    {
+        "handle":  7342160,
+        "name":  "",
+        "bounds":  {
+                       "y":  59,
+                       "width":  1650,
+                       "height":  1140,
+                       "x":  24
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1509840,
+        "name":  "",
+        "bounds":  {
+                       "y":  59,
+                       "width":  1650,
+                       "height":  1140,
+                       "x":  24
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3082766,
+        "name":  "",
+        "bounds":  {
+                       "y":  698,
+                       "width":  1614,
+                       "height":  483,
+                       "x":  42
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  985980,
+        "name":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  1584,
+                       "height":  431,
+                       "x":  57
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2362048,
+        "name":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  1559,
+                       "height":  431,
+                       "x":  57
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  4589624,
+        "name":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  26,
+                       "height":  431,
+                       "x":  1616
+                   },
+        "class":  "ScrollBar"
+    },
+    {
+        "handle":  920266,
+        "name":  "",
+        "bounds":  {
+                       "y":  657,
+                       "width":  491,
+                       "height":  29,
+                       "x":  42
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3148636,
+        "name":  "",
+        "bounds":  {
+                       "y":  324,
+                       "width":  1614,
+                       "height":  315,
+                       "x":  42
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2820154,
+        "name":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  1578,
+                       "height":  104,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2886272,
+        "name":  "",
+        "bounds":  {
+                       "y":  593,
+                       "width":  14,
+                       "height":  29,
+                       "x":  162
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  920240,
+        "name":  "",
+        "bounds":  {
+                       "y":  593,
+                       "width":  90,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2622244,
+        "name":  "",
+        "bounds":  {
+                       "y":  555,
+                       "width":  228,
+                       "height":  29,
+                       "x":  162
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  985558,
+        "name":  "",
+        "bounds":  {
+                       "y":  555,
+                       "width":  83,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1575612,
+        "name":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  14,
+                       "height":  29,
+                       "x":  407
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1510056,
+        "name":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  71,
+                       "height":  29,
+                       "x":  324
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  723654,
+        "name":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  138,
+                       "height":  29,
+                       "x":  162
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1051336,
+        "name":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  54,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  920250,
+        "name":  "",
+        "bounds":  {
+                       "y":  473,
+                       "width":  1578,
+                       "height":  33,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2689854,
+        "name":  "",
+        "bounds":  {
+                       "y":  441,
+                       "width":  51,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2558754,
+        "name":  "",
+        "bounds":  {
+                       "y":  396,
+                       "width":  1578,
+                       "height":  33,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3345208,
+        "name":  "",
+        "bounds":  {
+                       "y":  365,
+                       "width":  62,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3017200,
+        "name":  "",
+        "bounds":  {
+                       "y":  77,
+                       "width":  1614,
+                       "height":  230,
+                       "x":  42
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3082976,
+        "name":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  1578,
+                       "height":  38,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1116736,
+        "name":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  114,
+                       "height":  38,
+                       "x":  221
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  5375798,
+        "name":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  149,
+                       "height":  38,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2622476,
+        "name":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1051074,
+        "name":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  81,
+                       "height":  32,
+                       "x":  1266
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2886460,
+        "name":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  189,
+                       "height":  29,
+                       "x":  1068
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2886454,
+        "name":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  83,
+                       "height":  30,
+                       "x":  968
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1444684,
+        "name":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  162,
+                       "height":  29,
+                       "x":  794
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1379150,
+        "name":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  197,
+                       "height":  32,
+                       "x":  573
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1379152,
+        "name":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  54,
+                       "height":  29,
+                       "x":  507
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1248086,
+        "name":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  341,
+                       "height":  32,
+                       "x":  143
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3017560,
+        "name":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  71,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1116684,
+        "name":  "",
+        "bounds":  {
+                       "y":  161,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2689752,
+        "name":  "",
+        "bounds":  {
+                       "y":  161,
+                       "width":  1488,
+                       "height":  32,
+                       "x":  150
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2231140,
+        "name":  "",
+        "bounds":  {
+                       "y":  162,
+                       "width":  78,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2100110,
+        "name":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  1378832,
+        "name":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  83,
+                       "height":  30,
+                       "x":  861
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  3344836,
+        "name":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  84,
+                       "height":  29,
+                       "x":  768
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2100098,
+        "name":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  83,
+                       "height":  30,
+                       "x":  668
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2296684,
+        "name":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  59,
+                       "height":  29,
+                       "x":  600
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2165318,
+        "name":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  273,
+                       "height":  32,
+                       "x":  309
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  2624008,
+        "name":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  161,
+                       "height":  32,
+                       "x":  125
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  527038,
+        "name":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  53,
+                       "height":  29,
+                       "x":  60
+                   },
+        "class":  "TkChild"
+    },
+    {
+        "handle":  4849962,
+        "name":  "",
+        "bounds":  {
+                       "y":  0,
+                       "width":  0,
+                       "height":  0,
+                       "x":  0
+                   },
+        "class":  "PseudoConsoleWindow"
+    }
+]

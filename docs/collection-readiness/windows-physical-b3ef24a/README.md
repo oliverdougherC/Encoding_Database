@@ -1,6 +1,6 @@
 # Physical Windows candidate b3ef24a
 
-The separately built physical Windows candidate passed three seven-clip console campaigns and four bounded native fault cases. Physical GUI acceptance is still pending; the corrected, separately reviewed SendInput operator is running. These receipts are platform execution and retention evidence, not calibration fitting data or authoritative backend quality results.
+The separately built physical Windows candidate passed three seven-clip console campaigns, four bounded native fault cases, and the four-phase native GUI acceptance (preparation Stop, complete single run, measured Stop, Close confirmation) using ordinary observed-control mouse clicks. One interrupted-then-resumed campaign proves durable checkpoint reuse with retained bytes unchanged. These receipts are platform execution and retention evidence, not calibration fitting data or authoritative backend quality results.
 
 ## Exact candidate and machine
 
@@ -35,8 +35,16 @@ See [acceptance](acceptance) for per-recipe summaries, operator receipts and exa
 | Corrupted pack | Same-size altered pack rejected with exit 3; zero attempts; fallback blocked by an owned loopback proxy without forwarding | Original pack and all 44 original immutable files unchanged |
 | Storage budget | Explicit 1 MiB budget rejected with exit 6 before any attempt | All 44 original immutable files unchanged |
 
-Receipts, immutable-file ledgers and logs are in [faults](faults). The storage test exercises the client's declared budget, **not actual Windows disk-full behavior**. The 429 fixture does not represent production or candidate-server ingestion. No P910 contact or production submission occurred. The backpressured upload entries remain retained for later coordinated replay.
+Receipts, immutable-file ledgers and logs are in [faults](faults). The storage test exercises the client's declared budget, **not actual Windows disk-full behavior**. The 429 fixture does not represent production or candidate-server ingestion. These fault runs made no P910 contact and no production submission; the later explicitly authorized coordinated upload of completed campaigns is recorded separately in `windows-uploaded.json`. The backpressured upload entries remain retained for later coordinated replay.
+
+## Physical GUI acceptance (click6 run, 2026-09-20)
+
+The GUI driver ran the four phases against the real frozen GUI on the console session with dynamically re-observed controls: exact control/owner/PID binding, visible non-occluded click points, and native dialogs accepted by ID. [gui/receipt.json](gui/receipt.json) records status `PENDING_PARENT_INSPECTION`: every automated gate passed (preparation Stop observed mid-run with the helper's owned-process set non-empty, single-run completion, measured Stop with `measured=true`, Close via native `#32770` Yes, zero surviving owned processes, journal intact), and 16 owned-window screenshots (with UIA/Win32 control dumps and `events.jsonl`) are committed under [gui](gui) for parent visual review before the lane calls it finally accepted. The shortcut/`Alt+R` route is recorded separately as never activated Start on this host; ordinary clicks were the accepted mechanism. No hotkey settings were changed.
+
+## Interruption/resume
+
+A GUI-driven run was interrupted during measured work; the durable checkpoint, attempt journals and retained bytes stayed byte-identical. A re-encode attempt correctly refused (`Campaign already completed before resume; cancellation evidence invalid`) only after a later complete run finished; the direct `--resume-campaign` replay reused the checkpoint (identical artifact hashes, zero re-encode) and completed. The restricted scheduled-task driver hung before preparation on limited tasks (cause retained in receipts/watch logs); completion and verification were proven via the foreground diagnostic execution on the same durable queue. Receipts: `gui-resume-*` under the acceptance directory.
 
 ## Remaining work
 
-Physical GUI preparation cancellation, normal completion, measured Stop and Close are pending the current corrected operator run and visual review. Earlier focus/SendKeys failures are preserved privately; none is reported as passing. Cancellation/resume follow-up, final coordinated candidate upload/recovery and any release signing/publishing remain separate gates. The operator test suite passed eight checks on actual Windows, including exclusive host allocation, safe candidate phase labels, pin/path rejection and evidence preservation.
+Earlier focus/SendKeys failures are preserved privately; none is reported as passing. The parent visual review of the retained screenshots is pending. The coordinated candidate upload of the three canonical console campaigns completed strictly upload-only through the documented loopback chain (no re-encode; sealed bytes hash-verified before/after): 35 submissions recorded, 7 honest terminal receipts retained under [gui/upload](gui/upload); full detail in the lane's `windows-uploaded.json`. Release signing/publishing and production remain separate gates. The operator test suite passed eight checks on actual Windows, including exclusive host allocation, safe candidate phase labels, pin/path rejection and evidence preservation.

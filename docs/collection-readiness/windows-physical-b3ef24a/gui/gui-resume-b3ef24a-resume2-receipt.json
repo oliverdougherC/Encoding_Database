@@ -1,0 +1,96 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "FAILED",
+    "startedAt":  "2026-09-20T07:27:06.4085054Z",
+    "scope":  "GUI Stop interruption resumed by packaged console binary --resume-campaign; GUI exposes no resume control",
+    "root":  "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+    "label":  "b3ef24a",
+    "queuePath":  "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-é",
+    "campaignId":  "campaign-c8125005f0e5f828",
+    "forcedCleanup":  true,
+    "error":  "Resume exceeded its 25-minute bound; forced cleanup is failure",
+    "before":  {
+                   "attempts":  2,
+                   "snapshot":  [
+                                    {
+                                        "path":  "\\001-libx264-fast-24-warmup-r1.mp4",
+                                        "sha256":  "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+                                        "bytes":  6593091
+                                    },
+                                    {
+                                        "path":  "\\001-libx264-fast-24-warmup-r1.mp4.process.json",
+                                        "sha256":  "425cfcd5edc7d56ed7bcae4544136367f4580a7d8fe511252bb7c1bb07f3308e",
+                                        "bytes":  3440
+                                    },
+                                    {
+                                        "path":  "\\002-libx264-fast-24-measured-r1.mp4",
+                                        "sha256":  "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+                                        "bytes":  6593091
+                                    },
+                                    {
+                                        "path":  "\\002-libx264-fast-24-measured-r1.mp4.process.json",
+                                        "sha256":  "e4ec9770cc88488b7b493b3c83467b856be1a09a21e87ac998f542e457e55c45",
+                                        "bytes":  3444
+                                    },
+                                    {
+                                        "path":  "\\003-libx264-fast-24-measured-r2.mp4",
+                                        "sha256":  "c4f55a17db14aa823c03242e6114ac1ec93d59516a442830f40afe8e470cae33",
+                                        "bytes":  6593091
+                                    },
+                                    {
+                                        "path":  "\\003-libx264-fast-24-measured-r2.mp4.process.json",
+                                        "sha256":  "ce5783e7b416bcdb3d0491381cf80e357ee95f4ee637d4cff7c3409e9beddc36",
+                                        "bytes":  3444
+                                    },
+                                    {
+                                        "path":  "\\attempt-000001.json",
+                                        "sha256":  "10f148b389e0ee46d544ebef71eec6b616d310ce021c309c33ce337f5f7b5086",
+                                        "bytes":  12875
+                                    },
+                                    {
+                                        "path":  "\\attempt-000002.json",
+                                        "sha256":  "102467cbbb084b66b1f9ee74659d4fb25cc27378aa6216a45ecb28ad15cf6505",
+                                        "bytes":  13576
+                                    },
+                                    {
+                                        "path":  "\\environment-000002.json",
+                                        "sha256":  "7714baddc7245361d2b1afa6fb5724e7c499deddf487d6708038513f771425a1",
+                                        "bytes":  889
+                                    },
+                                    {
+                                        "path":  "\\environment-000003.json",
+                                        "sha256":  "07786d706b727f065b0ea2374fb4e9c368b55f73db4f553e2f466bc8a9773164",
+                                        "bytes":  890
+                                    },
+                                    {
+                                        "path":  "\\in-flight.json",
+                                        "sha256":  "6cd2f5e74ebedb46c31dd359121886c78278a66a1d50c5ed14e68a55ae238b95",
+                                        "bytes":  172
+                                    },
+                                    {
+                                        "path":  "\\manifest.json",
+                                        "sha256":  "effb1ccf45cbe91240a0fb130aaf421a9b7ee7fd41c1ef1465e4d21b5666c33b",
+                                        "bytes":  1722
+                                    }
+                                ],
+                   "files":  12
+               },
+    "command":  [
+                    "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows-console.exe",
+                    "--cli",
+                    "--resume-campaign",
+                    "campaign-c8125005f0e5f828",
+                    "--no-submit",
+                    "--base-url",
+                    "http://127.0.0.1:9",
+                    "--queue-dir",
+                    "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-é",
+                    "--max-duration-minutes",
+                    "20",
+                    "--max-storage-mb",
+                    "3072"
+                ],
+    "executableSha256":  "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+    "suiteCacheDir":  "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-é\\suite-cache",
+    "finishedAt":  "2026-09-20T07:52:08.3796084Z"
+}

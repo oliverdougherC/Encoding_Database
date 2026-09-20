@@ -1,0 +1,36 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "RUNNING",
+    "startedAt":  "2026-09-20T08:22:31.3568300Z",
+    "executableSha256":  "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+    "caBundleSha256":  "e83e2d3fa5e020f81870826cbaa97d9749cb597ba21cc1d759053f264954913b",
+    "baseUrl":  "https://127.0.0.1:3199",
+    "proxyMode":  "none",
+    "campaigns":  [
+                      {
+                          "terminalAfter":  0,
+                          "recipe":  "x264-crf23",
+                          "exitCode":  null,
+                          "terminalBefore":  0,
+                          "stdout":  "gui-upload-x264-crf23.stdout.log",
+                          "campaignFilesUnchanged":  true,
+                          "campaignId":  "campaign-48cfe70dd43b036c",
+                          "stderrTail":  [
+
+                                         ]
+                      }
+                  ],
+    "tunnel":  {
+                   "chain":  "100.96.210.77:3299",
+                   "pid":  26452
+               },
+    "error":  null,
+    "compatibility":  {
+                          "protocolVersion":  "7.1",
+                          "minimumClientVersion":  "client/0.3.0",
+                          "encodeTimerBoundary":  "ffmpeg-process-v1",
+                          "sourceSuiteVersion":  "encodingdb-test-suite-v1",
+                          "suiteFingerprint":  "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+                          "activeProtocolId":  "cmu9ftoor0000o1dwjprx8akt"
+                      }
+}

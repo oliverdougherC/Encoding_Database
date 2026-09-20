@@ -1,0 +1,22 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "STARTED",
+    "createdAt":  "2026-09-20T07:59:05.0823229Z",
+    "taskName":  "EncodingDB-PhysicalGUI-b3ef24a-resume3-15a85e45",
+    "principal":  "DESKTOP-4ELVRAT\\ofhd",
+    "requestedLogonType":  "Interactive",
+    "requestedRunLevel":  "Limited",
+    "action":  {
+                   "execute":  "powershell.exe",
+                   "arguments":  "-NoProfile -NonInteractive -WindowStyle Hidden -File \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\windows-physical-resume-direct.ps1\" -Root \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\" -Label b3ef24a -RunLabel b3ef24a-resume3 -QueuePath \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.test-reports\\windows-physical-gui-b3ef24a-click6\\gui\\stop\\queue-é\" -CampaignId campaign-c8125005f0e5f828 -SuiteCacheDir \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-temp-b3ef24a-click6\\encodingdb-native-Gui-stop-e87ab69eb8754b72a9e8f470ec41cd53-é\\suite-cache\""
+               },
+    "launcherSha256":  "278c582b30f6bd1538be60821ac6efe0c4ad825ea1fc0155b5b09671d863b51d",
+    "actualPrincipal":  {
+                            "UserId":  "ofhd",
+                            "LogonType":  3,
+                            "RunLevel":  0
+                        },
+    "taskResult":  267014,
+    "cleanupVerified":  true,
+    "cleanedAt":  "2026-09-20T08:08:26.4471097Z"
+}
