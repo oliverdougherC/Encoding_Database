@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "status": "RUNNING",
+  "kind": "physical-built-candidate-distinct-from-CI",
+  "actualSource": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
+  "trackedStatusBefore": "",
+  "sourceTree": "5125fe61341aec5e6850eb7ec5d1d3392361d75a",
+  "startedAt": "2026-09-20T15:22:47.003981+00:00",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "-m",
+        "PyInstaller",
+        "--clean",
+        "--onefile",
+        "--name",
+        "encodingdb-client-windows",
+        "--distpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\dist",
+        "--workpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\work\\encodingdb-client-windows",
+        "--specpath",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\spec\\encodingdb-client-windows",
+        "--paths",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe;bin/win",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\client\\presets.json;.",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\suite_resources\\test_suite_v1;resources/test_suite_v1",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\.build\\clients\\windows\\runtime_resources;resources/runtime",
+        "--add-data",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\client\\resources\\vmaf;resources/vmaf",
+        "--windowed",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-integration\\client\\_pyinstaller_gui_entry.py"
+      ],
+      "startedAt": "2026-09-20T15:22:47.005480+00:00"
+    }
+  ],
+  "buildDeviation": "The retained source939 attempt established that Windows PowerShell 5.1 treats normal PyInstaller stderr INFO as terminating. This operator executes the unchanged reviewed PyInstaller and finalizer arguments via subprocess, leaving tracked source untouched."
+}

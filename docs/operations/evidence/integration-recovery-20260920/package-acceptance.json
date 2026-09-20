@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "at": "2026-09-20T16:30:00Z",
+  "purpose": "Concrete tested native artifacts for the integrated release candidate: every client platform and the server image rebuilt from the integration tip so that review/publishing approval concerns actual tested bytes.",
+  "sourceTip": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
+  "clientTree": "cd68992587b8a48fd2f5652dd856b3ccb3778846",
+  "macos": {
+    "builtFrom": "3501724 tree; client tree identical at tip (cd68992587b8a48fd2f5652dd856b3ccb3778846); manifest records its own checkout revision",
+    "artifact": "encodingdb-client-macos",
+    "bytes": 124389728,
+    "sha256": "93339fda368d9285e8ba7d6c79d40de1a1069ca638839c126e8d5cb88f1e9a89",
+    "embeddedRuntimeAudit": {
+      "entries": 102,
+      "issues": 0,
+      "ok": true,
+      "reviewedLockSha256": "8cdbd7b3ebf74286ef0b58146d3f7f89d193793439a8c54a4f281214f7ef7ef3"
+    },
+    "acceptance": {
+      "helpExit": 0,
+      "packagedSmokeByFinalizer": {
+        "noSubmitSuiteExit": 0,
+        "frozen": true,
+        "preparationSeconds": 85.161,
+        "elapsedSeconds": 101.851,
+        "survivingOwnedPids": [],
+        "cleanupForced": false,
+        "note": "release_manifest_lib finalizer smoke over the full packaged default suite, same contract as mac-build-b3ef24a"
+      },
+      "manualReplaySmoke": "second --no-submit run from the shipped executable reproduced a local campaign campaign-e4529e039d86d627 (1 warmup + 2 measured valid, 240/240 frames, 0 skipped/0 failed)",
+      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error; bare --upload-only defers at the compatibility endpoint and encodes nothing",
+      "embeddedHelpersRoot": "_MEI extraction verified by the smoke runtime evidence"
+    }
+  },
+  "linux": {
+    "builtOn": "P910 (Ubuntu 24.04 host, uv-seeded build venv; the only host deviation is venv creation via uv --seed because python3-venv is not installed; PyInstaller and all build arguments are the pinned script's)",
+    "builtFrom": "a350d45 git archive",
+    "artifact": "/home/ofhd/encodingdb-clientbuild-tip/encodingdb-client-linux",
+    "bytes": 191206976,
+    "sha256": "e8927096799fc4c7592a375b0318bb2313f36fe00f950cfeb555ac93c29d5a9e",
+    "acceptance": {
+      "helpExit": 0,
+      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error"
+    }
+  },
+  "serverImage": {
+    "builtFrom": "88b8100 (client- and frontend-untouched; adds the markArtifactState lifecycle merge responding to operations-code-review.md F1)",
+    "tag": "encodingdb-candidate-server:88b8100",
+    "builtOn": "P910, all Dockerfile image gates green (VMAF model hash, canonical suite hashes, libvmaf and xpsnr preflights)",
+    "rolledTo": "live candidate compose (backup candidate.compose.json.bak-a350d45; rollback = prior tags a9bf6f9 or a350d45, same volumes)",
+    "postRollState": {
+      "migrations": 29,
+      "runs": 118,
+      "artifacts": 118,
+      "analysesNotCompleteOrSuspect": 0,
+      "derivedResults": 0,
+      "analysisConcurrency": 0,
+      "health": "healthy"
+    }
+  },
+  "windows": {
+    "builtOn": "physical Windows host (DESKTOP-4ELVRAT), durable scheduled task after the first ssh-launched operator was killed with its session (its RUNNING receipt retained as windows-build/physical-build-resume-integration-receipt-aborted-session1.json)",
+    "source": {
+      "revision": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
+      "tree": "5125fe61341aec5e6850eb7ec5d1d3392361d75a",
+      "clientTreeNote": "client tree cd68992587b8a48fd2f5652dd856b3ccb3778846 is identical at every tip commit after b637ced; doc/server-only commits do not move it"
+    },
+    "operator": "scripts/windows-physical-build-resume.py --label integration (same subprocess deviation as the retained b3 physical build; reviewed PyInstaller and finalizer arguments unchanged)",
+    "runtime": "retained runtime-939823e BtbN bundle, verified mode against the current ffmpeg-lock (win entries b74bd2209fe3/70be4ea32723)",
+    "receipt": "windows-build/physical-build-resume-integration-receipt.json",
+    "artifacts": {
+      "encodingdb-client-windows-console.exe": {
+        "bytes": 180170141,
+        "sha256": "0637ad12e31fd20adfeb4d26ea1b377d8e21c26fde1db341ead6fca0a7b4ee97"
+      },
+      "encodingdb-client-windows.exe": {
+        "bytes": 180167553,
+        "sha256": "9af36d251e94f7c261f163775db286eaf4c5988ea0d3a30f0346ba9719670cd0"
+      }
+    },
+    "acceptance": {
+      "consoleHelpExit": 0,
+      "consoleSmokeByFinalizer": {
+        "noSubmitSuiteExit": 0,
+        "preparationSeconds": 84.063,
+        "elapsedSeconds": 101.454,
+        "survivingOwnedPids": []
+      },
+      "guiSmoke": "skipped by the finalizer for the windowed build, same as the retained b3 package",
+      "uploadOnlyContract": "--upload-only --no-submit exits 2 with the parser error on the packaged console executable",
+      "freshHash": "console exe re-hashed on the host matches the receipt sha"
+    },
+    "notRun": "no encoding, upload, campaign or GUI interaction was performed on the physical host; the executables were only started for help/contract checks against a fresh isolated state directory"
+  },
+  "codeReview": {
+    "source": "operations-code-review.md (REQUEST_CHANGES on c3043e7 set)",
+    "f1": "resolved by 84cf4e2 (completion merge + coexistence test) and 88b8100 (markArtifactState merge in Prisma and stub + re-rejection coexistence assertion); F2-F5 noted, no action required"
+  }
+}
