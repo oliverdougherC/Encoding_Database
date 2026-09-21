@@ -22,7 +22,7 @@ export default function RunPage() {
             : <span key={a.file} className="btn" aria-disabled="true" title="Not published yet">{a.label} (pending publication)</span>)}
         </div>
         <ul>{downloads.items.map((a) => <li key={a.file}><code>{a.file}</code> · SHA-256 <code>{a.sha256}</code> · {a.support}</li>)}</ul>
-        <p>Signing and support, per the accepted build manifests: the macOS executable is ad-hoc signed (not Developer ID, not notarized) on native arm64 with a minimum of macOS 11.0, so Gatekeeper will prompt at first launch; the Windows executables carry no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown - VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV and AMD AMF remain unproven.</p>
+        <p>Signing and support, per the accepted build manifests: the macOS executable is ad-hoc signed (not Developer ID, not notarized) on native arm64; its embedded runtime requires macOS 27 or later, and older macOS versions remain unverified. Expect a Gatekeeper prompt at first launch; the Windows executables carry no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown - VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV and AMD AMF remain unproven.</p>
         {downloads.published
           ? <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums and build evidence ({projectTag})</a>
           : <p>Release notes and evidence will appear under tag <code>{projectTag}</code> only once the release is published; the page does not link an unpublished tag.</p>}
