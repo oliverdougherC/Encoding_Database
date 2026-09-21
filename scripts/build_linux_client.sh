@@ -20,6 +20,8 @@ SUITE_RESOURCE_DIR="$BUILD_ROOT/suite_resources/test_suite_v1"
 SUITE_PACK_PATH="${ENCODINGDB_SUITE_PACK_PATH:-$ROOT_DIR/encodingdb-test-suite-v1.tar.gz}"
 OUTPUT_PATH="$ROOT_DIR/$APP_NAME"
 BUILD_REQUIREMENTS="$CLIENT_DIR/requirements-build.txt"
+PACKAGE_HELPER="$ROOT_DIR/scripts/linux_client_package.py"
+TAR_OUTPUT="${ENCODINGDB_LINUX_TAR_PATH:-$ROOT_DIR/encodingdb-client-linux.tar.gz}"
 
 log() {
   echo "[Linux] $*"
@@ -65,6 +67,7 @@ rm -f "$OUTPUT_PATH"
 rm -f "$SUITE_PACK_PATH"
 rm -f "$ROOT_DIR/dist/$APP_NAME"
 rm -rf "$ROOT_DIR/build/$APP_NAME"
+rm -f "$TAR_OUTPUT" "$TAR_OUTPUT.SHA256SUMS" "$TAR_OUTPUT.package-info.json"
 mkdir -p "$PYI_DIST_DIR" "$PYI_WORK_DIR" "$PYI_SPEC_DIR"
 python3 -m venv "$BUILD_ROOT/venv"
 "$BUILD_ROOT/venv/bin/python" -m pip install --disable-pip-version-check -r "$BUILD_REQUIREMENTS" >/dev/null
@@ -112,6 +115,13 @@ fi
 log "Placing executable in repository root..."
 mv -f "$PYI_DIST_DIR/$APP_NAME" "$OUTPUT_PATH"
 chmod +x "$OUTPUT_PATH" || true
+
+log "Packing encodingdb-client-linux.tar.gz (guided-menu default, executable bits preserved)..."
+LINUX_PACKAGE_ARGS=("$PACKAGE_HELPER" "$OUTPUT_PATH" "$TAR_OUTPUT")
+if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
+  LINUX_PACKAGE_ARGS+=(--provisional)
+fi
+"$BUILD_PYTHON" "${LINUX_PACKAGE_ARGS[@]}" || die "Linux tar.gz packaging failed"
 if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
   log "Build-only validation complete; release sidecars require an assigned project version."
 else
@@ -125,5 +135,6 @@ else
     --output-dir "$ROOT_DIR"
 fi
 log "Build complete: $OUTPUT_PATH"
+log "Primary Linux artifact: $TAR_OUTPUT"
 log "Suite pack: $SUITE_PACK_PATH"
 log "Hidden build artifacts: $BUILD_ROOT"
