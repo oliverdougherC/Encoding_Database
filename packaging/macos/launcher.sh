@@ -5,9 +5,11 @@
 #
 # Path resolution is relative to $0 and fully quoted, so the bundle works when
 # relocated, when mounted read-only from a DMG, and under App Translocation.
-# ENCODINGDB_OPEN_BIN exists only so packaging regression tests can intercept the
-# Terminal hand-off; ENCODINGDB_SUPPRESS_ALERT keeps the failure alert out of
-# headless CI. Leave both unset in normal use.
+# The hand-off prefers standard stock Terminal locations (checked, installed
+# candidates only; no eval, no new dependencies) and falls back to the system
+# default .command handler. ENCODINGDB_OPEN_BIN, ENCODINGDB_TERMINAL_CANDIDATES
+# and ENCODINGDB_SUPPRESS_ALERT exist only so packaging regressions can drive
+# this script from an isolated harness; leave them unset in normal use.
 set -u
 
 dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P) || dir=""
@@ -20,8 +22,23 @@ if [ ! -x "$open_bin" ]; then
     open_bin=$(command -v open 2>/dev/null || true)
 fi
 
-if [ -f "$wrapper" ] && [ -n "$open_bin" ]; then
-    if "$open_bin" "$wrapper"; then
+terminal=""
+if [ -n "$open_bin" ] && [ -f "$wrapper" ]; then
+    candidates=${ENCODINGDB_TERMINAL_CANDIDATES:-"/System/Applications/Utilities/Terminal.app:/System/Applications/Terminal.app:/Applications/Utilities/Terminal.app"}
+    saved_ifs=$IFS
+    IFS=:
+    for candidate in $candidates; do
+        if [ -d "$candidate" ]; then
+            terminal=$candidate
+            break
+        fi
+    done
+    IFS=$saved_ifs
+    if [ -n "$terminal" ]; then
+        if "$open_bin" -a "$terminal" "$wrapper"; then
+            exit 0
+        fi
+    elif "$open_bin" "$wrapper"; then
         exit 0
     fi
 fi

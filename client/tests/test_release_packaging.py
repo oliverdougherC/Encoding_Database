@@ -233,10 +233,13 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn("macOS 27", macos_readme)
         self.assertNotIn("macOS 11", macos_readme)
         self.assertIn("not notarized", macos_readme)
-        self.assertIn("Right-click", macos_readme)
+        self.assertIn("Open Anyway", macos_readme)
+        self.assertIn("support.apple.com/en-us/102445", macos_readme)
+        self.assertNotIn("Right-click", macos_readme)
         linux_readme = (root / "packaging/linux/README.md").read_text(encoding="utf-8")
         self.assertIn("./start.sh", linux_readme)
         self.assertIn("guided menu", linux_readme)
+        self.assertIn("no default app", linux_readme)
         self.assertIn("sha256sum -c", linux_readme)
         from scripts import macos_client_package
         self.assertEqual(macos_client_package.format_version(

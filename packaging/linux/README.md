@@ -27,6 +27,11 @@ encoders, walks the sweep you pick, shows the real plan and progress, and
 submits only after one explicit consent. Advanced flags pass straight through,
 e.g. `./start.sh --help`.
 
+Desktop note: double-clicking `start.sh` in a file manager may open a text
+editor or report no default app — that path provides no terminal/TTY and is
+not the supported launch. Open a terminal in this folder and run `./start.sh`
+(the guided menu needs real stdin/stdout).
+
 State lives in `$XDG_STATE_HOME/EncodingDB` (default `~/.local/state/EncodingDB`)
 and cache in `$XDG_CACHE_HOME/encodingdb` (default `~/.cache/encodingdb`). The
 archive can live anywhere, including read-only locations.
