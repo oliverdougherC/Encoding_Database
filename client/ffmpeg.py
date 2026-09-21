@@ -1589,12 +1589,18 @@ def load_presets_config(path: str) -> Dict[str, Any]:
             return data
     except Exception:
         return {
-            "smallBenchmark": {
-                "crfValues": [28, 24],
-                "approxMinutes": 60
-            },
-            "fullBenchmark": {
-                "crfValues": [24],
-                "approxMinutes": 120
+            "sweepPlans": {
+                "small": {
+                    "crfValues": [24],
+                    "nativeQualityValues": [23],
+                    "bitrateKbpsValues": [6000],
+                    "approxMinutes": 15,
+                },
+                "full": {
+                    "crfValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                    "nativeQualityValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                    "bitrateKbpsValues": [1000, 2000, 4000, 6000, 9000, 13000, 18000],
+                    "approxHours": 240,
+                },
             }
         }
