@@ -18,7 +18,8 @@ class EncodingRegressionTests(unittest.TestCase):
     def test_corrected_metrics_use_distinguishable_client_version(self) -> None:
         from client import main as client_main
 
-        self.assertEqual(client_main.CLIENT_VERSION, "client/0.3.0")
+        self.assertEqual(client_main.CLIENT_VERSION, "client/0.3.1")
+        self.assertEqual(client_main.PROTOCOL_MINIMUM_CLIENT_VERSION, "client/0.3.0")
 
     def test_vmaf_passes_distorted_input_before_reference(self) -> None:
         completed = mock.Mock(returncode=0, stdout=ffmpeg.json.dumps({'frames': [{'metrics': {'vmaf': 88.5}}] * 240}))

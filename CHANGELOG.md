@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.2] - 2026-09-21
+
+Restore guided Small, Medium, Large and Full encoder sweeps with automatic
+publication after consent, visible budgets, checkpoints and upload recovery.
+Package macOS as a disk image with an application launcher and Linux as an
+executable-preserving archive. Repair responsive downloads, table alignment,
+hardware labels and the contribution flow. Client 0.3.1 retains protocol 7.1
+and its existing admission minimum; PL remains unavailable pending calibration.
+
 ## [1.3.0-rc.1] - 2026-09-14
 
 Unpublished corrected-collection candidate. Protocol 7.1 separates process-only

@@ -98,7 +98,7 @@ expected = {
     "benchmarkProtocolVersion": "7.1",
     "plFormulaVersion": "7.0",
     "suiteVersion": "encodingdb-test-suite-v1",
-    "clientImplementationVersion": "client/0.3.0",
+    "clientImplementationVersion": "client/0.3.1",
 }
 for key, value in expected.items():
     if payload.get(key) != value:
