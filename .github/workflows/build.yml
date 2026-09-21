@@ -311,6 +311,10 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
+      - name: Guard Windows GUI harness functions
+        if: ${{ !inputs.runtime_lock_evidence }}
+        shell: powershell
+        run: ./scripts/test-windows-gui-harness-guards.ps1
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
@@ -422,10 +426,6 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
 
-      - name: Guard Windows GUI harness functions
-        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
-        shell: powershell
-        run: ./scripts/test-windows-gui-harness-guards.ps1
       - name: Exercise actual packaged Windows GUI
         if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
         timeout-minutes: 31
