@@ -1,0 +1,128 @@
+{
+  "kind": "actual-nonprivileged-collector-observation-not-controlled-benchmark",
+  "sourceCommit": "d4b1a261778427ae482f4e5fde4c88ffc5b2e6dc",
+  "capturedAt": "2026-09-14T06:29:12.829546+00:00",
+  "elevated": false,
+  "device": {
+    "selection": "videotoolbox-system-selected",
+    "deviceId": "videotoolbox:system",
+    "model": "Apple M4 Pro",
+    "driverVersion": "unknown"
+  },
+  "ioregCommand": [
+    "/usr/sbin/ioreg",
+    "-a",
+    "-r",
+    "-c",
+    "AGXAccelerator",
+    "-d",
+    "1"
+  ],
+  "modelMatch": "Apple M4 Pro",
+  "metrics": {
+    "gpu_util_avg": 60.5,
+    "gpu_power_avg_w": null,
+    "gpu_mem_peak_mb": null,
+    "gpu_temp_max_c": null,
+    "cpu_util_avg": 11.799999999999999,
+    "cpu_util_max": 17.1,
+    "cpu_freq_avg_mhz": 4000.0,
+    "cpu_temp_max_c": null,
+    "peak_memory_mb": null,
+    "ffmpeg_cpu_util_avg": null,
+    "ffmpeg_cpu_util_max": null,
+    "ffmpeg_read_mb": null,
+    "ffmpeg_write_mb": null,
+    "ffmpeg_cpu_time_s": null,
+    "battery_percent_start": 100.0,
+    "battery_percent_end": 100.0,
+    "battery_percent_drop": 0.0,
+    "power_source": "ac",
+    "sample_count": 6,
+    "monitor_duration_ms": 3211,
+    "thermal_throttle": false,
+    "cpu_sample_count": 6,
+    "gpu_sample_count": 6,
+    "gpu_util_sample_count": 6,
+    "ffmpeg_sample_count": 0,
+    "battery_sample_count": 2,
+    "telemetry_sources": "battery_psutil,cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,gpu_ioreg_agx_system_utilization_v1",
+    "telemetry_missing": "cpu_temp_unavailable,ffmpeg_unavailable,gpu_temp_unavailable,powermetrics_unavailable",
+    "energy_domains": null
+  },
+  "rawGpuSamples": [
+    {
+      "util_pct": 67.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    },
+    {
+      "util_pct": 61.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    },
+    {
+      "util_pct": 54.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    },
+    {
+      "util_pct": 60.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    },
+    {
+      "util_pct": 59.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    },
+    {
+      "util_pct": 62.0,
+      "power_w": null,
+      "mem_used_mb": null,
+      "temp_c": null
+    }
+  ],
+  "protocolSnapshot": {
+    "background_cpu_pct": 11.8,
+    "background_gpu_pct": 65.5,
+    "power_source": "ac",
+    "cpu_temp_c": null,
+    "gpu_temp_c": null,
+    "thermal_throttle": false,
+    "free_memory_mb": 5015.84375,
+    "memory_pressure_pct": 79.5904795328776,
+    "gpu_power_w": null,
+    "gpu_memory_mb": null,
+    "cpu_frequency_mhz": 4000.0,
+    "selected_accelerator": "videotoolbox:system",
+    "accelerator_is_hardware": true,
+    "gpu_load_trustworthy": true,
+    "gpu_sample_count": 2,
+    "telemetry_sources": "battery_psutil,cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,gpu_ioreg_agx_system_utilization_v1",
+    "telemetry_missing": "cpu_temp_unavailable,ffmpeg_unavailable,gpu_temp_unavailable,powermetrics_unavailable"
+  },
+  "environmentValidity": {
+    "state": "suspect",
+    "reasons": [
+      {
+        "code": "background-gpu-suspect",
+        "severity": "suspect",
+        "message": "Background GPU load exceeded the suspect threshold.",
+        "metric": "backgroundGpuPct",
+        "actual": 65.5,
+        "threshold": 35.0
+      }
+    ]
+  },
+  "limitations": [
+    "System GPU utilization is not media-engine occupancy, temperature, power or per-process usage.",
+    "Existing application activity was not stopped; high background load remains subject to unchanged thresholds.",
+    "No previously recorded attempt is qualified by this later observation."
+  ]
+}

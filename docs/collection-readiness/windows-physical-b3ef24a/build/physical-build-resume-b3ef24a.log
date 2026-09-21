@@ -1,0 +1,227 @@
+83 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7
+83 INFO: Python: 3.12.10
+97 INFO: Platform: Windows-11-10.0.26200-SP0
+97 INFO: Python environment: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\venv
+97 INFO: wrote C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\spec\encodingdb-client-windows\encodingdb-client-windows.spec
+99 INFO: Removing temporary files and cleaning cache in C:\Users\ofhd\AppData\Local\pyinstaller
+104 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a']
+306 INFO: Appending 'datas' from .spec
+307 INFO: checking Analysis
+307 INFO: Building Analysis because Analysis-00.toc is non existent
+307 INFO: Looking for Python shared library...
+307 INFO: Using Python shared library: C:\Users\ofhd\AppData\Local\Programs\Python\Python312\python312.dll
+307 INFO: Running Analysis Analysis-00.toc
+307 INFO: Target bytecode optimization level: 0
+307 INFO: Initializing module dependency graph...
+308 INFO: Initializing module graph hook caches...
+317 INFO: Analyzing modules for base_library.zip ...
+1005 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+1864 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2361 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2587 INFO: Caching module dependency graph...
+2607 INFO: Analyzing C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\_pyinstaller_gui_entry.py
+2727 INFO: Processing standard module hook 'hook-psutil.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+2753 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2790 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2793 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+2879 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2956 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3119 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3120 INFO: SetuptoolsInfo: initializing cached setuptools info...
+3455 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3492 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3495 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3495 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+3501 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3501 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+3569 INFO: Processing standard module hook 'hook-_osx_support.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3571 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3578 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3710 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3711 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3827 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3827 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+4098 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+4098 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+4363 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+4363 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+4710 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+4942 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+5213 INFO: Processing standard module hook 'hook-rich.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+5631 INFO: Processing standard module hook 'hook-pygments.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6802 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+6803 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+6999 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7028 INFO: Processing module hooks (post-graph stage)...
+8244 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8254 INFO: Performing binary vs. data reclassification (952 entries)
+8342 INFO: Looking for ctypes DLLs
+8390 INFO: Analyzing run-time hooks ...
+8393 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8394 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8395 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8396 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8397 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8416 INFO: Creating base_library.zip...
+8427 INFO: Looking for dynamic libraries
+8761 INFO: Extra DLL search directories (AddDllDirectory): []
+8761 INFO: Extra DLL search directories (PATH): []
+8990 INFO: Warnings written to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows\encodingdb-client-windows\warn-encodingdb-client-windows.txt
+9029 INFO: Graph cross-reference written to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows\encodingdb-client-windows\xref-encodingdb-client-windows.html
+9059 INFO: checking PYZ
+9059 INFO: Building PYZ because PYZ-00.toc is non existent
+9059 INFO: Building PYZ (ZlibArchive) C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows\encodingdb-client-windows\PYZ-00.pyz
+9494 INFO: Building PYZ (ZlibArchive) C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows\encodingdb-client-windows\PYZ-00.pyz completed successfully.
+9514 INFO: checking PKG
+9514 INFO: Building PKG because PKG-00.toc is non existent
+9514 INFO: Building PKG (CArchive) encodingdb-client-windows.pkg
+33910 INFO: Building PKG (CArchive) encodingdb-client-windows.pkg completed successfully.
+33921 INFO: Bootloader C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\runw.exe
+33921 INFO: checking EXE
+33921 INFO: Building EXE because EXE-00.toc is non existent
+33921 INFO: Building EXE from EXE-00.toc
+33921 INFO: Copying bootloader EXE to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\dist\encodingdb-client-windows.exe
+33925 INFO: Copying icon to EXE
+33961 INFO: Copying 0 resources to EXE
+33961 INFO: Embedding manifest in EXE
+33964 INFO: Appending PKG archive to EXE
+34030 INFO: Fixing EXE headers
+40757 INFO: Building EXE from EXE-00.toc completed successfully.
+40767 INFO: Build complete! The results are available in: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\dist
+81 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7
+81 INFO: Python: 3.12.10
+95 INFO: Platform: Windows-11-10.0.26200-SP0
+95 INFO: Python environment: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\venv
+95 INFO: wrote C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\spec\encodingdb-client-windows-console\encodingdb-client-windows-console.spec
+97 INFO: Removing temporary files and cleaning cache in C:\Users\ofhd\AppData\Local\pyinstaller
+102 INFO: Module search paths (PYTHONPATH):
+['C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\python312.zip',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\DLLs',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\Lib',
+ 'C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages',
+ 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a']
+285 INFO: Appending 'datas' from .spec
+286 INFO: checking Analysis
+286 INFO: Building Analysis because Analysis-00.toc is non existent
+286 INFO: Looking for Python shared library...
+286 INFO: Using Python shared library: C:\Users\ofhd\AppData\Local\Programs\Python\Python312\python312.dll
+286 INFO: Running Analysis Analysis-00.toc
+286 INFO: Target bytecode optimization level: 0
+286 INFO: Initializing module dependency graph...
+287 INFO: Initializing module graph hook caches...
+296 INFO: Analyzing modules for base_library.zip ...
+1016 INFO: Processing standard module hook 'hook-encodings.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+1358 INFO: Processing standard module hook 'hook-heapq.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+1833 INFO: Processing standard module hook 'hook-pickle.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2536 INFO: Caching module dependency graph...
+2556 INFO: Analyzing C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\_pyinstaller_entry.py
+2667 INFO: Processing standard module hook 'hook-psutil.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+2690 INFO: Processing standard module hook 'hook-_ctypes.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2728 INFO: Processing standard module hook 'hook-platform.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2730 INFO: Processing standard module hook 'hook-certifi.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+2812 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2892 INFO: Processing standard module hook 'hook-xml.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3059 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3059 INFO: SetuptoolsInfo: initializing cached setuptools info...
+3394 INFO: Processing standard module hook 'hook-setuptools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3434 INFO: Processing standard module hook 'hook-sysconfig.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3436 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3436 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+3442 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3442 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+3514 INFO: Processing standard module hook 'hook-_osx_support.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3516 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3522 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3671 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3672 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3774 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+3774 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+4053 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+4053 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+4321 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_safe_import_module'
+4322 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+4659 INFO: Processing standard module hook 'hook-urllib3.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+4908 INFO: Processing standard module hook 'hook-charset_normalizer.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+5127 INFO: Processing standard module hook 'hook-rich.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\_pyinstaller_hooks_contrib\\stdhooks'
+5539 INFO: Processing standard module hook 'hook-pygments.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6711 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\pre_find_module_path'
+6712 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+6906 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+6934 INFO: Processing module hooks (post-graph stage)...
+8129 INFO: Processing standard module hook 'hook-_tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8139 INFO: Performing binary vs. data reclassification (952 entries)
+8198 INFO: Looking for ctypes DLLs
+8250 INFO: Analyzing run-time hooks ...
+8252 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8254 INFO: Including run-time hook 'pyi_rth__tkinter.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8255 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8256 INFO: Including run-time hook 'pyi_rth_setuptools.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8256 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+8276 INFO: Creating base_library.zip...
+8290 INFO: Looking for dynamic libraries
+8609 INFO: Extra DLL search directories (AddDllDirectory): []
+8609 INFO: Extra DLL search directories (PATH): []
+8840 INFO: Warnings written to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows-console\encodingdb-client-windows-console\warn-encodingdb-client-windows-console.txt
+8879 INFO: Graph cross-reference written to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows-console\encodingdb-client-windows-console\xref-encodingdb-client-windows-console.html
+8907 INFO: checking PYZ
+8907 INFO: Building PYZ because PYZ-00.toc is non existent
+8907 INFO: Building PYZ (ZlibArchive) C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows-console\encodingdb-client-windows-console\PYZ-00.pyz
+9340 INFO: Building PYZ (ZlibArchive) C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\work\encodingdb-client-windows-console\encodingdb-client-windows-console\PYZ-00.pyz completed successfully.
+9361 INFO: checking PKG
+9361 INFO: Building PKG because PKG-00.toc is non existent
+9361 INFO: Building PKG (CArchive) encodingdb-client-windows-console.pkg
+33755 INFO: Building PKG (CArchive) encodingdb-client-windows-console.pkg completed successfully.
+33766 INFO: Bootloader C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+33766 INFO: checking EXE
+33766 INFO: Building EXE because EXE-00.toc is non existent
+33766 INFO: Building EXE from EXE-00.toc
+33766 INFO: Copying bootloader EXE to C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\dist\encodingdb-client-windows-console.exe
+33818 INFO: Copying icon to EXE
+33847 INFO: Copying 0 resources to EXE
+33847 INFO: Embedding manifest in EXE
+33873 INFO: Appending PKG archive to EXE
+33937 INFO: Fixing EXE headers
+34361 INFO: Building EXE from EXE-00.toc completed successfully.
+34371 INFO: Build complete! The results are available in: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\dist
+runtime_lock: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows.exe.runtime-lock.json
+release_manifest: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows.exe.release-manifest.json
+signing: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows.exe.signing.json
+smoke: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows.exe.smoke.json
+sha256sums: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows.exe.SHA256SUMS
+runtime_lock: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows-console.exe.runtime-lock.json
+release_manifest: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows-console.exe.release-manifest.json
+signing: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows-console.exe.signing.json
+smoke: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows-console.exe.smoke.json
+sha256sums: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-client-windows-console.exe.SHA256SUMS
+altgraph==0.17.5
+certifi==2026.7.22
+charset-normalizer==3.5.1
+GPUtil==1.4.0
+idna==3.20
+markdown-it-py==4.2.0
+mdurl==0.1.2
+nvidia-ml-py==13.590.48
+packaging==26.3
+pefile==2024.8.26
+pip==25.0.1
+psutil==7.2.2
+py-cpuinfo==9.0.0
+Pygments==2.21.0
+pyinstaller==6.19.0
+pyinstaller-hooks-contrib==2026.7
+pywin32-ctypes==0.2.3
+requests==2.33.0
+rich==14.3.2
+setuptools==84.0.0
+urllib3==2.8.0

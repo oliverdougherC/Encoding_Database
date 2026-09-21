@@ -1,0 +1,3 @@
+Campaign campaign-b92d34ea50b6f8fc: at most 5 encodes; resume with --resume-campaign campaign-b92d34ea50b6f8fc
+Batch 1/1: 1 protocol recipe(s)
+Batch run interrupted by user.

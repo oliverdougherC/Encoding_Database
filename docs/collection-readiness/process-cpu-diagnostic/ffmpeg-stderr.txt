@@ -1,0 +1,36 @@
+Input #0, lavfi, from 'testsrc2=size=1920x1080:rate=24':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 1920x1080 [SAR 1:1 DAR 16:9], 24 fps, 24 tbr, 24 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (libx264))
+[libx264 @ 0x74dcc84a80] using SAR=1/1
+[libx264 @ 0x74dcc84a80] using cpu capabilities: ARMv8 NEON DotProd I8MM
+[libx264 @ 0x74dcc84a80] profile High, level 4.0, 4:2:0, 8-bit
+Output #0, null, to 'pipe:':
+  Metadata:
+    encoder         : Lavf63.1.100
+  Stream #0:0: Video: h264, yuv420p(tv, progressive), 1920x1080 [SAR 1:1 DAR 16:9], q=2-31, 24 fps, 24 tbn
+    Metadata:
+      encoder         : Lavc63.1.100 libx264
+    Side data:
+      CPB properties: bitrate max/min/avg: 0/0/0 buffer size: 0 vbv_delay: N/A
+frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:00.50    frame=    0 fps=0.0 q=0.0 size=       0KiB time=N/A bitrate=N/A speed=N/A elapsed=0:00:01.00    frame=    3 fps=2.0 q=28.0 size=N/A time=00:00:00.04 bitrate=N/A speed=0.0276x elapsed=0:00:01.50    frame=   15 fps=7.5 q=28.0 size=N/A time=00:00:00.54 bitrate=N/A speed=0.269x elapsed=0:00:02.01    frame=   27 fps= 11 q=28.0 size=N/A time=00:00:01.04 bitrate=N/A speed=0.414x elapsed=0:00:02.51    frame=   39 fps= 13 q=28.0 size=N/A time=00:00:01.54 bitrate=N/A speed=0.51x elapsed=0:00:03.02    frame=   51 fps= 14 q=28.0 size=N/A time=00:00:02.04 bitrate=N/A speed=0.579x elapsed=0:00:03.52    frame=   63 fps= 16 q=28.0 size=N/A time=00:00:02.54 bitrate=N/A speed=0.631x elapsed=0:00:04.02    frame=   76 fps= 17 q=28.0 size=N/A time=00:00:03.08 bitrate=N/A speed=0.68x elapsed=0:00:04.53    [out#0/null @ 0x74dd000900] video:3347KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: unknown
+frame=  120 fps= 24 q=-1.0 Lsize=N/A time=00:00:04.91 bitrate=N/A speed=0.978x elapsed=0:00:05.02    
+[libx264 @ 0x74dcc84a80] frame I:1     Avg QP:12.58  size: 46103
+[libx264 @ 0x74dcc84a80] frame P:59    Avg QP:25.04  size: 31438
+[libx264 @ 0x74dcc84a80] frame B:60    Avg QP:28.80  size: 25440
+[libx264 @ 0x74dcc84a80] consecutive B-frames: 25.8%  5.0% 52.5% 16.7%
+[libx264 @ 0x74dcc84a80] mb I  I16..4: 72.5% 21.0%  6.5%
+[libx264 @ 0x74dcc84a80] mb P  I16..4:  0.9%  3.1%  0.9%  P16..4:  4.4%  3.6%  2.0%  0.0%  0.0%    skip:85.2%
+[libx264 @ 0x74dcc84a80] mb B  I16..4:  0.2%  0.4%  0.6%  B16..8:  8.4%  2.6%  0.8%  direct: 1.2%  skip:85.7%  L0:52.3% L1:35.5% BI:12.2%
+[libx264 @ 0x74dcc84a80] 8x8 transform intra:49.7% inter:19.4%
+[libx264 @ 0x74dcc84a80] coded y,uvDC,uvAC intra: 21.8% 30.6% 30.2% inter: 3.6% 6.4% 5.9%
+[libx264 @ 0x74dcc84a80] i16 v,h,dc,p: 89%  9%  2%  0%
+[libx264 @ 0x74dcc84a80] i8 v,h,dc,ddl,ddr,vr,hd,vl,hu:  6%  8% 82%  1%  1%  0%  1%  1%  1%
+[libx264 @ 0x74dcc84a80] i4 v,h,dc,ddl,ddr,vr,hd,vl,hu: 22% 27% 28%  5%  3%  3%  4%  4%  3%
+[libx264 @ 0x74dcc84a80] i8c dc,h,v,p: 80%  9%  9%  2%
+[libx264 @ 0x74dcc84a80] Weighted P-Frames: Y:0.0% UV:0.0%
+[libx264 @ 0x74dcc84a80] ref P L0: 47.1%  8.9% 26.8% 17.2%
+[libx264 @ 0x74dcc84a80] ref B L0: 69.2% 23.9%  6.9%
+[libx264 @ 0x74dcc84a80] ref B L1: 97.4%  2.6%
+[libx264 @ 0x74dcc84a80] kb/s:5483.69

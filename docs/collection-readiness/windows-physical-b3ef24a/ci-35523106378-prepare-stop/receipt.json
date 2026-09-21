@@ -1,0 +1,76 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "BLOCKED",
+    "mode":  "Gui",
+    "startedAt":  "2026-09-20T16:46:07.7827239Z",
+    "sourceCommit":  "0b21096ff7e10a3bad71452733d33ac5b2e12697",
+    "runnerImage":  "win25-vs2026",
+    "runnerImageVersion":  "20260907.229.1",
+    "os":  {
+               "Caption":  "Microsoft Windows Server 2025 Datacenter",
+               "Version":  "10.0.26100",
+               "BuildNumber":  "26100",
+               "OSArchitecture":  "64-bit"
+           },
+    "computer":  {
+                     "Manufacturer":  "Microsoft Corporation",
+                     "Model":  "Virtual Machine"
+                 },
+    "interactive":  true,
+    "sessionId":  2,
+    "actionBackend":  "normal mouse clicks on dynamically reobserved visible Start/Stop controls; documented Alt+R/Alt+S keyboard primitive retained but not dispatched",
+    "scope":  "GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions",
+    "phases":  [
+                   {
+                       "preparationProbe":  null,
+                       "action":  null,
+                       "sourcePackPath":  "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-test-suite-v1.tar.gz",
+                       "name":  "prepare-stop",
+                       "command":  [
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows.exe",
+                                       "--no-submit",
+                                       "--base-url",
+                                       "http://127.0.0.1:9",
+                                       "--codec",
+                                       "libx264",
+                                       "--presets",
+                                       "fast",
+                                       "--queue-dir",
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop\\queue-é",
+                                       "--max-duration-minutes",
+                                       "20",
+                                       "--max-storage-mb",
+                                       "3072",
+                                       "--gui"
+                                   ],
+                       "survivors":  [
+
+                                     ],
+                       "queue":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop\\queue-é",
+                       "encoderObserved":  false,
+                       "helpers":  {
+
+                                   },
+                       "state":  "D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-5106647743974b68a46e1388f8b17d37-é",
+                       "status":  "BLOCKED",
+                       "executableSha256":  "d96210f5232c8aca4ad0d3668aa0cf409feb6b74a347e1a59bd76df12fa151a0",
+                       "path":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop",
+                       "exitCode":  -1,
+                       "sourcePackBefore":  "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150"
+                   }
+               ],
+    "error":  "BLOCKED_GUI_POINT: no enabled, visible, physically consistent \u0027Start\u0027 control was observed for the owned client. Last observation: BLOCKED_GUI_POINT: observed 2 candidate Start/Stop rows on this fresh instance; the unique two-button run-control row is not established.",
+    "primaryError":  {
+                         "at":  "2026-09-20T16:46:31.4297134Z",
+                         "message":  "BLOCKED_GUI_POINT: no enabled, visible, physically consistent \u0027Start\u0027 control was observed for the owned client. Last observation: BLOCKED_GUI_POINT: observed 2 candidate Start/Stop rows on this fresh instance; the unique two-button run-control row is not established.",
+                         "stage":  "run-action:Start:observe-control",
+                         "scriptStackTrace":  "at Invoke-RunAction, D:\\a\\Encoding_Database\\Encoding_Database\\scripts\\test-windows-native-gui.ps1: line 382\r\nat \u003cScriptBlock\u003e, D:\\a\\Encoding_Database\\Encoding_Database\\scripts\\test-windows-native-gui.ps1: line 484\r\nat \u003cScriptBlock\u003e, D:\\a\\_temp\\6abbd948-9a25-4a28-93a2-432e3491740e.ps1: line 2\r\nat \u003cScriptBlock\u003e, \u003cNo file\u003e: line 1",
+                         "type":  "System.Management.Automation.RuntimeException",
+                         "phase":  "prepare-stop"
+                     },
+    "cleanupErrors":  [
+
+                      ],
+    "cleanupForced":  true,
+    "finishedAt":  "2026-09-20T16:46:33.1304176Z"
+}

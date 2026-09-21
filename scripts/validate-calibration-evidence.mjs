@@ -17,3 +17,10 @@ const document = calibration.parseCalibrationEvidence(readFileSync(path.resolve(
 const assessment = calibration.assessCalibrationEvidence(document);
 process.stdout.write(`${JSON.stringify(assessment, null, 2)}\n`);
 if (!assessment.readyForProductionFreeze && !allowDraft) process.exitCode = 1;
+if (assessment.readyForProductionFreeze) {
+  const { prisma } = await import(path.join(serverRoot, 'dist', 'db.js'));
+  try {
+    const { verifyCalibrationRetainedEvidence } = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRetention.js'));
+    process.stdout.write(`${JSON.stringify(await verifyCalibrationRetainedEvidence(prisma, document))}\n`);
+  } finally { await prisma.$disconnect(); }
+}

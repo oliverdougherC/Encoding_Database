@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/ofhd/Developer/Encoding_Database/docs/collection-readiness/holdouts/hardware-execution-939823e/run.py", line 334, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/ofhd/Developer/Encoding_Database/docs/collection-readiness/holdouts/hardware-execution-939823e/run.py", line 293, in main
+    snapshot = environment_gate(host, cell['encoder'], env)
+  File "/Users/ofhd/Developer/Encoding_Database/docs/collection-readiness/holdouts/hardware-execution-939823e/run.py", line 219, in environment_gate
+    raise ValueError('Environment is not ready; no encode launched: ' + result.stdout[-4000:] + result.stderr[-1000:])
+ValueError: Environment is not ready; no encode launched: {"snapshot": {"background_cpu_pct": 46.8, "background_gpu_pct": 79.5, "power_source": "ac", "cpu_temp_c": null, "gpu_temp_c": null, "thermal_throttle": false, "free_memory_mb": 5309.390625, "memory_pressure_pct": 78.39603424072266, "gpu_power_w": null, "gpu_memory_mb": null, "cpu_frequency_mhz": 4000.0, "selected_accelerator": "videotoolbox:system", "accelerator_is_hardware": true, "gpu_load_trustworthy": true, "gpu_sample_count": 2, "telemetry_sources": "battery_psutil,cpu_freq_psutil,cpu_psutil,cpu_psutil_thread_window_v1,gpu_ioreg_agx_system_utilization_v1", "telemetry_missing": "cpu_temp_unavailable,ffmpeg_unavailable,gpu_temp_unavailable,powermetrics_unavailable"}, "validity": {"state": "invalid", "reasons": [{"code": "background-cpu-suspect", "severity": "suspect", "message": "Background CPU load exceeded the suspect threshold.", "metric": "backgroundCpuPct", "actual": 46.8, "threshold": 35.0}, {"code": "background-gpu-high", "severity": "invalid", "message": "Background GPU load exceeded the invalid threshold.", "metric": "backgroundGpuPct", "actual": 79.5, "threshold": 75.0}]}}
+

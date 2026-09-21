@@ -1,0 +1,11 @@
+{
+  "status": "PAUSED_AT_COMPLETED_CELL_BOUNDARY",
+  "completedCellOrder": 17,
+  "completedCellId": "validation-nocturne-ballet-30s--libx265--fast--crf28",
+  "completedCellExitCode": 0,
+  "samplerAffectedSource": "0185a001e268b35aad492a8d35c487f5527ac3f5",
+  "qualification": "All observations from affected source are exploratory; no historical flags reconstructed",
+  "reason": "Confirmed stale per-thread psutil background-sampler baseline; source0185 measurements exploratory only, no calibration eligibility inferred",
+  "schedulerDisposition": "Stopped parent scheduler killed only after its sole timed-cell child reached zombie state; child was not interrupted",
+  "pausedAt": "2026-09-14T05:52:05Z"
+}

@@ -18,7 +18,7 @@ class EncodingRegressionTests(unittest.TestCase):
     def test_corrected_metrics_use_distinguishable_client_version(self) -> None:
         from client import main as client_main
 
-        self.assertEqual(client_main.CLIENT_VERSION, "client/0.2.0")
+        self.assertEqual(client_main.CLIENT_VERSION, "client/0.3.0")
 
     def test_vmaf_passes_distorted_input_before_reference(self) -> None:
         completed = mock.Mock(returncode=0, stdout=ffmpeg.json.dumps({'frames': [{'metrics': {'vmaf': 88.5}}] * 240}))
@@ -138,7 +138,7 @@ class EncodingRegressionTests(unittest.TestCase):
         self.assertEqual(payload["sourceDurationSeconds"], 60.0)
         self.assertEqual(payload["videoBitrateBps"], 4_000_000)
         self.assertEqual(payload["scoreFormulaVersion"], "7.0")
-        self.assertEqual(payload["benchmarkProtocolVersion"], "7.0")
+        self.assertEqual(payload["benchmarkProtocolVersion"], "7.1")
         self.assertEqual(payload["sourceSuiteVersion"], suite.SUITE_VERSION)
         self.assertEqual(payload["workloadId"], suite.DEFAULT_QUICK_CLIP_ID)
         self.assertEqual(payload["contentClass"], "action")

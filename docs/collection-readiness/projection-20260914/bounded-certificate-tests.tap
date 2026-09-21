@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: native process deadline, output budget and abort terminate owned process trees
+ok 1 - native process deadline, output budget and abort terminate owned process trees
+  ---
+  duration_ms: 522.059
+  type: 'test'
+  ...
+# Subtest: real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+ok 2 - real media rejects truncated/extra/wrong cadence/timestamp sequences before metric execution
+  ---
+  duration_ms: 1397.068875
+  type: 'test'
+  ...
+# Subtest: VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+ok 3 - VMAF rejects missing/duplicate frame coverage instead of silently accepting shortest streams
+  ---
+  duration_ms: 0.466875
+  type: 'test'
+  ...
+# Subtest: operator middleware denies anonymous and binds configured credentials
+ok 4 - operator middleware denies anonymous and binds configured credentials
+  ---
+  duration_ms: 37.430417
+  type: 'test'
+  ...
+# Subtest: PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+ok 5 - PostgreSQL admission, upload slots, monotonic retries, lease fencing and durable recovery
+  ---
+  duration_ms: 10262.031167
+  type: 'test'
+  ...
+# Subtest: complete canonical group eligibility derives timing, exact members and current retained review state
+ok 6 - complete canonical group eligibility derives timing, exact members and current retained review state
+  ---
+  duration_ms: 3.712292
+  type: 'test'
+  ...
+# Subtest: three unstable four-attempt groups cannot manufacture HIGH confidence or PL from identical source medians
+ok 7 - three unstable four-attempt groups cannot manufacture HIGH confidence or PL from identical source medians
+  ---
+  duration_ms: 26.017958
+  type: 'test'
+  ...
+# Subtest: live complete-group verification is independent of frontier subset, validates sibling bytes, and rechecks later reviews
+ok 8 - live complete-group verification is independent of frontier subset, validates sibling bytes, and rechecks later reviews
+  ---
+  duration_ms: 603.115375
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 13098.694791

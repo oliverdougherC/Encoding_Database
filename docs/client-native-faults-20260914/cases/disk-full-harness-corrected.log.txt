@@ -1,0 +1,7 @@
+hdiutil: WARNING: 'hdiutil attach -nobrowse -mountpoint ...' is deprecated. Please use 'diskutil image attach --mountOptions nobrowse --mountPoint ...' instead.
+{"case": "disk-full", "exit": 0, "seconds": 44.42058458298561}
+Traceback (most recent call last):
+  File "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/run_disk_full.py", line 34, in <module>
+    assert result['exitCode']==6 and result['priorRecordsUnchanged']
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError

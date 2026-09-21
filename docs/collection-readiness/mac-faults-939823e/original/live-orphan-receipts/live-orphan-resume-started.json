@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "case": "live-orphan-resume",
+  "startedAt": "2026-09-20T02:10:00.474559+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--resume-campaign",
+    "campaign-250b62ed5aa9b145",
+    "--no-submit",
+    "--max-duration-minutes",
+    "3",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_PROTOCOL_SEED": "20260921",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/live-orphan-receipts/live-orphan-resume-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:55688",
+    "HTTPS_PROXY": "http://127.0.0.1:55688",
+    "ALL_PROXY": "http://127.0.0.1:55688",
+    "NO_PROXY": "localhost,127.0.0.1",
+    "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-test-suite-v1.tar.gz"
+  },
+  "pid": 35218,
+  "processCreatedAt": 1789870200.471836,
+  "artifactSha256": "ad01bfd36ad84e0e0d9f45730bd195c1b940a240493d093f6a875faa97a6f2c0",
+  "diagnosticNotCalibration": true,
+  "proxyRequestStart": 0
+}

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import styles from "./ComparePanel.module.css";
 import ComparePanel from "./ComparePanel";
 import type { Benchmark } from "../lib/types";
 
@@ -133,5 +134,51 @@ describe("ComparePanel", () => {
     expect(screen.getByText("Repetitions")).toBeInTheDocument();
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
+  });
+});
+
+const metricRow = (label: string) => within(screen.getByText(label).closest("tr")!);
+
+describe("comparison eligibility", () => {
+  const faster = () => makeRow({ id: "row-b", recipe: { ...makeRow().recipe, fingerprint: "other-recipe" }, performance: { encodeFps: 200, realTimeRatio: 6.67 }, quality: { ...makeRow().quality, vmafMean: 97 }, sampleCounts: { ...makeRow().sampleCounts, accepted: 9 } });
+  it("highlights compatible different recipes without interpreting sample counts as winners", () => {
+    render(<ComparePanel rows={[makeRow(), faster()]} onClose={() => {}} onClear={() => {}} />);
+    expect(metricRow("FPS").getByText("200.00")).toHaveClass(styles.bestCell);
+    expect(metricRow("VMAF").getByText("97.0")).toHaveClass(styles.bestCell);
+    expect(metricRow("Accepted runs").getByText("9")).not.toHaveClass(styles.bestCell);
+    expect(screen.queryByText(/Values are shown without winner/)).not.toBeInTheDocument();
+  });
+  it.each(["workload", "environment", "protocol", "suite"])("removes every metric highlight for incompatible %s", (field) => {
+    const other = faster();
+    if (field === "workload") other.workloadId = "animation";
+    if (field === "environment") other.environment = { ...other.environment, fingerprint: "other" };
+    if (field === "protocol") other.versions = { ...other.versions, benchmarkProtocolVersion: "7.1" };
+    if (field === "suite") other.versions = { ...other.versions, sourceSuiteVersion: "new-suite" };
+    const { container } = render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);
+    expect(container.querySelectorAll(`.${styles.bestCell}`)).toHaveLength(0);
+    expect(screen.getByText(/Values are shown without winner/)).toBeInTheDocument();
+  });
+  it("withholds quality highlights across models while allowing timing comparison", () => {
+    const other = faster(); other.quality = { ...other.quality, qualityModelId: "other-model" };
+    render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);
+    expect(metricRow("FPS").getByText("200.00")).toHaveClass(styles.bestCell);
+    expect(metricRow("VMAF").getByText("97.0")).not.toHaveClass(styles.bestCell);
+  });
+  it("compares compatible stable group centers without changing raw counts", () => {
+    const other = faster();
+    other.status = { ...other.status, centerBasis: "eligible-stable-groups" };
+    render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);
+    expect(metricRow("FPS").getByText("200.00")).toHaveClass(styles.bestCell);
+    expect(screen.getByText("Stable measurement groups")).toBeInTheDocument();
+    expect(metricRow("Accepted runs").getByText("9")).not.toHaveClass(styles.bestCell);
+  });
+  it("keeps suspect-only 0 accepted / 4 suspect evidence neutral and PL unavailable", () => {
+    const other = faster(); other.status = { ...other.status, centerBasis: "suspect", artifactState: "VERIFIED" }; other.sampleCounts = { ...other.sampleCounts, accepted: 0, suspect: 4 };
+    const { container } = render(<ComparePanel rows={[makeRow(), other]} onClose={() => {}} onClear={() => {}} />);
+    expect(container.querySelectorAll(`.${styles.bestCell}`)).toHaveLength(0);
+    expect(metricRow("Accepted runs").getByText("0")).toBeInTheDocument();
+    expect(metricRow("Suspect runs").getByText("4")).toBeInTheDocument();
+    expect(screen.getByText("Suspect · review required")).toBeInTheDocument();
+    expect(screen.getByText("Awaiting retention")).toBeInTheDocument();
   });
 });

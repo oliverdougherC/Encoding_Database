@@ -1,0 +1,46 @@
+{
+  "schemaVersion": "encodingdb-integration-receipt/v1",
+  "implementationCommit": "4348ca8f1fc0e5a8e1bde2dacc3d01c463ba4b43",
+  "sourceBase": "b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+  "server": {
+    "passed": 219,
+    "skipped": 0,
+    "command": "npm --prefix server test",
+    "databaseFixtures": "Dedicated migrated PostgreSQL databases for backend (America/Los_Angeles), corpus, calibration, reviews, E2E, and three-source sealed snapshots; actual pinned FFmpeg on PATH."
+  },
+  "client": {
+    "passed": 217,
+    "command": ".venv-release/bin/python -m pytest -q client/tests",
+    "seconds": 171.55
+  },
+  "frontend": {
+    "passed": 56,
+    "commands": [
+      "npm test",
+      "npm run lint",
+      "npm run build"
+    ]
+  },
+  "architectureReview": "Independent native agent closed protocol compatibility and historical-context findings. Not a human perceptual review or GitHub approval.",
+  "cleanup": {
+    "plan": ".omx/plans/cleanup-encodingdb-release.md",
+    "files": [
+      "server/src/routes.ts",
+      "server/src/v7/artifacts.ts",
+      "server/src/v7/referenceContext.ts"
+    ],
+    "change": "Removed confirmed unused imports/types/helpers and unused bindings while retaining awaited fencing calls. Independent cleanup review approved; full server suite reran after changes.",
+    "addedDependencies": false
+  },
+  "limitations": [
+    "Full release-preflight and native CI still running at this receipt.",
+    "Not native hardware certification, empirical calibration, human approval, or production epoch."
+  ],
+  "files": {
+    "client.log": "b62b47590079c813be4cf1f8d0f1275dbc1d4dd726f213d1c151e20323fd711a",
+    "frontend-tests.log": "f04eca0d3e11c923ded97e46bf13b70e021d5a3df1583175e997e87d54b1d33d",
+    "server.log": "9930aef3023c037295ad90245a3354d4eb44ac16fc264ff30a29fa8d0998b50d",
+    "frontend-lint.log": "a65870662de82e9ac786152289f9cf2450996b34e06522b8b3d5d1a055f6c469",
+    "frontend-build.log": "683ff59dc8c8aacde3ee6ea04a60738048506fc9ca2a161e97648ecc1fefc08b"
+  }
+}

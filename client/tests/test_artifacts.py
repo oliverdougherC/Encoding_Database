@@ -26,7 +26,7 @@ def _run_create_template(byte_size: int) -> Dict[str, object]:
             "minimumClientVersion": "client/0.2.0",
             "canonicalRecipeRules": {"artifactUploadRequired": True},
             "canonicalOutputRules": {"singleVideoStream": True, "noAudio": True},
-            "metricWorkerVersion": "authoritative-analysis/v1",
+            "metricWorkerVersion": "authoritative-analysis/v2",
         },
         "testClip": {
             "suiteId": "encodingdb-test-suite",
@@ -131,7 +131,7 @@ class _ArtifactFlowHandler(BaseHTTPRequestHandler):
                 "status": "COMPLETE",
                 "metricModelId": "vmaf-v1-sdr-1080p",
                 "qualityContextId": "vmaf-v1-sdr-1080p-yuv420p",
-                "analysisWorkerVersion": "authoritative-analysis/v1",
+                "analysisWorkerVersion": "authoritative-analysis/v2",
                 "vmafMean": 95.25,
                 "vmafP5": 90.25,
                 "xpsnr": 41.5,

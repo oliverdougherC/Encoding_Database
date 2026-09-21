@@ -1,0 +1,40 @@
+{
+  "capturedAt": "2026-09-20T00:56:38.628883+00:00",
+  "sourceSha": "9370c70baba4adea617e2a96f773fc5293592886",
+  "platform": "Darwin ofhds-MacBook-Pro.local 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:05:48 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T6041 arm64",
+  "node": "v22.23.0",
+  "containerName": "/encodingdb-projection-synthetic-20260914",
+  "containerId": "6a981083c832afcdde29f792958f2d134463301d13be6f60a2ff34e1bc8419b8",
+  "imageDigest": "sha256:f1c3376c26f2609ab9f29f71f824103fe2fcd8ee0346485cb6122a4f93df6f94",
+  "databaseMemoryBytes": 1073741824,
+  "databaseSwapLimitBytes": 1073741824,
+  "databaseShmBytes": 268435456,
+  "portBindings": {
+    "5432/tcp": [
+      {
+        "HostIp": "127.0.0.1",
+        "HostPort": "55441"
+      }
+    ]
+  },
+  "postgresCommand": [
+    "-c",
+    "shared_buffers=128MB",
+    "-c",
+    "work_mem=4MB",
+    "-c",
+    "max_connections=100"
+  ],
+  "prismaConnectionLimit": 30,
+  "recomputeTransactionTimeoutMs": 30000,
+  "priorFailedDatabaseDump": {
+    "path": ".test-reports/projection-scale-trial2/pre-reset-trial1.dump",
+    "sha256": "e296d29d888a414558f8a04653a4fcf763aef4d025f7015c720755a763a4e97f"
+  },
+  "limitations": [
+    "Synthetic metadata only; no retained media, quality-worker, calibration or human-review proof",
+    "25 concurrent HTTP readers, not Chromium rendering or frontend proxy",
+    "ARM64 local Docker Desktop PostgreSQL; not P910 hardware",
+    "Node server and database cgroup memory measured separately; load generator and Docker Desktop VM not included"
+  ]
+}

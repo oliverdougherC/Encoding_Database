@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   activateReferenceContextForProduction,
+  assertReferenceContextCalibrationBinding,
   buildReferenceContextFromRetainedEvidence,
   buildGeneralScopeWorkloadId,
   buildReferenceContextFromSweep,
@@ -373,7 +374,7 @@ test('retained evidence cannot be promoted with the checked-in incomplete PLA-87
   );
 });
 
-test('production promotion binds a complete calibration review hash and exact context hash', () => {
+test('legacy checkbox calibration with overlapping folds and unrelated frontier IDs is rejected', () => {
   const synthetic = loadReferenceContext(contextFixturePath);
   const context = buildReferenceContextFromRetainedEvidence({
     benchmarkProtocolId: 'proto-1',
@@ -391,16 +392,10 @@ test('production promotion binds a complete calibration review hash and exact co
     evidence: buildRetainedReferenceEvidenceFixture().map((entry) => ({ ...entry, benchmarkProtocolVersion: '7.0' })),
   });
   const calibration = buildCompleteCalibrationForContext(context);
-  const promoted = activateReferenceContextForProduction(context, calibration);
-
-  assert.equal(promoted.activation.stage, 'PRODUCTION');
-  assert.equal(promoted.activation.productionActivationAllowed, true);
-  assert.equal(promoted.activation.calibrationVersion, calibration.calibrationVersion);
-  assert.equal(promoted.activation.calibrationReviewHash, calibration.reviewHash);
-  assert.equal(promoted.hash, calibration.freeze.scoreContextHash);
+  assert.throws(() => activateReferenceContextForProduction(context, calibration), /not ready for production freeze/);
 });
 
-test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus latest authoritative analyses', async () => {
+test('legacy retained rows without complete group receipts cannot fit new reference contexts', async () => {
   const rows = await loadRetainedReferenceEvidence({
     benchmarkRun: {
       async findMany() {
@@ -428,14 +423,14 @@ test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus late
             sha256: 'b'.repeat(64),
           }],
           qualityAnalyses: [{
-            id: 'analysis-2',
+            id: 'analysis-2', artifactId: 'artifact-1', evidenceReviews: [],
             metricModelId: 'vmaf-v1-sdr-sd',
             status: 'COMPLETE',
             analysisWorkerVersion: 'worker-v2',
             videoBitrateBps: 2_700_000,
             vmafMean: 91.2,
           }, {
-            id: 'analysis-1',
+            id: 'analysis-1', artifactId: 'artifact-1', evidenceReviews: [],
             metricModelId: 'vmaf-v1-sdr-sd',
             status: 'COMPLETE',
             analysisWorkerVersion: 'worker-v1',
@@ -451,9 +446,7 @@ test('loadRetainedReferenceEvidence selects retained ENCODED artifacts plus late
     suiteVersion: 'encodingdb-test-suite-v1',
   });
 
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].qualityAnalysisId, 'analysis-2');
-  assert.equal(rows[0].artifactStorageState, 'RETAINED');
+  assert.deepEqual(rows, []);
 });
 
 test('score-context seeds include workload and GENERAL rows and reject provisional activation by default', async () => {
@@ -561,4 +554,50 @@ test('persistGeneralDerivedResultFromWorkloadEvidence persists GENERAL only with
   assert.equal(calls[0][1].create.kind, 'GENERAL');
   assert.equal(calls[0][1].create.workloadId, 'general-suite:encodingdb-test-suite-v1');
   assert.equal(calls[2][1].data.length, 7);
+});
+
+
+test('exact retained frontier binding rejects holdouts, relabeled samples and mismatched applied constants', () => {
+  const synthetic = loadReferenceContext(contextFixturePath);
+  const context = buildReferenceContextFromRetainedEvidence({
+    benchmarkProtocolId: 'proto-1', benchmarkProtocolVersion: 'EDB-2026.1',
+    sourceSuiteVersion: synthetic.sourceSuiteVersion, qualityModelId: 'vmaf-v1-sdr-sd', contextVersion: 'test-binding', formulaVersion: '7.0',
+    targetMetricValue: 90, qualityExponent: 2.4, speedCurveRate: 1.2, speedSaturationRealtime: 4,
+    requiredWorkloads: synthetic.workloads.map(({ workloadId, contentClass }) => ({ workloadId, contentClass })),
+    requiredContentClasses: synthetic.generalPolicy.requiredContentClasses, evidence: buildRetainedReferenceEvidenceFixture(),
+  });
+  const calibration = {
+    freeze: { bitrateReferenceVmafAnchor: 90, ...context.transformConstants }, metricSanityReviews: [],
+    corpus: context.workloads.flatMap(workload => workload.referenceFrontier.flatMap(point => point.evidence.map(ref => ({
+      evidenceId: ref.qualityAnalysisId, partition: 'CALIBRATION', qualityAnalysisId: ref.qualityAnalysisId,
+      benchmarkRunId: ref.benchmarkRunId, artifactId: ref.artifactId, artifactSha256: ref.artifactSha256,
+      analysisWorkerVersion: ref.analysisWorkerVersion, workloadId: workload.workloadId, contentClass: workload.contentClass,
+      videoBitrateBps: point.bitrateBps, vmafMean: point.vmafMean,
+    })))),
+  };
+  assert.doesNotThrow(() => assertReferenceContextCalibrationBinding(context, calibration));
+  for (const mutate of [
+    (ctx, doc) => doc.corpus[0].partition = 'HOLDOUT',
+    (ctx) => ctx.workloads[0].referenceFrontier[0].evidence[0].kind = 'synthetic-sample',
+    (ctx) => ctx.transformConstants.qualityExponent = 3,
+    (ctx) => ctx.workloads[0].referenceFrontier[0].vmafMean += 1,
+    (ctx) => ctx.workloads[0].workloadReferenceBitrateBps += 10,
+  ]) {
+    const ctx = structuredClone(context); const doc = structuredClone(calibration); mutate(ctx, doc);
+    assert.throws(() => assertReferenceContextCalibrationBinding(ctx, doc));
+  }
+});
+
+test('persisted context version cannot be rewritten with different reviewed constants', async () => {
+  const context = loadReferenceContext(contextFixturePath);
+  let writes = 0;
+  const client = {
+    async $executeRawUnsafe() {},
+    scoreContext: {
+      async findUnique() { return { benchmarkProtocolId: 'proto-1', workloadReferenceBitrateBps: 1, transformConstants: {}, referenceFrontier: {} }; },
+      async upsert() { writes += 1; },
+    },
+  };
+  await assert.rejects(persistScoreContextsFromReferenceContext(client, context, 'proto-1', { allowTestOnlyActivation: true }), /Immutable score context/);
+  assert.equal(writes, 0);
 });

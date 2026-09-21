@@ -21,6 +21,7 @@ import routes, {
   SORT_WHITELIST,
 } from '../dist/routes.js';
 import {
+  buildPublicCorpusRows,
   buildPublicCorpusOrderBy,
   buildPublicCorpusWhere,
 } from '../dist/v7/corpus.js';
@@ -166,6 +167,7 @@ test('GET /corpus returns unscored rows from direct retained evidence when no Sc
     return;
   }
 
+  const originalTransaction = prisma.$transaction;
   const originalBenchmarkRunFindMany = prisma.benchmarkRun.findMany;
   const originalDerivedFindMany = prisma.derivedResult.findMany;
   prisma.benchmarkRun.findMany = async () => [
@@ -196,7 +198,23 @@ test('GET /corpus returns unscored rows from direct retained evidence when no Sc
     }),
   ];
   prisma.derivedResult.findMany = async () => [];
+  prisma.$transaction = async callback => callback({
+    benchmarkRun: prisma.benchmarkRun,
+    derivedResult: prisma.derivedResult,
+    $executeRaw: async () => 0,
+    $queryRaw: async () => {
+      const runs = await prisma.benchmarkRun.findMany();
+      const [row] = buildPublicCorpusRows({ runs, publicReferenceContextVersions: new Set() });
+      return [{ totalCount: 1n, groups: [{
+        id: row.id, runId: runs[1].id, artifactId: 'artifact-2', analysisId: 'analysis-2', derivedId: null,
+        accepted: 2, suspect: 0, repetitions: 2, independentSources: 0, machines: 0,
+        fps: row.fps, sourceFps: row.sourceFps, vmaf: row.vmaf, vmafP5: row.vmafP5,
+        fileSizeBytes: row.fileSizeBytes, videoBitrateBps: row.videoBitrateBps, artifactState: row.status.artifactState,
+      }] }];
+    },
+  });
   t.after(() => {
+    prisma.$transaction = originalTransaction;
     prisma.benchmarkRun.findMany = originalBenchmarkRunFindMany;
     prisma.derivedResult.findMany = originalDerivedFindMany;
   });

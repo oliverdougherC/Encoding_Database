@@ -38,9 +38,13 @@ const referenceContextModule = await import(path.join(serverRoot, 'dist', 'v7', 
 let context;
 
 if (flags.has('--benchmark-protocol-id')) {
+  if (!flags.has('--calibration-evidence')) throw new Error('Retained generation requires --calibration-evidence with explicit CALIBRATION membership');
+  const calibrationModule = await import(path.join(serverRoot, 'dist', 'v7', 'calibration.js'));
+  const calibration = calibrationModule.parseCalibrationEvidence(readFileSync(path.resolve(flags.get('--calibration-evidence')), 'utf8'));
   const { prisma } = await import(path.join(serverRoot, 'dist', 'db.js'));
   try {
     context = await referenceContextModule.generateReferenceContextFromDatabase(prisma, {
+      fittingAnalysisIds: calibration.corpus.filter((entry) => entry.partition === 'CALIBRATION').map((entry) => entry.qualityAnalysisId),
       benchmarkProtocolId: flags.get('--benchmark-protocol-id'),
       benchmarkProtocolVersion: flags.get('--benchmark-protocol-version'),
       sourceSuiteVersion: flags.get('--source-suite-version'),
@@ -60,16 +64,23 @@ if (flags.has('--benchmark-protocol-id')) {
   context = referenceContextModule.buildReferenceContextFromSweep(sweep);
 }
 
-if (flags.has('--calibration-evidence')) {
+if (flags.has('--promote')) {
   if (!flags.has('--benchmark-protocol-id')) {
     throw new Error('--calibration-evidence can only promote a context generated from retained database evidence');
   }
   const calibrationPath = path.resolve(process.cwd(), flags.get('--calibration-evidence'));
   const calibrationModule = await import(path.join(serverRoot, 'dist', 'v7', 'calibration.js'));
   const calibration = calibrationModule.parseCalibrationEvidence(readFileSync(calibrationPath, 'utf8'));
-  context = referenceContextModule.activateReferenceContextForProduction(context, calibration);
+  const { prisma } = await import(path.join(serverRoot, 'dist', 'db.js'));
+  try {
+    const { verifyCalibrationRetainedEvidence } = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRetention.js'));
+    await verifyCalibrationRetainedEvidence(prisma, calibration);
+    context = referenceContextModule.activateReferenceContextForProduction(context, calibration);
+    const { verifyCalibrationRanking } = await import(path.join(serverRoot, 'dist', 'v7', 'calibrationRanking.js'));
+    verifyCalibrationRanking(calibration, context);
+  } finally { await prisma.$disconnect(); }
 }
 
 mkdirSync(path.dirname(outputPath), { recursive: true });
-writeFileSync(outputPath, `${JSON.stringify(context, null, 2)}\n`, 'utf8');
+writeFileSync(outputPath, `${JSON.stringify(context, null, 2)}\n`, { encoding: 'utf8', flag: 'wx' });
 process.stdout.write(`${outputPath}\n`);

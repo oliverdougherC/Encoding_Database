@@ -1,0 +1,12 @@
+{
+  "README.md": "a04b868724252ea5a14293f5fb8d0c479f6142d66e04f457dbaec56382848c37",
+  "terminal-receipt.json": "9971361b30a64fab72e7be00ee58d47b0b3dd3aebd4b673692332777a73e431b",
+  "pre-gui-resources.json": "9f0be90665f090a5bff25518d7f2b65a86f095dc8f4c4584efba6ec39a0de04b",
+  "gui/events.jsonl": "d7197fa4fd7f15435c2f06ceaf84b5a9af02fb0bdf29d4acaab794fc6d14d00c",
+  "gui/receipt.json": "b49ea23cbe14fc44462122ced1eaa3292622b6551a2617589aeaa2e53ec4e6f0",
+  "console/receipt.json": "fd708fcaf321e69a7d39cb9fc3440342b797ceb2a0751adbb6d75b89048ff2c4",
+  "console/seven-clips/embedded-runtime.json": "05d8900d7109f6d10c8aeb96b4768e466e822f8e9000d8a565c8755739f9cb0a",
+  "gui/close/failure.uia.json": "baf3a355ae051a56e89596b3c34f07c200fd42032cfb0cdbd682a4565e8f7f1d",
+  "gui/close/failure.png": "8f2cd1ad0a3334ee6f672379ea830ea55ca8cae0083c45951124e1dfa29446f0",
+  "gui/close/failure.win32.json": "1d3eb6af7b62b1dec66ce35a4f9981a80d9b9bc71940e42b146ac688a15dfeca"
+}

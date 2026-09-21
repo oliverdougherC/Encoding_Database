@@ -1,0 +1,35 @@
+{
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "client": {
+    "command": ".venv-release/bin/python -m pytest client/tests -q",
+    "passed": 370,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 133.9,
+    "log": "client-tests.txt",
+    "sha256": "015a61ec10d4f1fcb7ef731815b1796a707a049da45b18903b422a2d5a1eab90"
+  },
+  "runtime": "Python3.14.6; explicit reviewed macOS ARM64 FFmpeg9/ffprobe helpers",
+  "ci": {
+    "run": 35480963919,
+    "preflightRun": 35480963928,
+    "observedPassed": [
+      "server",
+      "client",
+      "frontend",
+      "migration",
+      "stack-smoke",
+      "clean-production-deployment",
+      "client-native-macos-build",
+      "client-native-linux-build"
+    ],
+    "pending": [
+      "client-native-windows-build"
+    ],
+    "releasePreflight": "success"
+  },
+  "limits": [
+    "Native Windows GUI/console and physical hardware execution remain pending.",
+    "Test success is not calibrated PL or production activation."
+  ]
+}

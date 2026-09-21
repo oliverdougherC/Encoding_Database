@@ -1,0 +1,196 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "BLOCKED",
+    "mode":  "Gui",
+    "startedAt":  "2026-09-20T03:04:10.1030710Z",
+    "sourceCommit":  "14403ea1c1519acce543dc9d76bacb13a2032159",
+    "runnerImage":  "win25-vs2026",
+    "runnerImageVersion":  "20260907.229.1",
+    "os":  {
+               "Caption":  "Microsoft Windows Server 2025 Datacenter",
+               "Version":  "10.0.26100",
+               "BuildNumber":  "26100",
+               "OSArchitecture":  "64-bit"
+           },
+    "computer":  {
+                     "Manufacturer":  "Microsoft Corporation",
+                     "Model":  "Virtual Machine"
+                 },
+    "interactive":  true,
+    "sessionId":  2,
+    "scope":  "GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions",
+    "phases":  [
+                   {
+                       "preparationProbe":  {
+                                                "path":  "D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-1ce8c3d1534d411da22673ed34fd617c-é\\tmp\\_MEI43442\\bin\\win\\ffprobe.exe",
+                                                "sha256":  "70be4ea32723b313df89603ba7cfbd818862e8785c20eb9008c27ef161ae84c0",
+                                                "commandLine":  "D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-1ce8c3d1534d411da22673ed34fd617c-é\\tmp\\_MEI43442\\bin\\win\\ffprobe.exe -v error -count_frames -select_streams v:0 -show_entries format=format_name:stream=codec_name,width,height,pix_fmt,bits_per_raw_sample,color_range,color_space,color_transfer,color_primaries,field_order,avg_frame_rate,r_frame_rate,nb_read_frames:stream_side_data -of json D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-1ce8c3d1534d411da22673ed34fd617c-é\\suite-cache\\.suite-pack\\suite-pack-fw16o4lx\\canonical\\athletic-action-1080p24-final.mkv"
+                                            },
+                       "action":  "Stop during preparation",
+                       "sourcePackAfter":  "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+                       "sourcePackPath":  "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-test-suite-v1.tar.gz",
+                       "name":  "prepare-stop",
+                       "command":  [
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows.exe",
+                                       "--no-submit",
+                                       "--base-url",
+                                       "http://127.0.0.1:9",
+                                       "--codec",
+                                       "libx264",
+                                       "--presets",
+                                       "fast",
+                                       "--queue-dir",
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop\\queue-é",
+                                       "--max-duration-minutes",
+                                       "20",
+                                       "--max-storage-mb",
+                                       "3072",
+                                       "--gui"
+                                   ],
+                       "visualStatusReview":  "PENDING_PARENT_INSPECTION",
+                       "survivors":  [
+
+                                     ],
+                       "queue":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop\\queue-é",
+                       "preparationCache":  [
+                                                {
+                                                    "FullName":  "D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-1ce8c3d1534d411da22673ed34fd617c-é\\suite-cache\\packs\\encodingdb-test-suite-v1.tar.gz",
+                                                    "Length":  1506890018
+                                                }
+                                            ],
+                       "encoderObserved":  false,
+                       "helpers":  {
+
+                                   },
+                       "scope":  "Local-pack source preparation Stop; not a network-download resume test",
+                       "state":  "D:\\a\\_temp\\encodingdb-native-Gui-prepare-stop-1ce8c3d1534d411da22673ed34fd617c-é",
+                       "status":  "PASSED",
+                       "executableSha256":  "cc2db8741412cc90ec0191c91d3a9ca6df0fca7cf9559ceb4ee24d85c003fe5b",
+                       "path":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\prepare-stop",
+                       "exitCode":  0,
+                       "sourcePackBefore":  "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150"
+                   },
+                   {
+                       "preparationProbe":  null,
+                       "action":  null,
+                       "name":  "complete",
+                       "command":  [
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows.exe",
+                                       "--no-submit",
+                                       "--base-url",
+                                       "http://127.0.0.1:9",
+                                       "--codec",
+                                       "libx264",
+                                       "--presets",
+                                       "fast",
+                                       "--queue-dir",
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\complete\\queue-é",
+                                       "--max-duration-minutes",
+                                       "20",
+                                       "--max-storage-mb",
+                                       "3072",
+                                       "--gui"
+                                   ],
+                       "survivors":  [
+
+                                     ],
+                       "queue":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\complete\\queue-é",
+                       "encoderObserved":  true,
+                       "helpers":  {
+                                       "D:\\a\\_temp\\encodingdb-native-Gui-complete-3eeee4f84d7c446eaf9718c726f40704-é\\tmp\\_MEI65442\\bin\\win\\ffmpeg.exe":  {
+                                                                                                                                                                     "path":  "D:\\a\\_temp\\encodingdb-native-Gui-complete-3eeee4f84d7c446eaf9718c726f40704-é\\tmp\\_MEI65442\\bin\\win\\ffmpeg.exe",
+                                                                                                                                                                     "sha256":  "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+                                                                                                                                                                     "commandLine":  "D:\\a\\_temp\\encodingdb-native-Gui-complete-3eeee4f84d7c446eaf9718c726f40704-é\\tmp\\_MEI65442\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i D:\\a\\_temp\\encodingdb-native-Gui-complete-3eeee4f84d7c446eaf9718c726f40704-é\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\complete\\queue-é\\campaigns\\campaign-048cdf259e715a96\\001-libx264-fast-24-warmup-r1.mp4"
+                                                                                                                                                                 }
+                                   },
+                       "visualStatusReview":  "PENDING_PARENT_INSPECTION",
+                       "state":  "D:\\a\\_temp\\encodingdb-native-Gui-complete-3eeee4f84d7c446eaf9718c726f40704-é",
+                       "status":  "PASSED",
+                       "path":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\complete",
+                       "exitCode":  0,
+                       "executableSha256":  "cc2db8741412cc90ec0191c91d3a9ca6df0fca7cf9559ceb4ee24d85c003fe5b"
+                   },
+                   {
+                       "preparationProbe":  null,
+                       "action":  "Stop",
+                       "name":  "stop",
+                       "command":  [
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows.exe",
+                                       "--no-submit",
+                                       "--base-url",
+                                       "http://127.0.0.1:9",
+                                       "--codec",
+                                       "libx264",
+                                       "--presets",
+                                       "fast",
+                                       "--queue-dir",
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\stop\\queue-é",
+                                       "--max-duration-minutes",
+                                       "20",
+                                       "--max-storage-mb",
+                                       "3072",
+                                       "--gui"
+                                   ],
+                       "survivors":  [
+
+                                     ],
+                       "queue":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\stop\\queue-é",
+                       "encoderObserved":  true,
+                       "helpers":  {
+                                       "D:\\a\\_temp\\encodingdb-native-Gui-stop-0fe18d53a2eb414d8776e619240532b3-é\\tmp\\_MEI18002\\bin\\win\\ffmpeg.exe":  {
+                                                                                                                                                                 "path":  "D:\\a\\_temp\\encodingdb-native-Gui-stop-0fe18d53a2eb414d8776e619240532b3-é\\tmp\\_MEI18002\\bin\\win\\ffmpeg.exe",
+                                                                                                                                                                 "sha256":  "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+                                                                                                                                                                 "commandLine":  "D:\\a\\_temp\\encodingdb-native-Gui-stop-0fe18d53a2eb414d8776e619240532b3-é\\tmp\\_MEI18002\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i D:\\a\\_temp\\encodingdb-native-Gui-stop-0fe18d53a2eb414d8776e619240532b3-é\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\stop\\queue-é\\campaigns\\campaign-01818d82bfd9593e\\001-libx264-fast-24-warmup-r1.mp4"
+                                                                                                                                                             }
+                                   },
+                       "visualStatusReview":  "PENDING_PARENT_INSPECTION",
+                       "state":  "D:\\a\\_temp\\encodingdb-native-Gui-stop-0fe18d53a2eb414d8776e619240532b3-é",
+                       "status":  "PASSED",
+                       "path":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\stop",
+                       "exitCode":  0,
+                       "executableSha256":  "cc2db8741412cc90ec0191c91d3a9ca6df0fca7cf9559ceb4ee24d85c003fe5b"
+                   },
+                   {
+                       "preparationProbe":  null,
+                       "action":  null,
+                       "name":  "close",
+                       "command":  [
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows.exe",
+                                       "--no-submit",
+                                       "--base-url",
+                                       "http://127.0.0.1:9",
+                                       "--codec",
+                                       "libx264",
+                                       "--presets",
+                                       "fast",
+                                       "--queue-dir",
+                                       "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\close\\queue-é",
+                                       "--max-duration-minutes",
+                                       "20",
+                                       "--max-storage-mb",
+                                       "3072",
+                                       "--gui"
+                                   ],
+                       "survivors":  [
+
+                                     ],
+                       "queue":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\close\\queue-é",
+                       "encoderObserved":  true,
+                       "helpers":  {
+                                       "D:\\a\\_temp\\encodingdb-native-Gui-close-c9befed0e43f4252a48fa7fde810fddf-é\\tmp\\_MEI92042\\bin\\win\\ffmpeg.exe":  {
+                                                                                                                                                                  "path":  "D:\\a\\_temp\\encodingdb-native-Gui-close-c9befed0e43f4252a48fa7fde810fddf-é\\tmp\\_MEI92042\\bin\\win\\ffmpeg.exe",
+                                                                                                                                                                  "sha256":  "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+                                                                                                                                                                  "commandLine":  "D:\\a\\_temp\\encodingdb-native-Gui-close-c9befed0e43f4252a48fa7fde810fddf-é\\tmp\\_MEI92042\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i D:\\a\\_temp\\encodingdb-native-Gui-close-c9befed0e43f4252a48fa7fde810fddf-é\\suite-cache\\canonical\\athletic-action-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\close\\queue-é\\campaigns\\campaign-26d7e5e4d1981fa1\\001-libx264-fast-24-warmup-r1.mp4"
+                                                                                                                                                              }
+                                   },
+                       "state":  "D:\\a\\_temp\\encodingdb-native-Gui-close-c9befed0e43f4252a48fa7fde810fddf-é",
+                       "status":  "BLOCKED",
+                       "path":  "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\gui\\close",
+                       "exitCode":  -1,
+                       "executableSha256":  "cc2db8741412cc90ec0191c91d3a9ca6df0fca7cf9559ceb4ee24d85c003fe5b"
+                   }
+               ],
+    "error":  "BLOCKED_GUI_AUTOMATION: expected one observed enabled \u0027Yes\u0027; found 2. Screenshots and trees retained.",
+    "cleanupForced":  true,
+    "finishedAt":  "2026-09-20T03:17:27.7763650Z"
+}

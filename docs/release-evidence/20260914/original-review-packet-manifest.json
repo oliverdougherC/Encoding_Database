@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "reviewState": "PENDING_HUMAN_REVIEW",
+  "originalArtifactSha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+  "alignment": "Both inputs settb=1/24,setpts=N then hstack, lossless H264, passthrough timestamps;240frames at24fps exactly10seconds.",
+  "browserVerification": {
+    "playback": true,
+    "seekToFrame239": 9.958333,
+    "duration": 10,
+    "mediaError": null
+  },
+  "files": {
+    "reference-proxy-verification.json": {
+      "sha256": "e4d550f8f5a928d0c48326c940af2dc5ebd0a75a982c9f82c01821528e27af1e",
+      "bytes": 57
+    },
+    "index.html": {
+      "sha256": "b24fc106ab61234575b0beda2453619d11ec600ce5a4f3fb7c39975ce5155c4c",
+      "bytes": 5041
+    },
+    "encoded-worst.png": {
+      "sha256": "40ed0776f0c24c78949827b3645483680aeaddddf90106d7e8fdd7dbd2520a46",
+      "bytes": 1578144
+    },
+    "original-talking-head-361f0536.mkv": {
+      "sha256": "361f0536e9d0096663da552d282063f1ba2799512e38b345dda8739dabab27f8",
+      "bytes": 2539152
+    },
+    "production-original-evidence.json": {
+      "sha256": "ab0eea5a738555f6c351a5c01ace4036d1252d70e7089b05aa0f54ace496b779",
+      "bytes": 151034
+    },
+    "reference-lossless.mp4": {
+      "sha256": "6b4b0267369ae0924f9f252e959b30ef96ee3841919ede0e2cffe7efac30bbf4",
+      "bytes": 202999585
+    },
+    "aligned-lossless.mp4": {
+      "sha256": "6e610e72f0010fabfb28f94dc968ffabf4f9394a8dba769dc32112c008b24ec7",
+      "bytes": 282795414
+    },
+    "SOURCE-NOTICE.txt": {
+      "sha256": "63fb7ce61b5ebcdc4aabd02c5075094ef2ebd9ecec6dff6d4a1d12987dc8c143",
+      "bytes": 1430
+    },
+    "reference-original.framemd5": {
+      "sha256": "1ec2dbfafd298bee9e438bb96b79c972bde37001a1854d0d63c9065b6f621d08",
+      "bytes": 19416
+    },
+    "reference-proxy.framemd5": {
+      "sha256": "1ec2dbfafd298bee9e438bb96b79c972bde37001a1854d0d63c9065b6f621d08",
+      "bytes": 19416
+    },
+    "encoded-remux.mp4": {
+      "sha256": "c184bad32971b20595fa69d2f43c4228be352456e90cd8aea1d94619f5edc0cc",
+      "bytes": 2539152
+    },
+    "reference-worst.png": {
+      "sha256": "5297af15ffcb91f310fe9ee927b0a3f1f57be162164931127cf7e084648fbe07",
+      "bytes": 2343798
+    }
+  }
+}

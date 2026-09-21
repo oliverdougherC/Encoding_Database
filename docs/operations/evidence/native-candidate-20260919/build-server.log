@@ -1,0 +1,168 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 5.64kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.6s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+#4 DONE 0.7s
+
+#5 [internal] load metadata for docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+#5 DONE 0.7s
+
+#6 [internal] load metadata for docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb
+#6 DONE 0.7s
+
+#7 [internal] load .dockerignore
+#7 transferring context:
+#7 transferring context: 230B done
+#7 DONE 0.3s
+
+#8 [internal] load build context
+#8 DONE 0.0s
+
+#9 [runtime  1/13] FROM docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb
+#9 resolve docker.io/linuxserver/ffmpeg:7.1.1@sha256:aea59a11c54291ac456bb2d67000445e5a8994f70bc3d96cdc29f022fbbf89fb 0.1s done
+#9 DONE 0.1s
+
+#10 [vmaf-builder 1/2] FROM docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea
+#10 resolve docker.io/library/ubuntu:24.04@sha256:561618e2c15bf2397621dd04f96926663a3b5616c189cf7e38db7e82f5c538ea 0.1s done
+#10 DONE 0.1s
+
+#11 [node-runtime 1/1] FROM docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5
+#11 resolve docker.io/library/node:20-bookworm@sha256:8f693eaa7e0a8e71560c9a82b55fd54c2ae920a2ba5d2cde28bac7d1c01c9ba5 0.1s done
+#11 DONE 0.1s
+
+#8 [internal] load build context
+#8 transferring context: 416.43kB 0.0s done
+#8 DONE 0.1s
+
+#12 [builder  1/11] WORKDIR /app
+#12 CACHED
+
+#13 [builder  2/11] COPY package.json package-lock.json* ./
+#13 CACHED
+
+#14 [builder  3/11] RUN npm ci --no-audit --no-fund
+#14 CACHED
+
+#15 [builder  4/11] COPY tsconfig.json ./
+#15 CACHED
+
+#16 [builder  5/11] COPY prisma ./prisma
+#16 DONE 0.1s
+
+#17 [builder  6/11] COPY src ./src
+#17 DONE 0.1s
+
+#18 [builder  7/11] COPY resources ./resources
+#18 DONE 5.5s
+
+#19 [builder  8/11] COPY config ./config
+#19 DONE 0.1s
+
+#20 [builder  9/11] RUN npx prisma generate
+#20 2.415 Prisma schema loaded from prisma/schema.prisma
+#20 3.392 
+#20 3.392 ✔ Generated Prisma Client (v6.19.3) to ./node_modules/@prisma/client in 409ms
+#20 3.392 
+#20 3.392 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#20 3.392 
+#20 3.392 Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate
+#20 3.392 
+#20 DONE 3.5s
+
+#21 [builder 10/11] RUN npm run build
+#21 0.589 
+#21 0.589 > server@1.0.0 build
+#21 0.589 > tsc
+#21 0.589 
+#21 DONE 8.5s
+
+#22 [builder 11/11] RUN npm prune --omit=dev --no-audit --no-fund
+#22 1.272 
+#22 1.272 up to date in 807ms
+#22 DONE 1.3s
+
+#23 [runtime  3/13] COPY --from=node-runtime /usr/local/ /usr/local/
+#23 CACHED
+
+#24 [vmaf-builder 2/2] RUN apt-get update     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends       build-essential ca-certificates curl meson nasm ninja-build pkg-config python3     && curl --fail --location --retry 3       "https://codeload.github.com/Netflix/vmaf/tar.gz/refs/tags/v3.2.0"       --output /tmp/vmaf.tar.gz     && echo "a28f93f3b4fa65601be324587072e32a6a704a304ba7b1aec9b70b3f709bc1dc  /tmp/vmaf.tar.gz" | sha256sum -c -     && mkdir /tmp/vmaf     && tar -xzf /tmp/vmaf.tar.gz --strip-components=1 -C /tmp/vmaf     && meson setup /tmp/vmaf/libvmaf/build /tmp/vmaf/libvmaf       --buildtype=release --prefix=/usr/local --libdir=lib       -Denable_tests=false -Denable_docs=false -Denable_float=true -Dbuilt_in_models=true     && ninja -C /tmp/vmaf/libvmaf/build     && DESTDIR=/vmaf-install meson install -C /tmp/vmaf/libvmaf/build
+#24 CACHED
+
+#25 [runtime  4/13] COPY --from=vmaf-builder /vmaf-install/usr/local/lib/ /usr/local/lib/
+#25 CACHED
+
+#26 [runtime  2/13] WORKDIR /app
+#26 CACHED
+
+#27 [runtime  5/13] RUN ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq '[[:space:]]libvmaf[[:space:]]'     && ffmpeg -hide_banner -filters 2>/dev/null | grep -Eq '[[:space:]]xpsnr[[:space:]]'     && command -v ffprobe >/dev/null
+#27 CACHED
+
+#28 [runtime  6/13] COPY --from=builder /app/node_modules ./node_modules
+#28 DONE 1.9s
+
+#29 [runtime  7/13] COPY package.json package-lock.json* ./
+#29 DONE 0.2s
+
+#30 [runtime  8/13] COPY --from=builder /app/dist ./dist
+#30 DONE 0.1s
+
+#31 [runtime  9/13] COPY --from=builder /app/resources ./resources
+#31 DONE 5.9s
+
+#32 [runtime 10/13] COPY --from=builder /app/config ./config
+#32 DONE 0.2s
+
+#33 [runtime 11/13] COPY prisma ./prisma
+#33 DONE 0.1s
+
+#34 [runtime 12/13] COPY scripts ./scripts
+#34 DONE 0.1s
+
+#35 [runtime 13/13] RUN echo "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e  /app/resources/vmaf/vmaf_v1.0.16_3d0h.json"     | sha256sum -c -     && test -f /app/resources/test_suite_v1/manifest.json     && node -e 'const fs=require("fs"),crypto=require("crypto"),path=require("path"); const root="/app/resources/test_suite_v1"; const manifest=JSON.parse(fs.readFileSync(path.join(root,"manifest.json"))); for(const clip of manifest.clips){const bytes=fs.readFileSync(path.join(root,"canonical",clip.fileName)); if(bytes.length!==clip.byteSize||crypto.createHash("sha256").update(bytes).digest("hex")!==clip.sha256) throw new Error(`invalid canonical source ${clip.id}`)}'     && test -f /app/config/reference-contexts/test-only.synthetic.encodingdb-test-suite-v1.vmaf-v1-sdr-sd.context.json     && ffmpeg -hide_banner -loglevel error       -f lavfi -i testsrc2=size=960x540:rate=2:duration=2       -f lavfi -i testsrc2=size=960x540:rate=2:duration=2       -lavfi "[0:v][1:v]libvmaf=model=path=/app/resources/vmaf/vmaf_v1.0.16_3d0h.json:n_threads=1:log_fmt=json:log_path=/tmp/vmaf-preflight.json"       -f null -     && test -s /tmp/vmaf-preflight.json     && grep -q '"vmaf"' /tmp/vmaf-preflight.json     && node --input-type=module -e 'import { execFileSync } from "node:child_process"; import { buildDiagnosticFilterInputs } from "./dist/v7/artifacts.js"; execFileSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-f", "lavfi", "-i", "testsrc2=size=64x64:rate=1:duration=1", "-lavfi", `${buildDiagnosticFilterInputs(1)};[distorted][reference]xpsnr`, "-f", "null", "-"], { stdio: "inherit" });'
+#35 0.389 /app/resources/vmaf/vmaf_v1.0.16_3d0h.json: OK
+#35 DONE 7.1s
+
+#36 exporting to image
+#36 exporting layers
+#36 exporting layers 149.8s done
+#36 exporting manifest sha256:7e2dd9b4e23c4b19c57fdacd5830eec7b8160e026424c45df4cf4ace4eb77739 0.0s done
+#36 exporting config sha256:04a2466888296d7118cdfc981fafbf13518e90c6e81c27ccb1016375b64f4372 0.0s done
+#36 exporting attestation manifest sha256:696cefc419199cff628cbe70bb2293ba793d04dbf8cea0dceca00299db8e131f 0.1s done
+#36 exporting manifest list sha256:f3acd4ee49ff07ab14645a85bdbe55f94de5cbd2c3a91176612128c8874663ee
+#36 exporting manifest list sha256:f3acd4ee49ff07ab14645a85bdbe55f94de5cbd2c3a91176612128c8874663ee 0.0s done
+#36 naming to docker.io/library/encodingdb-candidate-server:939823e done
+#36 unpacking to docker.io/library/encodingdb-candidate-server:939823e
+#36 unpacking to docker.io/library/encodingdb-candidate-server:939823e 21.4s done
+#36 DONE 171.4s
+	Command being timed: "docker build --progress=plain -t encodingdb-candidate-server:939823e server"
+	User time (seconds): 0.76
+	System time (seconds): 0.37
+	Percent of CPU this job got: 0%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:35.75
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 51392
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1
+	Minor (reclaiming a frame) page faults: 19530
+	Voluntary context switches: 17782
+	Involuntary context switches: 23
+	Swaps: 0
+	File system inputs: 992
+	File system outputs: 50
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

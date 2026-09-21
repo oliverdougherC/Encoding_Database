@@ -1,0 +1,148 @@
+[Linux] Preparing output directory...
+verified 7 canonical suite assets
+{
+  "ffmpegPath": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg",
+  "ffprobePath": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe",
+  "fingerprint": "09d0a493de921e3eb88c245c3e0fbe8312eac87a7032f110d45a3a4a53a53890",
+  "lockPath": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/client/resources/runtime/ffmpeg-lock.json",
+  "mode": "verified",
+  "platform": "linux",
+  "stagedRuntimeDir": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/runtime_resources"
+}
+staged suite resources: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/suite_resources/test_suite_v1
+suite pack: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/encodingdb-test-suite-v1.tar.gz
+[Linux] Running PyInstaller...
+121 INFO: PyInstaller: 6.19.0, contrib hooks: 2026.7
+122 INFO: Python: 3.11.16
+124 INFO: Platform: Linux-6.8.0-139-generic-x86_64-with-glibc2.39
+124 INFO: Python environment: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv
+125 INFO: wrote /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/spec/encodingdb-client-linux.spec
+126 INFO: Removing temporary files and cleaning cache in /home/ofhd/.cache/pyinstaller
+128 INFO: Module search paths (PYTHONPATH):
+['/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c',
+ '/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/python311.zip',
+ '/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/python3.11',
+ '/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/python3.11/lib-dynload',
+ '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages',
+ '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c']
+349 INFO: Appending 'datas' from .spec
+352 INFO: checking Analysis
+352 INFO: Building Analysis because Analysis-00.toc is non existent
+352 INFO: Looking for Python shared library...
+368 INFO: Using Python shared library: /mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/libpython3.11.so.1.0
+368 INFO: Running Analysis Analysis-00.toc
+368 INFO: Target bytecode optimization level: 0
+368 INFO: Initializing module dependency graph...
+370 INFO: Initializing module graph hook caches...
+397 INFO: Analyzing modules for base_library.zip ...
+1290 INFO: Processing standard module hook 'hook-heapq.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+1427 INFO: Processing standard module hook 'hook-encodings.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+3542 INFO: Processing standard module hook 'hook-pickle.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+6024 INFO: Caching module dependency graph...
+6085 INFO: Analyzing /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/client/_pyinstaller_entry.py
+6385 INFO: Processing standard module hook 'hook-psutil.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+6456 INFO: Processing standard module hook 'hook-_ctypes.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+6643 INFO: Processing standard module hook 'hook-platform.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+6645 INFO: Processing standard module hook 'hook-certifi.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+6878 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+7060 INFO: Processing standard module hook 'hook-xml.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+7537 INFO: Processing pre-safe-import-module hook 'hook-distutils.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+7538 INFO: Processing pre-find-module-path hook 'hook-distutils.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_find_module_path'
+7805 INFO: Processing standard module hook 'hook-distutils.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+7806 INFO: SetuptoolsInfo: initializing cached setuptools info...
+12617 INFO: Processing standard module hook 'hook-sysconfig.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+12669 INFO: Processing standard module hook 'hook-_osx_support.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+13626 INFO: Processing standard module hook 'hook-urllib3.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+13770 INFO: Processing pre-safe-import-module hook 'hook-backports.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+13771 INFO: Setuptools: 'backports' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.backports'!
+13789 INFO: Processing standard module hook 'hook-setuptools.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+13837 INFO: Processing standard module hook 'hook-distutils.util.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+13885 INFO: Processing pre-safe-import-module hook 'hook-packaging.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+14116 INFO: Processing pre-safe-import-module hook 'hook-typing_extensions.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+14116 INFO: Setuptools: 'typing_extensions' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.typing_extensions'!
+14377 INFO: Processing pre-safe-import-module hook 'hook-jaraco.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+14386 INFO: Setuptools: 'jaraco' appears to be a full setuptools-vendored copy - creating alias to 'setuptools._vendor.jaraco'!
+14415 INFO: Processing standard module hook 'hook-setuptools._vendor.jaraco.text.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+14416 INFO: Processing pre-safe-import-module hook 'hook-importlib_resources.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+14427 INFO: Processing pre-safe-import-module hook 'hook-more_itertools.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+14427 INFO: Setuptools: 'more_itertools' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.more_itertools'!
+15066 INFO: Processing pre-safe-import-module hook 'hook-importlib_metadata.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+15067 INFO: Setuptools: 'importlib_metadata' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.importlib_metadata'!
+15096 INFO: Processing standard module hook 'hook-setuptools._vendor.importlib_metadata.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+15097 INFO: Processing pre-safe-import-module hook 'hook-zipp.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+15097 INFO: Setuptools: 'zipp' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.zipp'!
+15771 INFO: Processing pre-safe-import-module hook 'hook-tomli.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+15772 INFO: Setuptools: 'tomli' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.tomli'!
+16359 INFO: Processing standard module hook 'hook-pkg_resources.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+16577 INFO: Processing pre-safe-import-module hook 'hook-platformdirs.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16586 INFO: Setuptools: 'platformdirs' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.platformdirs'!
+16956 INFO: Processing pre-safe-import-module hook 'hook-wheel.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_safe_import_module'
+16956 INFO: Setuptools: 'wheel' appears to be a setuptools-vendored copy - creating alias to 'setuptools._vendor.wheel'!
+17675 INFO: Processing standard module hook 'hook-charset_normalizer.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+18246 INFO: Processing standard module hook 'hook-rich.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/_pyinstaller_hooks_contrib/stdhooks'
+18940 INFO: Processing standard module hook 'hook-pygments.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+21160 INFO: Processing pre-find-module-path hook 'hook-tkinter.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/pre_find_module_path'
+21161 INFO: TclTkInfo: initializing cached Tcl/Tk info...
+21419 INFO: Processing standard module hook 'hook-_tkinter.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+21495 INFO: Processing module hooks (post-graph stage)...
+21659 INFO: Processing standard module hook 'hook-_tkinter.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+21947 INFO: Processing standard module hook 'hook-difflib.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks'
+25641 INFO: Performing binary vs. data reclassification (216 entries)
+25711 INFO: Looking for ctypes DLLs
+26652 INFO: Analyzing run-time hooks ...
+26659 INFO: Including run-time hook 'pyi_rth_inspect.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26662 INFO: Including run-time hook 'pyi_rth__tkinter.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26664 INFO: Including run-time hook 'pyi_rth_setuptools.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26665 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26667 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26670 INFO: Including run-time hook 'pyi_rth_pkgres.py' from '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/hooks/rthooks'
+26697 INFO: Creating base_library.zip...
+26730 INFO: Looking for dynamic libraries
+26833 WARNING: Library not found: could not resolve 'libtcl9.0.so', dependency of '/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/python3.11/lib-dynload/_tkinter.cpython-311-x86_64-linux-gnu.so'.
+26833 WARNING: Library not found: could not resolve 'libtcl9tk9.0.so', dependency of '/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/python/lib/python3.11/lib-dynload/_tkinter.cpython-311-x86_64-linux-gnu.so'.
+26848 INFO: Warnings written to /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/work/encodingdb-client-linux/warn-encodingdb-client-linux.txt
+26924 INFO: Graph cross-reference written to /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/work/encodingdb-client-linux/xref-encodingdb-client-linux.html
+26973 INFO: checking PYZ
+26973 INFO: Building PYZ because PYZ-00.toc is non existent
+26974 INFO: Building PYZ (ZlibArchive) /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/work/encodingdb-client-linux/PYZ-00.pyz
+28115 INFO: Building PYZ (ZlibArchive) /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/work/encodingdb-client-linux/PYZ-00.pyz completed successfully.
+28155 INFO: checking PKG
+28156 INFO: Building PKG because PKG-00.toc is non existent
+28156 INFO: Building PKG (CArchive) encodingdb-client-linux.pkg
+102438 INFO: Building PKG (CArchive) encodingdb-client-linux.pkg completed successfully.
+102444 INFO: Bootloader /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/venv/lib/python3.11/site-packages/PyInstaller/bootloader/Linux-64bit-intel/run
+102444 INFO: checking EXE
+102444 INFO: Building EXE because EXE-00.toc is non existent
+102444 INFO: Building EXE from EXE-00.toc
+102444 INFO: Copying bootloader EXE to /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/dist/encodingdb-client-linux
+102445 INFO: Appending PKG archive to custom ELF section in EXE
+103115 INFO: Building EXE from EXE-00.toc completed successfully.
+103122 INFO: Build complete! The results are available in: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/dist
+[Linux] Placing executable in repository root...
+[Linux] Build-only validation complete; release sidecars require an assigned project version.
+[Linux] Build complete: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/encodingdb-client-linux
+[Linux] Suite pack: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/encodingdb-test-suite-v1.tar.gz
+[Linux] Hidden build artifacts: /mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux
+	Command being timed: "bash scripts/build_linux_client.sh"
+	User time (seconds): 265.11
+	System time (seconds): 22.73
+	Percent of CPU this job got: 92%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 5:10.56
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 196416
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 18
+	Minor (reclaiming a frame) page faults: 578813
+	Voluntary context switches: 4496
+	Involuntary context switches: 108228
+	Swaps: 0
+	File system inputs: 27705354
+	File system outputs: 19028716
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

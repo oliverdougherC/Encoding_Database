@@ -1,0 +1,105 @@
+{
+  "status": "ALL_SEVEN_LONGER_SOURCES_TECHNICALLY_VALIDATED_REVIEW_PENDING",
+  "registryHash": "023d5490161da7c22d0534b7af968630ffaa8fb263b864c7270a7cbee9c5df76",
+  "sourceCount": 7,
+  "totalFrames": 5040,
+  "totalSeconds": 210,
+  "totalReferenceBytes": 5499942827,
+  "hostRoot": "P910:/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media",
+  "sources": [
+    {
+      "workloadId": "validation-atlas-receipts-30s",
+      "contentClass": "screen-text",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 145997007,
+      "sha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "sourceGroupId": "encodingdb-authored-atlas",
+      "nativeFrameRange": [
+        0,
+        720
+      ]
+    },
+    {
+      "workloadId": "validation-chimera-fountain-30s",
+      "contentClass": "fine-natural-detail",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 951612801,
+      "sha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/",
+      "nativeFrameRange": [
+        4200,
+        4920
+      ]
+    },
+    {
+      "workloadId": "validation-nocturne-ballet-30s",
+      "contentClass": "high-motion-sports",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 1001443324,
+      "sha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "nativeFrameRange": [
+        1800,
+        3600
+      ]
+    },
+    {
+      "workloadId": "validation-nocturne-grain-30s",
+      "contentClass": "film-grain-noise",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 1037311382,
+      "sha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "nativeFrameRange": [
+        21600,
+        23400
+      ]
+    },
+    {
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "contentClass": "dark-gradients-shadows",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 973293339,
+      "sha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "nativeFrameRange": [
+        10800,
+        12600
+      ]
+    },
+    {
+      "workloadId": "validation-sol-cave-forest-30s",
+      "contentClass": "animation-flat-fields",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 808647407,
+      "sha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+      "nativeFrameRange": [
+        720,
+        1440
+      ]
+    },
+    {
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "contentClass": "talking-head",
+      "frames": 720,
+      "durationSeconds": 30,
+      "byteSize": 581637567,
+      "sha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "sourceGroupId": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+      "nativeFrameRange": [
+        7200,
+        7920
+      ]
+    }
+  ],
+  "humanJudgments": null,
+  "codecExperiments": null,
+  "calibratedContext": null
+}

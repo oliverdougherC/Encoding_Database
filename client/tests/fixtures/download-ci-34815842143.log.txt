@@ -1,0 +1,54 @@
+preflight	Materialize frozen canonical references	﻿2026-09-14T07:01:02.0153484Z ##[group]Run python scripts/materialize_final_suite.py
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0154123Z ^[[36;1mpython scripts/materialize_final_suite.py^[[0m
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0183802Z shell: /usr/bin/bash -e {0}
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0184483Z env:
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0184909Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0185543Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0186231Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0186880Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0187473Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0188091Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0188918Z   FFMPEG_EXE: /home/runner/work/_temp/ffmpeg-runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0190031Z   FFPROBE_EXE: /home/runner/work/_temp/ffmpeg-runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe
+preflight	Materialize frozen canonical references	2026-09-14T07:01:02.0190926Z ##[endgroup]
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4101869Z Traceback (most recent call last):
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4103315Z   File "/home/runner/work/Encoding_Database/Encoding_Database/scripts/materialize_final_suite.py", line 82, in <module>
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4104361Z     raise SystemExit(main())
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4104928Z                      ^^^^^^
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4105696Z   File "/home/runner/work/Encoding_Database/Encoding_Database/scripts/materialize_final_suite.py", line 77, in main
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4106604Z     materialize(args.repo_root.resolve(), args.cache_dir, args.pack_path, args.pack_url)
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4107716Z   File "/home/runner/work/Encoding_Database/Encoding_Database/scripts/materialize_final_suite.py", line 38, in materialize
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4109063Z     archive = suite._ensure_suite_pack_available(metadata, cache_dir)
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4109966Z               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4111257Z   File "/home/runner/work/Encoding_Database/Encoding_Database/client/suite.py", line 1115, in _ensure_suite_pack_available
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4112986Z     raise RuntimeError(f"EncodingDB suite pack could not be acquired: {last_error}")
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4122657Z RuntimeError: EncodingDB suite pack could not be acquired: HTTPSConnectionPool(host='github.com', port=443): Read timed out. (read timeout=1)
+preflight	Materialize frozen canonical references	2026-09-14T07:01:03.4352631Z ##[error]Process completed with exit code 1.
+preflight	Retain executed release gate logs	﻿2026-09-14T07:01:03.4447750Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4448828Z ##[group]Run actions/upload-artifact@v4
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4449158Z with:
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4449532Z   name: release-preflight-logs-f2528dc3c87c0222e681b77837e15dcb1966861b
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4450054Z   path: /tmp/encodingdb-release-preflight.*/*.log
+preflight	Retain executed release gate logs	.test-reports/**/*.log
+preflight	Retain executed release gate logs	
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4450572Z   if-no-files-found: error
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4450864Z   retention-days: 90
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4451152Z   compression-level: 6
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4451641Z   overwrite: false
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4451916Z   include-hidden-files: false
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4452226Z env:
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4452522Z   pythonLocation: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4453106Z   PKG_CONFIG_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib/pkgconfig
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4453535Z   Python_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4453979Z   Python2_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4454374Z   Python3_ROOT_DIR: /opt/hostedtoolcache/Python/3.11.16/x64
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4454765Z   LD_LIBRARY_PATH: /opt/hostedtoolcache/Python/3.11.16/x64/lib
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4455297Z   FFMPEG_EXE: /home/runner/work/_temp/ffmpeg-runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4456054Z   FFPROBE_EXE: /home/runner/work/_temp/ffmpeg-runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.4456816Z ##[endgroup]
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.5941751Z (node:2607) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.5942645Z (Use `node --trace-deprecation ...` to show where the warning was created)
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.6004460Z Multiple search paths detected. Calculating the least common ancestor of all paths
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.6013548Z The least common ancestor is /. This will be the root directory of the artifact
+preflight	Retain executed release gate logs	2026-09-14T07:01:03.6031439Z ##[error]No files were found with the provided path: /tmp/encodingdb-release-preflight.*/*.log
+preflight	Retain executed release gate logs	.test-reports/**/*.log. No artifacts will be uploaded.

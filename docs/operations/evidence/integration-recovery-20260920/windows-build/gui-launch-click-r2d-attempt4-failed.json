@@ -1,0 +1,33 @@
+{
+ "preservedAt": "2026-09-20T19:20:00Z",
+ "note": "Attempt 4 identical BLOCKED_GUI_INPUT to attempt 3 at first Stop click. Root cause: my harness copy (cbf14cd3) predates the Windows lane final driver fixes (decoy run-control rows, input-desktop handling); click6 acceptance ran their e7c37181 harness. Re-preparing with the reviewed lane harness.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:05:45.455163+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r2d\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r2d",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 35880,
+  "exitCode": 1,
+  "error": "GUI harness did not pass; preserve diagnostic receipt and screenshots",
+  "wallSeconds": 19.718999999997322,
+  "finishedAt": "2026-09-20T19:06:07.167349+00:00"
+ }
+}

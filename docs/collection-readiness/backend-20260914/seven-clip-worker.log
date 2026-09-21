@@ -1,0 +1,7 @@
+athletic-action-1080p24-final: COMPLETE, frames=240, analysisMs=35723
+natural-detail-1080p24-final: COMPLETE, frames=240, analysisMs=44818
+film-grain-1080p24-final: SUSPECT, frames=240, analysisMs=44646
+dark-gradients-1080p24-final: SUSPECT, frames=240, analysisMs=45742
+animation-1080p24-final: COMPLETE, frames=192, analysisMs=40498
+screen-text-1080p24-final: COMPLETE, frames=240, analysisMs=15897
+talking-head-1080p24-final: COMPLETE, frames=240, analysisMs=37910

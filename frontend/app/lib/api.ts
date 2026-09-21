@@ -75,6 +75,10 @@ function readMock<T>(endpointPath: string, params?: URLSearchParams | Record<str
     const rows = MOCK_QUERY_ROWS.slice(Math.max(0, skip), Math.max(0, skip) + Math.max(1, limit));
     return { data: rows as T, totalCount: MOCK_QUERY_ROWS.length };
   }
+  if (endpointPath.startsWith("/corpus/")) {
+    const id = decodeURIComponent(endpointPath.slice("/corpus/".length));
+    return { data: (MOCK_QUERY_ROWS.find(row => row.id === id) ?? null) as T, totalCount: null };
+  }
   if (endpointPath === "/corpus") {
     const search = params instanceof URLSearchParams ? params : new URLSearchParams(toSearchString(params));
     const limit = Number(search.get("limit") || WORKBENCH_PAGE_SIZE);
@@ -97,6 +101,7 @@ function readMock<T>(endpointPath: string, params?: URLSearchParams | Record<str
 async function fetchJson<T>(
   endpointPath: string,
   params?: URLSearchParams | Record<string, string | number | undefined>,
+  missingIsNull = false,
 ): Promise<{ data: T; totalCount: number | null }> {
   const search = toSearchString(params);
   const mock = readMock<T>(endpointPath, params);
@@ -111,6 +116,7 @@ async function fetchJson<T>(
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         next: { revalidate: BENCHMARKS_REVALIDATE_SECONDS },
       });
+      if (missingIsNull && res.status === 404) return { data: null as T, totalCount: null };
       if (!res.ok) throw new Error(`Failed to fetch ${endpointPath}: ${res.status}`);
       const totalCount = parseTotalCount(res.headers.get("X-Total-Count"));
       const data = await res.json() as T;
@@ -153,5 +159,29 @@ export async function fetchHardwareAnalytics(filters: AnalyticsSearchState): Pro
 
 export async function fetchEncoderAnalytics(filters: AnalyticsSearchState): Promise<EncoderAnalyticsRow[]> {
   const { data } = await fetchJson<EncoderAnalyticsRow[]>("/analytics/encoders", toNullableRecord(filters));
+  return data;
+}
+
+
+// Next.js may hand dynamic segments to page components still percent-encoded
+// (e.g. "%3A%3A" for "::"). Re-encoding such a value double-escapes it and the
+// corpus API 404s every detail lookup. Normalize to a fully decoded id first,
+// then encode exactly once.
+export function encodeCorpusIdPathSegment(id: string): string {
+  let segment = id;
+  for (let i = 0; i < 3; i++) {
+    let decoded: string;
+    try {
+      decoded = decodeURIComponent(segment);
+    } catch {
+      break;
+    }
+    if (decoded === segment) break;
+    segment = decoded;
+  }
+  return encodeURIComponent(segment);
+}
+export async function fetchCorpusResult(id: string): Promise<Benchmark | null> {
+  const { data } = await fetchJson<Benchmark | null>(`/corpus/${encodeCorpusIdPathSegment(id)}`, undefined, true);
   return data;
 }

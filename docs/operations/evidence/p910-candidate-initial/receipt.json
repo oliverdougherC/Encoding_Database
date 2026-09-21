@@ -1,0 +1,17 @@
+{
+  "status": "PRELIMINARY_BUILD_AND_SMOKE_PASSED_NOT_FINAL_CERTIFICATION",
+  "sourceSha": "730de3ccc6c20372fd582a9155588b41734b4600",
+  "host": "P910",
+  "project": "encodingdb-candidate-730de3c",
+  "root": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c",
+  "serverBuildExitCode": 0,
+  "frontendBuildExitCode": 0,
+  "tlsBothSurfaceSmokeExitCode": 0,
+  "healthyContainers": 4,
+  "productionChanged": false,
+  "remaining": [
+    "apply parent UTC lease-clock safety follow-up and rebuild affected image",
+    "quiet-host native seven-clip worker concurrency measurements",
+    "scheduled paired backup/restore using committed portable helpers on candidate evidence"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "sourceCommit": "84d4086e4679566cfa6a7d10678be74a0a8993ab",
+  "imageId": "sha256:34d103cc4fc524e46325249540489b29b9f3345a2efc75f706c60da9019a6201",
+  "productionTarget": {
+    "analysisConcurrency": 2,
+    "serverMemoryLimitBytes": 17179869184,
+    "retainedArtifactQuotaBytes": 10737418240
+  },
+  "trialScope": "Seven prepared libx264 CRF23 artifacts through actual FfmpegArtifactAnalyzer in isolated container; no DB writes, upload admission or client timing.",
+  "results": [
+    {
+      "concurrency": 1,
+      "elapsedSeconds": 618.070953984,
+      "batchRateArtifactsPerHour": 40.77201790112329,
+      "kernelPeakContainerBytes": 2992496640,
+      "nodeMaxRssBytes": 115617792,
+      "completeFrameCoverage": 1632,
+      "completeCount": 5,
+      "suspectCount": 2
+    },
+    {
+      "concurrency": 2,
+      "elapsedSeconds": 337.823558518,
+      "batchRateArtifactsPerHour": 74.59515289741786,
+      "kernelPeakContainerBytes": 3226791936,
+      "nodeMaxRssBytes": 113590272,
+      "completeFrameCoverage": 1632,
+      "completeCount": 5,
+      "suspectCount": 2
+    }
+  ],
+  "limitations": [
+    "Finite seven-item batch, not sustained media arrival test",
+    "Container memory includes native descendants and charged cache; Node RSS alone is not whole-worker memory",
+    "Same batch order, not exhaustive adversarial pairings or all encoder/rate-control artifacts",
+    "Real host retains unrelated Jellyfin/qBittorrent/cAdvisor background activity; no competing EncodingDB builds or timing",
+    "Production remains unchanged; final corrected repetition-gate image and packaged contributor flow still required"
+  ],
+  "rawAnalysisSha256": {
+    "analysis-c1/screen-text-1080p24-final.json": "69e7ab6250295fd0442369a4cb37bf924e6507fa13a2d2561ebf0ce8ff8e7a49",
+    "analysis-c1/report.json": "4b8f423200e63ef017eaaa1bc8f6673cfdaed912514d443ba97c282f98d94c79",
+    "analysis-c1/talking-head-1080p24-final.json": "ae9249fa2260bd51dbbe9ad4766a7c36f6904b626f05a7386a0c3453b35a5fba",
+    "analysis-c1/animation-1080p24-final.json": "f8acbadbc3f19ed2c7e5f5f039cf94e2635ed64ffbb02609beb6a66bf3c185ed",
+    "analysis-c1/natural-detail-1080p24-final.json": "94a4cbf471cf1e9ebdae6777df4a355550ed4b6ea1478738e098db7ee9eaf228",
+    "analysis-c1/dark-gradients-1080p24-final.json": "b7936e54797df730c60b953027937262c1649fff59055fa28f39d1b150134dfa",
+    "analysis-c1/athletic-action-1080p24-final.json": "4a89d36e9a3f22a044eb81e01327ae80580cbbcd6f81ef6a2eedaf81af84a9b6",
+    "analysis-c1/film-grain-1080p24-final.json": "297d17bd9f02ff6a757f7f5aadbe97aa4130be3277d72d5ac7897b036aa827d0",
+    "analysis-c2/screen-text-1080p24-final.json": "aac9d08c198546361ef116987295b33377110aa8f4b2f22bd01ffaed17de66a2",
+    "analysis-c2/report.json": "9693be37a9c653f43b76fb59fce8693bafba87082746f57168a99dca33fe847c",
+    "analysis-c2/talking-head-1080p24-final.json": "c6c280e93c13cd120c4dc3aa59540c9a5bf0c3ca16ec16a364c478545dca93ed",
+    "analysis-c2/animation-1080p24-final.json": "ac2dd00f044675ffeb06b8b4cfa6e8f795141a69eb9e92fac2820c32b1f7ccdc",
+    "analysis-c2/natural-detail-1080p24-final.json": "17e2a8d9718bbaad98a4d71e908b2c24cfe6fa1a6730225c616648f82667c219",
+    "analysis-c2/dark-gradients-1080p24-final.json": "9fdc7b3fa41c3acef821fbfe96f2f36ff6f2e4feaa779bafda48d5ce61195654",
+    "analysis-c2/athletic-action-1080p24-final.json": "f20a0371851256989015f878b958ffa672a39e5966f0d0f126f6995979642963",
+    "analysis-c2/film-grain-1080p24-final.json": "7a97a176b076d1d1134c53108b1de4fc0feabce1e347d622c14b5664d280c388"
+  }
+}

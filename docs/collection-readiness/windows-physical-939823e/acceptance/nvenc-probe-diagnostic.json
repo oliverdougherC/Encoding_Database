@@ -1,0 +1,70 @@
+{
+  "scope": "Synthetic hardware usability diagnosis only; not timing, acceptance or fitting evidence",
+  "ffmpegSha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+  "probes": [
+    {
+      "name": "original-128",
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=128x128:rate=30",
+        "-frames:v",
+        "8",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:v",
+        "h264_nvenc",
+        "-an",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\nvenc-probe-diagnostic\\original-128.mp4"
+      ],
+      "exitCode": 4294967274,
+      "elapsedSeconds": 0.15599999999903957,
+      "timeout": false,
+      "stdout": "",
+      "stderr": "[h264_nvenc @ 000002646c30bb00] InitializeEncoder failed: invalid param (8): Frame Dimension less than the minimum supported value.\r\n[vost#0:0/h264_nvenc @ 000002646c30b040] [enc:h264_nvenc @ 000002646c2f4e00] Error while opening encoder - maybe incorrect parameters such as bit_rate, rate, width or height.\r\n[vf#0:0 @ 000002646c3279c0] Error sending frames to consumers: Invalid argument\r\n[vf#0:0 @ 000002646c3279c0] Task finished with error code: -22 (Invalid argument)\r\n[vf#0:0 @ 000002646c3279c0] Terminating thread with return code -22 (Invalid argument)\r\n[vost#0:0/h264_nvenc @ 000002646c30b040] [enc:h264_nvenc @ 000002646c2f4e00] Could not open encoder before EOF\r\n[vost#0:0/h264_nvenc @ 000002646c30b040] Task finished with error code: -22 (Invalid argument)\r\n[vost#0:0/h264_nvenc @ 000002646c30b040] Terminating thread with return code -22 (Invalid argument)\r\n[out#0/mp4 @ 000002646c2935c0] Nothing was written into output file, because at least one of its streams received no packets.\r\n"
+    },
+    {
+      "name": "device0-1080",
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+        "-y",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=1920x1080:rate=30",
+        "-frames:v",
+        "8",
+        "-pix_fmt",
+        "yuv420p",
+        "-c:v",
+        "h264_nvenc",
+        "-gpu",
+        "0",
+        "-preset",
+        "p4",
+        "-rc",
+        "vbr",
+        "-cq",
+        "24",
+        "-b:v",
+        "0",
+        "-an",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\nvenc-probe-diagnostic\\device0-1080.mp4"
+      ],
+      "exitCode": 0,
+      "elapsedSeconds": 0.2029999999977008,
+      "timeout": false,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

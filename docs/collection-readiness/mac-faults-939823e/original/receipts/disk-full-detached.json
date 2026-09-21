@@ -1,0 +1,7 @@
+{
+  "device": "/dev/disk4s1",
+  "detached": true,
+  "imageSha256": "bed5f1fc0cfc6c8edceeac93d9c8a09e181e458b475f3e05eba0c87dac88ef0f",
+  "originalHostQueueRestored": true,
+  "originalRecordsUnchanged": true
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "sourcePath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/first-cell-control/run.py",
+    "packetPath": "supervisor.py",
+    "sha256": "ee5de10d32c09c1f8cba5f536f6e46ba1485b863f5d7001d06e131f74375ca76",
+    "byteSize": 5668
+  },
+  {
+    "sourcePath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/first-cell-control/receipt.json",
+    "packetPath": "receipt.json",
+    "sha256": "eb13b72aedc2fd9ff831eb613c53c27b09591a261e5cb92ad6a31da04199bf52",
+    "byteSize": 3581
+  },
+  {
+    "sourcePath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/first-cell-control/allocation.json",
+    "packetPath": "allocation.json",
+    "sha256": "85cc0420b24732ef60acec26f8060fb3b233e7023643b1479a27f484b13fe925",
+    "byteSize": 1226
+  },
+  {
+    "sourcePath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/first-cell-control/operator.log",
+    "packetPath": "operator.log.txt",
+    "sha256": "5de9a2de324d2336dbcdcf1687d7d9baaeed921701840ebd6b78e1ea165d4382",
+    "byteSize": 1860
+  }
+]

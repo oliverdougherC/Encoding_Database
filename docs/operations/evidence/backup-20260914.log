@@ -1,0 +1,4 @@
+Backup space preflight: artifactBytes=2539520, requiredBytes=1078820864, availableBytes=24349470720
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 backup created: /tmp/encodingdb-operations-new-backup
+Backup supervisor: exit=0, elapsedSeconds=0.434

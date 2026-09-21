@@ -1,0 +1,34 @@
+{
+  "at": 1789878338.314314,
+  "reason": "Create space for retained canonical collection by deduplicating only verified task-created suite pack copies; no encoded evidence, binaries, corrupt pack or external production changed",
+  "rows": [
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/candidate-artifacts/encodingdb-test-suite-v1.tar.gz",
+      "target": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "bytes": 1506890018,
+      "replacement": "relative symlink; byte-identical task-owned pack copy"
+    },
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/final-suite-cache/packs/encodingdb-test-suite-v1.tar.gz",
+      "target": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "bytes": 1506890018,
+      "replacement": "relative symlink; byte-identical task-owned pack copy"
+    },
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/production-release/assets/encodingdb-test-suite-v1.tar.gz",
+      "target": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "bytes": 1506890018,
+      "replacement": "relative symlink; byte-identical task-owned pack copy"
+    },
+    {
+      "path": "/Users/ofhd/Developer/Encoding_Database/.build/production-release/production-benchmark/cache/packs/encodingdb-test-suite-v1.tar.gz",
+      "target": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "bytes": 1506890018,
+      "replacement": "relative symlink; byte-identical task-owned pack copy"
+    }
+  ]
+}

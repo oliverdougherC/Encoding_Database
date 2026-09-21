@@ -1,0 +1,6 @@
+{
+  "executionStartSourceSha": "36f9442",
+  "httpAndImportedCorpusImplementationSha": "5bae5016da74f485e3018df23778238dbe49ecc5",
+  "executionEndWorkingTreeSha": "f607d53915aca102c78aab11cc7cc9e26967156e",
+  "explanation": "The initial driver queried git HEAD when writing its final report. The worktree advanced while the 600-second Node process retained its initially imported code. The driver file itself did not change during execution. The original report is preserved; use this sidecar for execution provenance. A subsequent driver fix captures SHA at startup."
+}

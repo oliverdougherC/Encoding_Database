@@ -1,0 +1,56 @@
+{
+  "cases": {
+    "software": {
+      "campaign": "campaign-cda14a5876e816b6",
+      "preparedSubmissions": 18,
+      "dbRuns": 9,
+      "terminalReceipts": 11,
+      "unaccountedAttempts": [],
+      "problems": [],
+      "artifactStates": {
+        "461634664e26": "VERIFIED",
+        "d9c2533fa5b3": "REJECTED",
+        "52f8e97e7eb2": "VERIFIED",
+        "971c495f21e4": "RETAINED",
+        "8b6e182e7e33": "VERIFIED",
+        "52c6d85e66e6": "RETAINED",
+        "3d67a823be83": "REJECTED",
+        "68a9bf14ef67": "VERIFIED",
+        "34212dec4ad8": "RETAINED"
+      },
+      "analyses": [
+        "COMPLETE=3",
+        "SUSPECT=4"
+      ],
+      "sealedLedgerSha256": "5438b9ab130d36a94216252d37d92be549e24acbae9ba5106778142af4dd2c42",
+      "ledgerFiles": 52
+    },
+    "videotoolbox": {
+      "campaign": "campaign-5cdcb087bc1fc57a",
+      "preparedSubmissions": 14,
+      "dbRuns": 10,
+      "terminalReceipts": 4,
+      "unaccountedAttempts": [],
+      "problems": [],
+      "artifactStates": {
+        "b618c8739852": "VERIFIED",
+        "a0fbe31d6ae4": "UPLOADED",
+        "bf34a4af720e": "VERIFIED",
+        "c12a4fc1997f": "RETAINED",
+        "40f313c308fe": "RETAINED",
+        "cecca88f34a8": "VERIFIED",
+        "229678348258": "VERIFIED",
+        "15472ff16d27": "UPLOADED",
+        "cd08c8f15d64": "VERIFIED",
+        "3077740a5382": "VERIFIED"
+      },
+      "analyses": [
+        "PENDING=2",
+        "COMPLETE=3",
+        "SUSPECT=5"
+      ],
+      "sealedLedgerSha256": "17ba6f16bfbd971b31fc159159c809393856c94d8efb399d259f0026dced3973",
+      "ledgerFiles": 44
+    }
+  }
+}

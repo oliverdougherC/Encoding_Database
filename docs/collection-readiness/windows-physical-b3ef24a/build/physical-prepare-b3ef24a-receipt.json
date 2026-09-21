@@ -1,0 +1,178 @@
+{
+  "schemaVersion": 1,
+  "status": "PREPARED",
+  "startedAt": "2026-09-20T02:54:49.825536+00:00",
+  "requestedSource": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "reviewedTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "init",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+      "startedAt": "2026-09-20T02:54:49.826539+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:49.861153+00:00"
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+        "config",
+        "core.autocrlf",
+        "false"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+      "startedAt": "2026-09-20T02:54:49.861153+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:49.882665+00:00"
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+        "remote",
+        "add",
+        "origin",
+        "https://github.com/oliverdougherC/Encoding_Database.git"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+      "startedAt": "2026-09-20T02:54:49.882665+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:49.905680+00:00"
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+      "startedAt": "2026-09-20T02:54:49.906179+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:51.234018+00:00"
+    },
+    {
+      "argv": [
+        "git",
+        "-C",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+        "checkout",
+        "--detach",
+        "FETCH_HEAD"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+      "startedAt": "2026-09-20T02:54:51.234518+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:51.767321+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\bootstrap-venv-939823e\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\scripts\\materialize_final_suite.py",
+        "--pack-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-939823e\\encodingdb-test-suite-v1.tar.gz",
+        "--cache-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\suite-cache"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:54:51.809386+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:54:54.266397+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\bootstrap-venv-939823e\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\scripts\\verify_runtime_model.py"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:54:54.266397+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:55:07.544417+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "venv",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:55:07.546430+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:55:11.520832+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "-r",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\client\\requirements-build.txt"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:55:11.521336+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:55:23.207741+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\scripts\\register_ffmpeg_runtime.py",
+        "--platform",
+        "win",
+        "--ffmpeg-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+        "--ffprobe-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe",
+        "--lock-path",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\client\\resources\\runtime\\ffmpeg-lock.json",
+        "--stage-runtime-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\runtime_resources"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:55:23.208244+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:55:23.818094+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\scripts\\prepare_client_suite_distribution.py",
+        "--staged-resource-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\suite_resources\\test_suite_v1",
+        "--pack-out",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-test-suite-v1.tar.gz"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:55:23.818595+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:55:29.573497+00:00"
+    },
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\venv\\Scripts\\python.exe",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\scripts\\verify_suite_assets.py",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\client\\resources\\test_suite_v1"
+      ],
+      "cwd": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a",
+      "startedAt": "2026-09-20T02:55:29.573996+00:00",
+      "exitCode": 0,
+      "finishedAt": "2026-09-20T02:56:24.479498+00:00"
+    }
+  ],
+  "trackedStatus": "",
+  "finishedAt": "2026-09-20T02:56:24.725778+00:00"
+}

@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
+umask 077
+
+if [[ "${V7_BACKUP_SUPERVISED:-0}" != 1 ]]; then
+  exec python3 "$(dirname "${BASH_SOURCE[0]}")/v7-backup-supervisor.py" "${BASH_SOURCE[0]}" "$@"
+fi
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 : "${DATABASE_URL:?DATABASE_URL is required}"
@@ -10,6 +15,8 @@ QUIESCE_SERVICES="${QUIESCE_SERVICES:-server}"
 DRY_RUN=0
 OUTPUT_DIR=""
 QUIESCED_RUNNING_SERVICES=()
+QUIESCED_CONTAINER_IDS=()
+LOCK_OWNED=0
 
 usage() {
   cat <<'EOF' >&2
@@ -80,21 +87,79 @@ if (( DRY_RUN == 1 )); then
 fi
 
 mkdir -p "$OUTPUT_DIR"
-STAGING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/encodingdb-v7-backup.XXXXXX")"
+# Keep staging on the output filesystem so one explicit space check covers both.
+STAGING_DIR="$(mktemp -d "$OUTPUT_DIR/.staging.XXXXXX")"
 
 restart_quiesced_services() {
-  if [[ -n "$COMPOSE_FILE" && ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
-    echo "Restarting quiesced writer services: ${QUIESCED_RUNNING_SERVICES[*]}" >&2
-    docker compose -f "$COMPOSE_FILE" up -d "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
+  if [[ -n "$COMPOSE_FILE" && ${#QUIESCED_CONTAINER_IDS[@]} -gt 0 ]]; then
+    echo "Restarting exact quiesced writer containers: ${QUIESCED_RUNNING_SERVICES[*]}" >&2
+    # Never re-evaluate compose during recovery: changed defaults/configuration
+    # must not replace a data volume or start a different image during a backup.
+    docker start "${QUIESCED_CONTAINER_IDS[@]}" >/dev/null || return 1
+    local deadline=$((SECONDS + ${V7_BACKUP_WRITER_RECOVERY_TIMEOUT_SECONDS:-300}))
+    local all_ready summary cid
+    while (( SECONDS < deadline )); do
+      all_ready=1
+      for cid in "${QUIESCED_CONTAINER_IDS[@]}"; do
+        summary="$(docker inspect --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$cid" 2>/dev/null)" || return 1
+        if [[ "$summary" != 'running healthy' && "$summary" != 'running none' ]]; then all_ready=0; fi
+      done
+      if (( all_ready == 1 )); then
+        echo "Writer quiescence duration seconds: $(( $(date +%s) - QUIESCE_STARTED_SECONDS ))" >&2
+        return 0
+      fi
+      sleep 1
+    done
+    echo 'Quiesced writer recovery did not become healthy within its deadline' >&2
+    return 1
   fi
 }
 
 cleanup() {
-  restart_quiesced_services
-  rm -rf "$STAGING_DIR"
-  if [[ ! -f "$OUTPUT_DIR/SHA256SUMS" ]]; then rm -rf "$OUTPUT_DIR"; fi
+  local original_status=$?
+  set +e
+  if ! restart_quiesced_services; then original_status=1; fi
+  if ! rm -rf "$STAGING_DIR"; then original_status=1; fi
+  if [[ ! -f "$OUTPUT_DIR/SHA256SUMS" ]]; then
+    if ! rm -rf "$OUTPUT_DIR"; then original_status=1; fi
+  fi
+  if (( LOCK_OWNED == 1 )); then
+    if ! rmdir "$LOCK_DIR"; then original_status=1; fi
+  fi
+  exit "$original_status"
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+LOCK_ID="$(printf '%s' "${ARTIFACT_VOLUME_NAME:-$ARTIFACT_STORAGE_ROOT}" | shasum -a 256 | awk '{print $1}')"
+LOCK_DIR="${TMPDIR:-/tmp}/encodingdb-v7-backup-${LOCK_ID}.lock"
+mkdir "$LOCK_DIR" 2>/dev/null || { echo "another backup owns this artifact source (or a stale lock requires operator inspection): $LOCK_DIR" >&2; exit 1; }
+LOCK_OWNED=1
+
+# Reject a backup that cannot fit before interrupting writers. Size includes all
+# objects, not just retained rows; pending uploads are part of the recovery unit.
+if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
+  ARTIFACT_SOURCE_KIB="$(docker run --rm --label "encodingdb.backup.scope=${V7_BACKUP_SCOPE:-manual}" --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --memory "${V7_BACKUP_DOCKER_MEMORY:-2g}" -v "${ARTIFACT_VOLUME_NAME}:/from:ro" alpine:3.20 du -sk /from | awk '{print $1}')"
+else
+  ARTIFACT_SOURCE_KIB="$(du -sk "$ARTIFACT_STORAGE_ROOT" | awk '{print $1}')"
+fi
+python3 - "$OUTPUT_DIR" "$ARTIFACT_SOURCE_KIB" <<'PYSPACE'
+import os,sys
+root,kib=sys.argv[1],int(sys.argv[2])
+size=kib*1024
+maximum=int(os.environ.get('V7_BACKUP_MAX_ARTIFACT_BYTES', str(22*1024**3)))
+reserve=int(os.environ.get('V7_BACKUP_FREE_RESERVE_BYTES', str(1024**3)))
+# Snapshot copy + conservatively uncompressed archive + DB/headroom reserve.
+required=size*2+reserve
+fs=os.statvfs(root)
+available=fs.f_bavail*fs.f_frsize
+if maximum < 1 or reserve < 1 or size > maximum:
+    raise SystemExit('artifact tree exceeds configured backup size envelope')
+if available < required:
+    raise SystemExit(f'backup staging space insufficient: required={required}, available={available}')
+print(f'Backup space preflight: artifactBytes={size}, requiredBytes={required}, availableBytes={available}',file=sys.stderr)
+PYSPACE
 
 if [[ -n "$COMPOSE_FILE" ]]; then
   command -v docker >/dev/null 2>&1 || { echo "docker is required for --compose-file" >&2; exit 2; }
@@ -114,9 +179,11 @@ if [[ -n "$COMPOSE_FILE" ]]; then
     state="$(docker inspect --format '{{.State.Status}}' "$cid" 2>/dev/null || true)"
     if [[ "$state" == "running" ]]; then
       QUIESCED_RUNNING_SERVICES+=("$service")
+      QUIESCED_CONTAINER_IDS+=("$cid")
     fi
   done
   if [[ ${#QUIESCED_RUNNING_SERVICES[@]} -gt 0 ]]; then
+    QUIESCE_STARTED_SECONDS="$(date +%s)"
     echo "Quiescing writer services for backup consistency (downtime begins): ${QUIESCED_RUNNING_SERVICES[*]}" >&2
     docker compose -f "$COMPOSE_FILE" stop "${QUIESCED_RUNNING_SERVICES[@]}" >/dev/null
   fi
@@ -125,24 +192,27 @@ fi
 PG_DATABASE_URL="$(python3 -c 'import sys,urllib.parse as u; p=u.urlsplit(sys.argv[1]); q=u.urlencode([(k,v) for k,v in u.parse_qsl(p.query) if k != "schema"]); print(u.urlunsplit((p.scheme,p.netloc,p.path,q,p.fragment)))' "$DATABASE_URL")"
 pg_dump --format=custom --no-owner --no-acl --file "$OUTPUT_DIR/database.dump" "$PG_DATABASE_URL"
 
-ARTIFACT_EXPORT_ROOT="$ARTIFACT_STORAGE_ROOT"
+ARTIFACT_EXPORT_ROOT="$STAGING_DIR/artifacts"
+mkdir -p "$ARTIFACT_EXPORT_ROOT"
 if [[ -n "$ARTIFACT_VOLUME_NAME" ]]; then
-  ARTIFACT_EXPORT_ROOT="$STAGING_DIR/artifacts"
-  mkdir -p "$ARTIFACT_EXPORT_ROOT"
-  docker run --rm \
+  docker run --rm --label "encodingdb.backup.scope=${V7_BACKUP_SCOPE:-manual}" --cpus "${V7_BACKUP_DOCKER_CPUS:-2}" --memory "${V7_BACKUP_DOCKER_MEMORY:-2g}" \
     -v "${ARTIFACT_VOLUME_NAME}:/from:ro" \
     -v "${ARTIFACT_EXPORT_ROOT}:/to" \
-    alpine:3.20 sh -c 'cp -a /from/. /to/'
+    --env BACKUP_COPY_UID="$(id -u)" --env BACKUP_COPY_GID="$(id -g)" \
+    alpine:3.20 sh -c 'cp -a /from/. /to/ && chown -R "$BACKUP_COPY_UID:$BACKUP_COPY_GID" /to'
+else
+  cp -a "$ARTIFACT_STORAGE_ROOT/." "$ARTIFACT_EXPORT_ROOT/"
 fi
 
-DATABASE_URL="$DATABASE_URL" node "$ROOT_DIR/server/scripts/v7-backup-inventory.mjs" \
+DATABASE_URL="$DATABASE_URL" bash "$ROOT_DIR/scripts/v7-backup-inventory.sh" \
   --mode export --artifact-root "$ARTIFACT_EXPORT_ROOT" \
   --inventory "$OUTPUT_DIR/inventory.json" --output "$OUTPUT_DIR/inventory.json"
-tar -C "$ARTIFACT_EXPORT_ROOT" -czf "$OUTPUT_DIR/artifacts.tar.gz" .
+restart_quiesced_services
+QUIESCED_RUNNING_SERVICES=()
+QUIESCED_CONTAINER_IDS=()
+tar -C "$ARTIFACT_EXPORT_ROOT" -cf - . | python3 "$ROOT_DIR/scripts/v7-gzip-stream.py" "$OUTPUT_DIR/artifacts.tar.gz"
 (
   cd "$OUTPUT_DIR"
   shasum -a 256 artifacts.tar.gz database.dump inventory.json > SHA256SUMS
 )
-restart_quiesced_services
-QUIESCED_RUNNING_SERVICES=()
 echo "PL-v7 backup created: $OUTPUT_DIR"

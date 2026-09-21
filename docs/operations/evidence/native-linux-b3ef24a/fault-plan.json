@@ -1,0 +1,29 @@
+{
+  "status": "prepared-not-executed",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "performanceOrCalibrationEligible": false,
+  "seed": 954469154611952,
+  "recipe": {
+    "codec": "libx264",
+    "preset": "veryslow",
+    "crf": 24,
+    "campaign": "quick"
+  },
+  "maxAttempts": 20,
+  "maxDurationMinutes": 15,
+  "maxStorageMiB": 256,
+  "controllerDeadlineSeconds": 1800,
+  "interruptTrigger": "one completed warmup and a live owned encoder",
+  "hardKillTrigger": "at least one completed measured attempt and a live owned encoder",
+  "orphanSnapshotRule": "if an owned encoder survives SIGKILL, stop only that exact creation-bound process before copying partial evidence; native resume must drain it",
+  "corruptPack": {
+    "sameSizeMutation": true,
+    "originalPackUntouched": true,
+    "externalDownloadFallback": "owned loopback CONNECT refusal proxy",
+    "maxAttempts": 1,
+    "deadlineSeconds": 120
+  },
+  "ordinaryQueuesReadOnly": true,
+  "uploadEnabled": false,
+  "analysisConcurrency": 0
+}

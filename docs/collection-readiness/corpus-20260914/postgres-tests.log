@@ -1,0 +1,41 @@
+TAP version 13
+# Subtest: bounded query exhaustion reports recoverable capacity only
+ok 1 - bounded query exhaustion reports recoverable capacity only
+  ---
+  duration_ms: 0.473666
+  type: 'test'
+  ...
+# Subtest: PostgreSQL corpus matches complete-history reference, bounds pages, and follows review/reanalysis
+not ok 2 - PostgreSQL corpus matches complete-history reference, bounds pages, and follows review/reanalysis
+  ---
+  duration_ms: 69.017042
+  type: 'test'
+  location: '/Users/ofhd/Developer/EncodingDB-worktrees/corpus/server/test/corpus-postgres.test.js:15:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    
+    Invalid `prisma.benchmarkRun.create()` invocation:
+    
+    
+    Error occurred during query execution:
+    ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "22P03", message: "incorrect binary data format in bind parameter 13", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    ei.handleRequestError (/Users/ofhd/Developer/Encoding_Database/server/node_modules/@prisma/client/runtime/library.js:121:7458)
+    ei.handleAndLogRequestError (/Users/ofhd/Developer/Encoding_Database/server/node_modules/@prisma/client/runtime/library.js:121:6593)
+    ei.request (/Users/ofhd/Developer/Encoding_Database/server/node_modules/@prisma/client/runtime/library.js:121:6300)
+    async a (/Users/ofhd/Developer/Encoding_Database/server/node_modules/@prisma/client/runtime/library.js:130:9551)
+    async seedCorpusFixture (file:///Users/ofhd/Developer/EncodingDB-worktrees/corpus/server/test/fixtures/corpus-postgres.mjs:32:17)
+    async TestContext.<anonymous> (file:///Users/ofhd/Developer/EncodingDB-worktrees/corpus/server/test/corpus-postgres.test.js:20:21)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 1
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 168.902083

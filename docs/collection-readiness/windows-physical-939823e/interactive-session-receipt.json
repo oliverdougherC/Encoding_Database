@@ -1,0 +1,37 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "PASSED",
+    "taskName":  "EncodingDB-Interactive-Probe-20260920T020058Z-1e777430",
+    "createdAt":  "2026-09-20T02:00:58.7934670Z",
+    "principal":  "DESKTOP-4ELVRAT\\ofhd",
+    "requestedLogonType":  "Interactive",
+    "requestedRunLevel":  "Limited",
+    "action":  {
+                   "execute":  "powershell.exe",
+                   "arguments":  "-NoProfile -NonInteractive -WindowStyle Hidden -File \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\interactive-probe-20260920T020058Z-1e777430\\probe.ps1\" -ResultPath \"C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\interactive-probe-20260920T020058Z-1e777430\\result.json\""
+               },
+    "registrationSucceeded":  true,
+    "cleanupVerified":  true,
+    "error":  null,
+    "actualPrincipal":  {
+                            "UserId":  "ofhd",
+                            "LogonType":  3,
+                            "RunLevel":  0
+                        },
+    "result":  {
+                   "capturedAt":  "2026-09-20T02:00:59.5435913Z",
+                   "user":  "DESKTOP-4ELVRAT\\ofhd",
+                   "processId":  28284,
+                   "sessionId":  1,
+                   "activeConsoleSessionId":  1,
+                   "userInteractive":  true,
+                   "administratorRole":  false,
+                   "scope":  "Own process/session identity only; no screenshots, window enumeration, user application interaction or native workload"
+               },
+    "taskInfo":  {
+                     "LastRunTime":  "\/Date(1789869658000)\/",
+                     "LastTaskResult":  0,
+                     "NumberOfMissedRuns":  0
+                 },
+    "finishedAt":  "2026-09-20T02:01:01.4920986Z"
+}

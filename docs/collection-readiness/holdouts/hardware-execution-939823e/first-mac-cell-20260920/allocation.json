@@ -1,0 +1,14 @@
+{
+  "host": "Mac",
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "executionHash": "c59993cae26188c0d7519aa9d9371f0ecb0aa7e8d1ec4e2de02163d3ef7fe89e",
+  "expiresAt": "2026-09-20T06:12:16.311355+00:00",
+  "exclusiveTimingGranted": true,
+  "nativeAcceptanceComplete": true,
+  "noBuildAnalysisUploadOrSourcePreparation": true,
+  "scope": "First Mac private hardware-holdout cell only; latch the existing boundary pause after its RUNNING record, without interrupting or retrying the measurement.",
+  "nativeAcceptanceScope": "Exact local native software/VT execution, owned recovery, immutable artifact/frame/runtime evidence are verified. Remote publication and quality/review/release gates remain open. This allocation does not declare collection-ready.",
+  "sequencingAmendment": "Independent no-submit private timing may proceed before the remote publication demonstration, matching the recorded canonical timing allocation. Publication/analysis/fitting/release requirements remain unchanged.",
+  "priorMacAllocation": "Canonical8-cell batch completed0;9totalcells retained; all outcomes preserved.",
+  "coordination": "No other Mac timing, build, media audit, uploads or analysis until explicit handback."
+}

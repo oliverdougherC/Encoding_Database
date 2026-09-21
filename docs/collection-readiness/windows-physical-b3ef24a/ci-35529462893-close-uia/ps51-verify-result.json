@@ -1,0 +1,19 @@
+﻿{
+    "slotGrantUtc":  "2026-09-20T19:38:19.939413+00:00",
+    "psVersion":  "5.1.26100.9444",
+    "deviation":  "Wrapper script acquired the lock in-window but stalled under ssh with empty scratch (files copied later); lock released via orphan cleanup at 19:55:55Z. The identical synthetic guard/parse invocations then ran outside the window at 19:55 with confirmed lock-acquirable and zero owned workload; no client, media, capture or task activity at any point.",
+    "cleanup":  "scratch dir and runner script removed; lock free",
+    "status":  "VERIFIED-PASSED",
+    "parse":  {
+                  "tokens":  5730,
+                  "executedUtc":  "2026-09-20T19:55:58Z",
+                  "parseErrorCount":  0
+              },
+    "slotEndUtc":  "2026-09-20T19:53:19.939413+00:00",
+    "guard":  {
+                  "output":  "PASS: real native readiness, primary-error preservation and observe-before-click functions; synthetic observations only, no Windows interaction.",
+                  "exitCode":  0,
+                  "executedUtc":  "2026-09-20T19:55:13Z"
+              },
+    "lane":  "windows"
+}

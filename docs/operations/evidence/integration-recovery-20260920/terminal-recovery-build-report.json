@@ -1,0 +1,231 @@
+{
+ "built": [
+  {
+   "payloadHash": "7e95a763b67be452e1772293fb6b626c5082a4f024ac7087c5ccc042a7d062b2",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/2e45a91792315e7525c62fda52fa1a9b8e2f8ac6992406548be9ef275318411f.json"
+  },
+  {
+   "payloadHash": "859371ab773048eeb8ee99b471367d798c1d2e65f12bb0ba64608073398a23f1",
+   "source": "mac-terminal",
+   "campaign": "campaign-5cdcb087bc1fc57a",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue/3d938f79b5262229768a78528e89973e04b82497d9b7d14120686fb8b4c1e95f.json"
+  },
+  {
+   "payloadHash": "37787a046f80309d304dc3ec81f0628ba32bf38f98b3a2406e2280b4dbe6745d",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/6a5e3a7b2a7683e0e83d47a04e3f624a22a698bf2a7eec5c0490c3056e702fc9.json"
+  },
+  {
+   "payloadHash": "60c83728a35daac257bada189e7c7a538e09b9088d9c8029933529c6406d7893",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/6f5bf127252f9463213da982082358f47cb95d064ddb25328188ec767bf67caa.json"
+  },
+  {
+   "payloadHash": "b743ef8c1fafc1f2567c49e86913ad00aa85ce067b7ca1e02d1455960f2f4f3c",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/6fa8bfc0da7e01c412c05747c65808f5481ff4a6a212253710b561ee3f35361f.json"
+  },
+  {
+   "payloadHash": "80061727258656fe917604c390e2a201e104d21ef099f1b727858eeaae4eacbd",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/7ac81c19b1a76a124391db2dbb77a0e16eb711905d6f17b47da25139b7c5b003.json"
+  },
+  {
+   "payloadHash": "e47c5515d3b9d81482f8b4f2df3baef5bf447f7e094ee5859e808db73e3c0d38",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/806875559aa16b4b1f01ee99727b5201ca4ffe0c642a868bb911f322a0c2ef96.json"
+  },
+  {
+   "payloadHash": "3b4757556a7c846bd33b70021d51ac01f70ac18186f6d6928946e76e2a545354",
+   "source": "mac-terminal",
+   "campaign": "campaign-5cdcb087bc1fc57a",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue/a2e891a03d3cd9b65dca257743e46342b8a007bdbdd1077ca8f1c7fe1ed3d6b4.json"
+  },
+  {
+   "payloadHash": "c005acf1f19498a730ce82f71b2c168471c9dd5c33527133c2e876b9215e41fa",
+   "source": "mac-terminal",
+   "campaign": "campaign-5cdcb087bc1fc57a",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue/d6aa29161093b8c701c1016cb4c540112a461eff84a3143d64bcc8698007127f.json"
+  },
+  {
+   "payloadHash": "0ea3897dde46f926b82079beda261479fbd689828a3ee7c4815cda342ed57221",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/e4084688487716e723d143561393848e0f003650e6e70e32ef281dbbfc4815e3.json"
+  },
+  {
+   "payloadHash": "57b054a33ac54199b42c390e861a00903efa4f12653dca95e660b3c99daf1324",
+   "source": "mac-terminal",
+   "campaign": "campaign-5cdcb087bc1fc57a",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-bc1fc57a/queue/e5ad52354084a1dd5ef20a996f01021813debef847458cf9bace597ff38723b5.json"
+  },
+  {
+   "payloadHash": "c18273c8239db2eecd8020e917ea8161709925ed9ea5e2c4edfcbb42e35e76a7",
+   "source": "mac-terminal",
+   "campaign": "campaign-cda14a5876e816b6",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/mac-76e816b6/queue/fe530c951f9f8b4a6cf25296402f026e3bf131d13f9e3eb4725ec56518f8e299.json"
+  },
+  {
+   "payloadHash": "b36b01760fec37d09893302ed5c7ab4e8c967518bc545e00e0fec9f876ddae21",
+   "source": "windows-terminal",
+   "campaign": "campaign-48cfe70dd43b036c",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue/a4cd98cfe515634fbf3d05612ff96a5e9ee511a173fac3f836ebf4e555c0552b.json"
+  },
+  {
+   "payloadHash": "850cf5be90691e26a5afe6b5756d41d00dd6f7b1648919698193deaa9f0fa20e",
+   "source": "windows-terminal",
+   "campaign": "campaign-48cfe70dd43b036c",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue/b2a4d0be4af2cbcbf433d1247f2b4cae9cbc8e8f4327b1939d106bf1ef36039f.json"
+  },
+  {
+   "payloadHash": "f2b1bde6be048301fa7542a1bff0f213318dd9b854e2d3f025f515daadc50979",
+   "source": "windows-terminal",
+   "campaign": "campaign-48cfe70dd43b036c",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue/bc4e69ef1550c9c57ca25867a84cf9b73c5d636190b9fd8263e17efe8bf5bb4b.json"
+  },
+  {
+   "payloadHash": "edbe234b97199b605108b94c4ed75b3d2c3a03fb6d281acfaf5527393a98a0dc",
+   "source": "windows-terminal",
+   "campaign": "campaign-48cfe70dd43b036c",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue/cd1f785fb4532e9f55fd708500e8888dfc8439ce6a666ce3e8df36cdebb9d3c6.json"
+  },
+  {
+   "payloadHash": "ed0aa02016326b66bff1b38a6374b6da61fa33d1fcd6297ff1c9315b42fcbab7",
+   "source": "windows-terminal",
+   "campaign": "campaign-48cfe70dd43b036c",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/windows-d43b036c/queue/d11f443f1641cede6fe4b7d35aa3823ebb83431a6a78f7613d737860e5947fad.json"
+  },
+  {
+   "payloadHash": "18a7df401eb0c214ec2dbd9e21f4a7d7aa37693a3157a5ac257e91810973558b",
+   "source": "software-terminal",
+   "campaign": "campaign-8b19e985307766a7",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue/3f70cf6f4d78f6807d66708d5a2cba494d5f49dcd4fe5caf76985bca5328e809.json"
+  },
+  {
+   "payloadHash": "d5df0952c71d5380a1f31fdf82d582a88ca2b772d175cca8d2fa87ff8e7a4357",
+   "source": "software-terminal",
+   "campaign": "campaign-8b19e985307766a7",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue/7fd16d72afea5864901277ceffbf649c2336f17a7e024cc5f827e3015a028163.json"
+  },
+  {
+   "payloadHash": "990fa2f51e2f8ae2cee1e232fa64d7c46ee723df97a03fbd6bdec3250ddece0a",
+   "source": "software-terminal",
+   "campaign": "campaign-8b19e985307766a7",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue/a4518f0f65747271c895fc4ad06c6d080214b5106d53901dbccf0124ffc178e3.json"
+  },
+  {
+   "payloadHash": "3a28746cbf3a049d83ecb273911bd98222162b3bbc3faafe7fe5419d37da36f5",
+   "source": "software-terminal",
+   "campaign": "campaign-8b19e985307766a7",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue/cd11b391aa8cd30272fb353b0c96fc4f373300e724968d6ab44dc37653b8e711.json"
+  },
+  {
+   "payloadHash": "d883a7fff69f8bdb8f7713b1f372150ca6058daf639876c3caec684469eba699",
+   "source": "software-terminal",
+   "campaign": "campaign-8b19e985307766a7",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/software-307766a7/queue/f7a3573ff1d14654faa3d94c85f02b63c2f697a5ab8fcb7ea88e5c396326fc9e.json"
+  },
+  {
+   "payloadHash": "cb2f1fc1b12813dc661740c250f6cb93a9dc974d47190caad9c908a80af618c8",
+   "source": "nvenc-terminal",
+   "campaign": "campaign-83ac99a195c70b5d",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/nvenc-95c70b5d/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/nvenc-95c70b5d/queue/86a5fe1b9069db5afc7b907147d3bb22f325b9b219b94e1d79dd7c81cec52b58.json"
+  },
+  {
+   "payloadHash": "1054b6b6296840334822a3f8924e19958405b3b8123b6f64febd65c4f7dce6f2",
+   "source": "nvenc-terminal",
+   "campaign": "campaign-83ac99a195c70b5d",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/nvenc-95c70b5d/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/nvenc-95c70b5d/queue/a851c0e671bed54571678894045221dec5baec04ecefc22a0e67a957d9973b3f.json"
+  },
+  {
+   "payloadHash": "52c1096231878c55026dde7b7773793ca7330ff710e1af9724b49e0867e0ed20",
+   "source": "gopfix-animation-terminal",
+   "campaign": "campaign-823401bfd2102eda",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue/04a919f9282e85024ae975218e189c44cc33171f1d88ccc19c2d108210a49f4a.json"
+  },
+  {
+   "payloadHash": "862068d4f45bd9dbf7e98607c218342e3cb1acd0d3e16af00689cee8def991ea",
+   "source": "gopfix-animation-terminal",
+   "campaign": "campaign-823401bfd2102eda",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue/a05bbd829fac99cb445e38cf3ed20ec61a8ce2434029c4527a37a7ef803ee3b5.json"
+  },
+  {
+   "payloadHash": "e53b324427df039c1e00aceac6c50366124e09e60a60095ed744e3a3bc99b15e",
+   "source": "gopfix-animation-terminal",
+   "campaign": "campaign-823401bfd2102eda",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue/ee9dfe306349c476e108cb7bad050ef602e9fbc0feb800d976fbf696d7c97efd.json"
+  },
+  {
+   "payloadHash": "6a70e42047ad382955589867509a3eb1777739855bfde116f32e8b7097701bb4",
+   "source": "gopfix-animation-terminal",
+   "campaign": "campaign-823401bfd2102eda",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-animation-d2102eda/queue/eecf45fe7e3d7d97c912132df9e79d519b8de401a552a108233ef1a7cd2441ec.json"
+  },
+  {
+   "payloadHash": "e8a25a6fd83cc0389e2c8521732641669224ed3db988b666ca9cabb93fe1bcd8",
+   "source": "gopfix-athletic-terminal",
+   "campaign": "campaign-496b66c4aa78aa85",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue/831bca113ac4c37465ca12c785b3eb99fdd4cbba668e1b688f601753c4932dc3.json"
+  },
+  {
+   "payloadHash": "9b96ec288c614528b2d7491b2413729ff4fa7d0f120d1a5edeb2564839ec8d1e",
+   "source": "gopfix-athletic-terminal",
+   "campaign": "campaign-496b66c4aa78aa85",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue/8b94a558645f01feaeea1ed0b31c759cb11078f4890c7af4a03b0ae0c4dfafa0.json"
+  },
+  {
+   "payloadHash": "0d1ea0252d06c73bcd6fc486e11ced8679006e64a7a3a8cfb09c34f54d773d31",
+   "source": "gopfix-athletic-terminal",
+   "campaign": "campaign-496b66c4aa78aa85",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue/b3a9b9f47b5aaf44caa91e28e642228f94a35871016078f0afef95902b57bdd3.json"
+  },
+  {
+   "payloadHash": "b10cc539c453adb988ed0a9afda597e0168740bcbb6d7e32ee6b620f970f74a6",
+   "source": "gopfix-athletic-terminal",
+   "campaign": "campaign-496b66c4aa78aa85",
+   "queue": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue",
+   "entry": "/home/ofhd/encodingdb-recovery-20260920/replay-terminal/gopfix-athletic-aa78aa85/queue/bbc3a110edb18695596b20b8c1df59548e406b1f3518bf39ef955a50f0950902.json"
+  }
+ ],
+ "blocked": [],
+ "needMacStaging": [],
+ "needWindowsStaging": []
+}

@@ -1,0 +1,47 @@
+Preparing: runtime 
+Preparing: clip athletic-action-1080p24-final
+Preparing: validate athletic-action-1080p24-final
+Preparing: hash athletic-action-1080p24-final.mkv
+Preparing: probe athletic-action-1080p24-final.mkv
+Preparing: clip natural-detail-1080p24-final
+Preparing: validate natural-detail-1080p24-final
+Preparing: hash natural-detail-1080p24-final.mkv
+Preparing: probe natural-detail-1080p24-final.mkv
+Preparing: clip film-grain-1080p24-final
+Preparing: validate film-grain-1080p24-final
+Preparing: hash film-grain-1080p24-final.mkv
+Preparing: probe film-grain-1080p24-final.mkv
+Preparing: clip dark-gradients-1080p24-final
+Preparing: validate dark-gradients-1080p24-final
+Preparing: hash dark-gradients-1080p24-final.mkv
+Preparing: probe dark-gradients-1080p24-final.mkv
+Preparing: clip animation-1080p24-final
+Preparing: validate animation-1080p24-final
+Preparing: hash animation-1080p24-final.mkv
+Preparing: probe animation-1080p24-final.mkv
+Preparing: clip screen-text-1080p24-final
+Preparing: validate screen-text-1080p24-final
+Preparing: hash screen-text-1080p24-final.mkv
+Preparing: probe screen-text-1080p24-final.mkv
+Preparing: clip talking-head-1080p24-final
+Preparing: validate talking-head-1080p24-final
+Preparing: hash talking-head-1080p24-final.mkv
+Preparing: probe talking-head-1080p24-final.mkv
+Preparing: runtime 
+Campaign campaign-69ebca2da8fe37b8: at most 35 encodes; resume with --resume-campaign campaign-69ebca2da8fe37b8
+Batch 1/1: 7 protocol recipe(s)
+Retaining suspect protocol evidence for h264_videotoolbox default: background-gpu-suspect
+Retaining suspect protocol evidence for h264_videotoolbox default: power-source-battery,background-gpu-suspect
+Retaining suspect protocol evidence for h264_videotoolbox default: background-gpu-suspect
+Retaining suspect protocol evidence for h264_videotoolbox default: power-source-battery,background-gpu-suspect
+Retaining suspect protocol evidence for h264_videotoolbox default: power-source-battery,background-gpu-suspect
+Batch Summary
+  Planned Tasks: 35
+  Batches: 1
+  Completed Encodes: 14
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 1m 45s
+  Throughput: 482.1 encodes/hour

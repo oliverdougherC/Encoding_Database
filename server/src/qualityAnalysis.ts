@@ -23,6 +23,7 @@ export interface QualitySourceContext {
   width: number;
   height: number;
   frameRate: number;
+  expectedFrameCount?: number;
   dynamicRange?: SupportedDynamicRange;
 }
 
@@ -254,7 +255,7 @@ function buildCanonicalFilterGraph(metricModelPath: string, logPath: string, fra
     `[${CANONICAL_DISTORTED_INPUT_INDEX}:v]fps=${cadence},settb=AVTB,setpts=N/(${cadence}*TB),format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[distorted]`,
     `[${CANONICAL_REFERENCE_INPUT_INDEX}:v]fps=${cadence},settb=AVTB,setpts=N/(${cadence}*TB),format=pix_fmts=${CANONICAL_ANALYSIS_PIXEL_FORMAT}[reference]`,
     `[distorted][reference]libvmaf=model='path=${escapeFilterValue(metricModelPath)}'`
-      + `:log_fmt=${CANONICAL_VMAF_LOG_FORMAT}:log_path=${escapeFilterValue(logPath)}:n_threads=${CANONICAL_VMAF_THREADS}`,
+      + `:log_fmt=${CANONICAL_VMAF_LOG_FORMAT}:log_path=${escapeFilterValue(logPath)}:n_threads=${CANONICAL_VMAF_THREADS}:shortest=1:repeatlast=0`,
   ].join(';');
 }
 
@@ -402,6 +403,8 @@ export function parseVmafJsonReport(
     };
   }).sort((a, b) => a.frameIndex - b.frameIndex);
 
+  if (options.source.expectedFrameCount != null && frames.length !== options.source.expectedFrameCount) throw new Error(`VMAF frame coverage ${frames.length} does not match expected ${options.source.expectedFrameCount}`);
+  if (frames.some((frame, index) => frame.frameIndex !== index)) throw new Error('VMAF frame indices must cover the complete contiguous sequence exactly once');
   const values = frames.map((frame) => frame.score);
   const sortedAscending = [...values].sort((a, b) => a - b);
   const sum = values.reduce((acc, value) => acc + value, 0);

@@ -1,0 +1,20 @@
+/Users/ofhd/Developer/EncodingDB-worktrees/operations/scripts/v7-scheduled-backup.sh: line 28: args[@]: unbound variable
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+Backup space preflight: artifactBytes=2539520, requiredBytes=1078820864, availableBytes=21379244032
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 backup created: /tmp/encodingdb-scheduled-backup-acceptance/bundles/backup-20260914T005756Z-32821
+Backup supervisor: exit=0, elapsedSeconds=0.464
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":2,"derivedMemberCount":1}
+PL-v7 isolated restore drill passed
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists
+mkdir: /tmp/encodingdb-scheduled-backup-acceptance/started: File exists

@@ -1,0 +1,260 @@
+<!doctype html><html><head><meta charset="utf-8">
+<title>EncodingDB playable review packet — 2026-09-20 (repaired)</title>
+<style>
+body{font-family:system-ui;margin:2rem auto;max-width:1500px;padding:0 1rem;background:#111;color:#ddd}
+.pair{display:flex;gap:1rem;flex-wrap:wrap} figure{flex:1;min-width:420px;margin:0}
+video{width:100%;background:#000} h2{font-size:1.05rem} .host{color:#8ab4f8;font-weight:normal}
+.suspect{background:#5c1a1a;padding:.5rem;border-radius:4px}
+pre{white-space:pre-wrap;font-size:.75rem;color:#aaa} summary{cursor:pointer;color:#8ab4f8}
+.note{background:#1d2733;padding:.6rem;border-radius:4px;font-size:.85rem}
+.judge{border-top:1px solid #444;margin-top:.6rem;padding-top:.6rem;font-size:.9rem}
+.judge label{margin-right:1rem;cursor:pointer} .judge textarea{width:100%;min-height:3em;background:#1a1a1a;color:#ddd;border:1px solid #444;border-radius:3px}
+.orig{font-size:.75rem;color:#8ab4f8} .pv{color:#7c5;font-weight:bold} .warn{color:#e74}
+button{background:#264f78;color:#fff;border:0;padding:.5rem 1rem;border-radius:4px;cursor:pointer;margin-right:.5rem}
+table{border-collapse:collapse;font-size:.8rem} td,th{border:1px solid #444;padding:.25rem .5rem;text-align:left}
+</style></head><body>
+<h1>EncodingDB playable human-review packet</h1>
+<p>Candidate <code>b3ef24abb020bc6af5b5fe6b849ba3eae8314be2</code> (rebuild <code>a350d45</code> for GUI acceptance). PL is
+<b>inactive / provisional</b>: every public corpus entry reports <code>UNSCORED_NO_PUBLIC_DERIVED_RESULT</code> /
+<code>PROVISIONAL</code>, <code>pl.total=null</code>. This packet validates nothing about PL.</p>
+
+<div class="note"><b>Playability (fixed 2026-09-20).</b> The canonical suite references are FFV1/Matroska and do
+<b>not</b> decode in any browser. The players below are therefore <span class="pv">LOSSLESS H.264 previews</span>
+(libx264 <code>-qp 0</code>, yuv420p, 1s keyframes, faststart MP4). Every preview's <b>every decoded frame is
+MD5-identical to the original master</b> (1152/1152 frames, <code>tools/evidence/*.hash</code>), so what you see is
+the exact reference picture. Real headless-Chrome software-decode playback + seek proof:
+<code>tools/evidence/browser-proof.json</code> (7/7 PASS). Original FFV1 masters are unchanged, still served, and linked
+under each player for byte-exact download.</div>
+
+<div class="note"><b>Suite identity (provenance corrected 2026-09-20).</b> Three distinct values, never interchangeable:
+release suite-pack fingerprint (suite inventory) <code>d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e</code>;
+bundled <code>suite-lock.json</code> client/server lock fingerprint <code>41ae332c8e4ac7ae49c2a44917729c65d7a062710e4b44961b8125ffe7fb2660</code>;
+pack archive SHA-256 (release-pinned, fixed) <code>d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150</code>.
+The pre-repair manifest mislabeled the lock value as “suiteFingerprint”; identities themselves are unchanged.</div>
+
+<div class="note"><b>Scope limits.</b> Mac calibration (<code>canonical-matrix-b3ef24a</code>, phase=timing) is still running:
+<b>make no Balanced/Quality/other tier policy decisions from this packet.</b> Case C7 is flagged
+“Metric disagreement diagnostics flagged the run for review” — it is <b>ineligible</b> for quality or timing approval
+no matter how good the video looks; only disagreement classification applies. The broader API snapshot
+(<code>api/corpus-full.json</code>, 56 rows) contains 29 <code>centerBasis=suspect</code> rows; only the 7 cases below have
+paired media here, so the other suspect rows are <b>not</b> part of this review queue.</div>
+
+<h2>How to review (≈15 min)</h2>
+<ol style="font-size:.9rem">
+<li>For each case C1–C6: play left (lossless reference preview) then right (encode artifact), and seek both to the same
+timestamps. Judge visible artifacts against the reference.</li>
+<li>Mark exactly one decision per case — <b>accept / expect-disagreement / reject / investigate</b> — plus a short rationale.
+No blanks on return; do not bulk-approve by count; no verdict may be recorded for you.</li>
+<li>Case C7: choose only <b>expect-disagreement</b> or <b>investigate</b> (accept/reject are locked out) and state why the
+metric disagreement looks right or wrong.</li>
+<li>Enter your name, press <b>Export judgments JSON</b>, and return the downloaded
+<code>oliver-judgments-*.json</code> to Codex (or drop it in <code>.omx/local-execution/handoffs/</code>).
+Drafts auto-save in this browser (localStorage) if you stop mid-review.</li>
+</ol>
+
+<label>Reviewer name: <input id="reviewer" size="24" placeholder="Oliver"></label>
+<button onclick="exportJson()">Export judgments JSON</button>
+<button onclick="copyText()">Copy summary text</button>
+<span id="status" style="font-size:.8rem;color:#7c5"></span>
+
+<h2>Case summary</h2>
+<table><tr><th>Case</th><th>Content class</th><th>Encoder</th><th>Host</th><th>Run / analysis status</th><th>Required decisions</th></tr>
+<tr><td>C1</td><td>athletic-action</td><td>libx264 fast CRF23</td><td>macOS M4 Pro</td><td>ACCEPTED / COMPLETE (VMAF 98.12)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C2</td><td>athletic-action</td><td>h264_nvenc p4 CQ24</td><td>Win 7950X+RTX5090</td><td>ACCEPTED / COMPLETE (VMAF 99.10)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C3</td><td>screen-text</td><td>libx264 fast CRF23</td><td>macOS M4 Pro</td><td>ACCEPTED / COMPLETE (VMAF 97.09)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C4</td><td>screen-text</td><td>h264_nvenc p4 CQ24</td><td>Win 7950X+RTX5090</td><td>ACCEPTED / COMPLETE (VMAF 97.91)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C5</td><td>natural-detail</td><td>h264_videotoolbox VBR6000</td><td>macOS M4 Pro</td><td>ACCEPTED / COMPLETE (VMAF 91.03)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C6</td><td>film-grain</td><td>h264_nvenc p4 VBR4000</td><td>Linux E5-2699v4+GTX1070</td><td>ACCEPTED / COMPLETE (VMAF 87.49)</td><td>1 perceptual verdict</td></tr>
+<tr><td>C7</td><td>animation</td><td>libx264 fast CRF23</td><td>macOS M4 Pro</td><td><b>SUSPECT</b> / SUSPECT (metric-disagreement flag; VMAF 86.63 vs xPSNR 36.89)</td><td>1 disagreement classification only</td></tr>
+</table>
+
+<section id="C1">
+  <h2>C1 · athletic-action-1080p24-final — libx264 fast CRF23 <span class="host">[macOS (Apple M4 Pro)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/athletic-action-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/athletic-action-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=1e06fe03…31755de · 139815565 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=cfe056ef…f58f89f0 · 7327057 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9ho8lr004qo3dw0w7rpury
+artifact cmu9ho8lr004ro3dwxenuxvhv sha256=cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0 (RETAINED, run ACCEPTED)
+analysis cmu9wemky000ipmdwppo0p6p4 (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=98.12353 xPSNR=42.0552 SSIM=0.984571 PSNR=45.185018
+reference sha256=1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de
+reference preview sha256=2a203a411070d011dd7e5d0be97f160aacc28d983b52292e15e4a7a247a1c922 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry cmu9ftoor0000o1dwjprx8akt::athletic-action-1080p24-final::cmu9kslu4000pl9dwwa5qvte9::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p → UNSCORED_NO_PUBLIC_DERIVED_RESULT / PROVISIONAL / PL=None / centerBasis=accepted</pre></details>
+  <div class="judge" data-case="C1"></div>
+</section>
+
+<section id="C2">
+  <h2>C2 · athletic-action-1080p24-final — h264_nvenc p4 CQ24 <span class="host">[Windows (Ryzen 9 7950X + RTX 5090)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/athletic-action-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/athletic-action-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=1e06fe03…31755de · 139815565 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/96bed2cbd77fc887c05a04368ca59f71786be33f340528cd2550eb101f2c68e4.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=96bed2cb…1f2c68e4 · 9504723 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9ktk1s0021l9dw5ud9myo2
+artifact cmu9ktk1s0022l9dwdwrilusq sha256=96bed2cbd77fc887c05a04368ca59f71786be33f340528cd2550eb101f2c68e4 (RETAINED, run ACCEPTED)
+analysis cmu9ktooe0024l9dw3lnpkfo4 (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=99.099692 xPSNR=42.9593 SSIM=0.986745 PSNR=46.355761
+reference sha256=1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de
+reference preview sha256=2a203a411070d011dd7e5d0be97f160aacc28d983b52292e15e4a7a247a1c922 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry: (not materialized)</pre></details>
+  <div class="judge" data-case="C2"></div>
+</section>
+
+<section id="C3">
+  <h2>C3 · screen-text-1080p24-final — libx264 fast CRF23 <span class="host">[macOS (Apple M4 Pro)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/screen-text-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/screen-text-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=3c024a4a…bc05c8c · 35313873 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=3744643e…0e9ee34c · 238094 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9hobi7004to3dwfy5jnirz
+artifact cmu9hobi7004uo3dw7prifa7e sha256=3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c (RETAINED, run ACCEPTED)
+analysis cmu9hocdo004wo3dwsxyquzub (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=97.094146 xPSNR=48.2428 SSIM=0.997839 PSNR=50.648504
+reference sha256=3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c
+reference preview sha256=0abe0651e094bd02dfca3e293301ffbcb3e703c0246af219f89a0c59f5738f58 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry cmu9ftoor0000o1dwjprx8akt::screen-text-1080p24-final::cmu9hnqnl003ro3dwatj1pima::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p → UNSCORED_NO_PUBLIC_DERIVED_RESULT / PROVISIONAL / PL=None / centerBasis=accepted</pre></details>
+  <div class="judge" data-case="C3"></div>
+</section>
+
+<section id="C4">
+  <h2>C4 · screen-text-1080p24-final — h264_nvenc p4 CQ24 <span class="host">[Windows (Ryzen 9 7950X + RTX 5090)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/screen-text-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/screen-text-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=3c024a4a…bc05c8c · 35313873 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/dd8af3632ab66a6b47b635493d0ea9aa92febb5d47dfab12e4711875533eebe0.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=dd8af363…533eebe0 · 295938 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9ktpka002bl9dwao8e0znm
+artifact cmu9ktpkb002cl9dwr0k7wlil sha256=dd8af3632ab66a6b47b635493d0ea9aa92febb5d47dfab12e4711875533eebe0 (RETAINED, run ACCEPTED)
+analysis cmu9ktqvn002el9dwl1bc25jx (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=97.905259 xPSNR=50.5014 SSIM=0.998396 PSNR=52.948812
+reference sha256=3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c
+reference preview sha256=0abe0651e094bd02dfca3e293301ffbcb3e703c0246af219f89a0c59f5738f58 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry: (not materialized)</pre></details>
+  <div class="judge" data-case="C4"></div>
+</section>
+
+<section id="C5">
+  <h2>C5 · natural-detail-1080p24-final — h264_videotoolbox VBR 6000kbps <span class="host">[macOS (Apple M4 Pro)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/natural-detail-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/natural-detail-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=cfcc51d4…d8e51225 · 283872120 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=3f251af1…ab1bad0d6 · 7569383 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9i1dlf005fo3dwnqr2gp9n
+artifact cmu9i1dlf005go3dw11jvkq82 sha256=3f251af18a394c9bb7942ce6b19644f10b89b8740a070710606fa89ab1bad0d6 (RETAINED, run ACCEPTED)
+analysis cmu9i1gk4005io3dwb4fdi3wm (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=91.030479 xPSNR=35.582 SSIM=0.942581 PSNR=38.405399
+reference sha256=cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225
+reference preview sha256=263b9cfb89e6fd251b67861248b84cc954d1b5fc41ecb5c4a5eee58152b7a143 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry: (not materialized)</pre></details>
+  <div class="judge" data-case="C5"></div>
+</section>
+
+<section id="C6">
+  <h2>C6 · film-grain-1080p24-final — h264_nvenc p4 VBR 4000kbps <span class="host">[Linux (Xeon E5-2699 v4 + GTX 1070)]</span></h2>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/film-grain-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/film-grain-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=67d3d2f5…e578d603 · 336898554 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/e12ddf07e71b27f5546407681be6a038eb14e994706eafe67a46b22a2f766f8e.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=e12ddf07…2f766f8e · 5302720 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmu9fyjxy000ao3dwk9wuaiub
+artifact cmu9fyjxz000bo3dws77m9bgl sha256=e12ddf07e71b27f5546407681be6a038eb14e994706eafe67a46b22a2f766f8e (RETAINED, run ACCEPTED)
+analysis cmu9gedwn0022o3dwcwvnct42 (COMPLETE, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=87.49038 xPSNR=29.7296 SSIM=0.88733 PSNR=37.820095
+reference sha256=67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603
+reference preview sha256=e8d8a852a376a2b235b80d526d9198022d012a2e47c2499ca22688b32f655121 (lossless H.264; 240/240 frame hashes identical)
+public corpus entry: (not materialized)</pre></details>
+  <div class="judge" data-case="C6"></div>
+</section>
+
+<section id="C7">
+  <h2>C7 · animation-1080p24-final — libx264 fast CRF23 <span class="host">[macOS (Apple M4 Pro)]</span></h2>
+  <div class="suspect"><b>SUSPECT — “Metric disagreement diagnostics flagged the run for review”</b> (run status SUSPECT,
+analysis status SUSPECT; VMAF 86.63 vs xPSNR 36.89 / PSNR 42.19). This is a metric-disagreement flag, not an environment
+note. Case is <span class="warn">INELIGIBLE</span> for quality or timing approval regardless of how good the video looks —
+good-looking video cannot approve an unstable run. Judge only whether a metric disagreement looks expected here.</div>
+  <div class="pair">
+    <figure><figcaption><span class="pv">Reference — LOSSLESS H.264 PREVIEW</span> (pixel-equal to FFV1 master)</figcaption>
+      <video src="media/previews/animation-1080p24-final-lossless-h264-preview.mp4" controls preload="metadata"></video>
+      <div class="orig"><a href="media/canonical/animation-1080p24-final.mkv" download>Original FFV1 master (download)</a> sha256=d70c4d9e…d5d820ea · 173819800 B</div></figure>
+    <figure><figcaption>Encoded artifact</figcaption>
+      <video src="media/f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448.mp4" controls preload="metadata"></video>
+      <div class="orig">sha256=f803df85…3208c448 · 10360375 B</div></figure>
+  </div>
+  <details><summary>bindings</summary><pre>run cmua43aoj0029qcdw5norac9s
+artifact cmua43aoj002aqcdwxf8iezew sha256=f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448 (VERIFIED, run SUSPECT)
+analysis cmua43arp002cqcdw9n3qs09f (SUSPECT, vmaf-v1-sdr-1080p, authoritative-analysis/v2)
+  VMAF mean=86.625985 xPSNR=36.8877 SSIM=0.964614 PSNR=42.186465
+reference sha256=d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea
+reference preview sha256=9e030c9b6c3b04acbcfe1b1eef2b56d14ce3ab473251e9f5e27d88ad2d7ffbc9 (lossless H.264; 192/192 frame hashes identical)
+public corpus entry cmu9ftoor0000o1dwjprx8akt::animation-1080p24-final::cmu9ksair000bl9dw8k99x9wx::cmu9ks2ue0000l9dwvwi4f5vr::vmaf-v1-sdr-1080p → UNSCORED_NO_PUBLIC_DERIVED_RESULT / PROVISIONAL / PL=None / centerBasis=suspect</pre></details>
+  <div class="judge" data-case="C7" data-restricted="1"></div>
+</section>
+
+<p><a href="manifest.json">manifest.json</a> · <a href="tools/evidence/browser-proof.json">browser-proof.json</a> ·
+<a href="tools/evidence/preview-sha256.txt">preview-sha256.txt</a> · <a href="tools/evidence/post-repair-original-hashes.txt">post-repair original hashes</a></p>
+
+<script>
+const RESTRICTED = {C7: true};
+const OPTS = [["accept","accept — encode quality looks right for the number"],
+              ["expect-disagreement","expect-disagreement — metrics may disagree here, that's understandable"],
+              ["reject","reject — visible quality problem vs reference"],
+              ["investigate","investigate — something looks off, needs a second look"]];
+for (const el of document.querySelectorAll(".judge")) {
+  const c = el.dataset.case, restricted = el.dataset.restricted === "1";
+  el.innerHTML = "<b>Decision for " + c + ":</b><br>" + OPTS.map(([v,l]) =>
+    "<label><input type=radio name=d" + c + " value=" + v + (restricted && (v==="accept"||v==="reject") ? " disabled" : "") + "> " + l + "</label>"
+  ).join("") + "<br>Rationale (required): <textarea id=r" + c + " placeholder='What did you see, at which timestamps?'></textarea>";
+}
+const store = () => { const s = {reviewer: reviewer.value, cases: {}};
+  for (const c of ["C1","C2","C3","C4","C5","C6","C7"]) {
+    const d = document.querySelector("input[name=d" + c + "]:checked");
+    s.cases[c] = {decision: d ? d.value : null, rationale: document.getElementById("r" + c).value};
+  } return s; };
+const load = () => { try { const s = JSON.parse(localStorage.getItem("packet-judgments-20260920") || "{}");
+  if (s.reviewer) reviewer.value = s.reviewer;
+  for (const c in (s.cases||{})) { const {decision, rationale} = s.cases[c];
+    if (decision) { const r = document.querySelector("input[name=d" + c + "][value=" + decision + "]"); if (r) r.checked = true; }
+    if (rationale) document.getElementById("r" + c).value = rationale; } } catch {} };
+document.addEventListener("input", () => localStorage.setItem("packet-judgments-20260920", JSON.stringify(store())));
+function payload() { const s = store();
+  return {packet: "encodingdb-review-packet-20260920", repair: "lossless-preview-2026-09-20",
+    candidateCommit: "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2", savedAt: new Date().toISOString(),
+    reviewer: s.reviewer || "(unnamed)", plStatus: "not validated by this packet; all entries UNSCORED/PROVISIONAL/pl.total=null",
+    scopeNote: "no tier-policy (Balanced/Quality) decisions; C7 ineligible for quality/timing approval",
+    cases: s.cases}; }
+const statusEl = document.getElementById("status");
+function exportJson() { const missing = Object.entries(store().cases).filter(([,v]) => !v.decision || !v.rationale.trim()).map(([k]) => k);
+  if (missing.length) { statusEl.textContent = "Missing decision/rationale: " + missing.join(", "); return; }
+  const b = new Blob([JSON.stringify(payload(), null, 1)], {type: "application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(b);
+  a.download = "oliver-judgments-b3ef24a-" + new Date().toISOString().slice(0,10) + ".json"; a.click();
+  statusEl.textContent = "Downloaded — return this file to Codex or .omx/local-execution/handoffs/."; }
+async function copyText() { const lines = Object.entries(store().cases).map(([k,v]) =>
+  k + ": " + (v.decision || "(blank)") + " — " + (v.rationale || "(no rationale)"));
+  await navigator.clipboard.writeText("Packet 20260920 judgments by " + (reviewer.value || "(unnamed)") + "\n" + lines.join("\n"));
+  statusEl.textContent = "Summary copied to clipboard."; }
+load();
+</script>
+</body></html>

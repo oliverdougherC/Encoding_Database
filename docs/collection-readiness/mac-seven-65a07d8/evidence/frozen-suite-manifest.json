@@ -1,0 +1,360 @@
+{
+  "suiteId": "encodingdb-test-suite",
+  "suiteVersion": "encodingdb-test-suite-v1",
+  "displayName": "EncodingDB Canonical Suite \u2014 1080p SDR final candidate",
+  "manifestVersion": 2,
+  "defaultQuickClipId": "athletic-action-1080p24-final",
+  "requiredContentClasses": [
+    "high-motion-sports",
+    "fine-natural-detail",
+    "film-grain-noise",
+    "dark-gradients-shadows",
+    "animation-flat-fields",
+    "screen-text",
+    "talking-head"
+  ],
+  "generalPlPolicy": {
+    "requiresCompleteCoverage": true,
+    "weighting": "equal-class-geometric-mean",
+    "legacySingleClipGeneralPlAllowed": false
+  },
+  "redistribution": {
+    "license": "CC-BY-4.0 AND CC-BY-3.0 AND CC0-1.0",
+    "notes": "Candidate source selection/freeze authorized by the 2026-09-09 assignment. All seven actual sources reviewed using retained temporal samples and full-resolution detail frames, full decode and six real encoder/rate cases per clip. Human deployment approval remains pending. Per-asset notices travel in the pack; no synthetic pilot or PL calibration promoted. See docs/canonical-suite/README.md for class proxies, letterboxing and source-normalization limitations.",
+    "reviewed": true,
+    "redistributionApproved": true,
+    "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206",
+    "spdxExpression": "CC-BY-4.0 AND CC-BY-3.0 AND CC0-1.0"
+  },
+  "clips": [
+    {
+      "id": "athletic-action-1080p24-final",
+      "displayName": "Tears of Steel \u2014 athletic action",
+      "contentClass": "high-motion-sports",
+      "payloadContentClass": "action",
+      "description": "Sustained camera motion, running/turning actor, occlusion and irregular VFX action. Accepted as disclosed athletic-action proxy, not sporting-event footage; motion frames retain varied edges and no visible normalization damage.",
+      "fileName": "athletic-action-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 11713\u201311952; source excerpt SHA256 2995a722dc8ff9ec32a262dd1679c5aca91655dbb7de61d2457164567c1c482b. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-action-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-3.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/athletic-action-1080p24-final.mkv",
+        "originalFileName": "athletic-action-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+      "byteSize": 139815565
+    },
+    {
+      "id": "natural-detail-1080p24-final",
+      "displayName": "Chimera \u2014 natural hillside",
+      "contentClass": "fine-natural-detail",
+      "payloadContentClass": "nature",
+      "description": "Hillside soil, rocks and vegetation occupy most of the frame during a camera pan and wider shot. Reviewed real PQ/P3 to SDR conversion retains highlight/shadow separation and natural texture; no metadata-only HDR relabeling. Not a pure wind-foliage scene.",
+      "fileName": "natural-detail-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; frames 360\u2013599; source excerpt SHA256 79f35b35405c019c639e85b4b232ca04f780163f0f671ebcf55d281ea5a472c3. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/chimera-natural-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-4.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/natural-detail-1080p24-final.mkv",
+        "originalFileName": "natural-detail-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+      "byteSize": 283872120
+    },
+    {
+      "id": "film-grain-1080p24-final",
+      "displayName": "Nocturne \u2014 added film grain",
+      "contentClass": "film-grain-noise",
+      "payloadContentClass": "gaming",
+      "description": "Producer-added grain remains clearly visible on wood, fabric and skin in full-resolution frame3 and changes across the sequence. No denoise; light-to-dark transition retained. Grain provenance is added Filmbox, not a film scan.",
+      "fileName": "film-grain-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; 90\u2013100 seconds; source excerpt SHA256 ec4ec397e6495ef7054f5df93bc2e2a70f64d954186c1c6fc36bf654d73aab5c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-4.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/film-grain-1080p24-final.mkv",
+        "originalFileName": "film-grain-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+      "byteSize": 336898554
+    },
+    {
+      "id": "dark-gradients-1080p24-final",
+      "displayName": "Nocturne \u2014 dark interior gradients",
+      "contentClass": "dark-gradients-shadows",
+      "payloadContentClass": "mixed",
+      "description": "Low-light stairs, blue-purple defocused gradients and silhouetted piano retain shadow structure. Full-resolution gradient frame shows continuous tone plus source grain, without crushing the whole image to black.",
+      "fileName": "dark-gradients-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Netflix, Inc.; https://opencontent.netflix.com/; 148\u2013158 seconds; source excerpt SHA256 d19cb34070490e37a75ba71415e5f13536b291e3c1a71655df7051cb43cad88c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/nocturne-dark-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-4.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/dark-gradients-1080p24-final.mkv",
+        "originalFileName": "dark-gradients-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+      "byteSize": 317829621
+    },
+    {
+      "id": "animation-1080p24-final",
+      "displayName": "Sol Levante \u2014 cel-shaded face",
+      "contentClass": "animation-flat-fields",
+      "payloadContentClass": "animation",
+      "description": "Eight seconds chosen before the effects cut: broad smooth shaded skin, bright/dark cel edges, eyes and fine hair lines. Not the rejected lava sequence; shading/glow remain disclosed, not claimed perfectly flat backgrounds.",
+      "fileName": "animation-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Netflix, Inc. and Production I.G; https://opencontent.netflix.com/; 173\u2013181 seconds; source excerpt SHA256 af62fe6fbbb2ffc89195e348274b793c5e0f6e6894ad2b2b24bf52a4dc631e1c. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/sol-levante-flat-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-4.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/animation-1080p24-final.mkv",
+        "originalFileName": "animation-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 192,
+        "duration": {
+          "numerator": 8,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+      "byteSize": 173819800
+    },
+    {
+      "id": "screen-text-1080p24-final",
+      "displayName": "Atlas \u2014 authored screen workflow",
+      "contentClass": "screen-text",
+      "payloadContentClass": "screen",
+      "description": "Actual offline browser render shows readable code/table text, deterministic scroll/cursor motion and static navigation. Full-resolution prepared frame inspected; separate sRGB-to-BT709 conversion preserves text edges. Original authored workload, not lavfi.",
+      "fileName": "screen-text-1080p24-final.mkv",
+      "source": {
+        "kind": "project-authored-screen",
+        "provenance": "Original offline browser workflow, pinned Chromium/Playwright/font and lossless PNG timing. See docs/canonical-suite/evidence/screen-capture.json and scripts/canonical-screen/README.md.",
+        "license": "CC0-1.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/screen-text-1080p24-final.mkv",
+        "originalFileName": "screen-text-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c",
+      "byteSize": 35313873
+    },
+    {
+      "id": "talking-head-1080p24-final",
+      "displayName": "Tears of Steel \u2014 close dialogue",
+      "contentClass": "talking-head",
+      "payloadContentClass": "talkingHead",
+      "description": "Sustained close dialogue retains faces, beard/hair, skin detail and mouth/hand movement throughout ten seconds, avoiding rejected cut-heavy range. Cinematic 1920x800 image preserved with letterbox bars.",
+      "fileName": "talking-head-1080p24-final.mkv",
+      "source": {
+        "kind": "licensed-master-excerpt",
+        "provenance": "Blender Foundation / Mango Open Movie Project; https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/; frames 5761\u20136000; source excerpt SHA256 a1cd976db82df225a386baa38bba5c3071bdf40e18585a39028b4e7d8f02d3ea. Exact upstream URLs, fetched byte/frame hashes and notices: docs/canonical-sources/tos-dialog-acquisition.json. Prepared by scripts/prepare_canonical_references.py.",
+        "license": "CC-BY-3.0",
+        "reviewed": true,
+        "redistributionApproved": true,
+        "reviewHash": "01518dc41bc7bdb47cf25658154a808fde88f137d401356c708e16d354bb5206"
+      },
+      "acquisition": {
+        "kind": "retained-original",
+        "container": "matroska",
+        "videoCodec": "ffv1",
+        "packagedRelativePath": "canonical/talking-head-1080p24-final.mkv",
+        "originalFileName": "talking-head-1080p24-final.mkv"
+      },
+      "media": {
+        "frameCount": 240,
+        "duration": {
+          "numerator": 10,
+          "denominator": 1
+        },
+        "frameRate": {
+          "numerator": 24,
+          "denominator": 1
+        },
+        "width": 1920,
+        "height": 1080,
+        "pixelFormat": "yuv420p",
+        "bitDepth": 8,
+        "chromaSubsampling": "4:2:0",
+        "colorPrimaries": "bt709",
+        "colorTransfer": "bt709",
+        "colorMatrix": "bt709",
+        "colorRange": "tv",
+        "fieldOrder": "progressive",
+        "hdrMetadata": null
+      },
+      "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+      "byteSize": 219125475
+    }
+  ]
+}

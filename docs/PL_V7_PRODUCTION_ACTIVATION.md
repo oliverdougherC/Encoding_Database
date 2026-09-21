@@ -190,3 +190,38 @@ asserts:
   analysis row;
 - the exact-membership unique index exists.
 - `/health/ready`, `/query`, and `/corpus` succeed against the rehearsed DB.
+
+## Corrected-protocol activation safeguards
+
+COMPLETE calibration is mandatory even for an already PRODUCTION context.
+Activation re-verifies live DB measurements, current review heads, retained object
+SHA/size, constants/policy and actual production golden/holdout rankings. Advisory
+transaction lock 714555 spans live eligibility verification through read/rebuild/
+persistence, shared with workers and review writers. The default activation
+timeout is 30 minutes (`CALIBRATION_ACTIVATION_TIMEOUT_MS`); plan this operator
+maintenance interval against corpus size. Public requests must not run this scan.
+
+Output paths are reserved before DB mutations. A conflict leaves the database
+unchanged; a later DB failure can leave prepared hash-identical files for recovery.
+Retry without output flags using the same context, or choose fresh output names.
+The deployed path in env bindings must be updated for the container mount.
+
+`scoringBehaviorHash` binds the compiled scoring module closure, including aggregation,
+reference construction, persistence and review eligibility as well as fixed
+weights/constraints. Changes require a new reviewed context; old context identity
+and old-protocol timing are never silently relabeled.
+
+## Rollback
+
+Rollback is an image-tag revert, the mechanism proven on the isolated
+candidate (each rollout kept the compose file backed up and reverted by
+retagging with identical volumes; nothing else was touched). Before any
+production rollout, record the running server image tag and digest, the
+compose file hash, container names and volume identities. To roll back:
+restore the backed-up compose file, run
+`docker compose -p encodingdb up -d --no-build --pull never` with the prior
+image tag pinned, then re-check health, the protocol endpoint and worker
+state. Migrations are forward-only and additive; the prior release runs
+against the newer schema, so never drop or rewrite tables during a revert.
+Volumes are never substituted or deleted; restored data goes through the
+section 4 isolated rehearsal first, with originals retained.

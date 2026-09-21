@@ -1,0 +1,31 @@
+{
+ "server": "python3 serve.py 8777 (loopback-only, Range -> 206)",
+ "entryPoint": "http://127.0.0.1:8777/index.html",
+ "checks": [
+  {
+   "check": "GET /index.html",
+   "result": "200"
+  },
+  {
+   "check": "GET /media/96bed2\u2026f2c68e4.mp4 Range bytes=5000000-5000063",
+   "result": "206, Content-Range bytes 5000000-5000063/9504723, 64 bytes returned, content-type video/mp4 (with .mp4 name)"
+  },
+  {
+   "check": "GET /media/canonical/film-grain-1080p24-final.mkv Range bytes=100000000-100000063",
+   "result": "206, Content-Range bytes 100000000-100000063/336898554, 64 bytes returned, content-type video/x-matroska"
+  },
+  {
+   "check": "sha256 of all 14 media files vs manifest vs candidate DB",
+   "result": "14/14 match (see packet-file-hashcheck.json in repo evidence)"
+  },
+  {
+   "check": "live candidate frontend /results/<id> (encoded and raw id)",
+   "result": "200 after fix commit 971b259; page shows 'PL status: Unavailable', 'UNSCORED_NO_PUBLIC_DERIVED_RESULT'"
+  },
+  {
+   "check": "candidate API corpus detail",
+   "result": "200; status.scoring=UNSCORED_NO_PUBLIC_DERIVED_RESULT, evidenceTier=PROVISIONAL, pl.total=null, eligibleForDefaultRecommendation=false"
+  }
+ ],
+ "frontendFixNote": "b3ef24a frontend double-encoded corpus ids from Next page params, 404ing every /results/<id> deep link (server log shows %253A). Fixed in 971b259 (decode-then-single-encode); frontend vitest 59/59; redeployed as encodingdb-candidate-frontend:971b259."
+}

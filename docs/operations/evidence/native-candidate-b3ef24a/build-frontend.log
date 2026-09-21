@@ -1,0 +1,101 @@
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 1.04kB done
+#1 DONE 0.0s
+
+#2 resolve image config for docker-image://docker.io/docker/dockerfile:1
+#2 DONE 0.7s
+
+#3 docker-image://docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32
+#3 resolve docker.io/docker/dockerfile:1@sha256:ecfaec9ed6d810b56388c508f4121597bfbba70d41a6dfeee4d8cad5f295fc32 0.0s done
+#3 CACHED
+
+#4 [internal] load metadata for docker.io/library/node:20-alpine
+#4 DONE 0.7s
+
+#5 [internal] load .dockerignore
+#5 transferring context:
+#5 transferring context: 2B done
+#5 DONE 0.3s
+
+#6 [internal] load build context
+#6 DONE 0.0s
+
+#7 [builder 1/8] FROM docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293
+#7 resolve docker.io/library/node:20-alpine@sha256:fb4cd12c85ee03686f6af5362a0b0d56d50c58a04632e6c0fb8363f609372293 0.1s done
+#7 DONE 0.1s
+
+#6 [internal] load build context
+#6 transferring context: 5.93kB 0.0s done
+#6 DONE 0.0s
+
+#8 [builder 8/8] RUN npm prune --omit=dev
+#8 CACHED
+
+#9 [builder 7/8] RUN npm run build
+#9 CACHED
+
+#10 [runner 3/7] COPY --from=builder /app/node_modules ./node_modules
+#10 CACHED
+
+#11 [runner 6/7] COPY --from=builder /app/public ./public
+#11 CACHED
+
+#12 [builder 4/8] RUN npm ci
+#12 CACHED
+
+#13 [runner 5/7] COPY --from=builder /app/.next ./.next
+#13 CACHED
+
+#14 [builder 5/8] COPY . .
+#14 CACHED
+
+#15 [builder 2/8] WORKDIR /app
+#15 CACHED
+
+#16 [builder 3/8] COPY package.json package-lock.json* ./
+#16 CACHED
+
+#17 [builder 6/8] RUN mkdir -p public
+#17 CACHED
+
+#18 [runner 4/7] COPY --from=builder /app/package.json ./package.json
+#18 CACHED
+
+#19 [runner 7/7] COPY --from=builder /app/next.config.mjs ./next.config.mjs
+#19 CACHED
+
+#20 exporting to image
+#20 exporting layers done
+#20 exporting manifest sha256:de8451c19a3e04a7f2be841fac8540c8112f8057b2adc60fb6a40d1d866f2a0a done
+#20 exporting config sha256:bfa3a64f574ef01b1659b8cfac209e9647843f9424c97d1e711397335e6aeace done
+#20 exporting attestation manifest sha256:4f3b5b3a3be196ec1f101f4fb7c153d8976da0405e7a395db59055768a29afaa 0.1s done
+#20 exporting manifest list sha256:6fef7eda217b05e031f6281a8170e0ecc0ed63e92eb5e06736c99783e1c15432
+#20 exporting manifest list sha256:6fef7eda217b05e031f6281a8170e0ecc0ed63e92eb5e06736c99783e1c15432 0.1s done
+#20 naming to docker.io/library/encodingdb-candidate-frontend:b3ef24a done
+#20 unpacking to docker.io/library/encodingdb-candidate-frontend:b3ef24a 0.0s done
+#20 DONE 0.3s
+	Command being timed: "docker build --progress=plain -t encodingdb-candidate-frontend:b3ef24a frontend"
+	User time (seconds): 0.27
+	System time (seconds): 0.18
+	Percent of CPU this job got: 15%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.01
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 48576
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 18029
+	Voluntary context switches: 4794
+	Involuntary context switches: 87
+	Swaps: 0
+	File system inputs: 14
+	File system outputs: 34
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

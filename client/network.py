@@ -28,11 +28,13 @@ class SubmitError(RuntimeError):
         retryable: bool,
         status_code: Optional[int] = None,
         body: str = "",
+        retry_after: float = 0.0,
     ) -> None:
         super().__init__(message)
         self.retryable = retryable
         self.status_code = status_code
         self.body = body
+        self.retry_after = retry_after
 
 
 def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
@@ -240,3 +242,34 @@ def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
         config._BASELINE_ROWS_CACHE = []
         config._BASELINE_ROWS_CACHE_TS = time.time()
     return []
+
+
+def check_compatibility(base_url: str, client_version: str) -> Dict[str, Any]:
+    from .suite import load_suite_pack_metadata, SUITE_VERSION
+    response = _load_requests().get(f"{base_url.rstrip('/')}/v7/compatibility", timeout=10,
+                                    verify=config.REQUESTS_VERIFY, allow_redirects=False)
+    if response.status_code != 200:
+        raise SubmitError(f"Compatibility endpoint returned {response.status_code}", retryable=True,
+                          status_code=response.status_code)
+    contract = response.json()
+    def version(value):
+        return tuple(int(part) for part in str(value).removeprefix("client/").split("."))
+    if (contract.get("protocolVersion") != config.BENCHMARK_PROTOCOL_VERSION
+            or contract.get("encodeTimerBoundary") != "ffmpeg-process-v1"
+            or contract.get("sourceSuiteVersion") != SUITE_VERSION
+            or contract.get("suiteFingerprint") != load_suite_pack_metadata().get("suiteFingerprint")
+            or version(client_version) < version(contract.get("minimumClientVersion", "999.0.0"))):
+        raise SubmitError("Client/protocol incompatible with current collection epoch; update the client", retryable=False)
+    return contract
+
+
+def retry_after_seconds(headers) -> float:
+    from email.utils import parsedate_to_datetime
+    value = str(headers.get("Retry-After") or headers.get("retry-after") or "").strip()
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        try:
+            return max(0.0, parsedate_to_datetime(value).timestamp() - time.time())
+        except (ValueError, TypeError, OverflowError):
+            return 0.0

@@ -1,0 +1,33 @@
+{
+ "preservedAt": "2026-09-20T20:20:00Z",
+ "note": "click-r8: foreground tap fix WORKED \u2014 prepare-stop phase PASSED with native clicks, complete phase started real encoding (owned ffmpeg/ffprobe/GPU samplers discovered). The driver powershell then exited (rc=1) mid-complete without writing phase-failed, orphaning the GUI at t=119.47s. Under investigation; preserving receipt. Retry click-r9 with zero concurrent host operations.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:48:58.892407+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "argv": [
+   "powershell.exe",
+   "-NoProfile",
+   "-NonInteractive",
+   "-File",
+   "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\gui-driver-click-r8\\test-windows-native-gui.ps1",
+   "-Mode",
+   "Gui",
+   "-Output",
+   ".test-reports/windows-physical-gui-click-r8",
+   "-AcquisitionSeconds",
+   "600",
+   "-MeasurementMinutes",
+   "20"
+  ],
+  "pid": 12836,
+  "exitCode": 1,
+  "error": "GUI harness did not pass; preserve diagnostic receipt and screenshots",
+  "wallSeconds": 119.46899999999732,
+  "finishedAt": "2026-09-20T19:51:00.308087+00:00"
+ }
+}

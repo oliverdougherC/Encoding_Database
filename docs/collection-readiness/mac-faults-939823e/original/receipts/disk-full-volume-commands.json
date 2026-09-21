@@ -1,0 +1,45 @@
+[
+  {
+    "command": [
+      "hdiutil",
+      "create",
+      "-size",
+      "64m",
+      "-fs",
+      "HFS+",
+      "-volname",
+      "EncodingDBFault939",
+      "-type",
+      "UDIF",
+      "-nospotlight",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/disk-full/bounded-64MiB.dmg"
+    ],
+    "exitCode": 0,
+    "stdout": "created: /Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/disk-full/bounded-64MiB.dmg\n",
+    "stderr": "hdiutil: WARNING: 'hdiutil create -size -volname ...' is deprecated. Please use 'diskutil image create from/blank -size --volumeName ...' instead.\n"
+  },
+  {
+    "command": [
+      "hdiutil",
+      "attach",
+      "-nobrowse",
+      "-mountpoint",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue",
+      "-plist",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/disk-full/bounded-64MiB.dmg"
+    ],
+    "exitCode": 0,
+    "stdout": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n\t<key>system-entities</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>Apple_HFS</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4s1</string>\n\t\t\t<key>mount-point</key>\n\t\t\t<string>/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/e\u0301preuve \u5ba2\u6237\u7aef/recovery-queue</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<true/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>48465300-0000-11AA-AA11-00306543ECAC</string>\n\t\t\t<key>volume-kind</key>\n\t\t\t<string>hfs</string>\n\t\t</dict>\n\t\t<dict>\n\t\t\t<key>content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t\t<key>dev-entry</key>\n\t\t\t<string>/dev/disk4</string>\n\t\t\t<key>potentially-mountable</key>\n\t\t\t<false/>\n\t\t\t<key>unmapped-content-hint</key>\n\t\t\t<string>GUID_partition_scheme</string>\n\t\t</dict>\n\t</array>\n</dict>\n</plist>\n",
+    "stderr": "hdiutil: WARNING: 'hdiutil attach -nobrowse -mountpoint ...' is deprecated. Please use 'diskutil image attach --mountOptions nobrowse --mountPoint ...' instead.\n"
+  },
+  {
+    "command": [
+      "hdiutil",
+      "detach",
+      "/dev/disk4s1"
+    ],
+    "exitCode": 0,
+    "stdout": "\"disk4\" ejected.\n",
+    "stderr": "hdiutil: WARNING: 'hdiutil detach ...' is deprecated. Please use 'diskutil eject ...' instead.\n"
+  }
+]

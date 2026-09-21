@@ -1,0 +1,48 @@
+﻿{
+    "schemaVersion":  1,
+    "capturedAt":  "2026-09-20T01:29:37.2116165Z",
+    "candidateSource":  "939823ead2c052572f9deb5c9f91c85435d5661d",
+    "validationRoot":  "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e",
+    "scope":  "Physical Windows native validation; read-only inventory before candidate provisioning; no benchmark or upload yet",
+    "os":  {
+               "Caption":  "Microsoft Windows 11 Pro",
+               "Version":  "10.0.26200",
+               "BuildNumber":  "26200",
+               "OSArchitecture":  "64-bit",
+               "FreePhysicalMemory":  48926772,
+               "TotalVisibleMemorySize":  66206524
+           },
+    "processor":  {
+                      "Name":  "AMD Ryzen 9 7950X 16-Core Processor            ",
+                      "NumberOfCores":  16,
+                      "NumberOfLogicalProcessors":  32
+                  },
+    "gpu":  [
+                {
+                    "Name":  "AMD Radeon(TM) Graphics",
+                    "DriverVersion":  "32.0.21042.62",
+                    "PNPDeviceID":  "PCI\\VEN_1002\u0026DEV_164E\u0026SUBSYS_88771043\u0026REV_C1\\4\u00261EBE6A9C\u00260\u00260041"
+                },
+                {
+                    "Name":  "NVIDIA GeForce RTX 5090",
+                    "DriverVersion":  "32.0.16.1692",
+                    "PNPDeviceID":  "PCI\\VEN_10DE\u0026DEV_2B85\u0026SUBSYS_205710DE\u0026REV_A1\\4C58846A7B2DB04800"
+                }
+            ],
+    "disks":  [
+                  {
+                      "Name":  "C",
+                      "Used":  3829720252416,
+                      "Free":  3645611601920
+                  },
+                  {
+                      "Name":  "X",
+                      "Used":  120651776,
+                      "Free":  5994562060288
+                  }
+              ],
+    "nvidia":  "index, name, uuid, driver_version, memory.total [MiB], utilization.gpu [%], utilization.memory [%]\n0, NVIDIA GeForce RTX 5090, GPU-2a061b7a-f72b-a1e7-a203-ffc23e9c159c, 616.92, 32607 MiB, 8 %, 3 %",
+    "sessions":  " USERNAME              SESSIONNAME        ID  STATE   IDLE TIME  LOGON TIME\n ofhd                  console             1  Active      none   9/19/2026 2:28 PM",
+    "python":  "Python 3.12.10",
+    "git":  "git version 2.54.0.windows.1"
+}

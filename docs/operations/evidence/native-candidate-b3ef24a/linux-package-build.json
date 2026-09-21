@@ -1,0 +1,40 @@
+{
+  "at": "2026-09-20T03:54:51.114005+00:00",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "buildOnly": true,
+  "nativeExecutionPerformed": false,
+  "package": {
+    "sha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+    "bytes": 198988248,
+    "file": "encodingdb-client-linux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=3d4132e6aade8fe199dfd898058aa768ebd7f197, stripped"
+  },
+  "suitePack": {
+    "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+    "bytes": 1506890018
+  },
+  "sourceRuntimeLockSha256": "8cdbd7b3ebf74286ef0b58146d3f7f89d193793439a8c54a4f281214f7ef7ef3",
+  "embeddedRuntimeLockSha256": "fe3ef337dbaffb3d129d05ce1472461a4dfac5349206f13c412cfc86482b8e42",
+  "embeddedRuntimeLockMatchesSourceLinuxPlatform": true,
+  "embeddedRuntimeLockMatchesStagedBytes": true,
+  "helpers": [
+    {
+      "name": "ffmpeg",
+      "embeddedPath": "bin/linux/ffmpeg",
+      "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+      "bytes": 171156936,
+      "passed": true
+    },
+    {
+      "name": "ffprobe",
+      "embeddedPath": "bin/linux/ffprobe",
+      "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+      "bytes": 170923400,
+      "passed": true
+    }
+  ],
+  "previousBinary": {
+    "path": "operation-evidence/native-b3ef24a/previous-native/encodingdb-client-linux-939823e",
+    "sha256": "46a6dcad789f824909911455b19979a33e4053dae1440f09524da5142ca18dc3",
+    "preserved": true
+  }
+}

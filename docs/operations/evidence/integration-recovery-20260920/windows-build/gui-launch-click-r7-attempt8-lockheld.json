@@ -1,0 +1,15 @@
+{
+ "preservedAt": "2026-09-20T20:10:00Z",
+ "note": "click-r7 launcher wrapper worked but run-gui hit Permission denied on physical-operator.lock: leaked processes from the blocked click-r6 run still held the operator lock. Cleared; relaunch as click-r8.",
+ "receipt": {
+  "sessionId": 1,
+  "activeConsoleSessionId": 1,
+  "administratorRole": false,
+  "status": "FAILED",
+  "startedAt": "2026-09-20T19:45:40.913455+00:00",
+  "forcedCleanup": false,
+  "scope": "Actual interactive physical GUI acceptance",
+  "error": "[Errno 13] Permission denied: 'C:\\\\Users\\\\ofhd\\\\EncodingDB-validation-20260919-939823e\\\\host-state\\\\physical-operator.lock'",
+  "finishedAt": "2026-09-20T19:45:40.913955+00:00"
+ }
+}

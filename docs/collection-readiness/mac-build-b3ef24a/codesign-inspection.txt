@@ -1,0 +1,25 @@
+Executable=/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a/encodingdb-client-macos
+Identifier=encodingdb-client-macos-555549447e8c490a8df5d5ee718fd4246f2d7e42
+Format=Mach-O thin (arm64)
+CodeDirectory v=20400 size=242713 flags=0x2(adhoc) hashes=7578+2 location=embedded
+VersionPlatform=1
+VersionMin=720896
+VersionSDK=984320
+Hash type=sha256 size=32
+CandidateCDHash sha256=66fe9caf655dbf9f9a3a4a3b379f59b83b764da9
+CandidateCDHashFull sha256=66fe9caf655dbf9f9a3a4a3b379f59b83b764da9b73165e19484b3c4752599d3
+Hash choices=sha256
+CMSDigest=66fe9caf655dbf9f9a3a4a3b379f59b83b764da9b73165e19484b3c4752599d3
+CMSDigestType=2
+Executable Segment base=0
+Executable Segment limit=49152
+Executable Segment flags=0x1
+Page size=16384
+CDHash=66fe9caf655dbf9f9a3a4a3b379f59b83b764da9
+Signature=adhoc
+Info.plist=not bound
+TeamIdentifier=not set
+Sealed Resources=none
+Internal requirements count=0 size=12
+Total signatures=1
+Chosen signature=1

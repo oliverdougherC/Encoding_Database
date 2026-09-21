@@ -1,0 +1,89 @@
+{
+  "capturedAt": "2026-09-14T00:53:51.974Z",
+  "scope": "100k isolated synthetic metadata; missing objects expected; no media throughput claim",
+  "artifactCount": 100060,
+  "coldMilliseconds": 42.372916000000004,
+  "burstMilliseconds": 24.95949999999999,
+  "warm1000Milliseconds": 0.6668750000000045,
+  "rssBytes": 76333056,
+  "cold": {
+    "status": "degraded",
+    "reasons": [
+      "stale_pending_analyses",
+      "missing_retained_objects"
+    ],
+    "capturedAt": "2026-09-14T00:53:51.906Z",
+    "thresholds": {
+      "pendingUploadSeconds": 900,
+      "pendingAnalysisSeconds": 1800,
+      "orphanStagingSeconds": 3600,
+      "storageQuotaBytes": null,
+      "storageReserveBytes": 536870912
+    },
+    "integrityScan": {
+      "batchSize": 256,
+      "checkedThisBatch": 256,
+      "checkedThisCycle": 256,
+      "complete": false,
+      "cycleStartedAt": "2026-09-14T00:53:51.906Z",
+      "lastCompletedAt": null
+    },
+    "capacity": {
+      "pendingUploads": 0,
+      "pendingAnalyses": 2,
+      "maxPendingUploads": 500,
+      "maxPendingAnalyses": 500,
+      "maxConcurrentUploads": 4,
+      "maxConcurrentAnalyses": 2,
+      "activeLeases": 0,
+      "expiredLeases": 0,
+      "retryDue": 0
+    },
+    "artifacts": {
+      "byState": {
+        "VERIFIED": 20030,
+        "RETAINED": 80030
+      },
+      "pendingOldestSeconds": null,
+      "missingRetainedObjects": 256
+    },
+    "analyses": {
+      "byStatus": {
+        "PENDING": 2,
+        "COMPLETE": 80036,
+        "SUSPECT": 20022
+      },
+      "pendingOldestSeconds": 22121628.906,
+      "completedLatencySeconds": {
+        "sampleCount": 0,
+        "p50": null,
+        "p95": null,
+        "terminalStatuses": [
+          "COMPLETE",
+          "SUSPECT",
+          "REJECTED",
+          "FAILED"
+        ],
+        "missingCompletionTimestamp": 0
+      }
+    },
+    "storage": {
+      "rootAvailable": true,
+      "trackedBytes": 149995117000,
+      "quotaBytes": null,
+      "availableBytes": 20601081856,
+      "freeBytes": 20601081856
+    },
+    "staging": {
+      "entryCount": 0,
+      "staleEntryCount": 0,
+      "oldestSeconds": null,
+      "truncated": false,
+      "inspectedAt": "2026-09-14T00:53:51.906Z"
+    },
+    "derivations": {
+      "unresolvedSelectedAnalyses": 0
+    }
+  },
+  "burstSameSnapshot": true
+}

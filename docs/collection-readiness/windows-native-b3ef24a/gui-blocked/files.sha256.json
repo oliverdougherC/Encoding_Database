@@ -1,0 +1,9 @@
+{
+  "receipt.json": "218eeed0668e4a0e6d98e504c341873be5881e1cfd0546caadc1387911ef4967",
+  "prepare-stop/preparation-cancelled.png": "08f8503cc7688de66c6617e68670759661fb31bfebf89192f44594157ab7f01e",
+  "complete/locally-complete.png": "9dcb680c3f385fbff449427c964965b9fc3e018eea4054b725eb8db42a2eb240",
+  "stop/cancelled.png": "a956f5ddb5da2485e6cbf29eeb2a70e5f06293678086d2982e7704079d6ee260",
+  "close/failure.png": "eaa4f80036a7f002f5f2359124cfb2173dcedc383c1f8ba5f1e51e874dccfba2",
+  "close/before-action-Yes.uia.json": "a38af96284f2da7a878970eb01e220a69f32a34d05ada8cc65487b412481b450",
+  "close/before-action-Yes.win32.json": "d5de83db372810ae4249bf1ba5e18c20d071695513b9d4aff4bbdc005b9ba2ee"
+}

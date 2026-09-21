@@ -1,0 +1,31 @@
+{
+  "schema": "encodingdb-isolated-corpus-scale/v1",
+  "sourceSha": "7314c9aebef878bbfa806961a368478f1bb0e4f6",
+  "sourceDirty": true,
+  "fixtureOnly": true,
+  "backfillMs": 2386.953625,
+  "backfilledIdentities": 7012,
+  "prefix": "corpus-scale-1789346954183",
+  "metadataRuns": 100020,
+  "groups": 7004,
+  "concurrentBrowsers": 25,
+  "predeclaredP95TargetMs": 1000,
+  "requests": 100,
+  "successes": 100,
+  "failures": [],
+  "elapsedMs": 419.5042920000001,
+  "p50Ms": 77.55625000000009,
+  "p95Ms": 177.97062500000038,
+  "maxMs": 178.9471249999997,
+  "peakNodeRssBytes": 168542208,
+  "uniqueGroupsInspected": 2236,
+  "limits": {
+    "pageRows": 100,
+    "statementTimeoutMs": 15000,
+    "transactionTimeoutMs": 30000
+  },
+  "limitations": [
+    "Metadata-only isolated PostgreSQL fixture; no media throughput, human review or production readiness claim.",
+    "Actual HTTP and sustained ingestion/restart tests are separate operations gates."
+  ]
+}

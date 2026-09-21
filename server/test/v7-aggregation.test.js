@@ -69,7 +69,7 @@ function buildAcceptedRun(id, overrides = {}) {
     fileSizeBytes: 10_000_000,
     vmafMean: 94,
     vmafP5: 88,
-    machineKey: 'machine-a',
+    physicalSourceId: 'machine-a',
     contributorKey: 'contributor-a',
     repetitionGroupId: `rep-${id}`,
     ...overrides,
@@ -95,9 +95,9 @@ test('uncalibrated default policy never enables a public recommendation', () => 
     scoreContext,
     evidencePolicy: DEFAULT_RECOMMENDATION_EVIDENCE_POLICY,
     runs: [
-      buildAcceptedRun('run-a', { machineKey: 'machine-a', campaignId: 'campaign-a' }),
-      buildAcceptedRun('run-b', { machineKey: 'machine-b', campaignId: 'campaign-b' }),
-      buildAcceptedRun('run-c', { machineKey: 'machine-c', campaignId: 'campaign-c' }),
+      buildAcceptedRun('run-a', { physicalSourceId: 'machine-a', campaignId: 'campaign-a' }),
+      buildAcceptedRun('run-b', { physicalSourceId: 'machine-b', campaignId: 'campaign-b' }),
+      buildAcceptedRun('run-c', { physicalSourceId: 'machine-c', campaignId: 'campaign-c' }),
     ],
     bootstrap: { iterations: 128 },
   });
@@ -146,15 +146,15 @@ test('robust centers resist accepted outliers while suspect and invalid runs sta
   assert.deepEqual(withExcludedEvidence.members, ['run-a', 'run-b', 'run-c']);
 });
 
-test('one run and repeated same-machine/campaign runs remain provisional with unavailable confidence', () => {
+test('one run and repeated same-physical-source runs remain provisional with unavailable confidence', () => {
   const single = aggregate([
     buildAcceptedRun('run-a'),
   ]);
 
   const repeatedSameMachine = aggregate([
-    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
-    buildAcceptedRun('run-b', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
-    buildAcceptedRun('run-c', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
+    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
+    buildAcceptedRun('run-b', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
+    buildAcceptedRun('run-c', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
   ]);
 
   assert.equal(single.derivedResult.plTotal, repeatedSameMachine.derivedResult.plTotal);
@@ -174,15 +174,15 @@ test('one run and repeated same-machine/campaign runs remain provisional with un
 
 test('independent runs raise evidence tier without changing the point estimate', () => {
   const repeatedSameMachine = aggregate([
-    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
-    buildAcceptedRun('run-b', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
-    buildAcceptedRun('run-c', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
+    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
+    buildAcceptedRun('run-b', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
+    buildAcceptedRun('run-c', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
   ]);
 
   const independent = aggregate([
-    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', machineKey: 'machine-a' }),
-    buildAcceptedRun('run-b', { contributorKey: 'contributor-b', machineKey: 'machine-b' }),
-    buildAcceptedRun('run-c', { contributorKey: 'contributor-c', machineKey: 'machine-c' }),
+    buildAcceptedRun('run-a', { contributorKey: 'contributor-a', physicalSourceId: 'machine-a' }),
+    buildAcceptedRun('run-b', { contributorKey: 'contributor-b', physicalSourceId: 'machine-b' }),
+    buildAcceptedRun('run-c', { contributorKey: 'contributor-c', physicalSourceId: 'machine-c' }),
   ]);
 
   assert.equal(independent.derivedResult.plTotal, repeatedSameMachine.derivedResult.plTotal);
@@ -242,12 +242,12 @@ test('rebuild is deterministic and returns a derived-result-ready recomputation 
   assert.equal(first.derivedResult.dispersion.plTotal.sampleCount, 2);
 });
 
-test('cluster bootstrap resamples independent machine/campaign centers rather than raw repeats', () => {
+test('cluster bootstrap resamples independent physical-source centers rather than raw repeats', () => {
   const result = aggregate([
-    buildAcceptedRun('a-1', { machineKey: 'machine-a', campaignId: 'campaign-a', vmafMean: 90 }),
-    buildAcceptedRun('a-2', { machineKey: 'machine-a', campaignId: 'campaign-a', vmafMean: 92 }),
-    buildAcceptedRun('a-3', { machineKey: 'machine-a', campaignId: 'campaign-a', vmafMean: 94 }),
-    buildAcceptedRun('b-1', { machineKey: 'machine-b', campaignId: 'campaign-b', vmafMean: 98 }),
+    buildAcceptedRun('a-1', { physicalSourceId: 'machine-a', campaignId: 'campaign-a', vmafMean: 90 }),
+    buildAcceptedRun('a-2', { physicalSourceId: 'machine-a', campaignId: 'campaign-a', vmafMean: 92 }),
+    buildAcceptedRun('a-3', { physicalSourceId: 'machine-a', campaignId: 'campaign-a', vmafMean: 94 }),
+    buildAcceptedRun('b-1', { physicalSourceId: 'machine-b', campaignId: 'campaign-b', vmafMean: 98 }),
   ]);
 
   assert.equal(result.evidence.independentSourceCount, 2);
@@ -274,7 +274,7 @@ test('analysis records rebuild with explicit invalid counts and preserve accepte
         fileSizeBytes: 10_100_000,
         vmafMean: 95,
         vmafP5: 89,
-        machineKey: 'machine-a',
+        physicalSourceId: 'machine-a',
         contributorKey: 'contributor-a',
         repetitionGroupId: 'rep-a',
       },
@@ -290,7 +290,7 @@ test('analysis records rebuild with explicit invalid counts and preserve accepte
         fileSizeBytes: 11_000_000,
         vmafMean: 90,
         vmafP5: 80,
-        machineKey: 'machine-a',
+        physicalSourceId: 'machine-a',
         contributorKey: 'contributor-a',
         repetitionGroupId: 'rep-b',
       },
@@ -407,7 +407,7 @@ test('persistDerivedResultAggregate upserts derived rows and rewrites member lin
         fileSizeBytes: 10_100_000,
         vmafMean: 95,
         vmafP5: 89,
-        machineKey: 'machine-a',
+        physicalSourceId: 'machine-a',
         contributorKey: 'contributor-a',
         repetitionGroupId: 'rep-a',
       },
@@ -424,4 +424,14 @@ test('persistDerivedResultAggregate upserts derived rows and rewrites member lin
     benchmarkRunId: 'run-a',
     qualityAnalysisId: 'analysis-a',
   }]);
+});
+
+
+test('campaign IDs and environment aliases cannot manufacture independent physical sources', () => {
+  const result = aggregate(Array.from({ length: 8 }, (_, i) => buildAcceptedRun(`campaign-run-${i}`, { campaignId: `session-${i}`, physicalSourceId: 'same-installation', machineKey: `driver-cohort-${i}` })));
+  assert.equal(result.evidence.independentSourceCount, 1);
+  assert.equal(result.confidenceIntervals.plTotal.method, 'unavailable');
+  const unknown = aggregate([buildAcceptedRun('unknown-a', { physicalSourceId: null }), buildAcceptedRun('unknown-b', { physicalSourceId: null })]);
+  assert.equal(unknown.evidence.independentSourceCount, 0);
+  assert.equal(unknown.evidence.eligibleForDefaultRecommendation, false);
 });

@@ -1,0 +1,15 @@
+{
+  "at": "2026-09-20T01:29:17.640125+00:00",
+  "measurementLockAvailable": true,
+  "ownedBuildAndRolloutSessionsExited": true,
+  "ownedBackupContainersRemaining": false,
+  "observedMediaProcesses": [
+    {
+      "pid": 700589,
+      "parent": 13696,
+      "command": "ffmpeg",
+      "taskOwnedCandidate": false
+    }
+  ],
+  "noNativeAcceptanceRunYet": true
+}

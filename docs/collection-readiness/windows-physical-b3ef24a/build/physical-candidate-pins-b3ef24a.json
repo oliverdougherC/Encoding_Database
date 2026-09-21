@@ -1,0 +1,23 @@
+{
+  "kind": "physical-built-candidate-not-CI",
+  "actualBuildRevision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "sourceTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
+  "buildPythonVersion": "3.12.10",
+  "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+  "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+  "files": {
+    "encodingdb-client-windows-console.exe": "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+    "encodingdb-client-windows-console.exe.release-manifest.json": "b2c81a8cfa7c413d9f39d3c4589a93655015a5a3ed36805010934c439434a4a3",
+    "encodingdb-client-windows-console.exe.runtime-lock.json": "fb49e7f4e34f984fd95e61025d854dbde888d25c573d9effb2982c78a33db586",
+    "encodingdb-client-windows-console.exe.SHA256SUMS": "b19b43e687b73c2c67175be91c9410ff375f72e49e9a7c5179a68297776f6be0",
+    "encodingdb-client-windows-console.exe.signing.json": "0966aa4a88336e8f9cb479f93a988c59782368afee762fa19d62b51e379ce5d6",
+    "encodingdb-client-windows-console.exe.smoke.json": "d17df8dd050ce6e9cb3667d6a6a60406b1b2bf6b7c2f21269fe9bd9847acb653",
+    "encodingdb-client-windows.exe": "6d6cbbefb8656ba76c2eefd0c8107b6461a15e9ef381c86a3a90a0c819f66b0e",
+    "encodingdb-client-windows.exe.release-manifest.json": "7120c57212d4a0c52fbb373add12e72e53082fdb7af6dd8d6127d2e7b3cd296d",
+    "encodingdb-client-windows.exe.runtime-lock.json": "fb49e7f4e34f984fd95e61025d854dbde888d25c573d9effb2982c78a33db586",
+    "encodingdb-client-windows.exe.SHA256SUMS": "11b8a49f3f59759b3a18cc2a5a6dd0ba3be2896b64f7039b33cd72746d5242e7",
+    "encodingdb-client-windows.exe.signing.json": "0966aa4a88336e8f9cb479f93a988c59782368afee762fa19d62b51e379ce5d6",
+    "encodingdb-client-windows.exe.smoke.json": "3f9e0fa3e9e3989368b3a53e9dd3fdabd2eb13f5d65d9cae12d009f9e7dc3e9f",
+    "encodingdb-test-suite-v1.tar.gz": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150"
+  }
+}

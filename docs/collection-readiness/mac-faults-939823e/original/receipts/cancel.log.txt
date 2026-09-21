@@ -1,0 +1,8 @@
+Preparing: runtime 
+Preparing: validate athletic-action-1080p24-final
+Preparing: hash athletic-action-1080p24-final.mkv
+Preparing: probe athletic-action-1080p24-final.mkv
+Preparing: runtime 
+Campaign campaign-250b62ed5aa9b145: at most 5 encodes; resume with --resume-campaign campaign-250b62ed5aa9b145
+Batch 1/1: 1 protocol recipe(s)
+Batch run interrupted by user.

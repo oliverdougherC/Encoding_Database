@@ -1,0 +1,192 @@
+{
+  "at": "2026-09-20T03:46:33.887204+00:00",
+  "candidateGitHead": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "memory": {
+    "MemTotal": 135025184768,
+    "MemAvailable": 95435976704
+  },
+  "disk": {
+    "totalBytes": 1795073114112,
+    "freeBytes": 1574659948544
+  },
+  "containers": [
+    {
+      "id": "8ff252f9c4e69fb368ded05a16e14d6172d61a6dde845662aa3c7703a362fa27",
+      "name": "/encodingdb-candidate-730de3c-frontend-1",
+      "project": "encodingdb-candidate-730de3c",
+      "service": "frontend",
+      "imageId": "sha256:92affa067a7a4a101458cb9c787fa9a9c8fe774dd5f9677c746e77029ff377b1",
+      "imageTag": "encodingdb-candidate-frontend:939823e",
+      "startedAt": "2026-09-20T01:24:55.794928263Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 536870912,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": []
+    },
+    {
+      "id": "18e4704dc84924adea4d4b1657a1dd723693dd1175a27d098b3915c0c2770e30",
+      "name": "/encodingdb-candidate-730de3c-server-1",
+      "project": "encodingdb-candidate-730de3c",
+      "service": "server",
+      "imageId": "sha256:f3acd4ee49ff07ab14645a85bdbe55f94de5cbd2c3a91176612128c8874663ee",
+      "imageTag": "encodingdb-candidate-server:939823e",
+      "startedAt": "2026-09-20T01:24:55.463632823Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 17179869184,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb-candidate-730de3c_artifact_data",
+          "destination": "/app/artifacts"
+        }
+      ]
+    },
+    {
+      "id": "dc424ff2b230faf55e8fd47a4b0f5dded19d8b520a588581f5a1ef5056d70749",
+      "name": "/encodingdb-candidate-730de3c-nginx-1",
+      "project": "encodingdb-candidate-730de3c",
+      "service": "nginx",
+      "imageId": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "imageTag": "nginx:1.27-alpine",
+      "startedAt": "2026-09-14T01:48:03.788620197Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 134217728,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "bind",
+          "name": null,
+          "destination": "/etc/nginx/conf.d"
+        },
+        {
+          "type": "bind",
+          "name": null,
+          "destination": "/etc/nginx/certs"
+        }
+      ]
+    },
+    {
+      "id": "d1fb5343d5f3de70b7cfebd1911430ed0ca915123a26e94a97b5e733852e7ef8",
+      "name": "/encodingdb-candidate-730de3c-db-1",
+      "project": "encodingdb-candidate-730de3c",
+      "service": "db",
+      "imageId": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+      "imageTag": "postgres:16-alpine",
+      "startedAt": "2026-09-14T01:47:46.28212523Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 1073741824,
+      "shmBytes": 268435456,
+      "networks": [
+        "encodingdb-candidate-730de3c_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb-candidate-730de3c_db_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    },
+    {
+      "id": "846b1e2e652e6aa71bf79ed10965cb0ecec5f874a1bdbfe870d7daddb9d25544",
+      "name": "/encodingdb-server-1",
+      "project": "encodingdb",
+      "service": "server",
+      "imageId": "sha256:08c312e0d89eef45c4fd92b0f23d85630ff967f94e0b23836738656c181ae2e6",
+      "imageTag": "encodingdb-hotfix-server:b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+      "startedAt": "2026-09-13T04:19:42.929037058Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 17179869184,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb_prod_artifact_data",
+          "destination": "/app/artifacts"
+        }
+      ]
+    },
+    {
+      "id": "1cd16cd3878eca7a4be48357203156d47e7fe173eb6f7bbf79d7c4bab17de6d3",
+      "name": "/encodingdb-nginx",
+      "project": "encodingdb",
+      "service": "nginx",
+      "imageId": "sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10",
+      "imageTag": "encodingdb-release/nginx:1.2.0-c001ddc73964",
+      "startedAt": "2026-09-13T03:03:41.811609619Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 134217728,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb_app",
+        "npm_default"
+      ],
+      "mounts": [
+        {
+          "type": "bind",
+          "name": null,
+          "destination": "/etc/nginx/conf.d/default.conf"
+        }
+      ]
+    },
+    {
+      "id": "a0f3238c1d6c4b05aa1a8d4169319b9e0f688d9c6d22f7516f43557fd1e0b487",
+      "name": "/encodingdb-frontend-1",
+      "project": "encodingdb",
+      "service": "frontend",
+      "imageId": "sha256:4030703cc7af216cd9c3ea5feeb481300581091ebef7a9e61250de5676e4c19f",
+      "imageTag": "encodingdb-release/frontend:1.2.0-c001ddc73964",
+      "startedAt": "2026-09-13T03:03:30.509126854Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 536870912,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb_app"
+      ],
+      "mounts": []
+    },
+    {
+      "id": "637e1258bf6cf5650095c3f2c2f2fcf31df8d50d875cfff51ddcc67229a36f97",
+      "name": "/encodingdb-db-1",
+      "project": "encodingdb",
+      "service": "db",
+      "imageId": "sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685",
+      "imageTag": "encodingdb-release/db:1.2.0-c001ddc73964",
+      "startedAt": "2026-09-13T03:03:24.405517485Z",
+      "status": "running",
+      "health": "healthy",
+      "memoryLimitBytes": 536870912,
+      "shmBytes": 67108864,
+      "networks": [
+        "encodingdb_app"
+      ],
+      "mounts": [
+        {
+          "type": "volume",
+          "name": "encodingdb_db_data",
+          "destination": "/var/lib/postgresql/data"
+        }
+      ]
+    }
+  ]
+}

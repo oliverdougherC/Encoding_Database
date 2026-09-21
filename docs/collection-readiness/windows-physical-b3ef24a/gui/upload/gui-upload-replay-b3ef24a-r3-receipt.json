@@ -1,0 +1,67 @@
+﻿{
+    "schemaVersion":  1,
+    "status":  "PASSED",
+    "startedAt":  "2026-09-20T08:49:32.8382435Z",
+    "executableSha256":  "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+    "caBundleSha256":  "e83e2d3fa5e020f81870826cbaa97d9749cb597ba21cc1d759053f264954913b",
+    "baseUrl":  "https://127.0.0.1:3199",
+    "proxyMode":  "none",
+    "campaigns":  [
+                      {
+                          "campaignId":  "campaign-48cfe70dd43b036c",
+                          "recipe":  "x264-crf23",
+                          "dueUploadsAfter":  0,
+                          "terminalBefore":  0,
+                          "stdout":  "gui-upload-x264-crf23.stdout.log",
+                          "terminalAfter":  7,
+                          "dueUploadsBefore":  14,
+                          "campaignFilesUnchanged":  true,
+                          "exitCode":  0,
+                          "stderrTail":  [
+
+                                         ]
+                      },
+                      {
+                          "campaignId":  "campaign-ade93ae84fc38765",
+                          "recipe":  "nvenc-cq24",
+                          "dueUploadsAfter":  0,
+                          "terminalBefore":  0,
+                          "stdout":  "gui-upload-nvenc-cq24.stdout.log",
+                          "terminalAfter":  0,
+                          "dueUploadsBefore":  0,
+                          "campaignFilesUnchanged":  true,
+                          "exitCode":  0,
+                          "stderrTail":  [
+
+                                         ]
+                      },
+                      {
+                          "campaignId":  "campaign-fb607b76eec675bf",
+                          "recipe":  "nvenc-vbr6000",
+                          "dueUploadsAfter":  0,
+                          "terminalBefore":  0,
+                          "stdout":  "gui-upload-nvenc-vbr6000.stdout.log",
+                          "terminalAfter":  0,
+                          "dueUploadsBefore":  0,
+                          "campaignFilesUnchanged":  true,
+                          "exitCode":  0,
+                          "stderrTail":  [
+
+                                         ]
+                      }
+                  ],
+    "tunnel":  {
+                   "chain":  "100.96.210.77:3299",
+                   "pid":  26700
+               },
+    "error":  null,
+    "compatibility":  {
+                          "protocolVersion":  "7.1",
+                          "minimumClientVersion":  "client/0.3.0",
+                          "encodeTimerBoundary":  "ffmpeg-process-v1",
+                          "sourceSuiteVersion":  "encodingdb-test-suite-v1",
+                          "suiteFingerprint":  "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+                          "activeProtocolId":  "cmu9ftoor0000o1dwjprx8akt"
+                      },
+    "finishedAt":  "2026-09-20T08:51:59.9098467Z"
+}

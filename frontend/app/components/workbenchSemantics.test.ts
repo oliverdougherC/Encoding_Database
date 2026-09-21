@@ -126,11 +126,13 @@ describe("workbench aggregate semantics", () => {
     expect(hasIncompatibleWorkloads([benchmark({ id: "a" }), benchmark({ id: "b" })])).toBe(false);
   });
 
+  it("permits different recipes and score contexts for raw metric comparison", () => {
+    expect(hasIncompatibleWorkloads([benchmark(), benchmark({ recipe: { ...benchmark().recipe, fingerprint: "other" }, versions: { ...benchmark().versions, referenceContextVersion: "new-context" } })])).toBe(false);
+  });
+
   it.each([
     ["workload", { workloadId: "animation-1080p" }],
-    ["recipe fingerprint", { recipe: { ...benchmark().recipe, fingerprint: "different-recipe" } }],
     ["environment fingerprint", { environment: { ...benchmark().environment, fingerprint: "different-env" } }],
-    ["reference context lineage", { versions: { ...benchmark().versions, referenceContextVersion: "public-context-v1" } }],
     ["benchmark protocol", { versions: { ...benchmark().versions, benchmarkProtocolVersion: "EDB-2026.2" } }],
   ])("warns when %s differs", (_label, difference) => {
     expect(hasIncompatibleWorkloads([benchmark({ id: "a" }), benchmark({ id: "b", ...difference })])).toBe(true);

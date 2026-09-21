@@ -1,0 +1,15 @@
+Campaign retained for resume: [Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/épreuve 客户端/recovery-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000001.json.tmp-4f919f13571cae03'
+Traceback (most recent call last):
+  File "client/main.py", line 1625, in run_benchmark_batch
+  File "client/protocol.py", line 1018, in execute_protocol_campaign
+  File "client/campaign.py", line 307, in save
+  File "client/campaign.py", line 190, in atomic_json
+  File "pathlib/__init__.py", line 771, in open
+OSError: [Errno 28] No space left on device: '/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/épreuve 客户端/recovery-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000001.json.tmp-4f919f13571cae03'
+Preparing: runtime 
+Preparing: validate athletic-action-1080p24-final
+Preparing: hash athletic-action-1080p24-final.mkv
+Preparing: probe athletic-action-1080p24-final.mkv
+Preparing: runtime 
+Campaign campaign-250b62ed5aa9b145: at most 5 encodes; resume with --resume-campaign campaign-250b62ed5aa9b145
+Batch 1/1: 1 protocol recipe(s)

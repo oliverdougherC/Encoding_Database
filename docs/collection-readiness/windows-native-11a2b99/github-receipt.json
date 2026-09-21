@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "scope": "GitHub hosted Windows software acceptance only",
+  "runId": 34815842127,
+  "jobId": 103886217990,
+  "jobUrl": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/34815842127/job/103886217990",
+  "headSha": "11a2b99544058d11561210a5b78f3eeb55320388",
+  "mergeSha": "f2528dc3c87c0222e681b77837e15dcb1966861b",
+  "jobConclusion": "cancelled",
+  "startedAt": "2026-09-14T07:00:18Z",
+  "completedAt": "2026-09-14T08:05:19Z",
+  "annotation": "The job has exceeded the maximum execution time of 1h0m0s",
+  "steps": [
+    {
+      "name": "Run native Windows client build",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-09-14T07:03:20Z",
+      "completed_at": "2026-09-14T07:13:27Z"
+    },
+    {
+      "name": "Exercise actual packaged Windows GUI",
+      "status": "completed",
+      "conclusion": "failure",
+      "started_at": "2026-09-14T07:13:27Z",
+      "completed_at": "2026-09-14T07:43:30Z"
+    },
+    {
+      "name": "Exercise packaged Windows seven-clip software campaign",
+      "status": "in_progress",
+      "conclusion": null,
+      "started_at": "2026-09-14T07:43:30Z",
+      "completed_at": null
+    },
+    {
+      "name": "Retain Windows GUI and seven-clip acceptance evidence",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Retain windows candidate binaries and verified sidecars",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Post Run actions/setup-python@v7",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    },
+    {
+      "name": "Post Run actions/checkout@v6",
+      "status": "pending",
+      "conclusion": null,
+      "started_at": null,
+      "completed_at": null
+    }
+  ],
+  "retrieval": {
+    "directJobLog": "log not found: 103886217990",
+    "runLogArchive": "Contains no Windows job entries",
+    "windowsArtifacts": []
+  },
+  "acceptance": {
+    "nativeBuildStep": "PASSED according to GitHub step metadata; underlying Windows logs and binaries unavailable",
+    "gui": "FAILED; exact phase and reason unavailable",
+    "consoleSevenClip": "INCOMPLETE; cancelled by outer job deadline",
+    "screenshots": "Unavailable; no visual inspection possible",
+    "physicalWindowsGpu": "NOT TESTED"
+  }
+}

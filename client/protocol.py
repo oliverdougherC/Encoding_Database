@@ -139,7 +139,7 @@ class ProtocolConfig:
         structural_tolerance: Optional[StructuralTolerance] = None,
     ) -> "ProtocolConfig":
         normalized = str(version or "").strip()
-        if normalized != "7.0":
+        if normalized not in ("7.0", "7.1"):
             raise ValueError(f"Unsupported benchmark protocol version: {version}")
         return cls(
             version=normalized,
@@ -307,7 +307,7 @@ class EncodeTiming:
 
 @dataclass(frozen=True)
 class EncodeOutcome:
-    timing: EncodeTiming
+    timing: Optional[EncodeTiming]
     probe: ArtifactProbe
     artifact_path: Optional[str] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -435,7 +435,7 @@ def validate_environment(snapshot: EnvironmentSnapshot, thresholds: EnvironmentT
             actual=snapshot.power_source,
             threshold="ac",
         )
-    if not snapshot.selected_accelerator:
+    if not snapshot.selected_accelerator or snapshot.selected_accelerator == "unknown":
         result.add_reason(
             severity=VALIDITY_SUSPECT,
             code="accelerator-unresolved",
@@ -958,10 +958,28 @@ def execute_protocol_campaign(
     encode_runner: Callable[[ScheduledRun, RecipeSpec], EncodeOutcome],
     environment_sampler: Optional[Callable[[ScheduledRun, RecipeSpec], EnvironmentSnapshot]] = None,
     seed: Optional[int] = None,
+    record_sink: Optional[Callable[[BenchmarkRunRecord], None]] = None,
+    resumed_records: Optional[Dict[int, BenchmarkRunRecord]] = None,
 ) -> CampaignResult:
     # A campaign is a new measurement event by default. Reproducible ordering is
     # available by passing an explicit seed, but an omitted seed must never make
     # separate campaigns share an identity or silently reuse the same ordering.
+    if resumed_records:
+        original_runner, original_sampler = encode_runner, environment_sampler
+        def encode_runner(schedule, recipe):
+            cached = resumed_records.get(schedule.execution_order)
+            if cached is None:
+                return original_runner(schedule, recipe)
+            if cached.schedule != schedule or cached.probe is None:
+                raise ValueError("Campaign journal schedule mismatch")
+            return EncodeOutcome(cached.timing, cached.probe, metadata=cached.metadata)
+        def environment_sampler(schedule, recipe):
+            cached = resumed_records.get(schedule.execution_order)
+            if cached is not None:
+                if cached.schedule != schedule:
+                    raise ValueError("Campaign journal schedule mismatch")
+                return cached.environment_snapshot
+            return original_sampler(schedule, recipe) if original_sampler else None
     effective_seed = int(seed) if seed is not None else secrets.randbits(63)
     recipe_ids = [recipe.recipe_id for recipe in recipes]
     campaign_id = generate_campaign_id(config.version, recipe_ids, effective_seed)
@@ -996,6 +1014,8 @@ def execute_protocol_campaign(
                 metadata=dict(outcome.metadata),
             )
             run_records[recipe_id].append(record)
+            if record_sink:
+                record_sink(record)
 
     active = set(recipe_ids)
     repetition_index = 1
@@ -1049,6 +1069,8 @@ def execute_protocol_campaign(
                 )
                 run_records[recipe_id].append(record)
 
+            if record_sink:
+                record_sink(record)
             stability = evaluate_stability(run_records[recipe_id], config)
             completed_measured = [
                 run for run in run_records[recipe_id]

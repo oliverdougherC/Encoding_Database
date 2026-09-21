@@ -1,0 +1,21 @@
+{
+  "image": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/disk-full-exhaustive/bounded-64MiB.dmg",
+  "mount": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/recovery-queue",
+  "device": "/dev/disk6s1",
+  "entities": [
+    {
+      "content-hint": "Apple_HFS",
+      "dev-entry": "/dev/disk6s1",
+      "mount-point": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/e\u0301preuve \u5ba2\u6237\u7aef/recovery-queue",
+      "potentially-mountable": true,
+      "unmapped-content-hint": "48465300-0000-11AA-AA11-00306543ECAC",
+      "volume-kind": "hfs"
+    },
+    {
+      "content-hint": "GUID_partition_scheme",
+      "dev-entry": "/dev/disk6",
+      "potentially-mountable": false,
+      "unmapped-content-hint": "GUID_partition_scheme"
+    }
+  ]
+}

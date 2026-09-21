@@ -58,8 +58,8 @@ class ReleasePreflightTests(unittest.TestCase):
         payload = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text(encoding="utf-8"))
 
         self.assertEqual(payload["suiteVersion"], "encodingdb-test-suite-v1")
-        self.assertEqual(payload["projectVersion"], "1.2.0")
-        self.assertEqual(payload["releaseDate"], "2026-09-13")
+        self.assertEqual(payload["projectVersion"], "1.3.0-rc.1")
+        self.assertEqual(payload["releaseDate"], "2026-09-14")
         for tree in ("client", "server"):
             root = release_manifest_lib.ROOT_DIR / tree / "resources/test_suite_v1"
             status = json.loads((root / "finalization-status.json").read_text())

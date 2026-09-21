@@ -12,13 +12,17 @@ error text so submissions stay deterministic across retries.
 from __future__ import annotations
 
 import json
+import math
 import os
 import platform
+import plistlib
+import selectors
 import subprocess
 import threading
 import time
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from xml.parsers.expat import ExpatError
 
 import psutil
 
@@ -43,6 +47,9 @@ except Exception:
 
 _NVML_INITIALIZED = False
 _NVML_INIT_LOCK = threading.Lock()
+CPU_THREAD_WINDOW_SOURCE = "cpu_psutil_thread_window_v1"
+FFMPEG_PROCESS_WINDOW_SOURCE = "ffmpeg_psutil_process_window_v1"
+
 _DARWIN = platform.system() == "Darwin"
 _WINDOWS = platform.system() == "Windows"
 
@@ -114,6 +121,60 @@ def parse_powermetrics_output(text: str) -> Dict[str, float]:
             except Exception:
                 pass
     return out
+
+
+AGX_SYSTEM_GPU_SOURCE = "gpu_ioreg_agx_system_utilization_v1"
+_AGX_OUTPUT_LIMIT = 256 * 1024
+_AGX_COMMAND = ["/usr/sbin/ioreg", "-a", "-r", "-c", "AGXAccelerator", "-d", "1"]
+
+
+def _read_agx_ioreg() -> bytes:
+    """Bound both time and buffered bytes from this nonprivileged, leaf command."""
+    deadline = time.monotonic() + 1.0
+    chunks = bytearray()
+    with subprocess.Popen(_AGX_COMMAND, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL) as proc:
+        try:
+            with selectors.DefaultSelector() as selector:
+                selector.register(proc.stdout, selectors.EVENT_READ)
+                while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0 or not selector.select(remaining):
+                        raise subprocess.TimeoutExpired(_AGX_COMMAND, 1.0)
+                    chunk = os.read(proc.stdout.fileno(), 8192)
+                    if not chunk:
+                        break
+                    chunks.extend(chunk)
+                    if len(chunks) > _AGX_OUTPUT_LIMIT:
+                        raise ValueError("AGX observation exceeds output budget")
+            if proc.wait(timeout=max(0.001, deadline - time.monotonic())) != 0:
+                raise ValueError("AGX observation command failed")
+        finally:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+    return bytes(chunks)
+
+
+def parse_agx_system_utilization(raw: bytes, expected_model: Optional[str]) -> Optional[float]:
+    """Driver-reported system GPU load, not VideoToolbox media-engine occupancy."""
+    if not expected_model or expected_model == "unknown" or len(raw) > _AGX_OUTPUT_LIMIT:
+        return None
+    try:
+        rows = plistlib.loads(raw)
+    except (ValueError, TypeError, plistlib.InvalidFileException, ExpatError):
+        return None
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+        return None
+    adapter = rows[0]
+    if not str(adapter.get("IOObjectClass", "")).startswith("AGXAccelerator"):
+        return None
+    if adapter.get("model") != expected_model:
+        return None
+    stats = adapter.get("PerformanceStatistics")
+    value = stats.get("Device Utilization %") if isinstance(stats, dict) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value) if 0 <= value <= 100 and math.isfinite(value) else None
 
 
 def parse_windows_gpu_counter_output(text: str) -> Dict[str, Optional[float]]:
@@ -198,6 +259,7 @@ class HardwareMetrics:
     thermal_throttle: Optional[bool] = None
     cpu_sample_count: Optional[int] = None
     gpu_sample_count: Optional[int] = None
+    gpu_util_sample_count: Optional[int] = None
     ffmpeg_sample_count: Optional[int] = None
     battery_sample_count: Optional[int] = None
     telemetry_sources: Optional[str] = None
@@ -258,7 +320,12 @@ class HardwareMonitor:
         self._thread: Optional[threading.Thread] = None
         self._gpu_samples: List[_GpuSample] = []
         self._cpu_samples: List[_CpuSample] = []
+        self._cpu_baseline_ready = False
+        self._cpu_sampler_ident: Optional[int] = None
+        self._cpu_baseline_mono: Optional[float] = None
+        self._cpu_sample_is_fresh = False
         self._proc_samples: List[_ProcSample] = []
+        self._proc_cpu_windows: Dict[Tuple[int, float], Tuple[psutil.Process, float]] = {}
         self._battery_samples: List[_BatterySample] = []
         self._memory_peak_bytes: float = 0.0
         self._lock = threading.Lock()
@@ -278,6 +345,12 @@ class HardwareMonitor:
         self._cpu_freq_reference_mhz: Optional[float] = self._detect_cpu_freq_reference_mhz()
         self._collectors: List[_Collector] = []
         self._gpu_vendor = infer_gpu_vendor_for_encoder(encoder_name)
+        self._agx_expected_model: Optional[str] = None
+        if _DARWIN and self._gpu_vendor == "apple":
+            from .identity import selected_device
+            device = selected_device(encoder_name)
+            if device.get("deviceId") == "videotoolbox:system":
+                self._agx_expected_model = device.get("model")
         self._host_gpu_vendors = sorted({
             str(v).strip().lower()
             for v in (host_gpu_vendors or [])
@@ -294,6 +367,7 @@ class HardwareMonitor:
         self._gpu_samples.clear()
         self._cpu_samples.clear()
         self._proc_samples.clear()
+        self._proc_cpu_windows.clear()
         self._battery_samples.clear()
         self._sources.clear()
         self._missing.clear()
@@ -317,15 +391,7 @@ class HardwareMonitor:
         )
         self._energy_collector.start()
 
-        try:
-            psutil.cpu_percent(interval=None)
-        except Exception:
-            pass
-        for proc in self._collect_process_tree():
-            try:
-                proc.cpu_percent(interval=None)
-            except Exception:
-                continue
+        self._sample_ffmpeg_process()  # Prime the retained per-process objects; retain no first-read zeros.
 
         self._capture_battery_snapshot(is_end=False)
         self._build_collectors()
@@ -356,8 +422,20 @@ class HardwareMonitor:
             self._collectors.append(_Collector("gpu_windows_counter", 2.0, self._sample_windows_gpu_counter))
         if _DARWIN:
             self._collectors.append(_Collector("powermetrics", 2.0, self._sample_powermetrics))
+            if self._gpu_vendor == "apple":
+                self._collectors.append(_Collector("agx_system_gpu", 0.5, self._sample_agx_system_gpu))
 
     def _sample_loop(self) -> None:
+        # psutil keeps system CPU baselines by thread ID. A caller-thread prime
+        # cannot reset a recycled sampler ID's history from a previous encode.
+        self._cpu_baseline_ready = False
+        self._cpu_sampler_ident = threading.get_ident()
+        self._cpu_baseline_mono = None
+        self._read_cpu_percent()
+        # The discarded baseline is not a zero-utilization sample. Give the
+        # first retained delta the >=100ms interval recommended by psutil.
+        if self._stop_event.wait(0.1):
+            return
         while not self._stop_event.is_set():
             now = time.monotonic()
             for collector in self._collectors:
@@ -413,12 +491,14 @@ class HardwareMonitor:
         if len(indexes) == 1:
             return indexes
         if self._gpu_vendor == "nvidia":
-            self._record_missing("gpu_ambiguous")
-            return None
+            return [0]  # canonical NVENC commands explicitly use -gpu 0
         self._record_missing("gpu_ambiguous")
         return None
 
     def _sample_gpu_fast(self) -> None:
+        # Apple system GPU observations belong to the attributed AGX collector.
+        if _DARWIN and self._gpu_vendor == "apple":
+            return
         if not self._allow_gpu_collection:
             return
         if self._sample_gpu_nvml():
@@ -535,6 +615,18 @@ class HardwareMonitor:
             )
         self._record_source("gpu_windows_counter")
 
+    def _sample_agx_system_gpu(self) -> None:
+        if not self._allow_gpu_collection or not self._agx_expected_model:
+            self._record_missing("gpu_ioreg_agx_unattributed")
+            return
+        utilization = parse_agx_system_utilization(_read_agx_ioreg(), self._agx_expected_model)
+        if utilization is None:
+            self._record_missing("gpu_ioreg_agx_unavailable")
+            return
+        with self._lock:
+            self._gpu_samples.append(_GpuSample(util_pct=utilization))
+        self._record_source(AGX_SYSTEM_GPU_SOURCE)
+
     def _sample_powermetrics(self) -> None:
         if not _DARWIN or not self._elevated:
             if _DARWIN:
@@ -555,20 +647,41 @@ class HardwareMonitor:
             self._record_source("gpu_temp_powermetrics")
         cpu_temp = parsed.get("cpuTempMaxC")
         if cpu_temp is not None:
-            overall = 0.0
-            try:
-                overall = float(psutil.cpu_percent(interval=None))
-            except Exception:
-                overall = 0.0
+            overall = self._read_cpu_percent()
+            if overall is None:
+                return
             with self._lock:
                 self._cpu_samples.append(_CpuSample(overall_pct=overall, temp_c=cpu_temp))
             self._record_source("cpu_temp_powermetrics")
+            if self._cpu_sample_is_fresh:
+                self._record_source(CPU_THREAD_WINDOW_SOURCE)
 
-    def _sample_cpu(self) -> None:
+    def _read_cpu_percent(self) -> Optional[float]:
+        self._cpu_sample_is_fresh = False
         try:
             overall = float(psutil.cpu_percent(interval=None))
+            if not math.isfinite(overall) or not 0 <= overall <= 100:
+                raise ValueError("invalid CPU counter")
         except Exception:
+            self._cpu_baseline_ready = False
+            self._cpu_baseline_mono = None
             self._record_missing("cpu_unavailable")
+            return None
+        now = time.monotonic()
+        previous = self._cpu_baseline_mono
+        self._cpu_baseline_mono = now
+        if not self._cpu_baseline_ready:
+            self._cpu_baseline_ready = True
+            return None
+        self._cpu_sample_is_fresh = (self._cpu_sampler_ident == threading.get_ident()
+            and previous is not None and now >= previous + 0.1)
+        if self._cpu_sampler_ident is not None and not self._cpu_sample_is_fresh:
+            return None
+        return overall
+
+    def _sample_cpu(self) -> None:
+        overall = self._read_cpu_percent()
+        if overall is None:
             return
         freq: Optional[float] = None
         try:
@@ -600,24 +713,46 @@ class HardwareMonitor:
         with self._lock:
             self._cpu_samples.append(_CpuSample(overall_pct=overall, freq_mhz=freq, temp_c=temp))
         self._record_source("cpu_psutil")
+        if self._cpu_sample_is_fresh:
+            self._record_source(CPU_THREAD_WINDOW_SOURCE)
 
     def _sample_ffmpeg_process(self) -> None:
+        # psutil's nonblocking process CPU baseline belongs to the Process
+        # object. Discovery creates fresh objects; reuse only an exact PID and
+        # creation-time match so a recycled PID cannot inherit an old baseline.
+        processes = self._collect_process_tree(require_complete=True)
+        next_windows: Dict[Tuple[int, float], Tuple[psutil.Process, float]] = {}
         total_pct = 0.0
-        any_sample = False
-        for proc in self._collect_process_tree():
+        complete = bool(processes)
+        for discovered in processes:
             try:
-                pct = proc.cpu_percent(interval=None)
-                if pct >= 0:
-                    total_pct += float(pct)
-                    any_sample = True
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                continue
+                created = float(discovered.create_time())
+                if not math.isfinite(created) or created <= 0:
+                    raise ValueError("invalid process identity")
+                identity = (discovered.pid, created)
+                previous = self._proc_cpu_windows.get(identity)
+                proc = previous[0] if previous is not None else discovered
+                pct = float(proc.cpu_percent(interval=None))
+                if not math.isfinite(pct) or pct < 0:
+                    raise ValueError("invalid process CPU counter")
+                now = time.monotonic()
+                next_windows[identity] = (proc, now)
+                if previous is None or now < previous[1] + 0.1:
+                    complete = False
+                else:
+                    # Keep psutil's existing units: one busy CPU is 100%, so
+                    # a multithreaded encode may legitimately exceed 100%.
+                    total_pct += pct
             except Exception:
-                continue
-        if any_sample:
+                complete = False
+                self._record_missing("ffmpeg_cpu_unavailable")
+        self._proc_cpu_windows = next_windows
+        # A partial tree is not a zero or a complete process-utilization sample.
+        if complete:
             with self._lock:
                 self._proc_samples.append(_ProcSample(cpu_pct=total_pct))
             self._record_source("ffmpeg_psutil")
+            self._record_source(FFMPEG_PROCESS_WINDOW_SOURCE)
 
     def _sample_memory(self) -> None:
         rss = 0.0
@@ -663,8 +798,11 @@ class HardwareMonitor:
             battery = list(self._battery_samples)
             peak_mem = self._memory_peak_bytes
 
+        util_vals = [float(s.util_pct) for s in gpu
+                     if isinstance(s.util_pct, (int, float)) and not isinstance(s.util_pct, bool)
+                     and 0 <= s.util_pct <= 100 and math.isfinite(s.util_pct)]
+        m.gpu_util_sample_count = len(util_vals)
         if gpu:
-            util_vals = [float(s.util_pct) for s in gpu if s.util_pct is not None]
             if util_vals:
                 m.gpu_util_avg = sum(util_vals) / len(util_vals)
             power_vals = [float(s.power_w) for s in gpu if s.power_w is not None and s.power_w >= 0]
@@ -736,6 +874,8 @@ class HardwareMonitor:
             self._record_missing("ffmpeg_unavailable")
         if self._allow_gpu_collection and m.gpu_sample_count == 0:
             self._record_missing("gpu_unavailable")
+        if self._allow_gpu_collection and m.gpu_util_sample_count == 0:
+            self._record_missing("gpu_utilization_unavailable")
         if m.battery_sample_count == 0:
             self._record_missing("battery_unavailable")
         if m.cpu_temp_max_c is None:
@@ -768,7 +908,7 @@ class HardwareMonitor:
             return None
         return throttled
 
-    def _collect_process_tree(self) -> List[psutil.Process]:
+    def _collect_process_tree(self, *, require_complete: bool = False) -> List[psutil.Process]:
         pid = self._ffmpeg_pid
         if pid is None:
             return []
@@ -782,7 +922,9 @@ class HardwareMonitor:
         try:
             procs.extend(root.children(recursive=True))
         except Exception:
-            pass
+            if require_complete:
+                self._record_missing("ffmpeg_cpu_unavailable")
+                return []
         return procs
 
     def _read_ffmpeg_io_totals(self) -> Optional[Tuple[float, float]]:

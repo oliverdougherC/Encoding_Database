@@ -1,0 +1,22 @@
+[Unit]
+Description=EncodingDB read-only health poll with Discord failure alerts
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=encodingdb
+WorkingDirectory=/opt/encodingdb
+EnvironmentFile=/etc/encodingdb/failure-alert.env
+# systemd resolves a non-absolute ExecStart against the unit PATH; set PATH in
+# failure-alert.env to the inspected node runtime (P910 node is outside the
+# default PATH) before installing.
+ExecStart=/usr/bin/env node server/scripts/v7-failure-alert.mjs poll
+TimeoutStartSec=120
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+StateDirectory=encodingdb-failure-alerts
+StateDirectoryMode=0700

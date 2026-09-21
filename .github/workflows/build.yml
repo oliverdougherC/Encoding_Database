@@ -69,13 +69,34 @@ jobs:
     name: server
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: encodingdb_test
+          POSTGRES_PASSWORD: isolated-ci-only
+          POSTGRES_DB: encodingdb_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U encodingdb_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_test
+      BACKEND_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_backend
+      CALIBRATION_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration
+      CORPUS_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_corpus
+      REVIEW_TEST_DATABASE_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_review
+      SNAPSHOT_SOURCE_A_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_source_a
+      SNAPSHOT_SOURCE_B_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_source_b
+      SNAPSHOT_COMBINED_URL: postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/encodingdb_calibration_combined
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - name: Install media probe runtime
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg postgresql-client
       - name: Install
         working-directory: server
         run: npm ci --no-audit --no-fund
@@ -86,6 +107,19 @@ jobs:
         run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Materialize frozen canonical references
         run: python scripts/materialize_final_suite.py
+      - name: Migrate isolated real PostgreSQL fault-test databases
+        env:
+          PGPASSWORD: isolated-ci-only
+        run: |
+          set -euo pipefail
+          for database in encodingdb_test encodingdb_backend encodingdb_calibration encodingdb_corpus encodingdb_review encodingdb_calibration_source_a encodingdb_calibration_source_b encodingdb_calibration_combined; do
+            if [ "$database" != encodingdb_test ]; then
+              createdb -h 127.0.0.1 -U encodingdb_test "$database"
+            fi
+            DATABASE_URL="postgresql://encodingdb_test:isolated-ci-only@127.0.0.1:5432/$database" \
+              npx --prefix server prisma migrate deploy --schema server/prisma/schema.prisma
+          done
+          psql "$DATABASE_URL" -c "ALTER DATABASE encodingdb_backend SET timezone TO 'America/Los_Angeles'"
       - name: Test
         working-directory: server
         run: npm test
@@ -198,7 +232,7 @@ jobs:
 
   client-native-macos-build:
     name: client-native-macos-build
-    runs-on: macos-latest
+    runs-on: macos-26
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
@@ -209,15 +243,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
+          archive="$GITHUB_WORKSPACE/client/resources/runtime/archives/macos-arm64-ffmpeg9-vmaf3.2.tar.gz"
+          echo "1ef24cb8cbf23b9e1dbeeda40a58ff5f0a30e9254a324702f1b81a6953ea0c07  $archive" | shasum -a 256 -c -
           cd "$RUNNER_TEMP/ffmpeg-runtime"
-          curl -L --fail --silent --show-error -o runtime.tar.gz \
-            https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-macos-runtime-c27482a18d7.tar.gz
-          echo "0b7534979f2f073d9eddae6f92def32fb6063c50bb4aced75f7e88ecf0611687  runtime.tar.gz" | shasum -a 256 -c -
-          tar -xzf runtime.tar.gz
+          tar -xzf "$archive"
           test -x "$PWD/ffmpeg"
           test -x "$PWD/ffprobe"
+          echo "ENCODINGDB_RUNTIME_BUNDLE_DIR=$PWD" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFMPEG_PATH=$PWD/ffmpeg" >> "$GITHUB_ENV"
           echo "ENCODINGDB_FFPROBE_PATH=$PWD/ffprobe" >> "$GITHUB_ENV"
+          echo "FFMPEG_EXE=$PWD/ffmpeg" >> "$GITHUB_ENV"
+          echo "FFPROBE_EXE=$PWD/ffprobe" >> "$GITHUB_ENV"
       - name: Install runtime and canonical-suite validation dependencies
         run: python -m pip install --disable-pip-version-check requests==2.33.0 psutil==7.2.2
       - name: Generate proposed macos runtime lock for review
@@ -270,7 +306,8 @@ jobs:
   client-native-windows-build:
     name: client-native-windows-build
     runs-on: windows-latest
-    timeout-minutes: 60
+    # Build plus two independently bounded 31-minute acceptance steps and evidence upload.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v7
@@ -325,11 +362,12 @@ jobs:
         run: python scripts/verify_runtime_model.py
       - name: Run native Windows client build
         if: ${{ !inputs.runtime_lock_evidence }}
+        id: windows-native-build
         shell: pwsh
         run: ./scripts/build_windows_client.ps1
 
-      - name: Retain windows candidate binaries and verified sidecars
-        if: ${{ !inputs.runtime_lock_evidence }}
+      - name: Retain unverified Windows candidate binaries and build-verified sidecars
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
         uses: actions/upload-artifact@v4
         with:
           name: candidate-windows-${{ github.sha }}
@@ -340,11 +378,99 @@ jobs:
           path: |
             encodingdb-client-windows*
             .test-reports/runtime-model/
+            .test-reports/native-smoke/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/
             client/resources/test_suite_v1/suite-lock.json
             client/resources/test_suite_v1/suite-pack.json
             release.json
+      - name: Capture pre-GUI Windows resource snapshot
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $output = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-pre-gui'
+          New-Item -ItemType Directory -Force $output | Out-Null
+          $memory = Get-CimInstance Win32_OperatingSystem
+          $drives = @($env:GITHUB_WORKSPACE, $env:RUNNER_TEMP | ForEach-Object { [IO.Path]::GetPathRoot($_).TrimEnd('\') } | Select-Object -Unique)
+          $disks = @(Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DeviceID -in $drives } | ForEach-Object {
+            @{ drive = $_.DeviceID; freeBytes = [int64]$_.FreeSpace; totalBytes = [int64]$_.Size }
+          })
+          $snapshot = [ordered]@{
+            schemaVersion = 1; capturedAt = [DateTime]::UtcNow.ToString('o')
+            status = 'CANDIDATE_GUI_AND_CONSOLE_ACCEPTANCE_UNVERIFIED'
+            sourceCommit = (git rev-parse HEAD); workflowCommit = $env:GITHUB_SHA
+            totalRamBytes = [int64]$memory.TotalVisibleMemorySize * 1024
+            availableRamBytes = [int64]$memory.FreePhysicalMemory * 1024
+            disks = $disks
+            phasePaths = @{
+              gui = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-native-gui/gui'
+              console = Join-Path $env:GITHUB_WORKSPACE '.test-reports/windows-native-gui/console'
+              nativeSmoke = Join-Path $env:GITHUB_WORKSPACE '.test-reports/native-smoke'
+              extractionParent = $env:RUNNER_TEMP
+            }
+          }
+          $snapshot | ConvertTo-Json -Depth 5 | Set-Content -Encoding utf8 (Join-Path $output 'resources.json')
+      - name: Retain pre-GUI Windows resource snapshot
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-pre-gui-${{ github.sha }}
+          path: .test-reports/windows-pre-gui/resources.json
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: error
+
+      - name: Guard Windows GUI harness functions
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        shell: powershell
+        run: ./scripts/test-windows-gui-harness-guards.ps1
+      - name: Exercise actual packaged Windows GUI
+        if: ${{ !cancelled() && !inputs.runtime_lock_evidence && steps.windows-native-build.outcome == 'success' }}
+        timeout-minutes: 31
+        shell: powershell
+        run: ./scripts/test-windows-native-gui.ps1 -Mode Gui -MeasurementMinutes 20 -AcquisitionSeconds 600
+      - name: Retain Windows gui diagnostics before the next step
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-gui-diagnostics-${{ github.sha }}
+          path: |
+            .test-reports/windows-native-gui/gui/**/*.json
+            .test-reports/windows-native-gui/gui/**/*.jsonl
+            .test-reports/windows-native-gui/gui/**/*.log
+            .test-reports/windows-native-gui/gui/**/*.png
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: warn
+      - name: Exercise packaged Windows seven-clip software campaign
+        if: ${{ always() && !inputs.runtime_lock_evidence && hashFiles('encodingdb-client-windows-console.exe') != '' }}
+        timeout-minutes: 31
+        shell: powershell
+        run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 20 -AcquisitionSeconds 600
+      - name: Retain Windows console diagnostics before the next step
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-console-diagnostics-${{ github.sha }}
+          path: |
+            .test-reports/windows-native-gui/console/**/*.json
+            .test-reports/windows-native-gui/console/**/*.jsonl
+            .test-reports/windows-native-gui/console/**/*.log
+            .test-reports/windows-native-gui/console/**/*.png
+          retention-days: 90
+          include-hidden-files: true
+          if-no-files-found: warn
+      - name: Retain Windows GUI and seven-clip acceptance evidence
+        if: ${{ always() && !inputs.runtime_lock_evidence }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-native-acceptance-${{ github.sha }}
+          path: .test-reports/windows-native-gui/
+          retention-days: 90
+          include-hidden-files: true
+          compression-level: 0
+          if-no-files-found: error
 
   migration:
     name: migration

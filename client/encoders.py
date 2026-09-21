@@ -149,15 +149,19 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
     try:
         with tempfile.TemporaryDirectory() as td:
             out_path = os.path.join(td, "probe.mp4")
+            # Some NVENC devices reject tiny frames; use the canonical suite
+            # dimensions without increasing the work of other encoder probes.
+            probe_size = "1920x1080" if enc.endswith("_nvenc") else "128x128"
             cmd = [
                 config.ffmpeg_exe(), "-y", "-hide_banner", "-loglevel", "error",
-                # Use a realistic tiny sample so we don't reject encoders due to
-                # unusual minimum-size constraints.
-                "-f", "lavfi", "-i", "testsrc=size=128x128:rate=30",
+                "-f", "lavfi", "-i", f"testsrc=size={probe_size}:rate=30",
                 "-frames:v", "8", "-pix_fmt", "yuv420p",
                 "-c:v", encoder,
             ]
-            if enc.endswith("_videotoolbox"):
+            if enc.endswith("_nvenc"):
+                # Match the device used by retained NVENC measurements.
+                cmd += ["-gpu", "0"]
+            elif enc.endswith("_videotoolbox"):
                 # Mirror production VT options to reduce false positives in probe.
                 cmd += ["-b:v", "3000k"]
                 if enc == "h264_videotoolbox":

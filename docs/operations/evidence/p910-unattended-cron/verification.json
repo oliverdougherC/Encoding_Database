@@ -1,0 +1,65 @@
+{
+  "status": "PASSED_UNATTENDED_ORCHESTRATION",
+  "actualCronDaemonAncestry": true,
+  "noSshAncestor": true,
+  "unrelatedCrontabPreserved": true,
+  "ownEntryRemoved": true,
+  "snapshotCleaned": true,
+  "inventoryCounts": {
+    "artifactCount": 0,
+    "derivedMemberCount": 0,
+    "publicCorpusGroupCount": 0
+  },
+  "candidateContainers": [
+    {
+      "name": "encodingdb-candidate-730de3c-db-1",
+      "imageUnchanged": true,
+      "healthy": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-server-1",
+      "imageUnchanged": true,
+      "healthy": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-frontend-1",
+      "imageUnchanged": true,
+      "healthy": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-nginx-1",
+      "imageUnchanged": true,
+      "healthy": true
+    }
+  ],
+  "scope": "Real isolated candidate topology; corpus was empty. This is scheduler/recovery proof, not retained native-client acceptance. Full-object restoration is independently proven by the 10GiB+10GiB scale trial.",
+  "rawLogSha256": "6519862ab4245ff2f8e39c5f606916122cff4faeadf159cc0a24ca9659e1fe0c",
+  "helperSourceCommit": "a51fc39",
+  "runtimeImageSource": "730de3ccc6c20372fd582a9155588b41734b4600",
+  "exactContainerChecks": [
+    {
+      "name": "encodingdb-candidate-730de3c-db-1",
+      "initialIdPrefix": "d1fb5343d5f3",
+      "currentFullId": "d1fb5343d5f3de70b7cfebd1911430ed0ca915123a26e94a97b5e733852e7ef8",
+      "sameContainer": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-server-1",
+      "initialIdPrefix": "aa67c2dabc53",
+      "currentFullId": "aa67c2dabc53abdb5c171077749e4400f16f3aee80f7f5f0785609e524d52744",
+      "sameContainer": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-frontend-1",
+      "initialIdPrefix": "f6ce293621b1",
+      "currentFullId": "f6ce293621b12ecf9f072c13dbd669d1b0dbdb25376014b59eb1336cbf330c2a",
+      "sameContainer": true
+    },
+    {
+      "name": "encodingdb-candidate-730de3c-nginx-1",
+      "initialIdPrefix": "dc424ff2b230",
+      "currentFullId": "dc424ff2b230faf55e8fd47a4b0f5dded19d8b520a588581f5a1ef5056d70749",
+      "sameContainer": true
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "encodingdb-evidence-files/v1",
+  "files": {
+    "README.md": {
+      "sha256": "97605b0b1ea3990828ba338760ef4d02709f91b2781582fd07c3eef2ed27042f",
+      "bytes": 13682
+    },
+    "budget-proposal.json": {
+      "sha256": "e15e1fdca02b6518a551344b89a3366a4262f29ae2f6e79f888da2580b57b789",
+      "bytes": 2026
+    },
+    "execution.json": {
+      "sha256": "ec4a2e436ad7398b78c56c12b2528f098d887c3c02c876b999702b0c81e3ed9a",
+      "bytes": 17551
+    },
+    "linux-package-build-provenance.json": {
+      "sha256": "2b0f8b305f1ed879223cf631dc156341f40d33dc3339e210dd4553d664af8441",
+      "bytes": 1631
+    },
+    "mac-dry-plan.json": {
+      "sha256": "422bd7e188c66c8afb4984433fc5724cffdcd2047921afb92ff93b1829c2fdd7",
+      "bytes": 680328
+    },
+    "p910-dry-plan.json": {
+      "sha256": "e81bb4fa3645f7ff383e4ced0e60e89bc13692069919ff81d57dadaf6ea83fb7",
+      "bytes": 752793
+    }
+  }
+}

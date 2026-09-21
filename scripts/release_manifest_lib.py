@@ -3,11 +3,17 @@ import argparse
 import hashlib
 import json
 import os
+import platform as host_platform
 import re
+import shutil
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
+import time
+import signal
+import psutil
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
@@ -21,6 +27,42 @@ RELEASE_MANIFEST_SCHEMA_VERSION = 1
 SMOKE_SCHEMA_VERSION = 1
 SIGNING_SCHEMA_VERSION = 1
 SHA256SUMS_NAME = "SHA256SUMS"
+
+
+def executable_identity(path: Path) -> Dict[str, Any]:
+    """Inspect executable headers, independently of the build host architecture."""
+    with path.open('rb') as handle:
+        header = handle.read(4096)
+    architecture = None
+    minimum_os = None
+    binary_format = 'unknown'
+    if header[:4] == b'\xcf\xfa\xed\xfe' and len(header) >= 32:
+        binary_format = 'Mach-O'
+        cpu = struct.unpack_from('<I', header, 4)[0]
+        architecture = {0x0100000C: 'arm64', 0x01000007: 'x86_64'}.get(cpu)
+        ncmds = struct.unpack_from('<I', header, 16)[0]
+        offset = 32
+        for _ in range(ncmds):
+            if offset + 8 > len(header):
+                break
+            cmd, size = struct.unpack_from('<II', header, offset)
+            if size < 8 or offset + size > len(header):
+                break
+            if cmd == 0x32 and size >= 24:
+                value = struct.unpack_from('<I', header, offset + 12)[0]
+                minimum_os = f'{value >> 16}.{(value >> 8) & 255}.{value & 255}'
+            offset += size
+    elif header[:4] == b'\x7fELF' and len(header) >= 20:
+        binary_format = 'ELF'
+        endian = '<' if header[5] == 1 else '>'
+        machine = struct.unpack_from(endian + 'H', header, 18)[0]
+        architecture = {62: 'x86_64', 183: 'arm64', 3: 'x86'}.get(machine)
+    elif header[:2] == b'MZ' and len(header) >= 64:
+        offset = struct.unpack_from('<I', header, 60)[0]
+        if offset + 6 <= len(header) and header[offset:offset + 4] == b'PE\x00\x00':
+            binary_format = 'PE'
+            architecture = {0x8664: 'x86_64', 0xaa64: 'arm64', 0x14c: 'x86'}.get(struct.unpack_from('<H', header, offset + 4)[0])
+    return {'format': binary_format, 'architecture': architecture, 'minimumOsFromHeader': minimum_os}
 
 
 def canonical_json(value: Any) -> str:
@@ -60,6 +102,14 @@ def detect_project_version() -> str:
             "or ENCODINGDB_PROJECT_VERSION before building final clients"
         )
     return version.strip()
+
+
+def source_identity() -> Dict[str, Any]:
+    revision = subprocess.run(['git', '-C', str(ROOT_DIR), 'rev-parse', 'HEAD'], capture_output=True, text=True, timeout=10)
+    status = subprocess.run(['git', '-C', str(ROOT_DIR), 'status', '--porcelain', '--untracked-files=no'], capture_output=True, text=True, timeout=10)
+    return {'revision': revision.stdout.strip() if revision.returncode == 0 else None,
+            'trackedChanges': bool(status.stdout.strip()) if status.returncode == 0 else None,
+            'buildPythonVersion': host_platform.python_version()}
 
 
 def read_client_minimum_version() -> str:
@@ -115,6 +165,108 @@ def select_smoke_encoder(capabilities: Mapping[str, Any]) -> str:
     return available[0]
 
 
+# Hosted Windows receipts show source preparation still progressing at 600s.
+# Bound that stage separately; the client's own 10-minute measurement allowance
+# starts after preparation. The extra 30s is for journaling and clean shutdown.
+SMOKE_ACQUISITION_SECONDS = 900
+SMOKE_MEASUREMENT_SECONDS = 630
+
+
+def _smoke_children(process, observed):
+    try:
+        for child in psutil.Process(process.pid).children(recursive=True):
+            observed[(child.pid, child.create_time())] = child
+    except psutil.NoSuchProcess:
+        pass
+
+
+def _smoke_survivors(observed):
+    alive = []
+    for child in observed.values():
+        try:
+            if child.is_running() and child.status() != psutil.STATUS_ZOMBIE:
+                alive.append(child)
+        except psutil.NoSuchProcess:
+            pass
+    return alive
+
+
+def _stop_smoke_tree(process, observed):
+    _smoke_children(process, observed)
+    if os.name == "nt":
+        if process.poll() is None:
+            try:
+                subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                               capture_output=True, timeout=10, check=False)
+            except (OSError, subprocess.SubprocessError):
+                pass  # Fall through to creation-time-bound child and parent cleanup.
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    # Retained psutil Process identities check creation time, avoiding PID reuse.
+    # They also cover a PyInstaller parent that exited before its helper did.
+    for child in _smoke_survivors(observed):
+        try:
+            child.kill()
+        except psutil.NoSuchProcess:
+            pass
+    if process.poll() is None:
+        process.kill()
+    process.wait(timeout=10)
+    psutil.wait_procs(list(observed.values()), timeout=5)
+    return [child.pid for child in _smoke_survivors(observed)]
+
+
+def _run_smoke_command(command, *, env, queue_dir, stdout_path, stderr_path,
+                       acquisition_seconds, measurement_seconds):
+    started = time.monotonic()
+    stage = "help" if "--help" in command else "preparation"
+    deadline = started + (60 if stage == "help" else acquisition_seconds)
+    measurement_started = None
+    observed = {}
+    timed_out = False
+    survivors = []
+    cleanup_forced = False
+    with stdout_path.open("w", encoding="utf-8") as stdout, stderr_path.open("w", encoding="utf-8") as stderr:
+        process = subprocess.Popen(command, stdout=stdout, stderr=stderr, env=env,
+                                   start_new_session=os.name != "nt")
+        try:
+            while True:
+                _smoke_children(process, observed)
+                now = time.monotonic()
+                if stage == "preparation" and any((queue_dir / "campaigns").glob("*/manifest.json")):
+                    stage = "measurement"
+                    measurement_started = now
+                    deadline = now + measurement_seconds
+                if now >= deadline:
+                    timed_out = True
+                    break
+                try:
+                    process.wait(timeout=min(0.25, deadline - now))
+                    break
+                except subprocess.TimeoutExpired:
+                    pass
+        finally:
+            # Cleanup also executes on interruption or a diagnostic exception.
+            if process.poll() is None or _smoke_survivors(observed):
+                cleanup_forced = True
+                survivors = _stop_smoke_tree(process, observed)
+    return {
+        "returnCode": process.returncode,
+        "timedOut": timed_out,
+        "stageAtExit": stage,
+        "elapsedSeconds": time.monotonic() - started,
+        "preparationSeconds": None if measurement_started is None else measurement_started - started,
+        "acquisitionLimitSeconds": acquisition_seconds,
+        "measurementLimitSeconds": measurement_seconds,
+        "cleanupForced": cleanup_forced,
+        "observedOwnedProcessCount": len(observed),
+        "survivingOwnedPids": survivors,
+    }
+
+
 def run_smoke_check(
     *,
     artifact_path: Path,
@@ -123,12 +275,24 @@ def run_smoke_check(
     suite_cache_dir: Path,
     suite_pack_path: Optional[Path],
 ) -> Dict[str, Any]:
+    evidence_dir = ROOT_DIR / '.test-reports' / 'native-smoke' / artifact_path.name
+    evidence_dir.mkdir(parents=True, exist_ok=True)
     base_env = dict(os.environ)
+    # Candidate smoke must execute the embedded reviewed runtime, not CI provisioning paths.
+    runtime_overrides = ("FFMPEG_EXE", "FFPROBE_EXE", "ENCODINGDB_RUNTIME_LOCK_PATH",
+        "ENCODINGDB_FFMPEG_PATH", "ENCODINGDB_FFPROBE_PATH", "ENCODINGDB_RUNTIME_BUNDLE_DIR",
+        "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "LD_LIBRARY_PATH", "LD_PRELOAD")
+    for key in runtime_overrides:
+        base_env.pop(key, None)
+    with tempfile.NamedTemporaryFile(prefix="embedded-runtime-", suffix=".json", dir=evidence_dir, delete=False) as receipt:
+        runtime_evidence_path = Path(receipt.name)
     base_env.update(
         {
             "BACKEND_BASE_URL": "http://127.0.0.1:9",
             "QUEUE_DIR": str(queue_dir),
             "ENCODINGDB_SUITE_CACHE_DIR": str(suite_cache_dir),
+            "ENCODINGDB_DEBUG_TRACEBACK": "1",
+            "ENCODINGDB_RUNTIME_EVIDENCE_PATH": str(runtime_evidence_path),
         }
     )
     if suite_pack_path is not None:
@@ -147,31 +311,43 @@ def run_smoke_check(
             "--crf",
             "24",
             "--no-submit",
+            "--max-duration-minutes",
+            "10",
         ),
     )
     for index, command in enumerate(smoke_specs):
-        proc = subprocess.run(
-            list(command),
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=base_env,
-            timeout=300,
-        )
-        commands.append(
-            {
-                "name": "help" if index == 0 else "no-submit-suite",
-                "argv": [os.path.basename(part) if part == str(artifact_path) else part for part in command],
-                "returnCode": proc.returncode,
-            }
-        )
-        if proc.returncode != 0:
-            raise RuntimeError(f"packaged smoke check failed for {' '.join(command)}")
+        name = "help" if index == 0 else "no-submit-suite"
+        stdout_path = evidence_dir / f"{name}.stdout.log"
+        stderr_path = evidence_dir / f"{name}.stderr.log"
+        result = _run_smoke_command(list(command), env=base_env, queue_dir=queue_dir,
+                                    stdout_path=stdout_path, stderr_path=stderr_path,
+                                    acquisition_seconds=SMOKE_ACQUISITION_SECONDS,
+                                    measurement_seconds=SMOKE_MEASUREMENT_SECONDS)
+        commands.append({"name": name,
+            "argv": [os.path.basename(part) if part == str(artifact_path) else part for part in command],
+            **result})
+        atomic_write_json(evidence_dir / "commands.json", commands)
+        if result["returnCode"] != 0 or result["timedOut"] or result["cleanupForced"] or result["survivingOwnedPids"]:
+            shutil.copytree(queue_dir, evidence_dir / "queue", dirs_exist_ok=True)
+            print(stdout_path.read_text(encoding="utf-8", errors="replace")[-12000:], file=sys.stderr)
+            print(stderr_path.read_text(encoding="utf-8", errors="replace")[-12000:], file=sys.stderr)
+            raise RuntimeError(f"packaged smoke check failed during {result['stageAtExit']} for {' '.join(command)}; diagnostics: {evidence_dir}")
+    try:
+        embedded_runtime = json.loads(runtime_evidence_path.read_text())
+        if embedded_runtime.get("frozen") is not True:
+            raise ValueError("receipt is not from a packaged client")
+        extraction_root = os.path.realpath(embedded_runtime["extractionRoot"])
+        for field in ("ffmpegPath", "ffprobePath", "lockPath"):
+            if os.path.commonpath([extraction_root, os.path.realpath(embedded_runtime[field])]) != extraction_root:
+                raise ValueError(f"{field} escaped the packaged extraction root")
+    except (OSError, ValueError, KeyError) as error:
+        raise RuntimeError(f"Native smoke did not prove embedded runtime identity: {error}") from error
     return {
         "schemaVersion": SMOKE_SCHEMA_VERSION,
         "submissionMode": "no-submit",
         "commands": commands,
+        "embeddedRuntime": embedded_runtime,
+        "runtimeEvidenceFile": runtime_evidence_path.name,
     }
 
 
@@ -219,12 +395,14 @@ def build_release_manifest(
     return {
         "schemaVersion": RELEASE_MANIFEST_SCHEMA_VERSION,
         "projectVersion": detect_project_version(),
+        "source": source_identity(),
         "platform": str(platform).strip().lower(),
         "artifact": {
             "fileName": artifact_path.name,
             "sha256": artifact_sha,
             "byteSize": artifact_path.stat().st_size,
             "mode": stat.S_IMODE(artifact_path.stat().st_mode),
+            "executableIdentity": executable_identity(artifact_path),
         },
         "protocol": {
             "benchmarkProtocolVersion": config.BENCHMARK_PROTOCOL_VERSION,
@@ -256,7 +434,7 @@ def build_release_manifest(
         "runtime": {
             "fingerprint": runtime_fingerprint,
             "payload": runtime_lock_payload,
-            "checkedInLockPath": str(runtime_lock_path.resolve()),
+            "checkedInLockPath": runtime_lock_path.name,
         },
         "signing": signing_payload,
     }
@@ -321,6 +499,16 @@ def finalize_release(
         runtime_lock_path=resolved_runtime_lock_path,
         suite_pack_path=resolved_suite_pack_path,
     )
+    runtime_files = {'ffmpeg': ffmpeg_path, 'ffprobe': ffprobe_path}
+    library_dir = ffmpeg_path.parent / 'lib'
+    if library_dir.is_dir():
+        runtime_files.update({str(file.relative_to(ffmpeg_path.parent)): file
+                              for file in library_dir.rglob('*') if file.is_file()})
+    identities = {name: executable_identity(file) for name, file in runtime_files.items()}
+    minimum_versions = [row['minimumOsFromHeader'] for row in identities.values() if row['minimumOsFromHeader']]
+    manifest_payload['runtime']['executableIdentities'] = identities
+    manifest_payload['runtime']['minimumOsFromHeaders'] = max(
+        minimum_versions, key=lambda version: tuple(map(int, version.split('.'))), default=None)
     atomic_write_json(sidecars["runtime_lock"], runtime_lock_payload)
     atomic_write_json(sidecars["signing"], signing_payload)
     atomic_write_json(sidecars["smoke"], smoke_payload)

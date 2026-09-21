@@ -1,0 +1,96 @@
+{
+  "syntheticOnly": true,
+  "sourceSha": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "started": "2026-09-20T03:49:20.072Z",
+  "completed": "2026-09-20T03:49:52.161Z",
+  "counts": {
+    "runs": 100000,
+    "artifacts": 100000,
+    "analyses": 100000,
+    "derived": 981,
+    "members": 80000
+  },
+  "checks": [
+    {
+      "environmentId": "SYNTHETIC-PROJECTION-ONLY-env-0000",
+      "rawAccepted": 2000,
+      "sources": 960,
+      "exactQualifiedMemberCount": 1600,
+      "memberHash": "af10a0b56ac6ded89c5459b0301aef46146984819f42ffb49b068e9a15e43745",
+      "centerBasis": "eligible-stable-groups",
+      "fps": 9.99979167534686,
+      "pl": 56.77868360804335
+    },
+    {
+      "environmentId": "SYNTHETIC-PROJECTION-ONLY-env-0001",
+      "rawAccepted": 100,
+      "sources": 48,
+      "exactQualifiedMemberCount": 80,
+      "memberHash": "af419e8df0ded02b01682ea1d5d0943325690914d4fb26024fd73b0bd6c29543",
+      "centerBasis": "eligible-stable-groups",
+      "fps": 9.995626917560049,
+      "pl": 56.85867308804071
+    },
+    {
+      "environmentId": "SYNTHETIC-PROJECTION-ONLY-env-0500",
+      "rawAccepted": 100,
+      "sources": 48,
+      "exactQualifiedMemberCount": 80,
+      "memberHash": "b02a50d85f113f8f5ea1a24682f005e3e2c76a962918575811219828b9cfd80b",
+      "centerBasis": "eligible-stable-groups",
+      "fps": 8.275719386608547,
+      "pl": 55.1071524390912
+    },
+    {
+      "environmentId": "SYNTHETIC-PROJECTION-ONLY-env-0980",
+      "rawAccepted": 100,
+      "sources": 48,
+      "exactQualifiedMemberCount": 80,
+      "memberHash": "917037b3acabbded055e05c5baa40140754a11121db107aed7aa4b8e273e40fa",
+      "centerBasis": "eligible-stable-groups",
+      "fps": 7.100486680744889,
+      "pl": 53.73946419322822
+    }
+  ],
+  "reset": {
+    "method": "Delete only the exact 20 verified arrival records from the completed prior trial, then rebuild only the two affected cohorts",
+    "preservedDumpSha256": "b7d094721595480f35ea3ce6158403844e10557046d7eab2c4137942b394a833",
+    "originalSeedSource": "939823ead2c052572f9deb5c9f91c85435d5661d",
+    "before": {
+      "runs": 100020,
+      "artifacts": 100020,
+      "analyses": 100020,
+      "derived": 981,
+      "members": 80020
+    },
+    "deletedRunIds": [
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-1-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-1-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-2-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-2-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-3-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-3-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-4-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-4-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-5-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0000-arrival-5-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-1-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-1-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-2-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-2-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-3-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-3-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-4-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-4-run-1",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-5-run-0",
+      "SYNTHETIC-PROJECTION-ONLY-env-0001-arrival-5-run-1"
+    ],
+    "reconciliation": {
+      "expected": 80000,
+      "actual": 80000,
+      "missing": 0,
+      "extra": 0,
+      "dirty": 0
+    }
+  }
+}

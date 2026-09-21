@@ -1,0 +1,22 @@
+{
+  "at": "2026-09-20T11:34:57.490044+00:00",
+  "oldExecutableSha256": "037d2fa318027881d78af8b37dc042a93bd77d5917f203fc25e557cd3c3ead02",
+  "publishedProtocol": {
+    "benchmarkProtocolVersion": "7.0",
+    "minimumClientVersion": "client/0.2.0"
+  },
+  "candidateCompatibility": {
+    "protocolVersion": "7.1",
+    "minimumClientVersion": "client/0.3.0",
+    "encodeTimerBoundary": "ffmpeg-process-v1",
+    "sourceSuiteVersion": "encodingdb-test-suite-v1",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "activeProtocolId": "cmu9ftoor0000o1dwjprx8akt"
+  },
+  "candidateRequiresMinimum": "client/0.3.0",
+  "oldClientWouldBeRejectedByVersion": true,
+  "protocolMismatch": true,
+  "queueStatusExit": 0,
+  "legacySubmitContract": "ng, received undefined\"],\"ramGB\":[\"Invalid input: expected number, received NaN\"],\"os\":[\"Invalid input: expected string, received undefined\"],\"codec\":[\"Invalid input: expected string, received undefined\"],\"preset\":[\"Invalid input: expected string, received undefined\"],\"fps\":[\"Invalid input: expected number, received NaN\"],\"fileSizeBytes\":[\"Invalid input: expected number, received NaN\"]}}}\nHTTP 400",
+  "verdict": "candidate rejects the 7.0-era contract and requires protocol 7.1 / client/0.3.0"
+}

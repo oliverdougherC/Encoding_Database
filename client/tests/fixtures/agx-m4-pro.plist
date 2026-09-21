@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<array>
+	<dict>
+		<key>CFBundleIdentifier</key>
+		<string>com.apple.AGXG16X</string>
+		<key>IOObjectClass</key>
+		<string>AGXAcceleratorG16X</string>
+		<key>IORegistryEntryID</key>
+		<integer>4294968335</integer>
+		<key>IORegistryEntryName</key>
+		<string>AGXAcceleratorG16X</string>
+		<key>PerformanceStatistics</key>
+		<dict>
+			<key>Alloc system memory</key>
+			<integer>3940548608</integer>
+			<key>Allocated PB Size</key>
+			<integer>131465216</integer>
+			<key>Device Utilization %</key>
+			<integer>56</integer>
+			<key>In use system memory</key>
+			<integer>1112195072</integer>
+			<key>In use system memory (driver)</key>
+			<integer>0</integer>
+			<key>Renderer Utilization %</key>
+			<integer>56</integer>
+			<key>SplitSceneCount</key>
+			<integer>0</integer>
+			<key>TiledSceneBytes</key>
+			<integer>983040</integer>
+			<key>Tiler Utilization %</key>
+			<integer>15</integer>
+			<key>lastRecoveryTime</key>
+			<integer>0</integer>
+			<key>recoveryCount</key>
+			<integer>0</integer>
+		</dict>
+		<key>model</key>
+		<string>Apple M4 Pro</string>
+	</dict>
+</array>
+</plist>

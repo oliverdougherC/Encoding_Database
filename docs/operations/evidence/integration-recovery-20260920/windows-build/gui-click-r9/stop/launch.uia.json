@@ -1,0 +1,831 @@
+﻿[
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Window",
+        "handle":  1248682,
+        "name":  "EncodingDB Windows Client",
+        "patterns":  [
+                         "WindowPatternIdentifiers.Pattern",
+                         "TransformPatternIdentifiers.Pattern"
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  12,
+                       "width":  1674,
+                       "height":  1199,
+                       "x":  12
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2231606,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  59,
+                       "width":  1650,
+                       "height":  1140,
+                       "x":  24
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2035116,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  59,
+                       "width":  1650,
+                       "height":  1140,
+                       "x":  24
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2493852,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  698,
+                       "width":  1614,
+                       "height":  483,
+                       "x":  42
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2231716,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  1584,
+                       "height":  431,
+                       "x":  57
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2754978,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  1559,
+                       "height":  431,
+                       "x":  57
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3345424,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  735,
+                       "width":  26,
+                       "height":  431,
+                       "x":  1616
+                   },
+        "enabled":  false
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1379744,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  657,
+                       "width":  54,
+                       "height":  29,
+                       "x":  42
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3083454,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  324,
+                       "width":  1614,
+                       "height":  315,
+                       "x":  42
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3607956,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  1578,
+                       "height":  104,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920892,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  593,
+                       "width":  14,
+                       "height":  29,
+                       "x":  162
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  986438,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  593,
+                       "width":  90,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920914,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  555,
+                       "width":  228,
+                       "height":  29,
+                       "x":  162
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3935392,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  555,
+                       "width":  83,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1379676,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  14,
+                       "height":  29,
+                       "x":  351
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1641790,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  71,
+                       "height":  29,
+                       "x":  245
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2100632,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  35,
+                       "height":  29,
+                       "x":  162
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1314206,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  518,
+                       "width":  54,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920906,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  473,
+                       "width":  1578,
+                       "height":  33,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2034634,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  441,
+                       "width":  51,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  4197486,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  396,
+                       "width":  1578,
+                       "height":  33,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1576330,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  365,
+                       "width":  62,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  4918202,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  77,
+                       "width":  1614,
+                       "height":  230,
+                       "x":  42
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  11078534,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  1578,
+                       "height":  38,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3869256,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  114,
+                       "height":  38,
+                       "x":  221
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1707362,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  251,
+                       "width":  149,
+                       "height":  38,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2231434,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920912,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  81,
+                       "height":  32,
+                       "x":  1266
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3279214,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  189,
+                       "height":  29,
+                       "x":  1068
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  5376738,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  83,
+                       "height":  30,
+                       "x":  968
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  7800258,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  162,
+                       "height":  29,
+                       "x":  794
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2165874,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  197,
+                       "height":  32,
+                       "x":  573
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1903924,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  54,
+                       "height":  29,
+                       "x":  507
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2820284,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  204,
+                       "width":  341,
+                       "height":  32,
+                       "x":  143
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1051754,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  206,
+                       "width":  71,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1772674,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  161,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  986440,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  161,
+                       "width":  1488,
+                       "height":  32,
+                       "x":  150
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1510740,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  162,
+                       "width":  78,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1772868,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  1578,
+                       "height":  32,
+                       "x":  60
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920888,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  83,
+                       "height":  30,
+                       "x":  861
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1575064,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  84,
+                       "height":  29,
+                       "x":  768
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  1707330,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  83,
+                       "height":  30,
+                       "x":  668
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2296840,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  59,
+                       "height":  29,
+                       "x":  600
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  3541388,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  273,
+                       "height":  32,
+                       "x":  309
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  2035118,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  117,
+                       "width":  161,
+                       "height":  32,
+                       "x":  125
+                   },
+        "enabled":  true
+    },
+    {
+        "offscreen":  false,
+        "type":  "ControlType.Pane",
+        "handle":  920890,
+        "name":  "",
+        "patterns":  [
+
+                     ],
+        "processId":  40588,
+        "automationId":  "",
+        "bounds":  {
+                       "y":  119,
+                       "width":  53,
+                       "height":  29,
+                       "x":  60
+                   },
+        "enabled":  true
+    }
+]

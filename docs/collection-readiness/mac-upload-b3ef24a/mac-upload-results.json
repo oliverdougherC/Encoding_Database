@@ -1,0 +1,30 @@
+{
+  "cases": [
+    {
+      "case": "software",
+      "campaign": "campaign-cda14a5876e816b6",
+      "at": "2026-09-20T07:32:34.084984+00:00",
+      "executableSha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+      "clientExitCode": 1,
+      "wallSeconds": 7.1,
+      "submissionsExpected": 18,
+      "clientLogSha256": "2e6ae6fbc9d1af73bba7a1da2ec3f5b7375474ec9c41f5770c23d5be84089e54",
+      "pendingRootEntries": [],
+      "ledgerImmutable": true,
+      "immutableFiles": 52
+    },
+    {
+      "case": "videotoolbox",
+      "campaign": "campaign-5cdcb087bc1fc57a",
+      "at": "2026-09-20T07:33:24.267691+00:00",
+      "executableSha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+      "clientExitCode": 1,
+      "wallSeconds": 42.6,
+      "submissionsExpected": 14,
+      "clientLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "pendingRootEntries": [],
+      "ledgerImmutable": true,
+      "immutableFiles": 44
+    }
+  ]
+}

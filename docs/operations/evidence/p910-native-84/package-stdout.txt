@@ -1,0 +1,2 @@
+Pinned VMAF model ready: vmaf-v1-sdr-1080p (v1.0.16_3d0h) [bundled]
+VMAF model path: /tmp/_MEIw1Qx1P/resources/vmaf/vmaf_v1.0.16_3d0h.json

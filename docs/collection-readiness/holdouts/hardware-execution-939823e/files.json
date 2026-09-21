@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "encodingdb-evidence-files/v1",
+  "files": {
+    "README.md": {
+      "sha256": "e859a4da70bea4cf46ff4df3dd85f97b3d81b862bb2a0e4cbda70d53c9980781",
+      "bytes": 9160
+    },
+    "execution.json": {
+      "sha256": "a7c257e62116322b7ec2b7ebbc1803921255b4e242dee9a0b7a718eb778ab474",
+      "bytes": 55347
+    },
+    "guard-tests.txt": {
+      "sha256": "2c5ae09b420e7be122853cd066d14bb348a806496fc69c789fa57002594d1f83",
+      "bytes": 2759
+    },
+    "linux-filtered-runtime-lock.json": {
+      "sha256": "fe3ef337dbaffb3d129d05ce1472461a4dfac5349206f13c412cfc86482b8e42",
+      "bytes": 1848
+    },
+    "mac-dry-run.json": {
+      "sha256": "b4fb465989e487debda9977a1069feb343083842bec4e476ee46827fa629d71d",
+      "bytes": 15842
+    },
+    "mac-filtered-runtime-lock.json": {
+      "sha256": "5db0f9c3d5178f2bad9a84cced0141df44b82532314c7e5e30f401f47e7262b0",
+      "bytes": 20777
+    },
+    "mac-reference-staging.json": {
+      "sha256": "a827213063b4643c93132556aba0a7f34e7dd87507b5e5ca8e9a5ce3ddd70023",
+      "bytes": 7171
+    },
+    "p910-dry-run.json": {
+      "sha256": "42ed1d566b54c1a889fddc079dd9b78527ead008f159ede92148f2afe3d72ef8",
+      "bytes": 15381
+    },
+    "preparation.json": {
+      "sha256": "27182c81c353ed5c4d1657e59f59a282633359f80ed7af9745dfd5e667d882ea",
+      "bytes": 1094
+    },
+    "run.py": {
+      "sha256": "86901c5d83d63fbbeaaabff042e428c13963d6c3e110a3210de186a2424d6f35",
+      "bytes": 19885
+    },
+    "test_operator.py": {
+      "sha256": "8ee9c7c35d28d93b20f1d5751526ca9c3a4a1c85114379f8514b3aeb85cd27ab",
+      "bytes": 18887
+    },
+    "operator-revision-proof.json": {
+      "sha256": "656fb94ef1c22b69d85bb5c8d447fdb5040d70dd5882aab3de2824d88edacc40",
+      "bytes": 35853
+    }
+  }
+}

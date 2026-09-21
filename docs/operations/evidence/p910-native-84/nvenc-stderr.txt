@@ -1,0 +1,16 @@
+Input #0, lavfi, from 'testsrc2=size=640x360:rate=24:duration=0.25':
+  Duration: N/A, start: 0.000000, bitrate: N/A
+  Stream #0:0: Video: wrapped_avframe, yuv420p, 640x360 [SAR 1:1 DAR 16:9], 24 fps, 24 tbr, 24 tbn
+Stream mapping:
+  Stream #0:0 -> #0:0 (wrapped_avframe (native) -> h264 (h264_nvenc))
+Press [q] to stop, [?] for help
+Output #0, mp4, to '/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/operation-evidence/nvenc-device0-capability/probe.mp4':
+  Metadata:
+    encoder         : Lavf62.12.102
+  Stream #0:0: Video: h264 (Main) (avc1 / 0x31637661), yuv420p(tv, progressive), 640x360 [SAR 1:1 DAR 16:9], q=2-31, 2000 kb/s, 24 fps, 12288 tbn
+    Metadata:
+      encoder         : Lavc62.28.102 h264_nvenc
+    Side data:
+      CPB properties: bitrate max/min/avg: 4000000/0/2000000 buffer size: 4000000 vbv_delay: N/A
+[out#0/mp4 @ 0x5aad873afd00] video:64KiB audio:0KiB subtitle:0KiB other streams:0KiB global headers:0KiB muxing overhead: 1.447645%
+frame=    6 fps=0.0 q=11.0 Lsize=      65KiB time=00:00:00.12 bitrate=4269.7kbits/s speed=0.314x elapsed=0:00:00.39

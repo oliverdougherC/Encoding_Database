@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
+import { fetchWorkbenchPage } from "./lib/api";
 import Home from "./page";
 
 vi.mock("./lib/api", () => ({
@@ -146,5 +147,24 @@ describe("Home page", () => {
     expect(screen.getByText(/hevc_videotoolbox/)).toBeInTheDocument();
     expect(screen.getAllByText(/PL unavailable/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/Legacy .*query.* aggregates remain separate; this surface is V7-only\./)).toBeInTheDocument();
+  });
+});
+
+describe("corpus disposition totals", () => {
+  it.each([[0, 4], [4, 0], [2, 2]])("labels %i accepted and %i suspect runs on the loaded page", async (accepted, suspect) => {
+    const baseline = await fetchWorkbenchPage({ page: 1, cpu: "", gpu: "", search: "", preset: "", sort: "", dir: "desc", encoderType: "" });
+    vi.mocked(fetchWorkbenchPage).mockResolvedValueOnce({ totalCount: 100, rows: [{ ...baseline.rows[0], sampleCounts: { ...baseline.rows[0].sampleCounts, accepted, suspect } }] });
+    render(await Home({}));
+    expect(screen.getByText(`${accepted} accepted · ${suspect} suspect runs on this page`)).toBeInTheDocument();
+    expect(screen.queryByText(/accepted V7 workload aggregates/)).not.toBeInTheDocument();
+  });
+});
+
+describe("unavailable corpus", () => {
+  it("does not describe a fetch failure as an empty accepted corpus", async () => {
+    vi.mocked(fetchWorkbenchPage).mockRejectedValueOnce(new Error("Offline"));
+    render(await Home({}));
+    expect(screen.getByText("Corpus counts temporarily unavailable")).toBeInTheDocument();
+    expect(screen.queryByText(/runs on this page/)).not.toBeInTheDocument();
   });
 });

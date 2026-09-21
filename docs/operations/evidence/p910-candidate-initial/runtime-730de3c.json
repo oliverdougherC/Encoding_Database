@@ -1,0 +1,15 @@
+{
+  "compatibility": {
+    "protocolVersion": "7.1",
+    "minimumClientVersion": "client/0.3.0",
+    "encodeTimerBoundary": "ffmpeg-process-v1"
+  },
+  "runtime": {
+    "node": "v20.20.2",
+    "arch": "x64",
+    "platform": "linux",
+    "ffmpeg": "ffmpeg version 7.1.1 Copyright (c) 2000-2025 the FFmpeg developers",
+    "ffprobe": "ffprobe version 7.1.1 Copyright (c) 2007-2025 the FFmpeg developers",
+    "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e"
+  }
+}

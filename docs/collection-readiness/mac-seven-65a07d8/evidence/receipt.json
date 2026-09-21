@@ -1,0 +1,73 @@
+{
+  "sourceCommit": "65a07d8",
+  "executableSha256": "f76ebaa3ca384394276c5bff28f2738d91fcbde79f7749f88fbd7eb4d3bc175b",
+  "purpose": "Actual packaged seven-clip native acceptance; no publication and not the predeclared calibration matrix",
+  "cases": [
+    {
+      "name": "software",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/macos-65a07d8/encodingdb-client-macos",
+        "--cli",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--crf",
+        "23",
+        "--campaign",
+        "full",
+        "--no-submit",
+        "--max-attempts",
+        "35",
+        "--max-storage-mb",
+        "2048",
+        "--max-duration-minutes",
+        "20",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac/software/queue"
+      ],
+      "startedAt": "2026-09-14T05:12:46.234040+00:00",
+      "exitCode": 0,
+      "seed": 20260914,
+      "finishedAt": "2026-09-14T05:19:34.981662+00:00",
+      "wallSeconds": 408.7466950000089,
+      "logSha256": "6bb3a532456c856e30dcaa65dec86f7d27efa31e1d0b5f9ed1d0a25a3a9e816f",
+      "campaigns": [
+        "campaign-8cf5cad6d31bff9f"
+      ]
+    },
+    {
+      "name": "videotoolbox",
+      "command": [
+        "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/macos-65a07d8/encodingdb-client-macos",
+        "--cli",
+        "--codec",
+        "h264_videotoolbox",
+        "--presets",
+        "default",
+        "--target-bitrate-kbps",
+        "6000",
+        "--campaign",
+        "full",
+        "--no-submit",
+        "--max-attempts",
+        "35",
+        "--max-storage-mb",
+        "2048",
+        "--max-duration-minutes",
+        "20",
+        "--queue-dir",
+        "/Users/ofhd/Developer/Encoding_Database/.build/native-seven-mac/videotoolbox/queue"
+      ],
+      "startedAt": "2026-09-14T05:19:34.983297+00:00",
+      "exitCode": 0,
+      "seed": 20260915,
+      "finishedAt": "2026-09-14T05:24:48.288769+00:00",
+      "wallSeconds": 313.3049914999865,
+      "logSha256": "8e75e483d6fcbacd9b4551341d80c502fa5709de9bc9d44b77978d448fe0eda3",
+      "campaigns": [
+        "campaign-28e2def1d446eab1"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "case": "live-orphan-kill",
+  "startedAt": "2026-09-20T02:09:15.132063+00:00",
+  "command": [
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/encodingdb-client-macos",
+    "--cli",
+    "--codec",
+    "libx264",
+    "--presets",
+    "veryslow",
+    "--no-submit",
+    "--max-duration-minutes",
+    "3",
+    "--queue-dir",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue"
+  ],
+  "environment": {
+    "ENCODINGDB_STATE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+    "ENCODINGDB_SUITE_CACHE_DIR": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache",
+    "ENCODINGDB_DEBUG_TRACEBACK": "1",
+    "ENCODINGDB_PROTOCOL_SEED": "20260921",
+    "ENCODINGDB_RUNTIME_EVIDENCE_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/live-orphan-receipts/live-orphan-kill-embedded-runtime.json",
+    "HTTP_PROXY": "http://127.0.0.1:55688",
+    "HTTPS_PROXY": "http://127.0.0.1:55688",
+    "ALL_PROXY": "http://127.0.0.1:55688",
+    "NO_PROXY": "localhost,127.0.0.1",
+    "ENCODINGDB_SUITE_PACK_PATH": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-test-suite-v1.tar.gz"
+  },
+  "pid": 35081,
+  "processCreatedAt": 1789870155.129557,
+  "artifactSha256": "ad01bfd36ad84e0e0d9f45730bd195c1b940a240493d093f6a875faa97a6f2c0",
+  "diagnosticNotCalibration": true,
+  "proxyRequestStart": 0,
+  "beforeStop": {
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/attempt-000001.json": {
+      "recordSha256": "cb0ff90340d8e18e31adef1c23885f2032ed447fef15d2f78d6de5a9c10b397c",
+      "schedule": {
+        "campaign_id": "campaign-250b62ed5aa9b145",
+        "execution_order": 1,
+        "phase": "warmup",
+        "recipe_id": "athletic-action-1080p24-final|libx264|veryslow|24",
+        "repetition_index": 1
+      },
+      "timing": {
+        "elapsed_s": 10.782354125,
+        "encode_fps": 22.258590027527966,
+        "encoded_frame_count": 240,
+        "end_monotonic_ns": 267581406801750,
+        "ffmpeg_cpu_time_s": null,
+        "realtime_multiple": 0.9274412511469986,
+        "source_fps": 24.0,
+        "source_frame_count": 240,
+        "start_monotonic_ns": 267570624447625
+      },
+      "artifactPath": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/001-libx264-veryslow-24-warmup-r1.mp4",
+      "artifactSha256": "c76698555542b533f38b5b8bfb95007bca6063b18008448a979d5cd4c54c647b"
+    }
+  },
+  "activeReceipt": {
+    "command": [
+      "/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/_MEIbbEeWq/bin/mac/ffmpeg",
+      "-y",
+      "-hide_banner",
+      "-loglevel",
+      "error",
+      "-nostdin",
+      "-nostats",
+      "-progress",
+      "pipe:1",
+      "-i",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/athletic-action-1080p24-final.mkv",
+      "-c:v",
+      "libx264",
+      "-preset",
+      "veryslow",
+      "-crf",
+      "24",
+      "-pix_fmt",
+      "yuv420p",
+      "-video_track_timescale",
+      "24000",
+      "-an",
+      "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-939823e/\u00e9preuve \u5ba2\u6237\u7aef/live-orphan-queue/campaigns/campaign-250b62ed5aa9b145/002-libx264-veryslow-24-measured-r1.mp4"
+    ],
+    "createdAt": 1789870200.382139,
+    "pid": 35205
+  },
+  "clientMainPid": 35082,
+  "clientMainCreatedAt": 1789870155.68929,
+  "signal": "SIGKILL"
+}

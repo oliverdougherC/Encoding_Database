@@ -63,6 +63,10 @@ export interface EnvironmentIdentityInput {
   ffmpegVersion: string;
   encoderVersion?: string | null;
   clientVersion: string;
+  executionArchitecture?: string | null;
+  translationMode?: string | null;
+  runtimeIdentity?: JsonObject | null;
+  selectedDeviceEvidence?: JsonObject | null;
 }
 
 export interface AggregationCompatibilityIdentity {
@@ -143,6 +147,10 @@ type CanonicalEnvironmentIdentity = {
   ffmpegVersion: string;
   encoderVersion: string | null;
   clientVersion: string;
+  executionArchitecture?: string | null;
+  translationMode?: string | null;
+  runtimeIdentity?: JsonObject | null;
+  selectedDeviceEvidence?: JsonObject | null;
 };
 
 type CanonicalRateControlSettings = {
@@ -324,6 +332,10 @@ export function normalizeEnvironmentIdentity(input: EnvironmentIdentityInput): C
     ffmpegVersion: normalizeRequiredText(input.ffmpegVersion, 'ffmpegVersion'),
     encoderVersion: normalizeOptionalText(input.encoderVersion),
     clientVersion: normalizeRequiredText(input.clientVersion, 'clientVersion'),
+    ...(input.executionArchitecture !== undefined ? { executionArchitecture: normalizeOptionalText(input.executionArchitecture, true) } : {}),
+    ...(input.translationMode !== undefined ? { translationMode: normalizeOptionalText(input.translationMode, true) } : {}),
+    ...(input.runtimeIdentity !== undefined ? { runtimeIdentity: normalizeJsonObject(input.runtimeIdentity) } : {}),
+    ...(input.selectedDeviceEvidence !== undefined ? { selectedDeviceEvidence: normalizeJsonObject(input.selectedDeviceEvidence) } : {}),
   };
 }
 

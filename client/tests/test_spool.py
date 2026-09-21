@@ -200,7 +200,11 @@ class SpoolTests(unittest.TestCase):
             self.assertEqual(stats.dead_lettered, 1)
             submit_mock.assert_not_called()
 
-            path, entry = spool_payload(queue_dir, self._authoritative_payload(source_path))
+            # This is a distinct immutable observation. Reusing the rejected
+            # payload would correctly return its terminal receipt without replay.
+            other_payload = self._authoritative_payload(source_path)
+            other_payload["runCreate"]["payloadHash"] = "c" * 64
+            path, entry = spool_payload(queue_dir, other_payload)
             entry["payload"]["artifactPath"] = source_path
             with open(path, "w", encoding="utf-8") as handle:
                 json.dump(entry, handle)
@@ -237,6 +241,10 @@ class SpoolTests(unittest.TestCase):
                 )
                 self.assertEqual(first.retained, 1)
                 self.assertTrue(os.path.exists(managed_path))
+                entry = load_spool_entry(path)
+                entry["nextAttemptAt"] = 0
+                with open(path, "w") as handle:
+                    json.dump(entry, handle)
                 second = replay_spool(
                     queue_dir,
                     base_url="http://127.0.0.1:9",

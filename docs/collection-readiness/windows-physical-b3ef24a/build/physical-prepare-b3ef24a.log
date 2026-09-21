@@ -1,0 +1,79 @@
+Initialized empty Git repository in C:/Users/ofhd/EncodingDB-validation-20260919-939823e/source-b3ef24a/.git/
+From https://github.com/oliverdougherC/Encoding_Database
+ * branch            b3ef24abb020bc6af5b5fe6b849ba3eae8314be2 -> FETCH_HEAD
+HEAD is now at b3ef24a Expose the physical NVENC probe blocker while preserving successful software evidence
+Verified and materialized both suite trees: d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e
+{"status": "passed", "referenceSha256": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de", "modelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e", "encodedSha256": "a53856c8c997eac5acd77d6cc54524d9573470465ada38281ffdff56844e7566", "frameCount": 240, "vmafMean": 97.551344, "frozenQuickReference": true, "filterGraph": "[0:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[distorted];[1:v]fps=24,settb=AVTB,setpts=N/(24*TB),format=pix_fmts=yuv420p10le[reference];[distorted][reference]libvmaf=model=path=model.json:n_threads=1:log_fmt=json:log_path=metrics.json"}
+Collecting requests==2.33.0 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 1))
+  Using cached requests-2.33.0-py3-none-any.whl.metadata (5.1 kB)
+Collecting psutil==7.2.2 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 2))
+  Using cached psutil-7.2.2-cp37-abi3-win_amd64.whl.metadata (22 kB)
+Collecting py-cpuinfo==9.0.0 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 3))
+  Using cached py_cpuinfo-9.0.0-py3-none-any.whl.metadata (794 bytes)
+Collecting GPUtil==1.4.0 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 4))
+  Using cached gputil-1.4.0-py3-none-any.whl
+Collecting nvidia-ml-py==13.590.48 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 5))
+  Using cached nvidia_ml_py-13.590.48-py3-none-any.whl.metadata (9.8 kB)
+Collecting rich==14.3.2 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 6))
+  Using cached rich-14.3.2-py3-none-any.whl.metadata (18 kB)
+Collecting pyinstaller==6.19.0 (from -r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached pyinstaller-6.19.0-py3-none-win_amd64.whl.metadata (8.5 kB)
+Collecting charset_normalizer<4,>=2 (from requests==2.33.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 1))
+  Using cached charset_normalizer-3.5.1-cp312-cp312-win_amd64.whl.metadata (46 kB)
+Collecting idna<4,>=2.5 (from requests==2.33.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 1))
+  Using cached idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Collecting urllib3<3,>=1.26 (from requests==2.33.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 1))
+  Using cached urllib3-2.8.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting certifi>=2023.5.7 (from requests==2.33.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 1))
+  Using cached certifi-2026.7.22-py3-none-any.whl.metadata (2.5 kB)
+Collecting markdown-it-py>=2.2.0 (from rich==14.3.2->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 6))
+  Using cached markdown_it_py-4.2.0-py3-none-any.whl.metadata (7.4 kB)
+Collecting pygments<3.0.0,>=2.13.0 (from rich==14.3.2->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 6))
+  Using cached pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+Collecting altgraph (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached altgraph-0.17.5-py2.py3-none-any.whl.metadata (7.5 kB)
+Collecting packaging>=22.0 (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Collecting pefile>=2022.5.30 (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached pefile-2024.8.26-py3-none-any.whl.metadata (1.4 kB)
+Collecting pyinstaller-hooks-contrib>=2026.0 (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached pyinstaller_hooks_contrib-2026.7-py3-none-any.whl.metadata (16 kB)
+Collecting pywin32-ctypes>=0.2.1 (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached pywin32_ctypes-0.2.3-py3-none-any.whl.metadata (3.9 kB)
+Collecting setuptools>=42.0.0 (from pyinstaller==6.19.0->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 7))
+  Using cached setuptools-84.0.0-py3-none-any.whl.metadata (6.6 kB)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich==14.3.2->-r C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\client\requirements-build.txt (line 6))
+  Using cached mdurl-0.1.2-py3-none-any.whl.metadata (1.6 kB)
+Using cached requests-2.33.0-py3-none-any.whl (65 kB)
+Using cached psutil-7.2.2-cp37-abi3-win_amd64.whl (137 kB)
+Using cached py_cpuinfo-9.0.0-py3-none-any.whl (22 kB)
+Using cached nvidia_ml_py-13.590.48-py3-none-any.whl (50 kB)
+Using cached rich-14.3.2-py3-none-any.whl (309 kB)
+Using cached pyinstaller-6.19.0-py3-none-win_amd64.whl (1.4 MB)
+Using cached certifi-2026.7.22-py3-none-any.whl (136 kB)
+Using cached charset_normalizer-3.5.1-cp312-cp312-win_amd64.whl (200 kB)
+Using cached idna-3.20-py3-none-any.whl (69 kB)
+Using cached markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Using cached pefile-2024.8.26-py3-none-any.whl (74 kB)
+Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Using cached pyinstaller_hooks_contrib-2026.7-py3-none-any.whl (459 kB)
+Using cached pywin32_ctypes-0.2.3-py3-none-any.whl (30 kB)
+Using cached setuptools-84.0.0-py3-none-any.whl (818 kB)
+Using cached urllib3-2.8.0-py3-none-any.whl (135 kB)
+Using cached altgraph-0.17.5-py2.py3-none-any.whl (21 kB)
+Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Installing collected packages: py-cpuinfo, nvidia-ml-py, GPUtil, altgraph, urllib3, setuptools, pywin32-ctypes, pygments, psutil, pefile, packaging, mdurl, idna, charset_normalizer, certifi, requests, pyinstaller-hooks-contrib, markdown-it-py, rich, pyinstaller
+Successfully installed GPUtil-1.4.0 altgraph-0.17.5 certifi-2026.7.22 charset_normalizer-3.5.1 idna-3.20 markdown-it-py-4.2.0 mdurl-0.1.2 nvidia-ml-py-13.590.48 packaging-26.3 pefile-2024.8.26 psutil-7.2.2 py-cpuinfo-9.0.0 pygments-2.21.0 pyinstaller-6.19.0 pyinstaller-hooks-contrib-2026.7 pywin32-ctypes-0.2.3 requests-2.33.0 rich-14.3.2 setuptools-84.0.0 urllib3-2.8.0
+{
+  "ffmpegPath": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffmpeg.exe",
+  "ffprobePath": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\runtime-939823e\\ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1\\bin\\ffprobe.exe",
+  "fingerprint": "09d0a493de921e3eb88c245c3e0fbe8312eac87a7032f110d45a3a4a53a53890",
+  "lockPath": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\client\\resources\\runtime\\ffmpeg-lock.json",
+  "mode": "verified",
+  "platform": "win",
+  "stagedRuntimeDir": "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\.build\\clients\\windows\\runtime_resources"
+}
+staged suite resources: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\.build\clients\windows\suite_resources\test_suite_v1
+suite pack: C:\Users\ofhd\EncodingDB-validation-20260919-939823e\source-b3ef24a\encodingdb-test-suite-v1.tar.gz
+verified 7 canonical suite assets

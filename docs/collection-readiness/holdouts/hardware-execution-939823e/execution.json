@@ -1,0 +1,1097 @@
+{
+  "schemaVersion": "encodingdb-hardware-execution/v1",
+  "status": "FROZEN_NOT_EXECUTED",
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "sourceArchiveSha256": "36ec9835272b0d2cfc7ea2d59ad7607d2c6e5bf79cb7a0cca1ca505c192a2449",
+  "archiveCreation": "git archive --format=tar 939823ead2c052572f9deb5c9f91c85435d5661d | gzip -n",
+  "runnerSha256": "7d2e1a72fe57fea4866dd3853ba8837a57334a79581b58156d37166eaa60e194",
+  "operatorSha256": "86901c5d83d63fbbeaaabff042e428c13963d6c3e110a3210de186a2424d6f35",
+  "basePlanHash": "4b2a0502fa8f8b8d6210cf9a39e2acac8797bcefda511378026cd0d71fe26e31",
+  "originalBasePlanFileSha256": "d2e27003590e81dd595d954c406197dcc343395b1c2fa3a07bcab74d16aecb84",
+  "minimumFreeBytes": 5368709120,
+  "model": {
+    "id": "vmaf-v1-sdr-1080p",
+    "sha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+    "purpose": "Pinned identity for later authoritative analysis; hardware timing does not calculate quality metrics."
+  },
+  "storagePreparationAdjustment": {
+    "scope": "Storage-only preparation; no source, cell, order, seed, rate-control, warmup, repetition or stability criterion changed.",
+    "before": "Mac staged one source at a time because only approximately 8 GiB was available.",
+    "now": "All seven exact registered references were staged and SHA/size verified before hardware timing, preserving more than 5 GiB free; P910 coordinator was paused during transfers.",
+    "stagingReceiptSha256": "a827213063b4643c93132556aba0a7f34e7dd87507b5e5ca8e9a5ce3ddd70023",
+    "referenceBytes": 5499942827
+  },
+  "cells": [
+    {
+      "cellId": "validation-nocturne-lowlight-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "sourceRegistrationHash": "b50105e2352a05089fafaefc77930808f38e6a28a5f4cd85b1a2d85a9b4294dd",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-lowlight-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 1,
+      "seed": 202609142801
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "sourceRegistrationHash": "b50105e2352a05089fafaefc77930808f38e6a28a5f4cd85b1a2d85a9b4294dd",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-lowlight-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 2,
+      "seed": 202609142802
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-atlas-receipts-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/atlas-receipts-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 3,
+      "seed": 202609142803
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-atlas-receipts-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/atlas-receipts-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 4,
+      "seed": 202609142804
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "sourceRegistrationHash": "b50105e2352a05089fafaefc77930808f38e6a28a5f4cd85b1a2d85a9b4294dd",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-lowlight-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 5,
+      "seed": 202609142805
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "sourceRegistrationHash": "4835651abc49752b39bf8284630bb16c36a2289a97e065c0d2753f382f3c7528",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/tos-outdoor-dialogue-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 6,
+      "seed": 202609142806
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "sourceRegistrationHash": "4835651abc49752b39bf8284630bb16c36a2289a97e065c0d2753f382f3c7528",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/tos-outdoor-dialogue-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 7,
+      "seed": 202609142807
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 8,
+      "seed": 202609142808
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-ballet-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 9,
+      "seed": 202609142809
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "sourceRegistrationHash": "db3ba7e8d571dbf6f1d53832f2c8211bbbf251b481d92d76da0c82d5284eade4",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/sol-cave-forest-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 10,
+      "seed": 202609142810
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-grain-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "sourceRegistrationHash": "7d46614b3cf1459499fe97f298b0c309523f766fbf7b4886b8431d893f2c652f",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-grain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 11,
+      "seed": 202609142811
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-atlas-receipts-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/atlas-receipts-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 12,
+      "seed": 202609142812
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-grain-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "sourceRegistrationHash": "7d46614b3cf1459499fe97f298b0c309523f766fbf7b4886b8431d893f2c652f",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-grain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 13,
+      "seed": 202609142813
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "sourceRegistrationHash": "4835651abc49752b39bf8284630bb16c36a2289a97e065c0d2753f382f3c7528",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/tos-outdoor-dialogue-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 14,
+      "seed": 202609142814
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-grain-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "sourceRegistrationHash": "7d46614b3cf1459499fe97f298b0c309523f766fbf7b4886b8431d893f2c652f",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-grain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 15,
+      "seed": 202609142815
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-ballet-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 16,
+      "seed": 202609142816
+    },
+    {
+      "cellId": "validation-nocturne-grain-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-nocturne-grain-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "sourceRegistrationHash": "7d46614b3cf1459499fe97f298b0c309523f766fbf7b4886b8431d893f2c652f",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/nocturne-grain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 17,
+      "seed": 202609142817
+    },
+    {
+      "cellId": "validation-nocturne-lowlight-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "sourceRegistrationHash": "b50105e2352a05089fafaefc77930808f38e6a28a5f4cd85b1a2d85a9b4294dd",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-lowlight-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 18,
+      "seed": 202609142818
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "sourceRegistrationHash": "db3ba7e8d571dbf6f1d53832f2c8211bbbf251b481d92d76da0c82d5284eade4",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/sol-cave-forest-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 19,
+      "seed": 202609142819
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-chimera-fountain-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "sourceRegistrationHash": "a10077303a866e3dbca0f0eeedb48fc111091e310922bcc563a526137b7da1e1",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/chimera-fountain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 20,
+      "seed": 202609142820
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-chimera-fountain-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "sourceRegistrationHash": "a10077303a866e3dbca0f0eeedb48fc111091e310922bcc563a526137b7da1e1",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/chimera-fountain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 21,
+      "seed": 202609142821
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "sourceRegistrationHash": "db3ba7e8d571dbf6f1d53832f2c8211bbbf251b481d92d76da0c82d5284eade4",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/sol-cave-forest-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 22,
+      "seed": 202609142822
+    },
+    {
+      "cellId": "validation-sol-cave-forest-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "sourceRegistrationHash": "db3ba7e8d571dbf6f1d53832f2c8211bbbf251b481d92d76da0c82d5284eade4",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/sol-cave-forest-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 23,
+      "seed": 202609142823
+    },
+    {
+      "cellId": "validation-atlas-receipts-30s--h264_nvenc--p4--vbr8000",
+      "host": "P910",
+      "workloadId": "validation-atlas-receipts-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/atlas-receipts-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 24,
+      "seed": 202609142824
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--h264_videotoolbox--default--vbr4000",
+      "host": "Mac",
+      "workloadId": "validation-chimera-fountain-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "sourceRegistrationHash": "a10077303a866e3dbca0f0eeedb48fc111091e310922bcc563a526137b7da1e1",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/chimera-fountain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 25,
+      "seed": 202609142825
+    },
+    {
+      "cellId": "validation-tos-outdoor-dialogue-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "sourceRegistrationHash": "4835651abc49752b39bf8284630bb16c36a2289a97e065c0d2753f382f3c7528",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/tos-outdoor-dialogue-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 26,
+      "seed": 202609142826
+    },
+    {
+      "cellId": "validation-chimera-fountain-30s--h264_videotoolbox--default--vbr8000",
+      "host": "Mac",
+      "workloadId": "validation-chimera-fountain-30s",
+      "encoder": "h264_videotoolbox",
+      "preset": "default",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 8000,
+      "sourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "sourceRegistrationHash": "a10077303a866e3dbca0f0eeedb48fc111091e310922bcc563a526137b7da1e1",
+      "referencePath": "/Users/ofhd/Developer/Encoding_Database/.build/evidence/validation-hardware-staging/chimera-fountain-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 27,
+      "seed": 202609142827
+    },
+    {
+      "cellId": "validation-nocturne-ballet-30s--h264_nvenc--p4--vbr4000",
+      "host": "P910",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "encoder": "h264_nvenc",
+      "preset": "p4",
+      "rateControlMode": "vbr",
+      "targetBitrateKbps": 4000,
+      "sourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+      "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+      "maximumMeasurementMinutes": 60,
+      "maximumWarmups": 1,
+      "minimumMeasuredAttempts": 2,
+      "maximumAdaptiveAttempts": 2,
+      "order": 28,
+      "seed": 202609142828
+    }
+  ],
+  "hosts": {
+    "Mac": {
+      "checkout": "/Users/ofhd/Developer/EncodingDB-worktrees/native-mac-939823e",
+      "python": "/Users/ofhd/Developer/Encoding_Database/.venv-release/bin/python",
+      "archivePath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/source-939823e.tar.gz",
+      "registry": "/Users/ofhd/Developer/EncodingDB-worktrees/native-mac-939823e/docs/collection-readiness/holdouts/validation-source-registry-final-v1.json",
+      "stateDirectory": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260914/mac-host-state",
+      "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+      "outputRoot": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/campaigns",
+      "budgetRoot": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts",
+      "maximumTaskBytes": 30064771072,
+      "pauseFile": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/hardware-holdouts/PAUSE_HARDWARE_TIMING",
+      "ffmpeg": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffmpeg",
+      "ffprobe": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffprobe",
+      "runtimeLockPath": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/build/runtime_resources/ffmpeg-lock.json",
+      "runtimeLockSha256": "5db0f9c3d5178f2bad9a84cced0141df44b82532314c7e5e30f401f47e7262b0",
+      "runtimeLockFingerprint": "a3929406d94ea18976b7ba56c5b6991d0d70cf27ec9b544c76c319ad2f0db659",
+      "runtimeFiles": [
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffmpeg",
+          "sha256": "ef1da73e929cb11aae5f4770ba0fcab617641d9feb03c5d00bb7c0702ebdf5d2",
+          "byteSize": 489680
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffprobe",
+          "sha256": "12da1d9d189806ba249f3c44b703f20b804e309a6150b3bef1e0ab4b569e9b66",
+          "byteSize": 301264
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libSvtAv1Enc.4.2.0.dylib",
+          "sha256": "352e6304bd84cf92401a5c6504a9590b5bd33580e5abae3059104de8fc6276e2",
+          "byteSize": 3039680
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libX11.6.dylib",
+          "sha256": "0b1ea03b796b9d7959bba7e8ca144aaa09669a4396f8b9dea81d094dddd0f179",
+          "byteSize": 1001344
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libXau.6.dylib",
+          "sha256": "b3f446f5d69b9123503b762a2d34bd7f97750d0c7e5ed0a401496046785c8ae3",
+          "byteSize": 35136
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libXdmcp.6.dylib",
+          "sha256": "4161891103528f1c500558e37ca6ab72db7f7df169902c4831217e137e52ab30",
+          "byteSize": 36048
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libaom.3.14.1.dylib",
+          "sha256": "acff5ee4f9886bf823d013a461173f727c70db46580ba1e6fe730a37bdd7538f",
+          "byteSize": 4076640
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libarchive.13.dylib",
+          "sha256": "a67c377993be7fa29fb93952ae934272504cda17ada0003dfd875a4aef956490",
+          "byteSize": 685456
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libaribb24.0.dylib",
+          "sha256": "ee0fd41863b750f86e84116612298d8e4ad9a442a8560d9157ceb68032b74c28",
+          "byteSize": 104192
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libass.9.dylib",
+          "sha256": "ed247a3b388a24267150a3d0a5a310d0c071ff7c3cc337d46b52db9252da362c",
+          "byteSize": 228640
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libavcodec.63.1.100.dylib",
+          "sha256": "f8490c1eeb5f11224ffdd8d28ab73f3b597a18fbff260a03910d094eaa599230",
+          "byteSize": 10760896
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libavdevice.63.1.100.dylib",
+          "sha256": "0ee9ed91f35078491d331767f3c2fcaea5b121409df2ac18b49baa9b65649a03",
+          "byteSize": 185024
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libavfilter.12.1.100.dylib",
+          "sha256": "7782d51cf51f79c33980ac6dce92c51149e7d924b90faa2770730954ac1f7d43",
+          "byteSize": 3328752
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libavformat.63.1.100.dylib",
+          "sha256": "01e0a295c636c8dd6945aeafb54b335211bc180ecfb886d6939658e3f474a8e6",
+          "byteSize": 2478656
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libavutil.61.1.100.dylib",
+          "sha256": "0376f30a5d39f277907a9f3dcae1191b2b794a39274d583c7c4cbf75e33c1cec",
+          "byteSize": 706224
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libb2.1.dylib",
+          "sha256": "a56fe0c8c8f79d0e73df1379009b9ff482e39505669cbeac11618963aaf3b7e2",
+          "byteSize": 67600
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libbluray.4.dylib",
+          "sha256": "0c3ee625b8e16061f3d29eb47f650e9ebb0a16d87f7157fbbadcb7e7d07063c9",
+          "byteSize": 355840
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libbrotlicommon.1.2.0.dylib",
+          "sha256": "b59814b4fc11da549902b103b9be16c864ad45eabe3327b6d9da1bd0b3e34af0",
+          "byteSize": 149264
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libbrotlidec.1.2.0.dylib",
+          "sha256": "b73117b766070cccab91b65550f10860f10064a679b77e5db89bca8d66fbbf30",
+          "byteSize": 69744
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libbrotlienc.1.2.0.dylib",
+          "sha256": "b6eaf8f006701aef1379e20acb41f5a68e61e07ba1ad8f2ec82fbb4ccdc9e337",
+          "byteSize": 635344
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libcjson.1.7.19.dylib",
+          "sha256": "a72117634db8670cb85e0b72666487dd3280a754b9b83f36ef7da1dda71c804b",
+          "byteSize": 71952
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libcrypto.3.dylib",
+          "sha256": "5d4e849910477c9830006455fb8a632eceab8ea52eb4985afc1565e3e5a719e6",
+          "byteSize": 4828048
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libdav1d.7.dylib",
+          "sha256": "8176bb3e6ec148ff65efd88b5a5af3994cb28c9b73be5c0849050fe421524f1d",
+          "byteSize": 825360
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libfontconfig.1.dylib",
+          "sha256": "9440968f691c712440288915bad9aa2694bf753066c14daee3e2c018e56a0086",
+          "byteSize": 453344
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libfreetype.6.dylib",
+          "sha256": "02f1083160f084fb8955a8622d565ef2b2ce3a1b9f431eca902a4528ae0ef7cf",
+          "byteSize": 620256
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libfribidi.0.dylib",
+          "sha256": "460da445a3938f75ab0d2a9a45b4ea28ec3e3c2c4ebcdbaef3e4c4cafbcd4fb8",
+          "byteSize": 153040
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libggml-base.0.19.0.dylib",
+          "sha256": "b3eb8b59fa91c556aac4164ebe50faff935ef9d9e18d7ca61916dda99f2e9296",
+          "byteSize": 503152
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libggml.0.19.0.dylib",
+          "sha256": "bb7975c8aee37b188b22ebfff0a18a64f8ecadb76229241f4e0a3ae62f32d6c7",
+          "byteSize": 59936
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libgif.7.2.0.dylib",
+          "sha256": "2f120e4cf0b9e22f925a004002ad903ec074ec02992cc879a919caf49149be41",
+          "byteSize": 54672
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libglib-2.0.0.dylib",
+          "sha256": "6ac2a2515efd27a1f752b189c957a7eae102e4daf181344991e76f82e070e2a5",
+          "byteSize": 1351424
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libgmp.10.dylib",
+          "sha256": "38d4fdd433412334f60c5edb5edc1fc0b897c484e68414379a668c04426c4ef9",
+          "byteSize": 432320
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libgnutls.30.dylib",
+          "sha256": "52b319a550b6e0f18e496ee19951bd30be726d1d56eba2477d053575f9dd5142",
+          "byteSize": 2324784
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libgraphite2.3.3.1.dylib",
+          "sha256": "ed6d70386038e2f2bcbededdb31319bd19e6a2f88ab4af9486eb03d0bf53cf5f",
+          "byteSize": 124560
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libharfbuzz.0.dylib",
+          "sha256": "781275e3b92605ef64ed4a453b6485b3be8f179c4486736c2cad23bfed580703",
+          "byteSize": 1228032
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libhogweed.7.0.dylib",
+          "sha256": "8fe9c74ae5f000741a55b3a561796455fb2cf56aea2bc80240ed073c58c03f71",
+          "byteSize": 277520
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libhwy.1.4.0.dylib",
+          "sha256": "5193701e52a59d161b2cdfa7c92e3261061089d10f4bd863f8467783f1286442",
+          "byteSize": 80624
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libidn2.0.dylib",
+          "sha256": "055d8b6513ee634479925fd5221ee53dab1247ac1bf075769002e93297d55a5f",
+          "byteSize": 238896
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libintl.8.dylib",
+          "sha256": "0c714ad8e39946089527999493474cb9ce90be73df3e88aa2a000b3055da23ae",
+          "byteSize": 210816
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libjpeg.8.3.2.dylib",
+          "sha256": "df3fe980ea4b978062c8be32ad2e4b461f11dc08d2d84dd2c24cc0298bda3483",
+          "byteSize": 454256
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libjxl.0.12.0.dylib",
+          "sha256": "1c66187d8d4e9b39904054de86ef6ccdc31c73db14eb25196b00a15afa20e9f8",
+          "byteSize": 1915984
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libjxl_cms.0.12.0.dylib",
+          "sha256": "15faf578f6191e489dca1e235077a938038a31aa03c9889767a669abce448750",
+          "byteSize": 95264
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libjxl_threads.0.12.0.dylib",
+          "sha256": "025eb992d3f8df7483842bf3efc93bb655e2c0f4f7ad169ecbda18847615f649",
+          "byteSize": 38592
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/liblcms2.2.dylib",
+          "sha256": "f6af719637ad52cf1999556ec836337212fb8461d22a9fb2a4e7ca8fa1eb2a09",
+          "byteSize": 338272
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libleptonica.6.dylib",
+          "sha256": "cf5029f7cb01d6c8ca3cf99b2995fa1c2603f70b26820c69a28f687ab036da12",
+          "byteSize": 2190448
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/liblz4.1.10.0.dylib",
+          "sha256": "31daa9a4fa06dd239514fd12bf3860210c0deaf594c1e07de514647d6e70206b",
+          "byteSize": 158048
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/liblzma.5.dylib",
+          "sha256": "2a77f45df99f9232aab89e663b14c6bbe2edb4c38f4764048e5f394cb5c7e70c",
+          "byteSize": 166528
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libmbedcrypto.3.6.7.dylib",
+          "sha256": "1c1b8e3e1027991b7cc2d39ea4f31c740a28756bd39311e9e81c3016de37c866",
+          "byteSize": 495216
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libmp3lame.0.dylib",
+          "sha256": "9073c7960818b58b6d4aea8d92b51cd5d24de939979e065aeac40d9330789102",
+          "byteSize": 214640
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libmpg123.0.dylib",
+          "sha256": "68738a0b88a8f31f010a200ea6db55144610d46bb9e3527ec3ae03f67bcef3c3",
+          "byteSize": 270336
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libnettle.9.0.dylib",
+          "sha256": "f0f7646f71ad0bf71793f7506c01ad4c46153030ae976fac850050dedebec48f",
+          "byteSize": 314624
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libogg.0.8.6.dylib",
+          "sha256": "a8b0c4f5f05118512777a23db7e6a114dfafd75811cda77f413f4923783d5091",
+          "byteSize": 53728
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libomp.dylib",
+          "sha256": "3456e29b748a0510a15aed07e5f355b034d3e7070f90f080c54a2cbb9e901c46",
+          "byteSize": 721120
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libopencore-amrnb.0.dylib",
+          "sha256": "224f6564803494e0df2b142dc990c635df1ae3089863e33d48f7f4afe22fba3b",
+          "byteSize": 159584
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libopencore-amrwb.0.dylib",
+          "sha256": "949926911202dccbe3bd1d3947b7d9bea14fdbf70238bdeb1f5315aa3090c965",
+          "byteSize": 87616
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libopenjp2.2.5.4.dylib",
+          "sha256": "274d168f1b95794349cd08fc64706582346538a93bb4601fe0da4f4497c2f7dc",
+          "byteSize": 306160
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libopus.0.dylib",
+          "sha256": "b4906006890d36203a648b3c30352c84586edb1c35e33207e2899bedb52b699d",
+          "byteSize": 355760
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libp11-kit.0.dylib",
+          "sha256": "2927e98e4784251af9bf2a8738a9e85d08ed1f9190f8b4306d3a6d90314c10c6",
+          "byteSize": 1593536
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libpcre2-8.0.dylib",
+          "sha256": "0730eb159f5cfd51d2ddeb621c6154d0ad04570bc785c21bd9733ec4eb54a86f",
+          "byteSize": 570832
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libplacebo.360.dylib",
+          "sha256": "ff7531f52dc2ab6fba476ff3d83a5f434ec8e5b4b37fc48f3550294a114e59ab",
+          "byteSize": 939808
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libpng16.16.dylib",
+          "sha256": "b82e82f4fa71a43d8e74ee96a25138def6961c710e9d83854539ea779aff7bc4",
+          "byteSize": 190272
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/librav1e.0.8.1.dylib",
+          "sha256": "a4fc59c8fa0eb7c753f7a2d15f1adbb9602a1d4953f35f3eac567f64af3981f3",
+          "byteSize": 2906912
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/librist.4.dylib",
+          "sha256": "992e462945be55eb7524ddcff4b784f1e7866fb97dee81df44cfc5dbf596d8bc",
+          "byteSize": 225584
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/librubberband.3.dylib",
+          "sha256": "28ceaa9d9c7547b31f98b9d7e64a85cd622432ed30286791777f0844c02cee86",
+          "byteSize": 373824
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsamplerate.0.2.2.dylib",
+          "sha256": "900a5d737e3399f8c90a9f4992edd3683998662fd54614ee09fa3bbc98d4db45",
+          "byteSize": 1529840
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libshaderc_shared.1.dylib",
+          "sha256": "1f102d6e1c20ece069bcf606c0ac6aee5ef02f5d5f4780281b4ac77d1ac9a34c",
+          "byteSize": 7367824
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsharpyuv.0.1.2.dylib",
+          "sha256": "5e91b2f27286100966b6c0ec751ea0df4dffcd083c9c7e05b88c6e0be35893b3",
+          "byteSize": 51584
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsnappy.1.2.2.dylib",
+          "sha256": "430543530cfd3b79d9bb2a6cfbb2922a47bb45c00b58b4b7b95a5bae4aeb876f",
+          "byteSize": 61568
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsodium.26.dylib",
+          "sha256": "bc6b3775b947cc78d326b55ee989342c7563ef2998c28b58c02fc876684ca5be",
+          "byteSize": 346720
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsoxr.0.1.2.dylib",
+          "sha256": "a68dcab29c0bac2f5fe16fb0d6e8c99f154d183d2acb8e4d231e6887e318791c",
+          "byteSize": 140560
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libspeex.1.dylib",
+          "sha256": "904e96dccc98345eddc773c50f2fa6227f5d30cf36c9325da5220216927bc57a",
+          "byteSize": 107552
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libsrt.1.5.6.dylib",
+          "sha256": "c9050490c4947154d9d5b2b760777f313da911b9f9c1ac287aab854b75ace948",
+          "byteSize": 709088
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libssh.4.12.0.dylib",
+          "sha256": "e4e4282c182b33d6b1ff22374be6fc6295374da7a0c42dd65f5f047a1b19d629",
+          "byteSize": 516848
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libssl.3.dylib",
+          "sha256": "a09223f79eba9e3e6db2988f7f8fb1d09b1ed5957835e26b23c427be367de152",
+          "byteSize": 867008
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libswresample.7.1.100.dylib",
+          "sha256": "7b776ef5fa7ef0165c795684e1f0ff24317184ebffdc471008c5eed64254fbff",
+          "byteSize": 103488
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libswscale.10.1.100.dylib",
+          "sha256": "85cc70c61ce1ec28a18d2fc65d9624129783360173ffbb5edcdab722f011dd34",
+          "byteSize": 718592
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libtasn1.6.dylib",
+          "sha256": "4d5595ffb85314ffedba88b0b7d141550c60d93363920d065a4bb033e345c610",
+          "byteSize": 89728
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libtesseract.5.dylib",
+          "sha256": "abf3e9afaabe6a175d4d8964a073e6666b85e8e2c71b10a9bf9fdd12af3f3087",
+          "byteSize": 2786336
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libtheoradec.2.dylib",
+          "sha256": "e0297f189761a881f930baa8e0a918903b7844bc4931d782576859566c1fa6b5",
+          "byteSize": 72816
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libtheoraenc.2.dylib",
+          "sha256": "b85577a6325a7db37c3380295b981e72f58e40d122c4eb149e233d5a765d1b8d",
+          "byteSize": 159168
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libtiff.6.dylib",
+          "sha256": "7ecec192c960f0dc9797396ebc9faf518f37c91bcee95aec36be93552ea3c038",
+          "byteSize": 525504
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libudfread.3.dylib",
+          "sha256": "ad2aeb7a665b6899e624e074968e25ca70a490bb16c01962ed186c5e1dbf890c",
+          "byteSize": 53184
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libunibreak.7.dylib",
+          "sha256": "acaabd909913a11df808d8c09445bc645d14834991598c014576aecd939d12b0",
+          "byteSize": 151696
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libunistring.5.dylib",
+          "sha256": "45810098401c327483d2506cb55d64278a72ffbbb9451e22fbc9072070524536",
+          "byteSize": 2005056
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvidstab.1.2.dylib",
+          "sha256": "3f89d63dd6c27377a924262aa4e3c71ed017e2a20a71087a5060b0ca71b9a1c9",
+          "byteSize": 93616
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvmaf.3.dylib",
+          "sha256": "9d7b4ec69bae51c4fa631273d8ea713dbde99d93843c8a1ea2b3b2a8eb49cf8e",
+          "byteSize": 1571616
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvorbis.0.dylib",
+          "sha256": "dc1e2e31cc2dc91983158fd3739efbbaf788e55c749d0f32edd5418cd167aad4",
+          "byteSize": 175088
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvorbisenc.2.dylib",
+          "sha256": "c5078fd3aa4e7ea6e18909a496c409edae5ae1b3ee1d3142da89280575e3dbd0",
+          "byteSize": 705824
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvpx.12.dylib",
+          "sha256": "7da759e7c9c57b9dc423515ad88aebe53d4003f30e29e1c6bbc3cb0bd70833aa",
+          "byteSize": 1736496
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libvulkan.1.4.357.dylib",
+          "sha256": "55a0216e642061a3b08cd11eb331bd765a1d3cd053e0cdc4aa084000172cdc6d",
+          "byteSize": 645744
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libwebp.7.2.0.dylib",
+          "sha256": "194c6d7286e667a938ec05f4d645d222f1ab10f6f58242b700f5d46b579c2ae7",
+          "byteSize": 334336
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libwebpmux.3.1.2.dylib",
+          "sha256": "cb4deada13d9363c203f3fcf668872aa9e6a6dde9f6682738f32d70bd6d1b44d",
+          "byteSize": 55248
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libwhisper.1.9.2.dylib",
+          "sha256": "87df0cd5f9254ac21df5cf5aacacac7078bb94a0d9bd80f25816f78d4b3a4ee9",
+          "byteSize": 413552
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libx264.165.dylib",
+          "sha256": "19586643729f7ae115dcd38f028b8d34e6e4e5fd6a85cd657ce733237585fb76",
+          "byteSize": 1256304
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libx265.216.dylib",
+          "sha256": "3ce4251bd5729bb2ee6b3709ca1dc95fb9e0b6aec1c2ae7d187af455b158eb01",
+          "byteSize": 7458432
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libxcb-shape.0.0.0.dylib",
+          "sha256": "565f7abf1fb6b016355aaf07093d73fb64d6422e3015b23fa959fff2253e0b56",
+          "byteSize": 53056
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libxcb-shm.0.0.0.dylib",
+          "sha256": "0c4370403c6427f1fe4b8ce6c93f35c1429045454d4f7754c9ff0e4a7d98e8eb",
+          "byteSize": 52160
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libxcb-xfixes.0.0.0.dylib",
+          "sha256": "09b1549ae6d16d725ead4b5d7f16aaa77d5d15a8ce0ab0b9c0807f8918e9a223",
+          "byteSize": 62656
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libxcb.1.1.0.dylib",
+          "sha256": "6a2212a469356e698fa38033ae0040d71e8b41228e9b1bfdb6606eb8f1c4601f",
+          "byteSize": 175760
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libxvidcore.4.dylib",
+          "sha256": "67e7749ffbda928016d0ed53cef718726bbe233a1a75d62b48dd95814961d812",
+          "byteSize": 439232
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libzimg.2.dylib",
+          "sha256": "0b4cbca5d7d94fa21bddb90e84e80c8c87926b0daa9b22d9b50679dc062f0552",
+          "byteSize": 386208
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libzmq.5.dylib",
+          "sha256": "335dd5ba62e0ffffbc98c55f3c9063247d7739e2e91735e8880e97bb62524a8b",
+          "byteSize": 656112
+        },
+        {
+          "path": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/lib/libzstd.1.5.7.dylib",
+          "sha256": "198722ee7ae628ff46ccc27b5ebb953cc6ff251a9402b1f0ba4f79fe96bf8b79",
+          "byteSize": 631664
+        }
+      ],
+      "identityProof": "All 102 local helper/dependency bytes checked during preparation, plus embedded Mac package audit; execution checks them again.",
+      "preparationReady": false,
+      "remainingGate": "AC power and valid observed environment; current parent allocation before first encode."
+    },
+    "P910": {
+      "checkout": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c",
+      "python": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/native-build-venv/bin/python",
+      "archivePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/source/hardware-939823e.tar.gz",
+      "registry": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/validation-source-registry-final-v1.json",
+      "stateDirectory": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/host-state",
+      "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+      "outputRoot": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/hardware-939823e/campaigns",
+      "budgetRoot": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts",
+      "maximumTaskBytes": 21474836480,
+      "pauseFile": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/PAUSE_HARDWARE_TIMING",
+      "ffmpeg": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg",
+      "ffprobe": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe",
+      "runtimeLockPath": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/.build/clients/linux/runtime_resources/ffmpeg-lock.json",
+      "runtimeLockSha256": "fe3ef337dbaffb3d129d05ce1472461a4dfac5349206f13c412cfc86482b8e42",
+      "runtimeLockFingerprint": "494132ca850dadf47226fbb267bcde9d454b37b4a68892d9759d48db3a89fe7b",
+      "runtimeFiles": [
+        {
+          "path": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffmpeg",
+          "sha256": "d223345af606df9ab0c99e4222375376e218976c8e1e4ccaf8292d35d504f782",
+          "byteSize": 171156936
+        },
+        {
+          "path": "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/runtime/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1/bin/ffprobe",
+          "sha256": "fb1364aa21beb8f514fb1b8cc5a9c5d557f9347c9433541c45bd5f3146ccb719",
+          "byteSize": 170923400
+        }
+      ],
+      "identityProof": "Existing Linux939 package archive audit pins filtered lock and helper bytes; live hashes deferred until allocated execution preflight.",
+      "preparationReady": false,
+      "remainingGate": "Stage the exact archive after current capacity/native acceptance phases, obtain current parent timing allocation, and run live identity/environment guards."
+    }
+  },
+  "executionHash": "c59993cae26188c0d7519aa9d9371f0ecb0aa7e8d1ec4e2de02163d3ef7fe89e"
+}

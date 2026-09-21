@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "status": "PASSED_VIRTUALIZED_WINDOWS_SOFTWARE_ONLY",
+  "mode": "Console",
+  "startedAt": "2026-09-20T04:22:29.9547369Z",
+  "sourceCommit": "1f6a8c3dbd5a531d66aa76f60b4763de3a98ff9a",
+  "runnerImage": "win25-vs2026",
+  "runnerImageVersion": "20260907.229.1",
+  "os": {
+    "Caption": "Microsoft Windows Server 2025 Datacenter",
+    "Version": "10.0.26100",
+    "BuildNumber": "26100",
+    "OSArchitecture": "64-bit"
+  },
+  "computer": {
+    "Manufacturer": "Microsoft Corporation",
+    "Model": "Virtual Machine"
+  },
+  "interactive": true,
+  "sessionId": 2,
+  "scope": "GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions",
+  "phases": [
+    {
+      "preparationProbe": null,
+      "action": null,
+      "name": "seven-clips",
+      "command": [
+        "D:\\a\\Encoding_Database\\Encoding_Database\\encodingdb-client-windows-console.exe",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--queue-dir",
+        "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\console\\seven-clips\\queue-\u00e9",
+        "--max-duration-minutes",
+        "20",
+        "--max-storage-mb",
+        "3072",
+        "--cli",
+        "--campaign",
+        "full"
+      ],
+      "survivors": [],
+      "queue": "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\console\\seven-clips\\queue-\u00e9",
+      "encoderObserved": true,
+      "helpers": {
+        "D:\\a\\_temp\\encodingdb-native-Console-seven-clips-ab16c71e8d5e415898ab5c65c4da7f30-\u00e9\\tmp\\_MEI8602\\bin\\win\\ffmpeg.exe": {
+          "path": "D:\\a\\_temp\\encodingdb-native-Console-seven-clips-ab16c71e8d5e415898ab5c65c4da7f30-\u00e9\\tmp\\_MEI8602\\bin\\win\\ffmpeg.exe",
+          "sha256": "b74bd2209fe38026ae9f73ad676e626599bdc1efd950fe32d40b23184fb1a060",
+          "commandLine": "D:\\a\\_temp\\encodingdb-native-Console-seven-clips-ab16c71e8d5e415898ab5c65c4da7f30-\u00e9\\tmp\\_MEI8602\\bin\\win\\ffmpeg.exe -y -hide_banner -loglevel error -nostdin -nostats -progress pipe:1 -i D:\\a\\_temp\\encodingdb-native-Console-seven-clips-ab16c71e8d5e415898ab5c65c4da7f30-\u00e9\\suite-cache\\canonical\\natural-detail-1080p24-final.mkv -c:v libx264 -preset fast -crf 24 -pix_fmt yuv420p -video_track_timescale 24000 -an D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\console\\seven-clips\\queue-\u00e9\\campaigns\\campaign-1984867a01dddf4b\\001-libx264-fast-24-warmup-r1.mp4"
+        }
+      },
+      "state": "D:\\a\\_temp\\encodingdb-native-Console-seven-clips-ab16c71e8d5e415898ab5c65c4da7f30-\u00e9",
+      "status": "PASSED",
+      "path": "D:\\a\\Encoding_Database\\Encoding_Database\\.test-reports\\windows-native-gui\\console\\seven-clips",
+      "exitCode": 0,
+      "executableSha256": "8fee02478b2f3c8a9f0d17571b694e44d5e7bad6d5430b8041f88e3db055f742"
+    }
+  ],
+  "error": null,
+  "cleanupForced": false,
+  "finishedAt": "2026-09-20T04:33:14.4274220Z",
+  "journalVerification": [
+    {
+      "clips": [
+        "animation-1080p24-final",
+        "athletic-action-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "film-grain-1080p24-final",
+        "natural-detail-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "measuredAttempts": 14,
+      "warmupAttempts": 7,
+      "artifacts": [
+        {
+          "sha256": "9a8015c8a6d4ab7ac49eba6d3e56e0165e368adfb7a1cdbb91998b706e449ec0",
+          "bytes": 6914919
+        },
+        {
+          "sha256": "550421739c4c01d838b05552b3b199b34b7aa0fa0f4979a32722941a2577a79b",
+          "bytes": 2539294
+        },
+        {
+          "sha256": "95a1224b57f568778d318f2b2e0c0fef3ec6cf55e1dca71a4f2223aaf015882f",
+          "bytes": 9035966
+        },
+        {
+          "sha256": "3460cdcf05634446f007f6e261650da07a7eeb3725a5c403b64603ca80088c74",
+          "bytes": 226582
+        },
+        {
+          "sha256": "67188975be34bae55689dbfba32624332b284fc479daaa2f58785fcea2822438",
+          "bytes": 6281801
+        },
+        {
+          "sha256": "f83e13a196517d8874dbb23e284c525b97e9722522eb30685b5dc254ba6e7342",
+          "bytes": 8399526
+        },
+        {
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "sha256": "70eb93f962079687d7d044b622578b781efe4978f9ff5536e999702be02a8fa4",
+          "bytes": 5868227
+        },
+        {
+          "sha256": "f83e13a196517d8874dbb23e284c525b97e9722522eb30685b5dc254ba6e7342",
+          "bytes": 8399526
+        },
+        {
+          "sha256": "67188975be34bae55689dbfba32624332b284fc479daaa2f58785fcea2822438",
+          "bytes": 6281801
+        },
+        {
+          "sha256": "3460cdcf05634446f007f6e261650da07a7eeb3725a5c403b64603ca80088c74",
+          "bytes": 226582
+        },
+        {
+          "sha256": "95a1224b57f568778d318f2b2e0c0fef3ec6cf55e1dca71a4f2223aaf015882f",
+          "bytes": 9035966
+        },
+        {
+          "sha256": "550421739c4c01d838b05552b3b199b34b7aa0fa0f4979a32722941a2577a79b",
+          "bytes": 2539294
+        },
+        {
+          "sha256": "9a8015c8a6d4ab7ac49eba6d3e56e0165e368adfb7a1cdbb91998b706e449ec0",
+          "bytes": 6914919
+        }
+      ]
+    }
+  ]
+}

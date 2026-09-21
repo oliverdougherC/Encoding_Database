@@ -1,0 +1,367 @@
+{
+  "schemaVersion": "encodingdb-validation-fold-source-manifests/v1",
+  "registryHash": "023d5490161da7c22d0534b7af968630ffaa8fb263b864c7270a7cbee9c5df76",
+  "sourceSuiteVersion": "encodingdb-validation-holdouts-v1",
+  "folds": [
+    {
+      "foldId": "scene-transfer-validation-atlas-receipts-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "evaluationWorkloadId": "validation-atlas-receipts-30s",
+      "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+      "sourceGroupId": "encodingdb-authored-atlas",
+      "sceneGroupId": "atlas-receipt-reconciliation-30s",
+      "sourceFrameRange": [
+        0,
+        720
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "screen-text-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-atlas-receipts-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "856b9342c99ad688e5ee58d24fe72dedfe76df12a3417d8052bfbe98db6fef93",
+      "evaluationWorkloadId": "validation-atlas-receipts-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "screen-text-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "encodingdb-authored-atlas",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-chimera-fountain-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "evaluationWorkloadId": "validation-chimera-fountain-30s",
+      "sourceRegistrationHash": "a10077303a866e3dbca0f0eeedb48fc111091e310922bcc563a526137b7da1e1",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/",
+      "sceneGroupId": "chimera-fountain-175-205",
+      "sourceFrameRange": [
+        4200,
+        4920
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "natural-detail-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-chimera-fountain-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "2f1d48390efecb4ad15f41c3a0c05159a6ab72b6489977cd14d80c6de082090a",
+      "evaluationWorkloadId": "validation-chimera-fountain-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "natural-detail-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Chimera/tif_DCI4k2398p/",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-nocturne-ballet-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "evaluationWorkloadId": "validation-nocturne-ballet-30s",
+      "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-ballet-class-30-60",
+      "sourceFrameRange": [
+        1800,
+        3600
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "athletic-action-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-nocturne-ballet-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+      "evaluationWorkloadId": "validation-nocturne-ballet-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-nocturne-grain-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "evaluationWorkloadId": "validation-nocturne-grain-30s",
+      "sourceRegistrationHash": "7d46614b3cf1459499fe97f298b0c309523f766fbf7b4886b8431d893f2c652f",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-unresolved-scene-360-390",
+      "sourceFrameRange": [
+        21600,
+        23400
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "film-grain-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-nocturne-grain-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "24bdfafde86fb0f6f1f9e616be40a99f5e70dffcb2d47dddaedbeaf15d46216e",
+      "evaluationWorkloadId": "validation-nocturne-grain-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-nocturne-lowlight-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "evaluationWorkloadId": "validation-nocturne-lowlight-30s",
+      "sourceRegistrationHash": "b50105e2352a05089fafaefc77930808f38e6a28a5f4cd85b1a2d85a9b4294dd",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "sceneGroupId": "nocturne-solo-duet-180-210",
+      "sourceFrameRange": [
+        10800,
+        12600
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "dark-gradients-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-nocturne-lowlight-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "50988b3c1068545de2dacf4bdbd664430d0728d2b69b7de690e6d25694a9b8a9",
+      "evaluationWorkloadId": "validation-nocturne-lowlight-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/Nocturne/nocturne_filmgrain/nocturne_60fps_uhd_filmgrain_sdr.mov",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-sol-cave-forest-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "evaluationWorkloadId": "validation-sol-cave-forest-30s",
+      "sourceRegistrationHash": "db3ba7e8d571dbf6f1d53832f2c8211bbbf251b481d92d76da0c82d5284eade4",
+      "sourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+      "sceneGroupId": "sol-levante-cave-forest-30-60",
+      "sourceFrameRange": [
+        720,
+        1440
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "animation-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-sol-cave-forest-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "07720d790b3cd698448d2d8bdd4c7f5cef631d2502642f96d44b370a130e986b",
+      "evaluationWorkloadId": "validation-sol-cave-forest-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "animation-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://s3.amazonaws.com/download.opencontent.netflix.com/SolLevante/sdr/SolLevante_SDR_UHD_24fps.mov",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    },
+    {
+      "foldId": "scene-transfer-validation-tos-outdoor-dialogue-30s",
+      "experiment": "FINAL_SUITE_TO_LONGER_SCENE_TRANSFER",
+      "evaluationSourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "evaluationWorkloadId": "validation-tos-outdoor-dialogue-30s",
+      "sourceRegistrationHash": "4835651abc49752b39bf8284630bb16c36a2289a97e065c0d2753f382f3c7528",
+      "sourceGroupId": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+      "sceneGroupId": "tos-outdoor-dialogue-300-330",
+      "sourceFrameRange": [
+        7200,
+        7920
+      ],
+      "fittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "frozenReferenceWorkloadId": "talking-head-1080p24-final",
+      "prohibitions": [
+        "No observation from this validation source may fit a frontier or constants.",
+        "This scene-transfer test does not claim master independence or replace required CONTENT_CLASS group holdout."
+      ],
+      "status": "SOURCE_READY_MEASUREMENTS_AND_REVIEWS_PENDING",
+      "fittingAnalysisIds": [],
+      "evaluationAnalysisIds": []
+    },
+    {
+      "foldId": "source-group-validation-tos-outdoor-dialogue-30s",
+      "experiment": "SOURCE_GROUP_DISJOINT",
+      "evaluationSourceSha256": "2adeece793eda479bb530dec60fededeacb228e4eba5eff8a9fa2f4c12e25a03",
+      "evaluationWorkloadId": "validation-tos-outdoor-dialogue-30s",
+      "excludedFittingSourceWorkloadIds": [
+        "athletic-action-1080p24-final",
+        "talking-head-1080p24-final"
+      ],
+      "allowedFittingSourceWorkloadIds": [
+        "natural-detail-1080p24-final",
+        "film-grain-1080p24-final",
+        "dark-gradients-1080p24-final",
+        "animation-1080p24-final",
+        "screen-text-1080p24-final"
+      ],
+      "excludedSourceGroupId": "https://media.xiph.org/tearsofsteel/tearsofsteel-1080-png/",
+      "transferReferenceWorkloadId": null,
+      "status": "SOURCE_READY_FITTING_ONLY_TRANSFER_REFERENCE_AND_MEASUREMENTS_PENDING",
+      "requirement": "Predeclare a fitting-only reference mapping and independent fitted context; never fit the missing anchor from held-out observations."
+    }
+  ],
+  "scope": "1080p24SDR; no4K/HDR/HFR validation claim",
+  "status": "SOURCE_PREPARATION_COMPLETE_NOT_CALIBRATION",
+  "manifestHash": "0e8fb78f8222460574eabbd57fbbb172e2cc0d8fe901950962f09b000d3284c5"
+}

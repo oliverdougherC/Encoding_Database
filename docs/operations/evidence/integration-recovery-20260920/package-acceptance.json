@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "status": "ACCEPTED_PENDING_PARENT_VISUAL_REVIEW",
+  "identity": {
+    "applicationCandidate": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+    "sourceTree": "c40f4b4881c3a880051bb612b78beda9efc0ab13",
+    "builtRevision": "a350d4541d1d966a729f459e2c5d9bc5b0cbf458",
+    "builtRevisionNote": "Client payloads rebuilt from a350d45 = application candidate b3ef24a plus the recorded client tip deltas: client/main.py +6 (b637ced: an explicit --upload-only resume is a never-encode contract and completion-marker inference may not downgrade it) and client/tests/test_preparation.py +16 covering it; GUI/encode paths untouched. The delta is the upload-only contract this acceptance gate itself exercises; recorded in the rebuilt exe release manifests.",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "acceptedBuildReceipts": [
+      "docs/operations/evidence/integration-recovery-20260920/windows-build/ (SHA256SUMS, smoke, physical-build-resume-integration-receipt.json covering both Windows executables built from the a350d45 checkout)",
+      "docs/operations/evidence/integration-recovery-20260920/macos-packaged-embedded-runtime.json (packaged macOS binary embedded-runtime identity)"
+    ]
+  },
+  "acceptedArtifactIdentities": {
+    "linux": "e8927096 (encodingdb-client-linux, 191206976 bytes, sha256 e8927096799fc4c7592a37b5b2313f36f00f950cfebf5555ac93c29d5a9e)",
+    "macos": "93339fda368d9285 (encodingdb-client-macos single-file binary)",
+    "windowsConsole": "0637ad12 (encodingdb-client-windows-console.exe, 180170141 bytes)",
+    "windowsGui": "9af36d25 (encodingdb-client-windows.exe)"
+  },
+  "uploadOnlyContract": {
+    "help": "--upload-only --no-submit exits 2 with parser error until required identity fields; packaged clients never spawn FFmpeg on the upload-only path",
+    "verified": "source queue *.mp4/process.json unchanged before/after every replay below; zero FFmpeg processes during replays"
+  },
+  "isolatedAcceptanceStack": {
+    "host": "P910 ofhd@100.99.6.59, project encodingdb-packageacc, ports nginx 3197/db 3093-host (own volumes encodingdb-packageacc_* and own network after the compose-template pinning was corrected; both volume and network names were pinned to the candidate stack and were renamed before isolation held)",
+    "freshDb": "0 runs, 29 migrations at start; candidate stack untouched (150 runs; replay POSTs arriving during the mispinned window were idempotent no-ops verified against payloadHash)",
+    "tls": "self-signed dev cert pinned via REQUESTS_CA_BUNDLE"
+  },
+  "replays": {
+    "linux": {
+      "payloads": 15,
+      "sources": "terminal receipts on candidate stack: software x9, gopfix x2 (15 payloads), host queue identities staged from ORIGINAL terminal artifactPath bytes (hardlinks across /mnt/NVME vs /home filesystems were replaced with verified copies)",
+      "result": "15/15 accepted; BenchmarkRun 15, Artifact UPLOADED/VERIFIED/RETAINED 15, measurementGroup receipt JSONB present 15, QualityAnalysis auto-run 15; queued 0 terminal 0; staged mp4 9->0 via managed cleanup; campaign originals unchanged",
+      "note": "server-side timing plausibility classified replay records SUSPECT/ACCEPTED mixed (upload-time vs original measured wall time); expected for upload-only replay of historical sealed payloads; no score was re-asserted"
+    },
+    "macos": {
+      "payloads": 12,
+      "transport": "this Mac, ssh tunnel 127.0.0.1:3197 -> P910 acc nginx",
+      "result": "12/12 accepted, 0 terminal; staged mp4 8->0; Mac campaign originals 46->46 unchanged; packaged binary sha 93339fda verified before run"
+    },
+    "windows": {
+      "payloads": 5,
+      "transport": "loopback relay 127.0.0.1:3199 (scripts/windows-physical-tcp-relay.ps1) -> host relay 192.168.1.244:3297 -> acc nginx 3197",
+      "result": "5/5 accepted, 0 terminal, zero FFmpeg processes; validation tree mp4 count unchanged; packaged console exe sha 0637ad12 verified",
+      "totalAcrossClients": "acceptance stack BenchmarkRun 32 = 15+12+5 with 32 verified artifacts"
+    }
+  },
+  "windowsGuiInteraction": {
+    "status": "PASSED_AUTOMATED_GUI_CHECKS_VISUAL_REVIEW_PENDING",
+    "attempt1Failure": "windows-build/gui-launch-click-r2-attempt1-failed.json (pins declared candidate revision while rebuilt manifests record a350d45; guard correctly rejected; pins corrected to declare the true build revision)",
+    "attempt2Failure": "windows-build/gui-launch-click-r2b-attempt2-failed.json (prepared driver folder for the new run label omitted; WinError 267; create-only receipts preserved then cleaned)",
+    "attempt3Failure": "windows-build/gui-launch-click-r2c-attempt3-failed.json + gui-attempt3-events.jsonl (BLOCKED_GUI_INPUT at first Stop click; harness-refused-to-click)",
+    "attempt4Failure": "windows-build/gui-launch-click-r2d-attempt4-failed.json (identical block with exclusivity; not concurrency)",
+    "attempt5Failure": "windows-build/gui-launch-click-r3-attempt5-failed.json (lane-final harness e7c37181 blocks identically; rule-out of harness version)",
+    "abortedAttempt": "windows-build/gui-launch-click-r4-aborted-misbound.json (replace miss left driver bound to original tree; ended before phase progress)",
+    "probeFindings": "windows-build/gui-launch-click-r6-attempt7-failed.json: the click6-era GUI self-grabbed foreground at window creation (no owned-app-activation event exists in the accepted click6 timeline); the rebuilt GUI under the task->pythonw->powershell chain never does because the CreateProcess launch path grants no foreground and the last-input-owner is stale. Probes: bare task->powershell->GUI Start-Process takes foreground; task->pythonw->powershell->GUI never does; injecting one keybd_event Alt tap before launch makes foreground arrive within 3s and hold. Root cause: Windows foreground-grant policy state on the console session, not the executable or harness.",
+    "launcherFix": "windows-physical-run-gui-tapped.py (R root): one operator-equivalent keyboard tap via keybd_event, then the UNCHANGED reviewed windows-physical-run-gui.py -> UNCHANGED driver/verifier. Only the task action line in the operator-side windows-physical-gui-task.ps1 copy points to it.",
+    "attempt7Failure": "windows-build/gui-launch-click-r7-attempt8-lockheld.json (leaked powershell from the blocked attempt r6 held the operator lock; cleared)",
+    "attempt8": "windows-build/gui-launch-click-r8-attempt9-died-midcomplete.json + R\\preserved-click-r8\\: with the tap fix, prepare-stop PASSED via native clicks and the complete phase began real encoding; the driver powershell exited rc=1 without writing phase-failed at t=119.47s, orphaning the GUI. Retried as click-r9 (same stack) with strictly zero concurrent operations against the Windows host; receipt evidence retained either way",
+    "result": "run-label click-r9, driver da31ee83, tapped launcher: windows-physical-run-gui exit 0 in 360s; prepare-stop/complete/stop/close all PASSED with zero surviving owned processes, journals intact, deterministic artifact bytes (c4f55a17...) pinned across phases, 16 owned-window screenshots + UIA/Win32 dumps committed under windows-build/gui-click-r9/"
+  },
+  "cleanup": {
+    "relayProcesses": "host acc-relay.py killed and Windows acc-tcp-relay process stopped after window replay",
+    "stackRetention": "isolated acceptance stack retained on P910 (project encodingdb-packageacc) until parent review; candidate and production stacks untouched throughout"
+  }
+}

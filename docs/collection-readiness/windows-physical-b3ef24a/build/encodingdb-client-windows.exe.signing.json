@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "status": "unsigned",
+  "evidence": null,
+  "note": "Build is unsigned; no signing evidence was supplied."
+}

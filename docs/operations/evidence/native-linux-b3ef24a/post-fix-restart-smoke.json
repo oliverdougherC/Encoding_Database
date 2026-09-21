@@ -1,0 +1,14 @@
+{
+  "at": "2026-09-20T11:58:00Z",
+  "action": "docker restart of encodingdb-candidate-server-1 on image encodingdb-candidate-server:3e6bb08, then origin-by-origin smoke",
+  "observations": {
+    "image": "encodingdb-candidate-server:3e6bb08 (healthy)",
+    "api3091": "7.1 / client/0.3.0 / suiteFingerprint d40bff563dea… (plain HTTP on loopback; TLS sits at nginx 3094)",
+    "trustedTls3094": 200,
+    "frontend3092": 200,
+    "http3095": "301 (honest redirect, no silent plaintext)",
+    "runsAcrossRestart": "identical count and newest createdAt (diff clean); artifact states unchanged 61 VERIFIED / 47 RETAINED / 9 REJECTED",
+    "bindings": "3091-3095 all 127.0.0.1 only"
+  },
+  "verdict": "restart/rebuild consistency holds on the fixed build; candidate left in collection-ready standby with production untouched"
+}

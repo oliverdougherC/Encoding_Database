@@ -35,7 +35,8 @@ class ReleasePackagingTests(unittest.TestCase):
             native_workflow = job.group(1)
             # Retain both native artifacts for every platform; unrelated
             # regression-log uploads must not change this packaging contract.
-            self.assertEqual(native_workflow.count("retention-days: 90"), 2)
+            for artifact in (f"proposed-runtime-{platform}", f"candidate-{platform}"):
+                self.assertRegex(native_workflow, rf"name: {artifact}-[^\n]+\n(?:(?!\s+- name:)[^\n]*\n)*?\s+retention-days: 90")
             self.assertIn(f"candidate-{platform}-${{{{ github.sha }}}}", native_workflow)
             self.assertIn(f"proposed-runtime-{platform}-${{{{ github.sha }}}}", native_workflow)
         self.assertIn("if: ${{ !inputs.runtime_lock_evidence }}", workflow)
@@ -86,7 +87,7 @@ class ReleasePackagingTests(unittest.TestCase):
 
     def test_release_version_is_assigned_and_missing_version_is_rejected(self) -> None:
         metadata = json.loads((release_manifest_lib.ROOT_DIR / "release.json").read_text())
-        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+(?:-beta\.\d+)?$")
+        self.assertRegex(metadata["projectVersion"], r"^\d+\.\d+\.\d+(?:-(?:beta|rc)\.\d+)?$")
         import datetime
         datetime.date.fromisoformat(metadata["releaseDate"])
         with mock.patch.dict(os.environ, {}, clear=True):
@@ -96,7 +97,7 @@ class ReleasePackagingTests(unittest.TestCase):
                     release_manifest_lib.detect_project_version()
 
     def test_read_client_minimum_version_is_coherent(self) -> None:
-        self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.2.0")
+        self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.3.0")
 
     def test_finalize_release_writes_expected_sidecars(self) -> None:
         runtime_payload = {

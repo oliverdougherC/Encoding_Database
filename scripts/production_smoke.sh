@@ -71,6 +71,7 @@ if not isinstance(payload, dict):
 }
 
 [[ -n "$API_BASE_URL" ]] || die "API_BASE_URL is required"
+[[ -n "$APP_URL" ]] || die "APP_URL is required; production acceptance must verify both API and frontend"
 
 api_base="${API_BASE_URL%/}"
 log "Checking non-mutating production API surfaces at $api_base"
@@ -86,7 +87,7 @@ if not isinstance(payload, list) or len(payload) != 7:
     raise SystemExit("test-video catalog must contain exactly seven entries")
 '
 
-if [[ -n "$APP_URL" ]]; then
+{
   app_base="${APP_URL%/}"
   log "Checking frontend at $app_base"
   homepage="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/")"
@@ -95,6 +96,6 @@ if [[ -n "$APP_URL" ]]; then
   fetch_status "$app_base/api/corpus?limit=5" | assert_json_array
   methodology="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/methodology")"
   grep -qi "methodology" <<<"$methodology" || die "frontend methodology page did not contain methodology"
-fi
+}
 
-log "Production smoke checks passed"
+log "Production smoke checks passed (API and frontend)"

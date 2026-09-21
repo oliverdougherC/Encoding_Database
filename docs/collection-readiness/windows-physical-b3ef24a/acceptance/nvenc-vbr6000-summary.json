@@ -1,0 +1,116 @@
+{
+  "status": "PASSED_PLATFORM_EXECUTION_AND_RETENTION",
+  "scope": "Physical Windows acceptance only; no fitting-data or authoritative-quality claim",
+  "recipe": "nvenc-vbr6000",
+  "campaignId": "campaign-fb607b76eec675bf",
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "exitCode": 0,
+  "wallSeconds": 317.28099999999904,
+  "attempts": 21,
+  "warmups": 7,
+  "measured": 14,
+  "validityCounts": {
+    "valid": 21
+  },
+  "validityReasons": {},
+  "sourceAndArtifactFramesVerified": 4896,
+  "artifactHashesVerifiedByOperator": 21,
+  "cpuWindowSources": {
+    "cpu_psutil_thread_window_v1": 14
+  },
+  "selectedDevice": {
+    "deviceId": "nvenc:0",
+    "driverVersion": "616.92",
+    "model": "NVIDIA GeForce RTX 5090",
+    "pciBusId": "00000000:01:00.0",
+    "selection": "ffmpeg:-gpu=0"
+  },
+  "stableGroups": 7,
+  "groups": [
+    {
+      "clipId": "animation-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.8237811,
+        0.808097
+      ],
+      "relativeSpread": 0.01922214655616751,
+      "timingStable": true
+    },
+    {
+      "clipId": "athletic-action-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.7393255,
+        0.7305576
+      ],
+      "relativeSpread": 0.011930064370425021,
+      "timingStable": true
+    },
+    {
+      "clipId": "dark-gradients-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.9614135,
+        0.9581263
+      ],
+      "relativeSpread": 0.0034249875933805027,
+      "timingStable": true
+    },
+    {
+      "clipId": "film-grain-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.9351419,
+        0.9524148
+      ],
+      "relativeSpread": 0.01830186081297588,
+      "timingStable": true
+    },
+    {
+      "clipId": "natural-detail-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.9138253,
+        0.9156152
+      ],
+      "relativeSpread": 0.0019567731227115733,
+      "timingStable": true
+    },
+    {
+      "clipId": "screen-text-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.6336191,
+        0.6189703
+      ],
+      "relativeSpread": 0.023389627917975383,
+      "timingStable": true
+    },
+    {
+      "clipId": "talking-head-1080p24-final",
+      "attempts": 3,
+      "countedAttempts": 2,
+      "elapsedSeconds": [
+        0.8102355,
+        0.801631
+      ],
+      "relativeSpread": 0.010676442496943779,
+      "timingStable": true
+    }
+  ],
+  "telemetryMissing": {
+    "battery_unavailable,cpu_temp_unavailable,ffmpeg_unavailable": 14
+  },
+  "limitations": [
+    "Unsigned physical candidate; hosted-CI binary is distinct",
+    "GUI/fault recovery and authoritative backend quality validation are separate",
+    "Every observed validity result and unstable group remains retained"
+  ]
+}

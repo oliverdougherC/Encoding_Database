@@ -1,0 +1,27 @@
+{
+  "probeSourceCommit": "d2bb276",
+  "status": "passed",
+  "elapsedSeconds": 601.0083494590071,
+  "requests": 124737,
+  "errors": 0,
+  "p95BudgetMs": 1000.0,
+  "p95Ms": {
+    "corpus": 32.284459011862054,
+    "catalog": 1.4016670174896717,
+    "frontend": 18.48766699549742,
+    "frontend-corpus": 38.00362499896437
+  },
+  "sampledPeakProcessRssBytes": {
+    "36865": 229752832,
+    "38079": 322191360
+  },
+  "sampledPeakDatabaseDockerBytes": 651689984.0,
+  "healthAllOk": false,
+  "limits": [
+    "These are API/frontend metadata serving requests, not 25 simultaneous encodes or media uploads.",
+    "The route-only staging API omitted /health/v7-evidence; 404 monitoring is explicitly unavailable and not part of the passing read-serving verdict.",
+    "Node/API/frontend RSS and Docker memory are periodically sampled, not OS lifetime high-water marks.",
+    "Database process also hosted other isolated acceptance fixtures.",
+    "Production TLS/proxy/cgroup topology and full worker queue saturation/drain remain separate acceptance gates."
+  ]
+}

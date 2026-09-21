@@ -12,7 +12,8 @@ RUN /opt/suite-venv/bin/pip install --no-cache-dir --disable-pip-version-check -
     && /opt/suite-venv/bin/pip check \
     && ffmpeg -version && ffprobe -version
 WORKDIR /opt/encodingdb
-COPY client/__init__.py client/config.py client/suite.py ./client/
+COPY client/__init__.py client/config.py client/suite.py client/campaign.py client/protocol.py ./client/
 COPY scripts/materialize_final_suite.py ./scripts/
+RUN /opt/suite-venv/bin/python scripts/materialize_final_suite.py --help
 ENV PYTHONDONTWRITEBYTECODE=1 HOME=/tmp
 ENTRYPOINT ["/opt/suite-venv/bin/python", "/opt/encodingdb/scripts/materialize_final_suite.py"]

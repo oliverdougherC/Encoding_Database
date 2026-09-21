@@ -1,0 +1,49 @@
+{
+ "server": "python3 serve.py 8777 (loopback-only, Range -> 206)",
+ "entryPoint": "http://127.0.0.1:8777/index.html",
+ "repairedAt": "2026-09-20 (local OMP Qwen3.8-Flash-Next worker)",
+ "checks": [
+  {
+   "check": "GET /index.html",
+   "result": "200 (re-verified after repair)"
+  },
+  {
+   "check": "GET /media/previews/athletic-action-1080p24-final-lossless-h264-preview.mp4 Range bytes=1000-1999",
+   "result": "206 Partial Content (range transport for lossless preview)"
+  },
+  {
+   "check": "GET /media/canonical/film-grain-1080p24-final.mkv Range bytes=0-99",
+   "result": "206 (original master still served for download)"
+  },
+  {
+   "check": "REAL BROWSER playback + seek proof (headless Chrome --headless=new --disable-gpu software decode via CDP, tools/browser_proof.mjs)",
+   "result": "7/7 PASS: 1920x1080 metadata, playback advanced ~0.5s wall-clock-paced, browser-decoded frame counts via getVideoPlaybackQuality, seek landed delta=0.000s, canvas pixel variance non-trivial, 0 dropped frames, 0 media errors. Covers all 5 lossless reference previews + 2 encode artifacts. Evidence: tools/evidence/browser-proof.json. (Replaces HTTP-206-only claim, which proved transport, not decoding.)"
+  },
+  {
+   "check": "LOSSLESS preview pixel equivalence (tools/verify_previews.sh, ffmpeg framehash per-frame MD5)",
+   "result": "5/5 clips PASS: every decoded frame MD5-identical, original FFV1 master vs lossless H.264 preview (192+240+240+240+240 = 1152/1152 frames). Evidence: tools/evidence/<clip>-original.hash / -preview.hash"
+  },
+  {
+   "check": "Review worksheet functional test in headless Chrome (tools/ui_check.mjs)",
+   "result": "ALL_PASS: 7 decision blocks, 28 radio options, 7 rationale fields, C7 accept/reject locked out (expect-disagreement/investigate only), export gated on blanks, 7-case JSON payload emitted, localStorage autosave works"
+  },
+  {
+   "check": "Original/encode byte preservation",
+   "result": "12/12 reference masters + encode artifacts recomputed sha256-identical to manifest after repair (tools/evidence/post-repair-original-hashes.txt). Previews are new files in media/previews/; originals untouched."
+  },
+  {
+   "check": "Suite fingerprint provenance",
+   "result": "Verified distinct identities: d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e = release suite-pack.json / client release-manifest suiteFingerprint (suite inventory); 41ae332c8e4ac7ae49c2a44917729c65d7a062710e4b44961b8125ffe7fb2660 = fingerprint field of bundled suite-lock.json (client/server suite lock); pack archive sha256 d20407f8... fixed. api/corpus-full.json identifies the suite by name only (sourceSuiteVersion=encodingdb-test-suite-v1); its environment.fingerprint / ffmpegBuildFingerprint are host-level, not suite, identities. Manifest relabeled accordingly; no identity aliased or changed."
+  },
+  {
+   "check": "live candidate frontend /results/<id> (encoded and raw id)",
+   "result": "200 after fix commit 971b259; page shows 'PL status: Unavailable', 'UNSCORED_NO_PUBLIC_DERIVED_RESULT' (unchanged from pre-repair)"
+  },
+  {
+   "check": "candidate API corpus detail",
+   "result": "200; status.scoring=UNSCORED_NO_PUBLIC_DERIVED_RESULT, evidenceTier=PROVISIONAL, pl.total=null, eligibleForDefaultRecommendation=false (unchanged from pre-repair)"
+  }
+ ],
+ "frontendFixNote": "b3ef24a frontend double-encoded corpus ids from Next page params, 404ing every /results/<id> deep link (server log shows %253A). Fixed in 971b259 (decode-then-single-encode); frontend vitest 59/59; redeployed as encodingdb-candidate-frontend:971b259.",
+ "playabilityFixNote": "Pre-repair manifest claimed references were browser-playable H.264-in-Matroska; ffprobe showed ffv1/yuv420p (no browser decodes). Repair adds media/previews/*-lossless-h264-preview.mp4 (libx264 -qp 0, High, yuv420p, GOP 24, +faststart), frame-hash-proven pixel-equivalent, distinctly labeled, with original master download links retained."
+}

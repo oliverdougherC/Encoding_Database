@@ -1,0 +1,2 @@
+{"case": "live-orphan-kill", "exit": -9, "seconds": 45.29257858399069}
+{"case": "live-orphan-resume", "exit": 0, "seconds": 79.26524920901284}

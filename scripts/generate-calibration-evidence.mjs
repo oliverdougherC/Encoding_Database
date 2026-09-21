@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
-import crypto from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -19,9 +18,10 @@ function parseArgs(argv) {
     flags.set(key, value);
     index += 1;
   }
-  for (const required of ['--benchmark-protocol-id', '--quality-model-id', '--calibration-version', '--output']) {
+  for (const required of ['--quality-model-id', '--calibration-version', '--output']) {
     if (!flags.get(required)) throw new Error(`${required} is required`);
   }
+  if (!flags.get('--benchmark-protocol-id') && !flags.get('--benchmark-protocol-ids')) throw new Error('Explicit --benchmark-protocol-id or --benchmark-protocol-ids JSON list is required');
   return flags;
 }
 
@@ -29,19 +29,6 @@ function jsonObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
-function machineSourceId(canonicalEnvironment) {
-  const environment = jsonObject(canonicalEnvironment);
-  const identity = {
-    cpuModel: environment.cpuModel ?? null,
-    cpuArchitecture: environment.cpuArchitecture ?? null,
-    gpuModel: environment.gpuModel ?? null,
-    osName: environment.osName ?? null,
-    osVersion: environment.osVersion ?? null,
-    physicalCoreCount: environment.physicalCoreCount ?? null,
-    logicalThreadCount: environment.logicalThreadCount ?? null,
-  };
-  return `machine:${crypto.createHash('sha256').update(JSON.stringify(identity)).digest('hex')}`;
-}
 
 function hardwareFamily(implementation) {
   const value = implementation.toLowerCase();
@@ -61,19 +48,22 @@ function numeric(value, field, evidenceId) {
 }
 
 const flags = parseArgs(process.argv.slice(2));
+const protocolIds = flags.has('--benchmark-protocol-ids') ? JSON.parse(readFileSync(path.resolve(flags.get('--benchmark-protocol-ids')), 'utf8')) : [flags.get('--benchmark-protocol-id')];
+if (!Array.isArray(protocolIds) || !protocolIds.length || protocolIds.some(id => typeof id !== 'string' || !id)) throw new Error('Invalid protocol ID list');
 const outputPath = path.resolve(process.cwd(), flags.get('--output'));
 const since = flags.get('--since') ? new Date(flags.get('--since')) : null;
 if (since && Number.isNaN(since.getTime())) throw new Error('--since must be an ISO-8601 timestamp');
 
-const [{ prisma }, calibration] = await Promise.all([
+const [{ prisma }, calibration, { loadMeasurementGroupEligibility }] = await Promise.all([
   import(path.join(serverRoot, 'dist', 'db.js')),
   import(path.join(serverRoot, 'dist', 'v7', 'calibration.js')),
+  import(path.join(serverRoot, 'dist', 'v7', 'measurementGroup.js')),
 ]);
 
 try {
   const runs = await prisma.benchmarkRun.findMany({
     where: {
-      benchmarkProtocolId: flags.get('--benchmark-protocol-id'),
+      benchmarkProtocolId: { in: protocolIds },
       ...(since ? { createdAt: { gte: since } } : {}),
       status: { in: ['ACCEPTED', 'SUSPECT'] },
       artifacts: {
@@ -97,20 +87,25 @@ try {
       environment: true,
       artifacts: {
         where: { role: 'ENCODED', storageState: { in: ['RETAINED', 'VERIFIED'] }, sha256: { not: null } },
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       },
       qualityAnalyses: {
-        where: { metricModelId: flags.get('--quality-model-id'), status: { in: ['COMPLETE', 'SUSPECT'] } },
-        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+        include: { evidenceReviews: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } },
+        where: { metricModelId: flags.get('--quality-model-id') },
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       },
     },
     orderBy: [{ workloadId: 'asc' }, { id: 'asc' }],
   });
 
   const timestamps = [];
-  const corpus = runs.map((run) => {
-    const artifact = run.artifacts[0];
+  const groupEligibility = new Map();
+  for (const run of runs) groupEligibility.set(run.id, await loadMeasurementGroupEligibility(prisma, run, { metricModelId: flags.get('--quality-model-id') }));
+  const corpus = runs.flatMap((run) => {
+    if (!groupEligibility.get(run.id).eligible) return [];
     const analysis = run.qualityAnalyses[0];
+    if (!analysis || !['COMPLETE', 'SUSPECT'].includes(analysis.status)) return [];
+    const artifact = run.artifacts.find((item) => item.id === analysis?.artifactId);
     if (!artifact?.sha256 || !analysis) throw new Error(`Run ${run.id} lost required retained evidence during generation`);
     timestamps.push(analysis.updatedAt, artifact.updatedAt, run.updatedAt);
     const implementation = run.recipe.encoderImplementation;
@@ -118,18 +113,22 @@ try {
     const realTimeRatio = run.realTimeRatio ?? (
       run.encodeFps != null && run.sourceFps != null && run.sourceFps > 0 ? run.encodeFps / run.sourceFps : null
     );
-    return {
+    return [{
       evidenceId,
-      partition: 'CALIBRATION',
+      partition: run.testClip.suiteVersion === 'encodingdb-validation-holdouts-v1' ? 'HOLDOUT' : 'CALIBRATION',
+      sourceSuiteVersion: run.testClip.suiteVersion,
+      sourceSha256: run.testClip.sha256,
+      ...(run.testClip.sourceProvenance?.validationSource ? { sourceRegistrationHash: run.testClip.sourceProvenance.validationSourceHash } : {}),
       benchmarkRunId: run.id,
       artifactId: artifact.id,
       artifactSha256: artifact.sha256,
       artifactStorageState: artifact.storageState,
       qualityAnalysisId: analysis.id,
       analysisWorkerVersion: analysis.analysisWorkerVersion,
+      evidenceReviewId: analysis.evidenceReviews[0]?.id ?? null,
       recipeFingerprint: run.recipe.fingerprint,
       environmentFingerprint: run.environment.fingerprint,
-      machineSourceId: machineSourceId(run.environment.canonicalJson),
+      machineSourceId: run.physicalSourceId ?? '',
       workloadId: run.workloadId,
       contentClass: run.testClip.contentClass,
       encoderFamily: run.recipe.codecFamily,
@@ -144,7 +143,7 @@ try {
       xpsnr: numeric(analysis.xpsnr, 'xpsnr', evidenceId),
       videoBitrateBps: numeric(analysis.videoBitrateBps, 'videoBitrateBps', evidenceId),
       realTimeRatio: numeric(realTimeRatio, 'realTimeRatio', evidenceId),
-    };
+    }];
   }).sort((left, right) => left.workloadId.localeCompare(right.workloadId)
     || left.encoderImplementation.localeCompare(right.encoderImplementation)
     || left.videoBitrateBps - right.videoBitrateBps
@@ -152,13 +151,14 @@ try {
 
   if (!corpus.length) throw new Error('No retained authoritative calibration evidence matched the requested scope');
   const generatedAt = new Date(Math.max(...timestamps.map((value) => value.getTime()))).toISOString();
-  const firstRun = runs[0];
+  const firstRun = runs.find(run => run.testClip.suiteVersion !== 'encodingdb-validation-holdouts-v1') ?? runs[0];
+  if (new Set(runs.map(run => run.benchmarkProtocol.protocolVersion)).size !== 1) throw new Error('Selected evidence protocol versions differ');
   const document = {
     schemaVersion: calibration.CALIBRATION_EVIDENCE_SCHEMA_VERSION,
     calibrationVersion: flags.get('--calibration-version'),
     status: 'DRAFT',
     benchmarkProtocolVersion: firstRun.benchmarkProtocol.protocolVersion,
-    sourceSuiteVersion: firstRun.benchmarkProtocol.sourceSuiteVersion,
+    sourceSuiteVersion: flags.get('--source-suite-version') ?? (firstRun.testClip.suiteVersion === 'encodingdb-validation-holdouts-v1' ? 'encodingdb-test-suite-v1' : firstRun.benchmarkProtocol.sourceSuiteVersion),
     qualityModelId: flags.get('--quality-model-id'),
     scoreFormulaVersion: '7.0',
     generatedAt,

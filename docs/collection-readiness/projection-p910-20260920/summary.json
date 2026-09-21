@@ -1,0 +1,45 @@
+{
+  "syntheticOnly": true,
+  "sourceSha": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "started": "2026-09-20T01:57:16.482Z",
+  "completed": "2026-09-20T02:07:17.784Z",
+  "durationMs": 600000,
+  "readers": 25,
+  "targetP95Ms": 1000,
+  "requests": 24468,
+  "failures": [],
+  "scoredRows": 491345,
+  "diagnosticRows": 2923,
+  "latencyMs": {
+    "p50": 608.4476479999721,
+    "p95": 1062.4952500000072,
+    "p99": 1423.447920000006,
+    "max": 2437.5658279999916
+  },
+  "peakNodeRss": 546242560,
+  "peakDbCgroupBytes": 1072480256,
+  "dbLifetimePeakBytes": 1073754112,
+  "finalCounts": {
+    "runs": 100020,
+    "artifacts": 100020,
+    "analyses": 100020,
+    "derived": 981,
+    "members": 80020
+  },
+  "databaseStartBytes": 478551063,
+  "databaseEndBytes": 482581527,
+  "minimumHostAvailableDiskBytes": 1579437391872,
+  "passed": false,
+  "successfulWriterCycles": 5,
+  "reconciliation": {
+    "expectedMemberCount": 80020,
+    "actualMemberCount": 80020,
+    "missingMembers": 0,
+    "unexpectedMembers": 0,
+    "derivedCohorts": 981,
+    "pendingInvalidatingRows": 0,
+    "dirtyPublicGroups": 0
+  },
+  "serverImageId": "sha256:f3acd4ee49ff07ab14645a85bdbe55f94de5cbd2c3a91176612128c8874663ee",
+  "rawEvidenceSha256": "f4bff6b1c56e53a530b3aa033e9685a9da5d3b8863a54ad5d3feb0766871a3df"
+}

@@ -1,0 +1,11 @@
+[Unit]
+Description=EncodingDB failure-alert health poll
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+RandomizedDelaySec=30s
+Unit=encodingdb-failure-alert.service
+
+[Install]
+WantedBy=timers.target

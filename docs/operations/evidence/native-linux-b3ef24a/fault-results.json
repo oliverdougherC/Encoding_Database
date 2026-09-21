@@ -1,0 +1,75 @@
+{
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "packageSha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+  "startedAt": "2026-09-20T04:57:15.451764+00:00",
+  "performanceOrCalibrationEligible": false,
+  "uploadsAttempted": false,
+  "phases": [
+    {
+      "name": "same-size-corrupt-pack",
+      "returnCode": 3,
+      "timedOut": false,
+      "stageAtExit": "preparation",
+      "elapsedSeconds": 11.964301788946614,
+      "preparationSeconds": null,
+      "acquisitionLimitSeconds": 120,
+      "measurementLimitSeconds": 120,
+      "cleanupForced": false,
+      "observedOwnedProcessCount": 1,
+      "survivingOwnedPids": [],
+      "sameSize": true,
+      "corruptSha256": "906294ff07cda1fdc75726afd157cca3007b4d55edc5336d926638758cff6e06",
+      "fallbackRefusals": [
+        {
+          "method": "CONNECT",
+          "target": "github.com:443",
+          "status": 503
+        }
+      ],
+      "attemptCount": 0
+    },
+    {
+      "name": "sigint",
+      "returnCode": 130,
+      "completedRecordsPreserved": 1,
+      "protectedFileCount": 2,
+      "ownedOrphansPausedForSnapshot": [],
+      "campaignId": "campaign-a5c66f0d14e35644"
+    },
+    {
+      "name": "sigkill",
+      "returnCode": -9,
+      "completedRecordsPreserved": 2,
+      "protectedFileCount": 4,
+      "ownedOrphansPausedForSnapshot": [
+        {
+          "pid": 2424988,
+          "createdAt": 1789880484.49
+        }
+      ],
+      "campaignId": "campaign-a5c66f0d14e35644"
+    },
+    {
+      "name": "final-resume",
+      "returnCode": 0,
+      "timedOut": false,
+      "stageAtExit": "measurement",
+      "elapsedSeconds": 114.68272877414711,
+      "preparationSeconds": 0.09316596295684576,
+      "acquisitionLimitSeconds": 900,
+      "measurementLimitSeconds": 960,
+      "cleanupForced": false,
+      "observedOwnedProcessCount": 16,
+      "survivingOwnedPids": [],
+      "campaignId": "campaign-a5c66f0d14e35644"
+    }
+  ],
+  "passed": true,
+  "ordinaryLedgersUnchanged": true,
+  "completedDiagnosticFilesUnchanged": true,
+  "physicalSourceIdUnchanged": true,
+  "packageBytesUnchanged": true,
+  "finalResumeNote": "final-resume executed by resume-faults.py after the user wrap-up stopped run-faults.py before this phase; all earlier phases and attempts retained",
+  "resumedAt": "2026-09-20T05:50:33.430757+00:00",
+  "finishedAt": "2026-09-20T05:50:33.430757+00:00"
+}

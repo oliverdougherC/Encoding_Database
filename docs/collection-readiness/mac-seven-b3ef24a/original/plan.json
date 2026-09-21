@@ -1,0 +1,18 @@
+{
+  "status": "PREDECLARED_UNEXECUTED",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "executableSha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+  "seeds": {
+    "software": 4053523937118112,
+    "videotoolbox": 405869481192659
+  },
+  "seedDerivation": "first13hex SHA256(sourceCommit + :mac-native-acceptance: + phase + :1)",
+  "runnerSha256": "72f418d595e0720227d68ab82c76ccb08c81655da6845a376768501d2d7fa96f",
+  "scope": "Native acceptance, not calibration; existing verified cache/pack; no uploads",
+  "gates": [
+    "AC power",
+    "5GiB disk reserve plus2GiB cell",
+    "shared existing physical-host lock",
+    "unchanged validity/stability criteria"
+  ]
+}

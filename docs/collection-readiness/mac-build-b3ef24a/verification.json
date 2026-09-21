@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "encodingdb-packaged-mac-smoke-archive/v1",
+  "archivedAt": "2026-09-20T03:57:50.970150+00:00",
+  "sourceDirectory": "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-b3ef24a",
+  "sourceBuildLog": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/macos-b3ef24a-build.log",
+  "originalBuildLogSha256": "68160df5fc48fe0e2190de5f8eb53fdde63b5a99efbb5d48f601c44572e2b841",
+  "sourceRevision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "artifactSha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+  "artifactByteSize": 124388240,
+  "nativeArchitecture": "arm64",
+  "minimumOsFromBundleHeaders": "27.0.0",
+  "signingInspection": "ad-hoc Mach-O signature; no TeamIdentifier; no Developer ID/notarization evidence",
+  "releaseSigningReceiptStatus": "unsigned",
+  "freshOriginalFileChecks": [
+    {
+      "file": "encodingdb-client-macos",
+      "sha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+      "verification": "fresh SHA-256 of original file"
+    },
+    {
+      "file": "encodingdb-client-macos.release-manifest.json",
+      "sha256": "dd0700326317fde1b5480a49ddff205ac91f277085bc5edcd5eb606df0c77b48",
+      "verification": "fresh SHA-256 of original file"
+    },
+    {
+      "file": "encodingdb-client-macos.runtime-lock.json",
+      "sha256": "5db0f9c3d5178f2bad9a84cced0141df44b82532314c7e5e30f401f47e7262b0",
+      "verification": "fresh SHA-256 of original file"
+    },
+    {
+      "file": "encodingdb-client-macos.signing.json",
+      "sha256": "e89b4c2fe2aed95af2c65bf5c255619cefa7748cf98929b2f3f3bb9fc96d16d0",
+      "verification": "fresh SHA-256 of original file"
+    },
+    {
+      "file": "encodingdb-client-macos.smoke.json",
+      "sha256": "3c93884456005de3321ca11a7c95914e7ebbe3b08cf1dc59b71b33dbd071bba3",
+      "verification": "fresh SHA-256 of original file"
+    },
+    {
+      "file": "encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "verification": "existing build SHA receipt and release-manifest agreement; fresh file-size check only, no 1.5 GB rehash"
+    }
+  ],
+  "commands": [
+    {
+      "name": "help",
+      "argv": [
+        "encodingdb-client-macos",
+        "--help"
+      ],
+      "returnCode": 0,
+      "timedOut": false,
+      "stageAtExit": "help",
+      "elapsedSeconds": 6.705059667001478,
+      "preparationSeconds": null,
+      "acquisitionLimitSeconds": 900,
+      "measurementLimitSeconds": 630,
+      "cleanupForced": false,
+      "observedOwnedProcessCount": 1,
+      "survivingOwnedPids": []
+    },
+    {
+      "name": "no-submit-suite",
+      "argv": [
+        "encodingdb-client-macos",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--crf",
+        "24",
+        "--no-submit",
+        "--max-duration-minutes",
+        "10"
+      ],
+      "returnCode": 0,
+      "timedOut": false,
+      "stageAtExit": "measurement",
+      "elapsedSeconds": 104.28212375001749,
+      "preparationSeconds": 87.89909887500107,
+      "acquisitionLimitSeconds": 900,
+      "measurementLimitSeconds": 630,
+      "cleanupForced": false,
+      "observedOwnedProcessCount": 34,
+      "survivingOwnedPids": []
+    }
+  ],
+  "embeddedRuntimeEntryCount": 102,
+  "embeddedRuntimeFingerprint": "a3929406d94ea18976b7ba56c5b6991d0d70cf27ec9b544c76c319ad2f0db659",
+  "qualityModel": {
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "metricModelVersion": "v1.0.16_3d0h",
+    "sha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+    "bundleRelativePath": "resources/vmaf/vmaf_v1.0.16_3d0h.json"
+  },
+  "suite": {
+    "suiteId": "encodingdb-test-suite",
+    "suiteVersion": "encodingdb-test-suite-v1",
+    "manifestVersion": 2,
+    "distribution": "reviewed-final",
+    "isFrozen": true,
+    "finalLockPath": "suite-lock.json",
+    "distributionMode": "external-suite-pack",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "pack": {
+      "fileName": "encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "byteSize": 1506890018,
+      "format": "tar.gz",
+      "downloadUrls": [
+        "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz"
+      ]
+    }
+  },
+  "verificationLimits": [
+    "No executable or media is included in this archive.",
+    "No new build, smoke, timing or seven-clip execution was performed while archiving.",
+    "The final b3ef24a seven-clip Mac acceptance remains pending because Mac battery readiness held it.",
+    "The 1.5 GB suite pack was not rehashed during this bounded archival task; its existing build receipts agree and its original size was checked."
+  ],
+  "suitePackStorageProvenance": {
+    "receipt": "pack-deduplication.json",
+    "parentVerifiedSha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+    "preservedPack": "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+    "currentRelativeSymlink": "../../native-faults-20260914/package-f673170/encodingdb-test-suite-v1.tar.gz",
+    "storageOnlyChange": true
+  }
+}

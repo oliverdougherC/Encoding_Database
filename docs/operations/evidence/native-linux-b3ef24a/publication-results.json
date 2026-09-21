@@ -1,0 +1,669 @@
+{
+  "startedAt": "2026-09-20T06:26:31Z",
+  "sourceCommit": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "packageSha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+  "note": "isolated candidate publication; injected transport faults are proxy-tagged; real admission is measured in pass mode before injected pressure",
+  "phases": [
+    {
+      "name": "offline",
+      "at": "2026-09-20T06:30:13Z",
+      "software": {
+        "returnCode": 10,
+        "survivors": [],
+        "pending": [
+          {
+            "file": "045d86c5c4024ea598b5218bf7ea712cdc6e62222bc22fc75138f9d84e7a6c51.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.0000236,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "24814dfe51a751d993ca5e4e284255e4ce474ff2f9c3cb0d098ef2270c38a4a5.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.0638082,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "27cee3b72a22f8dd009b6c7e3ef600ff2dc989432524a86ac959f706d768f2c4.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.4736695,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "2bb14928139f951abbc62af31ef92ae4a5255d9c376cc264f21dfeefd56b7c98.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.1926725,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "3b36ddd08062a3c1034e11a3e5d0271360d45dcebcafc74045f0026b8ed57e3f.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.7326667,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "3f70cf6f4d78f6807d66708d5a2cba494d5f49dcd4fe5caf76985bca5328e809.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.6498675,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "3fe5cbcc0a371d221309ebf4456c82d9a727a67093ab0638665bbc2292bd836c.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.636825,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "6966d6d8c10d717690ae4767839389cc8d8e6510ba025026b6886f0ea415280b.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.5895307,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "7fd16d72afea5864901277ceffbf649c2336f17a7e024cc5f827e3015a028163.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.4098268,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "8615b08e4e3e5e6381f36585d8de83a19e7bc5d6309225a7df961440da90bb20.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.8564248,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "8c34b11a5d12528b401bf0b5132ad6ad55d9a578d0610d42ba0c3412765e7812.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.525418,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "961a97acfb91faf872a4eba7329abf80eb1bb95e3658003fe26253d1a20264e7.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.5832286,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "9f3dd70cb147e392fdc40a8b5fd73c00a453f7dc5f604faede06f7b80f5b9016.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.6423345,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "a4518f0f65747271c895fc4ad06c6d080214b5106d53901dbccf0124ffc178e3.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.667773,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "cd11b391aa8cd30272fb353b0c96fc4f373300e724968d6ab44dc37653b8e711.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.7721374,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "d206a4d7b7433e73e415d65a8f92fe5c586b66e0ff54f30c3221c9931aa9c912.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.772626,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "e72702e2c63f0f9d729806a1a4f77f60bfea5a960805ca65608b46634842c64a.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.9874704,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "ed8da50bc0c89fae5d2cc5d59efdc61e6e7d41e164d9c90abe0f5da04c3a674a.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885807.8866322,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "f7a3573ff1d14654faa3d94c85f02b63c2f697a5ab8fcb7ea88e5c396326fc9e.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885808.0161078,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "f8b310e48014f28e1116897ab4db1be1d048dd6394ad76222bee0adc4256e990.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885808.2723312,
+            "retryDeadlineAt": 1790490604,
+            "lastError": "run create failed (503)"
+          }
+        ],
+        "deadLetter": [],
+        "ledgerImmutable": true,
+        "immutableFiles": 56
+      },
+      "nvenc": {
+        "returnCode": 10,
+        "survivors": [],
+        "pending": [
+          {
+            "file": "0494e1db27fa5dc89bf21b7fc112132c2f52fb753f5058213b2f4847bfcd365a.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.6875439,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "18adf30ab28a68e9803dfd1992f601aba19f87dec76dd0a12d1d4afe458231c5.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.5848005,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "34241b04a3b3850652e012868376823658ca69c21f726fd65e56db2136d945bd.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.6317377,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "344a659375881ee4f38541d77ef644564918f489345a15d712020a3599814370.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.0508986,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "4e87d23448145c3cf7ddb3ac3e6f78ab41cabeeb4d4b186ad5d3ae9a27ac9bf5.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.737622,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "5889d25cc5e9dd8a9be60b655201c3ff8005507fef551032cc85ba92b01c0d2c.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.7882216,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "6081f32501ac17c5d7552ec0217104874ed38073ac6f927c86c4830698fc3822.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.835348,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "63457511692e5a630b59e794570023055f0d8370e577235f7c995e434e69927a.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.101787,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "6f9a30f75bc7642f1fa3e3f5c1a38043378f931c6308521060279cfa3753cefd.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885813.9708948,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "86a5fe1b9069db5afc7b907147d3bb22f325b9b219b94e1d79dd7c81cec52b58.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.2670877,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "8a3f0afb420777fd17e504900ab5087b8a2f4b0d36e99227e2878d89b665a73f.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.0412407,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "a851c0e671bed54571678894045221dec5baec04ecefc22a0e67a957d9973b3f.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.0718536,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "bc3589960ee087c337572d8cc162829b2c148002894f001064db86aa5c207a19.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.1229315,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "c1857c718d3175b78860906f109d328440bd3a31086626d59a2a32fa5d006de6.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.2246828,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "d3c5035aacf0e67e8aa1c077ceb733d0b50795bf3df579ea209ca26867db4c90.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.2095456,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "dd730cd1cced1562604186071c427f846a05699f6bf179b39bd17dd98945f675.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.6634936,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "e1f632dbf5dce0b8a1382ee9715f424083708416956b9445aa60937b924092ab.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.2974586,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          },
+          {
+            "file": "f370da1c379c442e8412901669919872c0c6155885b9c39d0daa09cb78f908ae.json",
+            "attempts": 1,
+            "nextAttemptAt": 1789885814.4949543,
+            "retryDeadlineAt": 1790490611,
+            "lastError": "run create failed (503)"
+          }
+        ],
+        "deadLetter": [],
+        "ledgerImmutable": true,
+        "immutableFiles": 52
+      }
+    },
+    {
+      "name": "real-admission",
+      "at": "2026-09-20T06:33:20Z",
+      "health": {
+        "status": "ok",
+        "corpus": {
+          "ready": true,
+          "pendingGroups": 0,
+          "oldestDirtyAt": null
+        }
+      },
+      "volumes": "{\"ok\":true,\"project\":\"encodingdb-candidate-730de3c\",\"checked\":[{\"service\":\"db\",\"target\":\"/var/lib/postgresql/data\",\"volume\":\"encodingdb-candidate-730de3c_db_data\"},{\"service\":\"server\",\"target\":\"/app/artifacts\",\"volume\":\"encodingdb-candidate-730de3c_artifact_data\"}]}",
+      "software": {
+        "returnCode": 10,
+        "elapsedSeconds": 5.898509796941653,
+        "survivingOwnedPids": []
+      },
+      "nvenc": {
+        "returnCode": 10,
+        "elapsedSeconds": 5.556934582069516,
+        "survivingOwnedPids": []
+      },
+      "admittedRuns": [
+        "cmu9ftos50005o1dwezve65r4|campaign-8b19e985307766a7|installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4|464383bc47a1fd43e523c06b609cac6d670e574124ebd3a171006c1c6d6184d0",
+        "cmu9ftqqb000co1dwezht7frc|campaign-8b19e985307766a7|installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4|9d4edfc9062cbb221852d42f0b73dc6f2e417878cb6499ddefc73b430842e909"
+      ],
+      "pendingAnalyses": 2,
+      "uploadedArtifacts": [
+        "1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52|2580944|UPLOADED",
+        "bd37fbeb08908cac1c99a7d7751fdc51ca95854b98f7d20cfd43221a41bea2fb|8027776|UPLOADED"
+      ],
+      "genuineBackpressure503": 33,
+      "proxyInjectedEvents": 0,
+      "softwarePending": 15,
+      "nvencPending": 18,
+      "samplePreservedRetry": [
+        {
+          "file": "27cee3b72a22f8dd009b6c7e3ef600ff2dc989432524a86ac959f706d768f2c4.json",
+          "attempts": 3,
+          "nextAttemptAt": 1789886022.873486,
+          "retryDeadlineAt": 1790490604,
+          "lastError": "run create failed (503)"
+        },
+        {
+          "file": "2bb14928139f951abbc62af31ef92ae4a5255d9c376cc264f21dfeefd56b7c98.json",
+          "attempts": 3,
+          "nextAttemptAt": 1789886022.9849598,
+          "retryDeadlineAt": 1790490604,
+          "lastError": "run create failed (503)"
+        },
+        {
+          "file": "3b36ddd08062a3c1034e11a3e5d0271360d45dcebcafc74045f0026b8ed57e3f.json",
+          "attempts": 3,
+          "nextAttemptAt": 1789886023.0999253,
+          "retryDeadlineAt": 1790490604,
+          "lastError": "run create failed (503)"
+        }
+      ]
+    },
+    {
+      "name": "restore",
+      "at": "2026-09-20T06:34:00Z",
+      "health": {
+        "status": "ok",
+        "corpus": {
+          "ready": true,
+          "pendingGroups": 0,
+          "oldestDirtyAt": null
+        }
+      },
+      "volumes": "{\"ok\":true,\"project\":\"encodingdb-candidate-730de3c\",\"checked\":[{\"service\":\"db\",\"target\":\"/var/lib/postgresql/data\",\"volume\":\"encodingdb-candidate-730de3c_db_data\"},{\"service\":\"server\",\"target\":\"/app/artifacts\",\"volume\":\"encodingdb-candidate-730de3c_artifact_data\"}]}",
+      "env": {
+        "ARTIFACT_PENDING_ANALYSIS_MAX": "500",
+        "ARTIFACT_ANALYSIS_CONCURRENCY_MAX": "2"
+      }
+    },
+    {
+      "name": "pressure",
+      "at": "2026-09-20T06:35:01Z",
+      "clientReturnCode": -15,
+      "terminatedAfterFirstInjection": true,
+      "injectedEvents": [
+        {
+          "at": "2026-09-20T06:34:41.632Z",
+          "kind": "pressure",
+          "method": "POST",
+          "path": "/v7/benchmark-runs/cmu9fyjgs0001o3dw25ekbxxd/artifacts/ENCODED/upload-authorizations",
+          "injected": true,
+          "status": 429
+        },
+        {
+          "at": "2026-09-20T06:34:41.809Z",
+          "kind": "pressure",
+          "method": "POST",
+          "path": "/v7/benchmark-runs/cmu9fyjm80004o3dw681y84y4/artifacts/ENCODED/upload-authorizations",
+          "injected": true,
+          "status": 429
+        },
+        {
+          "at": "2026-09-20T06:34:42.037Z",
+          "kind": "pressure",
+          "method": "POST",
+          "path": "/v7/benchmark-runs/cmu9fyjrz0007o3dwvullb7g8/artifacts/ENCODED/upload-authorizations",
+          "injected": true,
+          "status": 429
+        }
+      ],
+      "injectedCount": 3,
+      "forwardedRunCreates": 4,
+      "preservedRetries": [
+        {
+          "file": "0494e1db27fa5dc89bf21b7fc112132c2f52fb753f5058213b2f4847bfcd365a.json",
+          "nextAttemptAt": 1789886094.022826,
+          "lastError": "upload authorization failed (429)"
+        },
+        {
+          "file": "18adf30ab28a68e9803dfd1992f601aba19f87dec76dd0a12d1d4afe458231c5.json",
+          "nextAttemptAt": 1789886100.594019,
+          "lastError": "upload authorization failed (429)"
+        },
+        {
+          "file": "34241b04a3b3850652e012868376823658ca69c21f726fd65e56db2136d945bd.json",
+          "nextAttemptAt": 1789886100.2381568,
+          "lastError": "upload authorization failed (429)"
+        }
+      ],
+      "preservedCount": 3,
+      "waitedForRealSpoolDeadline": true
+    },
+    {
+      "name": "pre:snapshot",
+      "at": "2026-09-20T06:46:50Z",
+      "composeSha256": "bc34ee95f99bfcddb8abb72ebe62df2cdd9b74e3ab282717c3bf52aef94dc564",
+      "serverEnv": {
+        "ARTIFACT_ANALYSIS_CONCURRENCY_MAX": "2",
+        "ARTIFACT_ANALYSIS_LEASE_MS": "300000",
+        "ARTIFACT_ANALYSIS_MAX_ATTEMPTS": "3",
+        "ARTIFACT_ANALYSIS_POLL_MS": "1000",
+        "ARTIFACT_ANALYSIS_RETRY_BACKOFF_MS": "5000",
+        "ARTIFACT_AUTH_RATE_MAX": "30",
+        "ARTIFACT_AUTH_RATE_WINDOW_MS": "60000",
+        "ARTIFACT_AUTO_ANALYZE": "1",
+        "ARTIFACT_MAX_BYTES": "2147483648",
+        "ARTIFACT_NATIVE_TIMEOUT_MS": "300000",
+        "ARTIFACT_PENDING_ANALYSIS_MAX": "500",
+        "ARTIFACT_PENDING_UPLOAD_MAX": "500",
+        "ARTIFACT_PROBE_TIMEOUT_MS": "60000",
+        "ARTIFACT_RESERVATION_MS": "86400000",
+        "ARTIFACT_STORAGE_QUOTA_BYTES": "10737418240",
+        "ARTIFACT_STORAGE_RESERVE_BYTES": "536870912",
+        "ARTIFACT_STORAGE_ROOT": "/app/artifacts",
+        "ARTIFACT_UPLOAD_CONCURRENCY_MAX": "4",
+        "ARTIFACT_UPLOAD_DEADLINE_MS": "300000",
+        "ARTIFACT_UPLOAD_RATE_MAX": "20",
+        "ARTIFACT_UPLOAD_RATE_WINDOW_MS": "60000",
+        "ARTIFACT_UPLOAD_SECRET": "3f68890b333f3f5da69861beff0a2c1ac1bec0e470aec9ffaa04f83f2c18e288",
+        "ARTIFACT_UPLOAD_TTL_MS": "900000",
+        "ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH": "1",
+        "ARTIFACT_VOLUME_NAME": "encodingdb-candidate-730de3c_artifact_data",
+        "V7_BACKUP_COMPOSE_FILE": "",
+        "V7_BACKUP_DESTINATION": "",
+        "V7_BACKUP_FREE_RESERVE_BYTES": "1073741824",
+        "V7_BACKUP_MAX_ARTIFACT_BYTES": "23622320128",
+        "V7_BACKUP_RECOVERY_GRACE_SECONDS": "60",
+        "V7_BACKUP_RETENTION_COUNT": "7",
+        "V7_BACKUP_TIMEOUT_SECONDS": "300",
+        "V7_BACKUP_VERIFY_RESTORE": "1",
+        "V7_OPERATOR_ID": "isolated-candidate-operations",
+        "V7_OPERATOR_TOKEN": "024a5ce39c7789fe11e3fd8b31eb78013e54be5fbd3a23935ec29a543574710f",
+        "V7_ORPHAN_STAGING_ALERT_SECONDS": "3600",
+        "V7_PENDING_ANALYSIS_ALERT_SECONDS": "1800",
+        "V7_PENDING_UPLOAD_ALERT_SECONDS": "900"
+      },
+      "candidateServer": {
+        "id": "c9b107725df543a404883f35c6c3b25fa9375c57cd5f82d090b450bf4139941b",
+        "startedAt": "2026-09-20T06:33:53.980866032Z",
+        "image": "encodingdb-candidate-server:b3ef24a",
+        "volumes": [
+          "encodingdb-candidate-730de3c_artifact_data->/app/artifacts"
+        ]
+      },
+      "productionBaseline": {
+        "encodingdb-server-1": {
+          "id": "846b1e2e652e6aa71bf79ed10965cb0ecec5f874a1bdbfe870d7daddb9d25544",
+          "startedAt": "2026-09-13T04:19:42.929037058Z",
+          "image": "encodingdb-hotfix-server:b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+          "volumes": [
+            "encodingdb_prod_artifact_data->/app/artifacts"
+          ]
+        },
+        "encodingdb-frontend-1": {
+          "id": "a0f3238c1d6c4b05aa1a8d4169319b9e0f688d9c6d22f7516f43557fd1e0b487",
+          "startedAt": "2026-09-13T03:03:30.509126854Z",
+          "image": "encodingdb-release/frontend:1.2.0-c001ddc73964",
+          "volumes": []
+        },
+        "encodingdb-db-1": {
+          "id": "637e1258bf6cf5650095c3f2c2f2fcf31df8d50d875cfff51ddcc67229a36f97",
+          "startedAt": "2026-09-13T03:03:24.405517485Z",
+          "image": "encodingdb-release/db:1.2.0-c001ddc73964",
+          "volumes": [
+            "encodingdb_db_data->/var/lib/postgresql/data"
+          ]
+        },
+        "encodingdb-nginx": {
+          "id": "1cd16cd3878eca7a4be48357203156d47e7fe173eb6f7bbf79d7c4bab17de6d3",
+          "startedAt": "2026-09-13T03:03:41.811609619Z",
+          "image": "encodingdb-release/nginx:1.2.0-c001ddc73964",
+          "volumes": [
+            "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/nginx-p910.conf->/etc/nginx/conf.d/default.conf"
+          ]
+        }
+      },
+      "binarySha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+      "packageMatches": true,
+      "campaigns": {
+        "software": "campaign-8b19e985307766a7",
+        "nvenc": "campaign-83ac99a195c70b5d"
+      }
+    },
+    {
+      "name": "pre:db-baseline",
+      "at": "2026-09-20T06:46:50Z",
+      "runs": "19",
+      "artifactsByState": [
+        "PENDING|2",
+        "VERIFIED|7",
+        "RETAINED|5",
+        "REJECTED|5"
+      ],
+      "analysesByStatus": [
+        "COMPLETE|5",
+        "SUSPECT|7"
+      ],
+      "objects": [
+        "objects/04/045dbd0de322c759e675b61a6391bdd398aa058d363289fdb918495ed67e1d4a 6330186",
+        "objects/19/1999b01cb17952a0d2c37ba910c76764aeba711f3a483a3cf8d1b5a9b2205a52 2580944",
+        "objects/4b/4b9507c2c211ed8ec7d14b1d620f3474f82cb07caf3b36e40308d78f867a5cf0 4989882",
+        "objects/87/87d56f4cb8f4cfe82007393ed1f528301cf39df0010272bf3bd71a5ed7e64503 6797503",
+        "objects/bd/bd091cbd39a8062c2f8195f015ca2ca8dabc3f84510cb758458e918cfeda2cb2 5122601",
+        "objects/bd/bd37fbeb08908cac1c99a7d7751fdc51ca95854b98f7d20cfd43221a41bea2fb 8027776",
+        "objects/fe/fe0b6f349d42f41edf33cb4cfccc216e36feac29b2b3b60538653af1d515d8d9 236875",
+        ".quarantine/1b8d11105a26f698c29a79fffc3aba689e04f907a70b42c322a0d38ce1cf3b52 6345823",
+        ".quarantine/7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d 8751965"
+      ]
+    },
+    {
+      "name": "pre:proxy",
+      "at": "2026-09-20T06:46:51Z",
+      "pid": 3089808,
+      "mode": "offline",
+      "evidence": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/publication/fault-proxy-events-2.jsonl"
+    },
+    {
+      "name": "lost-response",
+      "at": "2026-09-20T06:47:13Z",
+      "dropEvent": {
+        "at": "2026-09-20T06:46:58.124Z",
+        "kind": "lost-response-after-upstream-success",
+        "method": "PUT",
+        "path": "/v7/artifact-uploads/<redacted>",
+        "injected": true,
+        "status": 202,
+        "requestBytes": 5030901
+      },
+      "clientReturn": -15,
+      "terminatedAfterDrop": true,
+      "replay2": 1,
+      "runIdentity": {
+        "runId": "cmu9fyjrz0007o3dwvullb7g8",
+        "artifactId": "cmu9fyjs00008o3dw6u01qghj",
+        "sha256": "7d434975cfe6195af9945cea8bb3c2236c8c366fdc82808965d7a0ad567f5d8e",
+        "byteSize": 5030901
+      },
+      "stateAfterDrop": "UPLOADED",
+      "stateAfterReplay": "UPLOADED",
+      "payloadHashRows": 1,
+      "artifactRowsForSha": 2
+    },
+    {
+      "name": "drain",
+      "at": "2026-09-20T06:58:39Z",
+      "rounds": [],
+      "wallSeconds": 424.5,
+      "analysesBacklog": 0,
+      "deadLetters": {
+        "software": [
+          "1789885861698-3f70cf6f4d78f6807d66708d5a2cba494d5f49dcd4fe5caf76985bca5328e809.json",
+          "1789885862070-7fd16d72afea5864901277ceffbf649c2336f17a7e024cc5f827e3015a028163.json",
+          "1789885863610-f7a3573ff1d14654faa3d94c85f02b63c2f697a5ab8fcb7ea88e5c396326fc9e.json",
+          "1789886132905-27cee3b72a22f8dd009b6c7e3ef600ff2dc989432524a86ac959f706d768f2c4.json",
+          "1789886145136-6966d6d8c10d717690ae4767839389cc8d8e6510ba025026b6886f0ea415280b.json",
+          "1789886148058-8615b08e4e3e5e6381f36585d8de83a19e7bc5d6309225a7df961440da90bb20.json",
+          "1789886151809-8c34b11a5d12528b401bf0b5132ad6ad55d9a578d0610d42ba0c3412765e7812.json",
+          "1789886155528-9f3dd70cb147e392fdc40a8b5fd73c00a453f7dc5f604faede06f7b80f5b9016.json",
+          "1789886155674-a4518f0f65747271c895fc4ad06c6d080214b5106d53901dbccf0124ffc178e3.json",
+          "1789886155797-cd11b391aa8cd30272fb353b0c96fc4f373300e724968d6ab44dc37653b8e711.json"
+        ],
+        "nvenc": [
+          "1789886830108-86a5fe1b9069db5afc7b907147d3bb22f325b9b219b94e1d79dd7c81cec52b58.json",
+          "1789886830496-a851c0e671bed54571678894045221dec5baec04ecefc22a0e67a957d9973b3f.json"
+        ]
+      },
+      "pendingAfter": {
+        "software": 0,
+        "nvenc": 0
+      }
+    },
+    {
+      "name": "reconcile",
+      "at": "2026-09-20T07:19:43Z",
+      "submissionsPrepared": 38,
+      "distinctPayloadIdentities": 38,
+      "dbRuns": 31,
+      "terminalReceipts": 12,
+      "unaccountedAttempts": [],
+      "terminalAlsoRecorded": [
+        "08c66885d4ff81b5f88c0b57f83b2143d7b2a89213155025c0b87015a391dae9",
+        "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+        "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+        "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+        "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818"
+      ],
+      "ghostRuns": [],
+      "shaMismatches": [],
+      "frameCoverageMismatches": [],
+      "derivedResultRows": 0,
+      "missingFromDisk": [],
+      "repeatedArtifactShas": [
+        "611f6eded96571684a5055992d52e46cda8631bf8c59670512796cdf3e61ff8d|2",
+        "045dbd0de322c759e675b61a6391bdd398aa058d363289fdb918495ed67e1d4a|2",
+        "7d434975cfe6195af9945cea8bb3c2236c8c366fdc82808965d7a0ad567f5d8e|2",
+        "87d56f4cb8f4cfe82007393ed1f528301cf39df0010272bf3bd71a5ed7e64503|4",
+        "bd37fbeb08908cac1c99a7d7751fdc51ca95854b98f7d20cfd43221a41bea2fb|2",
+        "4b9507c2c211ed8ec7d14b1d620f3474f82cb07caf3b36e40308d78f867a5cf0|4",
+        "0b8dad58bee698305e0d4e4dd059d72bbe1f09a6579e95050235c27ea1cbf99e|4",
+        "7a8e3eea989affdea24cf46ac8f256bc4d5676b3f7059543d04a0e779931682d|4",
+        "e12ddf07e71b27f5546407681be6a038eb14e994706eafe67a46b22a2f766f8e|2"
+      ],
+      "artifactStates": [
+        "VERIFIED|14",
+        "RETAINED|12",
+        "REJECTED|5"
+      ],
+      "analyses": [
+        "COMPLETE|vmaf-v1-sdr-1080p|authoritative-analysis/v2|12",
+        "SUSPECT|vmaf-v1-sdr-1080p|authoritative-analysis/v2|14"
+      ],
+      "objectsOnVolume": 12,
+      "physicalSourceId": "696e7374616c6c6174696f6e2d33353639663964343938353563303262313833343538313631313035313032363232613265663436626663666237333931383365623339306261383961306234",
+      "physicalSourceIds": [
+        "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4"
+      ],
+      "exactMemberSet": true
+    },
+    {
+      "name": "teardown",
+      "at": "2026-09-20T07:52:31Z",
+      "health": {
+        "status": "ok",
+        "corpus": {
+          "ready": true,
+          "pendingGroups": 0,
+          "oldestDirtyAt": null
+        }
+      },
+      "volumes": "{\"ok\":true,\"project\":\"encodingdb-candidate-730de3c\",\"checked\":[{\"service\":\"db\",\"target\":\"/var/lib/postgresql/data\",\"volume\":\"encodingdb-candidate-730de3c_db_data\"},{\"service\":\"server\",\"target\":\"/app/artifacts\",\"volume\":\"encodingdb-candidate-730de3c_artifact_data\"}]}",
+      "proxyStopped": true,
+      "restoredEnv": {
+        "ARTIFACT_PENDING_ANALYSIS_MAX": "500",
+        "ARTIFACT_ANALYSIS_CONCURRENCY_MAX": "0"
+      }
+    }
+  ]
+}

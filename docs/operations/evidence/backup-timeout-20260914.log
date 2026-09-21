@@ -1,0 +1,3 @@
+Backup exceeded 1s deadline; cancelling owned commands and restarting quiesced services via EXIT trap.
+Terminated: 15
+Backup supervisor: exit=124, elapsedSeconds=1.006

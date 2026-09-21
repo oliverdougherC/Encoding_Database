@@ -1,0 +1,10 @@
+{
+  "measurement.json": {
+    "sha256": "4c3ca6e1ce307d737104ca9d9a9ce93d504b9367aee31ed922cf58dc5f2a31dd",
+    "bytes": 33500
+  },
+  "postgres-interval.log": {
+    "sha256": "a76a14e867a9d2d9f7aaa5b2f2715df4d9122214cbff0f4c6b525fdc37669f6c",
+    "bytes": 434
+  }
+}

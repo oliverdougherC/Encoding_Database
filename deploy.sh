@@ -161,6 +161,7 @@ run_preflight_validation() {
 
   log "Validating compose configuration..."
   docker compose -f "$COMPOSE_FILE" config -q
+  node "$ROOT_DIR/scripts/verify-deployment-volumes.mjs" "$COMPOSE_FILE"
 }
 
 cd "$ROOT_DIR"
@@ -231,6 +232,7 @@ if [[ "$PREPARE_ONLY" -eq 1 ]]; then
   exit 0
 fi
 
+node "$ROOT_DIR/scripts/verify-deployment-volumes.mjs" "$COMPOSE_FILE"
 log "Preparation complete; starting production stack from prepared images..."
 docker compose -f "$COMPOSE_FILE" up -d --no-build --pull never --remove-orphans
 

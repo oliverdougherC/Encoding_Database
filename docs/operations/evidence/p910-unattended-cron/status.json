@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "startedAt": "2026-09-14T03:45:02Z",
+  "finishedAt": "2026-09-14T03:45:35.040075+00:00",
+  "bundle": "/mnt/NVME/docker/encodingdb-operations/20260914-candidate-730de3c/cron-backup/backups/backup-20260914T034502Z-3684274",
+  "exitCode": 0,
+  "restoreRequired": true
+}

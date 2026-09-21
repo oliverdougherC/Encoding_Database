@@ -1,0 +1,53 @@
+{
+  "cell": {
+    "cellId": "validation-nocturne-ballet-30s--libx265--fast--crf28",
+    "workloadId": "validation-nocturne-ballet-30s",
+    "encoder": "libx265",
+    "preset": "fast",
+    "crf": 28,
+    "sourceSha256": "449b8996ed40472e5a2d2c152e3474315d75244ecccc26ef38a71405dc225210",
+    "sourceRegistrationHash": "e0a367334df30c888794b964137ebd9449892ed522c45185a7749914190a4c02",
+    "referencePath": "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+    "maximumMeasurementMinutes": 60,
+    "maximumWarmups": 1,
+    "minimumMeasuredAttempts": 2,
+    "maximumAdaptiveAttempts": 2,
+    "order": 17,
+    "seed": 202609140017
+  },
+  "sourceCommit": "0185a001e268b35aad492a8d35c487f5527ac3f5",
+  "command": [
+    "/mnt/NVME/docker/encodingdb-operations/20260914-native-linux-candidate/native-build-venv/bin/python",
+    "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/source/timing-0185a00/scripts/run-validation-campaign.py",
+    "--registry",
+    "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/validation-source-registry-final-v1.json",
+    "--workload",
+    "validation-nocturne-ballet-30s",
+    "--reference",
+    "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/media/nocturne-ballet-30s/reference.mkv",
+    "--output",
+    "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/campaigns/validation-nocturne-ballet-30s--libx265--fast--crf28",
+    "--encoder",
+    "libx265",
+    "--preset",
+    "fast",
+    "--crf",
+    "28",
+    "--seed",
+    "202609140017",
+    "--max-duration-minutes",
+    "60"
+  ],
+  "exitCode": 0,
+  "exitCodeEvidence": {
+    "method": "Linux /proc child zombie stat field52 wait status decoded with os.waitstatus_to_exitcode",
+    "kernelWaitStatus": 0,
+    "childPid": 278411
+  },
+  "completedAtObserved": "2026-09-14T05:52:05Z",
+  "receipts": [
+    "/mnt/NVME/docker/encodingdb-operations/20260914-validation-holdouts/campaigns/validation-nocturne-ballet-30s--libx265--fast--crf28/campaigns/campaign-82f4b0b64658d039/validation-campaign.json"
+  ],
+  "externalPause": true,
+  "eligibility": "EXPLORATORY_AFFECTED_BACKGROUND_SAMPLER"
+}

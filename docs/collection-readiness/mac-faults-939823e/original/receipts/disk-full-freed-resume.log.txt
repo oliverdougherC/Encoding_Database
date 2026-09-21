@@ -1,0 +1,19 @@
+Preparing: runtime 
+Preparing: validate athletic-action-1080p24-final
+Preparing: hash athletic-action-1080p24-final.mkv
+Preparing: probe athletic-action-1080p24-final.mkv
+Preparing: runtime 
+Campaign campaign-250b62ed5aa9b145: at most 5 encodes; resume with --resume-campaign campaign-250b62ed5aa9b145
+Batch 1/1: 1 protocol recipe(s)
+Retaining suspect protocol evidence for libx264 veryslow: power-source-battery
+Retaining suspect protocol evidence for libx264 veryslow: power-source-battery
+Batch Summary
+  Planned Tasks: 5
+  Batches: 1
+  Completed Encodes: 2
+  Submitted: 0
+  Skipped: 0
+  Queued: 0
+  Failures: 0
+  Elapsed: 2s
+  Throughput: 3845.3 encodes/hour

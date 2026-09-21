@@ -1,0 +1,1181 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-20T01:46:48.501345+00:00",
+  "sourceCommit": "939823ead2c052572f9deb5c9f91c85435d5661d",
+  "executableSha256": "ad01bfd36ad84e0e0d9f45730bd195c1b940a240493d093f6a875faa97a6f2c0",
+  "freshProbePath": "/Users/ofhd/Developer/Encoding_Database/.build/runtime-macos-arm64-vmaf3.2/ffprobe",
+  "freshProbeSha256": "12da1d9d189806ba249f3c44b703f20b804e309a6150b3bef1e0ab4b569e9b66",
+  "qualityModel": {
+    "metricModelId": "vmaf-v1-sdr-1080p",
+    "metricModelVersion": "v1.0.16_3d0h",
+    "sha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+    "bundleRelativePath": "resources/vmaf/vmaf_v1.0.16_3d0h.json"
+  },
+  "embeddedModelSha256": "e4cf8c147e1368b35497d772920bc92f98c1ad7853c1033d8a836947f427140e",
+  "suite": {
+    "suiteId": "encodingdb-test-suite",
+    "suiteVersion": "encodingdb-test-suite-v1",
+    "manifestVersion": 2,
+    "distribution": "reviewed-final",
+    "isFrozen": true,
+    "finalLockPath": "suite-lock.json",
+    "distributionMode": "external-suite-pack",
+    "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+    "pack": {
+      "fileName": "encodingdb-test-suite-v1.tar.gz",
+      "sha256": "d20407f8d78f152f06c3b7271881d8b3f07d2b76cf3a2642b241162d666ac150",
+      "byteSize": 1506890018,
+      "format": "tar.gz",
+      "downloadUrls": [
+        "https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-test-suite-v1.tar.gz"
+      ]
+    }
+  },
+  "nativeHost": {
+    "command": [
+      "sw_vers"
+    ],
+    "exitCode": 0,
+    "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n",
+    "stderr": ""
+  },
+  "architecture": {
+    "command": [
+      "uname",
+      "-m"
+    ],
+    "exitCode": 0,
+    "stdout": "arm64\n",
+    "stderr": ""
+  },
+  "signingDisplay": {
+    "command": [
+      "codesign",
+      "-dv",
+      "--verbose=4",
+      "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": "Executable=/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos\nIdentifier=encodingdb-client-macos-55554944b4d0d265f2eb2539624ba2a722f8d4d6\nFormat=Mach-O thin (arm64)\nCodeDirectory v=20400 size=242713 flags=0x2(adhoc) hashes=7578+2 location=embedded\nVersionPlatform=1\nVersionMin=720896\nVersionSDK=984320\nHash type=sha256 size=32\nCandidateCDHash sha256=76e6ec792bdb773aa8e3797614adb97ffc98298a\nCandidateCDHashFull sha256=76e6ec792bdb773aa8e3797614adb97ffc98298a3fc7f01cbec6f49a153406cf\nHash choices=sha256\nCMSDigest=76e6ec792bdb773aa8e3797614adb97ffc98298a3fc7f01cbec6f49a153406cf\nCMSDigestType=2\nExecutable Segment base=0\nExecutable Segment limit=49152\nExecutable Segment flags=0x1\nPage size=16384\nCDHash=76e6ec792bdb773aa8e3797614adb97ffc98298a\nSignature=adhoc\nInfo.plist=not bound\nTeamIdentifier=not set\nSealed Resources=none\nInternal requirements count=0 size=12\nTotal signatures=1\nChosen signature=1\n"
+  },
+  "signingVerify": {
+    "command": [
+      "codesign",
+      "--verify",
+      "--strict",
+      "/Users/ofhd/Developer/Encoding_Database/.build/release-20260919/macos-939823e/encodingdb-client-macos"
+    ],
+    "exitCode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "minimumOsFromAllRuntimeHeaders": "27.0.0",
+  "claims": "Retained no-submit native acceptance and fresh artifact audit only. No server analysis, calibration, PL, or production claim.",
+  "cases": [
+    {
+      "name": "software",
+      "campaignId": "campaign-fd91ad0daa0d83ea",
+      "exitCode": 0,
+      "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+      "selectedDevices": {
+        "libx264": {
+          "deviceId": "cpu",
+          "driverVersion": "not-applicable",
+          "model": "arm",
+          "selection": "software"
+        }
+      },
+      "runtimeFingerprint": "a3929406d94ea18976b7ba56c5b6991d0d70cf27ec9b544c76c319ad2f0db659",
+      "attempts": [
+        {
+          "executionOrder": 1,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+          "frames": 240,
+          "elapsedSeconds": 1.461269291,
+          "encodeFps": 164.2407744268404,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1233.25,
+          "processCpuMaximumPct": 1287.4,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 2,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "c487f168ff961cd9634e90b45a3f8186bc6faad775f982ec35f1aa3890b94a2a",
+          "frames": 240,
+          "elapsedSeconds": 2.650597875,
+          "encodeFps": 90.54560945047163,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1189.67,
+          "processCpuMaximumPct": 1221.7,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 3,
+          "clipId": "animation-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+          "frames": 192,
+          "elapsedSeconds": 2.198335167,
+          "encodeFps": 87.33882025006062,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1218.7,
+          "processCpuMaximumPct": 1260.5,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 4,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "5b7d72f3cf2b68a6cd39f82b404f4b8c3c5d013d0c0ef1fd51b852fb88218c5a",
+          "frames": 240,
+          "elapsedSeconds": 1.95034425,
+          "encodeFps": 123.05519910138942,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1238.47,
+          "processCpuMaximumPct": 1290.5,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 5,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "12e80f96e5222ec6742ddc10774a14c527736f68252941d9a11011e8544e0e7a",
+          "frames": 240,
+          "elapsedSeconds": 2.680409917,
+          "encodeFps": 89.53854351823009,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1199.65,
+          "processCpuMaximumPct": 1310.4,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 6,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+          "frames": 240,
+          "elapsedSeconds": 2.049941666,
+          "encodeFps": 117.07650221496596,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1188.4,
+          "processCpuMaximumPct": 1254.7,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 7,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+          "frames": 240,
+          "elapsedSeconds": 0.450213667,
+          "encodeFps": 533.0802185532053,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": null,
+          "processCpuMaximumPct": null,
+          "processCpuSampleCount": 0
+        },
+        {
+          "executionOrder": 8,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+          "frames": 240,
+          "elapsedSeconds": 1.481196583,
+          "encodeFps": 162.03115964115074,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 7.9,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1244.6,
+          "processCpuMaximumPct": 1287.7,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 9,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "c487f168ff961cd9634e90b45a3f8186bc6faad775f982ec35f1aa3890b94a2a",
+          "frames": 240,
+          "elapsedSeconds": 2.660106417,
+          "encodeFps": 90.22195445498976,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 8.25,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1203.78,
+          "processCpuMaximumPct": 1236.7,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 10,
+          "clipId": "animation-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+          "frames": 192,
+          "elapsedSeconds": 2.189321958,
+          "encodeFps": 87.6983850175224,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.2,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1257.43,
+          "processCpuMaximumPct": 1305.0,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 11,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "5b7d72f3cf2b68a6cd39f82b404f4b8c3c5d013d0c0ef1fd51b852fb88218c5a",
+          "frames": 240,
+          "elapsedSeconds": 1.954410042,
+          "encodeFps": 122.79920530617086,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 4.4,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1264.23,
+          "processCpuMaximumPct": 1298.1,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 12,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "12e80f96e5222ec6742ddc10774a14c527736f68252941d9a11011e8544e0e7a",
+          "frames": 240,
+          "elapsedSeconds": 2.68273875,
+          "encodeFps": 89.46081686112746,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.95,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1209.62,
+          "processCpuMaximumPct": 1325.9,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 13,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+          "frames": 240,
+          "elapsedSeconds": 1.941750584,
+          "encodeFps": 123.59980832636124,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 5.6,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1231.73,
+          "processCpuMaximumPct": 1264.8,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 14,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+          "frames": 240,
+          "elapsedSeconds": 0.444247417,
+          "encodeFps": 540.2394945157329,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 7.8999999999999995,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": null,
+          "processCpuMaximumPct": null,
+          "processCpuSampleCount": 0
+        },
+        {
+          "executionOrder": 15,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "3744643e59f905561832f0abb3fcd15434502715293f146574aeeefe0e9ee34c",
+          "frames": 240,
+          "elapsedSeconds": 0.44779525,
+          "encodeFps": 535.959235833788,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 4.8,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": null,
+          "processCpuMaximumPct": null,
+          "processCpuSampleCount": 0
+        },
+        {
+          "executionOrder": 16,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "cfe056efd0ddb0cf683de078d52047578af29585519e1d4168a91489f58f89f0",
+          "frames": 240,
+          "elapsedSeconds": 1.929985667,
+          "encodeFps": 124.35325510632407,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 4.75,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1239.97,
+          "processCpuMaximumPct": 1266.5,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 17,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "12e80f96e5222ec6742ddc10774a14c527736f68252941d9a11011e8544e0e7a",
+          "frames": 240,
+          "elapsedSeconds": 2.660113292,
+          "encodeFps": 90.22172127847854,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 1.35,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1229.0,
+          "processCpuMaximumPct": 1346.6,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 18,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "5b7d72f3cf2b68a6cd39f82b404f4b8c3c5d013d0c0ef1fd51b852fb88218c5a",
+          "frames": 240,
+          "elapsedSeconds": 1.969349417,
+          "encodeFps": 121.86765737367367,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 6.300000000000001,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1252.93,
+          "processCpuMaximumPct": 1278.9,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 19,
+          "clipId": "animation-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "f803df85554b63eb9b222f6800daea9790870e23ff795cedd2c44e1c3208c448",
+          "frames": 192,
+          "elapsedSeconds": 2.236496833,
+          "encodeFps": 85.84854544258593,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.15,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1226.4,
+          "processCpuMaximumPct": 1304.5,
+          "processCpuSampleCount": 3
+        },
+        {
+          "executionOrder": 20,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "c487f168ff961cd9634e90b45a3f8186bc6faad775f982ec35f1aa3890b94a2a",
+          "frames": 240,
+          "elapsedSeconds": 2.679443958,
+          "encodeFps": 89.57082281323088,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.45,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1203.47,
+          "processCpuMaximumPct": 1237.9,
+          "processCpuSampleCount": 4
+        },
+        {
+          "executionOrder": 21,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "84ad13df23e3b0b79bec67e7ceab687a39a47c5ec99a8c274123c31fd0d0de4a",
+          "frames": 240,
+          "elapsedSeconds": 1.461035792,
+          "encodeFps": 164.26702296695,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.6999999999999997,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 1284.25,
+          "processCpuMaximumPct": 1325.1,
+          "processCpuSampleCount": 2
+        }
+      ],
+      "groups": [
+        {
+          "recipeId": "athletic-action-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            1.941750584,
+            1.929985667
+          ],
+          "relativeSpread": 0.0060773339077326745,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "natural-detail-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            1.954410042,
+            1.969349417
+          ],
+          "relativeSpread": 0.007614827135100484,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "film-grain-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            2.68273875,
+            2.660113292
+          ],
+          "relativeSpread": 0.008469430866564064,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "dark-gradients-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            2.660106417,
+            2.679443958
+          ],
+          "relativeSpread": 0.007243134586964029,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "animation-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            2.189321958,
+            2.236496833
+          ],
+          "relativeSpread": 0.021318032765341055,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "screen-text-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            0.444247417,
+            0.44779525
+          ],
+          "relativeSpread": 0.00795440202861956,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "talking-head-1080p24-final|libx264|fast|23",
+          "measuredSeconds": [
+            1.481196583,
+            1.461035792
+          ],
+          "relativeSpread": 0.013704417891193858,
+          "stable": true,
+          "countedAttempts": 2
+        }
+      ],
+      "validityCounts": {
+        "valid": 21
+      }
+    },
+    {
+      "name": "videotoolbox",
+      "campaignId": "campaign-69ebca2da8fe37b8",
+      "exitCode": 0,
+      "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+      "selectedDevices": {
+        "h264_videotoolbox": {
+          "deviceId": "videotoolbox:system",
+          "driverVersion": "unknown",
+          "model": "Apple M4 Pro",
+          "selection": "videotoolbox-system-selected"
+        }
+      },
+      "runtimeFingerprint": "a3929406d94ea18976b7ba56c5b6991d0d70cf27ec9b544c76c319ad2f0db659",
+      "attempts": [
+        {
+          "executionOrder": 1,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "16148e3e6c5416204cdbc8bad9e49d0ebfeaa0c3c968559d2e95395a220cf7ee",
+          "frames": 240,
+          "elapsedSeconds": 1.245615958,
+          "encodeFps": 192.67575889550383,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 558.85,
+          "processCpuMaximumPct": 630.0,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 2,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "c2ffb9075e06bf469d189983fbe880b76ce56995ea78319d3aebd63e663dc9fe",
+          "frames": 240,
+          "elapsedSeconds": 1.287998333,
+          "encodeFps": 186.3356448924845,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 639.2,
+          "processCpuMaximumPct": 662.1,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 3,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "f711a1fb22ef8d3ce600aeaf2dc0196c0959eabfb958b27b0a318c8d0330752a",
+          "frames": 240,
+          "elapsedSeconds": 1.268514083,
+          "encodeFps": 189.19774184328077,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 769.3,
+          "processCpuMaximumPct": 817.1,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 4,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "81ae1888f3da4b0b5003edd50730cd2d406a3e554d85b752af594b94979df835",
+          "frames": 240,
+          "elapsedSeconds": 1.266426,
+          "encodeFps": 189.50969105182617,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 782.6,
+          "processCpuMaximumPct": 820.5,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 5,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "37f7120f6f7cc1321825a01e11b55e8e5402b7938c13a4c45a027bae2c0124ea",
+          "frames": 240,
+          "elapsedSeconds": 1.278056625,
+          "encodeFps": 187.78510693921717,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 735.15,
+          "processCpuMaximumPct": 766.6,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 6,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "33cc32248fbf260cfa48e7a75e1959412130a39d90db26713c6a5683c78ef6b7",
+          "frames": 240,
+          "elapsedSeconds": 1.22331,
+          "encodeFps": 196.18902812860193,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 141.6,
+          "processCpuMaximumPct": 165.0,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 7,
+          "clipId": "animation-1080p24-final",
+          "phase": "warmup",
+          "repetition": 1,
+          "artifactSha256": "c84f0944e813fe02bf56fa0fcf4b2a44e6ae61794b28ad478a180ed496575579",
+          "frames": 192,
+          "elapsedSeconds": 1.060606917,
+          "encodeFps": 181.02842525587639,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": false,
+          "backgroundCpuPct": null,
+          "backgroundGpuPct": null,
+          "processCpuAveragePct": 906.9,
+          "processCpuMaximumPct": 906.9,
+          "processCpuSampleCount": 1
+        },
+        {
+          "executionOrder": 8,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "7a86953b752dc618600a2fd79566cd339a80496c751d160860c678438a7c9593",
+          "frames": 240,
+          "elapsedSeconds": 1.26714125,
+          "encodeFps": 189.40272049386758,
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": 39.5,
+                "code": "background-gpu-suspect",
+                "message": "Background GPU load exceeded the suspect threshold.",
+                "metric": "backgroundGpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 16.200000000000003,
+          "backgroundGpuPct": 39.5,
+          "processCpuAveragePct": 563.45,
+          "processCpuMaximumPct": 613.6,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 9,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "fa7234abfb5bd02019dc2a59480b6898ef608cc6ef0d2003aa0047d55c27c7ff",
+          "frames": 240,
+          "elapsedSeconds": 1.240148958,
+          "encodeFps": 193.52513942119523,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 8.4,
+          "backgroundGpuPct": 32.5,
+          "processCpuAveragePct": 625.9,
+          "processCpuMaximumPct": 701.1,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 10,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "df7861f7a1351b9ed3c17743cae2480134ce1522ab85cdae8e8a662e6dd0c58b",
+          "frames": 240,
+          "elapsedSeconds": 1.250735167,
+          "encodeFps": 191.88714472278048,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 0.35,
+          "backgroundGpuPct": 29.5,
+          "processCpuAveragePct": 760.95,
+          "processCpuMaximumPct": 838.2,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 11,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "75473b16ec35706c9bfadb98e0c0af3d2f9c14603fca1cb7b6ac382493aa07b0",
+          "frames": 240,
+          "elapsedSeconds": 1.25696625,
+          "encodeFps": 190.9359141504396,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 6.3,
+          "backgroundGpuPct": 29.5,
+          "processCpuAveragePct": 770.0,
+          "processCpuMaximumPct": 817.2,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 12,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "df9bddc62f22552341a02cc306f4a6a1ef754cbe6fa08ef9d791b2c34c7a6c23",
+          "frames": 240,
+          "elapsedSeconds": 1.264147208,
+          "encodeFps": 189.85130725376723,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 1.05,
+          "backgroundGpuPct": 29.5,
+          "processCpuAveragePct": 734.65,
+          "processCpuMaximumPct": 780.5,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 13,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "bb90fbc2363614051eec0bf73e3b7156c040864e78743bf52c0c5e9735fd61cf",
+          "frames": 240,
+          "elapsedSeconds": 1.224936041,
+          "encodeFps": 195.9285970588892,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 7.300000000000001,
+          "backgroundGpuPct": 30.0,
+          "processCpuAveragePct": 166.0,
+          "processCpuMaximumPct": 166.0,
+          "processCpuSampleCount": 1
+        },
+        {
+          "executionOrder": 14,
+          "clipId": "animation-1080p24-final",
+          "phase": "measured",
+          "repetition": 1,
+          "artifactSha256": "d1e283a2aeb6aef92c3ae7a0894666792c599570b06b87929ef5cae872838e93",
+          "frames": 192,
+          "elapsedSeconds": 1.063798916,
+          "encodeFps": 180.4852374938874,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 4.75,
+          "backgroundGpuPct": 29.5,
+          "processCpuAveragePct": 871.2,
+          "processCpuMaximumPct": 871.2,
+          "processCpuSampleCount": 1
+        },
+        {
+          "executionOrder": 15,
+          "clipId": "animation-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "bfde6621fcfcea71d3bd0e5b223b66a3ad7db09dafa8f9029af829def9ddb669",
+          "frames": 192,
+          "elapsedSeconds": 1.061877,
+          "encodeFps": 180.81190194344543,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 7.199999999999999,
+          "backgroundGpuPct": 29.5,
+          "processCpuAveragePct": 884.2,
+          "processCpuMaximumPct": 884.2,
+          "processCpuSampleCount": 1
+        },
+        {
+          "executionOrder": 16,
+          "clipId": "screen-text-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "9731e44118f60ff65817ff2a840d444f4abb19ebfe73e4b2f445ece7cdb0273f",
+          "frames": 240,
+          "elapsedSeconds": 1.221336917,
+          "encodeFps": 196.5059736256216,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.65,
+          "backgroundGpuPct": 30.5,
+          "processCpuAveragePct": 167.3,
+          "processCpuMaximumPct": 167.3,
+          "processCpuSampleCount": 1
+        },
+        {
+          "executionOrder": 17,
+          "clipId": "film-grain-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "0625af39bd6f03b32e14468de3cfc6deed2cbb46c2a212416c52fb3834c0055e",
+          "frames": 240,
+          "elapsedSeconds": 1.270785208,
+          "encodeFps": 188.8596109626734,
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": 40.0,
+                "code": "background-gpu-suspect",
+                "message": "Background GPU load exceeded the suspect threshold.",
+                "metric": "backgroundGpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 7.45,
+          "backgroundGpuPct": 40.0,
+          "processCpuAveragePct": 730.15,
+          "processCpuMaximumPct": 773.0,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 18,
+          "clipId": "natural-detail-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "f886b714b0ccf8f2d263b852f5ccb1d2517471213a9b51dab0b0e32c5afbf143",
+          "frames": 240,
+          "elapsedSeconds": 1.262799417,
+          "encodeFps": 190.0539363331049,
+          "overallValidity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 3.3,
+          "backgroundGpuPct": 33.5,
+          "processCpuAveragePct": 762.85,
+          "processCpuMaximumPct": 800.8,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 19,
+          "clipId": "dark-gradients-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "97a9513dc7bb6917819b5ba8fc92e8a0da28719f3e80e8c39537093abf7e2217",
+          "frames": 240,
+          "elapsedSeconds": 1.2614875,
+          "encodeFps": 190.25158790713343,
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              },
+              {
+                "actual": 41.0,
+                "code": "background-gpu-suspect",
+                "message": "Background GPU load exceeded the suspect threshold.",
+                "metric": "backgroundGpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 6.8,
+          "backgroundGpuPct": 41.0,
+          "processCpuAveragePct": 768.5,
+          "processCpuMaximumPct": 837.4,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 20,
+          "clipId": "talking-head-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "3dbd1093c2926e6c2ca0c3925d575355c286e9a53d9c200c5e0f9e159dfe1bb1",
+          "frames": 240,
+          "elapsedSeconds": 1.265431334,
+          "encodeFps": 189.65865120580298,
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              },
+              {
+                "actual": 42.5,
+                "code": "background-gpu-suspect",
+                "message": "Background GPU load exceeded the suspect threshold.",
+                "metric": "backgroundGpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 8.25,
+          "backgroundGpuPct": 42.5,
+          "processCpuAveragePct": 629.6,
+          "processCpuMaximumPct": 678.7,
+          "processCpuSampleCount": 2
+        },
+        {
+          "executionOrder": 21,
+          "clipId": "athletic-action-1080p24-final",
+          "phase": "measured",
+          "repetition": 2,
+          "artifactSha256": "bb3764f5e202bbe021c42e3e48fa85e69f09b285f40ae3fbc62bd87347af1cac",
+          "frames": 240,
+          "elapsedSeconds": 1.251000125,
+          "encodeFps": 191.84650361245966,
+          "overallValidity": {
+            "reasons": [
+              {
+                "actual": "battery",
+                "code": "power-source-battery",
+                "message": "Measured repetition ran off AC power.",
+                "metric": "powerSource",
+                "severity": "suspect",
+                "threshold": "ac"
+              },
+              {
+                "actual": 42.5,
+                "code": "background-gpu-suspect",
+                "message": "Background GPU load exceeded the suspect threshold.",
+                "metric": "backgroundGpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "countedForStability": true,
+          "backgroundCpuPct": 9.0,
+          "backgroundGpuPct": 42.5,
+          "processCpuAveragePct": 555.8,
+          "processCpuMaximumPct": 621.5,
+          "processCpuSampleCount": 2
+        }
+      ],
+      "groups": [
+        {
+          "recipeId": "athletic-action-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.26714125,
+            1.251000125
+          ],
+          "relativeSpread": 0.012819871958142215,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "natural-detail-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.25696625,
+            1.262799417
+          ],
+          "relativeSpread": 0.0046299281527594745,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "film-grain-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.264147208,
+            1.270785208
+          ],
+          "relativeSpread": 0.005237220494007775,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "dark-gradients-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.250735167,
+            1.2614875
+          ],
+          "relativeSpread": 0.008560015910405058,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "animation-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.063798916,
+            1.061877
+          ],
+          "relativeSpread": 0.0018082869411407815,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "screen-text-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.224936041,
+            1.221336917
+          ],
+          "relativeSpread": 0.002942536717523716,
+          "stable": true,
+          "countedAttempts": 2
+        },
+        {
+          "recipeId": "talking-head-1080p24-final|h264_videotoolbox|default|{\"mode\":\"vbr\",\"targetBitrateKbps\":6000}",
+          "measuredSeconds": [
+            1.240148958,
+            1.265431334
+          ],
+          "relativeSpread": 0.02018085477501836,
+          "stable": true,
+          "countedAttempts": 2
+        }
+      ],
+      "validityCounts": {
+        "valid": 16,
+        "suspect": 5
+      }
+    }
+  ],
+  "sourceInputs": {
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/talking-head-1080p24-final.mkv": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/dark-gradients-1080p24-final.mkv": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/animation-1080p24-final.mkv": "d70c4d9e85e88c4369b6391a21f0388a4a3a7b72e1b89f545e5897b4d5d820ea",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/natural-detail-1080p24-final.mkv": "cfcc51d48372138f6f66b3286fec5a533a808650098e40f119011060d8e51225",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/film-grain-1080p24-final.mkv": "67d3d2f5a4f8c617f223077e7071aaee625f014950126e0e93a16b27e578d603",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/athletic-action-1080p24-final.mkv": "1e06fe0315d0cb90247a3dae2258327989e657496247ca8974ddd8c2431755de",
+    "/Users/ofhd/Developer/Encoding_Database/.build/native-faults-20260914/\u00e9preuve \u5ba2\u6237\u7aef/clean-cache/canonical/screen-text-1080p24-final.mkv": "3c024a4aceb4ad09f8fa8cf51b6a4aba9be68460acb3f6a24a223e287bc05c8c"
+  },
+  "passed": true
+}

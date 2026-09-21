@@ -1,0 +1,124 @@
+TAP version 13
+# Subtest: complete reviewed evidence can pass the explicit production-freeze gate
+ok 1 - complete reviewed evidence can pass the explicit production-freeze gate
+  ---
+  duration_ms: 4.709333
+  type: 'test'
+  ...
+# Subtest: draft evidence reports missing real hardware, reviewers, holdouts, and freeze instead of self-certifying
+ok 2 - draft evidence reports missing real hardware, reviewers, holdouts, and freeze instead of self-certifying
+  ---
+  duration_ms: 1.851167
+  type: 'test'
+  ...
+# Subtest: the same benchmark run cannot leak between calibration and holdout partitions
+ok 3 - the same benchmark run cannot leak between calibration and holdout partitions
+  ---
+  duration_ms: 1.83575
+  type: 'test'
+  ...
+# Subtest: canonical evidence hash detects edits after reviewer sign-off
+ok 4 - canonical evidence hash detects edits after reviewer sign-off
+  ---
+  duration_ms: 1.701916
+  type: 'test'
+  ...
+# Subtest: placeholder decisions and rejected holdouts cannot freeze production policy
+ok 5 - placeholder decisions and rejected holdouts cannot freeze production policy
+  ---
+  duration_ms: 1.507167
+  type: 'test'
+  ...
+# Subtest: knowledgeably reviewed expected SUSPECT evidence can establish a rate-quality point
+ok 6 - knowledgeably reviewed expected SUSPECT evidence can establish a rate-quality point
+  ---
+  duration_ms: 1.344125
+  type: 'test'
+  ...
+# Subtest: checked-in Apple pilot binds exact retained evidence while remaining impossible to freeze
+ok 7 - checked-in Apple pilot binds exact retained evidence while remaining impossible to freeze
+  ---
+  duration_ms: 2.990708
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects validation source assigned to fitting even after hashes are recomputed
+ok 8 - semantic gate rejects validation source assigned to fitting even after hashes are recomputed
+  ---
+  duration_ms: 1.744375
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects unregistered validation source even after hashes are recomputed
+ok 9 - semantic gate rejects unregistered validation source even after hashes are recomputed
+  ---
+  duration_ms: 1.786708
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects single candidate holdout even after hashes are recomputed
+ok 10 - semantic gate rejects single candidate holdout even after hashes are recomputed
+  ---
+  duration_ms: 1.562959
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects duplicate native holdout choices even after hashes are recomputed
+ok 11 - semantic gate rejects duplicate native holdout choices even after hashes are recomputed
+  ---
+  duration_ms: 1.293958
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects empty fitting corpus even after hashes are recomputed
+ok 12 - semantic gate rejects empty fitting corpus even after hashes are recomputed
+  ---
+  duration_ms: 1.23525
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects overlapping holdout groups even after hashes are recomputed
+ok 13 - semantic gate rejects overlapping holdout groups even after hashes are recomputed
+  ---
+  duration_ms: 1.331958
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects identical native RC disguised with decorative settings even after hashes are recomputed
+ok 14 - semantic gate rejects identical native RC disguised with decorative settings even after hashes are recomputed
+  ---
+  duration_ms: 1.4015
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects identical native RC disguised with fingerprints even after hashes are recomputed
+ok 15 - semantic gate rejects identical native RC disguised with fingerprints even after hashes are recomputed
+  ---
+  duration_ms: 1.263875
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects wrong-family top result even after hashes are recomputed
+ok 16 - semantic gate rejects wrong-family top result even after hashes are recomputed
+  ---
+  duration_ms: 1.21525
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects empty metric review even after hashes are recomputed
+ok 17 - semantic gate rejects empty metric review even after hashes are recomputed
+  ---
+  duration_ms: 1.245375
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects unresolved investigation even after hashes are recomputed
+ok 18 - semantic gate rejects unresolved investigation even after hashes are recomputed
+  ---
+  duration_ms: 1.247583
+  type: 'test'
+  ...
+# Subtest: semantic gate rejects unbound calibrated confidence constants even after hashes are recomputed
+ok 19 - semantic gate rejects unbound calibrated confidence constants even after hashes are recomputed
+  ---
+  duration_ms: 1.469583
+  type: 'test'
+  ...
+1..19
+# tests 19
+# suites 0
+# pass 19
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 74.441292

@@ -1,0 +1,888 @@
+{
+  "startedAt": "2026-09-20T09:42:49Z",
+  "fixedSource": "3e6bb08",
+  "note": "post-fix verification; original defect evidence untouched; seeds pre-declared via :gopfix-verify:",
+  "phases": [
+    {
+      "name": "rollout",
+      "at": "2026-09-20T09:43:38Z",
+      "health": {
+        "status": "ok",
+        "corpus": {
+          "ready": true,
+          "pendingGroups": 0,
+          "oldestDirtyAt": null
+        }
+      },
+      "volumes": "{\"ok\":true,\"project\":\"encodingdb-candidate-730de3c\",\"checked\":[{\"service\":\"db\",\"target\":\"/var/lib/postgresql/data\",\"volume\":\"encodingdb-candidate-730de3c_db_data\"},{\"service\":\"server\",\"target\":\"/app/artifacts\",\"volume\":\"encodingdb-candidate-730de3c_artifact_data\"}]}",
+      "server": {
+        "image": "encodingdb-candidate-server:3e6bb08",
+        "env": {
+          "ARTIFACT_UPLOAD_DEADLINE_MS": "300000",
+          "ARTIFACT_ANALYSIS_CONCURRENCY_MAX": "2",
+          "ARTIFACT_PROBE_TIMEOUT_MS": "60000",
+          "V7_BACKUP_DESTINATION": "",
+          "V7_OPERATOR_TOKEN": "024a5ce39c7789fe11e3fd8b31eb78013e54be5fbd3a23935ec29a543574710f",
+          "ARTIFACT_UPLOAD_RATE_WINDOW_MS": "60000",
+          "V7_OPERATOR_ID": "isolated-candidate-operations",
+          "ARTIFACT_PENDING_UPLOAD_MAX": "500",
+          "V7_PENDING_ANALYSIS_ALERT_SECONDS": "1800",
+          "ARTIFACT_STORAGE_QUOTA_BYTES": "10737418240",
+          "V7_BACKUP_COMPOSE_FILE": "",
+          "ARTIFACT_NATIVE_TIMEOUT_MS": "300000",
+          "ARTIFACT_ANALYSIS_LEASE_MS": "300000",
+          "ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH": "1",
+          "ARTIFACT_UPLOAD_TTL_MS": "900000",
+          "ARTIFACT_AUTH_RATE_WINDOW_MS": "60000",
+          "ARTIFACT_UPLOAD_CONCURRENCY_MAX": "4",
+          "ARTIFACT_AUTO_ANALYZE": "1",
+          "V7_BACKUP_TIMEOUT_SECONDS": "300",
+          "V7_PENDING_UPLOAD_ALERT_SECONDS": "900",
+          "ARTIFACT_ANALYSIS_POLL_MS": "1000",
+          "V7_BACKUP_VERIFY_RESTORE": "1",
+          "V7_ORPHAN_STAGING_ALERT_SECONDS": "3600",
+          "ARTIFACT_STORAGE_ROOT": "/app/artifacts",
+          "ARTIFACT_UPLOAD_RATE_MAX": "20",
+          "ARTIFACT_ANALYSIS_MAX_ATTEMPTS": "3",
+          "V7_BACKUP_MAX_ARTIFACT_BYTES": "23622320128",
+          "ARTIFACT_UPLOAD_SECRET": "3f68890b333f3f5da69861beff0a2c1ac1bec0e470aec9ffaa04f83f2c18e288",
+          "ARTIFACT_RESERVATION_MS": "86400000",
+          "ARTIFACT_ANALYSIS_RETRY_BACKOFF_MS": "5000",
+          "V7_BACKUP_FREE_RESERVE_BYTES": "1073741824",
+          "V7_BACKUP_RETENTION_COUNT": "7",
+          "ARTIFACT_AUTH_RATE_MAX": "30",
+          "ARTIFACT_STORAGE_RESERVE_BYTES": "536870912",
+          "ARTIFACT_MAX_BYTES": "2147483648",
+          "ARTIFACT_VOLUME_NAME": "encodingdb-candidate-730de3c_artifact_data",
+          "ARTIFACT_PENDING_ANALYSIS_MAX": "500",
+          "V7_BACKUP_RECOVERY_GRACE_SECONDS": "60"
+        }
+      },
+      "productionBaseline": {
+        "encodingdb-server-1": {
+          "id": "846b1e2e652e6aa71bf79ed10965cb0ecec5f874a1bdbfe870d7daddb9d25544",
+          "startedAt": "2026-09-13T04:19:42.929037058Z",
+          "image": "encodingdb-hotfix-server:b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+          "volumes": [
+            "encodingdb_prod_artifact_data->/app/artifacts"
+          ]
+        },
+        "encodingdb-frontend-1": {
+          "id": "a0f3238c1d6c4b05aa1a8d4169319b9e0f688d9c6d22f7516f43557fd1e0b487",
+          "startedAt": "2026-09-13T03:03:30.509126854Z",
+          "image": "encodingdb-release/frontend:1.2.0-c001ddc73964",
+          "volumes": []
+        },
+        "encodingdb-db-1": {
+          "id": "637e1258bf6cf5650095c3f2c2f2fcf31df8d50d875cfff51ddcc67229a36f97",
+          "startedAt": "2026-09-13T03:03:24.405517485Z",
+          "image": "encodingdb-release/db:1.2.0-c001ddc73964",
+          "volumes": [
+            "encodingdb_db_data->/var/lib/postgresql/data"
+          ]
+        },
+        "encodingdb-nginx": {
+          "id": "1cd16cd3878eca7a4be48357203156d47e7fe173eb6f7bbf79d7c4bab17de6d3",
+          "startedAt": "2026-09-13T03:03:41.811609619Z",
+          "image": "encodingdb-release/nginx:1.2.0-c001ddc73964",
+          "volumes": [
+            "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/nginx-p910.conf->/etc/nginx/conf.d/default.conf"
+          ]
+        }
+      },
+      "compatibility": {
+        "protocolVersion": "7.1",
+        "suiteFingerprint": "d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e",
+        "minimumClientVersion": "client/0.3.0"
+      },
+      "candidateSource": "3e6bb0846ec3f1b396c9c8de513a5e6b6a2ed3c8"
+    },
+    {
+      "name": "drain",
+      "at": "2026-09-20T10:09:25Z",
+      "artifactStates": [
+        "VERIFIED|46",
+        "RETAINED|32",
+        "REJECTED|9"
+      ],
+      "analyses": [
+        "COMPLETE|33",
+        "SUSPECT|45"
+      ]
+    },
+    {
+      "name": "verify:progress",
+      "at": "2026-09-20T10:59:00Z",
+      "runs": {
+        "packageSha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+        "seeds": {
+          "verify-animation": 2779856495711473,
+          "verify-athletic-action": 987673234184634
+        },
+        "runs": [
+          {
+            "clip": "animation-1080p24-final",
+            "argv": [
+              "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/encodingdb-client-linux",
+              "--cli",
+              "--campaign",
+              "full",
+              "--v7-suite-clip",
+              "animation-1080p24-final",
+              "--codec",
+              "libx264",
+              "--presets",
+              "fast",
+              "--crf",
+              "24",
+              "--submit",
+              "--max-attempts",
+              "36",
+              "--max-duration-minutes",
+              "45",
+              "--max-storage-mb",
+              "2048",
+              "--queue-dir",
+              "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue",
+              "--base-url",
+              "https://127.0.0.1:3094"
+            ],
+            "returnCode": 1,
+            "survivingOwnedPids": [],
+            "pending": [],
+            "embeddedRuntimeVerified": true,
+            "ledger": {
+              "kind": "immutable-measurement-replay-ledger",
+              "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue",
+              "campaigns": [
+                "campaign-823401bfd2102eda"
+              ],
+              "files": {
+                "campaigns/campaign-823401bfd2102eda/manifest.json": "e772a5e51f7c20231d9ef8939ab7200d8da38ba908c6f068c7a3675843448ebd",
+                "campaigns/campaign-823401bfd2102eda/campaign-complete.json": "47b951e6222fa948ae9f53bdac1756d11790b9122dd0ad22b6b969c2c941d99e",
+                "campaigns/campaign-823401bfd2102eda/attempt-000001.json": "8a0832563382832122c82a1e5af9f776e96d9f89fb57ca3d537efd91a28623bd",
+                "campaigns/campaign-823401bfd2102eda/attempt-000002.json": "cae4188f8f7a76621931f1bef0632dc2dbd4f861d18334b6312e0d75f88280be",
+                "campaigns/campaign-823401bfd2102eda/attempt-000003.json": "3b032d45f01147fc47534185e7b3977297ce3168bc71124e61a4ba43bef07d81",
+                "campaigns/campaign-823401bfd2102eda/attempt-000004.json": "24cd1e07922e551b170c675201981edee748c5f451ab67b7a97e2de4dd9a80e8",
+                "campaigns/campaign-823401bfd2102eda/attempt-000005.json": "f375a7ea43a6214c3536f69fa3d149b4224f635e4c64a1f8e88a3fdad4e07d26",
+                "campaigns/campaign-823401bfd2102eda/attempt-000006.json": "7c7d8d388abeec803402f75f8d431812560b3dac155802161195be7382360082",
+                "campaigns/campaign-823401bfd2102eda/attempt-000007.json": "af9cc9c5e8c9b770161a664822d1b6c4b8edadc44c12b54281b96884e8b47bf8",
+                "campaigns/campaign-823401bfd2102eda/attempt-000008.json": "9a5a89ee26851a61ecb31a618b66f94de3e65b53e90c8da541cad5551d1ada69",
+                "campaigns/campaign-823401bfd2102eda/attempt-000009.json": "18caae90e04f53a78360ce5ec539ee473a180a97149b8c31a2aa304682ec111a",
+                "campaigns/campaign-823401bfd2102eda/attempt-000010.json": "f2591d653abe344dc8dbc183a6e41f7e655c13d4e454f48475330702fec2c739",
+                "campaigns/campaign-823401bfd2102eda/attempt-000011.json": "ce9c5070f8ad78e8db55f3dcd2ab67c932257ae6634936d35c4a15604912a530",
+                "campaigns/campaign-823401bfd2102eda/attempt-000012.json": "1763a7ec95443c4c02a0f33ce0690fd7cd53a94100d8b1f8074dc6b01abfdea8",
+                "campaigns/campaign-823401bfd2102eda/attempt-000013.json": "c337d0bfcfdfda658b39e200cbf73554f6ff86128e5ffb2b80aa8447d31bdbe7",
+                "campaigns/campaign-823401bfd2102eda/attempt-000014.json": "4c551836c4a4ee53762b1278b1df5f98d82340ba24d794bfa1c7b14ac0bf51d1",
+                "campaigns/campaign-823401bfd2102eda/attempt-000015.json": "c46536041ed84fc14cdd80971b57116c076f5c2ac715b06105af941ad6620be8",
+                "campaigns/campaign-823401bfd2102eda/attempt-000016.json": "b4664fd5a1e3fabac44be084f6dd53c8237601ec7c06bc111b28922c26149998",
+                "campaigns/campaign-823401bfd2102eda/attempt-000017.json": "60d26f0c0c51ea5b02673cf8d6cf07959a3aa89be90179e5892d5a2b666e9ffd",
+                "campaigns/campaign-823401bfd2102eda/attempt-000018.json": "aa0bd6906163efb1d32ce51a8d231cc462d70ba3084c13805379078d76153e4b",
+                "campaigns/campaign-823401bfd2102eda/attempt-000019.json": "c03ce22f34c0e52b05e111557d416cba6fc701151dc9ea53874d971cb3773eae",
+                "campaigns/campaign-823401bfd2102eda/attempt-000020.json": "8d237acb4242c1d5976e0a661522f6996bc47e200b96e7c3fec58e663b833bb1",
+                "campaigns/campaign-823401bfd2102eda/attempt-000021.json": "d4af483fe1857edbee1a0934e321a298bc9f1648421be9207e9cb210da50e0eb",
+                "campaigns/campaign-823401bfd2102eda/attempt-000022.json": "92ce950ba36984acc9c94ef2f998a79e49c65f042fd46aa9ad29772d2cb749be",
+                "campaigns/campaign-823401bfd2102eda/attempt-000023.json": "204d5da283f8744ed42cdd34d3fbc956c1bb552a36987cca906c78ad0afab9a9",
+                "campaigns/campaign-823401bfd2102eda/attempt-000024.json": "b8e0bb08de33ad2da84856e4ef1d33d8ab42de124c2d22e92299cfd61e3cb264",
+                "campaigns/campaign-823401bfd2102eda/attempt-000025.json": "dbdabd6e4cf9956024bdf7ef46496e5b4b853f231d1771db92d59e5188dfb925",
+                "campaigns/campaign-823401bfd2102eda/001-libx264-fast-24-warmup-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-823401bfd2102eda/002-libx264-fast-24-warmup-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-823401bfd2102eda/003-libx264-fast-24-warmup-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-823401bfd2102eda/004-libx264-fast-24-warmup-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-823401bfd2102eda/005-libx264-fast-24-warmup-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-823401bfd2102eda/006-libx264-fast-24-warmup-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-823401bfd2102eda/007-libx264-fast-24-warmup-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-823401bfd2102eda/008-libx264-fast-24-measured-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-823401bfd2102eda/009-libx264-fast-24-measured-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-823401bfd2102eda/010-libx264-fast-24-measured-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-823401bfd2102eda/011-libx264-fast-24-measured-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-823401bfd2102eda/012-libx264-fast-24-measured-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-823401bfd2102eda/013-libx264-fast-24-measured-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-823401bfd2102eda/014-libx264-fast-24-measured-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-823401bfd2102eda/015-libx264-fast-24-measured-r2.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-823401bfd2102eda/016-libx264-fast-24-measured-r2.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-823401bfd2102eda/017-libx264-fast-24-measured-r2.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-823401bfd2102eda/018-libx264-fast-24-measured-r2.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-823401bfd2102eda/019-libx264-fast-24-measured-r2.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-823401bfd2102eda/020-libx264-fast-24-measured-r2.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-823401bfd2102eda/021-libx264-fast-24-measured-r2.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-823401bfd2102eda/022-libx264-fast-24-measured-r3.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-823401bfd2102eda/023-libx264-fast-24-measured-r3.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-823401bfd2102eda/024-libx264-fast-24-measured-r4.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-823401bfd2102eda/025-libx264-fast-24-measured-r4.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226"
+              }
+            }
+          },
+          {
+            "clip": "athletic-action-1080p24-final",
+            "argv": [
+              "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/encodingdb-client-linux",
+              "--cli",
+              "--campaign",
+              "full",
+              "--v7-suite-clip",
+              "athletic-action-1080p24-final",
+              "--codec",
+              "libx264",
+              "--presets",
+              "fast",
+              "--crf",
+              "24",
+              "--submit",
+              "--max-attempts",
+              "36",
+              "--max-duration-minutes",
+              "45",
+              "--max-storage-mb",
+              "2048",
+              "--queue-dir",
+              "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue",
+              "--base-url",
+              "https://127.0.0.1:3094"
+            ],
+            "returnCode": 1,
+            "survivingOwnedPids": [],
+            "pending": [],
+            "embeddedRuntimeVerified": true,
+            "ledger": {
+              "kind": "immutable-measurement-replay-ledger",
+              "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue",
+              "campaigns": [
+                "campaign-496b66c4aa78aa85"
+              ],
+              "files": {
+                "campaigns/campaign-496b66c4aa78aa85/manifest.json": "813fe29d8c420e341c20be61fbc9e76288978fc08f3633e223446851073ab172",
+                "campaigns/campaign-496b66c4aa78aa85/campaign-complete.json": "ef4debdf037bf1b89d49f7d3edde86fa3c01f326db6c483ad492526f9fca5f72",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000001.json": "16f99c064070e08d03725cd1563a832e0f9af55f555b89995cdcdd16541b8fbd",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000002.json": "7319b860b5bc751c08aed37ab2d86c7bf0e765d67a5ccc2d1b172cba08970c08",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000003.json": "bc48bf90e3d395616aa6a47f35ac70cae961cc025027d3b81842d33d1c34c659",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000004.json": "0a4214106cdb7f9278a16e7264b00411a9d8ae4329f06e2b5c13767284f3dfde",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000005.json": "c1cd083fc555687748b4868d390445514138fe4fa4e01a124218f5810dfea76c",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000006.json": "065dcd955b31a4f7a672e8e06d23410e9864941c810c79f34fe26454ff33a326",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000007.json": "34af234ab38bacd76629155367fdbe9ed6437d936caf4ee46c392ddea39cb1c4",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000008.json": "65fd96bd440740807575d39aba24f72433cb78b73eb817606ea06eb407b8c4f0",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000009.json": "0c963af99ca8cf51377c0821a0c6bfb767709afa96fc545cb06408a93ef7c82e",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000010.json": "06d7cdba9d5d2172badf8daa4e2fa776d6617de86beca9cf0a33324b69b24b21",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000011.json": "a240ae4a18d79292aad59c308273fb99d285a7b95453d0e58cbc4818b3820f9d",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000012.json": "f25d4bf32b27f7d6e180233d619f79224bd001ed72ea5926bd05ed00c4eea3d7",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000013.json": "496ebd485d2b52d32038c139090a36e04a1ead1208f985e3aebeed0070565334",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000014.json": "0524a9d35374389eb636e1486017b5a54032326c7176cbbe12c2f4401c4d599e",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000015.json": "dcf6334fa8e6f932303dc77a3e036d591236bf184ac9daffc507f2cb793fe2e8",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000016.json": "d96b35dc1f8167a50379a0bcf6090af66de2c74144472741c4e72941ae11620a",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000017.json": "2b6ed6789b4fe11a8b37b34c68323b3ccc4c0d8e4fefa89b491b135015072573",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000018.json": "e133f6fc53e0400c05907828affa73281c0cac5ea92447bae8cb09c3a4083690",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000019.json": "80b663b8876d6a897727f06a35853fab922deb669806ed7085f6fdf0317cd370",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000020.json": "03cf44a3de7b2da624a300169fc2b2af8ba573937cab56e0e7b18d6a0a98b976",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000021.json": "9da68abcb2a1ebdf5d85478d970b021f19bf204fd6c5a7cb15e814948f378e9b",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000022.json": "532dec271386279e654cbcbd83f46fe74de613bd2d7c63695b1c4ca524de27e7",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000023.json": "7a355933e6b31b37eb7578f72c2f7f009696357c84521580ab59ab0cc708b55b",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000024.json": "3a05affadf15cf5b2f8526e422ecc5ce17ea9eac313112810eed3d4ad5ea1ab7",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000025.json": "c4127cdb2729de91f2dc59c3e754678080bd91150418c30136857b43339b5d32",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000026.json": "acdc0161b65f6495e6bac015b3402bad7eeff966b1998057f780d957be863bc9",
+                "campaigns/campaign-496b66c4aa78aa85/attempt-000027.json": "8e06f4466b8a406037eb3bc246485967f782d078ca0f2d340d881af3fddc3b1c",
+                "campaigns/campaign-496b66c4aa78aa85/001-libx264-fast-24-warmup-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-496b66c4aa78aa85/002-libx264-fast-24-warmup-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-496b66c4aa78aa85/003-libx264-fast-24-warmup-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-496b66c4aa78aa85/004-libx264-fast-24-warmup-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-496b66c4aa78aa85/005-libx264-fast-24-warmup-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-496b66c4aa78aa85/006-libx264-fast-24-warmup-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-496b66c4aa78aa85/007-libx264-fast-24-warmup-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-496b66c4aa78aa85/008-libx264-fast-24-measured-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-496b66c4aa78aa85/009-libx264-fast-24-measured-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-496b66c4aa78aa85/010-libx264-fast-24-measured-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-496b66c4aa78aa85/011-libx264-fast-24-measured-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-496b66c4aa78aa85/012-libx264-fast-24-measured-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-496b66c4aa78aa85/013-libx264-fast-24-measured-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-496b66c4aa78aa85/014-libx264-fast-24-measured-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-496b66c4aa78aa85/015-libx264-fast-24-measured-r2.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+                "campaigns/campaign-496b66c4aa78aa85/016-libx264-fast-24-measured-r2.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+                "campaigns/campaign-496b66c4aa78aa85/017-libx264-fast-24-measured-r2.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+                "campaigns/campaign-496b66c4aa78aa85/018-libx264-fast-24-measured-r2.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-496b66c4aa78aa85/019-libx264-fast-24-measured-r2.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+                "campaigns/campaign-496b66c4aa78aa85/020-libx264-fast-24-measured-r2.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-496b66c4aa78aa85/021-libx264-fast-24-measured-r2.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-496b66c4aa78aa85/022-libx264-fast-24-measured-r3.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+                "campaigns/campaign-496b66c4aa78aa85/023-libx264-fast-24-measured-r3.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-496b66c4aa78aa85/024-libx264-fast-24-measured-r3.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-496b66c4aa78aa85/025-libx264-fast-24-measured-r4.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+                "campaigns/campaign-496b66c4aa78aa85/026-libx264-fast-24-measured-r4.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+                "campaigns/campaign-496b66c4aa78aa85/027-libx264-fast-24-measured-r4.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2"
+              }
+            }
+          }
+        ],
+        "seedRule": "first 13 hex digits of SHA256(b3ef24abb020bc6af5b5fe6b849ba3eae8314be2:gopfix-verify:<name>:1)"
+      }
+    },
+    {
+      "name": "verify",
+      "at": "2026-09-20T11:18:24Z",
+      "packageSha256": "3abd38ee72fa9f5afd9b81934717b3319f7f6143f2675038f6293798c078bf9a",
+      "seeds": {
+        "verify-animation": 2779856495711473,
+        "verify-athletic-action": 987673234184634
+      },
+      "runs": [
+        {
+          "clip": "animation-1080p24-final",
+          "argv": [
+            "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/encodingdb-client-linux",
+            "--cli",
+            "--campaign",
+            "full",
+            "--v7-suite-clip",
+            "animation-1080p24-final",
+            "--codec",
+            "libx264",
+            "--presets",
+            "fast",
+            "--crf",
+            "24",
+            "--submit",
+            "--max-attempts",
+            "36",
+            "--max-duration-minutes",
+            "45",
+            "--max-storage-mb",
+            "2048",
+            "--queue-dir",
+            "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue",
+            "--base-url",
+            "https://127.0.0.1:3094"
+          ],
+          "returnCode": 1,
+          "survivingOwnedPids": [],
+          "pending": [],
+          "embeddedRuntimeVerified": true,
+          "ledger": {
+            "kind": "immutable-measurement-replay-ledger",
+            "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-animation-queue",
+            "campaigns": [
+              "campaign-823401bfd2102eda"
+            ],
+            "files": {
+              "campaigns/campaign-823401bfd2102eda/manifest.json": "e772a5e51f7c20231d9ef8939ab7200d8da38ba908c6f068c7a3675843448ebd",
+              "campaigns/campaign-823401bfd2102eda/campaign-complete.json": "47b951e6222fa948ae9f53bdac1756d11790b9122dd0ad22b6b969c2c941d99e",
+              "campaigns/campaign-823401bfd2102eda/attempt-000001.json": "8a0832563382832122c82a1e5af9f776e96d9f89fb57ca3d537efd91a28623bd",
+              "campaigns/campaign-823401bfd2102eda/attempt-000002.json": "cae4188f8f7a76621931f1bef0632dc2dbd4f861d18334b6312e0d75f88280be",
+              "campaigns/campaign-823401bfd2102eda/attempt-000003.json": "3b032d45f01147fc47534185e7b3977297ce3168bc71124e61a4ba43bef07d81",
+              "campaigns/campaign-823401bfd2102eda/attempt-000004.json": "24cd1e07922e551b170c675201981edee748c5f451ab67b7a97e2de4dd9a80e8",
+              "campaigns/campaign-823401bfd2102eda/attempt-000005.json": "f375a7ea43a6214c3536f69fa3d149b4224f635e4c64a1f8e88a3fdad4e07d26",
+              "campaigns/campaign-823401bfd2102eda/attempt-000006.json": "7c7d8d388abeec803402f75f8d431812560b3dac155802161195be7382360082",
+              "campaigns/campaign-823401bfd2102eda/attempt-000007.json": "af9cc9c5e8c9b770161a664822d1b6c4b8edadc44c12b54281b96884e8b47bf8",
+              "campaigns/campaign-823401bfd2102eda/attempt-000008.json": "9a5a89ee26851a61ecb31a618b66f94de3e65b53e90c8da541cad5551d1ada69",
+              "campaigns/campaign-823401bfd2102eda/attempt-000009.json": "18caae90e04f53a78360ce5ec539ee473a180a97149b8c31a2aa304682ec111a",
+              "campaigns/campaign-823401bfd2102eda/attempt-000010.json": "f2591d653abe344dc8dbc183a6e41f7e655c13d4e454f48475330702fec2c739",
+              "campaigns/campaign-823401bfd2102eda/attempt-000011.json": "ce9c5070f8ad78e8db55f3dcd2ab67c932257ae6634936d35c4a15604912a530",
+              "campaigns/campaign-823401bfd2102eda/attempt-000012.json": "1763a7ec95443c4c02a0f33ce0690fd7cd53a94100d8b1f8074dc6b01abfdea8",
+              "campaigns/campaign-823401bfd2102eda/attempt-000013.json": "c337d0bfcfdfda658b39e200cbf73554f6ff86128e5ffb2b80aa8447d31bdbe7",
+              "campaigns/campaign-823401bfd2102eda/attempt-000014.json": "4c551836c4a4ee53762b1278b1df5f98d82340ba24d794bfa1c7b14ac0bf51d1",
+              "campaigns/campaign-823401bfd2102eda/attempt-000015.json": "c46536041ed84fc14cdd80971b57116c076f5c2ac715b06105af941ad6620be8",
+              "campaigns/campaign-823401bfd2102eda/attempt-000016.json": "b4664fd5a1e3fabac44be084f6dd53c8237601ec7c06bc111b28922c26149998",
+              "campaigns/campaign-823401bfd2102eda/attempt-000017.json": "60d26f0c0c51ea5b02673cf8d6cf07959a3aa89be90179e5892d5a2b666e9ffd",
+              "campaigns/campaign-823401bfd2102eda/attempt-000018.json": "aa0bd6906163efb1d32ce51a8d231cc462d70ba3084c13805379078d76153e4b",
+              "campaigns/campaign-823401bfd2102eda/attempt-000019.json": "c03ce22f34c0e52b05e111557d416cba6fc701151dc9ea53874d971cb3773eae",
+              "campaigns/campaign-823401bfd2102eda/attempt-000020.json": "8d237acb4242c1d5976e0a661522f6996bc47e200b96e7c3fec58e663b833bb1",
+              "campaigns/campaign-823401bfd2102eda/attempt-000021.json": "d4af483fe1857edbee1a0934e321a298bc9f1648421be9207e9cb210da50e0eb",
+              "campaigns/campaign-823401bfd2102eda/attempt-000022.json": "92ce950ba36984acc9c94ef2f998a79e49c65f042fd46aa9ad29772d2cb749be",
+              "campaigns/campaign-823401bfd2102eda/attempt-000023.json": "204d5da283f8744ed42cdd34d3fbc956c1bb552a36987cca906c78ad0afab9a9",
+              "campaigns/campaign-823401bfd2102eda/attempt-000024.json": "b8e0bb08de33ad2da84856e4ef1d33d8ab42de124c2d22e92299cfd61e3cb264",
+              "campaigns/campaign-823401bfd2102eda/attempt-000025.json": "dbdabd6e4cf9956024bdf7ef46496e5b4b853f231d1771db92d59e5188dfb925",
+              "campaigns/campaign-823401bfd2102eda/001-libx264-fast-24-warmup-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-823401bfd2102eda/002-libx264-fast-24-warmup-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-823401bfd2102eda/003-libx264-fast-24-warmup-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-823401bfd2102eda/004-libx264-fast-24-warmup-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-823401bfd2102eda/005-libx264-fast-24-warmup-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-823401bfd2102eda/006-libx264-fast-24-warmup-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-823401bfd2102eda/007-libx264-fast-24-warmup-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-823401bfd2102eda/008-libx264-fast-24-measured-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-823401bfd2102eda/009-libx264-fast-24-measured-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-823401bfd2102eda/010-libx264-fast-24-measured-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-823401bfd2102eda/011-libx264-fast-24-measured-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-823401bfd2102eda/012-libx264-fast-24-measured-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-823401bfd2102eda/013-libx264-fast-24-measured-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-823401bfd2102eda/014-libx264-fast-24-measured-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-823401bfd2102eda/015-libx264-fast-24-measured-r2.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-823401bfd2102eda/016-libx264-fast-24-measured-r2.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-823401bfd2102eda/017-libx264-fast-24-measured-r2.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-823401bfd2102eda/018-libx264-fast-24-measured-r2.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-823401bfd2102eda/019-libx264-fast-24-measured-r2.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-823401bfd2102eda/020-libx264-fast-24-measured-r2.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-823401bfd2102eda/021-libx264-fast-24-measured-r2.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-823401bfd2102eda/022-libx264-fast-24-measured-r3.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-823401bfd2102eda/023-libx264-fast-24-measured-r3.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-823401bfd2102eda/024-libx264-fast-24-measured-r4.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-823401bfd2102eda/025-libx264-fast-24-measured-r4.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226"
+            }
+          }
+        },
+        {
+          "clip": "athletic-action-1080p24-final",
+          "argv": [
+            "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/encodingdb-client-linux",
+            "--cli",
+            "--campaign",
+            "full",
+            "--v7-suite-clip",
+            "athletic-action-1080p24-final",
+            "--codec",
+            "libx264",
+            "--presets",
+            "fast",
+            "--crf",
+            "24",
+            "--submit",
+            "--max-attempts",
+            "36",
+            "--max-duration-minutes",
+            "45",
+            "--max-storage-mb",
+            "2048",
+            "--queue-dir",
+            "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue",
+            "--base-url",
+            "https://127.0.0.1:3094"
+          ],
+          "returnCode": 1,
+          "survivingOwnedPids": [],
+          "pending": [],
+          "embeddedRuntimeVerified": true,
+          "ledger": {
+            "kind": "immutable-measurement-replay-ledger",
+            "queue": "/mnt/NVME/docker/encodingdb-operations/20260920-native-b3ef24a/gopfix-verify/verify-athletic-action-queue",
+            "campaigns": [
+              "campaign-496b66c4aa78aa85"
+            ],
+            "files": {
+              "campaigns/campaign-496b66c4aa78aa85/manifest.json": "813fe29d8c420e341c20be61fbc9e76288978fc08f3633e223446851073ab172",
+              "campaigns/campaign-496b66c4aa78aa85/campaign-complete.json": "ef4debdf037bf1b89d49f7d3edde86fa3c01f326db6c483ad492526f9fca5f72",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000001.json": "16f99c064070e08d03725cd1563a832e0f9af55f555b89995cdcdd16541b8fbd",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000002.json": "7319b860b5bc751c08aed37ab2d86c7bf0e765d67a5ccc2d1b172cba08970c08",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000003.json": "bc48bf90e3d395616aa6a47f35ac70cae961cc025027d3b81842d33d1c34c659",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000004.json": "0a4214106cdb7f9278a16e7264b00411a9d8ae4329f06e2b5c13767284f3dfde",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000005.json": "c1cd083fc555687748b4868d390445514138fe4fa4e01a124218f5810dfea76c",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000006.json": "065dcd955b31a4f7a672e8e06d23410e9864941c810c79f34fe26454ff33a326",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000007.json": "34af234ab38bacd76629155367fdbe9ed6437d936caf4ee46c392ddea39cb1c4",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000008.json": "65fd96bd440740807575d39aba24f72433cb78b73eb817606ea06eb407b8c4f0",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000009.json": "0c963af99ca8cf51377c0821a0c6bfb767709afa96fc545cb06408a93ef7c82e",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000010.json": "06d7cdba9d5d2172badf8daa4e2fa776d6617de86beca9cf0a33324b69b24b21",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000011.json": "a240ae4a18d79292aad59c308273fb99d285a7b95453d0e58cbc4818b3820f9d",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000012.json": "f25d4bf32b27f7d6e180233d619f79224bd001ed72ea5926bd05ed00c4eea3d7",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000013.json": "496ebd485d2b52d32038c139090a36e04a1ead1208f985e3aebeed0070565334",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000014.json": "0524a9d35374389eb636e1486017b5a54032326c7176cbbe12c2f4401c4d599e",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000015.json": "dcf6334fa8e6f932303dc77a3e036d591236bf184ac9daffc507f2cb793fe2e8",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000016.json": "d96b35dc1f8167a50379a0bcf6090af66de2c74144472741c4e72941ae11620a",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000017.json": "2b6ed6789b4fe11a8b37b34c68323b3ccc4c0d8e4fefa89b491b135015072573",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000018.json": "e133f6fc53e0400c05907828affa73281c0cac5ea92447bae8cb09c3a4083690",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000019.json": "80b663b8876d6a897727f06a35853fab922deb669806ed7085f6fdf0317cd370",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000020.json": "03cf44a3de7b2da624a300169fc2b2af8ba573937cab56e0e7b18d6a0a98b976",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000021.json": "9da68abcb2a1ebdf5d85478d970b021f19bf204fd6c5a7cb15e814948f378e9b",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000022.json": "532dec271386279e654cbcbd83f46fe74de613bd2d7c63695b1c4ca524de27e7",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000023.json": "7a355933e6b31b37eb7578f72c2f7f009696357c84521580ab59ab0cc708b55b",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000024.json": "3a05affadf15cf5b2f8526e422ecc5ce17ea9eac313112810eed3d4ad5ea1ab7",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000025.json": "c4127cdb2729de91f2dc59c3e754678080bd91150418c30136857b43339b5d32",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000026.json": "acdc0161b65f6495e6bac015b3402bad7eeff966b1998057f780d957be863bc9",
+              "campaigns/campaign-496b66c4aa78aa85/attempt-000027.json": "8e06f4466b8a406037eb3bc246485967f782d078ca0f2d340d881af3fddc3b1c",
+              "campaigns/campaign-496b66c4aa78aa85/001-libx264-fast-24-warmup-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-496b66c4aa78aa85/002-libx264-fast-24-warmup-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-496b66c4aa78aa85/003-libx264-fast-24-warmup-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-496b66c4aa78aa85/004-libx264-fast-24-warmup-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-496b66c4aa78aa85/005-libx264-fast-24-warmup-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-496b66c4aa78aa85/006-libx264-fast-24-warmup-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-496b66c4aa78aa85/007-libx264-fast-24-warmup-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-496b66c4aa78aa85/008-libx264-fast-24-measured-r1.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-496b66c4aa78aa85/009-libx264-fast-24-measured-r1.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-496b66c4aa78aa85/010-libx264-fast-24-measured-r1.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-496b66c4aa78aa85/011-libx264-fast-24-measured-r1.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-496b66c4aa78aa85/012-libx264-fast-24-measured-r1.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-496b66c4aa78aa85/013-libx264-fast-24-measured-r1.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-496b66c4aa78aa85/014-libx264-fast-24-measured-r1.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-496b66c4aa78aa85/015-libx264-fast-24-measured-r2.mp4": "914955c86e752820422883d9359f1a0d1d965710cdc70bf911e4ed942f19f797",
+              "campaigns/campaign-496b66c4aa78aa85/016-libx264-fast-24-measured-r2.mp4": "5ac0ed621c43428c27e2f0d68687f8f5d48e004540a4d31a4d307dbe1704052e",
+              "campaigns/campaign-496b66c4aa78aa85/017-libx264-fast-24-measured-r2.mp4": "761e9a944ba57822e91635ce1b432eac8d0d6515921de4d93f8d695128337596",
+              "campaigns/campaign-496b66c4aa78aa85/018-libx264-fast-24-measured-r2.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-496b66c4aa78aa85/019-libx264-fast-24-measured-r2.mp4": "12dd5a95a9767ac97d9c73f1ec91abb9556fa82c8dae2cd0f96045eed920f3f6",
+              "campaigns/campaign-496b66c4aa78aa85/020-libx264-fast-24-measured-r2.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-496b66c4aa78aa85/021-libx264-fast-24-measured-r2.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-496b66c4aa78aa85/022-libx264-fast-24-measured-r3.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2",
+              "campaigns/campaign-496b66c4aa78aa85/023-libx264-fast-24-measured-r3.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-496b66c4aa78aa85/024-libx264-fast-24-measured-r3.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-496b66c4aa78aa85/025-libx264-fast-24-measured-r4.mp4": "78119af2e483f016ad9bbb093786ace4e03511f6a12097e24734fa1dc348f2de",
+              "campaigns/campaign-496b66c4aa78aa85/026-libx264-fast-24-measured-r4.mp4": "9cf5696c445d9b62f96dfc19d5f57c265adeb6d3e73544dea7e8ec3b75bc3226",
+              "campaigns/campaign-496b66c4aa78aa85/027-libx264-fast-24-measured-r4.mp4": "79d77e00e16dc2973fdec14988030f9fb38317c7152b181ba541185e1bc93ae2"
+            }
+          }
+        }
+      ],
+      "seedRule": "first 13 hex digits of SHA256(b3ef24abb020bc6af5b5fe6b849ba3eae8314be2:gopfix-verify:<name>:1)",
+      "fresh": {
+        "animation-1080p24-final": [
+          {
+            "sha256": "5ac0ed621c43",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 38, 152]"
+          },
+          {
+            "sha256": "5ac0ed621c43",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 38, 152]"
+          },
+          {
+            "sha256": "5ac0ed621c43",
+            "storageState": "RETAINED",
+            "repetitionIndex": 2,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 38, 152]"
+          }
+        ],
+        "athletic-action-1080p24-final": [
+          {
+            "sha256": "914955c86e75",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 39, 88, 117, 148, 178, 227]"
+          },
+          {
+            "sha256": "914955c86e75",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 39, 88, 117, 148, 178, 227]"
+          },
+          {
+            "sha256": "914955c86e75",
+            "storageState": "RETAINED",
+            "repetitionIndex": 2,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 39, 88, 117, 148, 178, 227]"
+          },
+          {
+            "sha256": "914955c86e75",
+            "storageState": "RETAINED",
+            "repetitionIndex": 2,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 39, 88, 117, 148, 178, 227]"
+          }
+        ],
+        "dark-gradients-1080p24-final": [
+          {
+            "sha256": "12dd5a95a976",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "12dd5a95a976",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "12dd5a95a976",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 2,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "12dd5a95a976",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 2,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          }
+        ],
+        "film-grain-1080p24-final": [
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          },
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          },
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 2,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          },
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 2,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          },
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 3,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          },
+          {
+            "sha256": "79d77e00e16d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 4,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0, 80]"
+          }
+        ],
+        "natural-detail-1080p24-final": [
+          {
+            "sha256": "761e9a944ba5",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 180]"
+          },
+          {
+            "sha256": "761e9a944ba5",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 180]"
+          },
+          {
+            "sha256": "761e9a944ba5",
+            "storageState": "RETAINED",
+            "repetitionIndex": 2,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0, 180]"
+          }
+        ],
+        "screen-text-1080p24-final": [
+          {
+            "sha256": "78119af2e483",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "78119af2e483",
+            "storageState": "RETAINED",
+            "repetitionIndex": 1,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "78119af2e483",
+            "storageState": "RETAINED",
+            "repetitionIndex": 2,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "78119af2e483",
+            "storageState": "RETAINED",
+            "repetitionIndex": 3,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "78119af2e483",
+            "storageState": "RETAINED",
+            "repetitionIndex": 4,
+            "analysis": "COMPLETE",
+            "keyframeIndexes": "[0]"
+          }
+        ],
+        "talking-head-1080p24-final": [
+          {
+            "sha256": "9cf5696c445d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "9cf5696c445d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 1,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "9cf5696c445d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 2,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "9cf5696c445d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 3,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          },
+          {
+            "sha256": "9cf5696c445d",
+            "storageState": "VERIFIED",
+            "repetitionIndex": 4,
+            "analysis": "SUSPECT",
+            "keyframeIndexes": "[0]"
+          }
+        ]
+      }
+    },
+    {
+      "name": "membership",
+      "at": "2026-09-20T11:31:07Z",
+      "windowsRowsReceiptAttested": 35,
+      "windowsRowsPayloadProven": 2,
+      "windowsReceiptMatch": [
+        {
+          "campaign": "campaign-48cfe70dd43b036c",
+          "rows": 9,
+          "first": "2026-09-20 08:49:38.2",
+          "last": "2026-09-20 08:50:21.326",
+          "matchesReceipt": true
+        },
+        {
+          "campaign": "campaign-ade93ae84fc38765",
+          "rows": 14,
+          "first": "2026-09-20 08:50:25.183",
+          "last": "2026-09-20 08:51:10.932",
+          "matchesReceipt": true
+        },
+        {
+          "campaign": "campaign-fb607b76eec675bf",
+          "rows": 14,
+          "first": "2026-09-20 08:51:15.152",
+          "last": "2026-09-20 08:51:57.056",
+          "matchesReceipt": true
+        }
+      ],
+      "distinctPayloadIdentities": 108,
+      "dbRuns": 117,
+      "terminalReceipts": 42,
+      "terminalAlsoRecorded": [
+        "08c66885d4ff81b5f88c0b57f83b2143d7b2a89213155025c0b87015a391dae9",
+        "1da578ff587393e224404279387786287af924b96952e7c6cf393503ce39b62d",
+        "257071c1f1c06bfd9c64206edfb0134d195bb65695b49e8b3abe1c4e01b7115f",
+        "2a5913c024cba758b8820501196c3b0862734c25926ee5dac5a1c821ce6df64c",
+        "3d67a823be83969f246cac0984335b1cd1d25a9b11d63d0d1abeebd41f07967b",
+        "9882e227eb6a9c5020a2c8755dbfb5908b043caa4c02ef141a420024fd2ec55f",
+        "d9c2533fa5b37a5f2d9829f17069aec055285eefb99fd578ca5e8883aa71e9b8",
+        "f4b38d69d56c733a723b55891012609515b9e7c8e0dcfe151d3408968db2af38",
+        "fc220072e46b6387188d5fab49303542c24fd07c73b18d566a1be31fb52df818"
+      ],
+      "unaccountedAttempts": [],
+      "ghostRuns": [],
+      "shaMismatches": [],
+      "frameCoverageMismatches": [],
+      "artifactStates": [
+        "VERIFIED|61",
+        "RETAINED|47",
+        "REJECTED|9"
+      ],
+      "openArtifacts": 0,
+      "missingFromDisk": [],
+      "derivedResultRows": 0,
+      "windowsCampaignRows": [
+        "campaign-48cfe70dd43b036c|9|2026-09-20 08:49:38.2|2026-09-20 08:50:21.326",
+        "campaign-ade93ae84fc38765|14|2026-09-20 08:50:25.183|2026-09-20 08:51:10.932",
+        "campaign-fb607b76eec675bf|14|2026-09-20 08:51:15.152|2026-09-20 08:51:57.056"
+      ],
+      "analyses": [
+        "COMPLETE|48",
+        "SUSPECT|60"
+      ],
+      "exactMemberSet": true
+    },
+    {
+      "name": "restore",
+      "at": "2026-09-20T11:32:19Z",
+      "env": {
+        "V7_PENDING_ANALYSIS_ALERT_SECONDS": "1800",
+        "ARTIFACT_STORAGE_QUOTA_BYTES": "10737418240",
+        "V7_BACKUP_VERIFY_RESTORE": "1",
+        "ARTIFACT_UPLOAD_RATE_WINDOW_MS": "60000",
+        "V7_BACKUP_TIMEOUT_SECONDS": "300",
+        "V7_BACKUP_FREE_RESERVE_BYTES": "1073741824",
+        "ARTIFACT_STORAGE_RESERVE_BYTES": "536870912",
+        "ARTIFACT_PENDING_ANALYSIS_MAX": "500",
+        "ARTIFACT_AUTO_ANALYZE": "1",
+        "ARTIFACT_NATIVE_TIMEOUT_MS": "300000",
+        "ARTIFACT_RESERVATION_MS": "86400000",
+        "V7_BACKUP_COMPOSE_FILE": "",
+        "ARTIFACT_UPLOAD_SECRET": "3f68890b333f3f5da69861beff0a2c1ac1bec0e470aec9ffaa04f83f2c18e288",
+        "ARTIFACT_UPLOAD_TTL_MS": "900000",
+        "ARTIFACT_ANALYSIS_RETRY_BACKOFF_MS": "5000",
+        "V7_OPERATOR_ID": "isolated-candidate-operations",
+        "ARTIFACT_ANALYSIS_POLL_MS": "1000",
+        "ARTIFACT_PENDING_UPLOAD_MAX": "500",
+        "V7_BACKUP_DESTINATION": "",
+        "ARTIFACT_VOLUME_NAME": "encodingdb-candidate-730de3c_artifact_data",
+        "ARTIFACT_PROBE_TIMEOUT_MS": "60000",
+        "ARTIFACT_AUTH_RATE_WINDOW_MS": "60000",
+        "ARTIFACT_STORAGE_ROOT": "/app/artifacts",
+        "V7_PENDING_UPLOAD_ALERT_SECONDS": "900",
+        "ARTIFACT_UPLOAD_CONCURRENCY_MAX": "4",
+        "ARTIFACT_UPLOAD_DEADLINE_MS": "300000",
+        "ARTIFACT_ANALYSIS_CONCURRENCY_MAX": "0",
+        "ARTIFACT_ANALYSIS_MAX_ATTEMPTS": "3",
+        "ARTIFACT_UPLOAD_RATE_MAX": "20",
+        "ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH": "1",
+        "V7_BACKUP_RETENTION_COUNT": "7",
+        "V7_BACKUP_MAX_ARTIFACT_BYTES": "23622320128",
+        "ARTIFACT_ANALYSIS_LEASE_MS": "300000",
+        "V7_OPERATOR_TOKEN": "024a5ce39c7789fe11e3fd8b31eb78013e54be5fbd3a23935ec29a543574710f",
+        "ARTIFACT_AUTH_RATE_MAX": "30",
+        "V7_BACKUP_RECOVERY_GRACE_SECONDS": "60",
+        "V7_ORPHAN_STAGING_ALERT_SECONDS": "3600",
+        "ARTIFACT_MAX_BYTES": "2147483648"
+      },
+      "image": "encodingdb-candidate-server:3e6bb08",
+      "productionBaseline": {
+        "encodingdb-server-1": {
+          "id": "846b1e2e652e6aa71bf79ed10965cb0ecec5f874a1bdbfe870d7daddb9d25544",
+          "startedAt": "2026-09-13T04:19:42.929037058Z",
+          "image": "encodingdb-hotfix-server:b0f0bc7d12cb127c86a7c76979eb361398e293dd",
+          "volumes": [
+            "encodingdb_prod_artifact_data->/app/artifacts"
+          ]
+        },
+        "encodingdb-frontend-1": {
+          "id": "a0f3238c1d6c4b05aa1a8d4169319b9e0f688d9c6d22f7516f43557fd1e0b487",
+          "startedAt": "2026-09-13T03:03:30.509126854Z",
+          "image": "encodingdb-release/frontend:1.2.0-c001ddc73964",
+          "volumes": []
+        },
+        "encodingdb-db-1": {
+          "id": "637e1258bf6cf5650095c3f2c2f2fcf31df8d50d875cfff51ddcc67229a36f97",
+          "startedAt": "2026-09-13T03:03:24.405517485Z",
+          "image": "encodingdb-release/db:1.2.0-c001ddc73964",
+          "volumes": [
+            "encodingdb_db_data->/var/lib/postgresql/data"
+          ]
+        },
+        "encodingdb-nginx": {
+          "id": "1cd16cd3878eca7a4be48357203156d47e7fe173eb6f7bbf79d7c4bab17de6d3",
+          "startedAt": "2026-09-13T03:03:41.811609619Z",
+          "image": "encodingdb-release/nginx:1.2.0-c001ddc73964",
+          "volumes": [
+            "/mnt/NVME/docker/encodingdb-operations/20260913-release-1.2.0/nginx-p910.conf->/etc/nginx/conf.d/default.conf"
+          ]
+        }
+      }
+    }
+  ]
+}

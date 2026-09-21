@@ -1,0 +1,68 @@
+{
+  "schemaVersion": "encodingdb-canonical-first-cell-checkpoint/v1",
+  "status": "HISTORICAL_FIRST_INVOCATION_ONLY",
+  "archivedAt": "2026-09-20T04:31:49.539602+00:00",
+  "snapshotSource": "/Users/ofhd/Developer/Encoding_Database/.test-reports/release-20260919/mac-first-canonical-ledger.json",
+  "snapshotSha256": "ea5daccc0da716d15e7ceacc6350a944f46a1bfc81acc84b9de2d3b77ebba57c",
+  "applicationSource": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "identity": {
+    "clientSha256": "443e293e82f0f042b2017f55d12f1d73c7d5b6944cb43d6c9d70281beef6d70c",
+    "clientSourceSha": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+    "matrixSha256": "28471be198b342733d57c0dcd75dc3fcef257d9ca96a4adc136d1b2ea812d373",
+    "runnerSha256": "63c267aad259b24f50e71d540454b5e7563bf0473ce55a0717e25e8f5a4595bd",
+    "seed": 20260914,
+    "sessions": [
+      1,
+      2
+    ],
+    "slots": [
+      "source-a",
+      "videotoolbox-host"
+    ]
+  },
+  "executionPlanHash": "95fa4957bc2f610efabe783933b763c94362bf4fbf2447f5f5fd0986e50d0417",
+  "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+  "cellKey": "source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20",
+  "campaignId": "campaign-c9670ced0b800098",
+  "cellSeed": 25494854976677863,
+  "completedCanonicalCellSessionsAtCheckpoint": 1,
+  "plannedCanonicalCellSessions": 840,
+  "plannedMacCellSessions": 392,
+  "qualityAnalysesForThisCell": 0,
+  "humanReviewsForThisCell": 0,
+  "invocationWallSeconds": 78.46117281913757,
+  "childWallSeconds": 78.45769715309143,
+  "retainedArtifactCount": 3,
+  "auditedFrames": 576,
+  "retainedArtifactBytes": 43791636,
+  "warmupAttempts": 1,
+  "measuredAttempts": 2,
+  "allAttemptValidity": "valid",
+  "stability": {
+    "elapsed_mean_s": 2.788957146,
+    "elapsed_relative_spread": 0.0021106304944278204,
+    "sample_count": 2,
+    "stable": true
+  },
+  "submissionMode": "no-submit",
+  "sequenceAmendment": {
+    "before": "Proposed packet waited for native publication demonstration before any canonical timing.",
+    "after": "One independently journaled no-submit timing cell may run after exact-package native execution, retention/fault proof and full artifact audit. Publication demonstration remains mandatory before upload acceptance, fitting or release.",
+    "reason": "Mac acquisition/timing/retention are verified and do not depend on remote intake. Run this finite independent experiment while P910 completes native acceptance; no publication or worker load on the measurement host.",
+    "unchanged": [
+      "matrix",
+      "source/runtime",
+      "recipes",
+      "seeds/order",
+      "warmups/repetitions",
+      "validity/stability",
+      "retention",
+      "review/release gates"
+    ]
+  },
+  "allocationScope": "One first canonical software cell only, no submission or analysis",
+  "hardwareReadinessAtAllocation": "Latest VT probe remains SUSPECT; this allocation is software only. No hardware cell may start from this allocation.",
+  "sourceAuditScope": "Integrity/frame/timing audit only; no quality analysis or perceptual review",
+  "archivalChecks": "Original metadata byte hashes, protected snapshot/audit/log bindings and arithmetic only; no media rehash, probes, tests or host contact.",
+  "laterProgress": "Later batches may mutate the live root ledger. This archived first-invocation snapshot is not a live progress counter."
+}

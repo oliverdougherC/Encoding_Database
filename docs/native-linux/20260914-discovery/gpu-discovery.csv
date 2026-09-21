@@ -1,0 +1,2 @@
+index, name, driver_version, memory.total [MiB], memory.used [MiB], utilization.gpu [%]
+0, NVIDIA GeForce GTX 1070, 580.173.02, 8192 MiB, 3 MiB, 0 %

@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "case": "storage-budget",
+  "status": "PASSED_EXPECTED_NATIVE_FAILURE_AND_RETENTION",
+  "scope": "Physical native fault acceptance; local files/loopback only; no production or P910 contact",
+  "startedAt": "2026-09-20T04:05:24.785701+00:00",
+  "sourceRevision": "b3ef24abb020bc6af5b5fe6b849ba3eae8314be2",
+  "executableSha256": "1ef9d33f3b774c87676d65ec0982499a70b4df4d0755cb123f7d38eb98bc82d1",
+  "commands": [
+    {
+      "argv": [
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\source-b3ef24a\\encodingdb-client-windows-console.exe",
+        "--cli",
+        "--api-key",
+        "",
+        "--retries",
+        "1",
+        "--no-submit",
+        "--base-url",
+        "http://127.0.0.1:9",
+        "--campaign",
+        "quick",
+        "--codec",
+        "libx264",
+        "--presets",
+        "fast",
+        "--crf",
+        "23",
+        "--queue-dir",
+        "C:\\Users\\ofhd\\EncodingDB-validation-20260919-939823e\\fault-storage-budget-b3ef24a\\queue-\u5ba2\u6237",
+        "--max-duration-minutes",
+        "1",
+        "--max-storage-mb",
+        "1"
+      ],
+      "startedAt": "2026-09-20T04:05:24.906983+00:00",
+      "pid": 35332,
+      "exitCode": 6,
+      "wallSeconds": 31.31199999999808
+    }
+  ],
+  "networkEvents": [],
+  "forcedCleanup": false,
+  "capacityFixtureBytes": 1048576,
+  "newAttempts": 0,
+  "originalImmutableFilesUnchanged": 44,
+  "installationId": "installation-9e7cd0a8c6158d19d179f0acf79249c6c790b988b8a48f6563952c1c00acca29",
+  "finishedAt": "2026-09-20T04:05:56.346612+00:00"
+}

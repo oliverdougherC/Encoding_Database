@@ -1,0 +1,331 @@
+{
+  "evidenceVersion": "encodingdb-v7-backup-inventory/v2",
+  "createdAt": "2026-09-14T03:12:44.257Z",
+  "artifactCount": 40,
+  "derivedMemberCount": 0,
+  "publicCorpusGroupCount": 0,
+  "artifacts": [
+    {
+      "id": "backup-scale-artifact-0",
+      "benchmarkRunId": "backup-scale-run-0",
+      "sha256": "dbcb80754db778b66a067b364c12ecfab20da11c126a1d863b3f80bcf28bc613",
+      "byteSize": 268435456,
+      "storageKey": "objects/db/dbcb80754db778b66a067b364c12ecfab20da11c126a1d863b3f80bcf28bc613",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-1",
+      "benchmarkRunId": "backup-scale-run-1",
+      "sha256": "37305dec017df9057fbe779faa079b608943b6b5ba35766d2646f4815b721353",
+      "byteSize": 268435456,
+      "storageKey": "objects/37/37305dec017df9057fbe779faa079b608943b6b5ba35766d2646f4815b721353",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-10",
+      "benchmarkRunId": "backup-scale-run-10",
+      "sha256": "f81df5d6e94e8195ad2ac1ec1aedb8e375f903254728b1348a10b7387b8c4c50",
+      "byteSize": 268435456,
+      "storageKey": "objects/f8/f81df5d6e94e8195ad2ac1ec1aedb8e375f903254728b1348a10b7387b8c4c50",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-11",
+      "benchmarkRunId": "backup-scale-run-11",
+      "sha256": "d1199465a1c93979979c7d961e93d66f5c670c6064fd1a86dd97c6c07ae5ca9f",
+      "byteSize": 268435456,
+      "storageKey": "objects/d1/d1199465a1c93979979c7d961e93d66f5c670c6064fd1a86dd97c6c07ae5ca9f",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-12",
+      "benchmarkRunId": "backup-scale-run-12",
+      "sha256": "6a7308dd9fd81f6376f368f6d81bdc02aad5018ea6ce84eef8f0f49add62a613",
+      "byteSize": 268435456,
+      "storageKey": "objects/6a/6a7308dd9fd81f6376f368f6d81bdc02aad5018ea6ce84eef8f0f49add62a613",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-13",
+      "benchmarkRunId": "backup-scale-run-13",
+      "sha256": "0d6bef333dd5416283f520d0ff34b519955357a399dccbedb06e9571f3b6e12d",
+      "byteSize": 268435456,
+      "storageKey": "objects/0d/0d6bef333dd5416283f520d0ff34b519955357a399dccbedb06e9571f3b6e12d",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-14",
+      "benchmarkRunId": "backup-scale-run-14",
+      "sha256": "e33145ad005ff74fa7b0295b641f1d121fb7606858655308079a973901697304",
+      "byteSize": 268435456,
+      "storageKey": "objects/e3/e33145ad005ff74fa7b0295b641f1d121fb7606858655308079a973901697304",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-15",
+      "benchmarkRunId": "backup-scale-run-15",
+      "sha256": "45442b3f5678ba884212301650b451c6bae5f8a8757597758167bb2dcb74d680",
+      "byteSize": 268435456,
+      "storageKey": "objects/45/45442b3f5678ba884212301650b451c6bae5f8a8757597758167bb2dcb74d680",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-16",
+      "benchmarkRunId": "backup-scale-run-16",
+      "sha256": "fd47b66130d9bec2131bd5b1dd0d7382488703cd10f3a003def54a9f0c88805a",
+      "byteSize": 268435456,
+      "storageKey": "objects/fd/fd47b66130d9bec2131bd5b1dd0d7382488703cd10f3a003def54a9f0c88805a",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-17",
+      "benchmarkRunId": "backup-scale-run-17",
+      "sha256": "78885038cb9aa71cd19b349c942d0f3d53974ae5a8cd58bbbce06b23bb63b4c0",
+      "byteSize": 268435456,
+      "storageKey": "objects/78/78885038cb9aa71cd19b349c942d0f3d53974ae5a8cd58bbbce06b23bb63b4c0",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-18",
+      "benchmarkRunId": "backup-scale-run-18",
+      "sha256": "ca7f5258ad03a46dcfcab5bd137638e0e753d60c01691f47f22a84cd609aedd1",
+      "byteSize": 268435456,
+      "storageKey": "objects/ca/ca7f5258ad03a46dcfcab5bd137638e0e753d60c01691f47f22a84cd609aedd1",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-19",
+      "benchmarkRunId": "backup-scale-run-19",
+      "sha256": "b0f0b8ffada2a71b1c5805556a3313bec0c81936329e265fd28cf8d234977a2a",
+      "byteSize": 268435456,
+      "storageKey": "objects/b0/b0f0b8ffada2a71b1c5805556a3313bec0c81936329e265fd28cf8d234977a2a",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-2",
+      "benchmarkRunId": "backup-scale-run-2",
+      "sha256": "1bfcab6203651cada77575101116ff3dfa96bf1ffb5742dcc5514f75f292da13",
+      "byteSize": 268435456,
+      "storageKey": "objects/1b/1bfcab6203651cada77575101116ff3dfa96bf1ffb5742dcc5514f75f292da13",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-20",
+      "benchmarkRunId": "backup-scale-run-20",
+      "sha256": "fc9963b359d0d11648d6851c4778385e071e673b9365636aa5a4eda80c02338e",
+      "byteSize": 268435456,
+      "storageKey": "objects/fc/fc9963b359d0d11648d6851c4778385e071e673b9365636aa5a4eda80c02338e",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-21",
+      "benchmarkRunId": "backup-scale-run-21",
+      "sha256": "690b1d7566f1011243d8225856f8c1ec0f01f54c47f72c4f892cf838ca559ff5",
+      "byteSize": 268435456,
+      "storageKey": "objects/69/690b1d7566f1011243d8225856f8c1ec0f01f54c47f72c4f892cf838ca559ff5",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-22",
+      "benchmarkRunId": "backup-scale-run-22",
+      "sha256": "84e30a2f6d28c2bf535f74d780a80191df01b9cf816ffede0bc4904d52493410",
+      "byteSize": 268435456,
+      "storageKey": "objects/84/84e30a2f6d28c2bf535f74d780a80191df01b9cf816ffede0bc4904d52493410",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-23",
+      "benchmarkRunId": "backup-scale-run-23",
+      "sha256": "06b00e5366ed222115c90a00a80cc1f0eb372272268e9e4df326f6aa0b54a526",
+      "byteSize": 268435456,
+      "storageKey": "objects/06/06b00e5366ed222115c90a00a80cc1f0eb372272268e9e4df326f6aa0b54a526",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-24",
+      "benchmarkRunId": "backup-scale-run-24",
+      "sha256": "e62e0474e3a1700cdd3990511d27b5f16f8ab18cd919bfd82a6398a951af391a",
+      "byteSize": 268435456,
+      "storageKey": "objects/e6/e62e0474e3a1700cdd3990511d27b5f16f8ab18cd919bfd82a6398a951af391a",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-25",
+      "benchmarkRunId": "backup-scale-run-25",
+      "sha256": "5567b950b156fda0db13518fff1767efa13fd6685d897978649984851786aa5e",
+      "byteSize": 268435456,
+      "storageKey": "objects/55/5567b950b156fda0db13518fff1767efa13fd6685d897978649984851786aa5e",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-26",
+      "benchmarkRunId": "backup-scale-run-26",
+      "sha256": "29ae366d6c3bcba0794dba114250f61af495b22920d9137df1633e7aceacf651",
+      "byteSize": 268435456,
+      "storageKey": "objects/29/29ae366d6c3bcba0794dba114250f61af495b22920d9137df1633e7aceacf651",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-27",
+      "benchmarkRunId": "backup-scale-run-27",
+      "sha256": "ccbbf4fa3bf4eebdad0a1ca2a1e2c58d141f5a23b988ff3471bdbf12535a53c5",
+      "byteSize": 268435456,
+      "storageKey": "objects/cc/ccbbf4fa3bf4eebdad0a1ca2a1e2c58d141f5a23b988ff3471bdbf12535a53c5",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-28",
+      "benchmarkRunId": "backup-scale-run-28",
+      "sha256": "08ade4095ea7fe5243ea6fd0c249f8dcd22f0a71368b9895d8267a7c278bc203",
+      "byteSize": 268435456,
+      "storageKey": "objects/08/08ade4095ea7fe5243ea6fd0c249f8dcd22f0a71368b9895d8267a7c278bc203",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-29",
+      "benchmarkRunId": "backup-scale-run-29",
+      "sha256": "37c4985b293e262b2b5c8b82d4d2133aa5839ad55ae5b668122039a2e6568f55",
+      "byteSize": 268435456,
+      "storageKey": "objects/37/37c4985b293e262b2b5c8b82d4d2133aa5839ad55ae5b668122039a2e6568f55",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-3",
+      "benchmarkRunId": "backup-scale-run-3",
+      "sha256": "f4c97c812942854bb2f4df371313a0449e5d98425efd841c8ccfbc4f1fa807fa",
+      "byteSize": 268435456,
+      "storageKey": "objects/f4/f4c97c812942854bb2f4df371313a0449e5d98425efd841c8ccfbc4f1fa807fa",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-30",
+      "benchmarkRunId": "backup-scale-run-30",
+      "sha256": "9b4fefcffd1b85485bfa03f11c2e53b8f44ac2a132f228cd844dc775dfc7c98c",
+      "byteSize": 268435456,
+      "storageKey": "objects/9b/9b4fefcffd1b85485bfa03f11c2e53b8f44ac2a132f228cd844dc775dfc7c98c",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-31",
+      "benchmarkRunId": "backup-scale-run-31",
+      "sha256": "1986d264b722bd2f6e301fabce957615cd1fa1bef5924f0b85aacddb4a19d636",
+      "byteSize": 268435456,
+      "storageKey": "objects/19/1986d264b722bd2f6e301fabce957615cd1fa1bef5924f0b85aacddb4a19d636",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-32",
+      "benchmarkRunId": "backup-scale-run-32",
+      "sha256": "e01800cc99a168b80a0c45fb5b807d4366e04a1226fcdd678d3f3afc8c1a173e",
+      "byteSize": 268435456,
+      "storageKey": "objects/e0/e01800cc99a168b80a0c45fb5b807d4366e04a1226fcdd678d3f3afc8c1a173e",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-33",
+      "benchmarkRunId": "backup-scale-run-33",
+      "sha256": "85ec118af17534afb83a9b8e05aa6977afecf8e9e7256839ed73baa235e1c859",
+      "byteSize": 268435456,
+      "storageKey": "objects/85/85ec118af17534afb83a9b8e05aa6977afecf8e9e7256839ed73baa235e1c859",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-34",
+      "benchmarkRunId": "backup-scale-run-34",
+      "sha256": "d04cdb91deab57f224cf6bf4e9808bd15df0be167f082be9718ed260be2702e8",
+      "byteSize": 268435456,
+      "storageKey": "objects/d0/d04cdb91deab57f224cf6bf4e9808bd15df0be167f082be9718ed260be2702e8",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-35",
+      "benchmarkRunId": "backup-scale-run-35",
+      "sha256": "5c813a65f161deca20d475b51a55b0c3081d3bb4e3459921fd8d2746a44b88e7",
+      "byteSize": 268435456,
+      "storageKey": "objects/5c/5c813a65f161deca20d475b51a55b0c3081d3bb4e3459921fd8d2746a44b88e7",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-36",
+      "benchmarkRunId": "backup-scale-run-36",
+      "sha256": "cbe665d09b5dc3750b680c2a245b08dbe2aaf75861fcb896fc15bd57e4c72870",
+      "byteSize": 268435456,
+      "storageKey": "objects/cb/cbe665d09b5dc3750b680c2a245b08dbe2aaf75861fcb896fc15bd57e4c72870",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-37",
+      "benchmarkRunId": "backup-scale-run-37",
+      "sha256": "d88439b5988f2ecb00fe9a70c54793e8036a3fb26fbc5889d9a72e612e2bc189",
+      "byteSize": 268435456,
+      "storageKey": "objects/d8/d88439b5988f2ecb00fe9a70c54793e8036a3fb26fbc5889d9a72e612e2bc189",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-38",
+      "benchmarkRunId": "backup-scale-run-38",
+      "sha256": "aa98eff5065d1693555e5d18d61018ad80e51c13ce3df49189ef3027a0d4dee7",
+      "byteSize": 268435456,
+      "storageKey": "objects/aa/aa98eff5065d1693555e5d18d61018ad80e51c13ce3df49189ef3027a0d4dee7",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-39",
+      "benchmarkRunId": "backup-scale-run-39",
+      "sha256": "abaf0978dc3855f984129490fd400f6a77a70556a5538a3ba055f9627b1305e9",
+      "byteSize": 268435456,
+      "storageKey": "objects/ab/abaf0978dc3855f984129490fd400f6a77a70556a5538a3ba055f9627b1305e9",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-4",
+      "benchmarkRunId": "backup-scale-run-4",
+      "sha256": "dc1e247b358b3e49a31ad99bf75c3bfff5c97572351ec8c5a4097fb3d0c80478",
+      "byteSize": 268435456,
+      "storageKey": "objects/dc/dc1e247b358b3e49a31ad99bf75c3bfff5c97572351ec8c5a4097fb3d0c80478",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-5",
+      "benchmarkRunId": "backup-scale-run-5",
+      "sha256": "1f9136c9cda6a26e69a4b0449d869becc50e9d055c941e200303522493ad9a6a",
+      "byteSize": 268435456,
+      "storageKey": "objects/1f/1f9136c9cda6a26e69a4b0449d869becc50e9d055c941e200303522493ad9a6a",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-6",
+      "benchmarkRunId": "backup-scale-run-6",
+      "sha256": "e5f9fec7d70b94062fbf6181110f5a9bf650698cb41998751833b33e5e8146f8",
+      "byteSize": 268435456,
+      "storageKey": "objects/e5/e5f9fec7d70b94062fbf6181110f5a9bf650698cb41998751833b33e5e8146f8",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-7",
+      "benchmarkRunId": "backup-scale-run-7",
+      "sha256": "0775a5956b29a287fea092d4b01f8ef93e5908760a7d38f3493f6f2161e1270b",
+      "byteSize": 268435456,
+      "storageKey": "objects/07/0775a5956b29a287fea092d4b01f8ef93e5908760a7d38f3493f6f2161e1270b",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-8",
+      "benchmarkRunId": "backup-scale-run-8",
+      "sha256": "bb871b69c233f02920c941c515538e5e3c870aaf92d412489f8e7575a1b12781",
+      "byteSize": 268435456,
+      "storageKey": "objects/bb/bb871b69c233f02920c941c515538e5e3c870aaf92d412489f8e7575a1b12781",
+      "storageState": "RETAINED"
+    },
+    {
+      "id": "backup-scale-artifact-9",
+      "benchmarkRunId": "backup-scale-run-9",
+      "sha256": "a8bd1be44336d9e3c6779735347b2cfd450921a29a725dc2ff1db3da9955d576",
+      "byteSize": 268435456,
+      "storageKey": "objects/a8/a8bd1be44336d9e3c6779735347b2cfd450921a29a725dc2ff1db3da9955d576",
+      "storageState": "RETAINED"
+    }
+  ],
+  "derivedMembers": [],
+  "publicCorpusGroups": []
+}

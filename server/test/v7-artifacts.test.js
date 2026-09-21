@@ -195,6 +195,7 @@ class MemoryPersistence {
     this.testClips.set(key, record);
     return {
       id: record.id,
+      sha256: record.sha256,
       workloadId: record.workloadId,
       displayName: record.displayName,
       sourceProvenance: record.sourceProvenance,
@@ -345,7 +346,10 @@ class MemoryPersistence {
       storageKey: input.storageKey,
       storageUrl: input.storageUrl,
       stateReason: null,
-      stateDetails: input.stateDetails ?? null,
+      stateDetails: {
+        ...(artifact.stateDetails && typeof artifact.stateDetails === 'object' && !Array.isArray(artifact.stateDetails) ? artifact.stateDetails : {}),
+        ...(input.stateDetails ?? {}),
+      },
       uploadedAt: new Date(),
     });
     return this.cloneBundle(record);
@@ -356,7 +360,10 @@ class MemoryPersistence {
     const artifact = record.artifacts.find((entry) => entry.id === input.artifactId);
     artifact.storageState = input.storageState;
     artifact.stateReason = input.stateReason ?? null;
-    artifact.stateDetails = input.stateDetails ?? null;
+    artifact.stateDetails = {
+      ...(artifact.stateDetails && typeof artifact.stateDetails === 'object' && !Array.isArray(artifact.stateDetails) ? artifact.stateDetails : {}),
+      ...(input.stateDetails ?? {}),
+    };
     if (input.storageState === 'REJECTED') {
       record.run.status = 'REJECTED';
       record.run.statusReason = input.stateReason ?? 'Encoded artifact rejected';
@@ -364,6 +371,21 @@ class MemoryPersistence {
     if (input.storageState === 'VERIFIED') artifact.verifiedAt = new Date();
     if (input.storageState === 'RETAINED') artifact.retainedAt = new Date();
     if (input.storageState === 'DELETED') artifact.deletedAt = new Date();
+    return this.cloneBundle(record);
+  }
+
+  async requeueRejectedArtifact(input) {
+    const record = this.runs.get(this.findRunIdByArtifactId(input.artifactId));
+    const artifact = record.artifacts.find((entry) => entry.id === input.artifactId);
+    if (artifact.storageState !== 'REJECTED') throw new Error('Only REJECTED artifacts can be requeued by an operator');
+    artifact.stateDetails = { operatorRequeue: { operator: input.operator, reason: input.reason,
+      priorStateReason: artifact.stateReason, priorStateDetails: artifact.stateDetails } };
+    artifact.storageState = 'PENDING';
+    artifact.stateReason = 'OPERATOR_REQUEUED';
+    artifact.storageKey = null;
+    artifact.storageUrl = null;
+    record.run.status = 'PENDING';
+    record.run.statusReason = 'Encoded artifact requeued by operator for validated reupload';
     return this.cloneBundle(record);
   }
 
@@ -705,7 +727,7 @@ async function createHarness(configOverrides = {}) {
         provider: 'localfs',
         bucket: null,
       },
-      analyzerVersion: 'worker-v1',
+      analyzerVersion: DEFAULT_ANALYZER_VERSION,
       autoAnalyzeOnUpload: true,
       ...configOverrides,
     },
@@ -830,16 +852,19 @@ function buildRunBody(fixtures, overrides = {}) {
       canonicalJson: JSON.parse(fixtures.environment.canonicalJson),
       identity: fixtures.environment.identity,
     },
+    preRunEnvironmentCheck: { overallValidity: { state: 'valid' }, environmentValidity: { state: 'valid' }, structuralValidity: { state: 'valid' } },
     payloadHash: overrides.payloadHash || 'a'.repeat(64),
 	    workloadId: fixtures.clip.workloadId,
     expectedMetricModelId: PRIMARY_QUALITY_PLAN.metricModelId,
-    inputHash: 'b'.repeat(64),
+    inputHash: fixtures.clip.sha256,
+    encodeTimerBoundary: 'ffmpeg-process-v1',
+    physicalSourceId: 'test-physical-source-1',
     encodeWallTimeMs: 10_000,
-    encodeFps: 120,
+    encodeFps: fixtures.clip.media.frameCount / 10,
     sourceFps: 24,
-    realTimeRatio: 5,
-    sourceFrameCount: 240,
-    encodedFrameCount: 240,
+    realTimeRatio: (fixtures.clip.media.duration.numerator / fixtures.clip.media.duration.denominator) / 10,
+    sourceFrameCount: fixtures.clip.media.frameCount,
+    encodedFrameCount: fixtures.clip.media.frameCount,
     energyDomains: overrides.energyDomains,
     decodeBenchmark: overrides.decodeBenchmark,
     clientQualityDebug: overrides.clientQualityDebug ?? { vmafMean: 1.0, vmafP5: 0.5 },
@@ -887,7 +912,7 @@ async function createServiceHarness(configOverrides = {}, analyzerOverride = nul
     },
     storageQuotaBytes: null,
     storageReserveBytes: 0,
-    analyzerVersion: 'worker-v1',
+    analyzerVersion: DEFAULT_ANALYZER_VERSION,
     autoAnalyzeOnUpload: true,
     validateMediaBeforePublish: false,
     analysisPollIntervalMs: 10,
@@ -1330,7 +1355,7 @@ test('upload authorization enforces expiry, type, size, overwrite, and rate-ish 
   );
 });
 
-test('rejected encoded artifact makes the immutable benchmark run non-canonical', async (t) => {
+test('transport truncation leaves immutable metadata pending for a valid retry', async (t) => {
   const harness = await createServiceHarness();
   t.after(() => harness.close());
   const run = await createRunDirect(harness.service, harness.fixtures, {
@@ -1354,12 +1379,12 @@ test('rejected encoded artifact makes the immutable benchmark run non-canonical'
     /byte size does not match authorization/,
   );
   const bundle = await harness.service.getBundle(run.bundle.run.id, 'ENCODED');
-  assert.equal(bundle.artifact.storageState, 'REJECTED');
-  assert.equal(bundle.run.status, 'REJECTED');
-  assert.match(bundle.run.statusReason, /size.*match/i);
+  assert.equal(bundle.artifact.storageState, 'PENDING');
+  assert.equal(bundle.run.status, 'PENDING');
+  assert.match(bundle.artifact.stateReason, /size.*match/i);
 });
 
-test('retained artifacts can be reanalyzed with a newer worker version while same-version jobs stay idempotent', async (t) => {
+test('retained artifacts reject caller-invented workers while installed-identity retries stay idempotent', async (t) => {
   const harness = await createServiceHarness();
   t.after(() => harness.close());
 
@@ -1398,24 +1423,8 @@ test('retained artifacts can be reanalyzed with a newer worker version while sam
   assert.equal(idempotentBundle.qualityAnalyses.length, 1);
   assert.equal(harness.analyzer.calls.length, 1);
 
-  await harness.service.queueAuthoritativeAnalysis(
-    run.bundle.run.id,
-    'worker-v2',
-    PRIMARY_QUALITY_PLAN.metricModelId,
-  );
-  const upgradedBundle = await waitForBundleAnalysisState(
-    harness.service,
-    run.bundle.run.id,
-    (value) => value.qualityAnalyses.some((analysis) => analysis.analysisWorkerVersion === 'worker-v2' && analysis.status === 'COMPLETE'),
-    'upgraded reanalysis completion',
-  );
-  assert.equal(upgradedBundle.qualityAnalyses.length, 2);
-  const upgradedAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === 'worker-v2');
-  const baselineAnalysis = upgradedBundle.qualityAnalyses.find((analysis) => analysis.analysisWorkerVersion === DEFAULT_ANALYZER_VERSION);
-  assert.equal(upgradedAnalysis?.vmafMean, 97.25);
-  assert.ok(baselineAnalysis);
-  assert.equal(upgradedBundle.artifact.storageState, 'RETAINED');
-  assert.equal(harness.analyzer.calls.length, 2);
+  await assert.rejects(harness.service.queueAuthoritativeAnalysis(run.bundle.run.id, 'worker-v2', PRIMARY_QUALITY_PLAN.metricModelId), /installed server worker/);
+  assert.equal(harness.analyzer.calls.length, 1);
 });
 
 test('analysis maxAttempts counts executions once and permits the configured third attempt', async (t) => {
@@ -1687,7 +1696,7 @@ test('semantic bootstrap rejects non-canonical protocol drift and minimum-client
   assert.equal(versionResponse.status, 409);
 });
 
-test('default derived recompute callback persists workload derived results from authoritative analyses', async () => {
+test('default derived recompute callback leaves historical results untouched without explicit active context', async () => {
   const calls = [];
   const client = {
     benchmarkRun: {
@@ -1737,6 +1746,8 @@ test('default derived recompute callback persists workload derived results from 
       async findMany() {
         return [{
           id: 'analysis-1',
+          artifact: {storageState: 'RETAINED'},
+          evidenceReviews: [],
           benchmarkRunId: 'run-1',
           status: 'COMPLETE',
           analysisWorkerVersion: 'authoritative-analysis/v1',
@@ -1769,6 +1780,7 @@ test('default derived recompute callback persists workload derived results from 
         calls.push(['createMany', args]);
       },
     },
+    async $executeRawUnsafe() { return 0; },
     async $transaction(fn) {
       return fn(this);
     },
@@ -1782,12 +1794,93 @@ test('default derived recompute callback persists workload derived results from 
     analysisWorkerVersion: 'worker-v1',
   });
 
-  assert.deepEqual(calls.map(([name]) => name), ['upsert', 'deleteMany', 'createMany']);
-  assert.equal(calls[0][1].create.workloadId, 'sports-action-960x540-24p');
-  assert.equal(calls[0][1].create.scoreContext.connect.id, 'score-1');
-  assert.deepEqual(calls[2][1].data, [{
-    derivedResultId: 'derived-1',
-    benchmarkRunId: 'run-1',
-    qualityAnalysisId: 'analysis-1',
-  }]);
+  assert.deepEqual(calls, []);
+});
+
+test('operator requeue returns a defect-rejected run to PENDING preserving immutable identity', async (t) => {
+  if (!CAN_BIND_LOOPBACK) return t.skip('loopback bind unavailable');
+  const previousToken = process.env.V7_OPERATOR_TOKEN;
+  const previousId = process.env.V7_OPERATOR_ID;
+  process.env.V7_OPERATOR_TOKEN = 'operator-test-token';
+  process.env.V7_OPERATOR_ID = 'release-operator';
+  t.after(() => {
+    if (previousToken === undefined) delete process.env.V7_OPERATOR_TOKEN; else process.env.V7_OPERATOR_TOKEN = previousToken;
+    if (previousId === undefined) delete process.env.V7_OPERATOR_ID; else process.env.V7_OPERATOR_ID = previousId;
+  });
+  const harness = await createHarness();
+  t.after(() => harness.close());
+  const created = await createRun(harness.baseUrl, harness.fixtures, { payloadHash: 'e'.repeat(64) });
+  assert.equal(created.response.status, 201);
+  const runId = created.json.benchmarkRun.id;
+  const artifactId = created.json.artifact.id;
+  const rejectedBundle = await harness.persistence.markArtifactState({
+    artifactId, storageState: 'REJECTED', stateReason: 'failed-media-contract-validation',
+    stateDetails: { phase: 'media-contract', failedAt: 'fixture' },
+  });
+  assert.equal(rejectedBundle.run.status, 'REJECTED');
+
+  const requeuePath = `/v7/benchmark-runs/${runId}/artifacts/ENCODED/operator-requeue`;
+  const auth = { authorization: 'Bearer operator-test-token', 'content-type': 'application/json' };
+  const post = (path, body, headers) => requestJson(harness.baseUrl, path, {
+    method: 'POST',
+    headers: { ...(headers ?? {}), 'content-length': String(Buffer.byteLength(body)) },
+    body,
+  });
+
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'defect repaired, requeue please' }))).status, 401);
+  assert.equal((await post(`/v7/benchmark-runs/${runId}/artifacts/METADATA/operator-requeue`, JSON.stringify({ reason: 'defect repaired, requeue please' }), auth)).status, 400);
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'nope' }), auth)).status, 400);
+
+  const requeued = await post(requeuePath, JSON.stringify({ reason: 'server-side media validation defect repaired; requeued for validated reupload' }), auth);
+  assert.equal(requeued.status, 202);
+  assert.equal(requeued.json.artifact.storageState, 'PENDING');
+  assert.equal(requeued.json.artifact.stateReason, 'OPERATOR_REQUEUED');
+  assert.equal(requeued.json.benchmarkRun.status, 'PENDING');
+  assert.equal(requeued.json.benchmarkRun.statusReason, 'Encoded artifact requeued by operator for validated reupload');
+
+  const stored = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.deepEqual(stored.artifact.stateDetails.operatorRequeue.priorStateReason, 'failed-media-contract-validation');
+  assert.deepEqual(stored.artifact.stateDetails.operatorRequeue.priorStateDetails, { phase: 'media-contract', failedAt: 'fixture' });
+  assert.equal(stored.artifact.sha256, created.json.artifact.sha256);
+  assert.equal(stored.artifact.byteSize, created.json.artifact.byteSize);
+
+  assert.equal((await post(requeuePath, JSON.stringify({ reason: 'second attempt must be refused' }), auth)).status, 409);
+
+  // A re-authorized upload must be issued for the requeued artifact; frozen-REJECTED
+  // previously short-circuited with uploadRequired:false for the identical payload.
+  const authorization = await post(`/v7/benchmark-runs/${runId}/artifacts/ENCODED/upload-authorizations`, JSON.stringify({
+    sha256: created.json.artifact.sha256, byteSize: created.json.artifact.byteSize,
+  }), { 'content-type': 'application/json' });
+  assert.equal(authorization.status, 200, JSON.stringify(authorization.json));
+  assert.equal(authorization.json.uploadRequired, true);
+
+  // Audit survival: completing the requeued upload must not erase the operatorRequeue block.
+  await harness.persistence.markArtifactUploaded({
+    artifactId: stored.artifact.id,
+    sha256: stored.artifact.sha256,
+    byteSize: stored.artifact.byteSize,
+    mediaContainer: stored.artifact.mediaContainer,
+    storageProvider: 'localfs',
+    storageBucket: null,
+    storageKey: 'shard/requeued-completion',
+    storageUrl: '/isolated/requeued-completion',
+    stateDetails: { uploadedAt: 'fixture-completion', contentType: 'video/mp4', deduplicated: false },
+  });
+  const completed = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.equal(completed.artifact.storageState, 'UPLOADED');
+  assert.equal(completed.artifact.stateDetails.operatorRequeue.priorStateReason, 'failed-media-contract-validation');
+  assert.equal(completed.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
+  assert.equal(completed.artifact.stateDetails.contentType, 'video/mp4');
+  assert.equal(completed.artifact.stateDetails.deduplicated, false);
+
+  // A later re-rejection must not erase the operator audit either: the lifecycle
+  // transition merges, so the fresh rejection phase and operatorRequeue coexist.
+  await harness.persistence.markArtifactState({
+    artifactId: stored.artifact.id, storageState: 'REJECTED', stateReason: 'media contract failed again',
+    stateDetails: { failedAt: 'fixture-second', phase: 'upload', quarantineKey: '.quarantine/second' },
+  });
+  const reRejected = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  assert.equal(reRejected.artifact.stateDetails.quarantineKey, '.quarantine/second');
+  assert.equal(reRejected.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
+  assert.equal(reRejected.artifact.stateDetails.uploadedAt, 'fixture-completion');
 });

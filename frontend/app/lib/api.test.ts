@@ -40,3 +40,29 @@ describe("fetchWorkbenchPage", () => {
     expect(requested.searchParams.has("codecSearch")).toBe(false);
   });
 });
+
+describe("fetchCorpusResult", () => {
+  afterEach(() => { delete process.env.INTERNAL_API_BASE_URL; vi.restoreAllMocks(); });
+  it("looks up the exact encoded aggregate identity without scanning pages", async () => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "protocol::workload/a" })));
+    const { fetchCorpusResult } = await import("./api");
+    expect(await fetchCorpusResult("protocol::workload/a")).toEqual({ id: "protocol::workload/a" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toBe("http://backend.test/corpus/protocol%3A%3Aworkload%2Fa");
+  });
+  it("accepts a still-encoded id from Next page params without double-escaping", async () => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({ id: "ctx::clip::recipe::run::model" })));
+    const { fetchCorpusResult } = await import("./api");
+    await expect(fetchCorpusResult("ctx%3A%3Aclip%3A%3Arecipe%3A%3Arun%3A%3Amodel")).resolves.toEqual({ id: "ctx::clip::recipe::run::model" });
+    expect(String(fetchMock.mock.calls[0][0])).toBe("http://backend.test/corpus/ctx%3A%3Aclip%3A%3Arecipe%3A%3Arun%3A%3Amodel");
+  });
+  it("treats a withdrawn or missing result as unavailable", async () => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("{}", { status: 404 }));
+    const { fetchCorpusResult } = await import("./api");
+    expect(await fetchCorpusResult("withdrawn")).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});

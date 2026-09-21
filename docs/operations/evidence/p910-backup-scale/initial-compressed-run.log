@@ -1,0 +1,131 @@
+Backup space preflight: artifactBytes=21475037184, requiredBytes=44023816192, availableBytes=1676466585600
+Quiescing writer services for backup consistency (downtime begins): server
+ Container encodingdb-backup-scale-server-1 Stopping
+ Container encodingdb-backup-scale-server-1 Stopped
+{"ok":true,"artifactCount":40,"derivedMemberCount":0,"publicCorpusGroupCount":0}
+{"kind":"backup-inventory-resource-use","cgroupPeakMemoryBytes":57327616,"nodeMaxRssBytes":105533440}
+Restarting quiesced writer services: server
+time="2026-09-14T02:42:38Z" level=warning msg="volume \"encodingdb-backup-scale_artifact_data\" already exists but was not created by Docker Compose. Use `external: true` to use an existing volume"
+ Container encodingdb-backup-scale-db-1 Running
+ Container encodingdb-backup-scale-db-1 Waiting
+ Container encodingdb-backup-scale-db-1 Healthy
+ Container encodingdb-backup-scale-server-1 Starting
+ Container encodingdb-backup-scale-server-1 Started
+ Container encodingdb-backup-scale-db-1 Waiting
+ Container encodingdb-backup-scale-server-1 Waiting
+ Container encodingdb-backup-scale-db-1 Healthy
+ Container encodingdb-backup-scale-server-1 Healthy
+Writer quiescence duration seconds: 77
+PL-v7 backup created: /mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-37.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-21.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-7.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-16.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-35.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-38.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-23.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-14.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-5.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-19.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-8.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-25.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-33.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-28.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-12.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-3.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-27.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-31.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-1.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-10.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-13.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-2.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-32.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-29.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-24.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-0.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-11.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-30.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-26.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-6.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-17.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-20.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-36.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-18.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-9.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-15.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-4.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-39.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-22.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.staging/backup-scale-34.upload': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/aa/aa98eff5065d1693555e5d18d61018ad80e51c13ce3df49189ef3027a0d4dee7': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/55/5567b950b156fda0db13518fff1767efa13fd6685d897978649984851786aa5e': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/0d/0d6bef333dd5416283f520d0ff34b519955357a399dccbedb06e9571f3b6e12d': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/d0/d04cdb91deab57f224cf6bf4e9808bd15df0be167f082be9718ed260be2702e8': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/84/84e30a2f6d28c2bf535f74d780a80191df01b9cf816ffede0bc4904d52493410': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/e3/e33145ad005ff74fa7b0295b641f1d121fb7606858655308079a973901697304': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/cc/ccbbf4fa3bf4eebdad0a1ca2a1e2c58d141f5a23b988ff3471bdbf12535a53c5': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/a8/a8bd1be44336d9e3c6779735347b2cfd450921a29a725dc2ff1db3da9955d576': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/b0/b0f0b8ffada2a71b1c5805556a3313bec0c81936329e265fd28cf8d234977a2a': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/45/45442b3f5678ba884212301650b451c6bae5f8a8757597758167bb2dcb74d680': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/19/1986d264b722bd2f6e301fabce957615cd1fa1bef5924f0b85aacddb4a19d636': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/ab/abaf0978dc3855f984129490fd400f6a77a70556a5538a3ba055f9627b1305e9': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/69/690b1d7566f1011243d8225856f8c1ec0f01f54c47f72c4f892cf838ca559ff5': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/e0/e01800cc99a168b80a0c45fb5b807d4366e04a1226fcdd678d3f3afc8c1a173e': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/dc/dc1e247b358b3e49a31ad99bf75c3bfff5c97572351ec8c5a4097fb3d0c80478': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/f8/f81df5d6e94e8195ad2ac1ec1aedb8e375f903254728b1348a10b7387b8c4c50': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/07/0775a5956b29a287fea092d4b01f8ef93e5908760a7d38f3493f6f2161e1270b': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/1f/1f9136c9cda6a26e69a4b0449d869becc50e9d055c941e200303522493ad9a6a': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/6a/6a7308dd9fd81f6376f368f6d81bdc02aad5018ea6ce84eef8f0f49add62a613': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/37/37305dec017df9057fbe779faa079b608943b6b5ba35766d2646f4815b721353': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/37/37c4985b293e262b2b5c8b82d4d2133aa5839ad55ae5b668122039a2e6568f55': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/78/78885038cb9aa71cd19b349c942d0f3d53974ae5a8cd58bbbce06b23bb63b4c0': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/5c/5c813a65f161deca20d475b51a55b0c3081d3bb4e3459921fd8d2746a44b88e7': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/d1/d1199465a1c93979979c7d961e93d66f5c670c6064fd1a86dd97c6c07ae5ca9f': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/85/85ec118af17534afb83a9b8e05aa6977afecf8e9e7256839ed73baa235e1c859': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/bb/bb871b69c233f02920c941c515538e5e3c870aaf92d412489f8e7575a1b12781': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/29/29ae366d6c3bcba0794dba114250f61af495b22920d9137df1633e7aceacf651': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/ca/ca7f5258ad03a46dcfcab5bd137638e0e753d60c01691f47f22a84cd609aedd1': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/08/08ade4095ea7fe5243ea6fd0c249f8dcd22f0a71368b9895d8267a7c278bc203': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/e5/e5f9fec7d70b94062fbf6181110f5a9bf650698cb41998751833b33e5e8146f8': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/06/06b00e5366ed222115c90a00a80cc1f0eb372272268e9e4df326f6aa0b54a526': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/db/dbcb80754db778b66a067b364c12ecfab20da11c126a1d863b3f80bcf28bc613': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/d8/d88439b5988f2ecb00fe9a70c54793e8036a3fb26fbc5889d9a72e612e2bc189': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/fc/fc9963b359d0d11648d6851c4778385e071e673b9365636aa5a4eda80c02338e': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/fd/fd47b66130d9bec2131bd5b1dd0d7382488703cd10f3a003def54a9f0c88805a': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/9b/9b4fefcffd1b85485bfa03f11c2e53b8f44ac2a132f228cd844dc775dfc7c98c': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/f4/f4c97c812942854bb2f4df371313a0449e5d98425efd841c8ccfbc4f1fa807fa': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/cb/cbe665d09b5dc3750b680c2a245b08dbe2aaf75861fcb896fc15bd57e4c72870': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/e6/e62e0474e3a1700cdd3990511d27b5f16f8ab18cd919bfd82a6398a951af391a': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/objects/1b/1bfcab6203651cada77575101116ff3dfa96bf1ffb5742dcc5514f75f292da13': Permission denied
+rm: cannot remove '/mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/backups/backup-20260914T024123Z-3289063/.staging.P6ykxa/artifacts/.fixture-manifest.json': Permission denied
+Backup supervisor: exit=0, elapsedSeconds=1058.126
+artifacts.tar.gz: OK
+database.dump: OK
+inventory.json: OK
+{"ok":true,"artifactCount":40,"derivedMemberCount":0,"publicCorpusGroupCount":0}
+{"kind":"backup-inventory-resource-use","cgroupPeakMemoryBytes":56672256,"nodeMaxRssBytes":102367232}
+PL-v7 isolated restore drill passed
+Restore supervisor: exit=0, elapsedSeconds=376.368
+	Command being timed: "/bin/bash /mnt/NVME/docker/encodingdb-operations/20260914-backup-scale/tools/scripts/v7-scheduled-backup.sh"
+	User time (seconds): 1219.71
+	System time (seconds): 245.68
+	Percent of CPU this job got: 102%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 23:54.74
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 28160
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 31
+	Minor (reclaiming a frame) page faults: 112450
+	Voluntary context switches: 1355169
+	Involuntary context switches: 247354
+	Swaps: 0
+	File system inputs: 335462418
+	File system outputs: 83892973
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
