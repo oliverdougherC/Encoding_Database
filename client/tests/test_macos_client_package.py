@@ -405,7 +405,8 @@ class MacosBundlePackagingTests(unittest.TestCase):
         env = dict(os.environ)
         env.update({"ENCODINGDB_STUB_REPORT": str(report), "ENCODINGDB_NO_HOLD": "1"})
         script = self.root / "invoke-mount.sh"
-        script.write_text(f'#!/bin/sh\nexec "{wrapper}" {_shell_quote("ünïcode $\'`")}\n',
+        quoted_argument = _shell_quote("ünïcode $'`")
+        script.write_text(f'#!/bin/sh\nexec "{wrapper}" {quoted_argument}\n',
                           encoding="utf-8")
         script.chmod(0o755)
         status, output = run_with_pty(script, env, self.root)
