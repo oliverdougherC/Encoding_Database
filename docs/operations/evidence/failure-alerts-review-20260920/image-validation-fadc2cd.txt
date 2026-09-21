@@ -1,0 +1,12 @@
+=== image: encodingdb-candidate-server:fadc2cd
+=== A: disabled default (no V7_ALERT_ENABLED)
+{"action":"skipped_disabled"}
+=== B: mocked-sink degraded episode (sent then suppressed)
+TICK1:
+{"alertState":"degraded","reasons":["upload_secret_missing"],"action":"sent","notified":true,"capturedAt":"2026-09-21T00:17:36.915Z","delivery":{"delivered":true,"attempts":1,"httpStatus":204,"error":null}}
+TICK2:
+{"alertState":"degraded","reasons":["upload_secret_missing"],"action":"suppressed_unchanged","notified":false,"capturedAt":"2026-09-21T00:17:37.239Z","delivery":null}
+STATE_MODE: 600
+SINK_COUNT: 1
+SINK_BODY:
+{"content":"[EncodingDB production] FAILURE (degraded)\nreasons: upload_secret_missing\ncaptured: 2026-09-21T00:17:36.915Z","allowed_mentions":{"parse":[]}}
