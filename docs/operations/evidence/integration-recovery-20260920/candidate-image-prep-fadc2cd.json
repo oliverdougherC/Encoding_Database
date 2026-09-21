@@ -1,40 +1,47 @@
 {
-  "schemaVersion": 1,
-  "kind": "final-candidate-image-preparation-isolated",
-  "preparedAt": "2026-09-21T00:15:26Z",
-  "purpose": "Build the final candidate server and frontend images BEFORE production approval so Oliver reviews concrete artifacts; production compose dir, containers, volumes and networks untouched.",
-  "source": {
-    "commit": "fadc2cd (codex/local-release-integration tip)",
-    "transport": "git bundle 730de3c..codex/local-release-integration (9.0 MB) created on the Mac, fetched into an isolated copy",
-    "prepTree": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/src (rsync copy of the candidate checkout excluding .build/node_modules/.next; git fetch of the bundle; checkout integration-prep=fadc2cd; untracked suite resources retained for the Dockerfile verification gate)",
-    "isolation": "Owned prep path only. No production directories (20260913-release-1.2.0), no candidate-stack volumes, no pushes, no tags."
-  },
+  "digestNote": "Locally built images have docker image IDs only; registry digests exist solely after a push, and nothing was pushed. Deployment references these by tag+ID.",
   "images": [
     {
-      "tag": "encodingdb-candidate-server:fadc2cd",
+      "build": "docker build -t encodingdb-candidate-server:fadc2cd src/server (exit 0; includes pinned-model hash gate, canonical suite source hash gate, libvmaf+xpsnr probe, artifacts.js diagnostic probe)",
+      "buildLog": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/server-build.log (144 lines)",
       "imageId": "sha256:9b7801f1645d36e9b5148a0f506d2fb2abb3fa8773b0d9d746d44a4e6eb79891",
       "sizeBytes": "4.59GB reported",
-      "build": "docker build -t encodingdb-candidate-server:fadc2cd src/server (exit 0; includes pinned-model hash gate, canonical suite source hash gate, libvmaf+xpsnr probe, artifacts.js diagnostic probe)",
-      "buildLog": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/server-build.log (144 lines)"
+      "tag": "encodingdb-candidate-server:fadc2cd"
     },
     {
-      "tag": "encodingdb-candidate-frontend:fadc2cd",
+      "build": "docker build -t encodingdb-candidate-frontend:fadc2cd src/frontend (exit 0; final frontend tree including bfcf8bb+fadc2cd /run changes - NOT the older 971b259 candidate bytes)",
+      "buildLog": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/frontend-build.log (130 lines)",
       "imageId": "sha256:c5c897e28d23d050dbc464188044f5e6edc1dcb04db3ee1a2d2074e8ef704c31",
       "sizeBytes": "982MB reported",
-      "build": "docker build -t encodingdb-candidate-frontend:fadc2cd src/frontend (exit 0; final frontend tree including bfcf8bb+fadc2cd /run changes - NOT the older 971b259 candidate bytes)",
-      "buildLog": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/frontend-build.log (130 lines)"
+      "tag": "encodingdb-candidate-frontend:fadc2cd"
+    },
+    {
+      "build": "FINAL frontend rebuild after macOS-floor copy fix at tip 75b823b; server tree unchanged since fadc2cd so server artifact 9b7801f1... remains reviewed",
+      "imageId": "sha256:5203b8d8982f48255f7c833c106ca643fe74b99ca345366012ab55c80dab19a4",
+      "renderCheck": "throwaway container of the exact image: /run shows 'requires macOS 27 or later' and 'older macOS and Intel Macs unverified', zero macOS-11 claims, staged-by-default download state; removed after",
+      "tag": "encodingdb-candidate-frontend:75b823b"
     }
   ],
-  "digestNote": "Locally built images have docker image IDs only; registry digests exist solely after a push, and nothing was pushed. Deployment references these by tag+ID.",
   "inImageValidation": {
-    "receipt": "docs/operations/evidence/failure-alerts-review-20260920/image-validation-fadc2cd.txt",
     "harness": "P910:~/alert-image-validation.sh (loopback mock health+sink inside one throwaway container; no production files, no real webhook)",
+    "receipt": "docs/operations/evidence/failure-alerts-review-20260920/image-validation-fadc2cd.txt",
     "results": {
-      "disabledDefault": "{\"action\":\"skipped_disabled\"} with V7_ALERT_ENABLED unset",
       "degradedEpisode": "tick1 action=sent notified=true httpStatus=204, reasons [\"upload_secret_missing\"] (backup_schedule_missing filtered with V7_ALERT_BACKUP_MONITORING=0), allowed_mentions.parse=[]; tick2 suppressed_unchanged; state file mode 600; sink received exactly 1 message",
+      "disabledDefault": "{\"action\":\"skipped_disabled\"} with V7_ALERT_ENABLED unset",
       "paths": "executed as WORKDIR /app with argv node scripts/v7-failure-alert.mjs poll (ENTRYPOINT []), confirming the packet's ExecStart shape"
     }
   },
+  "kind": "final-candidate-image-preparation-isolated",
+  "nativeArtifacts": "Client executables untouched by this preparation (no rebuild); release publication still uses the four accepted binaries listed in parent-deployment-approval.md.",
+  "preparedAt": "2026-09-21T00:15:26Z",
+  "purpose": "Build the final candidate server and frontend images BEFORE production approval so Oliver reviews concrete artifacts; production compose dir, containers, volumes and networks untouched.",
   "rollbackBehavior": "Preparation created: two image tags, two build logs, one bundle, one validation script/output, all in owned paths. No service was stopped or started; no volume or network was created, mounted, or modified; production containers remain the recorded baseline.",
-  "nativeArtifacts": "Client executables untouched by this preparation (no rebuild); release publication still uses the four accepted binaries listed in parent-deployment-approval.md."
+  "schemaVersion": 1,
+  "source": {
+    "commit": "fadc2cd (codex/local-release-integration tip)",
+    "isolation": "Owned prep path only. No production directories (20260913-release-1.2.0), no candidate-stack volumes, no pushes, no tags.",
+    "prepTree": "P910:/mnt/NVME/docker/encodingdb-prep-20260920/src (rsync copy of the candidate checkout excluding .build/node_modules/.next; git fetch of the bundle; checkout integration-prep=fadc2cd; untracked suite resources retained for the Dockerfile verification gate)",
+    "transport": "git bundle 730de3c..codex/local-release-integration (9.0 MB) created on the Mac, fetched into an isolated copy"
+  },
+  "supersedes": "frontend:c5c897e2... (fadc2cd build) is superseded lineage only"
 }
