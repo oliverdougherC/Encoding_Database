@@ -196,10 +196,19 @@ describe("results table structure", () => {
     expect(screen.getByRole("link", { name: "Run a benchmark" })).toHaveAttribute("href", "/run");
   });
 
-  it("shows the real CPU name when the GPU field carries a placeholder", () => {
-    renderTable([makeRow({ gpuModel: "not-applicable", cpuModel: "Apple M2" })]);
+  it("keeps a GPU-less hardware encoder honest: CPU primary, OS secondary, no CPU-only claim", () => {
+    // hevc_videotoolbox on Apple silicon is hardware encoding even with no
+    // named GPU; absence of a gpuModel must not read as "CPU-only".
+    renderTable([makeRow({ id: "row-m2", encoderName: "hevc_videotoolbox", cpuModel: "Apple M2", gpuModel: "not-applicable", os: "macOS 15.6" })]);
     expect(screen.getByText("Apple M2")).toBeInTheDocument();
-    expect(screen.getByText(/CPU-only · Linux/)).toBeInTheDocument();
+    expect(screen.getByText("macOS 15.6")).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("not-applicable");
+    expect(document.body).not.toHaveTextContent("CPU-only");
+  });
+
+  it("reports 'GPU not reported' in the details panel instead of a CPU-only inference", () => {
+    render(<BenchmarkDetailsDialog row={makeRow({ encoderName: "hevc_videotoolbox", cpuModel: "Apple M2", gpuModel: "not-applicable" })} close={() => {}} />);
+    expect(screen.getByText("GPU not reported · Apple M2")).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent("CPU-only");
   });
 });

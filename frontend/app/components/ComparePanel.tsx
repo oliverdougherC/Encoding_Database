@@ -18,7 +18,7 @@ type Metric = {
 
 const METRICS: Metric[] = [
   { label: "CPU", getValue: r => r.cpuModel, getNumeric: () => null, higherIsBetter: true },
-  { label: "GPU", getValue: r => realGpu(r.gpuModel) ?? "CPU-only", getNumeric: () => null, higherIsBetter: true },
+  { label: "GPU", getValue: r => realGpu(r.gpuModel) ?? "GPU not reported", getNumeric: () => null, higherIsBetter: true },
   { label: "Encoder", getValue: r => r.encoderName, getNumeric: () => null, higherIsBetter: true },
   { label: "Preset", getValue: r => r.preset, getNumeric: () => null, higherIsBetter: true },
   { label: "Recipe fingerprint", getValue: r => r.recipe.fingerprint, getNumeric: () => null, higherIsBetter: true },

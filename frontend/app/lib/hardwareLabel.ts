@@ -1,7 +1,7 @@
-// Real hardware names over sentinels. Some corpus rows carry placeholder GPU
-// strings ("not-applicable") for CPU-only runs; `gpuModel || cpuModel` then
-// displays the placeholder instead of the actual CPU name. Normalize once,
-// shared by the results table, detail dialog, compare panel, and hardware index.
+// Real hardware names over sentinels. Corpus rows may carry placeholder GPU
+// strings ("not-applicable") or none at all - which does NOT prove CPU-only
+// encoding (e.g. VideoToolbox on Apple silicon reports no discrete GPU).
+// Normalize to "no named GPU" once; callers show the CPU name or "GPU not reported".
 const GPU_SENTINELS: Record<string, true> = {
   none: true,
   null: true,
