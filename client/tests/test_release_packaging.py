@@ -206,6 +206,42 @@ class ReleasePackagingTests(unittest.TestCase):
             self.assertTrue(any(line.endswith(f"  {smoke_path.name}") for line in sha_lines))
             self.assertTrue(any(line.endswith(f"  {suite_pack_path.name}") for line in sha_lines))
 
+    def test_primary_artifact_contracts_and_launch_wiring(self) -> None:
+        root = release_manifest_lib.ROOT_DIR
+        macos = (root / "scripts/build_macos_client.sh").read_text(encoding="utf-8")
+        self.assertIn("scripts/macos_client_package.py", macos)
+        self.assertIn("EncodingDB-macOS-arm64.dmg", macos)
+        self.assertIn('"$BUILD_PYTHON" "${PACKAGE_ARGS[@]}"', macos)
+        linux = (root / "scripts/build_linux_client.sh").read_text(encoding="utf-8")
+        self.assertIn("scripts/linux_client_package.py", linux)
+        self.assertIn("encodingdb-client-linux.tar.gz", linux)
+        self.assertIn('"$BUILD_PYTHON" "${LINUX_PACKAGE_ARGS[@]}"', linux)
+        windows = (root / "scripts/build_windows_client.ps1").read_text(encoding="utf-8")
+        self.assertIn('$guiAppName = "encodingdb-client-windows"', windows)
+        self.assertIn('$consoleAppName = "encodingdb-client-windows-console"', windows)
+        self.assertIn('"--windowed"', windows)
+        gui_entry = (root / "client/_pyinstaller_gui_entry.py").read_text(encoding="utf-8")
+        self.assertIn('"--gui"', gui_entry)
+        console_entry = (root / "client/_pyinstaller_entry.py").read_text(encoding="utf-8")
+        self.assertIn("from client.main import main", console_entry)
+        for relative_path in ("packaging/macos/launcher.sh",
+                              "packaging/macos/EncodingDB.command",
+                              "packaging/linux/start.sh"):
+            mode = (root / relative_path).stat().st_mode
+            self.assertTrue(mode & 0o111, f"{relative_path} must stay executable")
+        macos_readme = (root / "packaging/macos/README-installer.txt").read_text(encoding="utf-8")
+        self.assertIn("macOS 27", macos_readme)
+        self.assertNotIn("macOS 11", macos_readme)
+        self.assertIn("not notarized", macos_readme)
+        self.assertIn("Right-click", macos_readme)
+        linux_readme = (root / "packaging/linux/README.md").read_text(encoding="utf-8")
+        self.assertIn("./start.sh", linux_readme)
+        self.assertIn("guided menu", linux_readme)
+        self.assertIn("sha256sum -c", linux_readme)
+        from scripts import macos_client_package
+        self.assertEqual(macos_client_package.format_version(
+            macos_client_package.DOCUMENTED_MACOS_FLOOR), "27.0")
+
 
 if __name__ == "__main__":
     unittest.main()
