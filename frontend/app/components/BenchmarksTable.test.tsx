@@ -1,7 +1,13 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
-import { BenchmarkDetailsDialog } from "./BenchmarksTable";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import BenchmarksTable, { BenchmarkDetailsDialog } from "./BenchmarksTable";
 import type { Benchmark } from "../lib/types";
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 function makeRow(overrides: Partial<Benchmark> = {}): Benchmark {
   return {
@@ -151,5 +157,49 @@ describe("evidence interpretation", () => {
   it("does not invent confidence for sparse accepted evidence", () => {
     render(<BenchmarkDetailsDialog row={makeRow({ sampleCounts: { ...makeRow().sampleCounts, accepted: 1, suspect: 0 }, confidence: { ...makeRow().confidence, unavailableReason: "Insufficient independent sources" } })} close={() => {}} />);
     expect(screen.getByText("Insufficient independent sources")).toBeInTheDocument();
+  });
+});
+
+describe("results table structure", () => {
+  const renderTable = (rows: Benchmark[]) => render(<BenchmarksTable initialData={rows} totalCount={rows.length} currentPage={1} />);
+
+  it("drives colgroup, header, and body from one shared column definition", () => {
+    const { container } = renderTable([makeRow(), makeRow({ id: "row-b", encoderName: "libx264" })]);
+    const cols = container.querySelectorAll("table > colgroup > col");
+    const heads = [...container.querySelectorAll("table thead tr th")];
+    expect(cols.length).toBe(heads.length);
+    expect(heads.length).toBeGreaterThan(0);
+    for (const tr of container.querySelectorAll("table tbody tr")) {
+      expect(tr.querySelectorAll("td").length).toBe(heads.length);
+    }
+    // The metric labels exist exactly once, in order - no duplicated or
+    // drifted header row outside the table.
+    expect(heads.map((th) => th.textContent?.trim()).slice(1)).toEqual(["Hardware", "Encoder", "Configuration", "FPS", "VMAF", "Bitrate", "Evidence", "Runs", "Details"]);
+  });
+
+  it("exposes sorting through real columnheaders with aria-sort", () => {
+    renderTable([makeRow()]);
+    const before = screen.getByRole("button", { name: "FPS" }).closest("th");
+    expect(before).toHaveAttribute("aria-sort", "none");
+    fireEvent.click(screen.getByRole("button", { name: "FPS" }));
+    expect(screen.getByRole("button", { name: /FPS/ }).closest("th")).toHaveAttribute("aria-sort", "descending");
+    fireEvent.click(screen.getByRole("button", { name: /FPS/ }));
+    expect(screen.getByRole("button", { name: /FPS/ }).closest("th")).toHaveAttribute("aria-sort", "ascending");
+  });
+
+  it("keeps the empty state a single spanning row inside the table flow", () => {
+    const { container } = renderTable([]);
+    expect(screen.getByText(/No benchmark results match these filters/)).toBeInTheDocument();
+    const cells = container.querySelectorAll("table tbody td");
+    expect(cells).toHaveLength(1);
+    expect(cells[0]).toHaveAttribute("colspan", "10");
+    expect(screen.getByRole("link", { name: "Run a benchmark" })).toHaveAttribute("href", "/run");
+  });
+
+  it("shows the real CPU name when the GPU field carries a placeholder", () => {
+    renderTable([makeRow({ gpuModel: "not-applicable", cpuModel: "Apple M2" })]);
+    expect(screen.getByText("Apple M2")).toBeInTheDocument();
+    expect(screen.getByText(/CPU-only · Linux/)).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent("not-applicable");
   });
 });
