@@ -1,0 +1,1 @@
+1315:##[error]The template is not valid. System.InvalidOperationException: hashFiles('encodingdb-client-windows-console.exe') failed. Fail to hash files under directory 'D:\a\Encoding_Database\Encodin

@@ -6,7 +6,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null; $parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Harness,[ref]$tokens,[ref]$parseErrors)
 if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
-foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-ObservedRunControl','Invoke-RunAction','Wait-Until')) {
+foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-ObservedRunControl','Invoke-RunAction','Wait-Until','Observe-Processes')) {
     $definitions=@($ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true))
     if ($definitions.Count -ne 1) { throw "Expected one real $name definition." }
     Invoke-Expression $definitions[0].Extent.Text
@@ -119,6 +119,30 @@ Assert-True ($receipt.cleanupErrors[0].processId -eq 123 -and $receipt.cleanupEr
 $receipt=@{status='PENDING_EVIDENCE_VALIDATION';error=$null;primaryError=$null;cleanupErrors=@()}
 Record-CleanupFailure 'capture-owned-output' 'pipe still open' $null
 Assert-True ($receipt.error -eq 'Process cleanup/evidence failed: pipe still open') 'Cleanup-only failure was not reported.'
+# The real Observe-Processes closure must never adopt a process older than its claimed parent.
+# Replay of CI 35549600291 attempt2 at 02:43:35: boot-time csrss.exe/winlogon.exe whose stale WMI
+# ParentProcessId 8092 was just reused by the client worker's ~100ms Get-Counter GPU-sampler child.
+function New-FakeProcess([long]$ProcessId,[long]$ParentProcessId,[DateTime]$CreationDate,[string]$Name,[string]$CommandLine) {
+    [pscustomobject]@{ProcessId=$ProcessId;ParentProcessId=$ParentProcessId;CreationDate=$CreationDate;Name=$Name;ExecutablePath=('C:\fake\'+$Name);CommandLine=$CommandLine}
+}
+$boot=[DateTime]'2026-09-21T02:15:31.696'; $seeded=[DateTime]'2026-09-21T02:43:20.000'; $sampler=[DateTime]'2026-09-21T02:43:35.595'; $samplerChild=[DateTime]'2026-09-21T02:43:35.618'
+$fakes=@(
+    (New-FakeProcess 4588 1 $seeded 'encodingdb-client-windows.exe' 'client'),
+    (New-FakeProcess 8092 4588 $sampler 'powershell.exe' 'powershell -NoProfile -Command Get-Counter GPU Engine'),
+    (New-FakeProcess 6400 8092 $samplerChild 'conhost.exe' 'conhost 0x4'),
+    (New-FakeProcess 8108 8092 $boot 'csrss.exe' ''),
+    (New-FakeProcess 8156 8092 $boot 'winlogon.exe' 'winlogon.exe'),
+    (New-FakeProcess 8112 4588 ([DateTime]'2026-09-21T02:43:22.840') 'powershell.exe' 'worker')
+)
+$script:events=@()
+$script:processProbe={ return $fakes }
+$script:currentPhase=@{ name='close'; helpers=@{} }
+$script:owned=@{ '4588'=$fakes[0] }
+$aliveIds=@(Observe-Processes | ForEach-Object { $_.ProcessId })
+Assert-True (@($aliveIds) -contains 8092 -and @($aliveIds) -contains 6400 -and @($aliveIds) -contains 8112) 'Legitimate owned descendants were not adopted by the closure.'
+Assert-True (@($aliveIds) -notcontains 8108 -and @($aliveIds) -notcontains 8156) 'The closure adopted a process older than its claimed reused-PID parent.'
+Assert-True (@($script:events | Where-Object { $_.kind -eq 'owned-process-discovered' -and @(8108,8156) -contains $_.data.ProcessId }).Count -eq 0) 'Stale-parent system processes were recorded as discovered.'
+$script:processProbe=$null
 function Capture-Ui([string]$Label) { return @() }
 # The real Get-ObservedRunControl enumerates live Win32 child windows; this synthetic double supplies
 # observation outcomes so the extracted Invoke-RunAction dispatch discipline is testable.

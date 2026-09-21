@@ -17,6 +17,8 @@ if (Test-Path $modeRoot) { throw "Create-only acceptance output already exists: 
 New-Item -ItemType Directory $modeRoot | Out-Null
 $script:currentPhase = $null
 $script:owned = @{}
+# Test seam only: when set, Observe-Processes enumerates this scriptblock instead of Win32_Process.
+$script:processProbe = $null
 $script:process = $null
 $script:stdoutTask = $null
 $script:stderrTask = $null
@@ -184,7 +186,7 @@ public static class EdbWindows {
     Save-Json $receipt (Join-Path $modeRoot 'receipt.json'); throw
 }
 function Observe-Processes {
-    $all = @(Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine)
+    $all = @(if ($script:processProbe) { & $script:processProbe } else { Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine })
     $byId = @{}
     foreach ($item in $all) { $byId[[string]$item.ProcessId] = $item }
     do {
@@ -192,7 +194,10 @@ function Observe-Processes {
         foreach ($item in $all) {
             $key = [string]$item.ProcessId
             $parentKey = [string]$item.ParentProcessId
-            $parentLive = $script:owned.ContainsKey($parentKey) -and $byId.ContainsKey($parentKey) -and $byId[$parentKey].CreationDate -eq $script:owned[$parentKey].CreationDate
+            # A process cannot predate its parent: WMI ParentProcessId can name a reused PID whose live
+            # holder started long after this child was created (CI 35549600291 attempt2 adopted boot-time
+            # csrss.exe/winlogon.exe whose stale parent PID was reused by the client's GPU-sampler child).
+            $parentLive = $script:owned.ContainsKey($parentKey) -and $byId.ContainsKey($parentKey) -and $byId[$parentKey].CreationDate -eq $script:owned[$parentKey].CreationDate -and $item.CreationDate -ge $byId[$parentKey].CreationDate
             if (-not $script:owned.ContainsKey($key) -and $parentLive) {
                 $script:owned[$key] = $item; $added = $true
                 Record-Event 'owned-process-discovered' $item
