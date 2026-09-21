@@ -28,13 +28,12 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
   }
   const accepted = rows.reduce((sum, row) => sum + row.sampleCounts.accepted, 0);
   const suspect = rows.reduce((sum, row) => sum + row.sampleCounts.suspect, 0);
-
   return (
     <div className={`page ${styles.page}`}>
       <section className={styles.intro}>
         <p className={styles.kicker}>Community benchmark corpus</p>
-        <h1>Compare encoder speed and quality — then add your own numbers.</h1>
-        <p className={styles.lede}>Every result here is a community run of the same canonical clips with a reproducible FFmpeg recipe, kept together with the evidence behind it. Download the client, pick a measurement sweep, and your accepted runs join this table.</p>
+        <h1>Compare encoding performance.</h1>
+        <p className={styles.lede}>See how encoders and presets behave on specific hardware and settings — then add your own measurements with the guided client.</p>
         <div className={styles.ctaRow}>
           <a className="btn btn-primary" href="/run">Download &amp; run a benchmark</a>
           <a className="btn" href="/methodology">How scoring works</a>

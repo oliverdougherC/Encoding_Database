@@ -141,7 +141,7 @@ describe("Home page", () => {
     render(await Home({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByText("Community benchmark corpus")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 1, name: "Compare encoder speed and quality — then add your own numbers." })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Compare encoding performance." })).toBeInTheDocument();
     expect(screen.getByText("table-count:7")).toBeInTheDocument();
     expect(screen.getByText(/hevc_videotoolbox/)).toBeInTheDocument();
     expect(screen.getAllByText(/PL unavailable/i).length).toBeGreaterThan(0);
