@@ -1,0 +1,78 @@
+=== rehearsal start 2026-09-21T00:45:46Z
+--- bundle integrity (read-only)
+6d637b15990565b60853f97a41eb2c6a0ac5c534eda451dfccdde7751754babf  database.dump
+e93083a86653c905089fb8789f0c985cfdaec537e033f085841b176af4d3b230  inventory.json
+9e7f7f78251e7aded32f4be1e359e5c8c9f05be7471c79b18c4eb830f1e62261  artifacts.tar.gz
+--- fresh isolated restore (own net/volume; production untouched)
+73039995f56f86b3bfe45b91e3fbd775c279332d1f55b66ee4e2686456327cd2
+rehearsal-pg-data
+--- BEFORE (restored old schema)
+migrations_rows: 23
+benchmarkrun_count: 2
+submission_count: 0
+benchmarkrun_original_columns_fingerprint:
+784489d6aa1c1341835b2cd76650741fe976235ad014d31ff31b5ac1094e5e28  /tmp/br-before.tsv
+artifact_original_columns_fingerprint:
+55f89e212ccefc8246b1d2ae8c436a2d07e21181465cebf2c840494b4608ae41  /tmp/ar-before.tsv
+cmtz8j2u40005o6b33bg0qfip
+cmtz8j51c000ao6b3y5c5bx18
+--- migrate deploy with prepared candidate image
+Prisma schema loaded from prisma/schema.prisma
+Datasource "db": PostgreSQL database "benchmarks", schema "public" at "rehearsal-pg:5432"
+
+29 migrations found in prisma/migrations
+
+Applying migration `20260914010000_collection_integrity`
+Applying migration `20260914011000_review_derivation_invalidation`
+Applying migration `20260914012000_corpus_groups`
+Applying migration `20260914013000_precise_process_interval`
+Applying migration `20260914014000_measurement_group_lookup`
+Applying migration `20260914015000_group_projection_dependencies`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260914010000_collection_integrity/
+    └─ migration.sql
+  └─ 20260914011000_review_derivation_invalidation/
+    └─ migration.sql
+  └─ 20260914012000_corpus_groups/
+    └─ migration.sql
+  └─ 20260914013000_precise_process_interval/
+    └─ migration.sql
+  └─ 20260914014000_measurement_group_lookup/
+    └─ migration.sql
+  └─ 20260914015000_group_projection_dependencies/
+    └─ migration.sql
+      
+All migrations have been successfully applied.
+npm notice
+npm notice New major version of npm available! 10.8.2 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+--- AFTER (migrated schema)
+migrations_rows: 29
+benchmarkrun_count: 2
+artifact_count: 2
+tables_before: 14 tables_after: 18
+new_tables:
+DerivedResultGroupDependency
+EvidenceReview
+PublicCorpusDirtyGroup
+PublicCorpusGroup
+benchmarkrun_fingerprint:
+85499bae430d64c4b7338e69c89fdf29
+benchmarkrun_original_columns_fingerprint:
+784489d6aa1c1341835b2cd76650741fe976235ad014d31ff31b5ac1094e5e28  /tmp/br-after.tsv
+benchmarkrun_identity_unchanged:
+yes
+artifact_original_columns_fingerprint:
+55f89e212ccefc8246b1d2ae8c436a2d07e21181465cebf2c840494b4608ae41  /tmp/ar-after.tsv
+artifact_identity_unchanged:
+yes
+--- old baseline server against migrated schema (boot + read-only probes)
+old_server_health_ready 200
+old_server_query_status 200 body_head []
+--- teardown (throwaway only)
+=== rehearsal end 2026-09-21T00:46:10Z OK

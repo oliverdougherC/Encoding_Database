@@ -56,7 +56,7 @@ export const collectionAssets: ReleaseAsset[] = [
     file: "encodingdb-client-macos",
     label: "macOS (Apple Silicon)",
     sha256: "93339fda368d9285e8ba7d6c79d40de1a1069ca638839c126e8d5cb88f1e9a89",
-    support: "Ad-hoc signed (not Developer ID, not notarized), so expect a Gatekeeper prompt at first launch; native arm64 build, minimum macOS 11.0 per the accepted Mach-O header, embedded arm64 FFmpeg helpers (no Rosetta).",
+    support: "Ad-hoc signed (not Developer ID, not notarized), so expect a Gatekeeper prompt at first launch; native arm64 build whose complete embedded runtime requires macOS 27 or later per load commands (tested on macOS 27.0 build 26A428; older macOS and Intel Macs unverified). No Rosetta.",
   },
 ];
 

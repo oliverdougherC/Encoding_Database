@@ -51,6 +51,8 @@ describe("RunPage", () => {
     expect(document.body).not.toHaveTextContent("requires Rosetta");
     expect(document.body).toHaveTextContent("ad-hoc signed");
     expect(document.body).toHaveTextContent("VideoToolbox on the Apple Silicon Mac");
+    expect(document.body).toHaveTextContent("requires macOS 27 or later");
+    expect(document.body).not.toHaveTextContent("minimum macOS 11.0");
     // Source flow unchanged.
     expect(screen.getByText("python -m client --resume-campaign CAMPAIGN_ID --submit")).toBeInTheDocument();
     expect(screen.getByText(/python -m client --upload-only/)).toBeInTheDocument();
