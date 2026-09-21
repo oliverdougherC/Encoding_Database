@@ -113,7 +113,7 @@ def source_identity() -> Dict[str, Any]:
 
 
 def read_client_minimum_version() -> str:
-    client_match = re.search(r'CLIENT_VERSION\s*=\s*"([^"]+)"', read_text(ROOT_DIR / "client" / "main.py"))
+    client_match = re.search(r'PROTOCOL_MINIMUM_CLIENT_VERSION\s*=\s*"([^"]+)"', read_text(ROOT_DIR / "client" / "main.py"))
     server_match = re.search(
         r"SERVER_CANONICAL_MINIMUM_CLIENT_VERSION\s*=\s*'([^']+)'",
         read_text(ROOT_DIR / "server" / "src" / "v7" / "artifacts.ts"),

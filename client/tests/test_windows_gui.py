@@ -331,19 +331,22 @@ class GuiLifecycleTests(unittest.TestCase):
         root.destroy.assert_not_called()
         app._close_when_stopped()
         root.destroy.assert_not_called()
-        # Grace deadline reached with a still-live uploader: window closes, work stays bounded.
+        # A slow request must not outlive an apparently closed application.
         app._close_deadline = gui.time.monotonic() - 1
         log_lines = []
         with mock.patch.object(app, "_append_log", log_lines.append):
             app._close_when_stopped()
-        root.destroy.assert_called_once()
-        self.assertIn("Grace window reached", " ".join(log_lines))
+        root.destroy.assert_not_called()
+        self.assertIn("Waiting for the current operation", app.summary_var.get())
         self.assertTrue(uploader.is_alive(), "uploader object unaffected by close bookkeeping")
         # Declining the confirmation leaves the window open.
         root.reset_mock()
         tk.messagebox.askyesno.return_value = False
         app._on_close()
         root.destroy.assert_not_called()
+        uploader.finish()
+        app._close_when_stopped()
+        root.destroy.assert_called_once()
 
     def test_retry_exception_surfaces_and_restores_controls(self):
         app, _root, _bindings, _tk = self.build()
@@ -354,6 +357,21 @@ class GuiLifecycleTests(unittest.TestCase):
         self.assertIn("Upload retry failed: disk gone", app.summary_var.get())
         self.assertIsNone(app.upload_thread)
         self.assertEqual(app.upload_btn.options["state"], "normal")
+
+    def test_upload_status_does_not_release_a_still_running_worker(self):
+        app, _root, _bindings, _tk = self.build()
+        with mock.patch.object(gui.threading, "Thread", FakeThread):
+            app._retry_uploads()
+        uploader = app.upload_thread
+        app.event_queue.put(("upload_status", "Upload complete"))
+        app._poll_events()
+        self.assertIs(app.upload_thread, uploader)
+        self.assertEqual(app.start_btn.options["state"], "disabled")
+        self.assertEqual(app.upload_btn.options["state"], "disabled")
+        uploader.finish()
+        app._poll_events()
+        self.assertIsNone(app.upload_thread)
+        self.assertEqual(app.start_btn.options["state"], "normal")
 
     def test_submit_result_events_get_browse_link_not_fake_run_url(self):
         app, _root, _bindings, _tk = self.build()

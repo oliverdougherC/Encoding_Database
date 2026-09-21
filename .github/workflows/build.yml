@@ -296,6 +296,7 @@ jobs:
           include-hidden-files: true
           path: |
             encodingdb-client-macos*
+            EncodingDB-macOS-*.dmg*
             .test-reports/runtime-model/
             encodingdb-test-suite-v1.tar.gz
             client/resources/test_suite_v1/notices/

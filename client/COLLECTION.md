@@ -86,8 +86,9 @@ owned artifacts, protocol, schedule, source identity, hardware and runtime. A cr
 after encode can validate its completed artifact without re-encoding. Owned encoder
 processes are cancelled on Stop; matching orphan process receipts are fenced before
 resume after abrupt process death. The Windows GUI serializes the benchmark worker and
-the upload-replay worker on the same spool, tracks both threads, and waits for them
-with a bounded grace window before closing (replay itself is bounded to 25 entries/60s).
+the upload-replay worker on the same spool and tracks both threads until they exit.
+The window stays visible while an in-flight request finishes; replay checks its
+25-entry/60-second budget between requests, so that budget is not a hard shutdown deadline.
 
 Retries persist a seven-day deadline and a next-attempt time with exponential backoff,
 jitter and `Retry-After`. Expired/rejected items remain in dead-letter storage for

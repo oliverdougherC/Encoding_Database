@@ -107,7 +107,9 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.0"
+CLIENT_VERSION = "client/0.3.1"
+# UI/package patches do not change the server's frozen protocol 7.1 contract.
+PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
 
@@ -516,7 +518,7 @@ def _build_authoritative_run_create_request(
         "benchmarkProtocol": {
             "protocolVersion": config.BENCHMARK_PROTOCOL_VERSION,
             "sourceSuiteVersion": prepared_clip.suite_version,
-            "minimumClientVersion": CLIENT_VERSION,
+            "minimumClientVersion": PROTOCOL_MINIMUM_CLIENT_VERSION,
             "canonicalRecipeRules": {
                 "artifactUploadRequired": True,
                 "warmupRuns": protocol_config.warmup_runs,

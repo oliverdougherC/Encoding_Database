@@ -27,9 +27,8 @@ GUI_MODE_BY_LABEL: Dict[str, Optional[str]] = {
     "Full": "full",
     "Single (advanced)": None,
 }
-# A spool replay pass is bounded to ~60s by design; benchmark workers observe the
-# cancel event at encode/checkpoint boundaries. Bounded UI wait before window close;
-# non-daemon threads still make interpreter exit wait for real completion.
+# Replay checks its time budget between entries; an in-flight request can take
+# longer. Keep the window visible until both owned workers have actually exited.
 GUI_CLOSE_GRACE_SECONDS = 70.0
 
 
@@ -665,12 +664,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         self._update_single_fields_state(preview=False)
                     elif kind == "upload_status":
                         self._append_log(payload)
-                        self.upload_thread = None
-                        self._refresh_controls()
                         if not self.running:
                             self.summary_var.set(str(payload))
             except queue.Empty:
                 pass
+            if self.upload_thread is not None and not self.upload_thread.is_alive():
+                self.upload_thread = None
+            self._refresh_controls()
             self.root.after(120, self._poll_events)
 
         def _on_close(self) -> None:
@@ -688,11 +688,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         def _close_when_stopped(self):
             benchmark = self.worker_thread is not None and self.worker_thread.is_alive()
             uploader = self._upload_active()
-            if (benchmark or uploader) and time.monotonic() < self._close_deadline:
+            if benchmark or uploader:
+                if time.monotonic() >= self._close_deadline:
+                    self.summary_var.set("Waiting for the current operation to finish safely before closing...")
+                    self._close_deadline = time.monotonic() + GUI_CLOSE_GRACE_SECONDS
                 self.root.after(100, self._close_when_stopped)
                 return
-            if benchmark or uploader:
-                self._append_log("Grace window reached; retained worker still finishes bounded work before exit.")
             self.root.destroy()
 
         def run(self) -> int:
