@@ -1,8 +1,11 @@
 """Regression coverage for the double-clickable macOS packaging surface.
 
 Covers: bundle identity metadata and launch wiring, load-command-derived support
-floor, TTY launch quoting through the Terminal wrapper, launcher hand-off to
-`open`, failure-status retention, and (on macOS hosts) the real DMG round trip.
+floor, TTY launch quoting through the Terminal wrapper, launcher hand-off to a
+checked Terminal candidate, failure-status retention, real code-signing
+provenance transitions (preserve vs re-sign, verified from a read-only DMG
+mount), and the DMG sidecar contract. All GUI-level behavior is exercised via
+this isolated pty/CLI harness — no Finder/Terminal acceptance is claimed here.
 """
 import json
 import os
@@ -143,22 +146,46 @@ class MacosBundlePackagingTests(unittest.TestCase):
         self.assertEqual(plist["CFBundlePackageType"], "APPL")
         self.assertEqual(plist["CFBundleShortVersionString"], "9.9.9-test")
         self.assertEqual(plist["LSMinimumSystemVersion"], "27.0")
-        if shutil.which("iconutil"):
+        self.assertEqual(info["cliSourceSha256"], mcp.sha256_path(cli))
+        self.assertEqual(mcp.sha256_path(contents / "Resources" / "encodingdb"),
+                         info["cliSourceSha256"])
+        usable_art = shutil.which("iconutil") and mcp.ico_usable(mcp.REPO_FAVICON)
+        if usable_art:
             self.assertEqual(plist["CFBundleIconFile"], "AppIcon")
-            icns = contents / "Resources" / "AppIcon.icns"
-            self.assertTrue(icns.is_file() and icns.stat().st_size > 0)
-            self.assertEqual(icns.read_bytes()[:4], b"icns")
         else:
+            # Off macOS hosts lack iconutil, so the bundle honestly ships the
+            # generic app icon rather than claiming a converted brand asset.
             self.assertNotIn("CFBundleIconFile", plist)
+            self.assertFalse(info["iconIncluded"])
         for executable in (contents / "MacOS" / "EncodingDB",
                            contents / "Resources" / "EncodingDB.command",
                            contents / "Resources" / "encodingdb"):
             self.assertTrue(executable.is_file(), str(executable))
             self.assertTrue(executable.stat().st_mode & stat.S_IXUSR, str(executable))
         self.assertEqual((contents / "PkgInfo").read_bytes(), b"APPL????")
-        self.assertEqual(info["cliSha256"], mcp.sha256_path(cli))
-        self.assertEqual(mcp.sha256_path(contents / "Resources" / "encodingdb"),
-                         info["cliSha256"])
+
+    def test_explicit_icon_source_is_embedded(self) -> None:
+        cli = self.write_stub_cli(self.root)
+        icns = self.root / "brand.icns"
+        icns.write_bytes(b"icns" + b"\0" * 32)
+        info = mcp.assemble_app(cli_binary=cli, output_dir=self.root / "work",
+                                project_version="9.9.9-test", icon_source=icns)
+        plist_path = Path(info["appPath"]) / "Contents" / "Info.plist"
+        with plist_path.open("rb") as handle:
+            plist = plistlib.load(handle)
+        self.assertEqual(plist["CFBundleIconFile"], "AppIcon")
+        self.assertEqual((Path(info["appPath"]) / "Contents" / "Resources" / "AppIcon.icns")
+                         .read_bytes(), icns.read_bytes())
+
+    def test_favicon_is_real_art_and_converts_to_icns(self) -> None:
+        self.assertTrue(mcp.ico_usable(mcp.REPO_FAVICON),
+                        "frontend/app/favicon.ico carries a real 256px PNG entry")
+        if sys.platform != "darwin" or not (shutil.which("iconutil")
+                                            and Path("/usr/bin/sips").exists()):
+            self.skipTest("native sips/iconutil conversion requires macOS")
+        icns = mcp.icon_from_repo_asset(self.root / "icon-work")
+        self.assertIsNotNone(icns)
+        self.assertEqual(icns.read_bytes()[:4], b"icns")
 
     def test_wrapper_runs_bundled_cli_on_real_tty_with_hostile_paths(self) -> None:
         if sys.platform == "win32":
@@ -210,9 +237,7 @@ class MacosBundlePackagingTests(unittest.TestCase):
         self.assertIn("exited with status 7", output)
         self.assertIn("Press Return to close", output)
 
-    def test_launcher_hands_wrapper_to_terminal_open(self) -> None:
-        if sys.platform == "win32":
-            self.skipTest("POSIX launcher hand-off is not exercisable on Windows")
+    def _launcher_fixture(self):
         nasty_root = self.root / NASTY_DIR
         nasty_root.mkdir()
         cli = self.write_stub_cli(nasty_root)
@@ -226,16 +251,38 @@ class MacosBundlePackagingTests(unittest.TestCase):
         env.update({"ENCODINGDB_OPEN_BIN": str(fake_open),
                     "ENCODINGDB_OPEN_LOG": str(open_log),
                     "ENCODINGDB_SUPPRESS_ALERT": "1"})
+        wrapper = Path(info["appPath"]) / "Contents" / "Resources" / "EncodingDB.command"
+        return launcher, env, open_log, wrapper
+
+    def test_launcher_prefers_checked_terminal_candidate(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("POSIX launcher hand-off is not exercisable on Windows")
+        launcher, env, open_log, wrapper = self._launcher_fixture()
+        fake_terminal = self.root / NASTY_DIR / "Fake Terminal.app"
+        fake_terminal.mkdir()
+        env["ENCODINGDB_TERMINAL_CANDIDATES"] = str(fake_terminal) + ":/nonexistent/Terminal.app"
         ok = subprocess.run([str(launcher)], env=env, capture_output=True, timeout=30,
                             cwd=str(self.root))
         self.assertEqual(ok.returncode, 0, ok.stderr.decode("utf-8", "replace"))
         logged = open_log.read_text(encoding="utf-8").splitlines()
-        expected_wrapper = os.path.realpath(str(
-            Path(info["appPath"]) / "Contents" / "Resources" / "EncodingDB.command"))
-        self.assertEqual([os.path.realpath(entry) for entry in logged], [expected_wrapper])
+        def normalize(entry: str) -> str:
+            return os.path.realpath(entry) if entry.startswith("/") else entry
+        self.assertEqual([normalize(entry) for entry in logged],
+                         ["-a", os.path.realpath(str(fake_terminal)),
+                          os.path.realpath(str(wrapper))])
+    def test_launcher_falls_back_to_default_handler(self) -> None:
+        if sys.platform == "win32":
+            self.skipTest("POSIX launcher hand-off is not exercisable on Windows")
+        launcher, env, open_log, wrapper = self._launcher_fixture()
+        env["ENCODINGDB_TERMINAL_CANDIDATES"] = "/nonexistent/Terminal.app"
+        ok = subprocess.run([str(launcher)], env=env, capture_output=True, timeout=30,
+                            cwd=str(self.root))
+        self.assertEqual(ok.returncode, 0, ok.stderr.decode("utf-8", "replace"))
+        logged = open_log.read_text(encoding="utf-8").splitlines()
+        self.assertEqual([os.path.realpath(entry) for entry in logged],
+                         [os.path.realpath(str(wrapper))])
 
         # Missing wrapper must fail loudly, not vanish into the background.
-        wrapper = Path(info["appPath"]) / "Contents" / "Resources" / "EncodingDB.command"
         wrapper.unlink()
         missing = subprocess.run([str(launcher)], env=env, capture_output=True, timeout=30,
                                  cwd=str(self.root))
@@ -261,12 +308,77 @@ class MacosBundlePackagingTests(unittest.TestCase):
         self.assertFalse(requested.exists())
         info = json.loads(dmg.with_name(dmg.name + ".package-info.json").read_text())
         self.assertTrue(info["provisional"])
-        self.assertEqual(info["cliSha256"], mcp.sha256_path(cli))
+        self.assertEqual(info["cliSourceSha256"], mcp.sha256_path(cli))
+        self.assertEqual(info["cliEmbeddedSha256"], info["cliSourceSha256"])
+        self.assertFalse(info["cliBytesChangedByPackaging"])
         self.assertEqual(info["minimumSystemVersion"], "27.0")
         self.assertEqual(info["shortVersionString"], "9.9.9-test")
         self.assertEqual(info["dmg"]["sha256"], mcp.sha256_path(dmg))
         self.assertEqual(info["signing"]["status"], "unsigned (packaging skipped codesign)")
+        proof = info["dmg"]["readOnlyMountVerification"]
+        self.assertIsNotNone(proof, "read-only mount verification is mandatory")
+        self.assertEqual(proof["innerSha256"], info["cliEmbeddedSha256"])
         self.assertIn(dmg.name, dmg.with_name(dmg.name + ".SHA256SUMS").read_text(encoding="utf-8"))
+
+    @unittest.skipUnless(sys.platform == "darwin" and shutil.which("hdiutil")
+                         and shutil.which("codesign") and shutil.which("cc"),
+                         "signing provenance regressions need macOS hdiutil, codesign and cc")
+    def test_preserves_existing_inner_signature_and_audited_bytes(self) -> None:
+        cli = self._compile_cli("cli_preserved")
+        source_sha = mcp.sha256_path(cli)
+        self.assertTrue(mcp.inner_signature_valid(cli),
+                        "freshly linked macOS binaries carry a valid ad-hoc signature")
+        dmg = self.root / "EncodingDB-macOS-arm64.dmg"
+        self.assertEqual(mcp.main([
+            str(cli), str(dmg), "--work-dir", str(self.root / "work"),
+            "--project-version", "9.9.9-test", "--provisional",
+        ]), 0)
+        info = json.loads(dmg.with_name(dmg.name + ".package-info.json").read_text())
+        self.assertEqual(info["signing"]["mode"], "preserved-existing")
+        self.assertIn("preserved byte-for-byte", info["signing"]["status"])
+        self.assertEqual(info["cliSourceSha256"], source_sha)
+        self.assertEqual(info["cliEmbeddedSha256"], source_sha)
+        self.assertFalse(info["cliBytesChangedByPackaging"])
+        proof = info["dmg"]["readOnlyMountVerification"]
+        self.assertTrue(proof["mounted"])
+        self.assertTrue(proof["codesignVerified"])
+        self.assertEqual(proof["innerSha256"], source_sha)
+
+    @unittest.skipUnless(sys.platform == "darwin" and shutil.which("hdiutil")
+                         and shutil.which("codesign") and shutil.which("cc"),
+                         "signing provenance regressions need macOS hdiutil, codesign and cc")
+    def test_resign_transition_records_source_and_embedded_separately(self) -> None:
+        cli = self._compile_cli("cli_resigned")
+        strip = subprocess.run(["codesign", "--remove-signature", str(cli)],
+                               capture_output=True, text=True, timeout=120)
+        self.assertEqual(strip.returncode, 0, strip.stderr)
+        source_sha = mcp.sha256_path(cli)
+        self.assertFalse(mcp.inner_signature_valid(cli))
+        dmg = self.root / "EncodingDB-macOS-arm64.dmg"
+        self.assertEqual(mcp.main([
+            str(cli), str(dmg), "--work-dir", str(self.root / "work"),
+            "--project-version", "9.9.9-test", "--sign", "-", "--provisional",
+        ]), 0)
+        info = json.loads(dmg.with_name(dmg.name + ".package-info.json").read_text())
+        self.assertEqual(info["signing"]["mode"], "re-signed-inner")
+        self.assertIn("bytes changed", info["signing"]["status"])
+        self.assertEqual(info["cliSourceSha256"], source_sha)
+        embedded = info["cliEmbeddedSha256"]
+        self.assertNotEqual(embedded, source_sha,
+                            "ad-hoc signing must legitimately change the binary and say so")
+        self.assertTrue(info["cliBytesChangedByPackaging"])
+        proof = info["dmg"]["readOnlyMountVerification"]
+        self.assertEqual(proof["innerSha256"], embedded,
+                         "mounted artifact must match the recorded post-sign identity")
+        self.assertTrue(proof["codesignVerified"])
+
+    def _compile_cli(self, name: str) -> Path:
+        source = self.root / f"{name}.c"
+        source.write_text("int main(void) { return 0; }\n", encoding="utf-8")
+        output = self.root / name
+        subprocess.run(["cc", str(source), "-o", str(output)], check=True,
+                       capture_output=True, timeout=180)
+        return output
 
     @unittest.skipUnless(sys.platform == "darwin" and shutil.which("hdiutil"),
                          "DMG mount round trip requires macOS hdiutil")

@@ -7,22 +7,25 @@ in an app bundle whose executable opens the guided terminal interface through
 Terminal.app (real stdin/stdout, readable window), then packs that bundle into a
 read-only DMG with honest signing/support metadata.
 
-Nothing here mutates the CLI bytes, the locked FFmpeg runtime, or the pinned
-VMAF model; the bundle embeds a hash-verified copy of the audited binary and the
-package-info sidecar binds the inner and outer digests together.
+Provenance rules (packaging review 2026-09-21):
+  • Audited CLI bytes are preserved whenever the inner Mach-O already carries a
+    valid code signature; only the bundle wrapper is signed then.
+  • When signing legitimately rewrites the inner binary, the sidecar records the
+    source and final embedded digests separately — never one claimed as the other.
+  • Signing verification fails closed: `codesign --verify --strict` must pass,
+    and the final embedded identity is re-checked from a read-only DMG mount.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
-import os
 import plistlib
 import shutil
 import struct
 import subprocess
 import sys
-import zlib
+import tempfile
 from pathlib import Path, PurePosixPath
 from typing import Any, Dict, List, Optional, Sequence
 
@@ -34,29 +37,19 @@ PACKAGING_DIR = ROOT_DIR / "packaging" / "macos"
 LAUNCHER_ASSET = PACKAGING_DIR / "launcher.sh"
 COMMAND_ASSET = PACKAGING_DIR / "EncodingDB.command"
 INSTALLER_README_ASSET = PACKAGING_DIR / "README-installer.txt"
+REPO_FAVICON = ROOT_DIR / "frontend" / "app" / "favicon.ico"
 
 APP_NAME = "EncodingDB"
 BUNDLE_BINARY_NAME = "encodingdb"
 DEFAULT_BUNDLE_ID = "com.encodingdb.client"
-# Evidence for this floor lives in docs/NATIVE_RUNTIME_20260914.md: inside the
-# locked macOS runtime, libpcre2-8.0.dylib and libharfbuzz.0.dylib declare
-# minos 27.0. The outer PyInstaller header alone says 11.0 and must not be
-# mistaken for the package floor. Never lower this without new load-command
-# evidence from the exact bundled dylibs.
+# Evidence for this floor lives in docs/NATIVE_RUNTIME_20260914.md and was
+# re-confirmed against the load commands of the locked runtime bundle
+# (libpcre2-8.0.dylib and libharfbuzz.0.dylib declare minos 27.0). The outer
+# PyInstaller header alone says 11.0 and must not be mistaken for the package
+# floor. Never lower this without new load-command evidence.
 DOCUMENTED_MACOS_FLOOR = (27, 0)
 
-ICONSET_ENTRIES = {
-    "icon_16x16.png": 16,
-    "icon_16x16@2x.png": 32,
-    "icon_32x32.png": 32,
-    "icon_32x32@2x.png": 64,
-    "icon_128x128.png": 128,
-    "icon_128x128@2x.png": 256,
-    "icon_256x256.png": 256,
-    "icon_256x256@2x.png": 512,
-    "icon_512x512.png": 512,
-    "icon_512x512@2x.png": 1024,
-}
+ICONSET_SIZES = [16, 32, 64, 128, 256, 512]
 
 
 def sha256_path(path: Path) -> str:
@@ -67,18 +60,18 @@ def sha256_path(path: Path) -> str:
     return digest.hexdigest()
 
 
-def format_version(value: tuple) -> str:
-    parts = [str(part) for part in value]
-    while len(parts) > 2 and parts[-1] == "0":
-        parts.pop()
-    return ".".join(parts)
-
-
 def parse_version(text: str) -> tuple:
     parts = [int(part) for part in str(text).strip().split(".") if part != ""]
     while len(parts) < 2:
         parts.append(0)
     return tuple(parts)
+
+
+def format_version(value: tuple) -> str:
+    parts = [str(part) for part in value]
+    while len(parts) > 2 and parts[-1] == "0":
+        parts.pop()
+    return ".".join(parts)
 
 
 def macho_minimum_os(path: Path) -> Optional[tuple]:
@@ -155,94 +148,65 @@ def executable_arch(path: Path) -> Optional[str]:
     return {0x0100000C: "arm64", 0x01000007: "x86_64"}.get(cpu)
 
 
-# --- icon rendering (pure stdlib, deterministic) ---------------------------
+# --- icon handling (native tools only; generic icon when no usable art) ----
 
-_ACCENT = (79, 127, 240)
-_TEAL = (93, 199, 182)
-_LIGHT = (237, 242, 247)
-_CANVAS = (13, 17, 23)
-
-
-def _sdf_round_rect(x: float, y: float, half_w: float, half_h: float, radius: float) -> float:
-    dx = abs(x) - half_w + radius
-    dy = abs(y) - half_h + radius
-    outside = ((max(dx, 0.0)) ** 2 + (max(dy, 0.0)) ** 2) ** 0.5
-    inside = min(max(dx, dy), 0.0)
-    return outside + inside - radius
-
-
-def _coverage(distance: float) -> float:
-    return max(0.0, min(1.0, 0.5 - distance))
-
-
-def _blend(dst: Sequence[float], src: Sequence[int], alpha: float) -> Sequence[float]:
-    if alpha <= 0.0:
-        return dst
-    return tuple(channel * (1.0 - alpha) + src[channel] * alpha for channel in range(4))
+def ico_usable(path: Path) -> bool:
+    """True only if the ICO carries a real >=16px image payload (not stubs)."""
+    try:
+        with path.open("rb") as handle:
+            data = handle.read(65536)
+    except OSError:
+        return False
+    if data[:4] != b"\0\0\1\0":
+        return False
+    count = struct.unpack_from("<H", data, 4)[0]
+    for index in range(count):
+        offset = 6 + 16 * index
+        if offset + 16 > len(data):
+            break
+        width, height = data[offset], data[offset + 1]
+        size, entry_offset = struct.unpack_from("<II", data, offset + 8)
+        longest = max(width or 256, height or 256)
+        if longest >= 16 and size > 64 and entry_offset + size <= len(data):
+            return True
+    return False
 
 
-def _render_icon_png(size: int) -> bytes:
-    center = size / 2.0
-    tile = size / 2.0
-    radius = size * 0.22
-    inset = size * 0.055
-    bar_half_h = size * 0.052
-    bar_gap = size * 0.135
-    bar_left = size * 0.205
-    bar_lengths = (size * 0.245, size * 0.345, size * 0.445)
-    bar_colors = (_LIGHT, _TEAL, _ACCENT)
-    bar_radius = bar_half_h
-
-    rows = bytearray()
-    for py in range(size):
-        rows.append(0)
-        y = center - py
-        for px in range(size):
-            x = px - center
-            bg = _sdf_round_rect(x, y, tile - inset, tile - inset, radius)
-            color = _blend((0.0, 0.0, 0.0, 0.0), _CANVAS + (255,), _coverage(bg))
-            for index, length in enumerate(bar_lengths):
-                bar_y = bar_gap * (index - 1)
-                half_w = length / 2.0
-                bar_x = bar_left + half_w - center
-                distance = _sdf_round_rect(x - bar_x, y - bar_y, half_w, bar_half_h, bar_radius)
-                color = _blend(color, bar_colors[index] + (255,), _coverage(distance))
-            for channel in range(4):
-                rows.append(int(round(max(0.0, min(255.0, color[channel])))))
-
-    def chunk(tag: bytes, payload: bytes) -> bytes:
-        return (
-            struct.pack(">I", len(payload))
-            + tag
-            + payload
-            + struct.pack(">I", zlib.crc32(tag + payload) & 0xFFFFFFFF)
-        )
-
-    raw = bytes(rows)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
-    )
+def _sips(args: List[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(["/usr/bin/sips", *args], capture_output=True, text=True,
+                          timeout=120, check=True)
 
 
-def render_app_icon(work_dir: Path) -> Optional[Path]:
-    """Render the deterministic mark into AppIcon.icns via iconutil, if present."""
-    iconutil = shutil.which("iconutil")
-    if iconutil is None:
+def icon_from_repo_asset(work_dir: Path) -> Optional[Path]:
+    """Convert frontend/app/favicon.ico with stock sips/iconutil when it holds
+    real art; return None (generic app icon) whenever it does not."""
+    if shutil.which("iconutil") is None or not Path("/usr/bin/sips").exists():
         return None
-    iconset = work_dir / "AppIcon.iconset"
-    iconset.mkdir(parents=True, exist_ok=True)
-    for name, size in sorted(ICONSET_ENTRIES.items(), key=lambda item: item[1]):
-        (iconset / name).write_bytes(_render_icon_png(size))
-    target = work_dir / "AppIcon.icns"
-    subprocess.run(
-        [iconutil, "-c", "icns", str(iconset), "-o", str(target)],
-        check=True, capture_output=True, timeout=300,
-    )
-    shutil.rmtree(iconset, ignore_errors=True)
-    return target
+    if not REPO_FAVICON.is_file() or not ico_usable(REPO_FAVICON):
+        return None
+    iconset: Optional[Path] = None
+    try:
+        iconset = work_dir / "AppIcon.iconset"
+        iconset.mkdir(parents=True, exist_ok=True)
+        png = work_dir / "brand.png"
+        _sips(["-s", "format", "png", str(REPO_FAVICON), "--out", str(png)])
+        probe = _sips(["-g", "pixelWidth", "-g", "pixelHeight", str(png)])
+        dims = [int(line.split(":")[1]) for line in probe.stdout.splitlines()
+                if ":" in line and line.split(":")[1].strip().isdigit()]
+        if not dims or max(dims) < 16:
+            return None
+        for size in ICONSET_SIZES:
+            _sips(["-z", str(size), str(size), str(png), "--out",
+                   str(iconset / f"icon_{size}x{size}.png")])
+        target = work_dir / "AppIcon.icns"
+        subprocess.run(["iconutil", "-c", "icns", str(iconset), "-o", str(target)],
+                       check=True, capture_output=True, timeout=300)
+        return target if target.is_file() else None
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return None
+    finally:
+        if iconset is not None:
+            shutil.rmtree(iconset, ignore_errors=True)
 
 
 # --- bundle assembly ---------------------------------------------------------
@@ -318,16 +282,16 @@ def assemble_app(
     _install_executable(cli_binary, contents / "Resources" / BUNDLE_BINARY_NAME)
 
     icon_file = None
+    icon_path: Optional[Path] = None
     if icon_source is not None:
         if not icon_source.is_file():
             raise FileNotFoundError(f"Icon source not found: {icon_source}")
-        shutil.copyfile(icon_source, contents / "Resources" / "AppIcon.icns")
-        icon_file = "AppIcon"
+        icon_path = icon_source
     else:
-        rendered = render_app_icon(output_dir)
-        if rendered is not None:
-            shutil.copyfile(rendered, contents / "Resources" / "AppIcon.icns")
-            icon_file = "AppIcon"
+        icon_path = icon_from_repo_asset(output_dir)
+    if icon_path is not None:
+        shutil.copyfile(icon_path, contents / "Resources" / "AppIcon.icns")
+        icon_file = "AppIcon"
 
     plist = build_info_plist(
         bundle_id=bundle_id,
@@ -348,7 +312,7 @@ def assemble_app(
         "bundleId": bundle_id,
         "bundleExecutable": APP_NAME,
         "cliBinaryName": BUNDLE_BINARY_NAME,
-        "cliSha256": inner_digest,
+        "cliSourceSha256": inner_digest,
         "cliByteSize": cli_binary.stat().st_size,
         "iconIncluded": icon_file is not None,
         "minimumSystemVersion": floor,
@@ -357,46 +321,77 @@ def assemble_app(
     }
 
 
-# --- signing ---------------------------------------------------------------
+# --- signing -----------------------------------------------------------------
 
-def codesign_bundle(app: Path, identity: str) -> None:
-    for target in (app / "Contents" / "Resources" / BUNDLE_BINARY_NAME, app):
-        subprocess.run(
-            ["/usr/bin/codesign", "--force", "--sign", identity, str(target)],
-            check=True, capture_output=True, text=True, timeout=900,
-        )
+def _codesign(args: List[str], timeout: int = 900) -> subprocess.CompletedProcess:
+    return subprocess.run(["/usr/bin/codesign", *args], capture_output=True,
+                          text=True, timeout=timeout)
+
+
+def inner_signature_valid(path: Path) -> bool:
+    """True only when strict verification accepts the existing inner signature."""
+    if shutil.which("codesign") is None:
+        return False
+    result = _codesign(["--verify", "--strict", str(path)], timeout=300)
+    return result.returncode == 0
+
+
+def codesign_bundle(app: Path, identity: str) -> str:
+    """Sign the bundle; preserve audited inner bytes when its signature already
+    verifies strictly. Returns 'preserved-existing' or 're-signed-inner'.
+    Fails closed: any codesign error raises, and the outer strict verification
+    must pass before returning."""
+    inner = app / "Contents" / "Resources" / BUNDLE_BINARY_NAME
+    if inner_signature_valid(inner):
+        mode = "preserved-existing"
+    else:
+        res = _codesign(["--force", "--sign", identity, str(inner)])
+        if res.returncode != 0:
+            raise RuntimeError(f"codesign of embedded CLI failed: {res.stderr.strip()}")
+        if not inner_signature_valid(inner):
+            raise RuntimeError("embedded CLI still fails codesign --verify --strict after signing")
+        mode = "re-signed-inner"
+    outer = _codesign(["--force", "--sign", identity, str(app)])
+    if outer.returncode != 0:
+        raise RuntimeError(f"codesign of {APP_NAME}.app failed: {outer.stderr.strip()}")
+    verify = _codesign(["--verify", "--strict", str(app)])
+    if verify.returncode != 0:
+        raise RuntimeError(f"{APP_NAME}.app fails codesign --verify --strict: {verify.stderr.strip()}")
+    return mode
 
 
 def codesign_inspect(app: Path) -> Dict[str, Any]:
-    """Read-only inspection so the sidecar reports what the bundle actually is."""
+    """Read-only inspection plus strict verification; 'verifiable' means an
+    actual validity check, not merely readable display output."""
     if shutil.which("codesign") is None:
         return {"verifiable": False, "detail": "host has no codesign tool"}
-    result = subprocess.run(
-        ["/usr/bin/codesign", "-d", "--verbose=4", str(app)],
-        capture_output=True, text=True, timeout=300,
-    )
-    report = result.stderr + result.stdout
+    display = _codesign(["-d", "--verbose=4", str(app)], timeout=300)
+    report = display.stderr + display.stdout
     fields: Dict[str, str] = {}
     for line in report.splitlines():
         if "=" in line and not line.startswith(("Executable", "Page size")):
             key, _, value = line.partition("=")
             fields[key.strip()] = value.strip()
+    validity = _codesign(["--verify", "--strict", str(app)], timeout=300)
     return {
-        "verifiable": result.returncode == 0,
+        "verifiable": validity.returncode == 0,
         "identifier": fields.get("Identifier"),
         "signature": fields.get("Signature"),
         "codeDirectory": fields.get("CodeDirectory"),
     }
 
 
-def signing_status(identity: str, inspection: Dict[str, Any]) -> str:
+def signing_status(identity: str, mode: str, inspection: Dict[str, Any]) -> str:
     if identity == "none":
         return "unsigned (packaging skipped codesign)"
     if not inspection.get("verifiable"):
-        return "unverified (codesign inspection failed)"
-    if identity == "-":
-        return "ad-hoc (not Developer ID, not notarized)"
-    return f"{identity} (not notarized)"
+        return "unverified (codesign --verify --strict failed)"
+    basis = {
+        "preserved-existing": "embedded CLI signature preserved byte-for-byte",
+        "re-signed-inner": "embedded CLI re-signed by packaging (bytes changed)",
+    }.get(mode, mode)
+    label = "ad-hoc" if identity == "-" else identity
+    return f"{label} ({basis}; not Developer ID, not notarized)"
 
 
 # --- DMG --------------------------------------------------------------------
@@ -412,8 +407,7 @@ def make_dmg(app: Path, output: Path, *, volume_name: str = APP_NAME) -> None:
         shutil.rmtree(staging)
     staging.mkdir(parents=True)
     shutil.copytree(app, staging / app.name, symlinks=True)
-    if INSTALLER_README_ASSET.is_file():
-        shutil.copyfile(INSTALLER_README_ASSET, staging / "README.txt")
+    shutil.copyfile(INSTALLER_README_ASSET, staging / "README.txt")
     (staging / "Applications").symlink_to(PurePosixPath("/Applications"))
     if output.exists():
         output.unlink()
@@ -428,6 +422,46 @@ def make_dmg(app: Path, output: Path, *, volume_name: str = APP_NAME) -> None:
     )
 
 
+def verify_mounted_dmg(dmg: Path, expected_embedded_sha: str, *,
+                       require_codesign: bool = True) -> Dict[str, Any]:
+    """Re-read the inner CLI from a fresh read-only mount and enforce identity.
+
+    The provenance claim is only made after the artifact itself passes this
+    check; any mismatch raises before the package is reported complete.
+    """
+    mount = Path(tempfile.mkdtemp(prefix="encodingdb-dmg-check-"))
+    attach = subprocess.run(
+        ["hdiutil", "attach", "-readonly", "-nobrowse", "-mountpoint", str(mount), str(dmg)],
+        capture_output=True, text=True, timeout=300,
+    )
+    if attach.returncode != 0:
+        raise RuntimeError(f"verification mount failed: {attach.stdout}{attach.stderr}")
+    try:
+        inner = mount / f"{APP_NAME}.app" / "Contents" / "Resources" / BUNDLE_BINARY_NAME
+        observed = sha256_path(inner)
+        if observed != expected_embedded_sha:
+            raise RuntimeError(
+                f"DMG inner CLI hash {observed} != packaged identity {expected_embedded_sha}")
+        if not (mount / "README.txt").is_file():
+            raise RuntimeError("mounted DMG is missing README.txt")
+        result: Dict[str, Any] = {"mounted": True, "innerSha256": observed,
+                                  "codesignVerified": None}
+        if require_codesign:
+            if shutil.which("codesign") is None:
+                raise RuntimeError("signing verification requested but codesign is unavailable")
+            for target in (inner, mount / f"{APP_NAME}.app"):
+                check = _codesign(["--verify", "--strict", str(target)], timeout=300)
+                if check.returncode != 0:
+                    raise RuntimeError(
+                        f"mounted artifact fails codesign --verify --strict: {check.stderr.strip()}")
+            result["codesignVerified"] = True
+        return result
+    finally:
+        subprocess.run(["hdiutil", "detach", "-force", str(mount)],
+                       capture_output=True, timeout=300)
+        shutil.rmtree(mount, ignore_errors=True)
+
+
 def collect_source_identity() -> Dict[str, Any]:
     from scripts import release_manifest_lib
 
@@ -439,7 +473,7 @@ def package(args: argparse.Namespace) -> int:
     output_dmg = Path(args.output_dmg)
     work_dir = Path(args.work_dir).resolve() if args.work_dir else output_dmg.parent / ".macos-package-work"
     icon_source = Path(args.icon_source) if args.icon_source else None
-    info: Dict[str, Any] = {"schemaVersion": 1, "provisional": bool(args.provisional)}
+    info: Dict[str, Any] = {"schemaVersion": 2, "provisional": bool(args.provisional)}
     info.update(assemble_app(
         cli_binary=cli_binary,
         output_dir=work_dir,
@@ -453,10 +487,17 @@ def package(args: argparse.Namespace) -> int:
     identity = args.sign
     if identity == "auto":
         identity = "-" if shutil.which("codesign") else "none"
+    sign_mode = "skipped (signing disabled)"
     if identity != "none":
-        codesign_bundle(Path(info["appPath"]), identity)
+        sign_mode = codesign_bundle(Path(info["appPath"]), identity)
+    embedded_sha = sha256_path(Path(info["appPath"]) / "Contents" / "Resources" / BUNDLE_BINARY_NAME)
     inspection = codesign_inspect(Path(info["appPath"]))
-    info["signing"] = {"identity": identity, "status": signing_status(identity, inspection),
+    if identity != "none" and not inspection["verifiable"]:
+        raise RuntimeError("signing was requested but codesign --verify --strict fails on the bundle")
+    info["cliEmbeddedSha256"] = embedded_sha
+    info["cliBytesChangedByPackaging"] = embedded_sha != info["cliSourceSha256"]
+    info["signing"] = {"identity": identity, "mode": sign_mode,
+                       "status": signing_status(identity, sign_mode, inspection),
                        "inspection": inspection}
 
     arch = executable_arch(cli_binary) or "unknown"
@@ -467,17 +508,17 @@ def package(args: argparse.Namespace) -> int:
         info["appArtifact"] = str(Path(info["appPath"]))
     else:
         make_dmg(Path(info["appPath"]), output_dmg, volume_name=args.volume_name)
+        mount_proof = None if args.skip_mount_verify else verify_mounted_dmg(
+            output_dmg, embedded_sha, require_codesign=identity != "none")
         info["dmg"] = {
             "fileName": output_dmg.name,
             "sha256": sha256_path(output_dmg),
             "byteSize": output_dmg.stat().st_size,
             "volumeName": args.volume_name,
+            "readOnlyMountVerification": mount_proof,
         }
     info["source"] = collect_source_identity()
-    if args.skip_dmg:
-        sidecar_base = Path(info["appArtifact"])
-    else:
-        sidecar_base = output_dmg
+    sidecar_base = Path(info["appArtifact"]) if args.skip_dmg else output_dmg
     info_path = sidecar_base.with_name(sidecar_base.name + ".package-info.json")
     info_path.write_text(json.dumps(info, sort_keys=True, indent=2, ensure_ascii=True) + "\n",
                          encoding="utf-8")
@@ -506,6 +547,8 @@ def parse_args(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
                         help='"auto" (ad-hoc), "none", or a codesign identity string')
     parser.add_argument("--volume-name", default=APP_NAME)
     parser.add_argument("--skip-dmg", action="store_true", help="assemble the .app only")
+    parser.add_argument("--skip-mount-verify", action="store_true",
+                        help="skip the post-build read-only mount identity check (tests only)")
     parser.add_argument("--provisional", action="store_true",
                         help="mark the package-info as a non-publishable provisional wrapper")
     parser.add_argument("--no-dmg-name-auto", dest="dmg_name_auto", action="store_false",
