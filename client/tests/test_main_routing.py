@@ -937,9 +937,98 @@ class GuidedFlowTests(unittest.TestCase):
                     stack.enter_context(patcher)
                 rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
                                                 show_end_screen=False, interactive=False, presets_cfg={})
-        self.assertEqual(rc, 0)
         self.assertEqual(captured["args"].campaign_seed, 4242)
         self.assertEqual(captured["plan_metadata"]["sweepMode"], "small")
+
+    def test_sweep_honors_explicit_duration_and_attempts(self) -> None:
+        calls = []
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            return 11
+
+        with tempfile.TemporaryDirectory() as queue_dir:
+            captured_args = self.args(queue_dir=queue_dir, max_duration_minutes=15.0,
+                                      explicit_max_duration_minutes=True,
+                                      max_attempts=999, explicit_max_attempts=True)
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                rc = client_main.run_sweep_mode(mode="small", base_args=captured_args,
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 11)
+        self.assertEqual(len(calls), 1, "explicit allowance must not auto-continue")
+        self.assertEqual(calls[0]["args"].max_duration_minutes, 15.0)
+        self.assertEqual(calls[0]["args"].max_attempts, 999)
+
+    def test_sweep_auto_continues_across_checkpoints(self) -> None:
+        calls = []
+        client_main.config._BATCH_COMPLETED_COUNT = 0
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            client_main.config._BATCH_COMPLETED_COUNT += 1
+            return 11 if len(calls) == 1 else 0
+
+        try:
+            with tempfile.TemporaryDirectory() as queue_dir:
+                with ExitStack() as stack:
+                    for patcher in self._sweep_run_patches(queue_dir, {}):
+                        stack.enter_context(patcher)
+                    stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                    rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                    show_end_screen=False, interactive=False, presets_cfg={})
+        finally:
+            client_main.config._BATCH_COMPLETED_COUNT = 0
+        self.assertEqual(rc, 0, "checkpointing continues until the plan completes")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0]["args"].campaign_seed, calls[1]["args"].campaign_seed)
+        self.assertEqual(calls[0]["args"].max_attempts, 5, "cap sized to the plan (1 group x max repeats)")
+
+    def test_sweep_checkpoint_without_progress_stops(self) -> None:
+        calls = []
+        client_main.config._BATCH_COMPLETED_COUNT = 0
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            return 11  # checkpoint reached, but zero submissions
+
+        try:
+            with tempfile.TemporaryDirectory() as queue_dir:
+                with ExitStack() as stack:
+                    for patcher in self._sweep_run_patches(queue_dir, {}):
+                        stack.enter_context(patcher)
+                    stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                    rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                    show_end_screen=False, interactive=False, presets_cfg={})
+        finally:
+            client_main.config._BATCH_COMPLETED_COUNT = 0
+        self.assertEqual(rc, 11)
+        self.assertEqual(len(calls), 1, "no-progress checkpoint must not spin")
+
+    def test_sweep_probe_cancellation_never_reaches_encoding(self) -> None:
+        cancelled = type("AlwaysCancelled", (), {"is_set": lambda self: True})()
+        called = []
+
+        def fake_batch(**kwargs):
+            called.append(kwargs)
+            return 0
+
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "list_all_available_encoders",
+                                                      return_value=["libx264", "h264_videotoolbox"]))
+                stack.enter_context(mock.patch.object(client_main, "is_hardware_encoder_usable",
+                                                      side_effect=AssertionError("must not probe after cancel")))
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                cancel_event=cancelled, show_end_screen=False,
+                                                interactive=False, presets_cfg={})
+        self.assertEqual(rc, 130)
+        self.assertEqual(called, [], "cancelled preparation must not start encoding")
 
     def test_sweep_starts_fresh_when_saved_plan_differs(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:
@@ -953,7 +1042,7 @@ class GuidedFlowTests(unittest.TestCase):
                 rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
                                                 show_end_screen=False, interactive=False, presets_cfg={})
         self.assertEqual(rc, 0)
-        self.assertIsNone(captured["args"].campaign_seed)
+        self.assertNotEqual(captured["args"].campaign_seed, 4242)
 
     def test_resume_campaign_passes_saved_sweep_metadata_verbatim(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:

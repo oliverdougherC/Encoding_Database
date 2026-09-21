@@ -1302,50 +1302,86 @@ def run_sweep_mode(
     per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
     encodes_min = len(tasks) * per_recipe_min
     encodes_max = len(tasks) * per_recipe_max
+    if campaign_seed is None:
+        env_seed = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_SEED"))
+        campaign_seed = env_seed if env_seed is not None else secrets.randbits(63)
+    explicit_duration = bool(getattr(base_args, "explicit_max_duration_minutes", False))
+    segment_minutes = float(getattr(base_args, "max_duration_minutes", 60))
+    attempts_cap = (int(getattr(base_args, "max_attempts")) if bool(getattr(base_args, "explicit_max_attempts", False))
+                    else encodes_max)
+    storage_mb = int(getattr(base_args, "max_storage_mb", 2048))
     print_info(
         f"{mode} sweep: {len(plan.steps)} native recipes across {len(plan.encoders)} encoders "
-        f"on {len(suite_clips)} frozen clip(s) = {len(tasks)} measured groups."
+        f"on {len(suite_clips)} frozen clip(s) = {len(tasks)} measured groups; "
+        f"{encodes_min}-{encodes_max} encodes at full repetitions."
     )
     print_info(
         f"Authoritative protocol performs every warmup and at least {protocol_config.minimum_measured_runs} "
-        f"stable measured repetitions per group: {encodes_min}-{encodes_max} encodes. Repetitions are never trimmed."
+        "stable measured repetitions per group. Repetitions are never trimmed."
     )
-    print_info(
-        "If the measurement allowance ends first, progress is retained; starting the same mode again "
-        "continues the campaign automatically, or use --resume-campaign with the campaign ID printed below."
-    )
+    if explicit_duration:
+        print_info(
+            f"Explicit measurement allowance honored: {segment_minutes:g} minutes; the run stops at the cap "
+            "with the campaign saved, and starting this mode again continues it."
+        )
+    else:
+        print_info(
+            f"Checkpoint policy: every {segment_minutes:g}-minute segment saves progress and the run continues "
+            "automatically until the plan completes or you cancel; a checkpoint is never a partial completion."
+        )
+    print_info(f"Active limits: storage budget {storage_mb} MB, attempts cap {attempts_cap}.")
     config._BATCH_ACTIVE = True
     config._BATCH_START_TS = time.perf_counter()
     config._BATCH_COMPLETED_COUNT = 0
+    total_submitted = 0
     try:
-        rc = run_benchmark_batch(
-            hardware=detect_hardware(),
-            base_url=base_args.base_url,
-            args=argparse.Namespace(
+        segment = 0
+        while True:
+            segment += 1
+            rc = run_benchmark_batch(
+                hardware=detect_hardware(),
                 base_url=base_args.base_url,
-                api_key=base_args.api_key,
-                no_submit=base_args.no_submit,
-                submit=getattr(base_args, "submit", False),
-                crf=None,
-                retries=base_args.retries,
-                queue_dir=base_args.queue_dir,
-                menu=False,
-                batch_size=getattr(base_args, "batch_size", 0),
-                use_token=getattr(base_args, "use_token", False),
-                campaign_seed=campaign_seed,
-                max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
-                max_attempts=encodes_max,
-                max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
-            ),
-            tasks=tasks,
-            event_sink=event_sink,
-            cancel_event=cancel_event,
-            plan_metadata=plan_metadata,
-        )
+                args=argparse.Namespace(
+                    base_url=base_args.base_url,
+                    api_key=base_args.api_key,
+                    no_submit=base_args.no_submit,
+                    submit=getattr(base_args, "submit", False),
+                    crf=None,
+                    retries=base_args.retries,
+                    queue_dir=base_args.queue_dir,
+                    menu=False,
+                    batch_size=getattr(base_args, "batch_size", 0),
+                    use_token=getattr(base_args, "use_token", False),
+                    campaign_seed=campaign_seed,
+                    max_duration_minutes=segment_minutes,
+                    max_attempts=attempts_cap,
+                    max_storage_mb=storage_mb,
+                ),
+                tasks=tasks,
+                event_sink=event_sink,
+                cancel_event=cancel_event,
+                plan_metadata=plan_metadata,
+            )
+            total_submitted += int(getattr(config, "_BATCH_COMPLETED_COUNT", 0))
+            if rc != 11 or explicit_duration or _is_cancelled(cancel_event):
+                if rc == 11 and _is_cancelled(cancel_event):
+                    rc = 130
+                break
+            if int(getattr(config, "_BATCH_COMPLETED_COUNT", 0)) <= 0:
+                print("Checkpoint reached without any new measurement; stopping to keep retained progress "
+                      "safe. Start the same mode to continue.", file=sys.stderr)
+                break
+            if segment >= 10000:
+                print("Safety segment limit reached; campaign remains saved and continues on the next start.",
+                      file=sys.stderr)
+                break
+            config._BATCH_COMPLETED_COUNT = 0
+            print_info(f"Time checkpoint reached; continuing the campaign from retained evidence (segment {segment + 1}).")
+            _emit_event(event_sink, "campaign_checkpoint_continue", segment=segment + 1)
         elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
         if show_end_screen:
             _clear_screen()
-            print_end_screen(config._BATCH_COMPLETED_COUNT, elapsed_sec)
+            print_end_screen(total_submitted, elapsed_sec)
             try:
                 if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
                     input("Press Enter to exit...")
@@ -2703,23 +2739,26 @@ def _incomplete_campaigns(queue_dir: str) -> List[Tuple[str, float]]:
         return []
 
 
-def _guided_mode_label(mode: str, presets_cfg: Dict[str, Any], plan: sweep_plan.SweepPlan) -> str:
-    plans_cfg = presets_cfg.get("sweepPlans") if isinstance(presets_cfg.get("sweepPlans"), dict) else {}
-    mode_cfg = plans_cfg.get(mode) if isinstance(plans_cfg.get(mode), dict) else {}
-    minutes = mode_cfg.get("approxMinutes")
-    hours = mode_cfg.get("approxHours")
-    if minutes:
-        duration = f"~{minutes} minutes"
-    elif hours:
-        duration = f"~{hours} hours"
-    else:
-        duration = "exact budget shown after selection"
+def _sweep_clip_count(plan: sweep_plan.SweepPlan) -> int:
+    return 1 if plan.clip_policy == sweep_plan.CLIP_POLICY_QUICK else len(REQUIRED_CONTENT_CLASSES)
+
+
+def _guided_mode_label(mode: str, plan: sweep_plan.SweepPlan,
+                       per_recipe_min: int, per_recipe_max: int) -> str:
+    """Finite work counts only; absolute wall-clock claims need measurement evidence."""
     clips = {
         sweep_plan.CLIP_POLICY_QUICK: "the quick clip",
         sweep_plan.CLIP_POLICY_CLASSES: "one clip per content class (all 7)",
         sweep_plan.CLIP_POLICY_SUITE: "all seven frozen clips",
     }.get(plan.clip_policy, plan.clip_policy)
-    return f"{duration}, {plan.recipe_count} native recipes on {clips}"
+    if plan.is_empty():
+        return f"no supported encoder available for this sweep on this machine ({clips})"
+    clip_count = _sweep_clip_count(plan)
+    groups = plan.recipe_count * clip_count
+    return (
+        f"{plan.recipe_count} native recipes x {clip_count} clip(s) = {groups} groups; "
+        f"{groups * per_recipe_min}-{groups * per_recipe_max} encodes at full repetitions"
+    )
 
 
 def _advanced_single_flow(base_args: argparse.Namespace, encoders: List[str]) -> int:
@@ -2822,15 +2861,19 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         saved_on = time.strftime("%Y-%m-%d", time.localtime(mtime))
         option_labels.append(f"Continue the saved campaign {campaign_id} (saved {saved_on})")
         actions.append(("resume", campaign_id))
+    protocol_config = _build_protocol_config()
+    per_recipe_min = protocol_config.warmup_runs + protocol_config.minimum_measured_runs
+    per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
     mode_notes = {
         "small": "Recommended",
-        "medium": "broader encoder coverage",
-        "large": "overnight",
-        "full": "complete supported grid; server-class, resumable",
+        "medium": "preset band plus native quality points",
+        "large": "every supported speed preset",
+        "full": "complete supported grid; server-class",
     }
     for mode in sweep_plan.SWEEP_MODES:
         option_labels.append(
-            f"Run the {mode.capitalize()} sweep [{mode_notes[mode]}: {_guided_mode_label(mode, presets_cfg, previews[mode])}]"
+            f"Run the {mode.capitalize()} sweep [{mode_notes[mode]}: "
+            f"{_guided_mode_label(mode, previews[mode], per_recipe_min, per_recipe_max)}]"
         )
         actions.append(("sweep", mode))
     option_labels.append("Advanced: configure one recipe yourself (encoder, preset, native quality or bitrate)")
@@ -2852,6 +2895,19 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
         _clear_screen()
         return run_sweep_mode(mode=str(payload), base_args=base_args)
     return _advanced_single_flow(base_args, encoders)
+
+
+class _ExplicitBudgetAction(argparse.Action):
+    """Parse a budget value and remember that the operator set it explicitly.
+
+    Guided sweeps treat these budgets differently: the attempt cap sizes to the plan,
+    and the duration allowance becomes a checkpoint segment that auto-continues - unless
+    the operator named a value, which is then honored strictly.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        setattr(namespace, f"{self.dest}_explicit", True)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -2879,10 +2935,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--resume-campaign", default="", help="Resume a retained campaign ID, preserving completed attempts")
     p.add_argument("--upload-only", action="store_true", help="Retry due queued uploads without encoding")
     p.add_argument("--local-metrics", action="store_true", help="Run optional local quality diagnostics after all measurements")
-    p.add_argument("--max-attempts", type=int, default=100, help="Maximum planned warmup/measured encodes (default 100)")
-    p.add_argument("--max-duration-minutes", type=float, default=60, help="Measurement allowance per invocation in minutes; acquisition and uploads are separate (default 60)")
+    p.add_argument("--max-attempts", type=int, default=100, action=_ExplicitBudgetAction,
+                   help="Maximum planned warmup/measured encodes (default 100; guided sweeps size the cap "
+                        "to the plan unless set)")
+    p.add_argument("--max-duration-minutes", type=float, default=60, action=_ExplicitBudgetAction,
+                   help="Measurement allowance per invocation in minutes; acquisition and uploads are "
+                        "separate (default 60; guided sweeps continue across checkpoints unless set)")
     p.add_argument("--max-storage-mb", type=int, default=2048, help="Maximum retained queue and campaign storage in MiB")
     p.add_argument("--legacy-diagnostic", action="store_true", help="Noncanonical local-only legacy diagnostic; never publishes")
+    p.set_defaults(explicit_max_attempts=False, explicit_max_duration_minutes=False)
     return p
 
 
@@ -2903,6 +2964,8 @@ def main(argv: List[str]) -> int:
     direct_single_run_intent = _has_direct_single_run_intent(raw_args)
     parser = build_arg_parser()
     args = parser.parse_args(raw_args)
+    # Budget flags carry explicit_max_* markers (see _ExplicitBudgetAction); guided sweeps
+    # size the attempt cap to the plan and chain checkpoint segments unless the operator set them.
 
     # Validate queue directory path early
     try:

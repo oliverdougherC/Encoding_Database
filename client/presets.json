@@ -3,26 +3,22 @@
     "small": {
       "crfValues": [24],
       "nativeQualityValues": [23],
-      "bitrateKbpsValues": [6000],
-      "approxMinutes": 15
+      "bitrateKbpsValues": [6000]
     },
     "medium": {
       "crfValues": [22, 26],
       "nativeQualityValues": [20, 27],
-      "bitrateKbpsValues": [3000, 10000],
-      "approxHours": 3
+      "bitrateKbpsValues": [3000, 10000]
     },
     "large": {
       "crfValues": [20, 24, 28],
       "nativeQualityValues": [18, 23, 29],
-      "bitrateKbpsValues": [2000, 6000, 15000],
-      "approxHours": 12
+      "bitrateKbpsValues": [2000, 6000, 15000]
     },
     "full": {
       "crfValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
       "nativeQualityValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
-      "bitrateKbpsValues": [1000, 2000, 4000, 6000, 9000, 13000, 18000],
-      "approxHours": 240
+      "bitrateKbpsValues": [1000, 2000, 4000, 6000, 9000, 13000, 18000]
     }
   }
 }
