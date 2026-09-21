@@ -27,11 +27,49 @@ processes, writes a budget-exhaustion record and returns exit 11. An explicit
 Local metrics are optional, enabled by
 `--local-metrics`, and run after every timed experiment finishes.
 
-CLI Single, menu Single and GUI Single use this same authoritative artifact flow.
-GUI Full uses the same selected recipe across seven clips. `--v7-suite-clip ID`
+## Guided sweep contract (TUI and Windows GUI share one planner)
+
+A sweep is an encoder x preset x native-quality grid over the frozen EncodingDB
+Test Suite v1; the suite itself is never modified, and both surfaces derive the
+grid from the same deterministic planner (`client/sweep_plan.py`,
+`plannerVersion 1`) against the encoders actually detected as usable. Counts
+below assume every supported family is usable; the app always recomputes from
+the real encoder set. Quality values are per-family native: CRF for software
+families, CQ for NVENC, ICQ for QSV, QP/CQP for AMF/VAAPI/V4L2/OMX and explicit
+bitrate kbps only for VideoToolbox; no quality number is ever mapped across
+families.
+
+| Mode | Encoders | Presets | Quality points | Clips |
+| --- | --- | --- | --- | --- |
+| Small | first usable encoder per codec family | one medium-speed preset | 1 (CRF 24; CQ/ICQ/QP 23; 6000 kbps) | quick clip (1) |
+| Medium | every usable encoder | same single medium-speed preset | 2 (CRF 22/26; native 20/27; 3000/10000 kbps) | one per content class (7) |
+| Large | every usable encoder | three presets across the speed range | 3 (CRF 20/24/28; native 18/23/29; 2000/6000/15000 kbps) | all seven |
+| Full | every usable encoder | every supported preset | 10 (CRF/CQ/ICQ/QP 12..30 step 2; 1000..18000 kbps, 7 points) | all seven |
+
+Budget contract for all four modes: every measured group keeps one warmup, two
+required stable repetitions and up to two adaptive repeats (3-5 encodes per
+group; repetitions are never trimmed). The attempt cap is sized to the plan
+unless `--max-attempts` is set explicitly. The default 60-minute allowance is a
+checkpoint segment: the guided run saves progress and continues automatically
+from the same campaign until the plan completes, is cancelled, or a checkpoint
+makes no progress; a checkpoint is never reported as completion. Setting
+`--max-duration-minutes` explicitly is honored strictly - one invocation, exit
+11, campaign saved. `--max-storage-mb` (default 2048) is enforced in every
+segment. Restarting the same mode continues the retained campaign
+automatically when the planned tasks exactly match the saved plan (no campaign
+ID entry needed in the normal flow); `--resume-campaign ID` remains the
+explicit path. Neither surface claims wall-clock durations: absolute times
+need measurement evidence, so previews show finite plan/group/encode counts
+and hardware-dependent duration only.
+
+CLI Single, menu Advanced and GUI Single keep the manual one-recipe flow: this
+same authoritative artifact flow with `--campaign quick|full` clip coverage.
+GUI sweep modes and TUI sweep modes use the planner above. `--v7-suite-clip ID`
 selects one particular canonical clip. Explicit encoder names never fall back to a
-different implementation. `--crf` is a native quality value; `--target-bitrate-kbps`
-requests a native bitrate mode. `--legacy-diagnostic` is local-only and noncanonical.
+different implementation; the GUI manual default starts on a software encoder
+because a listed hardware name does not prove a usable GPU. `--crf` is a native
+quality value; `--target-bitrate-kbps` requests a native bitrate mode.
+`--legacy-diagnostic` is local-only and noncanonical.
 
 The client checks `/v7/compatibility` before measuring a publishing campaign.
 An offline user can collect with `--no-submit`, then publish its retained bytes via
@@ -47,7 +85,9 @@ records and artifact hashes are committed before the next attempt. Resume verifi
 owned artifacts, protocol, schedule, source identity, hardware and runtime. A crash
 after encode can validate its completed artifact without re-encoding. Owned encoder
 processes are cancelled on Stop; matching orphan process receipts are fenced before
-resume after abrupt process death. Windows GUI waits for its worker before closing.
+resume after abrupt process death. The Windows GUI serializes the benchmark worker and
+the upload-replay worker on the same spool, tracks both threads, and waits for them
+with a bounded grace window before closing (replay itself is bounded to 25 entries/60s).
 
 Retries persist a seven-day deadline and a next-attempt time with exponential backoff,
 jitter and `Retry-After`. Expired/rejected items remain in dead-letter storage for
