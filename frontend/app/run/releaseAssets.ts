@@ -44,7 +44,7 @@ export const primaryAssets: ReleaseAsset[] = [
     file: "EncodingDB-macOS-arm64.dmg",
     label: "macOS (Apple Silicon)",
     sha256: null,
-    support: "Double-clickable app inside a disk image. Ad-hoc signed (not Developer ID, not notarized), so use right-click → Open at the Gatekeeper prompt on first launch. Native arm64; the embedded runtime requires macOS 27 or later; Intel Macs remain unverified.",
+    support: "Double-clickable app inside a disk image; opens the guided menu in Terminal. Ad-hoc signed (not Developer ID, not notarized), so the first launch may need “Open Anyway” in System Settings → Privacy & Security (see first-launch help below). Native arm64; the embedded runtime requires macOS 27 or later; Intel Macs remain unverified.",
   },
   {
     file: "encodingdb-client-windows.exe",

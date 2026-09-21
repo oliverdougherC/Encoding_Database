@@ -45,18 +45,23 @@ describe("RunPage", () => {
       expect(screen.getAllByText(/pending publication/).length).toBeGreaterThan(0);
       expect(screen.getAllByText("SHA-256 published with the release.").length).toBeGreaterThan(0);
     }
-    // No live link to an unpublished release or its tag page.
+    expect(screen.getByRole("heading", { level: 1, name: "Contribute your results." })).toBeInTheDocument();
     expect(document.querySelector(`a[href*='download/${projectTag}/']`)).toBeNull();
     expect(document.querySelector(`a[href*='releases/tag/${projectTag}']`)).toBeNull();
     // Guided contract from the client brief: sweep sizes, one-time consent,
     // automatic submit, resumability.
-    expect(screen.getByText(/Small, Medium, Large, or Full/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Small, Medium, Large, or Full/).length).toBeGreaterThan(0);
     expect(screen.getByText(/submit automatically/)).toBeInTheDocument();
     // macOS floor/notarization honesty is visible, not buried.
     expect(screen.getAllByText(/requires macOS 27 or later/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/not notarized/).length).toBeGreaterThan(0);
+    // Launch guidance follows current Apple/MS guidance; no bypass automation.
+    expect(screen.getByText(/No commands to type/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Apple’s instructions/ })).toHaveAttribute("href", "https://support.apple.com/en-us/102445");
+    expect(screen.getAllByText(/Open Anyway/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/right-click/)).toBeNull();
+    expect(screen.queryByText(/allow it past/)).toBeNull();
     // Source/CLI exists only as the optional advanced path.
-    expect(screen.getByText(/python -m client --resume-campaign CAMPAIGN_ID --submit/)).toBeInTheDocument();
   });
 
   it("does not activate rc.2 downloads when the environment still names the rc.1 base", () => {

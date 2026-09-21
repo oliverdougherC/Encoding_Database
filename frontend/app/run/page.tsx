@@ -4,9 +4,9 @@ import { downloadModel, historicalTag, projectTag, repoReleases, supersededAsset
 export const dynamic = "force-dynamic";
 
 const platformNotes: Record<string, string[]> = {
-  "EncodingDB-macOS-arm64.dmg": ["Open the disk image and drag EncodingDB to Applications.", "First launch: right-click the app → Open to pass Gatekeeper.", "The guided window opens with the sweep picker."],
-  "encodingdb-client-windows.exe": ["Run the downloaded file; allow it past the SmartScreen warning.", "Choose a sweep size in the window and press Start.", "Progress, results, and upload status stay in the same window."],
-  "encodingdb-client-linux.tar.gz": ["Unpack the archive anywhere you can write.", "Run the launcher inside it.", "The guided window (or terminal) asks for a sweep size, then runs."],
+  "EncodingDB-macOS-arm64.dmg": ["Open the disk image and drag EncodingDB to Applications.", "Open EncodingDB from Applications; it launches the guided menu in Terminal.", "First launch blocked by macOS? Use the first-launch help under build details below."],
+  "encodingdb-client-windows.exe": ["Run the downloaded file.", "Windows warns because the build is unsigned; verify the SHA-256 below before continuing.", "Choose a sweep size in the window and press Start."],
+  "encodingdb-client-linux.tar.gz": ["Unpack the archive anywhere you can write.", "Run the launcher inside it.", "The guided Terminal menu asks for a sweep size, then runs."],
 };
 
 export default function RunPage() {
@@ -16,8 +16,8 @@ export default function RunPage() {
   return <div className={`page ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
-      <h1>Download. Open. Pick a sweep. Start.</h1>
-      <p>The client detects which encoders your machine can actually use, runs a guided measurement sweep over the canonical clips, and — once you have approved uploads — submits finished results automatically. No command line needed.</p>
+      <h1>Contribute your results.</h1>
+      <p>Download the client, open it, choose a sweep (Small, Medium, Large, or Full), and press Start. The client detects usable encoders and submits finished measurements automatically once you approve uploads. No commands to type.</p>
     </header>
 
     {downloads.published
@@ -60,6 +60,10 @@ export default function RunPage() {
         <p>Per the current build chain: the macOS app is ad-hoc signed (not Developer ID, not notarized) on native arm64 and requires macOS 27 or later; the Windows executable carries no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown — VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV, and AMD AMF remain unproven. {downloads.published
           ? <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums, and build evidence ({projectTag})</a>
           : <>Release notes and evidence will appear under tag <code>{projectTag}</code> once the release is published; this page does not link an unpublished tag.</>}</p>
+
+        <h3>First-launch help</h3>
+        <p>macOS: the app is ad-hoc signed and not notarized, so the first open may be blocked. If you trust this source, open System Settings → Privacy &amp; Security and choose “Open Anyway” — see <a href="https://support.apple.com/en-us/102445" target="_blank" rel="noreferrer">Apple’s instructions for opening a blocked app</a>. Nothing here asks you to disable Gatekeeper or clear the quarantine flag.</p>
+        <p>Windows: SmartScreen warns because the executable is unsigned. Verify the SHA-256 above first, and continue only if you trust the source; the page gives no bypass tool or automation.</p>
 
         <h3>Superseded command-line builds ({supersededTag})</h3>
         <p>Protocol-compatible plain executables that predate the packaged apps. The macOS file is a bare extensionless executable — prefer the disk image. Advanced users with a terminal may keep using these until {projectTag} ships.</p>
