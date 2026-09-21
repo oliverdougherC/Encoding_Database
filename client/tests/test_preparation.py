@@ -81,22 +81,27 @@ class PreparationTests(unittest.TestCase):
         prepare.assert_not_called()
         runtime.assert_not_called()
 
-    def test_menu_exit_does_not_prepare_sources_or_discover_helpers(self):
-        with mock.patch.object(main, 'prompt_choice', return_value=4), \
-             mock.patch.object(main, 'build_mode_estimates', return_value={'smallMinutes': 1, 'mediumHours': 1, 'fullHours': 1}), \
+    def test_menu_exit_does_not_prepare_sources_or_probe_hardware(self) -> None:
+        hardware = main.HardwareInfo("CPU", "GPU", 16, "TestOS")
+        with mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
+             mock.patch.object(main, 'detect_hardware', return_value=hardware), \
+             mock.patch.object(main, 'list_all_available_encoders', return_value=['libx264']), \
+             mock.patch.object(main, 'prompt_choice', return_value=5), \
              mock.patch.object(main.sys, 'stdin', None), \
              mock.patch.object(main, '_prepare_quick_suite_clip') as prepare, \
-             mock.patch.object(main, 'list_all_available_encoders') as discover:
+             mock.patch.object(main, 'is_hardware_encoder_usable') as probe:
             self.assertEqual(main.interactive_menu_flow(main.build_arg_parser(), self.args()), 0)
         prepare.assert_not_called()
-        discover.assert_not_called()
+        probe.assert_not_called()
 
-    def test_full_interactive_mismatch_precedes_encoder_discovery(self):
+    def test_sweep_interactive_mismatch_precedes_encoder_discovery(self) -> None:
         with mock.patch.object(main, 'check_compatibility', side_effect=RuntimeError('unsupported')), \
              mock.patch.object(main, '_prepare_full_suite') as prepare, \
+             mock.patch.object(main, '_prepare_sweep_clips') as clips, \
              mock.patch.object(main, 'list_all_available_encoders') as discover:
-            self.assertEqual(main.run_batch_mode(mode='full', base_args=self.args(), interactive=False), 5)
+            self.assertEqual(main.run_sweep_mode(mode='full', base_args=self.args(), interactive=False), 5)
         prepare.assert_not_called()
+        clips.assert_not_called()
         discover.assert_not_called()
 
     def test_gui_bound_stop_before_encode_reports_interruption_without_measurement_budget(self):

@@ -47,16 +47,6 @@ class EncodingRegressionTests(unittest.TestCase):
         mapped = [map_preset_for_encoder("hevc_nvenc", label)[1] for label in labels]
         self.assertEqual(mapped, ["p1", "p2", "p3", "p4", "p5", "p6"])
 
-    def test_nvenc_batch_selection_keeps_the_fast_end(self) -> None:
-        from client.main import build_batch_tasks_for_mode
-
-        cfg = {"smallBenchmark": {"crfValues": [24]}, "mediumBenchmark": {"crfValues": [24]}}
-        small = build_batch_tasks_for_mode(mode="small", presets_cfg=cfg, encoders=["h264_nvenc"])
-        medium = build_batch_tasks_for_mode(mode="medium", presets_cfg=cfg, encoders=["h264_nvenc"])
-
-        self.assertEqual([task["preset"] for task in small], ["p2", "p3", "p4"])
-        self.assertEqual([task["preset"] for task in medium], ["p1", "p2", "p3", "p4", "p5", "p6"])
-
     def test_hardware_failure_does_not_fallback_to_software(self) -> None:
         commands = []
 
