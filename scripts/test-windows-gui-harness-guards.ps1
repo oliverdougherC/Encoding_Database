@@ -1,5 +1,8 @@
 # Pure operator tests: parse the real functions and provide synthetic native observations.
-# No user32 calls, windows, input, screenshots, process inventory, or client execution.
+# No user32 calls, windows, input, screenshots, process inventory, or client execution:
+# the harness is only parsed (top-level code never runs); every native API the extracted
+# functions touch resolves to the stub EdbWindows class below; Observe-Processes is always
+# called while the synthetic process probe is installed.
 param([string]$Harness=(Join-Path $PSScriptRoot 'test-windows-native-gui.ps1'))
 Set-StrictMode -Version Latest
 $ErrorActionPreference='Stop'
@@ -63,11 +66,16 @@ public static class EdbWindows {
 }
 '@
 function Get-OwnedWindows { return @([EdbWindows]::Data.Keys | Where-Object { [EdbWindows]::Data[$_].Parent -eq 0 } | ForEach-Object { [IntPtr]$_ }) }
-function Assert-True([bool]$Value,[string]$Message) { if (-not $Value) { throw $Message } }
+# Every assertion names its case and, for Assert-Throws, the actual outcome, so a failure
+# identifies the fixture and the real error instead of only the expected pattern.
+$script:case='(startup)'
+function Case([string]$Name) { $script:case=$Name }
+function Assert-True([bool]$Value,[string]$Message) { if (-not $Value) { throw "guard case '$script:case' failed: $Message" } }
 function Assert-Throws([scriptblock]$Action,[string]$Pattern) {
-    $caught=$false
-    try { & $Action | Out-Null } catch { $caught=$_.Exception.Message -like $Pattern }
-    Assert-True $caught "Expected error matching $Pattern"
+    $actual=$null
+    try { & $Action | Out-Null } catch { $actual=$_.Exception.Message }
+    if ($null -eq $actual) { throw "guard case '$script:case' expected error matching $Pattern; no error was thrown" }
+    if ($actual -notlike $Pattern) { throw "guard case '$script:case' expected error matching $Pattern; actual error: $actual" }
 }
 function Run-Window([long]$Handle,[long]$Parent,[int[]]$Bounds,[string]$Class) {
     $w=[EdbWindows+Window]::new();$w.Parent=$Parent;$w.Bounds=$Bounds;$w.Class=$Class
@@ -99,43 +107,66 @@ function Run-Fixture {
     Run-Window 46 40 @(536,79,592,98) 'TkChild'
     Run-Window 47 40 @(598,78,653,98) 'TkChild'
 }
+Case 'run-row:real-identity-with-hosted-decoys'
 Run-Fixture
 $obs=Get-ObservedRunControl 'Start'
 Assert-True ($obs.child -eq [IntPtr]21 -and $obs.owner -eq 42 -and $obs.x -eq 89 -and $obs.y -eq 179) 'Real observer picked the wrong Start control with the hosted decoy rows present.'
 $obs=Get-ObservedRunControl 'Stop'
 Assert-True ($obs.child -eq [IntPtr]22 -and $obs.x -eq 185 -and $obs.y -eq 179) 'Real observer picked the wrong Stop control with the hosted decoy rows present.'
+Case 'run-row:reject-two-child-row'
 Run-Fixture
-$removed=[EdbWindows]::Data.Remove(23)
+[void][EdbWindows]::Data.Remove(23)
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-four-child-row'
 Run-Fixture;Run-Window 24 20 @(375,167,503,192) 'TkChild'
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-mixed-class-children'
 Run-Fixture;$flipped=[EdbWindows]::Data[21];$flipped.Class='ScrollBar'
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-mixed-child-heights'
 Run-Fixture;$shrink=[EdbWindows]::Data[23];$shrink.Bounds=@(239,167,367,191)
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
-Run-Fixture;$narrow=[EdbWindows]::Data[21];$narrow.Bounds=@(40,167,116,192)
-Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
-Run-Fixture;$gap=[EdbWindows]::Data[22];$gap.Bounds=@(180,167,256,192)
-Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
-Run-Fixture;$gap2=[EdbWindows]::Data[23];$gap2.Bounds=@(400,167,528,192)
-Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
-Run-Fixture;$wide=[EdbWindows]::Data[22];$wide.Bounds=@(147,167,295,192)
-Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
-Run-Fixture;$flipped2=[EdbWindows]::Data[12];$flipped2.Class='TkChild'
-Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-ambiguous-decoy-copycat'
+# Strip the decoy log frame's ScrollBar guard AND give it a third child sized to satisfy every
+# purely geometric rule: two structurally valid run rows must block acceptance, never guess.
+Run-Fixture;[EdbWindows]::Data[12].Class='TkChild';[EdbWindows]::Data[11].Bounds=@(38,490,300,673);[EdbWindows]::Data[12].Bounds=@(308,490,460,673)
+Run-Window 13 10 @(468,490,700,673) 'TkChild'
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*observed 2 candidate Start/Stop rows*not established*'
+Case 'run-row:mode-row-uniform-height-never-selected'
+# Flattening every mode-row child to the mode row's uniform height must not let the seven-control
+# row impersonate the run row nor displace the real Start/Stop identity.
 Run-Fixture
 foreach ($id in @(41,43,44,45,46,47)) { $row1=[EdbWindows]::Data[$id]; $row1.Bounds=@($row1.Bounds[0],78,$row1.Bounds[2],99) }
+$obs=Get-ObservedRunControl 'Start'
+Assert-True ($obs.child -eq [IntPtr]21 -and $obs.x -eq 89 -and $obs.y -eq 179) 'The uniform-height mode row impersonated the run control.'
+Case 'run-row:reject-first-not-wider'
+Run-Fixture;$narrow=[EdbWindows]::Data[21];$narrow.Bounds=@(40,167,116,192)
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-first-second-gap'
+Run-Fixture;$gap=[EdbWindows]::Data[22];$gap.Bounds=@(180,167,256,192)
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-second-third-gap'
+Run-Fixture;$gap2=[EdbWindows]::Data[23];$gap2.Bounds=@(400,167,528,192)
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'run-row:reject-second-overlaps-third-and-wider'
+Run-Fixture;$wide=[EdbWindows]::Data[22];$wide.Bounds=@(147,167,295,192)
+Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not established*'
+Case 'mode-row:real-identity-after-run-row-rejection'
 $mode=Get-ObservedModeControl
 Assert-True ($mode.child -eq [IntPtr]42 -and $mode.owner -eq 42 -and $mode.x -eq 148 -and $mode.y -eq 88) 'Real mode observer picked the wrong mode combobox on the hosted geometry.'
+Case 'mode-row:reject-eight-control-row'
 Run-Fixture;Run-Window 48 40 @(660,78,715,98) 'TkChild'
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
+Case 'mode-row:reject-mixed-class-children'
 Run-Fixture;$mflipped=[EdbWindows]::Data[44];$mflipped.Class='ScrollBar'
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
+Case 'mode-row:reject-overlapping-children'
 Run-Fixture;$mover=[EdbWindows]::Data[43];$mover.Bounds=@(200,78,412,99)
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
+Case 'mode-row:reject-undersized-combobox'
 Run-Fixture;$msmall=[EdbWindows]::Data[42];$msmall.Bounds=@(83,78,110,99)
 Assert-Throws {Get-ObservedModeControl} '*unexpected size*'
+Case 'mode-row:reject-ambiguous-second-seven-control-row'
 Run-Fixture;Run-Window 50 1 @(40,216,984,237) 'TkChild'
 Run-Window 51 50 @(40,217,75,236) 'TkChild'
 Run-Window 52 50 @(83,216,214,237) 'TkChild'
@@ -149,40 +180,50 @@ function Mode-Fixture {
     Run-Fixture
     [EdbWindows]::ResetModeState()
     [EdbWindows]::ActivateSucceeds=$true;[EdbWindows]::Foreground=[IntPtr]::Zero
-    [EdbWindows]::Clicks=0;[EdbWindows]::NextClickFails=false;[EdbWindows]::DeferOnce=false
+    [EdbWindows]::Clicks=0;[EdbWindows]::NextClickFails=$false;[EdbWindows]::DeferOnce=$false
     $script:events=@()
     $script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(30)
     $script:currentPhase=@{ name='mode-test'; path='.' }
 }
+Case 'mode-select:happy-path-aligns-walks-commits'
 Mode-Fixture
 Select-AdvancedSingleMode
 Assert-True ($script:currentPhase.modeSelection.attempts -eq 1) 'A posted aligned popup required an unexpected retry.'
 Assert-True (@($script:currentPhase.modeSelection.keyCodes) -join ',' -eq '28,28,28,28,28,28,13') 'Mode traversal must walk Down past the clamped final entry and then commit once with Return.'
 Assert-True ([EdbWindows]::Clicks -eq 1 -and -not [EdbWindows]::Data.ContainsKey(60)) 'The commit must close the observed popup exactly once.'
 Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-mode-selection' }).Count -eq 1) 'The mode selection evidence was not recorded.'
+Case 'mode-select:reject-popup-that-never-posts'
 Mode-Fixture;[EdbWindows]::ModePopup='absent';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*no mode combobox popup was observed*'
 Assert-True ([EdbWindows]::Clicks -eq 3 -and [EdbWindows]::Keys.Count -eq 0) 'A popup that never posted must be bounded to three clicks and zero keys.'
+Case 'mode-select:reject-misaligned-popup'
 Mode-Fixture;[EdbWindows]::ModePopup='misaligned';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*does not align*'
 Assert-True (-not [EdbWindows]::Keys.Contains(13)) 'An unaligned popup must never receive the commit key.'
+Case 'mode-select:reject-two-simultaneous-popups'
 Mode-Fixture;[EdbWindows]::ModePopup='two'
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*multiple unexpected owned top-level windows*'
 Assert-True ([EdbWindows]::Keys.Count -eq 0) 'Ambiguous popups must block before any traversal key.'
+Case 'mode-select:reject-stuck-popup-after-commit'
 Mode-Fixture;[EdbWindows]::ModePopup='stuck';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*stayed open*'
 Assert-True ([EdbWindows]::Keys.Contains(13)) 'The stuck-popup replay must have dispatched the commit key before blocking.'
+Case 'mode-select:reject-foreign-focus-after-commit'
 Mode-Fixture;[EdbWindows]::FocusFailure='synthetic focus elsewhere';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*focus did not return*'
-Assert-True ($null -eq $script:currentPhase.modeSelection) 'A lost focus after commit must never record a completed mode selection.'
+Assert-True (-not $script:currentPhase.ContainsKey('modeSelection')) 'A lost focus after commit must never record a completed mode selection.'
+Case 'mode-select:reject-focus-outside-owned-tree'
 Mode-Fixture;[EdbWindows]::ObservedFocus=999;$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*focus did not return*'
+Case 'mode-select:reject-refused-combobox-click'
 Mode-Fixture;[EdbWindows]::NextClickFails=$true
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_INPUT*mode combobox click was refused*'
 Assert-True ([EdbWindows]::Keys.Count -eq 0) 'A refused combobox click must not send keys.'
+Case 'mode-select:reject-activation-failure'
 Mode-Fixture;[EdbWindows]::ActivateSucceeds=$false;$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*foreground focus*'
 Assert-True ([EdbWindows]::Clicks -eq 0) 'Activation failure must block before any combobox click.'
+Case 'mode-select:reject-preexisting-foreign-top-level'
 Mode-Fixture;Run-Window 55 0 @(500,500,700,600) 'TkChild'
 Assert-Throws {Select-AdvancedSingleMode} '*before mode selection*'
 function Ready-Fixture {
@@ -191,30 +232,42 @@ function Ready-Fixture {
     $button=[EdbWindows+Window]::new();$button.Text='&Yes';$button.Class='Button';$button.Parent=1;$button.Control=6
     [EdbWindows]::Data.Add(1,$dialog);[EdbWindows]::Data.Add(2,$button)
 }
+Case 'exit-confirmation:absent-dialog-waits'
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Absent dialog must wait.'
+Case 'exit-confirmation:ready-native-identities'
 Ready-Fixture
 $ready=Get-OwnedExitConfirmation
 Assert-True ($ready.dialog -eq [IntPtr]1 -and $ready.button -eq [IntPtr]2 -and $ready.owner -eq 42) 'Ready native identities changed.'
 foreach ($field in @('Visible','Enabled')) {
+    Case "exit-confirmation:reject-button-$field-false"
     Ready-Fixture;[EdbWindows]::Data[2].$field=$false
     Assert-True ($null -eq (Get-OwnedExitConfirmation)) "$field guard was bypassed."
 }
+Case 'exit-confirmation:reject-wrong-control-id'
 Ready-Fixture;[EdbWindows]::Data[2].Control=7
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Only IDYES is accepted.'
+Case 'exit-confirmation:reject-indirect-button'
 Ready-Fixture;[EdbWindows]::Data[2].Parent=9
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Only a direct dialog child is accepted.'
+Case 'exit-confirmation:reject-non-yes-button-text'
 Ready-Fixture;[EdbWindows]::Data[2].Text='No'
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Only observed Yes is accepted.'
+Case 'exit-confirmation:reject-non-native-button-class'
 Ready-Fixture;[EdbWindows]::Data[2].Class='Pane'
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Only a native Button is accepted.'
+Case 'exit-confirmation:reject-non-dialog-root-class'
 Ready-Fixture;[EdbWindows]::Data[1].Class='TkTopLevel'
 Assert-True ($null -eq (Get-OwnedExitConfirmation)) 'Only a native Exit dialog is accepted.'
+Case 'exit-confirmation:reject-cross-process-button'
 Ready-Fixture;[EdbWindows]::Data[2].Owner=99
 Assert-Throws {Get-OwnedExitConfirmation} '*owner differs*'
+Case 'exit-confirmation:reject-two-dialogs'
 Ready-Fixture;[EdbWindows]::Data.Add(3,[EdbWindows]::Data[1])
 Assert-Throws {Get-OwnedExitConfirmation} '*multiple owned native Exit dialogs*'
+Case 'exit-confirmation:reject-two-yes-buttons'
 Ready-Fixture;[EdbWindows]::Data.Add(3,[EdbWindows]::Data[2])
 Assert-Throws {Get-OwnedExitConfirmation} '*multiple observed enabled native Yes buttons*'
+Case 'cleanup:primary-error-and-owned-identity-preserved'
 $script:events=@()
 $receipt=@{status='BLOCKED';error='original failure';primaryError=@{message='original failure';stage='close readiness'};cleanupErrors=@()}
 $owned=[pscustomobject]@{ProcessId=123;CreationDate=[DateTime]'2026-09-20T00:00:00Z';Name='owned.exe'}
@@ -223,6 +276,7 @@ Record-CleanupFailure 'verify-owned-exit' 'survivor' $null
 Assert-True ($receipt.error -eq 'original failure' -and $receipt.primaryError.stage -eq 'close readiness') 'Cleanup overwrote the initiating failure.'
 Assert-True ($receipt.status -eq 'FAILED' -and $receipt.cleanupErrors.Count -eq 2 -and $script:events.Count -eq 2) 'Separate cleanup failures were lost.'
 Assert-True ($receipt.cleanupErrors[0].processId -eq 123 -and $receipt.cleanupErrors[0].creationDate -eq $owned.CreationDate) 'Owned process identity was lost.'
+Case 'cleanup:cleanup-only-failure-reported'
 $receipt=@{status='PENDING_EVIDENCE_VALIDATION';error=$null;primaryError=$null;cleanupErrors=@()}
 Record-CleanupFailure 'capture-owned-output' 'pipe still open' $null
 Assert-True ($receipt.error -eq 'Process cleanup/evidence failed: pipe still open') 'Cleanup-only failure was not reported.'
@@ -245,14 +299,13 @@ $script:events=@()
 $script:processProbe={ return $fakes }
 $script:currentPhase=@{ name='close'; helpers=@{} }
 $script:owned=@{ '4588'=$fakes[0] }
+Case 'process-closure:real-reused-pid-replay'
 $aliveIds=@(Observe-Processes | ForEach-Object { $_.ProcessId })
 Assert-True (@($aliveIds) -contains 8092 -and @($aliveIds) -contains 6400 -and @($aliveIds) -contains 8112) 'Legitimate owned descendants were not adopted by the closure.'
 Assert-True (@($aliveIds) -notcontains 8108 -and @($aliveIds) -notcontains 8156) 'The closure adopted a process older than its claimed reused-PID parent.'
 Assert-True (@($script:events | Where-Object { $_.kind -eq 'owned-process-discovered' -and @(8108,8156) -contains $_.data.ProcessId }).Count -eq 0) 'Stale-parent system processes were recorded as discovered.'
-$script:processProbe=$null
 # The real Get-ObservedRunControl enumerates live Win32 child windows; this synthetic double supplies
 # observation outcomes so the extracted Invoke-RunAction dispatch discipline is testable.
-$script:observeCalls=0; $script:observeFail=$false; $script:failAfter=$null
 function Get-ObservedRunControl([string]$Action) {
     $script:observeCalls++
     if ($script:observeFail -and ($null -eq $script:failAfter -or $script:observeCalls -gt $script:failAfter)) { throw 'BLOCKED_GUI_POINT: synthetic observation refused.' }
@@ -265,30 +318,36 @@ function Click-Fixture {
     Ready-Fixture
     [EdbWindows]::Data[1].Text='EncodingDB Windows Client';[EdbWindows]::Data[1].Class='TkTopLevel'
     [EdbWindows]::ActivateSucceeds=$true;[EdbWindows]::Foreground=[IntPtr]::Zero
-    [EdbWindows]::Clicks=0;[EdbWindows]::LastClick=$null;[EdbWindows]::NextClickFails=$false;[EdbWindows]::DeferOnce=false
+    [EdbWindows]::Clicks=0;[EdbWindows]::LastClick=$null;[EdbWindows]::NextClickFails=$false;[EdbWindows]::DeferOnce=$false
     $script:roots=@([IntPtr]1)
     $script:observeCalls=0;$script:observeFail=$false;$script:failAfter=$null
     $script:events=@()
     $script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(5)
 }
+Case 'dispatch:reject-activation-failure-before-observation'
 Click-Fixture;[EdbWindows]::ActivateSucceeds=$false;$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Invoke-RunAction 'Start'} '*foreground focus*'
 Assert-True ($script:observeCalls -eq 0 -and [EdbWindows]::Clicks -eq 0) 'Foreground failure must block before observation or click.'
+Case 'dispatch:reject-unobservable-control'
 Click-Fixture;$script:observeFail=$true;$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Invoke-RunAction 'Start'} '*physically consistent*'
 Assert-True ($script:observeCalls -gt 0 -and [EdbWindows]::Clicks -eq 0) 'Unobservable controls must never receive a click.'
+Case 'dispatch:reject-control-changed-before-dispatch'
 Click-Fixture;$script:observeFail=$true;$script:failAfter=1
 Assert-Throws {Invoke-RunAction 'Stop'} '*changed before dispatch*'
 Assert-True ([EdbWindows]::Clicks -eq 0) 'A changed fresh re-observation must cancel dispatch.'
+Case 'dispatch:one-click-with-pinned-geometry'
 Click-Fixture
 Invoke-RunAction 'Start'
 Assert-True ([EdbWindows]::Clicks -eq 1) 'One prepared action must dispatch exactly one native click.'
 $click=[EdbWindows]::LastClick
 Assert-True ($click.Child -eq 55 -and $click.X -eq 134 -and $click.Y -eq 270 -and $click.Left -eq 12 -and $click.Top -eq 12 -and $click.Right -eq 1686 -and $click.Bottom -eq 1211) 'The dispatch lost the exact child handle, observed point or pinned root geometry.'
 Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-native-control-click' }).Count -eq 1 -and (@($script:events | Where-Object { $_.kind -eq 'observed-control-clicked' })[0].data.backend -like 'normal mouse click*')) 'Click receipts were not recorded.'
+Case 'dispatch:refused-native-click-not-retried'
 Click-Fixture;[EdbWindows]::NextClickFails=$true
 Assert-Throws {Invoke-RunAction 'Stop'} '*BLOCKED_GUI_INPUT*synthetic native rejection*'
 Assert-True ([EdbWindows]::Clicks -eq 1) 'A rejected native click must be preserved without retry.'
+Case 'dispatch:desktop-deferral-reobserves-and-retries-once'
 Click-Fixture;[EdbWindows]::DeferOnce=$true
 Invoke-RunAction 'Start'
 Assert-True ([EdbWindows]::Clicks -eq 2) 'A transient input-desktop refusal must be reobserved and retried within bounds.'
