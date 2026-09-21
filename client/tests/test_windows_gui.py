@@ -115,6 +115,87 @@ class WindowsGuiTests(unittest.TestCase):
             self.assertTrue(app.cancel_event.is_set())
             self.assertEqual(app.summary_var.get(), "Stopping owned work; retaining downloads and campaign...")
 
+    def _build_app(self, mode: str = "Small"):
+        """Instantiate the Tk app against the mocked widget harness."""
+        root = mock.MagicMock()
+        bindings = {}
+        root.bind.side_effect = lambda key, callback: bindings.__setitem__(key, callback)
+        tk = mock.MagicMock()
+        tk.Tk.return_value = root
+        tk.StringVar = tk.IntVar = tk.BooleanVar = Variable
+        for name in ("Frame", "LabelFrame", "Label", "Combobox", "Checkbutton", "Spinbox",
+                     "Entry", "Button", "Progressbar"):
+            setattr(tk.ttk, name, Widget)
+        tk.scrolledtext.ScrolledText = Widget
+        with mock.patch.dict(sys.modules, {"tkinter": tk}), mock.patch.object(gui.os, "name", "nt"), \
+             mock.patch.object(gui, "list_all_available_encoders",
+                               return_value=["libx264", "h264_videotoolbox"]), \
+             mock.patch.object(gui, "desktop_work_area", return_value=(0, 0, 1024, 720)), \
+             mock.patch.object(gui.threading, "Thread"):
+            gui.launch_windows_gui(self.args())
+        app = bindings["<Alt-r>"].__self__
+        app.mode_var.set(mode)
+        return app
+
+    def test_mode_choices_expose_shared_sweeps_with_single_as_advanced(self):
+        app = self._build_app()
+        self.assertEqual(list(app.mode_combo.values), list(gui.GUI_MODE_CHOICES))
+        self.assertEqual(app.mode_var.get(), "Small")
+        self.assertIn("native recipes", app.summary_var.get())
+        self.assertIn("quick clip", app.summary_var.get())
+        app.mode_var.set("Full")
+        app._update_single_fields_state()
+        self.assertIn("all seven frozen clips", app.summary_var.get())
+        app.mode_var.set("Single (advanced)")
+        app._update_single_fields_state()
+        self.assertEqual(app.encoder_combo.options["state"], "readonly")
+
+    def test_sweep_worker_dispatches_to_shared_planner_run(self):
+        app = self._build_app()
+        from client import main as client_main
+        with mock.patch.object(client_main, "run_sweep_mode", return_value=0) as sweep_mock, \
+                mock.patch.object(client_main, "run_with_args") as single_mock:
+            app._run_worker(self.run_args(), "Medium", "medium")
+        sweep_mock.assert_called_once()
+        self.assertEqual(sweep_mock.call_args.kwargs["mode"], "medium")
+        self.assertTrue(sweep_mock.call_args.kwargs["interactive"])
+        single_mock.assert_not_called()
+        kind, rc = app.event_queue.get_nowait()
+        self.assertEqual((kind, rc), ("done", 0))
+
+    def test_single_worker_keeps_manual_recipe_path(self):
+        app = self._build_app(mode="Single (advanced)")
+        app.encoder_values = ["libx264"]
+        app.preset_values = ["fast"]
+        from client import main as client_main
+        with mock.patch.object(client_main, "run_with_args", return_value=0) as single_mock, \
+                mock.patch.object(client_main, "run_sweep_mode") as sweep_mock:
+            app._run_worker(self.run_args(), "Single (advanced)", None)
+        single_mock.assert_called_once()
+        sweep_mock.assert_not_called()
+
+    def test_upload_retry_never_encodes(self):
+        app = self._build_app()
+        from client import main as client_main
+        with mock.patch.object(client_main, "count_pending_entries", side_effect=[2, 0]), \
+                mock.patch.object(client_main, "replay_spool",
+                                  return_value=mock.Mock(dead_lettered=0, corrupt=0)) as replay_mock, \
+                mock.patch.object(client_main, "run_sweep_mode") as sweep_mock, \
+                mock.patch.object(client_main, "run_with_args") as single_mock:
+            app._retry_uploads_worker("queue-dir", "https://example.invalid", "", 2)
+        replay_mock.assert_called_once()
+        sweep_mock.assert_not_called()
+        single_mock.assert_not_called()
+        kind, message = app.event_queue.get_nowait()
+        self.assertEqual(kind, "upload_status")
+        self.assertIn("2 pending before", message)
+
+    def run_args(self):
+        return argparse.Namespace(base_url="http://127.0.0.1:9", api_key="", no_submit=True,
+                                  submit=False, crf=24, retries=3, queue_dir="test-only",
+                                  batch_size=0, use_token=False, max_duration_minutes=60,
+                                  max_attempts=100, max_storage_mb=2048, pause_on_exit=False)
+
 
 if __name__ == "__main__":
     unittest.main()
