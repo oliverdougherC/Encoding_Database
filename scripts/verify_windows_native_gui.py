@@ -133,6 +133,7 @@ def verify_receipt(receipt_path, suite, locked):
         if gui:
             require((Path(phase["path"]) / "launch.png").is_file(), "Missing genuine GUI screenshot")
             require((Path(phase["path"]) / "launch.uia.json").is_file(), "Missing initial accessible-control capture")
+            require((Path(phase["path"]) / "mode-single-selected.png").is_file(), "Missing advanced-single mode-selection screenshot")
             if phase["name"] in ("stop", "close"):
                 require(phase["action"] == ("Stop" if phase["name"] == "stop" else "Close confirmed"), "Required GUI cancellation action not observed")
         if preparation:

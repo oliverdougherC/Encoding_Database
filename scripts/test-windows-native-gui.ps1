@@ -30,7 +30,7 @@ $receipt = [ordered]@{
     os = (Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture)
     computer = (Get-CimInstance Win32_ComputerSystem | Select-Object Manufacturer, Model)
     interactive = [Environment]::UserInteractive; sessionId = (Get-Process -Id $PID).SessionId
-    actionBackend = 'normal mouse clicks on dynamically reobserved visible Start/Stop controls; documented Alt+R/Alt+S keyboard primitive retained but not dispatched'
+    actionBackend = 'normal mouse clicks on dynamically reobserved visible mode/Start/Stop controls plus bounded modifier-free Down/Return keys dispatched while an aligned owned mode popup is observed; documented Alt+R/Alt+S keyboard primitive retained but not dispatched'
     scope = 'GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions'
     phases = @(); error = $null; primaryError = $null; cleanupErrors = @(); cleanupForced = $false
 }
@@ -123,6 +123,48 @@ public static class EdbWindows {
   if(!r.ForegroundAfter && r.Error==null) r.Error="Foreground changed during input; acceptance is blocked.";
   return r;
  }
+public sealed class KeyReceipt { public string Error,Desktop; public long Root,Popup,Foreground,Focus; public uint Owner,ForegroundOwner,FocusOwner,InsertedCount,ReleaseCount,Vk; public int InputSize,Win32Error; public bool FocusAccepted,ForegroundAccepted; }
+static Input KeyEx(ushort key,bool up,bool extended) { var i=new Input();i.type=1;i.value.keyboard.key=key;i.value.keyboard.flags=(up?2u:0u)|(extended?1u:0u);return i; }
+public static KeyReceipt SendOwnedPopupKey(IntPtr root,uint owner,IntPtr popup,ushort vk,bool extended) {
+ // Bounded popup traversal: modifier-free Down/Return only, against the owned client while the
+ // one observed popup is up; keyboard focus must sit inside the owned root or that popup right now.
+ var r=new KeyReceipt();r.Root=root.ToInt64();r.Popup=popup.ToInt64();r.Owner=owner;r.Vk=vk;r.InputSize=Marshal.SizeOf(typeof(Input));
+ if(popup==IntPtr.Zero||(vk!=0x28&&vk!=0x0D)){r.Error="Only modifier-free Down/Return popup-traversal keys against an observed popup are allowed.";return r;}
+ r.Desktop=InputDesktopName();
+ if(r.Desktop!="Default"||HeldInput()){r.Error="Secure desktop or held mouse/modifier input; no key.";return r;}
+ uint rootOwner;uint rootThread=GetWindowThreadProcessId(root,out rootOwner);
+ uint popupOwner;GetWindowThreadProcessId(popup,out popupOwner);
+ IntPtr fg=GetForegroundWindow();uint fgOwner;GetWindowThreadProcessId(fg,out fgOwner);
+ r.Foreground=fg.ToInt64();r.ForegroundOwner=fgOwner;
+ if(rootOwner!=owner||popupOwner!=owner||fgOwner!=owner||(fg!=root&&fg!=popup)||!IsWindowVisible(root)||!IsWindowEnabled(root)||!IsWindowVisible(popup)||rootThread==0){r.Error="Foreground/identity/desktop is not the owned client with the observed popup; no key.";return r;}
+ var g=new GuiThreadInfo();g.cbSize=(uint)Marshal.SizeOf(typeof(GuiThreadInfo));
+ if(!GetGUIThreadInfo(rootThread,ref g)){r.Error="Cannot observe target GUI keyboard focus.";r.Win32Error=Marshal.GetLastWin32Error();return r;}
+ r.Focus=g.focus.ToInt64();GetWindowThreadProcessId(g.focus,out r.FocusOwner);
+ r.FocusAccepted=g.focus!=IntPtr.Zero&&r.FocusOwner==owner&&(g.focus==root||IsChild(root,g.focus)||g.focus==popup||IsChild(popup,g.focus));
+ if(!r.FocusAccepted){r.Error="Keyboard focus is not inside the owned client or the observed popup; no key.";return r;}
+ if(GetForegroundWindow()!=fg){r.Error="Foreground changed during observation; no key.";return r;}
+ var input=new Input[]{KeyEx(vk,false,extended),KeyEx(vk,true,extended)};
+ r.InsertedCount=SendInput(2,input,r.InputSize);r.Win32Error=r.InsertedCount==2?0:Marshal.GetLastWin32Error();
+ if(r.InsertedCount!=2){
+  // Release only what this incomplete batch could have pressed; never re-press.
+  if(r.InsertedCount==1&&GetForegroundWindow()==fg){r.ReleaseCount=SendInput(1,new Input[]{KeyEx(vk,true,extended)},r.InputSize);}
+  r.Error="Popup traversal key input was not inserted completely.";
+ }
+ r.ForegroundAccepted=GetForegroundWindow()==fg;
+ if(!r.ForegroundAccepted&&r.Error==null)r.Error="Foreground changed during input; acceptance is blocked.";
+ return r;
+}
+public sealed class FocusState { public string Error; public long Foreground,Focus; public uint Owner,ForegroundOwner,FocusOwner; public bool FocusIsRoot,FocusInRoot; public int Win32Error; }
+public static FocusState ObserveOwnedFocusState(IntPtr root,uint owner) {
+ var s=new FocusState();IntPtr fg=GetForegroundWindow();s.Foreground=fg.ToInt64();GetWindowThreadProcessId(fg,out s.ForegroundOwner);
+ uint rootOwner;uint thread=GetWindowThreadProcessId(root,out rootOwner);s.Owner=rootOwner;
+ if(rootOwner!=owner||thread==0){s.Error="Observed root ownership changed.";return s;}
+ var g=new GuiThreadInfo();g.cbSize=(uint)Marshal.SizeOf(typeof(GuiThreadInfo));
+ if(!GetGUIThreadInfo(thread,ref g)){s.Error="Cannot observe target GUI keyboard focus.";s.Win32Error=Marshal.GetLastWin32Error();return s;}
+ s.Focus=g.focus.ToInt64();GetWindowThreadProcessId(g.focus,out s.FocusOwner);
+ s.FocusIsRoot=g.focus!=IntPtr.Zero&&g.focus==root;s.FocusInRoot=g.focus!=IntPtr.Zero&&g.focus!=root&&IsChild(root,g.focus);
+ return s;
+}
  public sealed class ClickReceipt { public string Error,Desktop; public long Root,PointWindow; public uint Owner,PointOwner,InsertedCount,ReleaseCount; public int InputSize,Win32Error; public Rect Window,Observed; public Point Point,CursorBefore,CursorAfter; public bool Visible,Enabled,ForegroundBefore,ExactPointRoot,PointOwnerMatches,ClientHit,GeometryUnchanged,ForegroundAfter; }
  static bool HeldInput() { foreach(int k in new int[]{1,2,4,5,6,16,17,18,0x5b,0x5c}) if((GetAsyncKeyState(k)&0x8000)!=0) return true; return false; }
  static string InputDesktopName() {
@@ -320,14 +362,9 @@ function Confirm-ObservedExit {
     if ($sent -eq [IntPtr]::Zero) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button did not accept the bounded click.' }
     Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$button.ToInt64(); controlId=6 }
 }
-function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
-    # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
-    # the TkTopLevel carries window text). The frozen client packs Start then Stop as exact native
-    # child HWNDs inside one row container, so the control is reobserved from that live Win32 structure:
-    # the unique row whose two visible same-owner same-class children share one height tightly equal to
-    # the row height, ordered left to right with the first child wider than the second. Start is the
-    # first. Requiring the same class rejects the log Text+ScrollBar row, which satisfies every pure
-    # geometric predicate on the hosted runner (CI 35523106378: two candidate rows -> blocked).
+function Get-OwnedClientTree {
+    # Enumerate the exact owned client window and every descendant child HWND once, in physical
+    # pixels, so row-structure predicates and click coordinates share one observation space.
     $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
     if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_POINT: expected one observed owned client window.' }
     $handle=$roots[0]
@@ -337,7 +374,6 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     try {
         $rootRect=[EdbWindows+Rect]::new()
         if (-not [EdbWindows]::GetWindowRect($handle,[ref]$rootRect)) { throw 'BLOCKED_GUI_POINT: cannot observe physical root bounds.' }
-        $rootWidth=$rootRect.Right-$rootRect.Left
         $children=@([EdbWindows]::Windows($handle))
         $byHandle=@{}
         foreach ($child in $children) {
@@ -349,40 +385,111 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
             if ($rect.Left -lt $rootRect.Left -or $rect.Top -lt $rootRect.Top -or $rect.Right -gt $rootRect.Right -or $rect.Bottom -gt $rootRect.Bottom) { continue }
             $byHandle[$child.ToInt64()]=@{ handle=$child; rect=$rect; parent=[int64]([EdbWindows]::GetParent($child).ToInt64()); visible=[EdbWindows]::IsWindowVisible($child); enabled=[EdbWindows]::IsWindowEnabled($child); class=[EdbWindows]::Class($child) }
         }
-        $rows=@()
-        foreach ($key in @($byHandle.Keys)) {
-            $candidate=$byHandle[$key]
-            $pRect=$candidate.rect
-            $pWidth=$pRect.Right-$pRect.Left; $pHeight=$pRect.Bottom-$pRect.Top
-            if ($pWidth -lt [Math]::Floor($rootWidth*0.5)) { continue }
-            $kids=@($byHandle.Values | Where-Object { $_.parent -eq $key -and $_.visible })
-            if ($kids.Count -ne 2) { continue }
-            $heights=@($kids | ForEach-Object { $_.rect.Bottom-$_.rect.Top } | Select-Object -Unique)
-            if ($heights.Count -ne 1) { continue }
-            if ([Math]::Abs($heights[0]-$pHeight) -gt 1) { continue }
-            $ordered=@($kids | Sort-Object { $_.rect.Left })
-            $first=$ordered[0]; $second=$ordered[1]
-            if ($first.rect.Left -ne $pRect.Left) { continue }
-            if ($second.rect.Left -lt $first.rect.Right) { continue }
-            if ($second.rect.Right -gt $pRect.Right) { continue }
-            if (($second.rect.Left-$first.rect.Right) -gt 32) { continue }
-            if (($first.rect.Right-$first.rect.Left) -le ($second.rect.Right-$second.rect.Left)) { continue }
-            if ($first.class -ne $second.class) { continue }
-            $rows+=,@{ row=$candidate; first=$first; second=$second }
-        }
-        if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate Start/Stop rows on this fresh instance; the unique two-button run-control row is not established." }
-        $control=if ($Action -eq 'Start') { $rows[0].first } else { $rows[0].second }
-        $rect=$control.rect
-        $width=$rect.Right-$rect.Left; $height=$rect.Bottom-$rect.Top
-        if ($width -lt 24 -or $height -lt 16) { throw 'BLOCKED_GUI_POINT: observed control is too small for a reliable click.' }
-        return @{
-            handle=$handle; owner=$ownerId; child=$control.handle; label=$Action
-            x=[int][Math]::Floor(($rect.Left+$rect.Right)/2.0); y=[int][Math]::Floor(($rect.Top+$rect.Bottom)/2.0)
-            controlBounds=@{ x=$rect.Left; y=$rect.Top; width=$width; height=$height }
-            rootBounds=@{ left=$rootRect.Left; top=$rootRect.Top; right=$rootRect.Right; bottom=$rootRect.Bottom }
-            childEnabled=$control.enabled
-        }
+        return @{ handle=$handle; owner=$ownerId; rootRect=$rootRect; byHandle=$byHandle }
     } finally { [void][EdbWindows]::SetThreadDpiAwarenessContext($previousDpi) }
+}
+function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
+    # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
+    # the TkTopLevel carries window text). The guided client packs the run controls as three exact
+    # native child HWNDs inside one row container (client/windows_gui.py: 'Start Run (Alt+R)',
+    # 'Stop (Alt+S)', 'Retry Queued Uploads'), so the controls are reobserved from that live Win32
+    # structure: the unique row at least half the root width whose visible children are exactly
+    # three, share one class and one height tightly equal to the row height, are ordered left to
+    # right flush with the row's left edge with gaps <=32px, and the first button is wider than the
+    # second. Start is the first; Stop is the second. Every other row fails a predicate on the
+    # hosted runner (CI 35651286705 failure.win32.json: the log frame holds only a Text child and a
+    # ScrollBar child, mixing classes; configuration rows hold 2, 7 or 8 children or mixed child
+    # heights). The former two-button contract blocked this phase at run35651286705.
+    $tree=Get-OwnedClientTree
+    $rootRect=$tree.rootRect; $byHandle=$tree.byHandle
+    $rootWidth=$rootRect.Right-$rootRect.Left
+    $rows=@()
+    foreach ($key in @($byHandle.Keys)) {
+        $candidate=$byHandle[$key]
+        $pRect=$candidate.rect
+        $pWidth=$pRect.Right-$pRect.Left; $pHeight=$pRect.Bottom-$pRect.Top
+        if ($pWidth -lt [Math]::Floor($rootWidth*0.5)) { continue }
+        $kids=@($byHandle.Values | Where-Object { $_.parent -eq $key -and $_.visible })
+        if ($kids.Count -ne 3) { continue }
+        $heights=@($kids | ForEach-Object { $_.rect.Bottom-$_.rect.Top } | Select-Object -Unique)
+        if ($heights.Count -ne 1) { continue }
+        if ([Math]::Abs($heights[0]-$pHeight) -gt 1) { continue }
+        $classes=@($kids | ForEach-Object { $_.class } | Select-Object -Unique)
+        if ($classes.Count -ne 1) { continue }
+        $ordered=@($kids | Sort-Object { $_.rect.Left })
+        $first=$ordered[0]; $second=$ordered[1]; $third=$ordered[2]
+        if ($first.rect.Left -ne $pRect.Left) { continue }
+        if ($second.rect.Left -lt $first.rect.Right) { continue }
+        if ($third.rect.Left -lt $second.rect.Right) { continue }
+        if ($third.rect.Right -gt $pRect.Right) { continue }
+        if (($second.rect.Left-$first.rect.Right) -gt 32) { continue }
+        if (($third.rect.Left-$second.rect.Right) -gt 32) { continue }
+        if (($first.rect.Right-$first.rect.Left) -le ($second.rect.Right-$second.rect.Left)) { continue }
+        $rows+=,@{ row=$candidate; first=$first; second=$second; third=$third }
+    }
+    if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate Start/Stop rows on this fresh instance; the unique three-button run-control row is not established." }
+    $control=if ($Action -eq 'Start') { $rows[0].first } else { $rows[0].second }
+    $rect=$control.rect
+    $width=$rect.Right-$rect.Left; $height=$rect.Bottom-$rect.Top
+    if ($width -lt 24 -or $height -lt 16) { throw 'BLOCKED_GUI_POINT: observed control is too small for a reliable click.' }
+    return @{
+        handle=$tree.handle; owner=$tree.owner; child=$control.handle; label=$Action
+        x=[int][Math]::Floor(($rect.Left+$rect.Right)/2.0); y=[int][Math]::Floor(($rect.Top+$rect.Bottom)/2.0)
+        controlBounds=@{ x=$rect.Left; y=$rect.Top; width=$width; height=$height }
+        rootBounds=@{ left=$rootRect.Left; top=$rootRect.Top; right=$rootRect.Right; bottom=$rootRect.Bottom }
+        childEnabled=$control.enabled
+    }
+}
+function Get-ObservedModeControl {
+    # The mode selector has no accessible name either, so it is identified structurally: the unique
+    # row at least half the root width whose visible same-class children are exactly seven controls
+    # in one non-overlapping left-to-right line flush with the row's left edge (client/windows_gui.py
+    # row1: Mode label, Mode combobox, No-submit checkbutton, Retries label, Retries spinbox, Batch
+    # label, Batch spinbox; CI 35651286705 launch.win32.json row at y=78). The combobox is the
+    # second control from the left. The guarded click that follows must post an aligned owned popup
+    # before any value-changing key is sent, so a structurally stale identity can never commit.
+    $tree=Get-OwnedClientTree
+    $rootRect=$tree.rootRect; $byHandle=$tree.byHandle
+    $rootWidth=$rootRect.Right-$rootRect.Left
+    $rows=@()
+    foreach ($key in @($byHandle.Keys)) {
+        $candidate=$byHandle[$key]
+        $pRect=$candidate.rect
+        if (($pRect.Right-$pRect.Left) -lt [Math]::Floor($rootWidth*0.5)) { continue }
+        $kids=@($byHandle.Values | Where-Object { $_.parent -eq $key -and $_.visible })
+        if ($kids.Count -ne 7) { continue }
+        $classes=@($kids | ForEach-Object { $_.class } | Select-Object -Unique)
+        if ($classes.Count -ne 1) { continue }
+        $ordered=@($kids | Sort-Object { $_.rect.Left })
+        if ($ordered[0].rect.Left -ne $pRect.Left) { continue }
+        $inside=$true
+        foreach ($kid in $ordered) {
+            $r=$kid.rect
+            if ($r.Left -lt $pRect.Left -or $r.Right -gt $pRect.Right -or $r.Top -lt $pRect.Top -or $r.Bottom -gt $pRect.Bottom) { $inside=$false; break }
+        }
+        if (-not $inside) { continue }
+        for ($i=1; $i -lt $ordered.Count; $i++) {
+            if ($ordered[$i].rect.Left -lt $ordered[$i-1].rect.Right) { $inside=$false; break }
+        }
+        if (-not $inside) { continue }
+        $rows+=,@{ row=$candidate; ordered=$ordered }
+    }
+    if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate configuration rows on this fresh instance; the unique seven-control mode row is not established." }
+    $combo=$rows[0].ordered[1]
+    $rect=$combo.rect
+    $width=$rect.Right-$rect.Left; $height=$rect.Bottom-$rect.Top
+    if ($width -lt 64 -or $width -gt 400 -or $height -lt 16) { throw 'BLOCKED_GUI_POINT: the observed mode combobox has an unexpected size.' }
+    return @{
+        handle=$tree.handle; owner=$tree.owner; child=$combo.handle
+        x=[int][Math]::Floor(($rect.Left+$rect.Right)/2.0); y=[int][Math]::Floor(($rect.Top+$rect.Bottom)/2.0)
+        controlBounds=@{ x=$rect.Left; y=$rect.Top; width=$width; height=$height }
+        rootBounds=@{ left=$rootRect.Left; top=$rootRect.Top; right=$rootRect.Right; bottom=$rootRect.Bottom }
+    }
+}
+function Set-OwnedForeground($handle) {
+    [void][EdbWindows]::ShowWindow($handle,9)
+    [void][EdbWindows]::SetForegroundWindow($handle)
+    Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $handle } 5 'BLOCKED_GUI_FOCUS: client did not receive foreground focus; no click sent.'
 }
 function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     $script:operationStage="run-action:${Action}:capture"
@@ -391,9 +498,7 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
     if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_FOCUS: expected one observed owned client window.' }
     $handle=$roots[0]
-    [void][EdbWindows]::ShowWindow($handle,9)
-    [void][EdbWindows]::SetForegroundWindow($handle)
-    Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $handle } 5 'BLOCKED_GUI_FOCUS: client did not receive foreground focus; no click sent.'
+    Set-OwnedForeground $handle
     $script:operationStage="run-action:${Action}:observe-control"
     $observation=$null; $attempts=0; $lastError=$null
     $observeDeadline=[DateTime]::UtcNow.AddSeconds(10)
@@ -425,6 +530,91 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
         if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
     }
     Record-Event 'observed-control-clicked' @{ action=$Action; control=$observation.label; backend='normal mouse click on visibly observed control'; insertedCount=$native.InsertedCount }
+}
+function Select-AdvancedSingleMode {
+    # The guided GUI opens on the Small sweep default (client/windows_gui.py mode_var), so Start
+    # would launch a multi-encoder sweep instead of the bounded single-recipe campaign the CLI
+    # arguments preloaded. Acceptance therefore deliberately chooses the final entry,
+    # 'Single (advanced)', physically and observably: one guarded mouse click on the structurally
+    # identified mode combobox posts the Tk popup (an owned untitled overrideredirect TkTopLevel);
+    # the popup must appear and align exactly with that combobox before any key is sent; bounded
+    # modifier-free Down keys walk the browse-mode listbox to its final entry (Tk 8.6 source: a
+    # posted popup preselects the current value, forces listbox focus on map, the win32 <Down>
+    # binding moves the single browse selection and clamps at the end); Return commits, unposts the
+    # popup, and returns keyboard focus inside the owned window. A missing popup, a second popup,
+    # an unaligned popup, a stuck popup, or focus that does not return blocks acceptance; nothing
+    # is ever committed to an unidentified control. The evidence verifier independently requires
+    # the resulting campaign to contain only the libx264/fast recipe.
+    $script:operationStage='mode-select:activate'
+    $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
+    if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_FOCUS: expected one observed owned client window.' }
+    $handle=$roots[0]
+    [uint32]$ownerId=0; [void][EdbWindows]::GetWindowThreadProcessId($handle,[ref]$ownerId)
+    $pre=@(Get-OwnedWindows | Where-Object { $_ -ne $handle })
+    if ($pre.Count) { throw 'BLOCKED_GUI_MODE: unexpected owned top-level windows exist before mode selection.' }
+    Set-OwnedForeground $handle
+    $popup=$null; $combo=$null; $attempts=0; $lastError=$null; $clickInputs=@()
+    while ($attempts -lt 3 -and $null -eq $popup) {
+        $attempts++
+        $script:operationStage="mode-select:observe-combobox:attempt-$attempts"
+        try { $combo=Get-ObservedModeControl } catch { $lastError=$_.Exception.Message; Start-Sleep -Milliseconds 250; continue }
+        if ($combo.handle -ne $handle -or $combo.owner -ne $ownerId) { throw 'BLOCKED_GUI_POINT: the owned client root changed during mode observation.' }
+        $script:operationStage="mode-select:click-combobox:attempt-$attempts"
+        $native=[EdbWindows]::SendOwnedControlClick($handle,$ownerId,[IntPtr]$combo.child,[int]$combo.x,[int]$combo.y,[int]$combo.rootBounds.left,[int]$combo.rootBounds.top,[int]$combo.rootBounds.right,[int]$combo.rootBounds.bottom)
+        $clickInputs+=@{ attempt=$attempts; childHandle=$combo.child.ToInt64(); point=@{ x=$combo.x; y=$combo.y }; input=$native }
+        Record-Event 'observed-native-control-click' @{ action='ModeSelect'; control='mode-combobox'; processId=$ownerId; observedHandle=$handle.ToInt64(); childHandle=$combo.child.ToInt64(); controlBounds=$combo.controlBounds; rootBounds=$combo.rootBounds; point=@{ x=$combo.x; y=$combo.y }; attempts=$attempts; childEnabled=$true; lastObservationError=$lastError; input=$native }
+        if ($native.Error) { throw "BLOCKED_GUI_INPUT: the mode combobox click was refused: $($native.Error)" }
+        $popupDeadline=[DateTime]::UtcNow.AddSeconds(5); if ($popupDeadline -gt $script:harnessDeadline) { $popupDeadline=$script:harnessDeadline }
+        do {
+            $extras=@(Get-OwnedWindows | Where-Object { $_ -ne $handle })
+            if ($extras.Count -gt 1) { throw 'BLOCKED_GUI_MODE: multiple unexpected owned top-level windows appeared after the mode combobox click.' }
+            if ($extras.Count -eq 1) { $popup=$extras[0]; break }
+            Start-Sleep -Milliseconds 100
+        } while ([DateTime]::UtcNow -lt $popupDeadline)
+        if ($null -eq $popup) { $lastError='no combobox popup top-level appeared after the guarded click' }
+    }
+    if ($null -eq $popup) { throw "BLOCKED_GUI_MODE: no mode combobox popup was observed. Last observation: $lastError" }
+    $popupClass=[EdbWindows]::Class($popup); $popupText=[EdbWindows]::Text($popup)
+    if ($popupClass -ne 'TkTopLevel' -or $popupText -ne '') { throw "BLOCKED_GUI_MODE: the posted popup is not an owned untitled Tk popup (class '$popupClass')." }
+    $popupRect=[EdbWindows+Rect]::new()
+    if (-not [EdbWindows]::GetWindowRect($popup,[ref]$popupRect)) { throw 'BLOCKED_GUI_MODE: cannot observe physical popup bounds.' }
+    $comboLeft=$combo.controlBounds.x; $comboBottom=$combo.controlBounds.y+$combo.controlBounds.height; $comboWidth=$combo.controlBounds.width
+    if ([Math]::Abs($popupRect.Left-$comboLeft) -gt 1 -or [Math]::Abs($popupRect.Top-$comboBottom) -gt 1 -or [Math]::Abs(($popupRect.Right-$popupRect.Left)-$comboWidth) -gt 1) {
+        throw 'BLOCKED_GUI_MODE: the posted popup does not align with the observed mode combobox; refusing to traverse an unidentified control.'
+    }
+    $keyCodes=@()
+    $script:operationStage='mode-select:choose-advanced-single'
+    for ($i=0; $i -lt 6; $i++) {
+        $key=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,0x28,$true)
+        $keyCodes+=28
+        Record-Event 'observed-popup-key' @{ vk=28; popupHandle=$popup.ToInt64(); input=$key }
+        if ($key.Error) { throw "BLOCKED_GUI_INPUT: popup traversal key was refused: $($key.Error)" }
+        Start-Sleep -Milliseconds 150
+    }
+    $script:operationStage='mode-select:commit-selection'
+    $commit=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,0x0D,$false)
+    $keyCodes+=13
+    Record-Event 'observed-popup-key' @{ vk=13; popupHandle=$popup.ToInt64(); input=$commit }
+    if ($commit.Error) { throw "BLOCKED_GUI_INPUT: popup commit key was refused: $($commit.Error)" }
+    $script:operationStage='mode-select:await-popup-close'
+    $commitDeadline=[DateTime]::UtcNow.AddSeconds(15); if ($commitDeadline -gt $script:harnessDeadline) { $commitDeadline=$script:harnessDeadline }
+    $closed=$false
+    do { if (-not [EdbWindows]::IsWindowVisible($popup)) { $closed=$true; break }; Start-Sleep -Milliseconds 100 } while ([DateTime]::UtcNow -lt $commitDeadline)
+    if (-not $closed) { throw 'BLOCKED_GUI_MODE: the mode popup stayed open after the commit key; Single (advanced) was not established.' }
+    $script:operationStage='mode-select:confirm-focus'
+    $focus=$null; $focusOk=$false
+    $focusDeadline=[DateTime]::UtcNow.AddSeconds(5); if ($focusDeadline -gt $script:harnessDeadline) { $focusDeadline=$script:harnessDeadline }
+    do {
+        $focus=[EdbWindows]::ObserveOwnedFocusState($handle,$ownerId)
+        $focusOk = $null -eq $focus.Error -and $focus.Focus -ne 0 -and $focus.FocusOwner -eq $ownerId -and ($focus.FocusIsRoot -or $focus.FocusInRoot)
+        if ($focusOk) { break }
+        Start-Sleep -Milliseconds 100
+    } while ([DateTime]::UtcNow -lt $focusDeadline)
+    if (-not $focusOk) { throw 'BLOCKED_GUI_MODE: keyboard focus did not return inside the owned client after the commit key.' }
+    [void](Capture-Ui 'mode-single-selected')
+    $evidence=@{ attempts=$attempts; combobox=@{ handle=$combo.child.ToInt64(); bounds=$combo.controlBounds }; popup=@{ handle=$popup.ToInt64(); class=$popupClass; bounds=@{ x=$popupRect.Left; y=$popupRect.Top; width=($popupRect.Right-$popupRect.Left); height=($popupRect.Bottom-$popupRect.Top) } }; keyCodes=$keyCodes; clicks=$clickInputs; focus=$focus }
+    $script:currentPhase.modeSelection=$evidence
+    Record-Event 'observed-mode-selection' $evidence
 }
 function Get-CompletionMarkers {
     return @(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'campaign-complete.json' -ErrorAction SilentlyContinue)
@@ -505,7 +695,9 @@ try {
             $phase=Start-Owned $name $true
             Wait-Until { return @(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' }).Count -eq 1 } 90 'BLOCKED_GUI_DESKTOP: no packaged GUI window appeared.'
             [void](Capture-Ui 'launch')
-            # CLI settings initialize the GUI; retained manifests verify the actual recipe.
+            # CLI settings preload the Single recipe, but the guided GUI opens on the Small sweep
+            # default; deliberately select Single (advanced) first or Start would run a sweep.
+            Select-AdvancedSingleMode
             Invoke-RunAction 'Start'
             if ($name -eq 'prepare-stop') {
                 Wait-Until { [void](Observe-Processes); return $null -ne $phase.preparationProbe } $AcquisitionSeconds 'Source preparation probe was not observed.'
