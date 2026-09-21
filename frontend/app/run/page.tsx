@@ -10,7 +10,7 @@ export default function RunPage() {
     <header><p className={styles.kicker}>Contribute results</p><h1>Run a benchmark</h1><p>Measure a canonical clip on your machine, review the result, then choose whether to publish.</p></header>
     {downloads.published
       ? <p className={styles.callout}><strong>Collection update published.</strong> The downloads below are the corrected client/0.3.0 builds (project {projectTag}) for the current server (protocol 7.1). Verify each file against its SHA-256 checksum before running.</p>
-      : <p className={styles.callout}><strong>Collection update in preparation.</strong> The corrected measurement flow requires client/0.3.0 and a compatible server. The current server already requires client/0.3.0 (protocol 7.1); the 1.2.0 downloads below (client/0.2.0) can no longer submit. The tested {projectTag} builds are staged and listed with their verified checksums, but are not downloadable here until they are published as release assets. Use the source client below meanwhile.</p>}
+      : <p className={styles.callout}><strong>Collection update in preparation.</strong> The corrected measurement flow requires client/0.3.0, and the server version shipped alongside this page requires protocol 7.1 - the historical 1.2.0 downloads below (client/0.2.0) can no longer submit to it. The tested {projectTag} builds are staged and listed with their verified checksums, but are not downloadable here until they are published as release assets for tag {projectTag}. Use the source client below meanwhile.</p>}
     <div className={styles.grid}><main className={styles.panel}><ol>
       <li><span>1</span><div><h2>Get the client</h2>
         <p>{downloads.published
@@ -22,9 +22,11 @@ export default function RunPage() {
             : <span key={a.file} className="btn" aria-disabled="true" title="Not published yet">{a.label} (pending publication)</span>)}
         </div>
         <ul>{downloads.items.map((a) => <li key={a.file}><code>{a.file}</code> · SHA-256 <code>{a.sha256}</code> · {a.support}</li>)}</ul>
-        <p>All four builds are unsigned; the macOS build is not notarized. The macOS executable is a native Apple Silicon build with embedded arm64 FFmpeg helpers - no Rosetta. Windows GUI and console were measured on one physical Windows 11 / RTX 5090 host; Intel macOS and other GPU combinations (QSV, AMF, VideoToolbox) are not supported by the campaign and remain unproven.</p>
-        <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums and build evidence ({projectTag})</a>
-        <p>Historical {historicalTag} downloads (client/0.2.0, protocol 7.0) remain available for reference but cannot submit to the current server:</p>
+        <p>Signing and support, per the accepted build manifests: the macOS executable is ad-hoc signed (not Developer ID, not notarized) on native arm64 with a minimum of macOS 11.0, so Gatekeeper will prompt at first launch; the Windows executables carry no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown - VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV and AMD AMF remain unproven.</p>
+        {downloads.published
+          ? <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums and build evidence ({projectTag})</a>
+          : <p>Release notes and evidence will appear under tag <code>{projectTag}</code> only once the release is published; the page does not link an unpublished tag.</p>}
+        <p>Historical {historicalTag} downloads (client/0.2.0, protocol 7.0) remain available for reference but cannot submit to the server version shipped with this page:</p>
         <div className={styles.downloads}>
           <a className="btn" href={`${historical}/encodingdb-client-windows.exe`}>Windows GUI (0.2.0)</a>
           <a className="btn" href={`${historical}/encodingdb-client-windows-console.exe`}>Windows console (0.2.0)</a>

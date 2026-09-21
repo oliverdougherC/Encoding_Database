@@ -65,6 +65,11 @@ services:
       NODE_ENV: production
       INTERNAL_API_BASE_URL: http://server:3001
       APP_URL: ${APP_URL:?APP_URL is required}
+      # Optional runtime switch consumed per request by the /run page (see
+      # frontend/app/run/releaseAssets.ts). Empty = collection assets staged,
+      # not yet published; set it only after the release tag exists and the
+      # published bytes re-hash to the accepted checksums.
+      COLLECTION_DOWNLOAD_BASE: ${COLLECTION_DOWNLOAD_BASE:-}
     depends_on:
       server:
         condition: service_started

@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import RunPage from "./page";
-import { collectionAssets, downloadModel } from "./releaseAssets";
+import { collectionAssets, downloadModel, projectTag, repoReleases } from "./releaseAssets";
 
 afterEach(() => {
   cleanup();
@@ -41,14 +41,16 @@ describe("RunPage", () => {
       expect(screen.getByText(new RegExp(asset.sha256.slice(0, 16)))).toBeInTheDocument();
     }
     expect(document.querySelector("a[href*='1.3.0-rc.1/encodingdb-client']")).toBeNull();
-    expect(screen.getAllByText(/pending publication/)).toHaveLength(collectionAssets.length);
-    // Historical 1.2.0 assets stay reachable, explicitly flagged as non-submitting.
     expect(screen.getByRole("link", { name: "Linux (0.2.0)" })).toHaveAttribute("href", expect.stringContaining("/1.2.0/encodingdb-client-linux"));
-    expect(screen.getByText(/cannot submit to the current server/)).toBeInTheDocument();
+    expect(screen.getByText(/cannot submit to the server version shipped with this page/)).toBeInTheDocument();
+    // No live link to the unpublished release tag in the staged state.
+    expect(screen.queryByRole("link", { name: /Release notes, checksums and build evidence/ })).toBeNull();
+    expect(document.querySelector("a[href*='releases/tag/1.3.0']")).toBeNull();
+    expect(screen.getByText(/does not link an unpublished tag/)).toBeInTheDocument();
     // Stale support claims are gone; real signing/support facts are present.
     expect(document.body).not.toHaveTextContent("requires Rosetta");
-    expect(document.body).toHaveTextContent("no Rosetta");
-    expect(document.body).toHaveTextContent("not notarized");
+    expect(document.body).toHaveTextContent("ad-hoc signed");
+    expect(document.body).toHaveTextContent("VideoToolbox on the Apple Silicon Mac");
     // Source flow unchanged.
     expect(screen.getByText("python -m client --resume-campaign CAMPAIGN_ID --submit")).toBeInTheDocument();
     expect(screen.getByText(/python -m client --upload-only/)).toBeInTheDocument();
@@ -58,11 +60,14 @@ describe("RunPage", () => {
   });
 
   it("advertises the published collection downloads once the deployment sets the base", () => {
-    vi.stubEnv("COLLECTION_DOWNLOAD_BASE", "https://github.com/oliverdougherC/Encoding_Database/releases/download/1.3.0-rc.1");
+    const plannedBase = `${repoReleases}/download/${projectTag}`;
+    vi.stubEnv("COLLECTION_DOWNLOAD_BASE", plannedBase);
     render(<RunPage />);
     expect(screen.getByText(/Collection update published/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Windows GUI" })).toHaveAttribute("href", "https://github.com/oliverdougherC/Encoding_Database/releases/download/1.3.0-rc.1/encodingdb-client-windows.exe");
-    expect(screen.getByRole("link", { name: "macOS (Apple Silicon)" })).toHaveAttribute("href", expect.stringContaining("/1.3.0-rc.1/encodingdb-client-macos"));
+    expect(screen.getByRole("link", { name: "Windows GUI" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-windows.exe`);
+    expect(screen.getByRole("link", { name: "macOS (Apple Silicon)" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-macos`);
+    expect(screen.getByRole("link", { name: /Release notes, checksums and build evidence/ })).toHaveAttribute("href", `${repoReleases}/tag/${projectTag}`);
     expect(screen.queryByText(/pending publication/)).toBeNull();
+    expect(screen.getByRole("link", { name: /1.2.0 requirements/ })).toHaveAttribute("href", `${repoReleases}/tag/1.2.0`);
   });
 });
