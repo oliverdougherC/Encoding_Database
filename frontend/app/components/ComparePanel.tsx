@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import type { Benchmark } from "./BenchmarksTable";
 import { measurementBasis, artifactIntegrity, artifactRetention, hasPublicPl } from "../lib/evidence";
+import { realGpu } from "../lib/hardwareLabel";
 import styles from "./ComparePanel.module.css";
 
 type CompareRow = Benchmark;
@@ -17,7 +18,7 @@ type Metric = {
 
 const METRICS: Metric[] = [
   { label: "CPU", getValue: r => r.cpuModel, getNumeric: () => null, higherIsBetter: true },
-  { label: "GPU", getValue: r => r.gpuModel || "-", getNumeric: () => null, higherIsBetter: true },
+  { label: "GPU", getValue: r => realGpu(r.gpuModel) ?? "CPU-only", getNumeric: () => null, higherIsBetter: true },
   { label: "Encoder", getValue: r => r.encoderName, getNumeric: () => null, higherIsBetter: true },
   { label: "Preset", getValue: r => r.preset, getNumeric: () => null, higherIsBetter: true },
   { label: "Recipe fingerprint", getValue: r => r.recipe.fingerprint, getNumeric: () => null, higherIsBetter: true },
