@@ -30,7 +30,7 @@ $receipt = [ordered]@{
     os = (Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, BuildNumber, OSArchitecture)
     computer = (Get-CimInstance Win32_ComputerSystem | Select-Object Manufacturer, Model)
     interactive = [Environment]::UserInteractive; sessionId = (Get-Process -Id $PID).SessionId
-    actionBackend = 'normal mouse clicks on dynamically reobserved visible mode/Start/Stop controls plus bounded modifier-free Down/Return keys dispatched while an aligned owned mode popup is observed; documented Alt+R/Alt+S keyboard primitive retained but not dispatched'
+    actionBackend = 'normal mouse clicks on dynamically reobserved visible mode/Start/Stop controls plus bounded modifier-free Down/Return keys dispatched while an aligned owned mode popup is observed; documented Alt+B/Alt+S keyboard primitive retained but not dispatched'
     scope = 'GitHub hosted virtualized Windows software acceptance; no physical Windows/GPU certification or submissions'
     phases = @(); error = $null; primaryError = $null; cleanupErrors = @(); cleanupForced = $false
 }
@@ -104,7 +104,7 @@ public static class EdbWindows {
   // Dispatch re-observes readiness; successful polling never authorizes stale focus.
   var r=ObserveOwnedFocus(root,owner);
   if(r.Error!=null) return r;
-  if(key!=0x52 && key!=0x53) {r.Error="Only documented Alt+R/Alt+S shortcuts are allowed.";return r;}
+  if(key!=0x42 && key!=0x53) {r.Error="Only documented Alt+B/Alt+S shortcuts are allowed.";return r;}
   r.CapsLock=(GetKeyState(0x14)&1)!=0;
   if(r.CapsLock) {r.Error="Caps Lock is active; user keyboard state was not changed.";return r;}
   foreach(int k in new int[]{0x10,0x11,0x12,0x5b,0x5c,key}) {
@@ -391,7 +391,7 @@ function Get-OwnedClientTree {
 function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
     # the TkTopLevel carries window text). The guided client packs the run controls as three exact
-    # native child HWNDs inside one row container (client/windows_gui.py: 'Start Run (Alt+R)',
+    # native child HWNDs inside one row container (client/windows_gui.py: 'Start benchmark (Alt+B)',
     # 'Stop (Alt+S)', 'Retry Queued Uploads'), so the controls are reobserved from that live Win32
     # structure: the unique row at least half the root width whose visible children are exactly
     # three, share one class and one height tightly equal to the row height, are ordered left to

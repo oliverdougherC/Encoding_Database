@@ -172,7 +172,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self._refresh_controls()
             self._poll_events()
             self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-            self.root.bind("<Alt-r>", self._start_shortcut)
+            self.root.bind("<Alt-b>", self._start_shortcut)
             self.root.bind("<Alt-s>", self._stop_shortcut)
 
         def _build_ui(self, ttk: Any, tk: Any, scrolledtext: Any) -> None:
@@ -230,7 +230,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             buttons = ttk.Frame(config_frame)
             buttons.pack(fill="x", pady=(10, 0))
-            self.start_btn = ttk.Button(buttons, text="Start Run (Alt+R)", underline=6, command=self._start_run)
+            self.start_btn = ttk.Button(buttons, text="Start benchmark (Alt+B)", underline=6, command=self._start_run)
             self.start_btn.pack(side="left")
             self.stop_btn = ttk.Button(buttons, text="Stop (Alt+S)", underline=0, command=self._stop_run, state="disabled")
             self.stop_btn.pack(side="left", padx=(8, 0))

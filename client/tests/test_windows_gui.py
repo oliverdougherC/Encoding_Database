@@ -115,18 +115,19 @@ class WindowsGuiTests(unittest.TestCase):
              mock.patch.object(gui, "desktop_work_area", return_value=(0, 0, 1024, 720)), \
              mock.patch.object(gui.threading, "Thread") as thread:
             self.assertEqual(gui.launch_windows_gui(self.args()), 0)
-            app = bindings["<Alt-r>"].__self__
+            app = bindings["<Alt-b>"].__self__
             self.assertEqual((app._selected_encoder(), app._selected_preset(), app.crf_var.get()), ("libx264", "fast", 0))
             app._handle_event({"type": "preparation_progress", "stage": "probe", "path": "test.mkv"})
             self.assertEqual(app.stage_var.get(), "Preparing: probe")
             self.assertIn("Stop is available", app.summary_var.get())
-            self.assertIn("Alt+R", app.start_btn.options["text"])
+            self.assertIn("Alt+B", app.start_btn.options["text"])
+            self.assertNotIn("<Alt-r>", bindings)
             self.assertIn("Alt+S", app.stop_btn.options["text"])
             root.geometry.assert_called_once_with("992x656+8+8")
             self.assertEqual(bindings["<Alt-s>"](None), "break")
             self.assertFalse(app.cancel_event.is_set())
-            self.assertEqual(bindings["<Alt-r>"](None), "break")
-            bindings["<Alt-r>"](None)
+            self.assertEqual(bindings["<Alt-b>"](None), "break")
+            bindings["<Alt-b>"](None)
             self.assertEqual(thread.call_count, 1)
             self.assertTrue(app.running)
             self.assertEqual(app.start_btn.options["state"], "disabled")
@@ -152,7 +153,7 @@ class WindowsGuiTests(unittest.TestCase):
              mock.patch.object(gui, "desktop_work_area", return_value=(0, 0, 1024, 720)), \
              mock.patch.object(gui.threading, "Thread"):
             gui.launch_windows_gui(self.args())
-        app = bindings["<Alt-r>"].__self__
+        app = bindings["<Alt-b>"].__self__
         app.mode_var.set(mode)
         return app
 
@@ -260,7 +261,7 @@ class GuiLifecycleTests(unittest.TestCase):
                                   return_value=["libx264", "h264_videotoolbox"]), \
                 mock.patch.object(gui, "desktop_work_area", return_value=(0, 0, 1024, 720)):
             gui.launch_windows_gui(self.args())
-        app = bindings["<Alt-r>"].__self__
+        app = bindings["<Alt-b>"].__self__
         app.mode_var.set(mode)
         return app, root, bindings, tk
 
@@ -272,7 +273,7 @@ class GuiLifecycleTests(unittest.TestCase):
         app, _root, bindings, _tk = self.build()
         self.assertEqual(self.states(app), ("normal", "disabled", "normal"))
         with mock.patch.object(gui.threading, "Thread", FakeThread):
-            bindings["<Alt-r>"](None)
+            bindings["<Alt-b>"](None)
             self.assertEqual(app.worker_thread.target.__name__, "_run_worker")
             self.assertEqual(self.states(app), ("disabled", "normal", "disabled"),
                              "Retry must be locked while a benchmark run is active")
@@ -395,7 +396,7 @@ class GuiLifecycleTests(unittest.TestCase):
         app.base_args.explicit_max_duration_minutes = True
         with mock.patch.object(gui.threading, "Thread", FakeThread), \
                 mock.patch.object(app, "_append_log", log_lines.append):
-            bindings["<Alt-r>"](None)
+            bindings["<Alt-b>"](None)
         self.assertIn("Explicit measurement allowance: 15 minutes", " ".join(log_lines))
 
 
