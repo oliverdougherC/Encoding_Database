@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { downloadBaseEnvVar, downloadModel, historicalTag, projectTag, repoReleases } from "./releaseAssets";
+import { downloadBaseEnvVar, downloadModel, historicalTag, primaryAssets, projectTag, repoReleases, supersededAssets } from "./releaseAssets";
 
 // These tests exist to catch drift between the page model, the publication
 // tag convention and the deployment wiring - the class of inconsistency root
@@ -32,5 +32,22 @@ describe("release configuration consistency", () => {
     }
     // Historical links must keep the identical structural pattern.
     expect(`${repoReleases}/download/${historicalTag}/encodingdb-client-linux`).toContain(`/download/${historicalTag}/`);
+  });
+
+
+  it("ships no invented digests: primary builds are pending or real 64-hex, superseded builds verified", () => {
+    for (const asset of primaryAssets) {
+      expect(asset.sha256 === null || /^[0-9a-f]{64}$/.test(asset.sha256)).toBe(true);
+    }
+    for (const asset of supersededAssets) {
+      expect(asset.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+  });
+
+  it("fails closed when the configured base names a different tag than the project", () => {
+    // Guards the live-deployment cutover: a stale rc.1 base must never yield
+    // rc.2 asset links.
+    expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/1.3.0-rc.1` }).published).toBe(false);
+    expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/${historicalTag}` }).published).toBe(false);
   });
 });

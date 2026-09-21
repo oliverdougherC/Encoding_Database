@@ -1,42 +1,95 @@
 import styles from "./page.module.css";
-import { downloadModel, historicalTag, projectTag, repoReleases } from "./releaseAssets";
+import { downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
 
 export const dynamic = "force-dynamic";
+
+const platformNotes: Record<string, string[]> = {
+  "EncodingDB-macOS-arm64.dmg": ["Open the disk image and drag EncodingDB to Applications.", "First launch: right-click the app → Open to pass Gatekeeper.", "The guided window opens with the sweep picker."],
+  "encodingdb-client-windows.exe": ["Run the downloaded file; allow it past the SmartScreen warning.", "Choose a sweep size in the window and press Start.", "Progress, results, and upload status stay in the same window."],
+  "encodingdb-client-linux.tar.gz": ["Unpack the archive anywhere you can write.", "Run the launcher inside it.", "The guided window (or terminal) asks for a sweep size, then runs."],
+};
 
 export default function RunPage() {
   const downloads = downloadModel(process.env);
   const historical = `${repoReleases}/download/${historicalTag}`;
+  const superseded = `${repoReleases}/download/${supersededTag}`;
   return <div className={`page ${styles.page}`}>
-    <header><p className={styles.kicker}>Contribute results</p><h1>Run a benchmark</h1><p>Measure a canonical clip on your machine, review the result, then choose whether to publish.</p></header>
+    <header className={styles.header}>
+      <p className={styles.kicker}>Contribute results</p>
+      <h1>Download. Open. Pick a sweep. Start.</h1>
+      <p>The client detects which encoders your machine can actually use, runs a guided measurement sweep over the canonical clips, and — once you have approved uploads — submits finished results automatically. No command line needed.</p>
+    </header>
+
     {downloads.published
-      ? <p className={styles.callout}><strong>Collection update published.</strong> The downloads below are the corrected client/0.3.0 builds (project {projectTag}) for the current server (protocol 7.1). Verify each file against its SHA-256 checksum before running.</p>
-      : <p className={styles.callout}><strong>Collection update in preparation.</strong> The corrected measurement flow requires client/0.3.0, and the server version shipped alongside this page requires protocol 7.1 - the historical 1.2.0 downloads below (client/0.2.0) can no longer submit to it. The tested {projectTag} builds are staged and listed with their verified checksums, but are not downloadable here until they are published as release assets for tag {projectTag}. Use the source client below meanwhile.</p>}
-    <div className={styles.grid}><main className={styles.panel}><ol>
-      <li><span>1</span><div><h2>Get the client</h2>
-        <p>{downloads.published
-          ? <>Collection-capable builds (client/0.3.0, project {projectTag}):</>
-          : <>Collection-capable builds (client/0.3.0, project {projectTag}) - staged for publication, checksums verified:</>}</p>
-        <div className={styles.downloads}>
-          {downloads.items.map((a) => a.href
-            ? <a key={a.file} className="btn" href={a.href}>{a.label}</a>
-            : <span key={a.file} className="btn" aria-disabled="true" title="Not published yet">{a.label} (pending publication)</span>)}
-        </div>
-        <ul>{downloads.items.map((a) => <li key={a.file}><code>{a.file}</code> · SHA-256 <code>{a.sha256}</code> · {a.support}</li>)}</ul>
-        <p>Signing and support, per the accepted build manifests: the macOS executable is ad-hoc signed (not Developer ID, not notarized) on native arm64; its embedded runtime requires macOS 27 or later, and older macOS versions remain unverified. Expect a Gatekeeper prompt at first launch; the Windows executables carry no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown - VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV and AMD AMF remain unproven.</p>
-        {downloads.published
-          ? <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums and build evidence ({projectTag})</a>
-          : <p>Release notes and evidence will appear under tag <code>{projectTag}</code> only once the release is published; the page does not link an unpublished tag.</p>}
-        <p>Historical {historicalTag} downloads (client/0.2.0, protocol 7.0) remain available for reference but cannot submit to the server version shipped with this page:</p>
-        <div className={styles.downloads}>
-          <a className="btn" href={`${historical}/encodingdb-client-windows.exe`}>Windows GUI (0.2.0)</a>
-          <a className="btn" href={`${historical}/encodingdb-client-windows-console.exe`}>Windows console (0.2.0)</a>
-          <a className="btn" href={`${historical}/encodingdb-client-linux`}>Linux (0.2.0)</a>
-          <a className="btn" href={`${historical}/encodingdb-client-macos`}>macOS (0.2.0)</a>
-        </div>
-        <a href={`${repoReleases}/tag/${historicalTag}`}>{historicalTag} requirements, checksums and release evidence</a></div></li>
-      <li><span>2</span><div><h2>Try the corrected source client</h2><p>From the client/0.3.0 source checkout and its installed Python environment, run one clip locally. The client downloads and verifies the suite, warms up the encoder, then measures repeated attempts.</p><pre>{`python -m client --codec libx264 --presets fast --no-submit`}</pre><p>For a seven-clip campaign using the same recipe:</p><pre>{`python -m client --codec libx264 --presets fast --campaign full --no-submit`}</pre><p>Keep the campaign ID printed by the client. A full campaign takes longer; the client reports its attempt and storage budget before encoding.</p></div></li>
-      <li><span>3</span><div><h2>Publish the saved result</h2><p>Use the campaign ID to upload the completed measurements without encoding them again:</p><pre>{`python -m client --resume-campaign CAMPAIGN_ID --submit`}</pre><p>To measure and publish a new quick contribution in one command:</p><pre>{`python -m client --codec libx264 --presets fast --submit`}</pre><p>An upload receipt means analysis is pending. The result may then be accepted, suspect and awaiting review, or rejected. Public PL remains unavailable until calibration is approved.</p></div></li>
-      <li><span>4</span><div><h2>Continue after an interruption</h2><p>Resume unfinished measurements or retry queued uploads. Offline results remain pending.</p><pre>{`python -m client --resume-campaign CAMPAIGN_ID --no-submit\npython -m client --upload-only\npython -m client --queue-status`}</pre></div></li>
-    </ol></main><aside className={styles.aside}><p className={styles.kicker}>Before running</p><ul><li>Use a compatible server and the exact requested encoder. Unsupported encoders fail explicitly.</li><li>Leave room for the 1.5 GB suite download, extracted references and retained encodes.</li><li>Close other demanding work during measurement.</li><li>Publication includes encoded canonical clips, hardware and software context, and an installation pseudonym.</li></ul><p className={styles.callout}>Only publish canonical benchmark media. Keep credentials and personal footage out of runs and notes.</p></aside></div>
+      ? <p className={styles.callout}><strong>Version {projectTag} is published.</strong> The downloads below are the packaged builds for the current server (protocol 7.1). Verify each file against the SHA-256 listed on the release page before running.</p>
+      : <p className={styles.callout}><strong>Version {projectTag} is being prepared.</strong> The packaged builds below are staged and their file names are final, but the download buttons activate only once they are published under tag {projectTag}. Checksums are published with the release, never before it.</p>}
+
+    <section className={styles.platforms} aria-label="Primary downloads">
+      {downloads.items.map((asset) => <article key={asset.file} className={styles.card}>
+        <h2>{asset.label}</h2>
+        {asset.href
+          ? <a className="btn btn-primary" href={asset.href}>Download for {asset.label}</a>
+          : <span className="btn" aria-disabled="true" title="Not published yet">Download for {asset.label} (pending publication)</span>}
+        <p className={styles.fileName}><code>{asset.file}</code></p>
+        <ol className={styles.steps}>{(platformNotes[asset.file] ?? []).map((line) => <li key={line}>{line}</li>)}</ol>
+        <p className={styles.support}>{asset.support}</p>
+        <p className={styles.sha}>{asset.sha256 ? <>SHA-256 <code>{asset.sha256}</code></> : "SHA-256 published with the release."}</p>
+      </article>)}
+    </section>
+
+    <section className={styles.howto} aria-label="How a run works">
+      <div><strong>1 · Choose a sweep</strong><span>Small, Medium, Large, or Full — increasing coverage of canonical clips and presets. The client prints the plan (time and disk budget) before it encodes anything.</span></div>
+      <div><strong>2 · Press start</strong><span>Encoders are detected on your machine; only usable ones are measured. You can review the numbers locally before anything leaves your machine.</span></div>
+      <div><strong>3 · Approve uploads once</strong><span>One consent, then finished measurements submit automatically. An upload receipt means analysis is pending; results may be accepted, suspect and awaiting review, or rejected.</span></div>
+      <div><strong>4 · Continue after an interruption</strong><span>Sweeps checkpoint as they go and queued uploads retry, so resuming the run finishes the work without re-encoding.</span></div>
+    </section>
+
+    <aside className={styles.beforeRun}>
+      <p className={styles.kicker}>Before running</p>
+      <ul>
+        <li>Leave room for the 1.5&nbsp;GB suite download, extracted references, and retained encodes.</li>
+        <li>Close other demanding work during measurement; the numbers are only as clean as the machine.</li>
+        <li>Publishing shares encoded canonical clips, hardware and software context, and an installation pseudonym — never your notes or personal footage.</li>
+      </ul>
+    </aside>
+
+    <details className={styles.disclosure}>
+      <summary>Build details, checksums, signing, and older releases</summary>
+      <div className={styles.disclosureBody}>
+        <h3>{projectTag} signing and support</h3>
+        <p>Per the current build chain: the macOS app is ad-hoc signed (not Developer ID, not notarized) on native arm64 and requires macOS 27 or later; the Windows executable carries no Authenticode signature; the Linux build is unsigned. Encoders were exercised per platform where shown — VideoToolbox on the Apple Silicon Mac, NVIDIA NVENC plus software encoders on the Windows and Linux hosts; Intel macOS, Intel QSV, and AMD AMF remain unproven. {downloads.published
+          ? <a href={`${repoReleases}/tag/${projectTag}`}>Release notes, checksums, and build evidence ({projectTag})</a>
+          : <>Release notes and evidence will appear under tag <code>{projectTag}</code> once the release is published; this page does not link an unpublished tag.</>}</p>
+
+        <h3>Superseded command-line builds ({supersededTag})</h3>
+        <p>Protocol-compatible plain executables that predate the packaged apps. The macOS file is a bare extensionless executable — prefer the disk image. Advanced users with a terminal may keep using these until {projectTag} ships.</p>
+        <ul className={styles.assetList}>
+          {supersededAssets.map((asset) => <li key={asset.file}>
+            <a href={`${superseded}/${asset.file}`}>{asset.label}</a>{" "}
+            <code>{asset.file}</code> · SHA-256 <code>{asset.sha256}</code>
+          </li>)}
+        </ul>
+
+        <h3>Historical 1.2.0 (cannot submit)</h3>
+        <p>The 1.2.0 downloads (client/0.2.0, protocol 7.0) remain reachable for reference, but they cannot submit to the server version shipped with this page. Treat them as archived, not as recommended downloads.</p>
+        <ul className={styles.assetList}>
+          <li><a href={`${historical}/encodingdb-client-windows.exe`}>Windows GUI (0.2.0)</a> · <code>encodingdb-client-windows.exe</code></li>
+          <li><a href={`${historical}/encodingdb-client-windows-console.exe`}>Windows console (0.2.0)</a> · <code>encodingdb-client-windows-console.exe</code></li>
+          <li><a href={`${historical}/encodingdb-client-linux`}>Linux (0.2.0)</a> · <code>encodingdb-client-linux</code></li>
+          <li><a href={`${historical}/encodingdb-client-macos`}>macOS (0.2.0)</a> · <code>encodingdb-client-macos</code></li>
+          <li><a href={`${repoReleases}/tag/${historicalTag}`}>1.2.0 requirements, checksums, and release evidence</a></li>
+        </ul>
+
+        <h3>Advanced: source checkout and scripted CLI (optional)</h3>
+        <p>Not the normal contribution path — the packaged apps do everything below. For automation or source builds, from a client checkout with its installed Python environment:</p>
+        <pre>{`python -m client --codec libx264 --presets fast --no-submit`}</pre>
+        <p>A seven-clip campaign with the same recipe:</p>
+        <pre>{`python -m client --codec libx264 --presets fast --campaign full --no-submit`}</pre>
+        <p>Publish a saved campaign without re-encoding, or measure and publish in one step:</p>
+        <pre>{`python -m client --resume-campaign CAMPAIGN_ID --submit\npython -m client --codec libx264 --presets fast --submit`}</pre>
+        <p>Resume unfinished measurements or retry queued uploads:</p>
+        <pre>{`python -m client --resume-campaign CAMPAIGN_ID --no-submit\npython -m client --upload-only\npython -m client --queue-status`}</pre>
+      </div>
+    </details>
   </div>;
 }
