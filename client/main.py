@@ -107,7 +107,7 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.1"
+CLIENT_VERSION = "client/0.3.2"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 PUBLICATION_CONSENT_VERSION = 1
