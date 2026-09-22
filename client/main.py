@@ -305,19 +305,21 @@ def _preparation_operation(function):
     return wrapped
 
 
-def _preparation_preflight(args, *, base_url=None):
+def _preparation_preflight(args, *, base_url=None, event_sink=None):
     check_preparation_cancelled()
     if not getattr(args, "no_submit", False):
         preparation_progress("compatibility")
         try:
             check_compatibility(base_url or args.base_url, CLIENT_VERSION)
         except Exception as exc:
-            print(f"Compatibility check failed before preparation: {exc}. Use --no-submit for local collection.", file=sys.stderr)
+            message = f"Compatibility check failed before preparation: {exc}. Use --no-submit for local collection."
+            print(message, file=sys.stderr)
+            _emit_event(event_sink, "run_error", scope="preparation", code=5, message=message)
             return 5
-    return _preparation_runtime_integrity()
+    return _preparation_runtime_integrity(event_sink=event_sink)
 
 
-def _preparation_runtime_integrity():
+def _preparation_runtime_integrity(event_sink=None):
     check_preparation_cancelled()
     if bool(getattr(sys, "frozen", False)) or os.environ.get("ENCODINGDB_RUNTIME_LOCK_PATH"):
         from .runtime_lock import verify_runtime_lock
@@ -325,7 +327,9 @@ def _preparation_runtime_integrity():
         try:
             verify_runtime_lock(ffmpeg_path=config.ffmpeg_exe(), ffprobe_path=config.ffprobe_exe())
         except Exception as exc:
-            print(f"Runtime integrity check failed before preparation: {exc}", file=sys.stderr)
+            message = f"Runtime integrity check failed before preparation: {exc}"
+            print(message, file=sys.stderr)
+            _emit_event(event_sink, "run_error", scope="preparation", code=2, message=message)
             return 2
     return 0
 
@@ -1260,13 +1264,15 @@ def run_sweep_mode(
         print(f"Unsupported sweep mode: {mode}", file=sys.stderr)
         return 4
     base_args = _apply_submission_policy(base_args, interactive=interactive)
-    preflight_rc = _preparation_preflight(base_args)
+    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink)
     if preflight_rc:
         return preflight_rc
     presets_cfg = presets_cfg if presets_cfg is not None else load_presets_config(PRESETS_CONFIG_PATH)
     candidates = list_all_available_encoders()
     if not candidates:
-        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+        message = "No available encoders found in this ffmpeg build."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
         return 4
     plan = sweep_plan.plan_sweep(
         mode,
@@ -1275,14 +1281,18 @@ def run_sweep_mode(
         is_usable=_probe_encoder_usable_with_cancel,
     )
     if plan.is_empty():
-        print("No usable encoder on this machine supports a sweep.", file=sys.stderr)
+        message = "No usable encoder on this machine supports a sweep."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
         return 4
     for name, reason in plan.skipped:
         print_info(f"Skipped {sweep_plan_label(name)}: {reason}")
     try:
         suite_clips = _prepare_sweep_clips(plan.clip_policy)
     except Exception as exc:
-        print(f"EncodingDB Test Suite v1 is unavailable: {exc}", file=sys.stderr)
+        message = f"EncodingDB Test Suite v1 is unavailable: {exc}"
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=3, message=message)
         return 3
     tasks: List[Dict[str, Any]] = []
     for step in plan.steps:
@@ -1414,14 +1424,18 @@ def run_benchmark_batch(
 ) -> int:
     duration_minutes = float(getattr(args, "max_duration_minutes", 60))
     if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
-        print("--max-duration-minutes must be positive and finite", file=sys.stderr)
+        message = "--max-duration-minutes must be positive and finite"
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="batch", code=4, message=message)
         return 4
-    preflight_rc = _preparation_preflight(args, base_url=base_url)
+    preflight_rc = _preparation_preflight(args, base_url=base_url, event_sink=event_sink)
     if preflight_rc:
         return preflight_rc
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ok:
-        print("ffmpeg/ffprobe not found in PATH. Please install ffmpeg.", file=sys.stderr)
+        message = "ffmpeg/ffprobe not found in PATH. Please install ffmpeg."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="batch", code=2, message=message)
         return 2
     if getattr(args, "local_metrics", False):
         quality_ok, quality_rc = _ensure_local_quality_stack(event_sink=event_sink, scope="batch")
@@ -1429,14 +1443,18 @@ def run_benchmark_batch(
             return quality_rc
     suite_clip = tasks[0].get("suiteClip") if tasks else None
     if not isinstance(suite_clip, PreparedSuiteClip):
-        print("Batch benchmark requires EncodingDB Test Suite v1 clip identities.", file=sys.stderr)
+        message = "Batch benchmark requires EncodingDB Test Suite v1 clip identities."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="batch", code=3, message=message)
         return 3
     input_path = suite_clip.path
     default_input_hash = suite_clip.input_hash
     protocol_config = _build_protocol_config()
     planned_attempts = len(tasks) * (protocol_config.warmup_runs + protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats)
     if planned_attempts > int(getattr(args, "max_attempts", 100)):
-        print(f"Campaign can require {planned_attempts} encodes, exceeding --max-attempts. Select fewer recipes or set an explicit budget.", file=sys.stderr)
+        message = f"Campaign can require {planned_attempts} encodes, exceeding --max-attempts. Select fewer recipes or set an explicit budget."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="batch", code=4, message=message)
         return 4
     campaign_seed = getattr(args, "campaign_seed", None)
     if campaign_seed is None:
@@ -2261,20 +2279,26 @@ def run_v7_suite_clip_mode(
     interactive: bool = False,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
-    preflight_rc = _preparation_preflight(base_args)
+    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink)
     if preflight_rc:
         return preflight_rc
     clip_id = str(getattr(base_args, "v7_suite_clip", "") or "").strip()
+    campaign_scope = str(getattr(base_args, "campaign", "quick") or "quick")
     try:
-        suite_clips = (_prepare_full_suite() if getattr(base_args, "campaign", "quick") == "full"
+        suite_clips = (_prepare_full_suite() if campaign_scope == "full"
                        else [_prepare_named_suite_clip(clip_id) if clip_id else _prepare_quick_suite_clip()])
     except Exception as exc:
-        print(f"Unable to prepare suite clip {clip_id}: {exc}", file=sys.stderr)
+        label = clip_id or ("all seven frozen clips" if campaign_scope == "full" else "the default quick clip")
+        message = f"Unable to prepare suite clip {label}: {exc}"
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=3, message=message)
         return 3
 
     requested_codec = str(getattr(base_args, "codec", "") or "").strip()
     if not requested_codec:
-        print("--codec is required for noninteractive v7 suite clip mode.", file=sys.stderr)
+        message = "--codec is required for noninteractive v7 suite clip mode."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
         return 4
     if has_encoder(requested_codec):
         resolved_encoder = requested_codec
@@ -2284,10 +2308,14 @@ def run_v7_suite_clip_mode(
     else:
         resolved_encoder = None
     if not resolved_encoder or not has_encoder(resolved_encoder):
-        print(f"Requested encoder '{requested_codec}' is not available.", file=sys.stderr)
+        message = f"Requested encoder '{requested_codec}' is not available."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
         return 4
     if is_hardware_encoder_name(resolved_encoder) and not is_hardware_encoder_usable(resolved_encoder):
-        print(f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine.", file=sys.stderr)
+        message = f"Selected hardware encoder '{resolved_encoder}' is not usable on this machine."
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
         return 4
 
     preset_list = [value.strip() for value in str(getattr(base_args, "presets", "") or "").split(",") if value.strip()]
@@ -2297,7 +2325,9 @@ def run_v7_suite_clip_mode(
     target_bitrate_kbps = getattr(base_args, "target_bitrate_kbps", None)
     if target_bitrate_kbps is not None or resolved_encoder.lower().endswith("_videotoolbox"):
         if target_bitrate_kbps is None or target_bitrate_kbps <= 0:
-            print("VideoToolbox v7 runs require --target-bitrate-kbps.", file=sys.stderr)
+            message = "VideoToolbox v7 runs require --target-bitrate-kbps."
+            print(message, file=sys.stderr)
+            _emit_event(event_sink, "run_error", scope="preparation", code=4, message=message)
             return 4
         task_rate_control = {"mode": "vbr", "targetBitrateKbps": int(target_bitrate_kbps)}
     else:
@@ -2340,7 +2370,7 @@ def run_v7_suite_clip_mode(
 @_preparation_operation
 def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=False):
     args = _apply_submission_policy(args, interactive=interactive)
-    preflight_rc = _preparation_preflight(args)
+    preflight_rc = _preparation_preflight(args, event_sink=event_sink)
     if preflight_rc:
         return preflight_rc
     try:
