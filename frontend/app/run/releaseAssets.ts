@@ -43,19 +43,19 @@ export const primaryAssets: ReleaseAsset[] = [
   {
     file: "EncodingDB-macOS-arm64.dmg",
     label: "macOS (Apple Silicon)",
-    sha256: null,
+    sha256: "2ec29a38cf36920d8eb030de97113cd37c56373a277ddbd79e46d1b0336c36ef",
     support: "Double-clickable app inside a disk image; opens the guided menu in Terminal. Ad-hoc signed (not Developer ID, not notarized), so the first launch may need “Open Anyway” in System Settings → Privacy & Security (see first-launch help below). Native arm64; the embedded runtime requires macOS 27 or later; Intel Macs remain unverified.",
   },
   {
     file: "encodingdb-client-windows.exe",
     label: "Windows (GUI)",
-    sha256: null,
+    sha256: "242881ee5095703c67c134590aa96fc5545d8d865321ace84cb451955194b612",
     support: "No Authenticode signature, so SmartScreen may warn at first launch. The window exposes the same Small/Medium/Large/Full sweeps as the guided interface.",
   },
   {
     file: "encodingdb-client-linux.tar.gz",
     label: "Linux (x86-64)",
-    sha256: null,
+    sha256: "b1a68a039ce78a6bc9718adbae99409865326ea8a8b3fc29e47aaa090ef0f4d8",
     support: "Unsigned archive; unpack it and run the launcher inside. Same guided flow; includes the command-line entry point for scripts.",
   },
 ];

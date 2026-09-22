@@ -37,13 +37,13 @@ describe("downloadModel", () => {
 });
 
 describe("RunPage", () => {
-  it("stages the packaged rc.2 builds as the primary flow without inventing links or checksums", () => {
+  it("stages the packaged rc.2 builds with verified digests but no download links until publication", () => {
     vi.stubEnv("COLLECTION_DOWNLOAD_BASE", "");
     render(<RunPage />);
     for (const asset of primaryAssets) {
       expect(screen.getAllByText(asset.file).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/pending publication/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText("SHA-256 published with the release.").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(new RegExp(asset.sha256 ?? "NEVER")).length).toBeGreaterThan(0);
     }
     expect(screen.getByRole("heading", { level: 1, name: "Contribute your results." })).toBeInTheDocument();
     expect(document.querySelector(`a[href*='download/${projectTag}/']`)).toBeNull();

@@ -9,11 +9,11 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 
 ## Current release status
 
-**1.3.0-rc.1 is an unpublished candidate. Collection readiness and validated PL are
-both BLOCKED pending the remaining empirical and release gates.** The current
-public download remains [1.2.0](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0).
-Candidate metadata is assigned in [release.json](release.json); it is not a claim
-that those candidate binaries have been published or certified.
+**1.3.0-rc.2 is the current published release** ([release](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.2),
+client/0.3.1, protocol 7.1): packaged macOS DMG, Windows GUI executable and Linux
+archive with verified SHA-256 digests on the [run page](/run). Collection readiness
+and validated PL remain BLOCKED pending the remaining empirical gates; PL rows stay
+unscored. 1.3.0-rc.1 stays published as superseded plain command-line builds.
 
 The corrected candidate uses `client/0.3.0`, benchmark protocol `7.1`, and the
 `ffmpeg-process-v1` encode timer. It preserves the frozen seven-clip Test Suite v1
@@ -280,8 +280,8 @@ V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to si
 
 ## Version identities
 
-- Candidate project version/date: `1.3.0-rc.1` / `2026-09-14` in `release.json`; unpublished.
-- Published project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
+- Published project release: `1.3.0-rc.2` / `2026-09-21` in `release.json`; client/0.3.1, protocol `7.1`.
+- Historical project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
 - Candidate client implementation/minimum version: `client/0.3.0`.
 - Candidate benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.
 - PL formula version: `7.0`.

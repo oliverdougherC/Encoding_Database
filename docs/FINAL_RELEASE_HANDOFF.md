@@ -1,22 +1,24 @@
-# Final release handoff — 1.3.0-rc.1
+# Final release handoff — 1.3.0-rc.2 (supersedes the rc.1 checkpoint)
 
-**Verdict: BLOCKED.** Native and operational evidence has advanced, but final
-GUI/native acceptance, empirical calibration, human review and protected promotion
-remain open. Neither READY FOR COLLECTION nor READY WITH VALIDATED PL is claimed.
-This is a checkpoint while the remaining acceptance work runs; in-progress work is
-not counted as passed.
+**Verdict: released; collection still BLOCKED.** The rc.2 packaged builds (macOS
+DMG, Windows GUI/console, Linux archive) passed native acceptance and are
+published; the website serves them. Validated PL remains BLOCKED: empirical
+calibration, human review and protected promotion are open, so neither READY
+FOR COLLECTION nor READY WITH VALIDATED PL is claimed.
 
 ## Candidate and published baseline
 
-The application candidate is `b3ef24abb020bc6af5b5fe6b849ba3eae8314be2`.
+The released application source is `0ce1acc2bda56d2c8f9404b9005ebaba7552823a`
+(Windows binaries) with Mac/Linux binaries built from `7a232a154df3f220d8c9b40355261dd24aa9e35b`,
+a parent revision whose only delta against `0ce1acc` is Windows-only.
 Operator/harness and evidence changes carry their own commits; they do not relabel
 older binaries or observations. This is not an approved production deployment SHA.
 
 | Identity | Current state |
 | --- | --- |
-| Candidate | `1.3.0-rc.1`, unpublished |
+| Release | `1.3.0-rc.2` published (prerelease), client/0.3.1, protocol `7.1`; rc.1 remains published as superseded CLI builds |
 | Candidate measurement | `client/0.3.0`, protocol `7.1`, `ffmpeg-process-v1` |
-| Public download | [1.2.0](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0), client/0.2.0, historical protocol 7.0 |
+| Public download | [1.3.0-rc.2](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.2); [1.2.0](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0) historical (client/0.2.0, protocol 7.0) |
 | Preserved main / last verified production code | `b0f0bc7d12cb127c86a7c76979eb361398e293dd` |
 | Suite | Frozen seven 1920×1080, 24 fps SDR BT.709 clips; animation 192 frames, others 240 |
 | Suite fingerprint | `d40bff563dead0e78003af90b2626003bd80afcc12220ab86bc6d4a4b8c83b6e` |
