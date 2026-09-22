@@ -17,10 +17,10 @@ describe("downloadModel", () => {
     }
   });
 
-  it("never resolves staged rc.2 names onto the deployed rc.1 base", () => {
+  it("never resolves staged current-tag names onto the deployed superseded base", () => {
     // The live deployment still points COLLECTION_DOWNLOAD_BASE at the
-    // published rc.1 path; concatenating rc.2 file names onto it would 404
-    // or, worse, serve superseded bytes under new names.
+    // published predecessor path; concatenating current file names onto it
+    // would 404 or, worse, serve superseded bytes under new names.
     const model = downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/${supersededTag}` });
     expect(model.published).toBe(false);
     for (const item of model.items) expect(item.href).toBeNull();
@@ -37,7 +37,7 @@ describe("downloadModel", () => {
 });
 
 describe("RunPage", () => {
-  it("stages the packaged rc.2 builds with verified digests but no download links until publication", () => {
+  it("stages the packaged builds with verified digests but no download links until publication", () => {
     vi.stubEnv("COLLECTION_DOWNLOAD_BASE", "");
     render(<RunPage />);
     for (const asset of primaryAssets) {
@@ -64,7 +64,7 @@ describe("RunPage", () => {
     // Source/CLI exists only as the optional advanced path.
   });
 
-  it("does not activate rc.2 downloads when the environment still names the rc.1 base", () => {
+  it("does not activate current downloads when the environment still names the superseded base", () => {
     vi.stubEnv("COLLECTION_DOWNLOAD_BASE", `${repoReleases}/download/${supersededTag}`);
     render(<RunPage />);
     expect(screen.getByText(/is being prepared/)).toBeInTheDocument();
@@ -86,10 +86,12 @@ describe("RunPage", () => {
 
   it("documents superseded and historical builds without presenting them as recommended", () => {
     render(<RunPage />);
-    // rc.1 keeps its verified digests and links under its own published tag.
+    // The superseded release keeps its verified digests and links under its
+    // own published tag. macOS/Linux digests intentionally equal the primary
+    // ones (byte-identical republish), so match with getAllByText.
     for (const asset of supersededAssets) {
       expect(asset.sha256).toMatch(/^[0-9a-f]{64}$/);
-      expect(screen.getByText(new RegExp(String(asset.sha256).slice(0, 16)))).toBeInTheDocument();
+      expect(screen.getAllByText(new RegExp(String(asset.sha256).slice(0, 16))).length).toBeGreaterThan(0);
       expect(document.querySelector(`a[href='${repoReleases}/download/${supersededTag}/${asset.file}']`)).not.toBeNull();
     }
     expect(screen.getByText(/bare extensionless executable/)).toBeInTheDocument();

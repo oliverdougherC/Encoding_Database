@@ -1,5 +1,5 @@
 import styles from "./page.module.css";
-import { downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
+import { cliTag, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +13,7 @@ export default function RunPage() {
   const downloads = downloadModel(process.env);
   const historical = `${repoReleases}/download/${historicalTag}`;
   const superseded = `${repoReleases}/download/${supersededTag}`;
+  const cliBase = `${repoReleases}/download/${cliTag}`;
   return <div className={`page ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
@@ -65,13 +66,23 @@ export default function RunPage() {
         <p>macOS: the app is ad-hoc signed and not notarized, so the first open may be blocked. If you trust this source, open System Settings → Privacy &amp; Security and choose “Open Anyway” — see <a href="https://support.apple.com/en-us/102445" target="_blank" rel="noreferrer">Apple’s instructions for opening a blocked app</a>. Nothing here asks you to disable Gatekeeper or clear the quarantine flag.</p>
         <p>Windows: SmartScreen warns because the executable is unsigned. Verify the SHA-256 above first, and continue only if you trust the source; the page gives no bypass tool or automation.</p>
 
-        <h3>Superseded command-line builds ({supersededTag})</h3>
-        <p>Protocol-compatible plain executables that predate the packaged apps. The macOS file is a bare extensionless executable — prefer the disk image. Advanced users with a terminal may keep using these until {projectTag} ships.</p>
+        <h3>Superseded packaged builds ({supersededTag})</h3>
+        <p>The {supersededTag} Windows build reported preparation failures as a bare exit code and could loop against a cache folder owned by another account; it is superseded by {projectTag}. Its macOS and Linux binaries are byte-identical to the current ones.</p>
         <ul className={styles.assetList}>
           {supersededAssets.map((asset) => <li key={asset.file}>
             <a href={`${superseded}/${asset.file}`}>{asset.label}</a>{" "}
             <code>{asset.file}</code> · SHA-256 <code>{asset.sha256}</code>
           </li>)}
+        </ul>
+
+        <h3>Plain command-line builds ({cliTag})</h3>
+        <p>Protocol-compatible executables that predate the packaged apps; the macOS file is a bare extensionless executable.</p>
+        <ul className={styles.assetList}>
+          <li><a href={`${cliBase}/encodingdb-client-windows.exe`}>Windows GUI (rc.1)</a> · <code>encodingdb-client-windows.exe</code></li>
+          <li><a href={`${cliBase}/encodingdb-client-windows-console.exe`}>Windows console (rc.1)</a> · <code>encodingdb-client-windows-console.exe</code></li>
+          <li><a href={`${cliBase}/encodingdb-client-linux`}>Linux (rc.1)</a> · <code>encodingdb-client-linux</code></li>
+          <li><a href={`${cliBase}/encodingdb-client-macos`}>macOS (rc.1)</a> · <code>encodingdb-client-macos</code></li>
+          <li><a href={`${repoReleases}/tag/${cliTag}`}>{cliTag} requirements, checksums, and release evidence</a></li>
         </ul>
 
         <h3>Historical 1.2.0 (cannot submit)</h3>
