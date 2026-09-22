@@ -1405,7 +1405,7 @@ def run_sweep_mode(
         # Journals created before budgets were persisted carry no budget.json; recover an
         # allowance that at least fits what the campaign already retains plus headroom,
         # instead of resuming into an instant budget rejection.
-        storage_mb = max(storage_mb, retained // (1024 * 1024) + 1024)
+        storage_mb = max(storage_mb, retained // (1024 * 1024) + 1024, 6144 if mode == "large" else 0)
         print_info(f"No persisted budget for this campaign; sizing retention to its retained "
                    f"{retained // (1024 * 1024)} MB plus 1024 MB headroom; --max-storage-mb overrides.")
     if not storage_explicit and saved_manifest is None and mode == "large" and storage_mb < 6144:
@@ -2603,7 +2603,6 @@ def run_v7_suite_clip_mode(
 
 
 @_preparation_operation
-@_preparation_operation
 def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=False):
     refused = active_collection_guard(args.queue_dir, event_sink, scope="resume")
     if refused:
@@ -2627,7 +2626,8 @@ def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=Fa
                 print_info(f"Restoring this campaign's original {persisted_mb} MB storage allowance for resume.")
             else:
                 retained_mb = directory_bytes(str(root)) // (1024 * 1024)
-                args.max_storage_mb = max(int(getattr(args, "max_storage_mb", 2048)), retained_mb + 1024)
+                args.max_storage_mb = max(int(getattr(args, "max_storage_mb", 2048)), retained_mb + 1024,
+                                          6144 if saved.get("sweepMode") == "large" else 0)
                 print_info(f"No saved storage allowance; allowing {args.max_storage_mb} MB for this "
                            "campaign's retained files and continuation.")
         # Reopening the journal requires the exact saved manifest; sweep campaigns persist
@@ -2643,9 +2643,27 @@ def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=Fa
             tasks.append({"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
                           "rateControl": task["rateControl"], "suiteClip": clips[clip_id]})
         check_preparation_cancelled()
-        return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks,
-                                   event_sink=event_sink, cancel_event=cancel_event,
-                                   plan_metadata=plan_metadata)
+        protocol_config = _build_protocol_config()
+        if not bool(getattr(args, "max_attempts_explicit", False)):
+            args.max_attempts = max(int(getattr(args, "max_attempts", 100)), len(tasks) * (
+                protocol_config.warmup_runs + protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats))
+        hardware = detect_hardware()
+        continuing_sweep = saved.get("sweepMode") in sweep_plan.SWEEP_MODES
+        for _segment in range(10000):
+            config._BATCH_ATTEMPTS_RECORDED = 0
+            rc = run_benchmark_batch(hardware=hardware, base_url=args.base_url, args=args, tasks=tasks,
+                                     event_sink=event_sink, cancel_event=cancel_event,
+                                     plan_metadata=plan_metadata)
+            if _is_cancelled(cancel_event):
+                return 130
+            if rc != 11 or not continuing_sweep or bool(getattr(args, "max_duration_minutes_explicit", False)):
+                return rc
+            if config._BATCH_ATTEMPTS_RECORDED <= 0:
+                print_warning("Checkpoint made no new measurement; retained campaign is paused safely.")
+                return 11
+            print_info("Continuing the saved sweep after its checkpoint.")
+        print_warning("Safety segment limit reached; the campaign remains saved for continuation.")
+        return 11
     except Exception as exc:
         print(f"Cannot resume campaign: {exc}", file=sys.stderr)
         _debug_exception_traceback()
