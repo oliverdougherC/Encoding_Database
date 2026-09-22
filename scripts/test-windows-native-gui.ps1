@@ -536,8 +536,10 @@ function Select-AdvancedSingleMode {
     # would launch a multi-encoder sweep instead of the bounded single-recipe campaign the CLI
     # arguments preloaded. Acceptance therefore deliberately chooses the final entry,
     # 'Single (advanced)', physically and observably: one guarded mouse click on the structurally
-    # identified mode combobox posts the Tk popup (an owned untitled overrideredirect TkTopLevel);
-    # the popup must appear and align exactly with that combobox before any key is sent; bounded
+    # identified mode combobox posts the Tk popdown (an owned overrideredirect TkTopLevel that Tk
+    # names 'popdown' from its widget path - CI 35665619085 failure.win32.json: name 'popdown',
+    # class 'TkTopLevel', bounds aligned to the combobox); the popup must appear and align exactly
+    # with that combobox before any key is sent; bounded
     # modifier-free Down keys walk the browse-mode listbox to its final entry (Tk 8.6 source: a
     # posted popup preselects the current value, forces listbox focus on map, the win32 <Down>
     # binding moves the single browse selection and clamps at the end); Return commits, unposts the
@@ -575,24 +577,29 @@ function Select-AdvancedSingleMode {
     }
     if ($null -eq $popup) { throw "BLOCKED_GUI_MODE: no mode combobox popup was observed. Last observation: $lastError" }
     $popupClass=[EdbWindows]::Class($popup); $popupText=[EdbWindows]::Text($popup)
-    if ($popupClass -ne 'TkTopLevel' -or $popupText -ne '') { throw "BLOCKED_GUI_MODE: the posted popup is not an owned untitled Tk popup (class '$popupClass')." }
+    # Real Tk evidence (CI 35665619085 failure.win32.json): the combobox popdown is an owned
+    # overrideredirect TkTopLevel whose window text is the widget-path name 'popdown'. Ownership and
+    # uniqueness are already enforced by the owned-top-level enumeration; this check pins class and
+    # the exact Tk naming so an unrelated same-process window cannot be traversed.
+    if ($popupClass -ne 'TkTopLevel' -or ($popupText -ne '' -and $popupText -ne 'popdown')) { throw "BLOCKED_GUI_MODE: the posted popup is not the observed Tk popdown (class '$popupClass' want 'TkTopLevel'; text '$popupText' want '' or 'popdown')." }
+    if (-not [EdbWindows]::IsWindowVisible($popup)) { throw 'BLOCKED_GUI_MODE: the identified popdown is not visible; refusing to traverse an unposted control.' }
     $popupRect=[EdbWindows+Rect]::new()
     if (-not [EdbWindows]::GetWindowRect($popup,[ref]$popupRect)) { throw 'BLOCKED_GUI_MODE: cannot observe physical popup bounds.' }
     $comboLeft=$combo.controlBounds.x; $comboBottom=$combo.controlBounds.y+$combo.controlBounds.height; $comboWidth=$combo.controlBounds.width
     if ([Math]::Abs($popupRect.Left-$comboLeft) -gt 1 -or [Math]::Abs($popupRect.Top-$comboBottom) -gt 1 -or [Math]::Abs(($popupRect.Right-$popupRect.Left)-$comboWidth) -gt 1) {
-        throw 'BLOCKED_GUI_MODE: the posted popup does not align with the observed mode combobox; refusing to traverse an unidentified control.'
+        throw "BLOCKED_GUI_MODE: the posted popup does not align with the observed mode combobox (popup left=$($popupRect.Left) top=$($popupRect.Top) width=$($popupRect.Right-$popupRect.Left); want left=$comboLeft top=$comboBottom width=$comboWidth within 1px); refusing to traverse an unidentified control."
     }
     $keyCodes=@()
     $script:operationStage='mode-select:choose-advanced-single'
     for ($i=0; $i -lt 6; $i++) {
-        $key=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,0x28,$true)
+        $key=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,[uint16]0x28,$true)
         $keyCodes+=28
         Record-Event 'observed-popup-key' @{ vk=28; popupHandle=$popup.ToInt64(); input=$key }
         if ($key.Error) { throw "BLOCKED_GUI_INPUT: popup traversal key was refused: $($key.Error)" }
         Start-Sleep -Milliseconds 150
     }
     $script:operationStage='mode-select:commit-selection'
-    $commit=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,0x0D,$false)
+    $commit=[EdbWindows]::SendOwnedPopupKey($handle,$ownerId,[IntPtr]$popup,[uint16]0x0D,$false)
     $keyCodes+=13
     Record-Event 'observed-popup-key' @{ vk=13; popupHandle=$popup.ToInt64(); input=$commit }
     if ($commit.Error) { throw "BLOCKED_GUI_INPUT: popup commit key was refused: $($commit.Error)" }

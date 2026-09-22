@@ -32,7 +32,7 @@ public static class EdbWindows {
  public static IntPtr SetThreadDpiAwarenessContext(IntPtr c){ return new IntPtr(-1); }
  public static bool ShowWindow(IntPtr h,int mode){return true;}
  static bool IsDescendant(long h,long ancestor){var seen=new HashSet<long>();long p=h;while(Data.ContainsKey(p)){p=Data[p].Parent;if(p==ancestor)return true;if(!seen.Add(p))break;}return false;}
- static void PostPopup(long id,int l,int t,int r,int b){ var w=new Window(); w.Parent=0; w.Bounds=new int[]{l,t,r,b}; w.Class="TkTopLevel"; Data[id]=w; }
+ static void PostPopup(long id,int l,int t,int r,int b){ var w=new Window(); w.Parent=0; w.Bounds=new int[]{l,t,r,b}; w.Class="TkTopLevel"; w.Text="popdown"; Data[id]=w; } // real Tk names the combobox popdown by its widget path (CI 35665619085 evidence)
  public static ClickReceipt SendOwnedControlClick(IntPtr root,uint owner,IntPtr child,int x,int y,int left,int top,int right,int bottom){
   Clicks++;var r=new ClickReceipt();r.Root=root.ToInt64();r.Child=child.ToInt64();r.X=x;r.Y=y;r.Left=left;r.Top=top;r.Right=right;r.Bottom=bottom;
   if(NextClickFails){r.Error="synthetic native rejection";}else if(DeferOnce){DeferOnce=false;r.Error="Secure desktop or held mouse/modifier input; no click.";}else{r.InsertedCount=3;}LastClick=r;
@@ -40,6 +40,8 @@ public static class EdbWindows {
    if(ModePopup=="post"||ModePopup=="stuck") PostPopup(60,83,99,214,194);
    else if(ModePopup=="misaligned") PostPopup(60,300,99,431,194);
    else if(ModePopup=="two"){PostPopup(60,83,99,214,194);PostPopup(61,300,300,431,395);}
+   else if(ModePopup=="wrongtitle"){PostPopup(60,83,99,214,194);Data[60].Text="evil-tool";}
+   else if(ModePopup=="wrongclass"){PostPopup(60,83,99,214,194);Data[60].Class="Panel";}
   }
   return r;}
  public static void ResetModeState(){Keys.Clear();ModePopup="post";ObservedFocus=42;FocusFailure=null;Data.Remove(60);Data.Remove(61);}
@@ -200,6 +202,14 @@ Case 'mode-select:reject-misaligned-popup'
 Mode-Fixture;[EdbWindows]::ModePopup='misaligned';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*does not align*'
 Assert-True (-not [EdbWindows]::Keys.Contains(13)) 'An unaligned popup must never receive the commit key.'
+Case 'mode-select:reject-popup-with-unexpected-title'
+Mode-Fixture;[EdbWindows]::ModePopup='wrongtitle';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
+Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*not the observed Tk popdown*evil-tool*'
+Assert-True ([EdbWindows]::Keys.Count -eq 0) 'A popup with an unrelated title must block before any traversal key.'
+Case 'mode-select:reject-popup-with-wrong-class'
+Mode-Fixture;[EdbWindows]::ModePopup='wrongclass';$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
+Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*not the observed Tk popdown*Panel*'
+Assert-True ([EdbWindows]::Keys.Count -eq 0) 'A popup of the wrong window class must block before any traversal key.'
 Case 'mode-select:reject-two-simultaneous-popups'
 Mode-Fixture;[EdbWindows]::ModePopup='two'
 Assert-Throws {Select-AdvancedSingleMode} '*BLOCKED_GUI_MODE*multiple unexpected owned top-level windows*'
