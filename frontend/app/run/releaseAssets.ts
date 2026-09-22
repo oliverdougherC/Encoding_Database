@@ -29,7 +29,7 @@ export const primaryAssets: ReleaseAsset[] = [
   {
     file: "EncodingDB-macOS-arm64.dmg",
     label: "macOS (Apple Silicon)",
-    sha256: "bfa37a2422b1c3ce187161c067ecf1d6984a471a818503ae6181caf4c01618b5",
+    sha256: "cc6c6503293c8f01b223e1fac9a5da56888352d39c5e777cf90d23acec8aa8c6",
     support: "Double-clickable app inside a disk image; opens the guided menu in Terminal. Ad-hoc signed (not Developer ID, not notarized), so the first launch may need “Open Anyway” in System Settings → Privacy & Security (see first-launch help below). Native arm64; the embedded runtime requires macOS 27 or later; Intel Macs remain unverified.",
   },
   {
