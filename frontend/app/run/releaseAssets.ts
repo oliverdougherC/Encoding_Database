@@ -53,7 +53,7 @@ export const primaryAssets: ReleaseAsset[] = [
   {
     file: "encodingdb-client-windows.exe",
     label: "Windows (GUI)",
-    sha256: null,
+    sha256: "2ec0a4bcb7d94af340e61a1837bfc9380b51b2dd60bbd1f48eb023dfa24c0379",
     support: "No Authenticode signature, so SmartScreen may warn at first launch. The window exposes the same Small/Medium/Large/Full sweeps as the guided interface and recovers automatically from a cache folder protected against the current user.",
   },
   {
