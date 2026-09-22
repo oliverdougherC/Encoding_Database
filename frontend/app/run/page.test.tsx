@@ -56,7 +56,7 @@ describe("RunPage", () => {
     expect(screen.getAllByText(/requires macOS 27 or later/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/not notarized/).length).toBeGreaterThan(0);
     // Launch guidance follows current Apple/MS guidance; no bypass automation.
-    expect(screen.getByText(/No commands to type/)).toBeInTheDocument();
+    expect(screen.getByText(/run \.\/start\.sh/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Apple’s instructions/ })).toHaveAttribute("href", "https://support.apple.com/en-us/102445");
     expect(screen.getAllByText(/Open Anyway/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/right-click/)).toBeNull();

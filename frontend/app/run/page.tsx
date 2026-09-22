@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 const platformNotes: Record<string, string[]> = {
   "EncodingDB-macOS-arm64.dmg": ["Open the disk image and drag EncodingDB to Applications.", "Open EncodingDB from Applications; it launches the guided menu in Terminal.", "First launch blocked by macOS? Use the first-launch help under build details below."],
   "encodingdb-client-windows.exe": ["Run the downloaded file.", "Windows warns because the build is unsigned; verify the SHA-256 below before continuing.", "Choose a sweep size in the window and press Start."],
-  "encodingdb-client-linux.tar.gz": ["Unpack the archive anywhere you can write.", "Run the launcher inside it.", "The guided Terminal menu asks for a sweep size, then runs."],
+  "encodingdb-client-linux.tar.gz": ["Unpack the archive anywhere you can write.", "Open a terminal in the extracted folder and run ./start.sh.", "The guided Terminal menu asks for a sweep size, then runs."],
 };
 
 export default function RunPage() {
@@ -17,7 +17,7 @@ export default function RunPage() {
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
       <h1>Contribute your results.</h1>
-      <p>Download the client, open it, choose a sweep (Small, Medium, Large, or Full), and press Start. The client detects usable encoders and submits finished measurements automatically once you approve uploads. No commands to type.</p>
+      <p>Download the client and follow the launch steps for your system. Choose Small, Medium, Large, or Full; the client detects usable encoders and submits finished measurements automatically once you approve uploads.</p>
     </header>
 
     {downloads.published
