@@ -390,6 +390,12 @@ class CampaignResult:
     protocol_version: str
     seed: Optional[int]
     recipe_results: List[RecipeCampaignResult]
+    # A budget-exhausted segment is a resumable pause, not a failed campaign:
+    # completed=False carries the pause through submission, and unfinished
+    # recipes (still short of a terminal stability outcome) stay unsubmitted
+    # so their measurement groups can complete in a later segment untouched.
+    completed: bool = True
+    unfinished_recipes: frozenset = frozenset()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -397,6 +403,8 @@ class CampaignResult:
             "protocolVersion": self.protocol_version,
             "seed": self.seed,
             "recipeResults": [result.to_dict() for result in self.recipe_results],
+            "completed": self.completed,
+            "unfinishedRecipes": sorted(self.unfinished_recipes),
         }
 
 
@@ -1112,4 +1120,51 @@ def execute_protocol_campaign(
         protocol_version=config.version,
         seed=effective_seed,
         recipe_results=recipe_results,
+    )
+
+
+def campaign_result_from_records(
+    *,
+    campaign_id: str,
+    config: ProtocolConfig,
+    seed: Optional[int],
+    recipes: Sequence[RecipeSpec],
+    records: Dict[int, BenchmarkRunRecord],
+) -> CampaignResult:
+    """Rebuild the campaign view from journalized attempts at a checkpoint.
+
+    The terminal rule mirrors the scheduler's own exits: a recipe is final
+    exactly when its measured group is stable or has reached the measured
+    attempt cap. Everything else stays in ``unfinished_recipes`` so a
+    checkpoint never uploads a group a later segment could still extend."""
+    by_recipe: Dict[str, List[BenchmarkRunRecord]] = {recipe.recipe_id: [] for recipe in recipes}
+    for record in sorted(records.values(), key=lambda item: item.schedule.execution_order):
+        if record.schedule.campaign_id == campaign_id and record.schedule.recipe_id in by_recipe:
+            by_recipe[record.schedule.recipe_id].append(record)
+    attempt_cap = config.minimum_measured_runs + config.max_adaptive_repeats
+    recipe_results: List[RecipeCampaignResult] = []
+    unfinished = set()
+    for recipe in recipes:
+        runs = by_recipe[recipe.recipe_id]
+        stability = evaluate_stability(runs, config)
+        measured_runs = [run for run in runs if run.schedule.phase == "measured"]
+        if not stability.stable and len(measured_runs) < attempt_cap:
+            unfinished.add(recipe.recipe_id)
+        recipe_results.append(
+            RecipeCampaignResult(
+                recipe_id=recipe.recipe_id,
+                runs=runs,
+                stability=stability,
+                measured_runs_required=config.minimum_measured_runs,
+                measured_runs_completed=len(measured_runs),
+                measured_runs_counted=stability.sample_count,
+            )
+        )
+    return CampaignResult(
+        campaign_id=campaign_id,
+        protocol_version=config.version,
+        seed=seed,
+        recipe_results=recipe_results,
+        completed=False,
+        unfinished_recipes=frozenset(unfinished),
     )

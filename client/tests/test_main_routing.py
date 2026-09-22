@@ -948,9 +948,9 @@ class GuidedFlowTests(unittest.TestCase):
             return 11
 
         with tempfile.TemporaryDirectory() as queue_dir:
-            captured_args = self.args(queue_dir=queue_dir, max_duration_minutes=15.0,
-                                      explicit_max_duration_minutes=True,
-                                      max_attempts=999, explicit_max_attempts=True)
+            captured_args = self.args(queue_dir=queue_dir,
+                                      max_duration_minutes=15.0, max_duration_minutes_explicit=True,
+                                      max_attempts=999, max_attempts_explicit=True)
             with ExitStack() as stack:
                 for patcher in self._sweep_run_patches(queue_dir, {}):
                     stack.enter_context(patcher)
@@ -964,11 +964,11 @@ class GuidedFlowTests(unittest.TestCase):
 
     def test_sweep_auto_continues_across_checkpoints(self) -> None:
         calls = []
-        client_main.config._BATCH_COMPLETED_COUNT = 0
+        client_main.config._BATCH_ATTEMPTS_RECORDED = 0
 
         def fake_batch(**kwargs):
             calls.append(kwargs)
-            client_main.config._BATCH_COMPLETED_COUNT += 1
+            client_main.config._BATCH_ATTEMPTS_RECORDED += 1
             return 11 if len(calls) == 1 else 0
 
         try:
@@ -980,7 +980,7 @@ class GuidedFlowTests(unittest.TestCase):
                     rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
                                                     show_end_screen=False, interactive=False, presets_cfg={})
         finally:
-            client_main.config._BATCH_COMPLETED_COUNT = 0
+            client_main.config._BATCH_ATTEMPTS_RECORDED = 0
         self.assertEqual(rc, 0, "checkpointing continues until the plan completes")
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0]["args"].campaign_seed, calls[1]["args"].campaign_seed)
@@ -1029,6 +1029,185 @@ class GuidedFlowTests(unittest.TestCase):
                                                 interactive=False, presets_cfg={})
         self.assertEqual(rc, 130)
         self.assertEqual(called, [], "cancelled preparation must not start encoding")
+
+    def test_active_collection_refuses_second_collector(self) -> None:
+        import fcntl
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with open(os.path.join(queue_dir, "measurement.lock"), "a+b") as held:
+                fcntl.flock(held.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.assertIsNotNone(client_main.active_collection(queue_dir))
+                events = []
+                rc = client_main.run_benchmark_batch(
+                    hardware=HardwareInfo("CPU", "GPU", 16, "TestOS"), base_url="https://example.invalid",
+                    args=self.args(queue_dir=queue_dir), tasks=[],
+                    event_sink=lambda event: events.append(event))
+        self.assertEqual(rc, 6)
+        self.assertTrue(any(event.get("type") == "run_error" and "actively running" in str(event.get("message"))
+                            for event in events), "the GUI needs the honest refusal reason, not just exit 6")
+
+    def test_failed_sweep_end_screen_reports_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", return_value=6))
+                screens = []
+                stack.enter_context(mock.patch.object(client_main, "print_end_screen",
+                                                      side_effect=lambda *a, **k: screens.append(k)))
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                show_end_screen=True, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 6)
+        self.assertEqual(screens[0].get("status"), "failed")
+        self.assertTrue(screens[0].get("recovery"), "a failed run must tell the operator how to continue")
+
+    def test_sweep_entry_refuses_before_any_expensive_work(self) -> None:
+        import fcntl
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with open(os.path.join(queue_dir, "measurement.lock"), "a+b") as held:
+                fcntl.flock(held.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                events = []
+                rc = client_main.run_sweep_mode(
+                    mode="small", base_args=self.args(queue_dir=queue_dir),
+                    event_sink=lambda event: events.append(event),
+                    show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 6)
+        self.assertTrue(any(event.get("type") == "run_error" and "actively running" in str(event.get("message"))
+                            and "continue automatically" in str(event.get("message"))
+                            for event in events),
+                        "refusal must explain auto-continuing checkpoints, not suggest resuming over them")
+
+    @unittest.skipIf(os.name != "posix" or hasattr(os, "geteuid") and os.geteuid() == 0,
+                     "permission semantics require a non-root POSIX account")
+    def test_active_probe_reports_lock_permission_error_accurately(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            lock = os.path.join(queue_dir, "measurement.lock")
+            open(lock, "a+b").close()
+            os.chmod(lock, 0)
+            try:
+                with self.assertRaisesRegex(OSError, "Cannot inspect"):
+                    client_main.active_collection(queue_dir)
+            finally:
+                os.chmod(lock, 0o644)
+
+    def test_sweep_restores_saved_storage_allowance_on_resume(self) -> None:
+        clip = MainRoutingTests("_quick_clip")._quick_clip()
+        plan = client_main.sweep_plan.plan_sweep("small", ["libx264"], presets_cfg={})
+        saved_tasks = [{"encoder": step["encoder"], "preset": step["preset"], "crf": step["crf"],
+                        "rateControl": step["rateControl"], "clipId": clip.clip_id} for step in plan.steps]
+        with tempfile.TemporaryDirectory() as queue_dir:
+            self._saved_sweep_journal(queue_dir, saved_tasks)
+            journal_root = client_main.journal_path(queue_dir, "campaign-0123456789abcdef")
+            (journal_root / "budget.json").write_text(json.dumps({"schemaVersion": 1, "maxStorageMb": 6144}))
+            captured = {}
+            from types import SimpleNamespace
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, captured):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch("shutil.disk_usage",
+                                               return_value=SimpleNamespace(total=1024 ** 4, used=0,
+                                                                            free=100 * 1024 ** 3)))
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["args"].max_storage_mb, 6144,
+                         "a campaign started with 6144 MB must not resume at the 2048 default and reject its own 2.7 GiB")
+
+    def test_legacy_journal_without_budget_recovers_allowance(self) -> None:
+        from types import SimpleNamespace
+        clip = MainRoutingTests("_quick_clip")._quick_clip()
+        plan = client_main.sweep_plan.plan_sweep("small", ["libx264"], presets_cfg={})
+        saved_tasks = [{"encoder": step["encoder"], "preset": step["preset"], "crf": step["crf"],
+                        "rateControl": step["rateControl"], "clipId": clip.clip_id} for step in plan.steps]
+        with tempfile.TemporaryDirectory() as queue_dir:
+            self._saved_sweep_journal(queue_dir, saved_tasks)
+            journal_root = client_main.journal_path(queue_dir, "campaign-0123456789abcdef")
+            with open(journal_root / "retained.bin", "wb") as bulk:
+                bulk.truncate(2100 * 1024 * 1024)
+            captured = {}
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, captured):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch("shutil.disk_usage",
+                                               return_value=SimpleNamespace(total=1024 ** 4, used=0,
+                                                                            free=100 * 1024 ** 3)))
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 0)
+        self.assertEqual(captured["args"].max_storage_mb, 3124,
+                         "a pre-budget.json campaign retaining 2100 MB must resume above its own retained bytes")
+
+    def test_large_mode_default_storage_and_explicit_override(self) -> None:
+        plan = client_main.sweep_plan.plan_sweep("small", ["libx264"], presets_cfg={})
+        from types import SimpleNamespace
+        for changes, expected in (({}, 6144), ({"max_storage_mb": 512, "max_storage_mb_explicit": True}, 512)):
+            with self.subTest(**changes), mock.patch("shutil.disk_usage") as usage:
+                usage.return_value = SimpleNamespace(total=1024 ** 4, used=0, free=100 * 1024 ** 3)
+                with tempfile.TemporaryDirectory() as queue_dir:
+                    captured = {}
+                    with ExitStack() as stack:
+                        for patcher in self._sweep_run_patches(queue_dir, captured):
+                            stack.enter_context(patcher)
+                        stack.enter_context(mock.patch.object(client_main.sweep_plan, "plan_sweep",
+                                                              return_value=plan))
+                        rc = client_main.run_sweep_mode(
+                            mode="large", base_args=self.args(queue_dir=queue_dir, **changes),
+                            show_end_screen=False, interactive=False, presets_cfg={})
+                self.assertEqual(rc, 0)
+                self.assertEqual(captured["args"].max_storage_mb, expected)
+
+    def test_volume_cannot_host_working_set_stops_before_any_encode(self) -> None:
+        from types import SimpleNamespace
+        calls = []
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch("shutil.disk_usage",
+                                               return_value=SimpleNamespace(total=1024 ** 4, used=0, free=1088 * 1024 * 1024)))
+                events = []
+                rc = client_main.run_sweep_mode(
+                    mode="small", base_args=self.args(queue_dir=queue_dir, max_storage_mb=6144,
+                                                      max_storage_mb_explicit=True),
+                    event_sink=lambda event: events.append(event),
+                    show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 6)
+        self.assertEqual(calls, [], "a plan the volume cannot host must never reach encoding")
+        self.assertTrue(any(event.get("type") == "run_error" and "cannot hold" in str(event.get("message"))
+                            for event in events))
+
+    def test_end_screen_rendered_text_is_honest(self) -> None:
+        import contextlib
+        import io
+        from client import ui
+        for status, needle in (("complete", "Benchmark complete"),
+                               ("paused", "not finished"),
+                               ("interrupted", "not finished"),
+                               ("failed", "nothing was marked finished")):
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                ui.print_end_screen(7, 83, status=status, recovery="Recovery hint.")
+            text = buf.getvalue()
+            self.assertIn(needle, text, f"{status} end screen")
+            self.assertIn("Recovery hint.", text)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            ui.print_end_screen(3, 5, status="failed", recovery="x")
+        self.assertNotIn("Benchmark complete", buf.getvalue())
+
+    def test_failed_sweep_prints_failed_banner_without_mock(self) -> None:
+        import contextlib
+        import io
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", return_value=6))
+                buf = io.StringIO()
+                with contextlib.redirect_stdout(buf):
+                    rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                    show_end_screen=True, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 6)
+        self.assertIn("nothing was marked finished", buf.getvalue())
 
     def test_sweep_starts_fresh_when_saved_plan_differs(self) -> None:
         with tempfile.TemporaryDirectory() as queue_dir:

@@ -287,17 +287,31 @@ def _format_duration(seconds: float) -> str:
     return " ".join(parts)
 
 
-def print_end_screen(completed_count: int, elapsed_seconds: float) -> None:
+def print_end_screen(completed_count: int, elapsed_seconds: float, status: str = "complete",
+                     recovery: Optional[str] = None) -> None:
+    """Render the terminal state honestly; only rc-0 work may claim completion."""
     time_str = _format_duration(elapsed_seconds)
+    headline, title, plain = {
+        "complete": ("[ok] Benchmark run complete [/ok]", "Thank You", "Benchmark complete."),
+        "paused": ("[accent2] Campaign checkpointed — retained, not finished [/accent2]", "Not Finished",
+                   "Campaign checkpointed and retained; not finished."),
+        "interrupted": ("[accent2] Run interrupted — retained, not finished [/accent2]", "Interrupted",
+                        "Run interrupted; progress retained; not finished."),
+        "failed": ("[accent] Run did not complete — nothing was marked finished [/accent]", "Failed",
+                   "Run did not complete; nothing was marked finished."),
+    }.get(status, ("[accent] Run ended with an unknown state [/accent]", "Failed",
+                   "Run ended with an unknown state."))
+    recovery_line = f"\n[muted]{recovery}[/muted]" if recovery else ""
     if _rich_tty():
         body = (
-            "[ok] Benchmark run complete [/ok]\n\n"
+            f"{headline}\n\n"
             f"[muted]Submitted data points:[/muted] [accent]{completed_count}[/accent]\n"
-            f"[muted]Time donated:[/muted] [accent2]{time_str}[/accent2]"
+            f"[muted]Time donated:[/muted] [accent2]{time_str}[/accent2]{recovery_line}"
         )
-        _console.print(_Panel(body, title="[title] Thank You [/title]", border_style="accent2"))
+        _console.print(_Panel(body, title=f"[title] {title} [/title]", border_style="accent2"))
     else:
-        print(f"Benchmark complete. Submitted {completed_count} data points in {time_str}.")
+        print(f"{plain} Submitted {completed_count} data points in {time_str}."
+              + (f" {recovery}" if recovery else ""))
 
 
 def print_benchmark_result(payload: Dict[str, Any], relative_file_size_pct: Optional[float]) -> None:

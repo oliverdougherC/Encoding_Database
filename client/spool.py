@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from .artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND, submit_artifact_submission
+from .campaign import directory_bytes
 from .network import SubmitError, submit
 
 SPOOL_VERSION = 1
@@ -50,9 +51,25 @@ def _spool_write_lock(queue_dir: str):
             release()
 
 
+def _publication_bytes(queue_dir: str) -> int:
+    """Shared publication store: pending entries, managed copies, receipts, dead
+    letters. OTHER campaigns' retained attempts are charged to their own journal
+    allowance, never to this run's budget."""
+    def fail_scan(error):
+        raise error
+    total = 0
+    for root, dirs, names in os.walk(queue_dir, onerror=fail_scan):
+        if os.path.abspath(root) == os.path.abspath(queue_dir) and "campaigns" in dirs:
+            dirs.remove("campaigns")
+        # Stat errors fail closed rather than undercount.
+        total += sum(os.stat(os.path.join(root, name)).st_size for name in names)
+    return total
+
+
 def _check_spool_capacity(queue_dir: str, payload: Dict[str, Any], max_storage_mb: int) -> None:
     staged = dict(payload)
     copy_bytes = 0
+    source = ""
     if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
         source = str(payload.get("artifactPath") or "").strip()
         sha = str(payload.get("artifactSha256") or "").strip().lower()
@@ -65,17 +82,31 @@ def _check_spool_capacity(queue_dir: str, payload: Dict[str, Any], max_storage_m
                 copy_bytes = size
             staged.update(artifactPath=destination, artifactManaged=True)
     metadata_bytes = len(json.dumps(_envelope_for_payload(staged), sort_keys=True).encode("utf-8"))
-    # Count campaign originals, managed copies, pending records, receipts, terminal
-    # evidence and temporary files. Stat errors fail closed rather than undercount.
-    def fail_scan(error):
-        raise error
-    used = sum(os.stat(os.path.join(root, name)).st_size
-               for root, _, names in os.walk(queue_dir, onerror=fail_scan) for name in names)
+    used = _publication_bytes(queue_dir)
+    # Submission envelopes do not carry a top-level campaignId. Account for
+    # the original using its owned filesystem location, including older flat
+    # campaign layouts, instead of trusting optional payload metadata.
+    if source:
+        campaigns = Path(queue_dir).resolve() / "campaigns"
+        try:
+            relative = Path(source).resolve().relative_to(campaigns)
+        except (OSError, ValueError):
+            relative = None
+        if relative is not None and relative.parts:
+            owned = campaigns / relative.parts[0]
+            used += directory_bytes(str(owned)) if owned.is_dir() else owned.stat().st_size
     required = copy_bytes + metadata_bytes + SPOOL_METADATA_RESERVE_BYTES
     if used + required > max_storage_mb * 1024 * 1024:
-        raise SpoolCapacityError("Publication storage budget reached; increase --max-storage-mb and resume the retained campaign")
-    if shutil.disk_usage(queue_dir).free < required:
-        raise SpoolCapacityError("Insufficient free disk for publication staging; free space and resume the retained campaign")
+        raise SpoolCapacityError(
+            f"Publication storage budget reached: this campaign's retained attempts plus pending "
+            f"uploads exceed its {max_storage_mb} MB allowance ({used // (1024 * 1024)} MB used). "
+            f"Accepted uploads retire at checkpoints — wait for one, or raise --max-storage-mb if the volume allows")
+    floor_mb = max(0, int(os.environ.get("ENCODINGDB_MIN_FREE_MB", "1024")))
+    free = shutil.disk_usage(queue_dir).free
+    if free - required < floor_mb * 1024 * 1024:
+        raise SpoolCapacityError(f"Insufficient free disk for publication staging: only "
+                                 f"{free // (1024 * 1024)} MB free against the {floor_mb} MB safety "
+                                 f"floor; free space and resume the retained campaign")
 
 
 @dataclass

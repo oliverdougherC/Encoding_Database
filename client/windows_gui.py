@@ -369,6 +369,17 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         def _start_run(self) -> None:
             if self.running or self._upload_active():
                 return
+            try:  # Advisory only; run_benchmark_batch refuses authoritatively before any preparation.
+                active = client_main.active_collection(str(self.base_args.queue_dir))
+            except Exception:
+                active = None
+            if active is not None:
+                who = f" (campaign {active['campaignId']}, PID {active['pid']})" if active.get("campaignId") else ""
+                self.summary_var.set(f"Another collection is actively running in this queue{who}. "
+                                     f"Its checkpoints continue automatically - let it finish, or "
+                                     f"stop/cancel that run first. Retry Queued Uploads stays available.")
+                self._append_log("Start refused: active collection detected")
+                return
             mode = self.mode_var.get().strip()
             mode_key = GUI_MODE_BY_LABEL.get(mode)
             if mode_key is None and (
@@ -400,7 +411,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.pause_on_exit = False
             run_args.menu = False
             self._browse_shown = False
-            if getattr(run_args, "explicit_max_duration_minutes", False):
+            if getattr(run_args, "max_duration_minutes_explicit", False):
                 self._append_log(
                     f"Explicit measurement allowance: {float(run_args.max_duration_minutes):g} minutes; "
                     "the run stops there with the campaign saved for a later continuation."
@@ -518,7 +529,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     return
                 label = event.get("clipId") or os.path.basename(str(event.get("path") or ""))
                 done, total = event.get("completedBytes"), event.get("totalBytes")
-                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                if done is not None and total:
+                    amount = f" ({done}/{total} bytes)"
+                elif event.get("completed") is not None and event.get("total"):
+                    amount = f" ({event['completed']}/{event['total']})"
+                else:
+                    amount = ""
                 self.summary_var.set(f"Preparing {label}{amount}; Stop is available")
                 return
 

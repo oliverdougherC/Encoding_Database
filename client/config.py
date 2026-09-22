@@ -70,6 +70,9 @@ _BATCH_ACTIVE: bool = False
 _BATCH_START_TS: float = 0.0
 _BATCH_COMPLETED_COUNT: int = 0
 
+# New-attempt heartbeat across checkpoint segments; resumed attempts do not count.
+_BATCH_ATTEMPTS_RECORDED: int = 0
+
 # Baseline cache for client-side outlier checks (populated lazily per session)
 _BASELINE_ROWS_CACHE: Optional[List[Dict[str, Any]]] = None
 _BASELINE_ROWS_CACHE_TS: float = 0.0

@@ -273,3 +273,23 @@ def test_process_receipt_disk_failure_cancels_owned_encode(tmp_path):
             if process.poll() is None:
                 process.kill()
             process.wait()
+
+
+def test_per_campaign_allowance_isolates_other_retained_campaigns(tmp_path, monkeypatch):
+    monkeypatch.setenv("ENCODINGDB_MIN_FREE_MB", "1")
+    a = CampaignJournal(str(tmp_path), "campaign-" + "a" * 16, {"physicalSourceId": "TEST ONLY"}, 2048)
+    with open(a.root / "bulk.bin", "wb") as bulk:  # Sparse stand-in for retained artifact bytes
+        bulk.truncate(2100 * 1024 * 1024)
+    with pytest.raises(OSError, match="this campaign retained"):
+        a.check_budget()
+    b = CampaignJournal(str(tmp_path), "campaign-" + "b" * 16, {"physicalSourceId": "TEST ONLY"}, 2048)
+    assert b.check_budget() > 0  # Another campaign's retention must not block a fresh plan
+
+
+def test_disk_guard_reports_volume_free_space_floor(tmp_path, monkeypatch):
+    import shutil
+    journal = CampaignJournal(str(tmp_path), "campaign-" + "c" * 16, {"physicalSourceId": "TEST ONLY"}, 2048)
+    monkeypatch.setattr(shutil, "disk_usage",
+                        lambda path: SimpleNamespace(total=1024 ** 4, free=500 * 1024 * 1024, used=0))
+    with pytest.raises(OSError, match="safety floor"):
+        journal.check_budget()

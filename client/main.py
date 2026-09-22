@@ -11,6 +11,7 @@ import tempfile
 import time
 import secrets
 from contextlib import nullcontext
+from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple, Callable
 
 import psutil
@@ -64,7 +65,7 @@ from .artifacts import (
     build_recipe_bootstrap,
 )
 from .network import fetch_baseline_rows, check_compatibility
-from .campaign import (CampaignJournal, atomic_json, physical_source_id, journal_path,
+from .campaign import (CampaignJournal, active_collection, atomic_json, directory_bytes, physical_source_id, journal_path,
     PreparationScope, preparation_progress, check_preparation_cancelled,
     MeasurementBudget, MeasurementBudgetExceeded, check_measurement_budget, measurement_timeout, run_measurement_process)
 from .identity import selected_device
@@ -77,6 +78,7 @@ from .protocol import (
     RecipeSpec,
     StructuralExpectation,
     execute_protocol_campaign,
+    campaign_result_from_records,
     generate_campaign_id,
 )
 from .spool import (
@@ -295,7 +297,12 @@ def _preparation_operation(function):
                     return
                 label = details.get("clipId") or os.path.basename(str(details.get("path") or ""))
                 done, total = details.get("completedBytes"), details.get("totalBytes")
-                amount = f" ({done}/{total} bytes)" if done is not None and total else ""
+                if done is not None and total:
+                    amount = f" ({done}/{total} bytes)"
+                elif details.get("completed") is not None and details.get("total"):
+                    amount = f" ({details['completed']}/{details['total']})"
+                else:
+                    amount = ""
                 print_info(f"Preparing: {stage} {label}{amount}")
 
         try:
@@ -933,6 +940,20 @@ def _probe_artifact_contract(path: str) -> ArtifactProbe:
     )
 
 
+# Frozen suite sources are re-probed only when the file identity changes; the
+# structural expectations for every recipe on one clip are byte-determined.
+_SOURCE_CONTRACT_CACHE: Dict[str, ArtifactProbe] = {}
+
+
+def _source_contract_cache_key(path: str) -> str:
+    resolved = os.path.realpath(path)
+    try:
+        stat = os.stat(resolved)
+        return f"{resolved}:{stat.st_size}:{stat.st_mtime_ns}"
+    except OSError:
+        return resolved
+
+
 def _build_protocol_config() -> ProtocolConfig:
     threshold = _safe_float(os.environ.get("ENCODINGDB_PROTOCOL_STABILITY_THRESHOLD"))
     adaptive_repeats = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_MAX_ADAPTIVE_REPEATS"))
@@ -950,13 +971,33 @@ def _build_protocol_recipe_specs(
     default_input_hash: str,
 ) -> List[RecipeSpec]:
     specs: List[RecipeSpec] = []
-    for task in tasks:
+    resolved_tasks = [
+        (task, *_resolve_input_for_task(default_input_path, default_input_hash, task))
+        for task in tasks
+    ]
+    contract_total = len({_source_contract_cache_key(item[1]) for item in resolved_tasks}) or 1
+    contracts_done = 0
+    for task, effective_input, input_hash, prepared_clip in resolved_tasks:
+        check_preparation_cancelled()
         encoder = str(task.get("encoder") or "").strip()
         preset = str(task.get("preset") or "").strip()
         crf = task.get("crf")
         rate_control = task.get("rateControl")
-        effective_input, input_hash, prepared_clip = _resolve_input_for_task(default_input_path, default_input_hash, task)
-        source_probe = _probe_artifact_contract(effective_input)
+        # One full-decode contract probe per distinct source file; every recipe
+        # on a frozen clip shares the same byte-determined expectations.
+        contract_key = _source_contract_cache_key(effective_input)
+        source_probe = _SOURCE_CONTRACT_CACHE.get(contract_key)
+        if source_probe is None:
+            preparation_progress(
+                "source-contract",
+                clipId=(prepared_clip.clip_id if isinstance(prepared_clip, PreparedSuiteClip)
+                        else os.path.basename(effective_input)),
+                completed=contracts_done + 1,
+                total=contract_total,
+            )
+            source_probe = _probe_artifact_contract(effective_input)
+            _SOURCE_CONTRACT_CACHE[contract_key] = source_probe
+            contracts_done += 1
         source_duration = source_probe.duration_s
         source_fps = source_probe.avg_frame_rate
         source_frame_count = source_probe.frame_count
@@ -1162,6 +1203,35 @@ def _persist_protocol_attempt_evidence(queue_dir: str, campaign_result: Any) -> 
     return final_path
 
 
+def _retire_uploaded_artifact(journal_root, record: Any, artifact_sha256: str, benchmark_run_id: str) -> None:
+    """Record the server-accepted receipt, then release the campaign copy.
+
+    Accepted bytes now live on the server under ``benchmark_run_id``. The
+    journal re-opens behind this receipt only when it matches the attempt's
+    recipe, path and SHA-256, so evidence stays verifiable while the storage
+    budget only holds attempts that still need uploading."""
+    if not str(benchmark_run_id or "").strip() or not artifact_sha256:
+        return  # Without a server run id nothing may be treated as accepted.
+    info = record.metadata.get("info") or {}
+    artifact_path = str(info.get("artifactPath") or "").strip()
+    atomic_json(journal_root / f"submission-{record.schedule.execution_order:06d}.accepted.json",
+                {"schemaVersion": 1,
+                 "executionOrder": record.schedule.execution_order,
+                 "recipeId": record.schedule.recipe_id,
+                 "artifactPath": artifact_path,
+                 "artifactSha256": artifact_sha256,
+                 "benchmarkRunId": str(benchmark_run_id).strip(),
+                 "acceptedAt": time.time()})
+    if artifact_path:
+        candidate = Path(artifact_path).resolve()
+        # Only bytes owned by this campaign journal may ever be released.
+        if Path(journal_root).resolve() in candidate.parents and candidate.is_file():
+            try:
+                candidate.unlink()
+            except OSError:
+                pass
+
+
 def _submit_payload_with_spool(
     *,
     queue_dir: str,
@@ -1248,6 +1318,7 @@ def _matching_saved_sweep_campaign(queue_dir: str, mode: str,
         if saved.get("sweepMode") != mode or saved.get("seed") is None:
             continue
         if saved.get("tasks") == planned_tasks:
+            saved["campaignId"] = campaign_id  # informational; identity match stays task-exact
             return saved
     return None
 
@@ -1266,6 +1337,9 @@ def run_sweep_mode(
     if mode not in sweep_plan.SWEEP_MODES:
         print(f"Unsupported sweep mode: {mode}", file=sys.stderr)
         return 4
+    refused = active_collection_guard(base_args.queue_dir, event_sink, scope="sweep")
+    if refused:
+        return refused
     base_args = _apply_submission_policy(base_args, interactive=interactive)
     preflight_rc = _preparation_preflight(base_args, event_sink=event_sink)
     if preflight_rc:
@@ -1312,7 +1386,55 @@ def run_sweep_mode(
         campaign_seed = saved_manifest["seed"]
         plan_metadata = {key: saved_manifest[key] for key in sweep_plan.MANIFEST_KEYS if key in saved_manifest}
         print_info(f"Continuing the retained {mode} sweep campaign from its saved plan.")
+    storage_mb = int(getattr(base_args, "max_storage_mb", 2048))
+    storage_explicit = bool(getattr(base_args, "max_storage_mb_explicit", False))
+    saved_storage = 0
+    if saved_manifest is not None and not storage_explicit and saved_manifest.get("campaignId"):
+        try:
+            budget = json.loads((journal_path(base_args.queue_dir, saved_manifest["campaignId"])
+                                 / "budget.json").read_text(encoding="utf-8"))
+            saved_storage = int(budget.get("maxStorageMb") or 0)
+        except (OSError, ValueError, json.JSONDecodeError):
+            saved_storage = 0
+        if saved_storage > 0 and saved_storage != storage_mb:
+            storage_mb = saved_storage
+            print_info(f"Restoring this campaign's original {storage_mb} MB storage allowance for resume.")
+    retained = directory_bytes(str(journal_path(base_args.queue_dir, saved_manifest["campaignId"]))) \
+        if saved_manifest and saved_manifest.get("campaignId") else 0
+    if saved_manifest is not None and not storage_explicit and saved_storage == 0 and retained > 0:
+        # Journals created before budgets were persisted carry no budget.json; recover an
+        # allowance that at least fits what the campaign already retains plus headroom,
+        # instead of resuming into an instant budget rejection.
+        storage_mb = max(storage_mb, retained // (1024 * 1024) + 1024, 6144 if mode == "large" else 0)
+        print_info(f"No persisted budget for this campaign; sizing retention to its retained "
+                   f"{retained // (1024 * 1024)} MB plus 1024 MB headroom; --max-storage-mb overrides.")
+    if not storage_explicit and saved_manifest is None and mode == "large" and storage_mb < 6144:
+        # One full measured round of the 357-group large plan retains ~2.5-3 GiB
+        # before the first checkpoint upload retires bytes (observed 2026-09-22);
+        # the 2048 MB default would stall mid-round. --max-storage-mb overrides.
+        storage_mb = 6144
+        print_info("Large sweep retention default is 6144 MB (one full measured round needs ~2.5-3 GiB "
+                   "before checkpoint uploads retire bytes); override with --max-storage-mb.")
+    from shutil import disk_usage as _disk_usage
+    floor_mb = max(0, int(os.environ.get("ENCODINGDB_MIN_FREE_MB", "1024")))
+    try:
+        usable = _disk_usage(str(base_args.queue_dir)).free - floor_mb * 1024 * 1024 + retained
+    except OSError:
+        usable = None  # Queue volume not readable yet; journal open enforces budgets at creation.
     protocol_config = _build_protocol_config()
+    # The allowance is a ceiling, not a reservation. Small sweeps need much
+    # less space than that ceiling; resumed campaigns can upload completed
+    # groups as they advance, so require working room beyond retained bytes.
+    estimate = len(tasks) * (protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats) * 12 * 1024 * 1024
+    required = retained + 64 * 1024 * 1024 if saved_manifest else min(storage_mb * 1024 * 1024, max(128 * 1024 * 1024, estimate))
+    if usable is not None and usable < required:
+        message = (f"This volume cannot hold the sweep's estimated {required // (1024 * 1024)} MB working set: about "
+                   f"{max(0, usable) // (1024 * 1024)} MB is usable beyond the {floor_mb} MB free-space "
+                   f"floor. Free disk space, choose a smaller mode, or pass --max-storage-mb with a "
+                   f"value the volume supports; nothing was started.")
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope="preparation", code=6, message=message)
+        return 6
     per_recipe_min = protocol_config.warmup_runs + protocol_config.minimum_measured_runs
     per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
     encodes_min = len(tasks) * per_recipe_min
@@ -1320,11 +1442,10 @@ def run_sweep_mode(
     if campaign_seed is None:
         env_seed = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_SEED"))
         campaign_seed = env_seed if env_seed is not None else secrets.randbits(63)
-    explicit_duration = bool(getattr(base_args, "explicit_max_duration_minutes", False))
+    explicit_duration = bool(getattr(base_args, "max_duration_minutes_explicit", False))
     segment_minutes = float(getattr(base_args, "max_duration_minutes", 60))
-    attempts_cap = (int(getattr(base_args, "max_attempts")) if bool(getattr(base_args, "explicit_max_attempts", False))
+    attempts_cap = (int(getattr(base_args, "max_attempts")) if bool(getattr(base_args, "max_attempts_explicit", False))
                     else encodes_max)
-    storage_mb = int(getattr(base_args, "max_storage_mb", 2048))
     print_info(
         f"{mode} sweep: {len(plan.steps)} native recipes across {len(plan.encoders)} encoders "
         f"on {len(suite_clips)} frozen clip(s) = {len(tasks)} measured groups; "
@@ -1348,6 +1469,7 @@ def run_sweep_mode(
     config._BATCH_ACTIVE = True
     config._BATCH_START_TS = time.perf_counter()
     config._BATCH_COMPLETED_COUNT = 0
+    config._BATCH_ATTEMPTS_RECORDED = 0
     total_submitted = 0
     try:
         segment = 0
@@ -1382,10 +1504,11 @@ def run_sweep_mode(
                 if rc == 11 and _is_cancelled(cancel_event):
                     rc = 130
                 break
-            if int(getattr(config, "_BATCH_COMPLETED_COUNT", 0)) <= 0:
+            if int(getattr(config, "_BATCH_ATTEMPTS_RECORDED", 0)) <= 0:
                 print("Checkpoint reached without any new measurement; stopping to keep retained progress "
                       "safe. Start the same mode to continue.", file=sys.stderr)
                 break
+            config._BATCH_ATTEMPTS_RECORDED = 0
             if segment >= 10000:
                 print("Safety segment limit reached; campaign remains saved and continues on the next start.",
                       file=sys.stderr)
@@ -1396,7 +1519,15 @@ def run_sweep_mode(
         elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
         if show_end_screen:
             _clear_screen()
-            print_end_screen(total_submitted, elapsed_sec)
+            end_status = ("complete" if rc == 0 else
+                          "paused" if rc in (10, 11) else
+                          "interrupted" if rc == 130 else "failed")
+            print_end_screen(total_submitted, elapsed_sec, status=end_status,
+                             recovery=None if rc == 0 else
+                             ("Retained campaign saved; start this mode again to continue it."
+                              if rc in (10, 11, 130) else
+                              "Nothing was marked complete; fix the error above and start again — "
+                              "the retained campaign continues from its journal."))
             try:
                 if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
                     input("Press Enter to exit...")
@@ -1414,6 +1545,33 @@ def sweep_plan_label(encoder: str) -> str:
         return encoder
 
 
+def active_collection_guard(queue_dir: str,
+                            event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+                            *, scope: str = "batch") -> Optional[int]:
+    """Refusal code when this queue already hosts a live collection, else None.
+
+    A live collector holds the measurement lock for its whole campaign: its
+    checkpoints continue automatically, so a second run must wait for it to
+    finish or stop/cancel it first - never "resume over" a checkpoint."""
+    try:
+        active = active_collection(str(queue_dir))
+    except OSError as exc:
+        message = str(exc)
+        print(message, file=sys.stderr)
+        _emit_event(event_sink, "run_error", scope=scope, code=6, message=message)
+        return 6
+    if active is None:
+        return None
+    who = f" (campaign {active['campaignId']}, PID {active['pid']})" if active.get("campaignId") else ""
+    message = (f"Another collection is actively running in this queue{who}. Its checkpoints continue "
+               f"automatically - let it finish, or stop/cancel that run first; a second collector "
+               f"would corrupt measurement timing.")
+    print(message, file=sys.stderr)
+    _emit_event(event_sink, "run_error", scope=scope, code=6, message=message)
+    return 6
+
+
+
 @_preparation_operation
 def run_benchmark_batch(
     *,
@@ -1425,12 +1583,16 @@ def run_benchmark_batch(
     cancel_event: Optional[Any] = None,
     plan_metadata: Optional[Dict[str, Any]] = None,
 ) -> int:
+    refused = active_collection_guard(args.queue_dir, event_sink, scope="batch")
+    if refused:
+        return refused
     duration_minutes = float(getattr(args, "max_duration_minutes", 60))
     if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
         message = "--max-duration-minutes must be positive and finite"
         print(message, file=sys.stderr)
         _emit_event(event_sink, "run_error", scope="batch", code=4, message=message)
         return 4
+    campaign_paused = False
     preflight_rc = _preparation_preflight(args, base_url=base_url, event_sink=event_sink)
     if preflight_rc:
         return preflight_rc
@@ -1494,12 +1656,25 @@ def run_benchmark_batch(
         manifest.update(plan_metadata)
     try:
         journal = CampaignJournal(args.queue_dir, campaign_id, manifest, int(getattr(args, "max_storage_mb", 2048)))
-        journal.check_budget()
+        remaining_bytes = journal.check_budget()
     except Exception as exc:
-        print(f"Cannot open campaign journal: {exc}", file=sys.stderr)
+        message = f"Cannot open campaign journal: {exc}"
+        print(message, file=sys.stderr)
         _debug_exception_traceback()
+        _emit_event(event_sink, "run_error", scope="batch", code=6, message=message)
         return 6
     print_info(f"Campaign {campaign_id}: at most {total_tasks} encodes; resume with --resume-campaign {campaign_id}")
+    pending_attempts = max(0, total_tasks - len(journal.records))
+    if pending_attempts:
+        observed = sorted(int((record.metadata.get("info") or {}).get("fileSizeBytes") or 0)
+                          for record in journal.records.values())
+        typical = observed[len(observed) // 2] if any(observed) else 12 * 1024 * 1024
+        needed = pending_attempts * typical
+        if needed > remaining_bytes:
+            print_info(f"Planned attempts could need up to ≈{needed // (1024 * 1024)} MB of retention while "
+                       f"this campaign's remaining allowance is {remaining_bytes // (1024 * 1024)} MB. "
+                       f"Completed groups upload and retire automatically at checkpoints; if the volume "
+                       f"allows, --max-storage-mb raises the allowance.")
     total_batches = 1
     run_started_at = time.perf_counter()
     use_token = _should_use_submit_token(args)
@@ -1756,15 +1931,37 @@ def run_benchmark_batch(
                 )
 
             budget = MeasurementBudget(duration_minutes, cancel_event=cancel_event)
-            with budget.activate():
-                campaign_result = execute_protocol_campaign(
-                    recipes=recipe_specs,
+            recorded_before = set(journal.records)
+
+            def _journal_attempt(record: Any) -> None:
+                journal.save(record)
+                if record.schedule.execution_order not in recorded_before:
+                    with config._GLOBAL_STATE_LOCK:
+                        config._BATCH_ATTEMPTS_RECORDED += 1
+                journal.release_warmup_artifact(record)  # Hash-verified, never publishable.
+
+            try:
+                with budget.activate():
+                    campaign_result = execute_protocol_campaign(
+                        recipes=recipe_specs,
+                        config=protocol_config,
+                        encode_runner=_encode_protocol_run,
+                        environment_sampler=_sample_environment,
+                        seed=campaign_seed,
+                        record_sink=_journal_attempt,
+                        resumed_records=journal.records,
+                    )
+            except MeasurementBudgetExceeded:
+                # The 60-minute checkpoint is a resumable pause: every attempt
+                # recorded so far is journalized, so rebuild the scheduler's
+                # view and upload only terminal measurement groups below.
+                campaign_paused = True
+                campaign_result = campaign_result_from_records(
+                    campaign_id=campaign_id,
                     config=protocol_config,
-                    encode_runner=_encode_protocol_run,
-                    environment_sampler=_sample_environment,
                     seed=campaign_seed,
-                    record_sink=journal.save,
-                    resumed_records=journal.records,
+                    recipes=recipe_specs,
+                    records=journal.records,
                 )
             attempt_evidence_path = _persist_protocol_attempt_evidence(args.queue_dir, campaign_result)
             _emit_event(
@@ -1777,8 +1974,11 @@ def run_benchmark_batch(
 
             measurement_groups = _completed_measurement_groups(campaign_result)
             measured_records: List[Tuple[RecipeSpec, Any]] = []
+            unfinished_recipes = getattr(campaign_result, "unfinished_recipes", frozenset())
             for recipe_result in campaign_result.recipe_results:
                 recipe = recipe_by_id[recipe_result.recipe_id]
+                if recipe_result.recipe_id in unfinished_recipes:
+                    continue  # A later segment can still extend a checkpointed group.
                 _emit_event(
                     event_sink,
                     "protocol_recipe_complete",
@@ -1796,6 +1996,8 @@ def run_benchmark_batch(
                 if not getattr(args, "local_metrics", False):
                     record.metadata["metrics"] = {}
                     continue
+                if journal.accepted_receipt(record) is not None:
+                    continue  # Bytes retired after acceptance; nothing left to measure.
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
                 info = dict(record.metadata.get("info") or {})
@@ -1855,6 +2057,8 @@ def run_benchmark_batch(
             for recipe, record in measured_records:
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
+                if journal.accepted_receipt(record) is not None:
+                    continue  # Faithful accepted receipt from an earlier segment.
                 task = _task_from_recipe(recipe)
                 info = dict(record.metadata.get("info") or {})
                 codec_label = str(info.get('encoderUsed') or task['encoder'])
@@ -2125,6 +2329,7 @@ def run_benchmark_batch(
                         )
                         if status == "submitted":
                             submitted_count += 1
+                            _retire_uploaded_artifact(journal.root, record, artifact_sha256, error_text)
                             if error_text:
                                 print_info(f"Authoritative benchmark run recorded as {error_text}.")
                             _emit_event(
@@ -2209,6 +2414,23 @@ def run_benchmark_batch(
                 processed_total += 1
                 progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
                 _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
+            if campaign_paused:
+                status = {"status": "budget_exhausted", "campaignId": campaign_id,
+                          "maxDurationMinutes": duration_minutes,
+                          "elapsedSeconds": max(0.0, budget.clock() - budget.started),
+                          "stoppedAt": time.time(), "phase": "measurement",
+                          "checkpointUploads": submitted_count, "queuedUploads": queued_count}
+                flight = journal.root / "in-flight.json"
+                if flight.exists():
+                    try:
+                        status["lastStartedAttempt"] = json.loads(flight.read_text())
+                    except (OSError, ValueError):
+                        pass
+                atomic_json(journal.root / f"budget-exhausted-{time.time_ns()}.json", status)
+                print_warning(f"Checkpoint reached: {submitted_count} accepted upload(s) this segment; the "
+                              f"retained campaign continues automatically ({campaign_id}).")
+                _emit_event(event_sink, "run_budget_exhausted", scope="batch", **status)
+                return 11
     except MeasurementBudgetExceeded as exc:
         status = {"status": "budget_exhausted", "campaignId": campaign_id,
                   "maxDurationMinutes": exc.budget.minutes,
@@ -2226,6 +2448,16 @@ def run_benchmark_batch(
         print_warning(f"{exc}. Saved attempts remain available; resume with --resume-campaign {campaign_id}.")
         _emit_event(event_sink, "run_budget_exhausted", scope="batch", **status)
         return 11
+    except SpoolCapacityError as exc:
+        if campaign_paused:
+            print_warning(f"Checkpoint upload deferred: {exc}; the retained campaign continues.")
+            _emit_event(event_sink, "run_budget_exhausted", scope="batch",
+                        status="budget_exhausted", campaignId=campaign_id, deferred=str(exc))
+            return 11
+        print(f"Campaign retained for resume: {exc}", file=sys.stderr)
+        _debug_exception_traceback()
+        _emit_event(event_sink, "run_error", scope="batch", code=6, message=str(exc))
+        return 6
     except (OSError, ValueError, TimeoutError) as exc:
         print(f"Campaign retained for resume: {exc}", file=sys.stderr)
         _debug_exception_traceback()
@@ -2372,6 +2604,9 @@ def run_v7_suite_clip_mode(
 
 @_preparation_operation
 def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=False):
+    refused = active_collection_guard(args.queue_dir, event_sink, scope="resume")
+    if refused:
+        return refused
     args = _apply_submission_policy(args, interactive=interactive)
     preflight_rc = _preparation_preflight(args, event_sink=event_sink)
     if preflight_rc:
@@ -2380,16 +2615,55 @@ def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=Fa
         root = journal_path(args.queue_dir, args.resume_campaign)
         saved = json.loads((root / "manifest.json").read_text())
         args.campaign_seed = saved["seed"]
+        try:
+            budget = json.loads((root / "budget.json").read_text(encoding="utf-8"))
+            persisted_mb = int(budget.get("maxStorageMb") or 0)
+        except (OSError, ValueError, json.JSONDecodeError):
+            persisted_mb = 0
+        if not bool(getattr(args, "max_storage_mb_explicit", False)):
+            if persisted_mb > 0:
+                args.max_storage_mb = persisted_mb
+                print_info(f"Restoring this campaign's original {persisted_mb} MB storage allowance for resume.")
+            else:
+                retained_mb = directory_bytes(str(root)) // (1024 * 1024)
+                args.max_storage_mb = max(int(getattr(args, "max_storage_mb", 2048)), retained_mb + 1024,
+                                          6144 if saved.get("sweepMode") == "large" else 0)
+                print_info(f"No saved storage allowance; allowing {args.max_storage_mb} MB for this "
+                           "campaign's retained files and continuation.")
         # Reopening the journal requires the exact saved manifest; sweep campaigns persist
         # their planner metadata, so resume must pass every plan key through unchanged.
         plan_metadata = {key: saved[key] for key in sweep_plan.MANIFEST_KEYS if key in saved} or None
-        tasks = [{"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
-                  "rateControl": task["rateControl"], "suiteClip": _prepare_named_suite_clip(task["clipId"])}
-                 for task in saved["tasks"]]
+        clips = {}
+        tasks = []
+        for task in saved["tasks"]:
+            check_preparation_cancelled()
+            clip_id = task["clipId"]
+            if clip_id not in clips:
+                clips[clip_id] = _prepare_named_suite_clip(clip_id)
+            tasks.append({"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
+                          "rateControl": task["rateControl"], "suiteClip": clips[clip_id]})
         check_preparation_cancelled()
-        return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks,
-                                   event_sink=event_sink, cancel_event=cancel_event,
-                                   plan_metadata=plan_metadata)
+        protocol_config = _build_protocol_config()
+        if not bool(getattr(args, "max_attempts_explicit", False)):
+            args.max_attempts = max(int(getattr(args, "max_attempts", 100)), len(tasks) * (
+                protocol_config.warmup_runs + protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats))
+        hardware = detect_hardware()
+        continuing_sweep = saved.get("sweepMode") in sweep_plan.SWEEP_MODES
+        for _segment in range(10000):
+            config._BATCH_ATTEMPTS_RECORDED = 0
+            rc = run_benchmark_batch(hardware=hardware, base_url=args.base_url, args=args, tasks=tasks,
+                                     event_sink=event_sink, cancel_event=cancel_event,
+                                     plan_metadata=plan_metadata)
+            if _is_cancelled(cancel_event):
+                return 130
+            if rc != 11 or not continuing_sweep or bool(getattr(args, "max_duration_minutes_explicit", False)):
+                return rc
+            if config._BATCH_ATTEMPTS_RECORDED <= 0:
+                print_warning("Checkpoint made no new measurement; retained campaign is paused safely.")
+                return 11
+            print_info("Continuing the saved sweep after its checkpoint.")
+        print_warning("Safety segment limit reached; the campaign remains saved for continuation.")
+        return 11
     except Exception as exc:
         print(f"Cannot resume campaign: {exc}", file=sys.stderr)
         _debug_exception_traceback()
@@ -2976,9 +3250,13 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--max-duration-minutes", type=float, default=60, action=_ExplicitBudgetAction,
                    help="Measurement allowance per invocation in minutes; acquisition and uploads are "
                         "separate (default 60; guided sweeps continue across checkpoints unless set)")
-    p.add_argument("--max-storage-mb", type=int, default=2048, help="Maximum retained queue and campaign storage in MiB")
     p.add_argument("--legacy-diagnostic", action="store_true", help="Noncanonical local-only legacy diagnostic; never publishes")
-    p.set_defaults(explicit_max_attempts=False, explicit_max_duration_minutes=False)
+    p.add_argument("--max-storage-mb", type=int, default=2048, action=_ExplicitBudgetAction,
+                   help="Maximum retained queue and campaign storage in MiB (default 2048; the large "
+                        "sweep defaults to 6144 because one measured round retains ~2.5-3 GiB before "
+                        "checkpoint uploads retire bytes)")
+    p.set_defaults(max_attempts_explicit=False, max_duration_minutes_explicit=False,
+                   max_storage_mb_explicit=False)
     return p
 
 

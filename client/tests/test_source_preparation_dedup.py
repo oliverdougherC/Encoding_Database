@@ -139,3 +139,63 @@ def test_source_contract_preserves_existing_metrics_fallback_without_extra_probe
     assert recipe.expectation.duration_s == 1 / 12
     assert recipe.expectation.avg_frame_rate == 24
     assert recipe.expectation.frame_count == 2
+
+
+def _two_clip_prepared(manifest):
+    return [suite.ensure_suite_clip(manifest.clips[0]), suite.ensure_suite_clip(manifest.clips[1])]
+
+
+def test_recipe_source_contract_probes_each_distinct_clip_once():
+    from test_suite_v1 import small_media_fixture
+    with small_media_fixture() as (_, manifest):
+        clips = _two_clip_prepared(manifest)
+        main._SOURCE_CONTRACT_CACHE.clear()
+        tasks = [{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clips[index % 2]}
+                 for index in range(8)]
+        with mock.patch.object(main, '_probe_artifact_contract',
+                               wraps=main._probe_artifact_contract) as contract:
+            recipes = main._build_protocol_recipe_specs(
+                tasks, default_input_path=clips[0].path, default_input_hash=clips[0].input_hash)
+        assert contract.call_count == 2  # Once per distinct frozen clip, never once per recipe.
+        assert len(recipes) == 8
+        assert all(recipe.expectation.width == 32 for recipe in recipes)
+
+
+def test_recipe_source_contract_reports_advancing_progress():
+    from test_suite_v1 import small_media_fixture
+    with small_media_fixture() as (_, manifest):
+        clips = [suite.ensure_suite_clip(clip) for clip in manifest.clips[:3]]
+        main._SOURCE_CONTRACT_CACHE.clear()
+        events = []
+        tasks = [{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clips[index % 3]}
+                 for index in range(9)]
+        with campaign.PreparationScope(progress=lambda stage, **details: events.append((stage, details))).activate():
+            main._build_protocol_recipe_specs(
+                tasks, default_input_path=clips[0].path, default_input_hash=clips[0].input_hash)
+        contracts = [details for stage, details in events if stage == 'source-contract']
+        assert [details['completed'] for details in contracts] == [1, 2, 3]
+        assert all(details['total'] == 3 for details in contracts)
+        assert {details['clipId'] for details in contracts} == {clip.clip_id for clip in clips}
+
+
+def test_recipe_source_contract_cancellation_stops_before_next_probe():
+    from test_suite_v1 import small_media_fixture
+    with small_media_fixture() as (_, manifest):
+        clips = _two_clip_prepared(manifest)
+        main._SOURCE_CONTRACT_CACHE.clear()
+        stop = threading.Event()
+        real_probe = main._probe_artifact_contract
+        probed = []
+        def probe_once(path):
+            probed.append(path)
+            result = real_probe(path)
+            stop.set()  # Cancel lands after the first probe; the next task's fence must fire.
+            return result
+        with mock.patch.object(main, '_probe_artifact_contract', side_effect=probe_once):
+            tasks = [{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clips[index % 2]}
+                     for index in range(8)]
+            with campaign.PreparationScope(stop).activate():
+                with pytest.raises(KeyboardInterrupt):
+                    main._build_protocol_recipe_specs(
+                        tasks, default_input_path=clips[0].path, default_input_hash=clips[0].input_hash)
+        assert len(probed) == 1  # The cancel fence halts the plan before the next full decode.
