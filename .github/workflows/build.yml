@@ -446,9 +446,12 @@ jobs:
           if-no-files-found: warn
       - name: Exercise packaged Windows seven-clip software campaign
         if: ${{ always() && !inputs.runtime_lock_evidence && hashFiles('encodingdb-client-windows-console.exe') != '' }}
-        timeout-minutes: 31
+        # Cold console state re-verifies the whole frozen pack (~10 min of decode on CI VM)
+        # before the first encode; the acquisition window must cover that, and the campaign
+        # measurement stays inside the step budget (11 + 15 + 1 min observed margins).
+        timeout-minutes: 45
         shell: powershell
-        run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 20 -AcquisitionSeconds 600
+        run: ./scripts/test-windows-native-gui.ps1 -Mode Console -MeasurementMinutes 15 -AcquisitionSeconds 1500
       - name: Retain Windows console diagnostics before the next step
         if: ${{ always() && !inputs.runtime_lock_evidence }}
         uses: actions/upload-artifact@v4
