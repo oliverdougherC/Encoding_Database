@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.3] - 2026-09-22
+
+Windows-only repair. The packaged GUI now names every pre-encode failure's
+cause in its event log and status line instead of a bare
+`Run failed (exit code 3)`, and a suite-cache folder owned by another account
+or an administrator-privileged run is detected before re-extraction, with an
+exact path and recovery instruction, instead of failing a swap that can never
+land. Client 0.3.2; protocol 7.1, admission minimum, suite bytes and
+scientific settings unchanged. macOS and Linux binaries are byte-identical
+to the accepted rc.2 builds.
+
 ## [1.3.0-rc.2] - 2026-09-21
 
 Restore guided Small, Medium, Large and Full encoder sweeps with automatic
