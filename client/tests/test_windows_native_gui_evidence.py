@@ -20,17 +20,20 @@ class WindowsEvidenceTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(ValueError):
                 verifier.verify_embedded({**payload, field: value}, lock)
 
-    def campaign(self, root, completed=True):
+    def campaign(self, root, completed=True, preset="fast", sweep=False):
         campaign = root / "campaigns/campaign-0123456789abcdef"
         campaign.mkdir(parents=True)
-        manifest = {"protocolVersion": "7.1", "physicalSourceId": "TEST ONLY installation", "runtime": {"clientExecutionArchitecture": "x86_64", "ffmpeg": {"architectures": ["x86_64"]}, "ffprobe": {"architectures": ["x86_64"]}}, "tasks": [{"encoder": "libx264", "preset": "fast", "clipId": "clip-a"}]}
+        recipe = {"encoder": "libx264", "preset": preset, "crf": 24, "clipId": "clip-a"}
+        tasks = [dict(recipe, clipId="clip-b"), dict(recipe, clipId="clip-c")] if sweep else [recipe]
+        manifest = {"protocolVersion": "7.1", "physicalSourceId": "TEST ONLY installation", "runtime": {"clientExecutionArchitecture": "x86_64", "ffmpeg": {"architectures": ["x86_64"]}, "ffprobe": {"architectures": ["x86_64"]}}, "tasks": tasks}
         (campaign / "manifest.json").write_text(json.dumps(manifest))
         if completed:
             (campaign / "campaign-complete.json").write_text(json.dumps({"failed": 0, "skipped": 0}))
+        recipe_id = f"clip-a|libx264|{preset}|24"
         for number, phase in enumerate(("warmup", "measured", "measured")):
             artifact = campaign / f"artifact-{number}.mp4"
             artifact.write_bytes(b"SYNTHETIC verifier fixture, not media")
-            record = {"schedule": {"campaign_id": campaign.name, "recipe_id": "recipe-a", "phase": phase}, "timing": {"elapsed_s": 2.0, "source_frame_count": 240, "encoded_frame_count": 240, "source_fps": 24}, "metadata": {"info": {"artifactPath": str(artifact), "artifactSha256": verifier.digest(artifact)}}}
+            record = {"schedule": {"campaign_id": campaign.name, "recipe_id": recipe_id, "phase": phase}, "timing": {"elapsed_s": 2.0, "source_frame_count": 240, "encoded_frame_count": 240, "source_fps": 24}, "metadata": {"info": {"artifactPath": str(artifact), "artifactSha256": verifier.digest(artifact)}}}
             (campaign / f"attempt-{number:06d}.json").write_text(json.dumps(record))
         return campaign
 
@@ -91,6 +94,43 @@ class WindowsEvidenceTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "changed the delivered"):
                 verifier.verify_preparation_stop(phase, locked)
 
+
+    def test_gui_phase_recipes_are_frozen_and_sweeps_are_rejected(self):
+        # Cancellation phases legitimately run libx264/slower; the completed campaign stays fast.
+        # Preset drift or an accidental Small/Full sweep must fail per phase, not silently shift
+        # the timing regime (CI 35670931191 timing repair).
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name); self.campaign(root, completed=False, preset="slower")
+            verifier.inspect_campaigns(root, None, False, recipe=("libx264", "slower"), single_recipe=True)
+            with self.assertRaisesRegex(ValueError, "selected software recipe"):
+                verifier.inspect_campaigns(root, None, False, recipe=("libx264", "fast"), single_recipe=True)
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name); self.campaign(root, completed=False, preset="slower", sweep=True)
+            with self.assertRaisesRegex(ValueError, "sweep"):
+                verifier.inspect_campaigns(root, None, False, recipe=("libx264", "slower"), single_recipe=True)
+            verifier.inspect_campaigns(root, None, False, recipe=("libx264", "slower"))
+        with tempfile.TemporaryDirectory() as name:
+            root = Path(name); campaign = self.campaign(root, completed=False, preset="slower")
+            for attempt_path in campaign.glob("attempt-*.json"):
+                record = json.loads(attempt_path.read_text())
+                record["schedule"]["recipe_id"] = "clip-a|libx264|fast|24"
+                attempt_path.write_text(json.dumps(record))
+            with self.assertRaisesRegex(ValueError, "recipe identity"):
+                verifier.inspect_campaigns(root, None, False, recipe=("libx264", "slower"), single_recipe=True)
+
+    def test_phase_command_and_declaration_must_match_frozen_recipe(self):
+        phase = {"command": ["client.exe", "--codec", "libx264", "--presets", "slower", "--no-submit"], "expectedRecipe": {"codec": "libx264", "preset": "slower", "crf": 24}}
+        verifier.verify_phase_recipe(phase, "libx264", "slower")
+        self.assertEqual(verifier.GUI_PHASE_RECIPES["stop"], ("libx264", "slower"))
+        self.assertEqual(verifier.GUI_PHASE_RECIPES["close"], ("libx264", "slower"))
+        self.assertEqual(verifier.GUI_PHASE_RECIPES["complete"], ("libx264", "fast"))
+        self.assertEqual(verifier.GUI_PHASE_RECIPES["prepare-stop"], ("libx264", "fast"))
+        with self.assertRaisesRegex(ValueError, "preset differs"):
+            verifier.verify_phase_recipe({**phase, "command": ["client.exe", "--codec", "libx264", "--presets", "fast", "--no-submit"]}, "libx264", "slower")
+        with self.assertRaisesRegex(ValueError, "expected recipe differs"):
+            verifier.verify_phase_recipe({**phase, "expectedRecipe": {"codec": "libx264", "preset": "fast", "crf": 24}}, "libx264", "slower")
+        with self.assertRaisesRegex(ValueError, "expected recipe differs"):
+            verifier.verify_phase_recipe({**phase, "expectedRecipe": {}}, "libx264", "slower")
 
     def test_blocked_gui_and_forced_cleanup_never_become_pass(self):
         with tempfile.TemporaryDirectory() as name:

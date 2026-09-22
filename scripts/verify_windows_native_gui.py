@@ -36,7 +36,7 @@ def verify_embedded(payload, locked):
     require(lock_path.startswith(root + "/"), "Runtime lock was selected outside the package")
 
 
-def inspect_campaigns(queue, expected_clips, completed):
+def inspect_campaigns(queue, expected_clips, completed, recipe=("libx264", "fast"), single_recipe=False):
     manifests = list(Path(queue).glob("campaigns/*/manifest.json"))
     require(manifests, "No retained campaign manifest")
     clips = set()
@@ -51,7 +51,10 @@ def inspect_campaigns(queue, expected_clips, completed):
         for name in ("ffmpeg", "ffprobe"):
             require(manifest["runtime"][name]["architectures"] == ["x86_64"], f"Unexpected {name} architecture")
         tasks = manifest["tasks"]
-        require(all(task["encoder"] == "libx264" and task["preset"] == "fast" for task in tasks), "GUI did not execute the selected software recipe")
+        codec, preset = recipe
+        require(all(task["encoder"] == codec and task["preset"] == preset and task["crf"] == 24 for task in tasks), "GUI did not execute the selected software recipe")
+        if single_recipe:
+            require(len(tasks) == 1, f"GUI phase campaign carries {len(tasks)} tasks; an accidental Small/Full sweep never satisfies the single frozen recipe")
         clips.update(task["clipId"] for task in tasks)
         marker = path.parent / "campaign-complete.json"
         if completed:
@@ -66,6 +69,7 @@ def inspect_campaigns(queue, expected_clips, completed):
             attempt = load(attempt_path)
             schedule = attempt["schedule"]
             require(schedule["campaign_id"] == path.parent.name, "Attempt campaign identity changed")
+            require(str(schedule["recipe_id"]).split("|")[-3:] == [codec, preset, "24"], "An attempt's recipe identity differs from the phase's frozen software recipe")
             if schedule["phase"] == "warmup":
                 warmup_count += 1
                 warmed_recipes.add(schedule["recipe_id"])
@@ -110,6 +114,22 @@ def verify_preparation_stop(phase, locked):
     return {"preparationCancelled": True, "measuredAttempts": 0, "sourcePackUnchanged": True, "visualStatusReview": "PENDING_PARENT_INSPECTION"}
 
 
+GUI_PHASE_RECIPES = {"prepare-stop": ("libx264", "fast"), "complete": ("libx264", "fast"), "stop": ("libx264", "slower"), "close": ("libx264", "slower")}
+
+
+def verify_phase_recipe(phase, codec, preset, crf=24):
+    # Every GUI phase pins its recipe three independent ways: the exact launched command line, the
+    # driver-declared expected recipe, and (in inspect_campaigns) the campaign manifest plus each
+    # attempt's recipe identity. The cancellation scenarios legitimately run a slower fixed recipe
+    # than the completed campaign (CI 35670931191 timing repair), so preset drift or an accidental
+    # sweep in any single phase must fail here rather than silently change the timing regime.
+    command = [str(part) for part in phase.get("command", [])]
+    require("--codec" in command and command[command.index("--codec") + 1] == codec, "Phase launch command codec differs from the frozen phase recipe")
+    require("--presets" in command and command[command.index("--presets") + 1] == preset, f"Phase launch command preset differs from the frozen {codec}/{preset} recipe")
+    declared = phase.get("expectedRecipe") or {}
+    require(declared.get("codec") == codec and declared.get("preset") == preset and declared.get("crf") == crf, "Phase-declared expected recipe differs from the frozen phase recipe")
+
+
 def verify_receipt(receipt_path, suite, locked):
     receipt_path = Path(receipt_path)
     receipt = load(receipt_path)
@@ -123,6 +143,8 @@ def verify_receipt(receipt_path, suite, locked):
         require(phase["status"] == "PASSED" and not phase["survivors"], "Native phase failed or left owned processes")
         require(phase["exitCode"] == 0, "Packaged process returned nonzero")
         preparation = phase["name"] == "prepare-stop"
+        if gui:
+            verify_phase_recipe(phase, *GUI_PHASE_RECIPES[phase["name"]])
         if not preparation:
             require(phase["encoderObserved"] and phase["helpers"], "No actual packaged encoder process observed")
         require("--no-submit" in phase["command"] and "--submit" not in phase["command"], "Unexpected publication command")
@@ -141,7 +163,8 @@ def verify_receipt(receipt_path, suite, locked):
             continue
         completed = phase["name"] in ("complete", "seven-clips")
         expected = [clip["id"] for clip in suite["clips"]] if not gui else None
-        summaries.append(inspect_campaigns(phase["queue"], expected, completed))
+        recipe = GUI_PHASE_RECIPES[phase["name"]] if gui else ("libx264", "fast")
+        summaries.append(inspect_campaigns(phase["queue"], expected, completed, recipe=recipe, single_recipe=gui))
     receipt["journalVerification"] = summaries
     receipt["status"] = "PASSED_AUTOMATED_GUI_CHECKS_VISUAL_REVIEW_PENDING" if gui else "PASSED_VIRTUALIZED_WINDOWS_SOFTWARE_ONLY"
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
