@@ -137,16 +137,15 @@ afterEach(() => {
 });
 
 describe("Home page", () => {
-  it("renders V7 corpus counts and withheld scoring copy from the API payload", async () => {
+  it("renders corpus counts and withheld scoring copy from the API payload", async () => {
     render(await Home({ searchParams: Promise.resolve({}) }));
 
-    expect(screen.getByText("V7 public corpus")).toBeInTheDocument();
-    expect(screen.getByText("Brevity is the soul of wit.")).toBeInTheDocument();
-    expect(document.body).toHaveTextContent("7 V7 aggregates");
-    expect(document.body).toHaveTextContent("1 environments on this page");
+    expect(screen.getByText("Community benchmark corpus")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Compare encoding performance." })).toBeInTheDocument();
+    expect(screen.getByText("table-count:7")).toBeInTheDocument();
     expect(screen.getByText(/hevc_videotoolbox/)).toBeInTheDocument();
     expect(screen.getAllByText(/PL unavailable/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/Legacy .*query.* aggregates remain separate; this surface is V7-only\./)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Download & run a benchmark" })).toHaveAttribute("href", "/run");
   });
 });
 
@@ -155,8 +154,7 @@ describe("corpus disposition totals", () => {
     const baseline = await fetchWorkbenchPage({ page: 1, cpu: "", gpu: "", search: "", preset: "", sort: "", dir: "desc", encoderType: "" });
     vi.mocked(fetchWorkbenchPage).mockResolvedValueOnce({ totalCount: 100, rows: [{ ...baseline.rows[0], sampleCounts: { ...baseline.rows[0].sampleCounts, accepted, suspect } }] });
     render(await Home({}));
-    expect(screen.getByText(`${accepted} accepted · ${suspect} suspect runs on this page`)).toBeInTheDocument();
-    expect(screen.queryByText(/accepted V7 workload aggregates/)).not.toBeInTheDocument();
+    expect(document.body).toHaveTextContent(`${accepted} accepted · ${suspect} suspect runs on this page`);
   });
 });
 

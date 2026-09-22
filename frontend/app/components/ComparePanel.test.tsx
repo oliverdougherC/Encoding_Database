@@ -135,6 +135,12 @@ describe("ComparePanel", () => {
     expect(screen.getByText("3")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
   });
+
+  it("labels an unreported GPU without claiming CPU-only for a hardware encoder", () => {
+    render(<ComparePanel rows={[makeRow({ encoderName: "hevc_videotoolbox", cpuModel: "Apple M2", gpuModel: "not-applicable" })]} onClose={() => undefined} onClear={() => undefined} />);
+    expect(metricRow("GPU").getByText("GPU not reported")).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent("CPU-only");
+  });
 });
 
 const metricRow = (label: string) => within(screen.getByText(label).closest("tr")!);

@@ -18,7 +18,8 @@ class EncodingRegressionTests(unittest.TestCase):
     def test_corrected_metrics_use_distinguishable_client_version(self) -> None:
         from client import main as client_main
 
-        self.assertEqual(client_main.CLIENT_VERSION, "client/0.3.0")
+        self.assertEqual(client_main.CLIENT_VERSION, "client/0.3.1")
+        self.assertEqual(client_main.PROTOCOL_MINIMUM_CLIENT_VERSION, "client/0.3.0")
 
     def test_vmaf_passes_distorted_input_before_reference(self) -> None:
         completed = mock.Mock(returncode=0, stdout=ffmpeg.json.dumps({'frames': [{'metrics': {'vmaf': 88.5}}] * 240}))
@@ -46,16 +47,6 @@ class EncodingRegressionTests(unittest.TestCase):
         labels = ["ultrafast", "veryfast", "fast", "medium", "slow", "veryslow"]
         mapped = [map_preset_for_encoder("hevc_nvenc", label)[1] for label in labels]
         self.assertEqual(mapped, ["p1", "p2", "p3", "p4", "p5", "p6"])
-
-    def test_nvenc_batch_selection_keeps_the_fast_end(self) -> None:
-        from client.main import build_batch_tasks_for_mode
-
-        cfg = {"smallBenchmark": {"crfValues": [24]}, "mediumBenchmark": {"crfValues": [24]}}
-        small = build_batch_tasks_for_mode(mode="small", presets_cfg=cfg, encoders=["h264_nvenc"])
-        medium = build_batch_tasks_for_mode(mode="medium", presets_cfg=cfg, encoders=["h264_nvenc"])
-
-        self.assertEqual([task["preset"] for task in small], ["p2", "p3", "p4"])
-        self.assertEqual([task["preset"] for task in medium], ["p1", "p2", "p3", "p4", "p5", "p6"])
 
     def test_hardware_failure_does_not_fallback_to_software(self) -> None:
         commands = []

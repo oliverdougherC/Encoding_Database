@@ -21,6 +21,8 @@ SUITE_RESOURCE_DIR="$BUILD_ROOT/suite_resources/test_suite_v1"
 SUITE_PACK_PATH="${ENCODINGDB_SUITE_PACK_PATH:-$ROOT_DIR/encodingdb-test-suite-v1.tar.gz}"
 OUTPUT_PATH="${ENCODINGDB_OUTPUT_PATH:-$ROOT_DIR/$APP_NAME}"
 BUILD_REQUIREMENTS="$CLIENT_DIR/requirements-build.txt"
+PACKAGE_HELPER="$ROOT_DIR/scripts/macos_client_package.py"
+DMG_OUTPUT="${ENCODINGDB_MACOS_DMG_PATH:-$ROOT_DIR/EncodingDB-macOS-arm64.dmg}"
 
 log() {
   echo "[macOS] $*"
@@ -67,6 +69,7 @@ rm -f "$OUTPUT_PATH"
 rm -f "$SUITE_PACK_PATH"
 rm -f "$ROOT_DIR/dist/$APP_NAME"
 rm -rf "$ROOT_DIR/build/$APP_NAME"
+rm -f "$ROOT_DIR"/EncodingDB-macOS-*.dmg "$ROOT_DIR"/EncodingDB-macOS-*.dmg.SHA256SUMS "$ROOT_DIR"/EncodingDB-macOS-*.dmg.package-info.json
 mkdir -p "$PYI_DIST_DIR" "$PYI_WORK_DIR" "$PYI_SPEC_DIR"
 python3 -m venv "$BUILD_ROOT/venv"
 "$BUILD_ROOT/venv/bin/python" -m pip install --disable-pip-version-check -r "$BUILD_REQUIREMENTS" >/dev/null
@@ -125,6 +128,22 @@ chmod +x "$OUTPUT_PATH" || true
 "$BUILD_PYTHON" "$ROOT_DIR/scripts/pyinstaller_locked_runtime.py" audit \
   --path "$OUTPUT_PATH" --lock "$RUNTIME_LOCK_PATH" --platform mac > "$OUTPUT_PATH.embedded-runtime.json" \
   || die "Embedded runtime differs from reviewed bytes or lacks executable helpers"
+
+log "Assembling EncodingDB.app and DMG (double-clickable guided client)..."
+PACKAGE_ARGS=("$PACKAGE_HELPER" "$OUTPUT_PATH" "$DMG_OUTPUT" --work-dir "$BUILD_ROOT/package")
+if [[ -d "$BUNDLE_DIR/lib" ]]; then
+  PACKAGE_ARGS+=(--runtime-lib-dir "$BUNDLE_DIR/lib")
+fi
+if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
+  PACKAGE_ARGS+=(--project-version "${ENCODINGDB_PROJECT_VERSION:-0.0.0-build-only}" --provisional)
+fi
+if [[ -n "${ENCODINGDB_MACOS_CODESIGN:-}" ]]; then
+  PACKAGE_ARGS+=(--sign "$ENCODINGDB_MACOS_CODESIGN")
+fi
+if [[ -n "${ENCODINGDB_MACOS_ICON:-}" ]]; then
+  PACKAGE_ARGS+=(--icon-source "$ENCODINGDB_MACOS_ICON")
+fi
+"$BUILD_PYTHON" "${PACKAGE_ARGS[@]}" || die "macOS app/DMG packaging failed"
 if [[ "${ENCODINGDB_BUILD_ONLY:-0}" == "1" ]]; then
   log "Build-only validation complete; release sidecars require an assigned project version."
 else
@@ -138,5 +157,6 @@ else
     --output-dir "$ROOT_DIR"
 fi
 log "Build complete: $OUTPUT_PATH"
+log "Primary macOS artifact: $DMG_OUTPUT (or the arch-corrected name printed above)"
 log "Suite pack: $SUITE_PACK_PATH"
 log "Hidden build artifacts: $BUILD_ROOT"

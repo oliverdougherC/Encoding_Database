@@ -50,22 +50,45 @@ class MainRoutingTests(unittest.TestCase):
     def test_runtime_environment_sampler_dependency_is_imported(self) -> None:
         self.assertEqual(client_main.HardwareMonitor.__module__, "client.hardware_monitor")
 
-    def test_batch_requires_explicit_videotoolbox_bitrate_recipe(self) -> None:
-        presets = {"smallBenchmark": {"crfValues": [24]}}
-        with mock.patch.object(client_main, "enumerate_supported_presets_for_encoder", return_value=["default"]), \
-                mock.patch.object(client_main, "sort_presets_by_speed_desc", return_value=["default"]):
-            omitted = client_main.build_batch_tasks_for_mode(
-                mode="small", presets_cfg=presets, encoders=["h264_videotoolbox"]
+    def test_sweep_gives_videotoolbox_explicit_native_bitrates(self) -> None:
+        plan = client_main.sweep_plan.plan_sweep(
+            "medium", ["libx264", "h264_videotoolbox"], presets_cfg={"sweepPlans": {
+                "medium": {"crfValues": [22, 26], "bitrateKbpsValues": [3000, 10000]},
+            }}
+        )
+        vt_steps = [step for step in plan.steps if step["encoder"] == "h264_videotoolbox"]
+        self.assertEqual([step["crf"] for step in vt_steps], [None, None])
+        self.assertEqual([step["rateControl"] for step in vt_steps], [
+            {"mode": "vbr", "targetBitrateKbps": 3000},
+            {"mode": "vbr", "targetBitrateKbps": 10000},
+        ])
+
+    def test_sweep_run_binds_plan_metadata_and_probe_filtered_encoders(self) -> None:
+        base_args = client_main.argparse.Namespace(
+            base_url="https://example.invalid", api_key="", no_submit=True, submit=False, crf=24,
+            retries=3, queue_dir="unused", menu=False, batch_size=0, use_token=False,
+            max_duration_minutes=60, max_attempts=100000, max_storage_mb=2048,
+        )
+        captured = {}
+
+        def fake_batch(**kwargs):
+            captured.update(kwargs)
+            return 0
+
+        with mock.patch.object(client_main, "_preparation_preflight", return_value=0), \
+                mock.patch.object(client_main, "list_all_available_encoders",
+                                  return_value=["libx264", "h264_nvenc"]), \
+                mock.patch.object(client_main, "is_hardware_encoder_usable", return_value=False), \
+                mock.patch.object(client_main, "_prepare_sweep_clips", return_value=[self._quick_clip()]), \
+                mock.patch.object(client_main, "detect_hardware",
+                                  return_value=HardwareInfo("CPU", "GPU", 16, "TestOS")), \
+                mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch):
+            self.assertEqual(
+                client_main.run_sweep_mode(mode="small", base_args=base_args, interactive=False), 0
             )
-            explicit = client_main.build_batch_tasks_for_mode(
-                mode="small",
-                presets_cfg=presets,
-                encoders=["h264_videotoolbox"],
-                videotoolbox_target_bitrate_kbps=5000,
-            )
-        self.assertEqual(omitted, [])
-        self.assertEqual(explicit[0]["crf"], None)
-        self.assertEqual(explicit[0]["rateControl"], {"mode": "vbr", "targetBitrateKbps": 5000})
+        self.assertEqual(captured["plan_metadata"]["sweepMode"], "small")
+        self.assertEqual([task["encoder"] for task in captured["tasks"]], ["libx264"])
+        self.assertFalse(any(task["encoder"] == "h264_nvenc" for task in captured["tasks"]))
 
     def _quick_clip(self) -> PreparedSuiteClip:
         return PreparedSuiteClip(
@@ -723,6 +746,320 @@ class MainRoutingTests(unittest.TestCase):
         self.assertEqual(rc, 0)
         pick_mock.assert_called_once_with("av1")
         self.assertEqual(run_mock.call_args.kwargs["tasks"][0]["encoder"], "libaom-av1")
+
+
+class GuidedFlowTests(unittest.TestCase):
+    def args(self, **changes):
+        values = dict(
+            base_url="https://example.invalid", api_key="", no_submit=False, submit=False, crf=24,
+            retries=3, queue_dir="unused", menu=False, batch_size=0, use_token=False,
+            target_bitrate_kbps=None, max_duration_minutes=60, max_attempts=100,
+            max_storage_mb=2048, pause_on_exit=False,
+        )
+        values.update(changes)
+        return client_main.argparse.Namespace(**values)
+
+    def _menu_patches(self, extra=None):
+        stack = [
+            mock.patch.object(client_main, "ensure_ffmpeg_and_ffprobe", return_value=(True, "ffmpeg test")),
+            mock.patch.object(client_main, "detect_hardware",
+                              return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")),
+            mock.patch.object(client_main, "list_all_available_encoders", return_value=["libx264"]),
+            mock.patch.object(client_main, "_incomplete_campaigns", return_value=[]),
+        ]
+        stack.extend(extra or [])
+        return stack
+
+    def test_no_argument_launch_opens_guided_tui(self) -> None:
+        with mock.patch.object(client_main, "validate_queue_dir", side_effect=lambda path: path), \
+                mock.patch.object(client_main, "interactive_menu_flow", return_value=0) as menu_mock, \
+                mock.patch.object(client_main, "run_with_args") as run_mock, \
+                mock.patch.object(client_main, "run_windows_gui_flow") as gui_mock:
+            rc = client_main.main(["prog"])
+        self.assertEqual(rc, 0)
+        menu_mock.assert_called_once()
+        run_mock.assert_not_called()
+        gui_mock.assert_not_called()
+
+    def test_guided_choice_small_runs_sweep_after_readiness(self) -> None:
+        with ExitStack() as stack:
+            for patcher in self._menu_patches():
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(client_main, "prompt_choice", return_value=0))
+            stack.enter_context(mock.patch.object(client_main, "confirm_benchmark_readiness", return_value=True))
+            sweep_mock = stack.enter_context(mock.patch.object(client_main, "run_sweep_mode", return_value=0))
+            rc = client_main.interactive_menu_flow(client_main.build_arg_parser(), self.args())
+        self.assertEqual(rc, 0)
+        self.assertEqual(sweep_mock.call_args.kwargs["mode"], "small")
+
+    def test_guided_aborted_readiness_does_not_run(self) -> None:
+        with ExitStack() as stack:
+            for patcher in self._menu_patches():
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(client_main, "prompt_choice", return_value=1))
+            stack.enter_context(mock.patch.object(client_main, "confirm_benchmark_readiness", return_value=False))
+            sweep_mock = stack.enter_context(mock.patch.object(client_main, "run_sweep_mode"))
+            rc = client_main.interactive_menu_flow(client_main.build_arg_parser(), self.args())
+        self.assertEqual(rc, 0)
+        sweep_mock.assert_not_called()
+
+    def test_guided_resume_offer_continues_saved_campaign(self) -> None:
+        args = self.args()
+        with ExitStack() as stack:
+            for patcher in self._menu_patches([
+                mock.patch.object(client_main, "_incomplete_campaigns",
+                                  return_value=[("campaign-0123456789abcdef", 1_760_000_000.0)]),
+            ]):
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(client_main, "prompt_choice", return_value=0))
+            resume_mock = stack.enter_context(mock.patch.object(client_main, "_resume_campaign", return_value=0))
+            sweep_mock = stack.enter_context(mock.patch.object(client_main, "run_sweep_mode"))
+            self.assertEqual(client_main.interactive_menu_flow(client_main.build_arg_parser(), args), 0)
+        resume_mock.assert_called_once()
+        self.assertEqual(args.resume_campaign, "campaign-0123456789abcdef")
+        sweep_mock.assert_not_called()
+
+    def test_advanced_single_still_runs_manual_recipe(self) -> None:
+        with ExitStack() as stack:
+            for patcher in self._menu_patches():
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(client_main, "prompt_choice", side_effect=[4, 0, 6]))
+            stack.enter_context(mock.patch.object(client_main, "prompt_text", return_value="22"))
+            stack.enter_context(mock.patch.object(client_main, "_apply_submission_policy",
+                                                  side_effect=lambda a, **kw: a))
+            stack.enter_context(mock.patch.object(client_main, "_preparation_preflight", return_value=0))
+            run_mock = stack.enter_context(mock.patch.object(client_main, "run_with_args", return_value=0))
+            rc = client_main.interactive_menu_flow(client_main.build_arg_parser(), self.args())
+        self.assertEqual(rc, 0)
+        effective = run_mock.call_args.args[0]
+        self.assertEqual(effective.codec, "libx264")
+        self.assertEqual(effective.crf, 22)
+        self.assertEqual(effective.presets, "slow")
+
+    def test_advanced_single_uses_native_bitrate_for_videotoolbox(self) -> None:
+        with ExitStack() as stack:
+            for patcher in self._menu_patches([
+                mock.patch.object(client_main, "list_all_available_encoders",
+                                  return_value=["h264_videotoolbox"]),
+            ]):
+                stack.enter_context(patcher)
+            stack.enter_context(mock.patch.object(client_main, "prompt_choice", side_effect=[4, 0, 0]))
+            stack.enter_context(mock.patch.object(client_main, "prompt_text", return_value="5000"))
+            stack.enter_context(mock.patch.object(client_main, "_apply_submission_policy",
+                                                  side_effect=lambda a, **kw: a))
+            stack.enter_context(mock.patch.object(client_main, "_preparation_preflight", return_value=0))
+            stack.enter_context(mock.patch.object(client_main, "is_hardware_encoder_usable", return_value=True))
+            run_mock = stack.enter_context(mock.patch.object(client_main, "run_with_args", return_value=0))
+            rc = client_main.interactive_menu_flow(client_main.build_arg_parser(), self.args())
+        self.assertEqual(rc, 0)
+        effective = run_mock.call_args.args[0]
+        self.assertEqual(effective.codec, "h264_videotoolbox")
+        self.assertIsNone(effective.crf)
+        self.assertEqual(effective.target_bitrate_kbps, 5000)
+
+    def test_sweep_interactive_submits_after_persisted_consent(self) -> None:
+        captured = {}
+
+        def fake_batch(**kwargs):
+            captured.update(kwargs)
+            return 0
+
+        with mock.patch.object(client_main, "_ensure_interactive_publication_consent", return_value=True), \
+                mock.patch.object(client_main, "_preparation_preflight", return_value=0), \
+                mock.patch.object(client_main, "list_all_available_encoders", return_value=["libx264"]), \
+                mock.patch.object(client_main, "_prepare_sweep_clips",
+                                  return_value=[MainRoutingTests("_quick_clip")._quick_clip()]), \
+                mock.patch.object(client_main, "detect_hardware",
+                                  return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")), \
+                mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch):
+            self.assertEqual(
+                client_main.run_sweep_mode(mode="small", base_args=self.args(), interactive=True), 0
+            )
+        self.assertFalse(captured["args"].no_submit)
+        self.assertEqual(captured["plan_metadata"]["sweepMode"], "small")
+
+    def test_resume_replays_saved_sweep_tasks_without_replanning(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            root = client_main.journal_path(queue_dir, "campaign-0123456789abcdef")
+            root.mkdir(parents=True)
+            saved_task = {"encoder": "libx264", "preset": "fast", "crf": 24,
+                          "rateControl": None, "clipId": "athletic-action-1080p24-final"}
+            (root / "manifest.json").write_text(json.dumps({"seed": 7, "tasks": [saved_task]}))
+            args = self.args(queue_dir=queue_dir, resume_campaign="campaign-0123456789abcdef")
+            clip = MainRoutingTests("_quick_clip")._quick_clip()
+            with mock.patch.object(client_main, "_preparation_preflight", return_value=0), \
+                    mock.patch.object(client_main.sweep_plan, "plan_sweep",
+                                      side_effect=AssertionError("resume must not re-plan")), \
+                    mock.patch.object(client_main, "_prepare_named_suite_clip", return_value=clip), \
+                    mock.patch.object(client_main, "detect_hardware",
+                                      return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")), \
+                    mock.patch.object(client_main, "run_benchmark_batch", return_value=0) as batch_mock:
+                self.assertEqual(client_main._resume_campaign(args), 0)
+        task = batch_mock.call_args.kwargs["tasks"][0]
+        self.assertEqual(task["encoder"], "libx264")
+        self.assertIs(task["suiteClip"], clip)
+        self.assertEqual(batch_mock.call_args.kwargs["args"].campaign_seed, 7)
+        self.assertIsNone(batch_mock.call_args.kwargs["plan_metadata"])
+
+    def _saved_sweep_journal(self, queue_dir, tasks, *, mode="small", seed=4242):
+        root = client_main.journal_path(queue_dir, "campaign-0123456789abcdef")
+        root.mkdir(parents=True)
+        manifest = {"seed": seed, "tasks": tasks, "sweepMode": mode, "plannerVersion": 1,
+                    "clipPolicy": "quick", "sweepEncoders": ["libx264"], "sweepSkipped": []}
+        (root / "manifest.json").write_text(json.dumps(manifest))
+        return manifest
+
+    def _sweep_run_patches(self, queue_dir, captured):
+        def fake_batch(**kwargs):
+            captured.update(kwargs)
+            return 0
+
+        return [
+            mock.patch.object(client_main, "_preparation_preflight", return_value=0),
+            mock.patch.object(client_main, "list_all_available_encoders", return_value=["libx264"]),
+            mock.patch.object(client_main, "_prepare_sweep_clips",
+                              return_value=[MainRoutingTests("_quick_clip")._quick_clip()]),
+            mock.patch.object(client_main, "detect_hardware",
+                              return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")),
+            mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch),
+        ]
+
+    def test_sweep_auto_resumes_saved_campaign_with_matching_plan(self) -> None:
+        clip = MainRoutingTests("_quick_clip")._quick_clip()
+        plan = client_main.sweep_plan.plan_sweep("small", ["libx264"], presets_cfg={})
+        saved_tasks = [{"encoder": step["encoder"], "preset": step["preset"], "crf": step["crf"],
+                        "rateControl": step["rateControl"], "clipId": clip.clip_id} for step in plan.steps]
+        with tempfile.TemporaryDirectory() as queue_dir:
+            self._saved_sweep_journal(queue_dir, saved_tasks)
+            captured = {}
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, captured):
+                    stack.enter_context(patcher)
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(captured["args"].campaign_seed, 4242)
+        self.assertEqual(captured["plan_metadata"]["sweepMode"], "small")
+
+    def test_sweep_honors_explicit_duration_and_attempts(self) -> None:
+        calls = []
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            return 11
+
+        with tempfile.TemporaryDirectory() as queue_dir:
+            captured_args = self.args(queue_dir=queue_dir, max_duration_minutes=15.0,
+                                      explicit_max_duration_minutes=True,
+                                      max_attempts=999, explicit_max_attempts=True)
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                rc = client_main.run_sweep_mode(mode="small", base_args=captured_args,
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 11)
+        self.assertEqual(len(calls), 1, "explicit allowance must not auto-continue")
+        self.assertEqual(calls[0]["args"].max_duration_minutes, 15.0)
+        self.assertEqual(calls[0]["args"].max_attempts, 999)
+
+    def test_sweep_auto_continues_across_checkpoints(self) -> None:
+        calls = []
+        client_main.config._BATCH_COMPLETED_COUNT = 0
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            client_main.config._BATCH_COMPLETED_COUNT += 1
+            return 11 if len(calls) == 1 else 0
+
+        try:
+            with tempfile.TemporaryDirectory() as queue_dir:
+                with ExitStack() as stack:
+                    for patcher in self._sweep_run_patches(queue_dir, {}):
+                        stack.enter_context(patcher)
+                    stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                    rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                    show_end_screen=False, interactive=False, presets_cfg={})
+        finally:
+            client_main.config._BATCH_COMPLETED_COUNT = 0
+        self.assertEqual(rc, 0, "checkpointing continues until the plan completes")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0]["args"].campaign_seed, calls[1]["args"].campaign_seed)
+        self.assertEqual(calls[0]["args"].max_attempts, 5, "cap sized to the plan (1 group x max repeats)")
+
+    def test_sweep_checkpoint_without_progress_stops(self) -> None:
+        calls = []
+        client_main.config._BATCH_COMPLETED_COUNT = 0
+
+        def fake_batch(**kwargs):
+            calls.append(kwargs)
+            return 11  # checkpoint reached, but zero submissions
+
+        try:
+            with tempfile.TemporaryDirectory() as queue_dir:
+                with ExitStack() as stack:
+                    for patcher in self._sweep_run_patches(queue_dir, {}):
+                        stack.enter_context(patcher)
+                    stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                    rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                    show_end_screen=False, interactive=False, presets_cfg={})
+        finally:
+            client_main.config._BATCH_COMPLETED_COUNT = 0
+        self.assertEqual(rc, 11)
+        self.assertEqual(len(calls), 1, "no-progress checkpoint must not spin")
+
+    def test_sweep_probe_cancellation_never_reaches_encoding(self) -> None:
+        cancelled = type("AlwaysCancelled", (), {"is_set": lambda self: True})()
+        called = []
+
+        def fake_batch(**kwargs):
+            called.append(kwargs)
+            return 0
+
+        with tempfile.TemporaryDirectory() as queue_dir:
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, {}):
+                    stack.enter_context(patcher)
+                stack.enter_context(mock.patch.object(client_main, "list_all_available_encoders",
+                                                      return_value=["libx264", "h264_videotoolbox"]))
+                stack.enter_context(mock.patch.object(client_main, "is_hardware_encoder_usable",
+                                                      side_effect=AssertionError("must not probe after cancel")))
+                stack.enter_context(mock.patch.object(client_main, "run_benchmark_batch", side_effect=fake_batch))
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                cancel_event=cancelled, show_end_screen=False,
+                                                interactive=False, presets_cfg={})
+        self.assertEqual(rc, 130)
+        self.assertEqual(called, [], "cancelled preparation must not start encoding")
+
+    def test_sweep_starts_fresh_when_saved_plan_differs(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            stale = {"encoder": "libx264", "preset": "slow", "crf": 30,
+                     "rateControl": None, "clipId": "athletic-action-1080p24-final"}
+            self._saved_sweep_journal(queue_dir, [stale])
+            captured = {}
+            with ExitStack() as stack:
+                for patcher in self._sweep_run_patches(queue_dir, captured):
+                    stack.enter_context(patcher)
+                rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
+                                                show_end_screen=False, interactive=False, presets_cfg={})
+        self.assertEqual(rc, 0)
+        self.assertNotEqual(captured["args"].campaign_seed, 4242)
+
+    def test_resume_campaign_passes_saved_sweep_metadata_verbatim(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            saved_task = {"encoder": "libx264", "preset": "fast", "crf": 24,
+                          "rateControl": None, "clipId": "athletic-action-1080p24-final"}
+            manifest = self._saved_sweep_journal(queue_dir, [saved_task], seed=99)
+            args = self.args(queue_dir=queue_dir, resume_campaign="campaign-0123456789abcdef")
+            clip = MainRoutingTests("_quick_clip")._quick_clip()
+            with mock.patch.object(client_main, "_preparation_preflight", return_value=0), \
+                    mock.patch.object(client_main, "_prepare_named_suite_clip", return_value=clip), \
+                    mock.patch.object(client_main, "detect_hardware",
+                                      return_value=client_main.HardwareInfo("CPU", "GPU", 16, "TestOS")), \
+                    mock.patch.object(client_main, "run_benchmark_batch", return_value=0) as batch_mock:
+                self.assertEqual(client_main._resume_campaign(args), 0)
+        passed = batch_mock.call_args.kwargs["plan_metadata"]
+        for key in client_main.sweep_plan.MANIFEST_KEYS:
+            self.assertEqual(passed[key], manifest[key])
 
 
 if __name__ == "__main__":

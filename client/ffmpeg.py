@@ -14,6 +14,7 @@ from typing import Optional, Dict, Any, List, Mapping
 from . import config
 from . import recipe as recipe_model
 from .campaign import check_measurement_budget, measurement_timeout, run_measurement_process
+from .console_policy import hidden_console_kwargs
 from .decode import run_decode_benchmark
 from .encoders import (
     effective_preset_for_encoder, map_preset_for_encoder,
@@ -56,6 +57,7 @@ def get_ffmpeg_banner(*, force_refresh: bool = False) -> Optional[str]:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            **hidden_console_kwargs(),
         )
         banner = (proc.stdout or "").strip() or None
     except Exception:
@@ -315,8 +317,10 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "out.mp4")
         cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset, crf=crf)
+        spawn_options = hidden_console_kwargs()
         start = time.perf_counter()
-        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                              **spawn_options)
         end = time.perf_counter()
         elapsed = max(0.0001, end - start)
         total_frames = _parse_frame_count(proc.stdout) or _parse_frame_count(proc.stderr)
@@ -618,7 +622,8 @@ def compute_vmaf_metrics(input_path: str, encoded_path: str) -> Dict[str, Any]:
                 "-f", "null", "-",
             ]
             try:
-                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                                      **hidden_console_kwargs())
                 if proc.returncode != 0:
                     continue
                 if os.path.isfile(log_path):
@@ -653,7 +658,8 @@ def compute_ssim(input_path: str, encoded_path: str) -> Optional[float]:
         "-f", "null", "-",
     ]
     try:
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                              **hidden_console_kwargs())
         out = proc.stdout
         m = re.search(r'All:\s*([0-9]+(?:\.[0-9]+)?)', out)
         if m:
@@ -676,7 +682,8 @@ def compute_psnr(input_path: str, encoded_path: str) -> Optional[float]:
         "-f", "null", "-",
     ]
     try:
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                              **hidden_console_kwargs())
         out = proc.stdout
         m = re.search(r'average:\s*([0-9]+(?:\.[0-9]+)?|inf)', out)
         if m:
@@ -782,7 +789,8 @@ def _terminate_owned_process(proc: Any) -> None:
     if os.name != "nt":
         os.killpg(proc.pid, signal.SIGTERM)
     else:
-        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=10)
+        subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], capture_output=True, timeout=10,
+                       **hidden_console_kwargs())
     try:
         proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:
@@ -813,11 +821,13 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
     receipt_writer = None
     receipt_errors = []
     hw_metrics = None
+    spawn_options = hidden_console_kwargs()
     try:
         check_measurement_budget()
         start_ns = time.perf_counter_ns()
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                                start_new_session=os.name != "nt")
+                                start_new_session=os.name != "nt",
+                                **spawn_options)
         monitor._ffmpeg_pid = proc.pid
         if checkpoint_path:
             from pathlib import Path
@@ -1589,12 +1599,16 @@ def load_presets_config(path: str) -> Dict[str, Any]:
             return data
     except Exception:
         return {
-            "smallBenchmark": {
-                "crfValues": [28, 24],
-                "approxMinutes": 60
-            },
-            "fullBenchmark": {
-                "crfValues": [24],
-                "approxMinutes": 120
+            "sweepPlans": {
+                "small": {
+                    "crfValues": [24],
+                    "nativeQualityValues": [23],
+                    "bitrateKbpsValues": [6000],
+                },
+                "full": {
+                    "crfValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                    "nativeQualityValues": [12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                    "bitrateKbpsValues": [1000, 2000, 4000, 6000, 9000, 13000, 18000],
+                },
             }
         }

@@ -193,7 +193,15 @@ function Invoke-PyInstallerBuild {
     Write-Log "Running PyInstaller for $Name..."
     Push-Location -LiteralPath $rootDir
     try {
-        & $buildPython @buildArgs *>&1 | Tee-Object -FilePath $logFile -Append
+        # PowerShell 5.1 otherwise treats PyInstaller's informational stderr
+        # as a terminating NativeCommandError. Its exit code remains the gate.
+        $previousErrorActionPreference = $ErrorActionPreference
+        try {
+            $ErrorActionPreference = 'Continue'
+            & $buildPython @buildArgs *>&1 | Tee-Object -FilePath $logFile -Append -ErrorAction Stop
+        } finally {
+            $ErrorActionPreference = $previousErrorActionPreference
+        }
         if ($LASTEXITCODE -ne 0) {
             Fail "PyInstaller failed for $Name. See build log: $logFile"
         }

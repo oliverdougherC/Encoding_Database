@@ -6,6 +6,7 @@ import os
 from typing import Optional, Dict, List, Tuple
 
 from . import config
+from .console_policy import hidden_console_kwargs
 from .hardware import detect_hardware
 
 
@@ -86,7 +87,8 @@ def is_hardware_encoder_name(encoder: str) -> bool:
 
 def exec_ok(cmd: List[str]) -> bool:
     try:
-        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                       **hidden_console_kwargs())
         return True
     except Exception:
         return False
@@ -96,7 +98,8 @@ def ensure_ffmpeg_and_ffprobe() -> Tuple[bool, Optional[str]]:
     if not exec_ok([config.ffmpeg_exe(), "-version"]) or not exec_ok([config.ffprobe_exe(), "-version"]):
         return False, None
     try:
-        out = subprocess.run([config.ffmpeg_exe(), "-version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.run([config.ffmpeg_exe(), "-version"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                             **hidden_console_kwargs())
         version_line = (out.stdout or "").splitlines()[0] if out.stdout else ""
     except Exception:
         version_line = ""
@@ -115,6 +118,7 @@ def _get_encoder_set() -> set:
         out = subprocess.run(
             [config.ffmpeg_exe(), "-hide_banner", "-encoders"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+            **hidden_console_kwargs(),
         )
         names: set = set()
         for line in (out.stdout or "").splitlines():
@@ -169,7 +173,8 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
                 elif enc == "hevc_videotoolbox":
                     cmd += ["-tag:v", "hvc1"]
             cmd += ["-an", out_path]
-            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8)
+            proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=8,
+                                  **hidden_console_kwargs())
             ok = (proc.returncode == 0) and os.path.exists(out_path) and os.path.getsize(out_path) > 0
             with config._GLOBAL_STATE_LOCK:
                 config._ENCODER_USABLE_CACHE[enc] = bool(ok)
@@ -182,7 +187,8 @@ def is_hardware_encoder_usable(encoder: str) -> bool:
 
 def has_libvmaf() -> bool:
     try:
-        out = subprocess.run([config.ffmpeg_exe(), "-hide_banner", "-filters"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        out = subprocess.run([config.ffmpeg_exe(), "-hide_banner", "-filters"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+                             **hidden_console_kwargs())
         return "libvmaf" in (out.stdout or "")
     except Exception:
         return False

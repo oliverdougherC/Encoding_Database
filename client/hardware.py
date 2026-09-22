@@ -17,6 +17,7 @@ except Exception:
     GPUtil = None  # type: ignore
 
 from . import config
+from .console_policy import hidden_console_kwargs
 
 
 def _detect_gpu_vendors_from_name(name: str) -> List[str]:
@@ -92,7 +93,8 @@ def detect_hardware() -> config.HardwareInfo:
                 probe = subprocess.run([
                     "powershell", "-NoProfile", "-Command",
                     "Get-CimInstance Win32_VideoController | Select-Object -ExpandProperty Name | ConvertTo-Json -Compress"
-                ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=5)
+                ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=5,
+                   **hidden_console_kwargs())
                 names_raw = (probe.stdout or "").strip()
                 if names_raw:
                     try:

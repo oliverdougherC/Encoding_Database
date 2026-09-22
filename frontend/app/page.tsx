@@ -2,7 +2,6 @@ import type { Benchmark } from "./lib/types";
 import { fetchWorkbenchPage } from "./lib/api";
 import { buildWorkbenchSearchString, parseWorkbenchSearchParams } from "./lib/queryState";
 import BenchmarksTable from "./components/BenchmarksTable";
-import HeroSearch from "./components/HeroSearch";
 import styles from "./page.module.css";
 
 export const revalidate = 60;
@@ -29,47 +28,29 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
   }
   const accepted = rows.reduce((sum, row) => sum + row.sampleCounts.accepted, 0);
   const suspect = rows.reduce((sum, row) => sum + row.sampleCounts.suspect, 0);
-  const systems = new Set(rows.map((row) => row.environment.fingerprint)).size;
-  const encoders = new Set(rows.map((row) => row.encoderName)).size;
-  const codecs = new Set(rows.map((row) => row.codecFamily || row.codec)).size;
-
   return (
     <div className={`page ${styles.page}`}>
-      <section className={styles.hero}>
-        <div className={styles.heroMain}>
-          <p className={styles.kicker}>V7 public corpus</p>
-          <h1>Brevity is the soul of wit.</h1>
-          <p className={styles.lede}>Browse V7 workload results with verified artifacts, clear hardware context, and canonical recipes. Public PL stays blank until a production reference context is published.</p>
-          <HeroSearch className={styles.heroSearch} />
-          {!error && <div className={styles.datasetLine}>
-            <span><strong>{totalCount.toLocaleString()}</strong> V7 aggregates</span>
-            <span><strong>{systems}</strong> environments on this page</span>
-            <span><strong>{encoders}</strong> encoders on this page</span>
-          </div>}
+      <section className={styles.intro}>
+        <p className={styles.kicker}>Community benchmark corpus</p>
+        <h1>Compare encoding performance.</h1>
+        <p className={styles.lede}>See how encoders and presets behave on specific hardware and settings — then add your own measurements with the guided client.</p>
+        <div className={styles.ctaRow}>
+          <a className="btn btn-primary" href="/run">Download &amp; run a benchmark</a>
+          <a className="btn" href="/methodology">How scoring works</a>
         </div>
-        <aside className={styles.corpus}>
-          <p className={styles.kicker}>Corpus status</p>
-          <div className={styles.big}>{error ? "—" : totalCount.toLocaleString()}</div>
-          <p className={styles.corpusLabel}>{error ? "Corpus counts temporarily unavailable" : "V7 workload aggregates available to inspect"}</p>
-          {!error && <p className={styles.corpusLabel}>{accepted.toLocaleString()} accepted · {suspect.toLocaleString()} suspect runs on this page</p>}
-          <div className={styles.coverage}>
-            <div><strong>{systems}</strong><span>environments shown</span></div>
-            <div><strong>{encoders}</strong><span>encoders shown</span></div>
-            <div><strong>{codecs}</strong><span>codec families</span></div>
-            <div><strong>60s</strong><span>data refresh</span></div>
-          </div>
-          <p className={styles.callout}><strong>Transparent by design.</strong> Legacy `/query` aggregates remain separate; this surface is V7-only.</p>
-        </aside>
+        {error
+          ? <p className={styles.statusLine}>Corpus counts temporarily unavailable</p>
+          : <p className={styles.statusLine}><strong>{accepted.toLocaleString()} accepted · {suspect.toLocaleString()} suspect</strong> runs on this page. Public scores stay blank until a public reference context is published.</p>}
       </section>
       <div className={styles.sectionHead} id="results">
-        <div><h2>Browse corpus</h2><p>Open a row to inspect immutable recipe and environment identity, evidence tier, bitrate, confidence, and version lineage.</p></div>
+        <div><h2>Browse results</h2><p>Open a row to inspect recipe and environment identity, evidence tier, bitrate, confidence, and version lineage.</p></div>
       </div>
       {error
         ? <div className={styles.error}>Unable to load results: {error}</div>
         : <BenchmarksTable initialData={rows} totalCount={totalCount} currentPage={state.page} />}
       <aside className={styles.note}>
-        <strong>About this V7 surface</strong>
-        <span>Each row is a V7 workload aggregate. Suspect measurements remain visible for review. Test-only reference contexts never surface as public PL, and submission-specific notes or personal media are never attributed to a corpus row.</span>
+        <strong>About this corpus</strong>
+        <span>Each row aggregates repeated measurements of one recipe on one machine. Suspect measurements remain visible for review, and submission-specific notes or personal media are never attached to a corpus row.</span>
         <a href={`/methodology?${buildWorkbenchSearchString(state)}`}>Read methodology</a>
       </aside>
     </div>

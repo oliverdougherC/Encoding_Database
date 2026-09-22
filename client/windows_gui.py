@@ -2,10 +2,12 @@ import argparse
 import os
 import queue
 import threading
+import time
 import traceback
 from typing import Any, Dict, Optional
 
 from . import main as client_main
+from . import sweep_plan
 from .encoders import (
     enumerate_supported_presets_for_encoder,
     get_encoder_friendly_label,
@@ -15,14 +17,60 @@ from .encoders import (
     pick_software_encoder_for_family,
 )
 
+# Shared sweep modes plus the advanced manual recipe; both surfaces (TUI and
+# this GUI) drive the same client.sweep_plan planner.
+GUI_MODE_CHOICES: tuple[str, ...] = ("Small", "Medium", "Large", "Full", "Single (advanced)")
+GUI_MODE_BY_LABEL: Dict[str, Optional[str]] = {
+    "Small": "small",
+    "Medium": "medium",
+    "Large": "large",
+    "Full": "full",
+    "Single (advanced)": None,
+}
+# Replay checks its time budget between entries; an in-flight request can take
+# longer. Keep the window visible until both owned workers have actually exited.
+GUI_CLOSE_GRACE_SECONDS = 70.0
+
+
+def plan_summary_text(mode: str, encoders: list[str], presets_cfg: dict[str, Any]) -> str:
+    """One-line honest preview of a sweep plan: finite work counts, no wall-clock claims."""
+    plan = sweep_plan.plan_sweep(mode, encoders, presets_cfg=presets_cfg)
+    if plan.is_empty():
+        return "No supported encoder is available for this sweep."
+    clips = {
+        sweep_plan.CLIP_POLICY_QUICK: "the quick clip",
+        sweep_plan.CLIP_POLICY_CLASSES: "one clip per content class (all 7)",
+        sweep_plan.CLIP_POLICY_SUITE: "all seven frozen clips",
+    }.get(plan.clip_policy, plan.clip_policy)
+    protocol_config = client_main._build_protocol_config()
+    per_recipe_min = protocol_config.warmup_runs + protocol_config.minimum_measured_runs
+    per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
+    groups = plan.recipe_count * client_main._sweep_clip_count(plan)
+    return (
+        f"{mode.capitalize()} sweep plan: {plan.recipe_count} native recipes across "
+        f"{len(plan.encoders)} encoders on {clips} = {groups} groups; "
+        f"{groups * per_recipe_min}-{groups * per_recipe_max} encodes at full "
+        "repetitions; checkpoint segments auto-continue until the plan completes."
+    )
+
 
 def initial_gui_settings(base_args: argparse.Namespace, encoders: list[str]) -> tuple[str, str, int]:
-    """Honor configured native choices; only an omitted encoder uses the GUI default."""
+    """Honor configured native choices; an omitted encoder defaults to a software encoder.
+
+    A hardware encoder name being present in the ffmpeg build does not mean the machine
+    has a usable GPU, so the advanced-single default starts on the always-usable software
+    path; hardware names stay selectable and sweeps probe them at run time.
+    """
     requested = str(getattr(base_args, "codec", "") or "").strip()
-    encoder = requested or (encoders[0] if encoders else "")
-    if requested and requested not in encoders and is_codec_family_selector(requested):
-        family = normalize_codec_family(requested)
-        encoder = pick_software_encoder_for_family(family) if family else ""
+    if requested:
+        encoder = requested
+        if encoder not in encoders and is_codec_family_selector(requested):
+            family = normalize_codec_family(requested)
+            encoder = pick_software_encoder_for_family(family) if family else ""
+    else:
+        encoder = pick_software_encoder_for_family("h264")
+        if encoder not in encoders:
+            encoder = encoders[0] if encoders else ""
     if not encoder or encoder not in encoders:
         raise ValueError(f"Requested encoder '{requested or '(none available)'}' is not available.")
     presets = enumerate_supported_presets_for_encoder(encoder)
@@ -69,6 +117,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         messagebox.showerror("Runtime integrity", "Bundled runtime verification failed. See the diagnostic output.")
         return runtime_rc
     encoders = list_all_available_encoders()
+    presets_cfg = client_main.load_presets_config(client_main.PRESETS_CONFIG_PATH)
     try:
         initial_encoder, initial_preset, initial_quality = initial_gui_settings(base_args, encoders)
     except ValueError as exc:
@@ -86,10 +135,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.base_args = argparse.Namespace(**vars(base_args))
             self.event_queue: queue.Queue = queue.Queue()
             self.worker_thread: Optional[threading.Thread] = None
+            self.upload_thread: Optional[threading.Thread] = None
             self.cancel_event = threading.Event()
             self.running = False
+            self._browse_shown = False
+            self._close_deadline = 0.0
 
-            self.mode_var = tk.StringVar(value="Single")
+            self.mode_var = tk.StringVar(value="Small")
             self.no_submit_var = tk.BooleanVar(value=bool(getattr(base_args, "no_submit", False)))
             self.base_url_var = tk.StringVar(value=str(getattr(base_args, "base_url", "")))
             self.retries_var = tk.IntVar(value=max(1, int(getattr(base_args, "retries", 3))))
@@ -117,9 +169,10 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self._build_ui(ttk, tk, scrolledtext)
             self._refresh_encoders()
             self._update_single_fields_state()
+            self._refresh_controls()
             self._poll_events()
             self.root.protocol("WM_DELETE_WINDOW", self._on_close)
-            self.root.bind("<Alt-r>", self._start_shortcut)
+            self.root.bind("<Alt-b>", self._start_shortcut)
             self.root.bind("<Alt-s>", self._stop_shortcut)
 
         def _build_ui(self, ttk: Any, tk: Any, scrolledtext: Any) -> None:
@@ -135,9 +188,9 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.mode_combo = ttk.Combobox(
                 row1,
                 textvariable=self.mode_var,
-                values=["Single", "Full"],
+                values=list(GUI_MODE_CHOICES),
                 state="readonly",
-                width=14,
+                width=18,
             )
             self.mode_combo.pack(side="left", padx=(8, 16))
             self.mode_combo.bind("<<ComboboxSelected>>", lambda _evt: self._update_single_fields_state())
@@ -177,10 +230,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             buttons = ttk.Frame(config_frame)
             buttons.pack(fill="x", pady=(10, 0))
-            self.start_btn = ttk.Button(buttons, text="Start Run (Alt+R)", underline=6, command=self._start_run)
+            self.start_btn = ttk.Button(buttons, text="Start benchmark (Alt+B)", underline=6, command=self._start_run)
             self.start_btn.pack(side="left")
             self.stop_btn = ttk.Button(buttons, text="Stop (Alt+S)", underline=0, command=self._stop_run, state="disabled")
             self.stop_btn.pack(side="left", padx=(8, 0))
+            self.upload_btn = ttk.Button(buttons, text="Retry Queued Uploads", command=self._retry_uploads)
+            self.upload_btn.pack(side="left", padx=(16, 0))
 
             progress_frame = ttk.LabelFrame(outer, text="Live Progress", padding=10)
             progress_frame.pack(fill="x", pady=(12, 12))
@@ -217,29 +272,51 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.log_text.see("end")
             self.log_text.configure(state="disabled")
 
+        def _upload_active(self) -> bool:
+            return self.upload_thread is not None and self.upload_thread.is_alive()
+
+        def _site_root(self) -> str:
+            base = (self.base_url_var.get().strip() or str(self.base_args.base_url)).rstrip("/")
+            if base.endswith("/api"):
+                base = base[: -len("/api")]
+            return f"{base}/"
+
+        def _refresh_controls(self) -> None:
+            idle = not self.running and not self._upload_active()
+            self.start_btn.configure(state="normal" if idle else "disabled")
+            self.stop_btn.configure(state="normal" if self.running else "disabled")
+            self.upload_btn.configure(state="normal" if idle else "disabled")
+
         def _set_running(self, running: bool) -> None:
             self.running = running
-            start_state = "disabled" if running else "normal"
-            stop_state = "normal" if running else "disabled"
-            self.start_btn.configure(state=start_state)
-            self.stop_btn.configure(state=stop_state)
+            self._refresh_controls()
             readonly = "disabled" if running else "readonly"
             enabled = "disabled" if running else "normal"
             self.mode_combo.configure(state=readonly)
             self.encoder_combo.configure(state=readonly if not running else "disabled")
             self.preset_combo.configure(state=readonly if not running else "disabled")
-            self.retries_spin.configure(state=enabled)
-            self.batch_spin.configure(state=enabled)
-            self.base_url_entry.configure(state=enabled)
+            self.retries_spin.configure(state="normal" if not self.running and not self._upload_active() else "disabled")
+            self.batch_spin.configure(state="normal" if not self.running and not self._upload_active() else "disabled")
+            self.base_url_entry.configure(state="normal" if not self.running and not self._upload_active() else "disabled")
             self.crf_spin.configure(state=enabled)
 
-        def _update_single_fields_state(self) -> None:
-            single = True
+        def _selected_mode_key(self) -> Optional[str]:
+            return GUI_MODE_BY_LABEL.get(self.mode_var.get().strip())
+
+        def _update_single_fields_state(self, preview: bool = True) -> None:
+            single = self._selected_mode_key() is None
             state = "readonly" if single and not self.running else "disabled"
             spin_state = "normal" if single and not self.running else "disabled"
             self.encoder_combo.configure(state=state)
             self.preset_combo.configure(state=state)
             self.crf_spin.configure(state=spin_state)
+            self.bitrate_entry.configure(state="normal" if single and not self.running else "disabled")
+            if not self.running and not single and preview:
+                mode_key = self._selected_mode_key()
+                try:
+                    self.summary_var.set(plan_summary_text(str(mode_key), encoders, presets_cfg))
+                except Exception as exc:
+                    self.summary_var.set(f"Plan preview unavailable: {exc}")
 
         def _refresh_encoders(self) -> None:
             labels = []
@@ -287,10 +364,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             return "break"
 
         def _start_run(self) -> None:
-            if self.running:
+            if self.running or self._upload_active():
                 return
             mode = self.mode_var.get().strip()
-            if not self._selected_encoder() or self._selected_preset() not in self.preset_values:
+            mode_key = GUI_MODE_BY_LABEL.get(mode)
+            if mode_key is None and (
+                not self._selected_encoder() or self._selected_preset() not in self.preset_values
+            ):
                 messagebox.showerror("Unsupported configuration", "Select an available encoder and supported preset before starting.")
                 return
             self.cancel_event.clear()
@@ -315,7 +395,17 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             run_args.batch_size = max(0, int(self.batch_size_var.get() or 0))
             run_args.pause_on_exit = False
             run_args.menu = False
-            self._append_log(f"Measurement allowance: {getattr(run_args, 'max_duration_minutes', 60):g} minutes; acquisition is separate.")
+            self._browse_shown = False
+            if getattr(run_args, "explicit_max_duration_minutes", False):
+                self._append_log(
+                    f"Explicit measurement allowance: {float(run_args.max_duration_minutes):g} minutes; "
+                    "the run stops there with the campaign saved for a later continuation."
+                )
+            else:
+                self._append_log(
+                    f"Checkpoint segments: {getattr(run_args, 'max_duration_minutes', 60):g} minutes each; "
+                    "the run continues automatically until the plan completes. Acquisition and uploads are separate."
+                )
             bitrate = self.bitrate_var.get().strip()
             try:
                 run_args.target_bitrate_kbps = int(bitrate) if bitrate else None
@@ -337,27 +427,71 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     self.no_submit_var.set(True)
                     self._append_log("Publication consent not granted; switching to local dry-run mode.")
 
-            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode), daemon=False)
+            self.worker_thread = threading.Thread(target=self._run_worker, args=(run_args, mode, mode_key), daemon=False)
             self.worker_thread.start()
 
-        def _run_worker(self, run_args: argparse.Namespace, mode: str) -> None:
+        def _run_worker(self, run_args: argparse.Namespace, mode: str, mode_key: Optional[str]) -> None:
             def sink(event: Dict[str, Any]) -> None:
                 self.event_queue.put(("event", event))
 
             rc = 1
             try:
-                effective_args = client_main.build_single_effective_args(
-                    base_args=run_args, encoder=self._selected_encoder(),
-                    preset=self._selected_preset(), crf=int(self.crf_var.get()),
-                )
-                effective_args.campaign = "full" if mode == "Full" else "quick"
-                rc = client_main.run_with_args(effective_args, event_sink=sink,
-                                              cancel_event=self.cancel_event, show_end_screen=False)
+                if mode_key is not None:
+                    rc = client_main.run_sweep_mode(
+                        mode=mode_key,
+                        base_args=run_args,
+                        event_sink=sink,
+                        cancel_event=self.cancel_event,
+                        show_end_screen=False,
+                        interactive=True,
+                        presets_cfg=dict(presets_cfg),
+                    )
+                else:
+                    effective_args = client_main.build_single_effective_args(
+                        base_args=run_args, encoder=self._selected_encoder(),
+                        preset=self._selected_preset(), crf=int(self.crf_var.get()),
+                    )
+                    rc = client_main.run_with_args(effective_args, event_sink=sink,
+                                                  cancel_event=self.cancel_event, show_end_screen=False)
             except Exception as e:
                 self.event_queue.put(("error", f"{e}\n{traceback.format_exc()}"))
                 rc = 1
             finally:
                 self.event_queue.put(("done", rc))
+
+        def _retry_uploads(self) -> None:
+            if self.running or self._upload_active():
+                return
+            base_url = self.base_url_var.get().strip() or str(self.base_args.base_url)
+            api_key = str(getattr(self.base_args, "api_key", "") or "")
+            queue_dir = str(self.base_args.queue_dir)
+            retries = max(1, int(self.retries_var.get() or 1))
+            self._append_log("Retrying queued uploads (never encodes)...")
+            self.summary_var.set("Retrying queued uploads...")
+            self.upload_thread = threading.Thread(
+                target=self._retry_uploads_worker,
+                args=(queue_dir, base_url, api_key, retries),
+                daemon=False,
+            )
+            self.upload_thread.start()
+            self._refresh_controls()
+
+        def _retry_uploads_worker(self, queue_dir: str, base_url: str, api_key: str, retries: int) -> None:
+            try:
+                pending_before = client_main.count_pending_entries(queue_dir)
+                if not pending_before:
+                    self.event_queue.put(("upload_status", "Upload queue is empty; nothing to retry."))
+                    return
+                stats = client_main.replay_spool(queue_dir, base_url=base_url, api_key=api_key,
+                                                 retries=retries, use_token=False)
+                remaining = client_main.count_pending_entries(queue_dir)
+                self.event_queue.put((
+                    "upload_status",
+                    f"Upload retry: {pending_before} pending before, {remaining} still pending, "
+                    f"dead-lettered={stats.dead_lettered}, corrupt={stats.corrupt}.",
+                ))
+            except Exception as e:
+                self.event_queue.put(("upload_status", f"Upload retry failed: {e}"))
 
         def _stop_run(self) -> None:
             if not self.running:
@@ -440,7 +574,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 return
 
             if event_type == "submit_result":
-                self._append_log(f"Submit result: {event.get('status')} ({event.get('preset') or event.get('codec')})")
+                line = f"Submit result: {event.get('status')} ({event.get('preset') or event.get('codec')})"
+                # The ingest response carries only the BenchmarkRun id, which the site does
+                # not resolve; never fabricate a per-run URL. Point at the corpus browse page.
+                if event.get("status") == "submitted" and not self._browse_shown:
+                    self._browse_shown = True
+                    line += f" — browse all results: {self._site_root()}"
+                self._append_log(line)
                 return
 
             if event_type == "counters":
@@ -472,6 +612,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 self._append_log(self.summary_var.get())
                 return
 
+            if event_type == "campaign_checkpoint_continue":
+                self._append_log(
+                    f"Time checkpoint reached; continuing the campaign from retained evidence "
+                    f"(segment {event.get('segment')})."
+                )
+                return
+
             if event_type == "run_interrupted":
                 self.stage_var.set("Interrupted")
                 self.summary_var.set("Run interrupted")
@@ -496,36 +643,58 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     elif kind == "done":
                         self._set_running(False)
                         rc = int(payload)
+                        pending_note = ""
+                        if rc in (0, 10, 11) and not self.no_submit_var.get():
+                            try:
+                                pending = client_main.count_pending_entries(str(self.base_args.queue_dir))
+                            except Exception:
+                                pending = 0
+                            if pending:
+                                pending_note = f" — {pending} upload(s) queued; use Retry Queued Uploads"
                         if rc == 0:
-                            self.summary_var.set("Locally complete" if self.no_submit_var.get() else "Uploaded; analysis pending")
+                            self.summary_var.set(("Locally complete" if self.no_submit_var.get() else "Uploaded; analysis pending") + pending_note)
                         elif rc == 11:
-                            self.summary_var.set("Time budget reached; campaign saved for resume")
+                            self.summary_var.set("Measurement allowance reached; campaign saved — starting this mode again continues it" + pending_note)
                         elif rc == 10:
-                            self.summary_var.set("Saved locally; upload queued")
+                            self.summary_var.set(f"Saved locally; upload queued{pending_note}")
                         elif rc == 130:
                             self.summary_var.set("Run cancelled")
                         else:
                             self.summary_var.set(f"Run failed (exit code {rc})")
-                        self._update_single_fields_state()
+                        self._update_single_fields_state(preview=False)
+                    elif kind == "upload_status":
+                        self._append_log(payload)
+                        if not self.running:
+                            self.summary_var.set(str(payload))
             except queue.Empty:
                 pass
+            if self.upload_thread is not None and not self.upload_thread.is_alive():
+                self.upload_thread = None
+            self._refresh_controls()
             self.root.after(120, self._poll_events)
 
         def _on_close(self) -> None:
-            if self.running:
-                if not messagebox.askyesno("Exit", "A benchmark run is still active. Stop and exit?"):
+            if self.running or self._upload_active():
+                if not messagebox.askyesno("Exit", "EncodingDB still has active work (benchmark run and/or upload replay). Stop and exit?"):
                     return
-                self.cancel_event.set()
-                self.summary_var.set("Stopping and saving campaign before close...")
+                if self.running:
+                    self.cancel_event.set()
+                self.summary_var.set("Stopping owned work before close...")
+                self._close_deadline = time.monotonic() + GUI_CLOSE_GRACE_SECONDS
                 self.root.after(100, self._close_when_stopped)
                 return
             self.root.destroy()
 
         def _close_when_stopped(self):
-            if self.worker_thread and self.worker_thread.is_alive():
+            benchmark = self.worker_thread is not None and self.worker_thread.is_alive()
+            uploader = self._upload_active()
+            if benchmark or uploader:
+                if time.monotonic() >= self._close_deadline:
+                    self.summary_var.set("Waiting for the current operation to finish safely before closing...")
+                    self._close_deadline = time.monotonic() + GUI_CLOSE_GRACE_SECONDS
                 self.root.after(100, self._close_when_stopped)
-            else:
-                self.root.destroy()
+                return
+            self.root.destroy()
 
         def run(self) -> int:
             self.root.mainloop()

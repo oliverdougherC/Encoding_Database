@@ -7,6 +7,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from . import config
+from .console_policy import hidden_console_kwargs
 
 
 def build_ffmpeg_decode_cmd(*, input_path: str) -> List[str]:
@@ -90,6 +91,7 @@ def run_decode_benchmark(
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        **hidden_console_kwargs(),
     )
     elapsed = max(0.0001, time.perf_counter() - start)
     frames_decoded = _parse_progress_frame_count(proc.stdout)

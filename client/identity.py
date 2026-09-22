@@ -10,11 +10,13 @@ import shutil
 from pathlib import Path
 
 from . import config
+from .console_policy import hidden_console_kwargs
 
 
 def _command(argv):
     try:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=10, check=False)
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=10, check=False,
+                                **hidden_console_kwargs())
         return result.stdout.strip() if result.returncode == 0 else ""
     except (OSError, subprocess.TimeoutExpired):
         return ""

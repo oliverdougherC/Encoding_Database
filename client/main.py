@@ -27,6 +27,7 @@ if __name__ == "__main__" and __package__ is None:
 # Module imports (no circular dependencies - each only imports from above)
 from . import config
 from . import recipe as recipe_model
+from . import sweep_plan
 from .config import (
     ENV_BACKEND_BASE_URL, ENV_API_KEY, ENV_PRESETS, ENV_CRF, ENV_CODEC,
     ENV_QUEUE_DIR, PRESETS_CONFIG_PATH,
@@ -40,9 +41,8 @@ from .encoders import (
     ensure_ffmpeg_and_ffprobe, has_encoder, has_libvmaf,
     is_codec_family_selector, normalize_codec_family, pick_software_encoder_for_family,
     discover_hardware_encoders_for_family, list_all_available_encoders,
-    enumerate_supported_presets_for_encoder, sort_presets_by_speed_desc,
+    enumerate_supported_presets_for_encoder,
     get_encoder_friendly_label, is_hardware_encoder_name, is_hardware_encoder_usable,
-    SOFTWARE_ENCODERS_ORDER, HARDWARE_ENCODERS,
 )
 from .ffmpeg import (
     run_ffmpeg_test, encode_to_artifact, compute_vmaf_parallel,
@@ -91,6 +91,7 @@ from .spool import (
 from .stats import should_skip_submission
 from .suite import (
     PreparedSuiteClip,
+    REQUIRED_CONTENT_CLASSES,
     ensure_suite,
     ensure_suite_clip,
     get_clip,
@@ -103,10 +104,12 @@ from .ui import (
     _clear_screen, confirm_benchmark_readiness,
     print_end_screen, print_benchmark_result,
     BenchmarkProgress, BatchRunDashboard,
-    print_info, print_success, print_warning, print_batch_summary,
+    print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.0"
+CLIENT_VERSION = "client/0.3.1"
+# UI/package patches do not change the server's frozen protocol 7.1 contract.
+PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
 
@@ -515,7 +518,7 @@ def _build_authoritative_run_create_request(
         "benchmarkProtocol": {
             "protocolVersion": config.BENCHMARK_PROTOCOL_VERSION,
             "sourceSuiteVersion": prepared_clip.suite_version,
-            "minimumClientVersion": CLIENT_VERSION,
+            "minimumClientVersion": PROTOCOL_MINIMUM_CLIENT_VERSION,
             "canonicalRecipeRules": {
                 "artifactUploadRequired": True,
                 "warmupRuns": protocol_config.warmup_runs,
@@ -580,14 +583,6 @@ def _build_authoritative_run_create_request(
         run_create["measurementGroup"] = measurement_group
     run_create["payloadHash"] = build_payload_hash(run_create)
     return run_create
-
-
-def _filter_canonical_encoders(encoders: List[str]) -> List[str]:
-    filtered: List[str] = []
-    for encoder in encoders:
-        if not is_hardware_encoder_name(encoder) or is_hardware_encoder_usable(encoder):
-            filtered.append(encoder)
-    return filtered
 
 
 def _apply_v7_score_contract(payload: Dict[str, Any]) -> None:
@@ -1202,92 +1197,208 @@ def _has_direct_single_run_intent(raw_args: List[str]) -> bool:
     return False
 
 
-def build_mode_estimates(presets_cfg: Dict[str, Any]) -> Dict[str, Any]:
-    small_minutes = int(presets_cfg.get("smallBenchmark", {}).get("approxMinutes", 5))
-    medium_hours = int(presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("approxHours", 3))
-    full_hours = presets_cfg.get("fullBenchmark", {}).get("approxHours")
-    try:
-        full_hours = int(full_hours) if isinstance(full_hours, int) else float(full_hours)
-    except Exception:
-        full_hours = 3
-    return {
-        "smallMinutes": small_minutes,
-        "mediumHours": medium_hours,
-        "fullHours": full_hours,
-    }
+def _probe_encoder_usable_with_cancel(encoder: str) -> bool:
+    check_preparation_cancelled()
+    return is_hardware_encoder_usable(encoder)
 
 
-def _resolve_crf_values_for_mode(mode: str, presets_cfg: Dict[str, Any], default_crf: int) -> List[int]:
-    m = (mode or "").strip().lower()
-    if m == "small":
-        small_defaults = presets_cfg.get("smallBenchmark", {}).get("crfValues", [])
-        return [int(small_defaults[0])] if small_defaults else [default_crf]
-    if m == "medium":
-        values = [int(v) for v in presets_cfg.get("mediumBenchmark", presets_cfg.get("smallBenchmark", {})).get("crfValues", []) if isinstance(v, int)]
-        return values or [default_crf]
-    if m == "full":
-        values = [int(v) for v in presets_cfg.get("fullBenchmark", {}).get("crfValues", []) if isinstance(v, int)]
-        return values or [default_crf]
-    return [default_crf]
+def _prepare_sweep_clips(clip_policy: str) -> List[PreparedSuiteClip]:
+    """Resolve the frozen suite clips a sweep mode covers, in stable order."""
+    manifest = load_default_suite_manifest()
+    if clip_policy == sweep_plan.CLIP_POLICY_QUICK:
+        return [ensure_suite_clip(get_default_quick_clip(manifest))]
+    if clip_policy == sweep_plan.CLIP_POLICY_CLASSES:
+        prepared: List[PreparedSuiteClip] = []
+        for content_class in REQUIRED_CONTENT_CLASSES:
+            clip = next((c for c in manifest.clips if c.canonical_content_class == content_class), None)
+            if clip is None:
+                raise RuntimeError(f"EncodingDB Test Suite v1 is missing the {content_class} clip")
+            prepared.append(ensure_suite_clip(clip))
+        return prepared
+    return _prepare_full_suite()
 
 
-def build_batch_tasks_for_mode(
+def build_sweep_plan(mode: str, presets_cfg: Optional[Dict[str, Any]] = None) -> sweep_plan.SweepPlan:
+    """Plan the sweep against currently detected encoders without probing devices."""
+    presets_cfg = presets_cfg if presets_cfg is not None else load_presets_config(PRESETS_CONFIG_PATH)
+    return sweep_plan.plan_sweep(mode, list_all_available_encoders(), presets_cfg=presets_cfg)
+
+
+def _matching_saved_sweep_campaign(queue_dir: str, mode: str,
+                                   planned_tasks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Manifest of an incomplete campaign whose frozen plan equals the planned tasks.
+
+    A budget-paused or interrupted sweep must continue from its saved plan, never a
+    re-planned one, and the journal refuses manifest drift; only an exact task match
+    may be resumed under the saved campaign identity.
+    """
+    for campaign_id, _modified in _incomplete_campaigns(queue_dir):
+        try:
+            with open(journal_path(queue_dir, campaign_id) / "manifest.json", encoding="utf-8") as handle:
+                saved = json.load(handle)
+        except Exception:
+            continue
+        if saved.get("sweepMode") != mode or saved.get("seed") is None:
+            continue
+        if saved.get("tasks") == planned_tasks:
+            return saved
+    return None
+
+
+@_preparation_operation
+def run_sweep_mode(
     *,
     mode: str,
-    presets_cfg: Dict[str, Any],
-    encoders: List[str],
-    default_crf: int = 24,
-    videotoolbox_target_bitrate_kbps: Optional[int] = None,
-) -> List[Dict[str, Any]]:
-    mode_key = (mode or "").strip().lower()
-    if mode_key not in ("small", "medium", "full"):
-        raise ValueError(f"Unsupported batch mode: {mode}")
-    crf_values = _resolve_crf_values_for_mode(mode_key, presets_cfg, default_crf)
+    base_args: argparse.Namespace,
+    event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
+    cancel_event: Optional[Any] = None,
+    show_end_screen: bool = True,
+    interactive: bool = True,
+    presets_cfg: Optional[Dict[str, Any]] = None,
+) -> int:
+    if mode not in sweep_plan.SWEEP_MODES:
+        print(f"Unsupported sweep mode: {mode}", file=sys.stderr)
+        return 4
+    base_args = _apply_submission_policy(base_args, interactive=interactive)
+    preflight_rc = _preparation_preflight(base_args)
+    if preflight_rc:
+        return preflight_rc
+    presets_cfg = presets_cfg if presets_cfg is not None else load_presets_config(PRESETS_CONFIG_PATH)
+    candidates = list_all_available_encoders()
+    if not candidates:
+        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+        return 4
+    plan = sweep_plan.plan_sweep(
+        mode,
+        candidates,
+        presets_cfg=presets_cfg,
+        is_usable=_probe_encoder_usable_with_cancel,
+    )
+    if plan.is_empty():
+        print("No usable encoder on this machine supports a sweep.", file=sys.stderr)
+        return 4
+    for name, reason in plan.skipped:
+        print_info(f"Skipped {sweep_plan_label(name)}: {reason}")
+    try:
+        suite_clips = _prepare_sweep_clips(plan.clip_policy)
+    except Exception as exc:
+        print(f"EncodingDB Test Suite v1 is unavailable: {exc}", file=sys.stderr)
+        return 3
     tasks: List[Dict[str, Any]] = []
-    for crf_val in crf_values:
-        for enc in encoders:
-            if enc.strip().lower().endswith("_videotoolbox"):
-                if videotoolbox_target_bitrate_kbps is None or videotoolbox_target_bitrate_kbps <= 0:
-                    continue
-                task_rate_control: Optional[Dict[str, Any]] = {
-                    "mode": "vbr",
-                    "targetBitrateKbps": int(videotoolbox_target_bitrate_kbps),
-                }
-            else:
-                task_rate_control = None
-            presets_for_encoder = enumerate_supported_presets_for_encoder(enc)
-            ordered = sort_presets_by_speed_desc(enc, presets_for_encoder)
-            if mode_key == "small":
-                if not ordered:
-                    continue
-                mid_index = max(0, (len(ordered) - 1) // 2)
-                picks: List[str] = []
-                faster1 = mid_index - 1
-                faster2 = mid_index - 2
-                if faster2 >= 0:
-                    picks.append(ordered[faster2])
-                if faster1 >= 0:
-                    picks.append(ordered[faster1])
-                picks.append(ordered[mid_index])
-                seen: Dict[str, bool] = {}
-                final = [p for p in picks if not seen.setdefault(p, False)]
-                for preset_label in final:
-                    tasks.append({"encoder": enc, "preset": preset_label, "crf": None if task_rate_control else crf_val, "rateControl": task_rate_control})
-                continue
-            if mode_key == "medium":
-                if len(ordered) > 0:
-                    drop_count = int(round(len(ordered) * 0.2))
-                    if drop_count >= len(ordered):
-                        drop_count = len(ordered) - 1
-                    keep = ordered[:-drop_count] if drop_count > 0 else ordered
-                else:
-                    keep = ordered
-                for preset_label in keep:
-                    tasks.append({"encoder": enc, "preset": preset_label, "crf": None if task_rate_control else crf_val, "rateControl": task_rate_control})
-                continue
-            for preset_label in ordered:
-                tasks.append({"encoder": enc, "preset": preset_label, "crf": None if task_rate_control else crf_val, "rateControl": task_rate_control})
-    return tasks
+    for step in plan.steps:
+        for suite_clip in suite_clips:
+            expanded = dict(step)
+            expanded["suiteClip"] = suite_clip
+            tasks.append(expanded)
+    planned_identity = [{"encoder": t["encoder"], "preset": t["preset"], "crf": t.get("crf"),
+                         "rateControl": t.get("rateControl"), "clipId": t["suiteClip"].clip_id} for t in tasks]
+    saved_manifest = _matching_saved_sweep_campaign(base_args.queue_dir, mode, planned_identity)
+    campaign_seed = None
+    plan_metadata = plan.manifest_metadata()
+    if saved_manifest is not None:
+        campaign_seed = saved_manifest["seed"]
+        plan_metadata = {key: saved_manifest[key] for key in sweep_plan.MANIFEST_KEYS if key in saved_manifest}
+        print_info(f"Continuing the retained {mode} sweep campaign from its saved plan.")
+    protocol_config = _build_protocol_config()
+    per_recipe_min = protocol_config.warmup_runs + protocol_config.minimum_measured_runs
+    per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
+    encodes_min = len(tasks) * per_recipe_min
+    encodes_max = len(tasks) * per_recipe_max
+    if campaign_seed is None:
+        env_seed = _safe_int(os.environ.get("ENCODINGDB_PROTOCOL_SEED"))
+        campaign_seed = env_seed if env_seed is not None else secrets.randbits(63)
+    explicit_duration = bool(getattr(base_args, "explicit_max_duration_minutes", False))
+    segment_minutes = float(getattr(base_args, "max_duration_minutes", 60))
+    attempts_cap = (int(getattr(base_args, "max_attempts")) if bool(getattr(base_args, "explicit_max_attempts", False))
+                    else encodes_max)
+    storage_mb = int(getattr(base_args, "max_storage_mb", 2048))
+    print_info(
+        f"{mode} sweep: {len(plan.steps)} native recipes across {len(plan.encoders)} encoders "
+        f"on {len(suite_clips)} frozen clip(s) = {len(tasks)} measured groups; "
+        f"{encodes_min}-{encodes_max} encodes at full repetitions."
+    )
+    print_info(
+        f"Authoritative protocol performs every warmup and at least {protocol_config.minimum_measured_runs} "
+        "stable measured repetitions per group. Repetitions are never trimmed."
+    )
+    if explicit_duration:
+        print_info(
+            f"Explicit measurement allowance honored: {segment_minutes:g} minutes; the run stops at the cap "
+            "with the campaign saved, and starting this mode again continues it."
+        )
+    else:
+        print_info(
+            f"Checkpoint policy: every {segment_minutes:g}-minute segment saves progress and the run continues "
+            "automatically until the plan completes or you cancel; a checkpoint is never a partial completion."
+        )
+    print_info(f"Active limits: storage budget {storage_mb} MB, attempts cap {attempts_cap}.")
+    config._BATCH_ACTIVE = True
+    config._BATCH_START_TS = time.perf_counter()
+    config._BATCH_COMPLETED_COUNT = 0
+    total_submitted = 0
+    try:
+        segment = 0
+        while True:
+            segment += 1
+            rc = run_benchmark_batch(
+                hardware=detect_hardware(),
+                base_url=base_args.base_url,
+                args=argparse.Namespace(
+                    base_url=base_args.base_url,
+                    api_key=base_args.api_key,
+                    no_submit=base_args.no_submit,
+                    submit=getattr(base_args, "submit", False),
+                    crf=None,
+                    retries=base_args.retries,
+                    queue_dir=base_args.queue_dir,
+                    menu=False,
+                    batch_size=getattr(base_args, "batch_size", 0),
+                    use_token=getattr(base_args, "use_token", False),
+                    campaign_seed=campaign_seed,
+                    max_duration_minutes=segment_minutes,
+                    max_attempts=attempts_cap,
+                    max_storage_mb=storage_mb,
+                ),
+                tasks=tasks,
+                event_sink=event_sink,
+                cancel_event=cancel_event,
+                plan_metadata=plan_metadata,
+            )
+            total_submitted += int(getattr(config, "_BATCH_COMPLETED_COUNT", 0))
+            if rc != 11 or explicit_duration or _is_cancelled(cancel_event):
+                if rc == 11 and _is_cancelled(cancel_event):
+                    rc = 130
+                break
+            if int(getattr(config, "_BATCH_COMPLETED_COUNT", 0)) <= 0:
+                print("Checkpoint reached without any new measurement; stopping to keep retained progress "
+                      "safe. Start the same mode to continue.", file=sys.stderr)
+                break
+            if segment >= 10000:
+                print("Safety segment limit reached; campaign remains saved and continues on the next start.",
+                      file=sys.stderr)
+                break
+            config._BATCH_COMPLETED_COUNT = 0
+            print_info(f"Time checkpoint reached; continuing the campaign from retained evidence (segment {segment + 1}).")
+            _emit_event(event_sink, "campaign_checkpoint_continue", segment=segment + 1)
+        elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
+        if show_end_screen:
+            _clear_screen()
+            print_end_screen(total_submitted, elapsed_sec)
+            try:
+                if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
+                    input("Press Enter to exit...")
+            except Exception:
+                pass
+        return rc
+    finally:
+        config._BATCH_ACTIVE = False
+
+
+def sweep_plan_label(encoder: str) -> str:
+    try:
+        return get_encoder_friendly_label(encoder)
+    except Exception:
+        return encoder
 
 
 @_preparation_operation
@@ -1299,6 +1410,7 @@ def run_benchmark_batch(
     tasks: List[Dict[str, Any]],
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
     cancel_event: Optional[Any] = None,
+    plan_metadata: Optional[Dict[str, Any]] = None,
 ) -> int:
     duration_minutes = float(getattr(args, "max_duration_minutes", 60))
     if not math.isfinite(duration_minutes) or not math.isfinite(duration_minutes * 60) or duration_minutes <= 0:
@@ -1357,6 +1469,8 @@ def run_benchmark_batch(
         "tasks": [{"encoder": t["encoder"], "preset": t["preset"], "crf": t.get("crf"),
                    "rateControl": t.get("rateControl"), "clipId": t["suiteClip"].clip_id} for t in tasks],
     }
+    if isinstance(plan_metadata, dict):
+        manifest.update(plan_metadata)
     try:
         journal = CampaignJournal(args.queue_dir, campaign_id, manifest, int(getattr(args, "max_storage_mb", 2048)))
         journal.check_budget()
@@ -2224,8 +2338,8 @@ def run_v7_suite_clip_mode(
 
 
 @_preparation_operation
-def _resume_campaign(args, *, event_sink=None, cancel_event=None):
-    args = _apply_submission_policy(args, interactive=False)
+def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=False):
+    args = _apply_submission_policy(args, interactive=interactive)
     preflight_rc = _preparation_preflight(args)
     if preflight_rc:
         return preflight_rc
@@ -2233,12 +2347,16 @@ def _resume_campaign(args, *, event_sink=None, cancel_event=None):
         root = journal_path(args.queue_dir, args.resume_campaign)
         saved = json.loads((root / "manifest.json").read_text())
         args.campaign_seed = saved["seed"]
+        # Reopening the journal requires the exact saved manifest; sweep campaigns persist
+        # their planner metadata, so resume must pass every plan key through unchanged.
+        plan_metadata = {key: saved[key] for key in sweep_plan.MANIFEST_KEYS if key in saved} or None
         tasks = [{"encoder": task["encoder"], "preset": task["preset"], "crf": task["crf"],
                   "rateControl": task["rateControl"], "suiteClip": _prepare_named_suite_clip(task["clipId"])}
                  for task in saved["tasks"]]
         check_preparation_cancelled()
         return run_benchmark_batch(hardware=detect_hardware(), base_url=args.base_url, args=args, tasks=tasks,
-                                   event_sink=event_sink, cancel_event=cancel_event)
+                                   event_sink=event_sink, cancel_event=cancel_event,
+                                   plan_metadata=plan_metadata)
     except Exception as exc:
         print(f"Cannot resume campaign: {exc}", file=sys.stderr)
         _debug_exception_traceback()
@@ -2572,7 +2690,8 @@ def build_single_effective_args(
     base_args: argparse.Namespace,
     encoder: str,
     preset: str,
-    crf: int,
+    crf: Optional[int],
+    target_bitrate_kbps: Optional[int] = None,
 ) -> argparse.Namespace:
     return argparse.Namespace(
         base_url=base_args.base_url,
@@ -2587,7 +2706,10 @@ def build_single_effective_args(
         menu=False,
         batch_size=getattr(base_args, "batch_size", 0),
         use_token=getattr(base_args, "use_token", False),
-        target_bitrate_kbps=getattr(base_args, "target_bitrate_kbps", None),
+        target_bitrate_kbps=(
+            target_bitrate_kbps if target_bitrate_kbps is not None
+            else getattr(base_args, "target_bitrate_kbps", None)
+        ),
         max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
         max_attempts=getattr(base_args, "max_attempts", 100),
         max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
@@ -2595,81 +2717,112 @@ def build_single_effective_args(
     )
 
 
-@_preparation_operation
-def run_batch_mode(
-    *,
-    mode: str,
-    base_args: argparse.Namespace,
-    event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
-    cancel_event: Optional[Any] = None,
-    show_end_screen: bool = True,
-    interactive: bool = True,
-) -> int:
-    base_args = _apply_submission_policy(base_args, interactive=interactive)
+def _incomplete_campaigns(queue_dir: str) -> List[Tuple[str, float]]:
+    """Retained campaign journals that never reached their completion marker."""
+    try:
+        root = os.path.join(queue_dir, "campaigns")
+        if not os.path.isdir(root):
+            return []
+        found: List[Tuple[str, float]] = []
+        for name in os.listdir(root):
+            entry = os.path.join(root, name)
+            if not os.path.isdir(entry):
+                continue
+            try:
+                journal = journal_path(queue_dir, name)
+            except ValueError:
+                continue
+            if (journal / "campaign-complete.json").exists():
+                continue
+            found.append((name, os.path.getmtime(entry)))
+        found.sort(key=lambda item: item[1], reverse=True)
+        return found[:5]
+    except Exception:
+        return []
+
+
+def _sweep_clip_count(plan: sweep_plan.SweepPlan) -> int:
+    return 1 if plan.clip_policy == sweep_plan.CLIP_POLICY_QUICK else len(REQUIRED_CONTENT_CLASSES)
+
+
+def _guided_mode_label(mode: str, plan: sweep_plan.SweepPlan,
+                       per_recipe_min: int, per_recipe_max: int) -> str:
+    """Finite work counts only; absolute wall-clock claims need measurement evidence."""
+    clips = {
+        sweep_plan.CLIP_POLICY_QUICK: "the quick clip",
+        sweep_plan.CLIP_POLICY_CLASSES: "one clip per content class (all 7)",
+        sweep_plan.CLIP_POLICY_SUITE: "all seven frozen clips",
+    }.get(plan.clip_policy, plan.clip_policy)
+    if plan.is_empty():
+        return f"no supported encoder available for this sweep on this machine ({clips})"
+    clip_count = _sweep_clip_count(plan)
+    groups = plan.recipe_count * clip_count
+    return (
+        f"{plan.recipe_count} native recipes x {clip_count} clip(s) = {groups} groups; "
+        f"{groups * per_recipe_min}-{groups * per_recipe_max} encodes at full repetitions"
+    )
+
+
+def _advanced_single_flow(base_args: argparse.Namespace, encoders: List[str]) -> int:
+    """Manual one-recipe configuration; the advanced path, not the default flow."""
+    base_args = _apply_submission_policy(base_args, interactive=True)
     preflight_rc = _preparation_preflight(base_args)
     if preflight_rc:
         return preflight_rc
-    presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
-    encoders = _filter_canonical_encoders(list_all_available_encoders())
-    if not encoders:
-        print("No available encoders found in this ffmpeg build.", file=sys.stderr)
+    sw_encs = [e for e in encoders if not is_hardware_encoder_name(e)]
+    hw_encs = [e for e in encoders if is_hardware_encoder_name(e) and is_hardware_encoder_usable(e)]
+    idx_map: List[str] = sw_encs + hw_encs
+    if not idx_map:
+        print("No usable encoders found in this ffmpeg build.", file=sys.stderr)
         return 4
-    try:
-        suite_clips = _prepare_full_suite()
-    except Exception as exc:
-        print(f"EncodingDB Test Suite v1 is unavailable: {exc}", file=sys.stderr)
-        return 3
-    base_tasks = build_batch_tasks_for_mode(
-        mode=mode,
-        presets_cfg=presets_cfg,
-        encoders=encoders,
-        default_crf=int(base_args.crf) if isinstance(base_args.crf, int) else 24,
-        videotoolbox_target_bitrate_kbps=getattr(base_args, "target_bitrate_kbps", None),
+    option_labels = (
+        [f"Software | {get_encoder_friendly_label(e)}" for e in sw_encs]
+        + [f"Hardware | {get_encoder_friendly_label(e)}" for e in hw_encs]
     )
-    tasks: List[Dict[str, Any]] = []
-    for task in base_tasks:
-        for suite_clip in suite_clips:
-            expanded = dict(task)
-            expanded["suiteClip"] = suite_clip
-            tasks.append(expanded)
-    config._BATCH_ACTIVE = True
-    config._BATCH_START_TS = time.perf_counter()
-    config._BATCH_COMPLETED_COUNT = 0
-    try:
-        rc = run_benchmark_batch(
-            hardware=detect_hardware(),
-            base_url=base_args.base_url,
-            args=argparse.Namespace(
-                base_url=base_args.base_url,
-                api_key=base_args.api_key,
-                no_submit=base_args.no_submit,
-                submit=getattr(base_args, "submit", False),
-                crf=None,
-                retries=base_args.retries,
-                queue_dir=base_args.queue_dir,
-                menu=False,
-                batch_size=getattr(base_args, "batch_size", 0),
-                use_token=getattr(base_args, "use_token", False),
-                max_duration_minutes=getattr(base_args, "max_duration_minutes", 60),
-                max_attempts=getattr(base_args, "max_attempts", 100),
-                max_storage_mb=getattr(base_args, "max_storage_mb", 2048),
-            ),
-            tasks=tasks,
-            event_sink=event_sink,
-            cancel_event=cancel_event,
+    default_idx = idx_map.index("libx264") if "libx264" in idx_map else 0
+    enc_idx = prompt_choice("Choose encoder", option_labels, default_index=default_idx)
+    chosen_encoder = idx_map[enc_idx]
+
+    encoder_presets = enumerate_supported_presets_for_encoder(chosen_encoder)
+    if not encoder_presets:
+        encoder_presets = ["medium"]
+    mid_index = max(0, (len(encoder_presets) - 1) // 2)
+    preset_idx = prompt_choice("Select a preset", encoder_presets, default_index=mid_index)
+    chosen_preset = encoder_presets[preset_idx]
+
+    target_bitrate_kbps: Optional[int] = None
+    chosen_crf: Optional[int]
+    if sweep_plan.is_bitrate_driven(chosen_encoder):
+        try:
+            default_bitrate = int(getattr(base_args, "target_bitrate_kbps", None) or 6000)
+        except Exception:
+            default_bitrate = 6000
+        bitrate_input = prompt_text(
+            "Target bitrate in kbps (bitrate-driven encoder; quality values do not apply)",
+            str(default_bitrate),
         )
-        elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
-        if show_end_screen:
-            _clear_screen()
-            print_end_screen(config._BATCH_COMPLETED_COUNT, elapsed_sec)
-            try:
-                if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
-                    input("Press Enter to exit...")
-            except Exception:
-                pass
-        return rc
-    finally:
-        config._BATCH_ACTIVE = False
+        try:
+            target_bitrate_kbps = max(1, int(bitrate_input))
+        except Exception:
+            target_bitrate_kbps = default_bitrate
+        chosen_crf = None
+    else:
+        try:
+            default_crf = base_args.crf if isinstance(base_args.crf, int) else 24
+        except Exception:
+            default_crf = 24
+        crf_input = prompt_text(f"Enter {sweep_plan.native_quality_label(chosen_encoder)}", str(default_crf))
+        try:
+            chosen_crf = int(crf_input)
+        except Exception:
+            chosen_crf = default_crf
+    return run_with_args(build_single_effective_args(
+        base_args=base_args,
+        encoder=chosen_encoder,
+        preset=chosen_preset,
+        crf=chosen_crf,
+        target_bitrate_kbps=target_bitrate_kbps,
+    ))
 
 
 @_preparation_operation
@@ -2681,98 +2834,82 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             subprocess.run(["stty", "sane"], check=False)
     except Exception:
         pass
+    ffmpeg_ok, _ffmpeg_version = ensure_ffmpeg_and_ffprobe()
+    if not ffmpeg_ok:
+        print_error("ffmpeg/ffprobe were not found in PATH. Install ffmpeg (https://ffmpeg.org/download.html), then start EncodingDB again.")
+        return 2
+    hardware = detect_hardware()
+    encoders = list_all_available_encoders()
+    if not encoders:
+        print_error("No supported encoders were found in this ffmpeg build. Install a full ffmpeg build with libx264.")
+        return 4
+    software_encoders = [e for e in encoders if not is_hardware_encoder_name(e)]
+    hardware_encoders = [e for e in encoders if is_hardware_encoder_name(e)]
+    print_success("EncodingDB contributor setup looks good.")
+    print_info(
+        f"Machine: {hardware.cpuModel} | {hardware.gpuModel or 'no discrete GPU detected'} "
+        f"| {hardware.ramGB} GB RAM | {hardware.os}"
+    )
+    print_info(f"Software encoders ready: {', '.join(software_encoders) if software_encoders else 'none'}")
+    if hardware_encoders:
+        print_info(f"Hardware encoders detected (real usability is probed before measuring): {', '.join(hardware_encoders)}")
+    else:
+        print_info("Hardware encoders detected: none; software encoders will be swept.")
     presets_cfg = load_presets_config(PRESETS_CONFIG_PATH)
-    estimates = build_mode_estimates(presets_cfg)
-    s_minutes = estimates["smallMinutes"]
-    m_hours = estimates["mediumHours"]
-    f_hours = estimates["fullHours"]
-    print_info("Select an option:")
-    menu = [
-        "Run Single Benchmark [content-specific quick test, not General PL]",
-        f"Run Small Benchmark [~{s_minutes} minutes]",
-        f"Run Medium Benchmark [~{m_hours} hours] (Recommended)",
-        f"Run Full Benchmark [~{f_hours} hours] (Not recommended for most machines, intended for servers)",
-        "Exit",
-    ]
-    choice = prompt_choice("Menu", menu, default_index=0)
-    if choice == 4:
-        return 0
-
-    if choice == 0:
-        base_args = _apply_submission_policy(base_args, interactive=True)
-        preflight_rc = _preparation_preflight(base_args)
-        if preflight_rc:
-            return preflight_rc
-        all_encs = list_all_available_encoders()
-        if not all_encs:
-            print("No available encoders found in this ffmpeg build.", file=sys.stderr)
-            return 4
-
-        sw_set = set([enc for _family, lst in SOFTWARE_ENCODERS_ORDER.items() for enc in lst])
-        hw_set = set([enc for _family, lst in HARDWARE_ENCODERS.items() for enc, _ in lst])
-        sw_encs = [e for e in all_encs if e in sw_set]
-        hw_encs = [e for e in all_encs if e in hw_set and is_hardware_encoder_usable(e)]
-
-        print_info("Select an encoder:")
-        idx_map: List[str] = []
-        option_labels: List[str] = []
-        if sw_encs:
-            for e in sw_encs:
-                idx_map.append(e)
-                option_labels.append(f"Software | {get_encoder_friendly_label(e)}")
-        if hw_encs:
-            for e in hw_encs:
-                idx_map.append(e)
-                option_labels.append(f"Hardware | {get_encoder_friendly_label(e)}")
-
-        default_idx = 0
-        try:
-            if "libx264" in idx_map:
-                default_idx = idx_map.index("libx264")
-        except Exception:
-            default_idx = 0
-        enc_idx = prompt_choice("Choose encoder", option_labels, default_index=default_idx)
-        chosen_encoder = idx_map[enc_idx]
-
-        try:
-            default_crf = base_args.crf if isinstance(base_args.crf, int) else 24
-        except Exception:
-            default_crf = 24
-        crf_input = prompt_text("Enter CRF", str(default_crf))
-        try:
-            chosen_crf = int(crf_input)
-        except Exception:
-            chosen_crf = default_crf
-
-        encoder_presets = enumerate_supported_presets_for_encoder(chosen_encoder)
-        if not encoder_presets:
-            encoder_presets = ["medium"]
-        mid_index = max(0, (len(encoder_presets) - 1) // 2)
-        preset_idx = prompt_choice("Select a preset", encoder_presets, default_index=mid_index)
-        chosen_preset = encoder_presets[preset_idx]
-
-        effective_args = argparse.Namespace(
-            **vars(build_single_effective_args(
-                base_args=base_args,
-                encoder=chosen_encoder,
-                preset=chosen_preset,
-                crf=chosen_crf,
-            ))
+    previews = {mode: sweep_plan.plan_sweep(mode, encoders, presets_cfg=presets_cfg) for mode in sweep_plan.SWEEP_MODES}
+    option_labels: List[str] = []
+    actions: List[Tuple[str, Optional[str]]] = []
+    for campaign_id, mtime in _incomplete_campaigns(base_args.queue_dir):
+        saved_on = time.strftime("%Y-%m-%d", time.localtime(mtime))
+        option_labels.append(f"Continue the saved campaign {campaign_id} (saved {saved_on})")
+        actions.append(("resume", campaign_id))
+    protocol_config = _build_protocol_config()
+    per_recipe_min = protocol_config.warmup_runs + protocol_config.minimum_measured_runs
+    per_recipe_max = per_recipe_min + protocol_config.max_adaptive_repeats
+    mode_notes = {
+        "small": "Recommended",
+        "medium": "preset band plus native quality points",
+        "large": "every supported speed preset",
+        "full": "complete supported grid; server-class",
+    }
+    for mode in sweep_plan.SWEEP_MODES:
+        option_labels.append(
+            f"Run the {mode.capitalize()} sweep [{mode_notes[mode]}: "
+            f"{_guided_mode_label(mode, previews[mode], per_recipe_min, per_recipe_max)}]"
         )
-        return run_with_args(effective_args)
-
-    if choice in (1, 2, 3):
-        ok = confirm_benchmark_readiness()
-        if not ok:
+        actions.append(("sweep", mode))
+    option_labels.append("Advanced: configure one recipe yourself (encoder, preset, native quality or bitrate)")
+    actions.append(("single", None))
+    option_labels.append("Exit")
+    actions.append(("exit", None))
+    default_index = next((index for index, (action, _payload) in enumerate(actions) if action == "sweep"), 0)
+    choice = prompt_choice("What would you like to do?", option_labels, default_index=default_index)
+    action, payload = actions[choice]
+    if action == "exit":
+        return 0
+    if action == "resume":
+        base_args.resume_campaign = payload
+        return _resume_campaign(base_args, interactive=True)
+    if action == "sweep":
+        if not confirm_benchmark_readiness():
             print("Aborted by user. Please close other programs and try again.")
             return 0
         _clear_screen()
+        return run_sweep_mode(mode=str(payload), base_args=base_args)
+    return _advanced_single_flow(base_args, encoders)
 
-    mode_map = {1: "small", 2: "medium", 3: "full"}
-    mode = mode_map.get(choice)
-    if not mode:
-        return 1
-    return run_batch_mode(mode=mode, base_args=base_args)
+
+class _ExplicitBudgetAction(argparse.Action):
+    """Parse a budget value and remember that the operator set it explicitly.
+
+    Guided sweeps treat these budgets differently: the attempt cap sizes to the plan,
+    and the duration allowance becomes a checkpoint segment that auto-continues - unless
+    the operator named a value, which is then honored strictly.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        setattr(namespace, f"{self.dest}_explicit", True)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -2800,10 +2937,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     p.add_argument("--resume-campaign", default="", help="Resume a retained campaign ID, preserving completed attempts")
     p.add_argument("--upload-only", action="store_true", help="Retry due queued uploads without encoding")
     p.add_argument("--local-metrics", action="store_true", help="Run optional local quality diagnostics after all measurements")
-    p.add_argument("--max-attempts", type=int, default=100, help="Maximum planned warmup/measured encodes (default 100)")
-    p.add_argument("--max-duration-minutes", type=float, default=60, help="Measurement allowance per invocation in minutes; acquisition and uploads are separate (default 60)")
+    p.add_argument("--max-attempts", type=int, default=100, action=_ExplicitBudgetAction,
+                   help="Maximum planned warmup/measured encodes (default 100; guided sweeps size the cap "
+                        "to the plan unless set)")
+    p.add_argument("--max-duration-minutes", type=float, default=60, action=_ExplicitBudgetAction,
+                   help="Measurement allowance per invocation in minutes; acquisition and uploads are "
+                        "separate (default 60; guided sweeps continue across checkpoints unless set)")
     p.add_argument("--max-storage-mb", type=int, default=2048, help="Maximum retained queue and campaign storage in MiB")
     p.add_argument("--legacy-diagnostic", action="store_true", help="Noncanonical local-only legacy diagnostic; never publishes")
+    p.set_defaults(explicit_max_attempts=False, explicit_max_duration_minutes=False)
     return p
 
 
@@ -2824,6 +2966,8 @@ def main(argv: List[str]) -> int:
     direct_single_run_intent = _has_direct_single_run_intent(raw_args)
     parser = build_arg_parser()
     args = parser.parse_args(raw_args)
+    # Budget flags carry explicit_max_* markers (see _ExplicitBudgetAction); guided sweeps
+    # size the attempt cap to the plan and chain checkpoint segments unless the operator set them.
 
     # Validate queue directory path early
     try:
