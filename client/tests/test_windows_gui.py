@@ -120,6 +120,10 @@ class WindowsGuiTests(unittest.TestCase):
             app._handle_event({"type": "preparation_progress", "stage": "probe", "path": "test.mkv"})
             self.assertEqual(app.stage_var.get(), "Preparing: probe")
             self.assertIn("Stop is available", app.summary_var.get())
+            app._handle_event({"type": "preparation_progress", "stage": "recovery",
+                               "path": "recovered", "message": "installed a fully verified copy"})
+            self.assertIn("Suite cache recovery active", app.summary_var.get())
+            self.assertNotEqual(app.stage_var.get(), "Preparing: probe")
             self.assertIn("Alt+B", app.start_btn.options["text"])
             self.assertNotIn("<Alt-r>", bindings)
             self.assertIn("Alt+S", app.stop_btn.options["text"])

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.4] - 2026-09-22
+
+Windows-focused repair with automatic recovery. A suite-cache extraction folder
+that the normal user cannot read or replace (for example one left by an
+administrator-privileged run) no longer requires manual deletion: after full
+archive/manifest/clip verification the client installs a verified copy at a
+deterministic writable location beside the blocked folder, announces the
+recovery in the preparation event log, and reuses it byte-for-byte on later
+runs. The blocked folder is never deleted, taken over or trusted. If neither
+location is writable the failure names the actual permission error and the
+cache path. The macOS and Linux binaries are byte-identical to the accepted
+rc.2 builds. Client 0.3.3; protocol 7.1, admission minimum, suite bytes,
+frozen fingerprints and scientific settings unchanged.
+
 ## [1.3.0-rc.3] - 2026-09-22
 
 Windows-only repair. The packaged GUI now names every pre-encode failure's
