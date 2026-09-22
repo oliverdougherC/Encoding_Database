@@ -119,7 +119,7 @@ def test_retained_campaign_traceback_is_opt_in_and_exit_stays_failed(tmp_path, m
     def failed_lock():
         raise OSError(errno.EBADF, 'Bad file descriptor')
         yield
-    journal = SimpleNamespace(root=tmp_path, check_budget=lambda: 1000, measurement_lock=failed_lock)
+    journal = SimpleNamespace(root=tmp_path, records={}, check_budget=lambda: 1000, measurement_lock=failed_lock)
     with mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'test')), mock.patch.object(main, '_build_protocol_recipe_specs', return_value=[protocol.RecipeSpec('recipe', protocol.StructuralExpectation())]), mock.patch.object(main, 'CampaignJournal', return_value=journal), mock.patch.object(main, 'physical_source_id', return_value='installation-'+'a'*64), mock.patch('client.identity.runtime_identity', return_value={}), mock.patch.object(main, 'selected_device', return_value={'deviceId':'cpu'}):
         code = main.run_benchmark_batch(hardware=main.HardwareInfo('CPU',None,16,'OS'), base_url='unused',
             args=args, tasks=[{'encoder':'libx264','preset':'fast','crf':24,'suiteClip':clip}])

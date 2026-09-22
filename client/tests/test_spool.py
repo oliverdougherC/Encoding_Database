@@ -293,6 +293,52 @@ class SpoolTests(unittest.TestCase):
             server.server_close()
             thread.join(timeout=2)
 
+    def test_unrelated_retained_campaign_does_not_block_this_upload(self) -> None:
+        # Review scenario: a Large campaign retaining >2 GiB must not consume the
+        # allowance of a Small run spooling its own measured artifact.
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            other_root = os.path.join(queue_dir, "campaigns", "campaign-" + "f" * 16)
+            os.makedirs(other_root)
+            with open(os.path.join(other_root, "retained.bin"), "wb") as bulk:
+                bulk.truncate(2100 * 1024 * 1024)
+            source_path = os.path.join(queue_dir, "campaigns", "campaign-" + "a" * 16, "artifact.mp4")
+            os.makedirs(os.path.dirname(source_path), exist_ok=True)
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            payload = self._authoritative_payload(source_path)
+            path, _entry = spool_payload(queue_dir, payload, max_storage_mb=2048)
+            managed_path = load_spool_entry(path)["payload"]["artifactPath"]
+            self.assertTrue(os.path.exists(managed_path))
+            with mock.patch("client.spool.submit_artifact_submission",
+                            return_value={"analyses": [{"vmafMean": 95.25}]}):
+                stats = replay_spool(queue_dir, base_url="http://127.0.0.1:9", api_key="",
+                                     retries=1, use_token=False)
+            self.assertEqual(stats.submitted, 1)
+            self.assertEqual(count_pending_entries(queue_dir), 0)
+            self.assertFalse(os.path.exists(managed_path))  # accepted upload retires staging
+            self.assertTrue(os.path.exists(os.path.join(other_root, "retained.bin")))
+
+    def test_spool_capacity_charges_own_campaign_and_honors_free_floor(self) -> None:
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as queue_dir, tempfile.TemporaryDirectory() as source_dir:
+            mine = os.path.join(queue_dir, "campaigns", "campaign-" + "a" * 16)
+            os.makedirs(mine)
+            bulk = os.path.join(mine, "retained.bin")
+            with open(bulk, "wb") as handle:
+                handle.truncate(2100 * 1024 * 1024)
+            source_path = os.path.join(queue_dir, "campaigns", "campaign-" + "a" * 16, "artifact.mp4")
+            os.makedirs(os.path.dirname(source_path), exist_ok=True)
+            with open(source_path, "wb") as handle:
+                handle.write(b"test")
+            payload = self._authoritative_payload(source_path)
+            with self.assertRaisesRegex(OSError, "this campaign's retained attempts"):
+                spool_payload(queue_dir, payload, max_storage_mb=2048)
+            os.remove(bulk)  # own campaign now small; disk floor must still protect the volume
+            with mock.patch("client.spool.shutil.disk_usage",
+                            return_value=SimpleNamespace(total=1024 ** 4, used=0, free=500 * 1024 * 1024)):
+                with self.assertRaisesRegex(OSError, "safety"):
+                    spool_payload(queue_dir, payload, max_storage_mb=2048)
+
 
 if __name__ == "__main__":
     unittest.main()

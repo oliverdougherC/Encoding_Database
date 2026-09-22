@@ -23,7 +23,7 @@ def snapshot(root):
     return {str(p.relative_to(root)): p.read_bytes() for p in root.rglob('*') if p.is_file()}
 
 
-@pytest.mark.parametrize('retained_folder', ['campaigns/old', 'receipts', 'terminal', 'dead-letter', 'artifacts'])
+@pytest.mark.parametrize('retained_folder', ['receipts', 'terminal', 'dead-letter', 'artifacts'])
 def test_aggregate_counts_all_retained_data_before_copy(tmp_path, retained_folder):
     queue = tmp_path / 'queue'
     prior = queue / retained_folder / 'retained.dat'

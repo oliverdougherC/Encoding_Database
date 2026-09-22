@@ -119,6 +119,11 @@ class WindowsGuiTests(unittest.TestCase):
             self.assertEqual((app._selected_encoder(), app._selected_preset(), app.crf_var.get()), ("libx264", "fast", 0))
             app._handle_event({"type": "preparation_progress", "stage": "probe", "path": "test.mkv"})
             self.assertEqual(app.stage_var.get(), "Preparing: probe")
+            app._handle_event({"type": "preparation_progress", "stage": "source-contract",
+                               "clipId": "talking-head-1080p24-final", "completed": 3, "total": 7})
+            self.assertEqual(app.stage_var.get(), "Preparing: source-contract")
+            self.assertIn("(3/7)", app.summary_var.get())
+            self.assertIn("talking-head-1080p24-final", app.summary_var.get())
             self.assertIn("Stop is available", app.summary_var.get())
             app._handle_event({"type": "preparation_progress", "stage": "recovery",
                                "path": "recovered", "message": "installed a fully verified copy"})
@@ -397,7 +402,7 @@ class GuiLifecycleTests(unittest.TestCase):
         app, _root, bindings, _tk = self.build()
         log_lines = []
         app.base_args.max_duration_minutes = 15.0
-        app.base_args.explicit_max_duration_minutes = True
+        app.base_args.max_duration_minutes_explicit = True
         with mock.patch.object(gui.threading, "Thread", FakeThread), \
                 mock.patch.object(app, "_append_log", log_lines.append):
             bindings["<Alt-b>"](None)

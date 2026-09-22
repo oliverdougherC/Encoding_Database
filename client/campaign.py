@@ -275,16 +275,30 @@ class CampaignJournal:
                 raise ValueError("Campaign environment, recipes or protocol changed; start a new campaign")
         else:
             atomic_json(manifest_path, manifest)
+        # The retention allowance is campaign policy, not plan identity: it persists
+        # beside the manifest so resumes keep the original budget without making the
+        # frozen manifest drift for journals written before this separation existed.
+        budget_path = self.root / "budget.json"
+        # Entry points restore the saved allowance only when the caller has not
+        # supplied an explicit limit. Honor their resolved policy here, including
+        # deliberate increases or decreases, without changing campaign identity.
+        atomic_json(budget_path, {"schemaVersion": 1, "maxStorageMb": int(max_storage_mb)})
         for path in sorted(self.root.glob("attempt-*.json")):
             record = load_record(json.loads(path.read_text()))
             info = record.metadata.get("info") or {}
             artifact = info.get("artifactPath")
             if artifact and not info.get("error"):
                 candidate = Path(artifact)
-                if not candidate.is_file() or self.root.resolve() not in candidate.resolve().parents:
+                if candidate.is_file():
+                    if self.root.resolve() not in candidate.resolve().parents:
+                        raise ValueError("Journal artifact missing or outside owned campaign")
+                    if self.hash_file(candidate) != info.get("artifactSha256"):
+                        raise ValueError("Journal artifact changed; cannot resume")
+                elif record.schedule.phase == "warmup":
+                    if not self._warmup_released(record):
+                        raise ValueError("Warmup artifact missing without verified release evidence")
+                elif not self.accepted_receipt(record):
                     raise ValueError("Journal artifact missing or outside owned campaign")
-                if self.hash_file(candidate) != info.get("artifactSha256"):
-                    raise ValueError("Journal artifact changed; cannot resume")
             self.records[record.schedule.execution_order] = record
 
     @staticmethod
@@ -295,11 +309,97 @@ class CampaignJournal:
                 digest.update(chunk)
         return digest.hexdigest()
 
+    def _receipt_path(self, execution_order: int) -> Path:
+        return self.root / f"submission-{execution_order:06d}.accepted.json"
+
+    def accepted_receipt(self, record):
+        """Return the accepted-upload receipt only when it is faithful to the attempt.
+
+        A receipt counts when it names the same execution order, recipe, exact
+        artifact path and SHA-256 as the journaled record and carries the
+        server's run id. Corrupt, empty, partial or mismatched receipts never
+        authorize skipping an upload or trusting a released artifact."""
+        info = record.metadata.get("info") or {}
+        artifact_path = str(info.get("artifactPath") or "").strip()
+        artifact_sha = info.get("artifactSha256")
+        if not artifact_path or not artifact_sha:
+            return None
+        try:
+            receipt = json.loads(self._receipt_path(record.schedule.execution_order).read_text())
+        except (OSError, ValueError):
+            return None
+        if (isinstance(receipt, dict)
+                and receipt.get("schemaVersion") == 1
+                and receipt.get("executionOrder") == record.schedule.execution_order
+                and receipt.get("recipeId") == record.schedule.recipe_id
+                and receipt.get("artifactPath") == artifact_path
+                and receipt.get("artifactSha256") == artifact_sha
+                and str(receipt.get("benchmarkRunId") or "").strip()):
+            return receipt
+        return None
+
+    def _warmup_released(self, record) -> bool:
+        info = record.metadata.get("info") or {}
+        try:
+            evidence = json.loads((self.root / f"warmup-{record.schedule.execution_order:06d}.released.json").read_text())
+        except (OSError, ValueError):
+            return False
+        return (isinstance(evidence, dict)
+                and evidence.get("schemaVersion") == 1
+                and evidence.get("executionOrder") == record.schedule.execution_order
+                and evidence.get("recipeId") == record.schedule.recipe_id
+                and evidence.get("artifactPath") == str(info.get("artifactPath") or "").strip()
+                and evidence.get("artifactSha256") == info.get("artifactSha256"))
+
+    def release_warmup_artifact(self, record) -> bool:
+        """Delete a hash-verified warmup output whose bytes have no consumer.
+
+        Warmups tune encoders before measurement; they are never uploaded and
+        never re-read once the attempt (with its SHA-256) is durable. Release
+        evidence keeps the journal reopenable without the bytes; any hash
+        mismatch keeps the file in place so the budget check fails honestly."""
+        info = record.metadata.get("info") or {}
+        artifact = str(info.get("artifactPath") or "").strip()
+        sha = info.get("artifactSha256")
+        if record.schedule.phase != "warmup" or not artifact or not sha:
+            return False
+        candidate = Path(artifact)
+        if self.root.resolve() not in candidate.resolve().parents or not candidate.is_file():
+            return False
+        if self.hash_file(candidate) != sha:
+            return False
+        atomic_json(self.root / f"warmup-{record.schedule.execution_order:06d}.released.json",
+                    {"schemaVersion": 1,
+                     "executionOrder": record.schedule.execution_order,
+                     "recipeId": record.schedule.recipe_id,
+                     "artifactPath": artifact,
+                     "artifactSha256": sha,
+                     "releasedAt": time.time()})
+        candidate.unlink()
+        return True
+
+    def campaign_bytes(self):
+        return directory_bytes(str(self.root))
+
     def check_budget(self):
-        total = sum(path.stat().st_size for path in self.queue_root.rglob("*") if path.is_file())
-        if total >= self.max_bytes:
-            raise OSError("Campaign storage budget reached; retained attempts can be resumed after freeing space")
-        return self.max_bytes - total
+        """This campaign's retention allowance plus a whole-volume safety floor.
+
+        One campaign's retained bytes never block a different campaign: the
+        allowance below is charged to THIS journal only. The floor is global
+        protection for the disk itself and applies to every run."""
+        used = self.campaign_bytes()
+        if used >= self.max_bytes:
+            raise OSError(f"this campaign retained {used // (1024 * 1024)} MB of its "
+                          f"{self.max_bytes // (1024 * 1024)} MB allowance; accepted uploads retire "
+                          f"automatically at checkpoints — wait for one, remove finished campaigns, "
+                          f"or raise --max-storage-mb if the volume allows")
+        from shutil import disk_usage
+        floor_mb = max(0, int(os.environ.get("ENCODINGDB_MIN_FREE_MB", "1024")))
+        free = disk_usage(str(self.queue_root)).free
+        if free < floor_mb * 1024 * 1024:
+            raise OSError(f"volume free space {free // (1024 * 1024)} MB is below the "
+                          f"{floor_mb} MB safety floor reserved for the system; free space and retry")
+        return min(self.max_bytes - used, free - floor_mb * 1024 * 1024)
 
     def save(self, record):
         info = record.metadata.get("info") or {}
@@ -364,3 +464,58 @@ class CampaignJournal:
                     else:
                         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         return locked()
+
+
+def active_collection(queue_dir: str):
+    """Describe the live collector holding this queue, if any.
+
+    A held measurement lock (or a live encoder receipt during the brief
+    between-segment window) means an authoritative collection is running; a
+    second collector would corrupt measurement timing and is refused before
+    any expensive preparation."""
+    root = Path(queue_dir)
+    lock = root / "measurement.lock"
+    if not lock.exists():
+        return None
+    try:
+        with lock.open("a+b") as handle:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    handle.seek(0)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+                    msvcrt.locking(handle.fileno(), msvcrt.LK_UNLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+            except OSError:
+                pass  # Only a denied LOCK attempt means another collector holds it.
+            else:
+                return None
+    except OSError as exc:
+        # Opening/reading the lock is a permissions or media problem, NOT evidence
+        # of a running collector; report it accurately instead of mislabelling it.
+        raise OSError(f"Cannot inspect this queue's measurement lock: {exc}") from exc
+    import psutil
+    for receipt in sorted(root.glob("campaigns/*/*.active.json")):
+        try:
+            raw = json.loads(receipt.read_text())
+            process = psutil.Process(int(raw.get("pid", -1)))
+            if process.create_time() == raw.get("createdAt"):
+                return {"campaignId": receipt.parent.name, "pid": int(raw["pid"])}
+        except Exception:
+            continue
+    return {"campaignId": None, "pid": None}
+
+
+def directory_bytes(path: str) -> int:
+    """Bytes retained under a directory; a retiring upload is not an error."""
+    total = 0
+    for root, _dirs, names in os.walk(path):
+        for name in names:
+            try:
+                total += os.stat(os.path.join(root, name)).st_size
+            except FileNotFoundError:
+                continue
+    return total
