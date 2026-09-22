@@ -9,7 +9,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null; $parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Harness,[ref]$tokens,[ref]$parseErrors)
 if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
-foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-OwnedClientTree','Get-ObservedRunControl','Get-ObservedModeControl','Set-OwnedForeground','Select-AdvancedSingleMode','Invoke-RunAction','Wait-Until','Observe-Processes')) {
+foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-OwnedClientTree','Get-ObservedRunControl','Get-ObservedModeControl','Set-OwnedForeground','Select-AdvancedSingleMode','Invoke-RunAction','Wait-Until','Observe-Processes','Get-CompletionMarkers','Wait-Encoder','Wait-NoEncoders','Get-ActiveEncodeEvidence','Get-DurableMeasuredAttempts','Wait-MeasuredThenActiveEncode')) {
     $definitions=@($ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true))
     if ($definitions.Count -ne 1) { throw "Expected one real $name definition." }
     Invoke-Expression $definitions[0].Extent.Text
@@ -309,6 +309,13 @@ $script:events=@()
 $script:processProbe={ return $fakes }
 $script:currentPhase=@{ name='close'; helpers=@{} }
 $script:owned=@{ '4588'=$fakes[0] }
+$script:targetedProbe=$null
+$script:PreDispatchRecheck=$null
+$script:process=$null
+# Extracted functions run without the harness param block; supply the bounded acquisition value
+# Wait-Encoder needs so no case can wait on a real acquisition window.
+$AcquisitionSeconds=5
+$script:guardTemps=@()
 Case 'process-closure:real-reused-pid-replay'
 $aliveIds=@(Observe-Processes | ForEach-Object { $_.ProcessId })
 Assert-True (@($aliveIds) -contains 8092 -and @($aliveIds) -contains 6400 -and @($aliveIds) -contains 8112) 'Legitimate owned descendants were not adopted by the closure.'
@@ -333,6 +340,7 @@ function Click-Fixture {
     $script:observeCalls=0;$script:observeFail=$false;$script:failAfter=$null
     $script:events=@()
     $script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(5)
+    $script:PreDispatchRecheck=$null
 }
 Case 'dispatch:reject-activation-failure-before-observation'
 Click-Fixture;[EdbWindows]::ActivateSucceeds=$false;$script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(-1)
@@ -362,4 +370,104 @@ Click-Fixture;[EdbWindows]::DeferOnce=$true
 Invoke-RunAction 'Start'
 Assert-True ([EdbWindows]::Clicks -eq 2) 'A transient input-desktop refusal must be reobserved and retried within bounds.'
 Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-click-deferred-for-desktop' }).Count -eq 1) 'The input-desktop deferral was not recorded.'
-Write-Output 'PASS: real native readiness, three-button run row, mode combobox identity, observed-popup mode selection, primary-error preservation and observe-before-click functions; synthetic observations only, no Windows interaction.'
+# Cancellation-window observation guards (CI 35670931191): the failure mode - a live encode absent
+# from every full enumeration plus an idle campaign waited out to the deadline - is replayed with
+# synthetic rows and temp-dir attempt journals only. No real process, window, input or screenshot
+# action occurs; every path below runs with the synthetic process probe installed.
+function New-EncoderProcess([long]$ProcessId,[long]$Parent,[DateTime]$Date,[string]$CommandLine) {
+    [pscustomobject]@{ProcessId=$ProcessId;ParentProcessId=$Parent;CreationDate=$Date;Name='ffmpeg.exe';ExecutablePath=$script:fakeEncoderPath;CommandLine=$CommandLine}
+}
+function New-GuardQueue([bool]$Durable) {
+    $queue=Join-Path ([IO.Path]::GetTempPath()) ('edb-guards-'+[Guid]::NewGuid().ToString('N'))
+    $dir=Join-Path $queue 'campaigns/c1'; New-Item -ItemType Directory -Force $dir | Out-Null
+    $script:guardTemps+=@($queue)
+    $artifact=$null
+    if ($Durable) { $artifact=Join-Path $dir 'measured.mp4'; Set-Content -LiteralPath $artifact -Value 'SYNTHETIC measured fixture' -Encoding Ascii }
+    $timing=if ($Durable) { @{ elapsed_s=120.5 } } else { $null }
+    @{ schedule=@{ campaign_id='c1'; recipe_id='clip-a|libx264|slower|24'; phase='measured' }; timing=$timing; metadata=@{ info=@{ artifactPath=$artifact } } } |
+        ConvertTo-Json -Depth 8 | Set-Content -LiteralPath (Join-Path $dir 'attempt-000001.json') -Encoding Ascii
+    return $queue
+}
+function Encoder-Fixture([bool]$Durable) {
+    $script:fakeEncoderPath=Join-Path ([IO.Path]::GetTempPath()) 'edb-guard-fake-ffmpeg.exe'
+    Set-Content -LiteralPath $script:fakeEncoderPath -Value 'SYNTHETIC fake helper bytes' -Encoding Ascii
+    $script:guardTemps+=@($script:fakeEncoderPath)
+    $queue=New-GuardQueue $Durable
+    $script:currentPhase=@{ name='stop'; queue=$queue; helpers=@{}; encoderObserved=$false }
+    $script:owned=@{ '4588'=(New-FakeProcess 4588 1 $seeded 'encodingdb-client-windows.exe' 'client') }
+    $script:events=@()
+    $script:harnessDeadline=[DateTime]::UtcNow.AddMinutes(2)
+    $script:process=[pscustomobject]@{ HasExited=$false }
+    $script:processProbe={ @(New-FakeProcess 4588 1 $seeded 'encodingdb-client-windows.exe' 'client') }
+    $script:targetedProbe=$null
+    $script:targetedCalls=0
+    return $queue
+}
+$encoderLine='ffmpeg.exe -hide_banner -v error -i in.mkv -c:v libx264 -preset slower -crf 24 out.mp4'
+Case 'encode-observation:targeted-query-adopts-when-full-inventory-missed'
+$null=Encoder-Fixture $true
+$script:targetedProbe={ $script:targetedCalls++; @(New-EncoderProcess 9100 4588 $seeded.AddSeconds(30) $encoderLine) }
+$ev=Get-ActiveEncodeEvidence
+Assert-True ($ev.identified.Count -eq 1 -and $ev.identified[0].ProcessId -eq 9100) 'A live encode missing from the full enumeration was not adopted from the targeted query.'
+Assert-True ($script:owned.ContainsKey('9100')) 'The targeted encode bypassed the ownership closure.'
+Assert-True (@($script:events | Where-Object { $_.kind -eq 'owned-process-discovered' -and $_.data.ProcessId -eq 9100 }).Count -eq 1) 'The adopted targeted encode was not recorded as discovered.'
+Assert-True ($script:currentPhase.encoderObserved -and $script:currentPhase.helpers.Count -eq 1) 'The adopted encode did not certify packaged-helper evidence.'
+Case 'encode-observation:command-line-blind-owned-child-is-unidentified-encode'
+$null=Encoder-Fixture $true
+$script:targetedProbe={ @(New-EncoderProcess 9101 4588 $seeded.AddSeconds(30) $null) }
+$ev=Get-ActiveEncodeEvidence
+Assert-True ($ev.identified.Count -eq 0 -and $ev.unidentified.Count -eq 1) 'An owned ffmpeg row without command-line evidence was not reported as command-line-blind.'
+Case 'encode-observation:full-inventory-hit-skips-targeted-query'
+$null=Encoder-Fixture $true
+$script:processProbe={ @((New-FakeProcess 4588 1 $seeded 'encodingdb-client-windows.exe' 'client'),(New-EncoderProcess 9102 4588 $seeded.AddSeconds(30) $encoderLine)) }
+$script:targetedProbe={ $script:targetedCalls++; @() }
+$ev=Get-ActiveEncodeEvidence
+Assert-True ($ev.identified.Count -eq 1 -and $script:targetedCalls -eq 0) 'A full-inventory encode hit must not run the targeted query.'
+Case 'encoder-acquisition:full-inventory-certifies-packaged-encoder'
+$null=Encoder-Fixture $true
+$script:processProbe={ @((New-FakeProcess 4588 1 $seeded 'encodingdb-client-windows.exe' 'client'),(New-EncoderProcess 9106 4588 $seeded.AddSeconds(30) $encoderLine)) }
+Wait-Encoder
+Assert-True ($script:currentPhase.encoderObserved -and $script:currentPhase.helpers.Count -eq 1) 'Wait-Encoder did not certify the observed packaged encoder.'
+Case 'measured-wait:requires-durable-receipt-and-active-encode-together'
+$null=Encoder-Fixture $true
+$script:targetedProbe={ @(New-EncoderProcess 9103 4588 $seeded.AddSeconds(30) $encoderLine) }
+Wait-MeasuredThenActiveEncode 5
+Assert-True (@($script:events | Where-Object { $_.kind -eq 'cancellation-window-observed' -and $_.data.durableReceipts -eq 1 -and @($_.data.identifiedEncoders) -contains 9103 }).Count -eq 1) 'The cancellation window observation was not recorded.'
+Case 'measured-wait:timing-null-attempt-is-not-a-durable-receipt'
+$null=Encoder-Fixture $false
+$script:targetedProbe={ @(New-EncoderProcess 9104 4588 $seeded.AddSeconds(30) $encoderLine) }
+Assert-Throws { Wait-MeasuredThenActiveEncode 0 } '*No later encode after a durable measured attempt*'
+Case 'measured-wait:campaign-completion-fails-fast'
+$queue=Encoder-Fixture $true
+Set-Content -LiteralPath (Join-Path $queue 'campaigns/c1/campaign-complete.json') -Value '{}' -Encoding Ascii
+Assert-Throws { Wait-MeasuredThenActiveEncode 0 } '*Campaign completed before the cancellation click*'
+Case 'measured-wait:budget-pause-fails-fast'
+$queue=Encoder-Fixture $true
+Set-Content -LiteralPath (Join-Path $queue 'campaigns/c1/budget-exhausted-1.json') -Value '{}' -Encoding Ascii
+Assert-Throws { Wait-MeasuredThenActiveEncode 0 } '*time budget paused scheduling*'
+Case 'measured-wait:gui-exit-fails-fast'
+$null=Encoder-Fixture $true
+$script:process=[pscustomobject]@{ HasExited=$true }
+Assert-Throws { Wait-MeasuredThenActiveEncode 0 } '*BLOCKED_GUI_DESKTOP*'
+Case 'zero-survivor:targeted-query-exposes-surviving-encode'
+$null=Encoder-Fixture $true
+$script:targetedProbe={ @(New-EncoderProcess 9105 4588 $seeded.AddSeconds(30) $encoderLine) }
+$script:harnessDeadline=[DateTime]::UtcNow # clamps Wait-Until to a single probe pass; no real waiting
+Assert-Throws { Wait-NoEncoders } '*survived GUI cancellation*'
+Case 'zero-survivor:clean-closure-passes'
+$null=Encoder-Fixture $true
+$script:harnessDeadline=[DateTime]::UtcNow
+Wait-NoEncoders
+Case 'dispatch:preclick-recheck-refuses-stale-encode'
+Click-Fixture
+$script:PreDispatchRecheck={ param($action) if ($action -eq 'Stop') { throw 'BLOCKED_GUI_RACE: guard synthetic staleness.' } }
+Assert-Throws { Invoke-RunAction 'Stop' } '*BLOCKED_GUI_RACE*'
+Assert-True ([EdbWindows]::Clicks -eq 0) 'A stale cancellation window must never receive the click.'
+Case 'dispatch:preclick-recheck-passes-when-encode-live'
+Click-Fixture
+$script:PreDispatchRecheck={ param($action) }
+Invoke-RunAction 'Stop'
+Assert-True ([EdbWindows]::Clicks -eq 1) 'A live-encode recheck must dispatch the prepared click.'
+$script:PreDispatchRecheck=$null
+foreach ($temp in $script:guardTemps) { Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue }
+Write-Output 'PASS: real native readiness, three-button run row, mode combobox identity, observed-popup mode selection, primary-error preservation and observe-before-click functions, targeted-query encode adoption, durable measured-receipt gating with completion/budget/exit fail-fast, and pre-dispatch cancellation rechecks; synthetic observations only, no Windows interaction.'

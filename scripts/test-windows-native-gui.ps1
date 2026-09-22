@@ -3,8 +3,9 @@
 param(
     [ValidateSet('Gui','Console')][string]$Mode = 'Gui',
     [string]$Output = '.test-reports/windows-native-gui',
-    [int]$AcquisitionSeconds = 600,
-    [int]$MeasurementMinutes = 20
+ [int]$AcquisitionSeconds = 600,
+ [int]$MeasurementMinutes = 20,
+ [int]$SlowCampaignMinutes = 15
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -19,11 +20,37 @@ $script:currentPhase = $null
 $script:owned = @{}
 # Test seam only: when set, Observe-Processes enumerates this scriptblock instead of Win32_Process.
 $script:processProbe = $null
+# Test seam only: when set, the targeted Name='ffmpeg.exe' re-enumeration runs this scriptblock
+# instead of Get-CimInstance; a probe is only consulted when no full-inventory probe is installed.
+$script:targetedProbe = $null
 $script:process = $null
 $script:stdoutTask = $null
 $script:stderrTask = $null
+# Optional cancellation-window gate: when set, Invoke-RunAction re-verifies live encode evidence
+# immediately before dispatching its click and after any input-desktop re-observation.
+$script:PreDispatchRecheck = $null
 $script:operationStage = 'initializing'
-$script:harnessDeadline = [DateTime]::UtcNow.AddSeconds(($MeasurementMinutes*60)+$AcquisitionSeconds)
+# Per-phase frozen software recipes. CI 35670931191: with the fast recipe every measured encode on
+# the hosted runner finished in ~19-20s, and the later encode of the stop campaign additionally
+# vanished from every full Win32_Process enumeration for ~19s, so the durable-receipt-plus-active-
+# encode conjunction could not be observed before the campaign fell idle. The stop/close
+# cancellation scenarios therefore run the fixed libx264/slower recipe: calibrated on the 1080p24
+# 240-frame canonical-length clip, slower is >=3.3x the fast encode duration on every measured
+# machine (hosted runner fast ~19.4s => slower >=64s, expected ~90-150s), which keeps a real active
+# encode window for the wait/fail-fast logic below while the two slow campaigns stay inside the
+# 31-minute CI step. veryslow (>=4.7x here, 4x the CI fast estimate alone ~26 min for both slow
+# phases) was rejected for exceeding that step budget on a noisy-neighbor runner.
+$script:phaseSpec = @{
+    'prepare-stop' = @{ codec='libx264'; preset='fast';   budget=$MeasurementMinutes;     waitSeconds=(($MeasurementMinutes*60)+60) }
+    'complete'     = @{ codec='libx264'; preset='fast';   budget=$MeasurementMinutes;     waitSeconds=(($MeasurementMinutes*60)+60) }
+    'stop'         = @{ codec='libx264'; preset='slower'; budget=$SlowCampaignMinutes;    waitSeconds=(($SlowCampaignMinutes*60)+420) }
+    'close'        = @{ codec='libx264'; preset='slower'; budget=$SlowCampaignMinutes;    waitSeconds=(($SlowCampaignMinutes*60)+420) }
+    'seven-clips'  = @{ codec='libx264'; preset='fast';   budget=$MeasurementMinutes;     waitSeconds=(($MeasurementMinutes*60)+60) }
+}
+# Upper-bound clamp only: acquisition plus the complete-phase campaign plus both bounded slow
+# cancellation campaigns (wait deadline plus exit/verification allowance each) plus inter-phase
+# overhead; each phase's own wait deadline is the deadline that actually fires in a stall.
+$script:harnessDeadline = [DateTime]::UtcNow.AddSeconds($AcquisitionSeconds + ($MeasurementMinutes*60) + 2*(($SlowCampaignMinutes*60)+600) + 600)
 $receipt = [ordered]@{
     schemaVersion = 1; status = 'RUNNING'; mode = $Mode; startedAt = [DateTime]::UtcNow.ToString('o')
     sourceCommit = (git -C $repo rev-parse HEAD); runnerImage = $env:ImageOS; runnerImageVersion = $env:ImageVersion
@@ -228,9 +255,16 @@ public static FocusState ObserveOwnedFocusState(IntPtr root,uint owner) {
     Save-Json $receipt (Join-Path $modeRoot 'receipt.json'); throw
 }
 function Observe-Processes {
+    param([object[]]$ExtraRows = @())
     $all = @(if ($script:processProbe) { & $script:processProbe } else { Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine })
     $byId = @{}
     foreach ($item in $all) { $byId[[string]$item.ProcessId] = $item }
+    # CI 35670931191 proved a live owned encode can be absent from consecutive full Win32_Process
+    # enumerations; caller-supplied targeted rows join the same closure before adoption so the same
+    # ownership rules (live parent + creation-time consistency) still govern every adoption.
+    foreach ($item in @($ExtraRows)) {
+        if (-not $byId.ContainsKey([string]$item.ProcessId)) { $byId[[string]$item.ProcessId] = $item; $all += $item }
+    }
     do {
         $added = $false
         foreach ($item in $all) {
@@ -513,6 +547,8 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
     # Fresh dynamic re-observation immediately before the one normal click.
     try { $observation=Get-ObservedRunControl $Action } catch { throw "BLOCKED_GUI_POINT: control observation changed before dispatch: $($_.Exception.Message)" }
     if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
+    # A cancellation dispatch must see the live encode at dispatch time, not only at wait time.
+    if ($script:PreDispatchRecheck) { & $script:PreDispatchRecheck $Action }
     $script:operationStage="run-action:${Action}:click"
     $desktopWaits=0
     $clickDeadline=[DateTime]::UtcNow.AddSeconds(120); if ($clickDeadline -gt $script:harnessDeadline) { $clickDeadline=$script:harnessDeadline }
@@ -528,6 +564,7 @@ function Invoke-RunAction([ValidateSet('Start','Stop')][string]$Action) {
         $desktopWaits++
         try { $observation=Get-ObservedRunControl $Action } catch { throw "BLOCKED_GUI_POINT: control observation changed while awaiting the input desktop: $($_.Exception.Message)" }
         if ($observation.handle -ne $handle) { throw 'BLOCKED_GUI_POINT: the owned client root changed during observation.' }
+        if ($script:PreDispatchRecheck) { & $script:PreDispatchRecheck $Action }
     }
     Record-Event 'observed-control-clicked' @{ action=$Action; control=$observation.label; backend='normal mouse click on visibly observed control'; insertedCount=$native.InsertedCount }
 }
@@ -546,7 +583,7 @@ function Select-AdvancedSingleMode {
     # popup, and returns keyboard focus inside the owned window. A missing popup, a second popup,
     # an unaligned popup, a stuck popup, or focus that does not return blocks acceptance; nothing
     # is ever committed to an unidentified control. The evidence verifier independently requires
-    # the resulting campaign to contain only the libx264/fast recipe.
+    # the resulting campaign to contain exactly the phase's frozen libx264 software recipe.
     $script:operationStage='mode-select:activate'
     $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
     if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_FOCUS: expected one observed owned client window.' }
@@ -633,7 +670,7 @@ function Wait-Until([scriptblock]$Condition, [int]$Seconds, [string]$Failure) {
     do { if (& $Condition) { return }; Start-Sleep -Milliseconds 250 } while ([DateTime]::UtcNow -lt $deadline)
     throw $Failure
 }
-function Start-Owned([string]$Name, [bool]$Gui) {
+function Start-Owned([string]$Name, [bool]$Gui, $Spec) {
     $script:operationStage="phase:${Name}:launch"
     $phasePath = Join-Path $modeRoot $Name; New-Item -ItemType Directory $phasePath | Out-Null
     $state = Join-Path $env:RUNNER_TEMP ("encodingdb-native-$Mode-$Name-" + [Guid]::NewGuid().ToString('N') + '-' + [char]0x00E9)
@@ -652,7 +689,7 @@ function Start-Owned([string]$Name, [bool]$Gui) {
     $info.EnvironmentVariables['ENCODINGDB_STATE_DIR'] = Join-Path $outputRoot 'host-state'
     $info.EnvironmentVariables['LOCALAPPDATA'] = Join-Path $state 'localappdata'
     $info.EnvironmentVariables['TEMP'] = Join-Path $state 'tmp'; $info.EnvironmentVariables['TMP'] = Join-Path $state 'tmp'
-    $arguments = @('--no-submit','--base-url','http://127.0.0.1:9','--codec','libx264','--presets','fast','--queue-dir',$phase.queue,'--max-duration-minutes',"$MeasurementMinutes",'--max-storage-mb','3072')
+    $arguments = @('--no-submit','--base-url','http://127.0.0.1:9','--codec',$Spec.codec,'--presets',$Spec.preset,'--queue-dir',$phase.queue,'--max-duration-minutes',"$($Spec.budget)",'--max-storage-mb','3072')
     if ($Gui) { $arguments += '--gui' } else { $arguments += @('--cli','--campaign','full') }
     # Windows native argv quoting, including spaces, non-ASCII and trailing slashes.
     $quoted = @($arguments | ForEach-Object {
@@ -665,6 +702,7 @@ function Start-Owned([string]$Name, [bool]$Gui) {
         $phase.sourcePackBefore=(Get-FileHash -LiteralPath $phase.sourcePackPath -Algorithm SHA256).Hash.ToLowerInvariant()
     }
     $phase.command = @($exe) + $arguments; $phase.executableSha256 = (Get-FileHash $exe -Algorithm SHA256).Hash.ToLowerInvariant()
+    $phase.expectedRecipe = @{ codec=$Spec.codec; preset=$Spec.preset; crf=24; budgetMinutes=$Spec.budget }
     $script:process = [Diagnostics.Process]::new(); $script:process.StartInfo=$info; [void]$script:process.Start()
     $record = Get-CimInstance Win32_Process -Filter "ProcessId=$($script:process.Id)" | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine
     $script:owned[[string]$record.ProcessId] = $record
@@ -681,14 +719,78 @@ function Save-ProcessOutput {
     }
 }
 function Wait-Encoder {
-    Wait-Until { [void](Observe-Processes); return $script:currentPhase.encoderObserved } $AcquisitionSeconds 'Timed out before observing the packaged libx264 encoder; acquisition/launch not certified.'
+    # Full-closure observation first; if the encode row eludes every full Win32_Process enumeration
+    # (CI 35670931191), the targeted re-enumeration adopts it through the same ownership closure.
+    Wait-Until { [void](Get-ActiveEncodeEvidence); return [bool]$script:currentPhase.encoderObserved } $AcquisitionSeconds 'Timed out before observing the packaged libx264 encoder; acquisition/launch not certified.'
 }
 function Wait-NoEncoders {
-    Wait-Until { return @((Observe-Processes) | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') }).Count -eq 0 } 60 'Owned media process survived GUI cancellation.'
+    Wait-Until {
+        $alive=@(Observe-Processes)
+        if (@($alive | Where-Object { $_.Name -in @('ffmpeg.exe','ffprobe.exe') }).Count) { return $false }
+        $ev=Get-ActiveEncodeEvidence
+        return [bool](-not $ev.identified.Count -and -not $ev.unidentified.Count)
+    } 60 'Owned media process survived GUI cancellation.'
+}
+function Get-ActiveEncodeEvidence {
+    # The cancellation scenarios must see an actually-running owned libx264 encode right now. The
+    # full-inventory closure is primary and remains the only source that certifies helpers; when it
+    # finds no encode, a targeted Name='ffmpeg.exe' query (cheap enough for 1s polling; CI
+    # 35670931191: a live encode was absent from every full enumeration for ~19s while sibling
+    # children were adopted) re-runs the identical ownership closure before concluding no encode is
+    # active. 'identified' rows carry the exact libx264 argument evidence; 'unidentified' rows are
+    # owned ffmpeg.exe rows whose CommandLine WMI could not read - still an active owned encode,
+    # whose frozen recipe is pinned by the phase command and the attempt journals.
+    $alive = @(Observe-Processes)
+    $identified = @($alive | Where-Object { $_.Name -eq 'ffmpeg.exe' -and $_.CommandLine -match '(?:-c:v|-vcodec)\s+"?libx264' })
+    if ($identified.Count) { return @{ identified=$identified; unidentified=@() } }
+    if ($script:processProbe -and -not $script:targetedProbe) { return @{ identified=@(); unidentified=@() } }
+    $rows = @(if ($script:targetedProbe) { & $script:targetedProbe } else { @(Get-CimInstance Win32_Process -Filter "Name='ffmpeg.exe'" | Select-Object ProcessId, ParentProcessId, CreationDate, Name, ExecutablePath, CommandLine) })
+    if (-not $rows.Count) { return @{ identified=@(); unidentified=@() } }
+    $merged = @(Observe-Processes -ExtraRows $rows)
+    $identified = @($merged | Where-Object { $_.Name -eq 'ffmpeg.exe' -and $_.CommandLine -match '(?:-c:v|-vcodec)\s+"?libx264' })
+    if ($identified.Count) { return @{ identified=$identified; unidentified=@() } }
+    return @{ identified=@(); unidentified=@($merged | Where-Object { $_.Name -eq 'ffmpeg.exe' -and -not $_.CommandLine }) }
+}
+function Get-DurableMeasuredAttempts {
+    # A durable measured receipt is a completed attempt: measured phase, real process timing, and a
+    # retained artifact file on disk. An interrupted attempt (timing null) never counts, so
+    # cancellation is always exercised against completed work preserved on disk.
+    @(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'attempt-*.json' -ErrorAction SilentlyContinue | Where-Object {
+        try {
+            $attempt = Get-Content -LiteralPath $_.FullName -Raw | ConvertFrom-Json
+            if ($null -eq $attempt -or $attempt.schedule.phase -ne 'measured') { return $false }
+            if ($null -eq $attempt.timing -or $attempt.timing.elapsed_s -le 0) { return $false }
+            $artifact = $attempt.metadata.info.artifactPath
+            return [bool]($artifact -and (Test-Path -LiteralPath $artifact))
+        } catch { return $false }
+    })
+}
+function Wait-MeasuredThenActiveEncode([int]$Seconds) {
+    # Cancellation evidence requires the conjunction observed together: a durable completed measured
+    # attempt already on disk AND a later owned libx264 encode actively running. The previous
+    # 250ms-poll condition could not distinguish 'not yet' from 'the campaign is finished/idle', so
+    # the stop phase burned its full 20.5-minute deadline after the campaign fell idle
+    # (CI 35670931191). Completion, budget-pause and process-exit markers now fail fast with the
+    # actual cause: the scenario is either exercised or diagnosed, never silently waited out.
+    $deadline = [DateTime]::UtcNow.AddSeconds($Seconds)
+    if ($deadline -gt $script:harnessDeadline) { $deadline = $script:harnessDeadline }
+    do {
+        if (@(Get-CompletionMarkers).Count) { throw 'Campaign completed before the cancellation click; the durable measured receipt was observed without a cancellable later encode; cancellation scenario not exercised.' }
+        if (@(Get-ChildItem -Path $script:currentPhase.queue -Recurse -Filter 'budget-exhausted-*.json' -ErrorAction SilentlyContinue).Count) { throw 'Campaign time budget paused scheduling before a later encode became active; cancellation scenario not exercised.' }
+        if ($script:process.HasExited) { throw 'BLOCKED_GUI_DESKTOP: packaged GUI exited before an active post-receipt encode was observed.' }
+        $durable = @(Get-DurableMeasuredAttempts)
+        $encode = Get-ActiveEncodeEvidence
+        if ($durable.Count -and ($encode.identified.Count -or $encode.unidentified.Count)) {
+            Record-Event 'cancellation-window-observed' @{ durableReceipts=$durable.Count; identifiedEncoders=@($encode.identified | ForEach-Object { $_.ProcessId }); commandLineBlindEncoders=@($encode.unidentified | ForEach-Object { $_.ProcessId }) }
+            return
+        }
+        Start-Sleep -Milliseconds 1000
+    } while ([DateTime]::UtcNow -lt $deadline)
+    throw 'No later encode after a durable measured attempt; cancellation scenario not exercised.'
 }
 try {
     if ($Mode -eq 'Console') {
-        $phase=Start-Owned 'seven-clips' $false; Wait-Encoder
+        $phase=Start-Owned 'seven-clips' $false $script:phaseSpec['seven-clips']; Wait-Encoder
         Wait-Until { [void](Observe-Processes); return $script:process.HasExited } (($MeasurementMinutes*60)+60) 'Seven-clip console campaign exceeded its deadline.'
         Save-ProcessOutput
         if ($phase.exitCode -ne 0) { throw "Seven-clip console returned $($phase.exitCode); not accepted as PASS." }
@@ -699,7 +801,7 @@ try {
         # system power or lock setting.
         [void][EdbWindows]::SetThreadExecutionState([uint32]2147483650) # ES_DISPLAY_REQUIRED(0x80000002)|ES_CONTINUOUS(0x2)
         foreach ($name in @('prepare-stop','complete','stop','close')) {
-            $phase=Start-Owned $name $true
+            $phase=Start-Owned $name $true $script:phaseSpec[$name]
             Wait-Until { return @(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' }).Count -eq 1 } 90 'BLOCKED_GUI_DESKTOP: no packaged GUI window appeared.'
             [void](Capture-Ui 'launch')
             # CLI settings preload the Single recipe, but the guided GUI opens on the Small sweep
@@ -729,14 +831,18 @@ try {
                     [void](Capture-Ui 'locally-complete')
                     $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                 } else {
-                    # Cancel only after a durable measured attempt, while a later owned encode is active.
-                    Wait-Until {
-                        $measured=@(Get-ChildItem -Path $phase.queue -Recurse -Filter 'attempt-*.json' -ErrorAction SilentlyContinue | Where-Object { (Get-Content $_.FullName -Raw | ConvertFrom-Json).schedule.phase -eq 'measured' })
-                        $encoding=@((Observe-Processes) | Where-Object { $_.Name -eq 'ffmpeg.exe' -and $_.CommandLine -match '(?:-c:v|-vcodec)\s+"?libx264' })
-                        return $measured.Count -gt 0 -and $encoding.Count -gt 0
-                    } (($MeasurementMinutes*60)+30) 'No later encode after a durable measured attempt; cancellation scenario not exercised.'
+                    # Cancel only after a durable measured attempt, while a later owned encode is active
+                    # on the phase's frozen slower recipe (>=64s active window per the header
+                    # calibration). CI 35670931191: the wait must observe the conjunction from encoder
+                    # evidence that survives full-enumeration gaps, fail fast on idle/paused campaigns,
+                    # and re-verify the live encode immediately before each dispatch (after the UIA
+                    # capture that precedes the click, not only before it).
+                    Wait-MeasuredThenActiveEncode $script:phaseSpec[$name].waitSeconds
                     if ($name -eq 'stop') {
-                        Invoke-RunAction 'Stop'; $phase.action='Stop'
+                        try {
+                            $script:PreDispatchRecheck = { param($action) if ($action -eq 'Stop') { $late=Get-ActiveEncodeEvidence; if (-not $late.identified.Count -and -not $late.unidentified.Count) { throw 'BLOCKED_GUI_RACE: no owned libx264 encode remained active immediately before the Stop dispatch; cancellation was not exercised against live work.' } } }
+                            Invoke-RunAction 'Stop'; $phase.action='Stop'
+                        } finally { $script:PreDispatchRecheck = $null }
                         Wait-NoEncoders
                         Start-Sleep -Seconds 2
                         Wait-NoEncoders
@@ -745,7 +851,10 @@ try {
                         $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
                     } else {
                         $windows=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
-                        [void](Capture-Ui 'before-window-close'); [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
+                        [void](Capture-Ui 'before-window-close')
+                        $late=Get-ActiveEncodeEvidence
+                        if (-not $late.identified.Count -and -not $late.unidentified.Count) { throw 'BLOCKED_GUI_RACE: no owned libx264 encode remained active immediately before the Close dispatch; Close did not interrupt live work.' }
+                        [void][EdbWindows]::PostMessage($windows[0],0x0010,[IntPtr]::Zero,[IntPtr]::Zero)
                         Wait-Until { return $null -ne (Get-OwnedExitConfirmation) } 10 'Native Close confirmation did not appear.'
                         Confirm-ObservedExit; $phase.action='Close confirmed'
                         $phase.visualStatusReview='PENDING_PARENT_INSPECTION'
