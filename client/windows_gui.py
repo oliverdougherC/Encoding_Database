@@ -512,6 +512,10 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             if event_type == "preparation_progress":
                 stage = str(event.get("stage") or "source")
                 self.stage_var.set(f"Preparing: {stage}")
+                if stage == "recovery" and event.get("message"):
+                    self.summary_var.set("Suite cache recovery active; using a verified writable copy")
+                    self._append_log(f"Cache recovery: {event['message']}")
+                    return
                 label = event.get("clipId") or os.path.basename(str(event.get("path") or ""))
                 done, total = event.get("completedBytes"), event.get("totalBytes")
                 amount = f" ({done}/{total} bytes)" if done is not None and total else ""

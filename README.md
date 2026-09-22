@@ -280,7 +280,7 @@ V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to si
 
 ## Version identities
 
-- Published project release: `1.3.0-rc.3` / `2026-09-22` in `release.json`; client/0.3.2, protocol `7.1`.
+- Published project release: `1.3.0-rc.4` / `2026-09-22` in `release.json`; client/0.3.3, protocol `7.1`.
 - Historical project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
 - Candidate client implementation/minimum version: `client/0.3.0`.
 - Candidate benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.

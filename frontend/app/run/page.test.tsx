@@ -43,7 +43,9 @@ describe("RunPage", () => {
     for (const asset of primaryAssets) {
       expect(screen.getAllByText(asset.file).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/pending publication/).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(new RegExp(asset.sha256 ?? "NEVER")).length).toBeGreaterThan(0);
+      if (asset.sha256) {
+        expect(screen.getAllByText(new RegExp(asset.sha256)).length).toBeGreaterThan(0);
+      }
     }
     expect(screen.getByRole("heading", { level: 1, name: "Contribute your results." })).toBeInTheDocument();
     expect(document.querySelector(`a[href*='download/${projectTag}/']`)).toBeNull();

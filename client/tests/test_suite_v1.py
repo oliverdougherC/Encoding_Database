@@ -292,28 +292,44 @@ class SuiteDistributionFailureTests(unittest.TestCase):
         suite.build_suite_pack_archive(str(root), str(archive))
         return archive, metadata
 
-    def test_unreachable_stale_cache_reports_ownership_without_reextracting(self):
-        # A cache subtree created by an administrator-privileged run is invisible to
-        # os.path.exists and undeletable by the normal user; the client must name that
-        # cause instead of re-extracting gigabytes that can never be installed.
+    def test_unreachable_stale_cache_recovers_into_writable_alternate(self):
+        # A primary extraction protected against this account must not stop the run:
+        # verified bytes install into the writable recovered location, the blocked
+        # folder stays byte-identical, and the next start reuses the recovered copy.
+        import os
+        real_scandir = os.scandir
         with tempfile.TemporaryDirectory() as directory:
             archive, metadata = self._fixture_pack(directory)
             target = Path(suite._suite_pack_extract_root(metadata, directory))
+            recovered = Path(suite._suite_pack_recovered_root(metadata, directory))
             target.mkdir(parents=True)
             (target / "manifest.json").write_text("stale bytes")
-            with mock.patch.object(suite.os, "scandir", side_effect=PermissionError(13, "Access is denied")), \
-                 mock.patch.object(tarfile, "open", side_effect=AssertionError("must not re-extract an unreachable cache")):
-                with self.assertRaisesRegex(RuntimeError, "administrator-privileged") as raised:
-                    suite._extract_suite_pack(str(archive), metadata, directory)
-            self.assertIn(str(target), str(raised.exception))
+            def deny_primary(path, *args, **kwargs):
+                if Path(path) == target:
+                    raise PermissionError(13, "Access is denied")
+                return real_scandir(path, *args, **kwargs)
+            events = []
+            with mock.patch.object(suite.os, "scandir", side_effect=deny_primary), \
+                 mock.patch.object(suite, "verify_suite_clip", return_value=suite.ClipVerificationResult(True, "fixture media verification", {})), \
+                 mock.patch.object(suite, "preparation_progress", side_effect=lambda stage, **d: events.append((stage, d))):
+                canonical = Path(suite._extract_suite_pack(str(archive), metadata, directory))
+                self.assertEqual(canonical, recovered / "canonical")
+                self.assertEqual((canonical.parent / "manifest.json").read_text(),
+                                 (Path(directory) / "source" / "manifest.json").read_text())
+                with mock.patch.object(tarfile, "open", side_effect=AssertionError("recovered copy must be reused without re-extracting")):
+                    again = Path(suite._extract_suite_pack(str(archive), metadata, directory))
+                self.assertEqual(again, canonical)
             self.assertEqual((target / "manifest.json").read_text(), "stale bytes")
+            self.assertTrue(any(stage == "recovery" and "recovered" in str(details.get("message")) for stage, details in events))
+            self.assertEqual(list(recovered.parent.glob("suite-pack-*")), [])
 
-    def test_locked_target_swap_reports_actionable_error_and_cleans_staging(self):
+    def test_locked_target_swap_recovers_into_writable_alternate(self):
         import shutil
         real_rmtree = shutil.rmtree
         with tempfile.TemporaryDirectory() as directory:
             archive, metadata = self._fixture_pack(directory)
             target = Path(suite._suite_pack_extract_root(metadata, directory))
+            recovered = Path(suite._suite_pack_recovered_root(metadata, directory))
             with mock.patch.object(suite, "verify_suite_clip", return_value=suite.ClipVerificationResult(True, "fixture media verification", {})):
                 canonical = Path(suite._extract_suite_pack(str(archive), metadata, directory))
                 (canonical.parent / "manifest.json").write_text("corrupt")  # force fast-path miss
@@ -321,13 +337,41 @@ class SuiteDistributionFailureTests(unittest.TestCase):
                     if Path(path) == target:
                         raise PermissionError(13, "Access is denied")
                     return real_rmtree(path, *args, **kwargs)
-
                 with mock.patch.object(suite.shutil, "rmtree", side_effect=deny_target):
-                    with self.assertRaisesRegex(RuntimeError, "could not be replaced") as raised:
-                        suite._extract_suite_pack(str(archive), metadata, directory)
-            self.assertIn("Explorer", str(raised.exception))
+                    recovered_canonical = Path(suite._extract_suite_pack(str(archive), metadata, directory))
+            self.assertEqual(recovered_canonical, recovered / "canonical")
+            self.assertEqual((recovered_canonical.parent / "manifest.json").read_text(),
+                             (Path(directory) / "source" / "manifest.json").read_text())
             self.assertEqual(list(target.parent.glob("suite-pack-*")), [])
-            self.assertTrue((target / "manifest.json").exists())
+            self.assertEqual(list(recovered.parent.glob("suite-pack-*")), [])
+            self.assertEqual((target / "manifest.json").read_text(), "corrupt")
+
+    def test_unwritable_cache_reports_actual_permission_cause(self):
+        # No primary, no recovered location: fail clearly naming the cache folder and
+        # the permission error instead of claiming a different extraction would work.
+        import os
+        real_scandir = os.scandir
+        real_makedirs = os.makedirs
+        with tempfile.TemporaryDirectory() as directory:
+            archive, metadata = self._fixture_pack(directory)
+            target = Path(suite._suite_pack_extract_root(metadata, directory))
+            recovered_parent = Path(suite._suite_pack_recovered_root(metadata, directory)).parent
+            target.mkdir(parents=True)
+            (target / "manifest.json").write_text("stale bytes")
+            def deny_primary(path, *args, **kwargs):
+                if Path(path) == target:
+                    raise PermissionError(13, "Access is denied")
+                return real_scandir(path, *args, **kwargs)
+            def deny_recovered(path, *args, **kwargs):
+                if Path(path) == recovered_parent:
+                    raise PermissionError(13, "Access is denied")
+                return real_makedirs(path, *args, **kwargs)
+            with mock.patch.object(suite.os, "scandir", side_effect=deny_primary), \
+                 mock.patch.object(suite.os, "makedirs", side_effect=deny_recovered):
+                with self.assertRaisesRegex(RuntimeError, "not writable") as raised:
+                    suite._extract_suite_pack(str(archive), metadata, directory)
+            self.assertIn(directory, str(raised.exception))
+            self.assertIn("Access is denied", str(raised.exception))
 
     def test_cached_pack_checks_all_bytes_without_reprobing_and_repairs_corruption(self):
         with small_media_fixture() as (root, manifest):

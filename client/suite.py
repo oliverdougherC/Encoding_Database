@@ -969,9 +969,9 @@ def _copy_preparation_file(source, destination):
 def _suite_pack_target_access_error(target_root: str) -> Optional[str]:
     """Explain why an existing extracted root can be neither reused nor replaced.
 
-    A cache created by a different account or an administrator-privileged run is
-    invisible to os.path.exists and undeletable by the normal user; returning a
-    cause here prevents a multi-gigabyte re-extraction that cannot land anyway.
+    A folder write-protected against the current account is invisible to
+    os.path.exists and undeletable or unreadable once found. The caller recovers
+    into a writable alternate location; this only names the observed cause.
     """
     if not os.path.isdir(target_root):
         return None
@@ -980,42 +980,62 @@ def _suite_pack_target_access_error(target_root: str) -> Optional[str]:
             for _ in entries:
                 break
     except PermissionError as exc:
-        return (
-            f"suite cache at {target_root} exists but is not accessible to the current user ({exc}); "
-            "it was created by a different account or an administrator-privileged run - delete that "
-            "cache folder, then start the run again"
-        )
+        return f"the existing cache folder {target_root} is not readable by the current user ({exc})"
     except OSError as exc:
-        return (
-            f"suite cache at {target_root} cannot be inspected ({exc}); delete that cache folder, "
-            "then start the run again"
-        )
+        return f"the existing cache folder {target_root} cannot be inspected ({exc})"
     try:
         with open(os.path.join(target_root, "manifest.json"), "rb"):
             return None
     except FileNotFoundError:
         return None
     except OSError as exc:
-        return (
-            f"suite cache at {target_root} cannot be read ({exc}); it was likely created by a "
-            "different account or an administrator-privileged run - delete that cache folder, then "
-            "start the run again"
-        )
+        return f"the existing cache folder {target_root} cannot be read ({exc})"
+
+
+def _suite_pack_recovered_root(pack_metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
+    """Deterministic user-writable home for verified content when the primary
+    extraction location is blocked by ACLs or locks. It lives beside, never inside,
+    the blocked ".suite-pack" subtree, under the same suite cache root."""
+    suite_fingerprint = str(pack_metadata.get("suiteFingerprint") or "").strip()
+    if not suite_fingerprint:
+        raise RuntimeError("suite pack metadata is missing suiteFingerprint")
+    return os.path.join(cache_root or _suite_cache_root(), ".suite-pack-recovered", suite_fingerprint)
 
 
 def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
     target_root = _suite_pack_extract_root(metadata, cache_root)
     canonical_root = os.path.join(target_root, "canonical")
+    recovered_root = _suite_pack_recovered_root(metadata, cache_root)
+    primary_error = _suite_pack_target_access_error(target_root)
+    if primary_error is None:
+        try:
+            _verify_extracted_suite_pack(target_root, metadata, verify_media=False)
+            return canonical_root
+        except Exception:
+            pass
+    else:
+        # A previous run may already have installed the verified recovered copy; reuse
+        # it byte-for-byte without re-extracting.
+        try:
+            _verify_extracted_suite_pack(recovered_root, metadata, verify_media=False)
+        except Exception:
+            pass
+        else:
+            preparation_progress(
+                "recovery", path=recovered_root,
+                message=f"reusing the verified recovered suite cache copy at {recovered_root}",
+            )
+            return os.path.join(recovered_root, "canonical")
+    staging_parent = os.path.dirname(recovered_root) if primary_error else os.path.dirname(target_root)
     try:
-        _verify_extracted_suite_pack(target_root, metadata, verify_media=False)
-        return canonical_root
-    except Exception:
-        access_error = _suite_pack_target_access_error(target_root)
-        if access_error:
-            raise RuntimeError(access_error) from None
-    parent_dir = os.path.dirname(target_root)
-    os.makedirs(parent_dir, exist_ok=True)
-    staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=parent_dir)
+        os.makedirs(staging_parent, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"the configured suite cache under {cache_root or _suite_cache_root()} is not writable by "
+            f"the current user ({exc}); point ENCODINGDB_SUITE_CACHE_DIR at a writable folder and "
+            "start the run again"
+        ) from exc
+    staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=staging_parent)
     try:
         with tarfile.open(pack_path, "r:gz") as archive:
             for member in archive:
@@ -1028,21 +1048,38 @@ def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root:
                 with archive.extractfile(member) as source, open(destination, "xb") as target:
                     _copy_preparation_stream(source, target, path=member.name, total=member.size)
         _verify_extracted_suite_pack(staging_root, metadata)
+        if primary_error is None:
+            try:
+                if os.path.isdir(target_root):
+                    shutil.rmtree(target_root)
+                os.replace(staging_root, target_root)
+                return canonical_root
+            except OSError as swap_exc:
+                primary_error = (
+                    f"the existing cache folder {target_root} could not be replaced ({swap_exc}); "
+                    "it is held open or write-protected for this account"
+                )
         try:
-            if os.path.isdir(target_root):
-                shutil.rmtree(target_root)
-            os.replace(staging_root, target_root)
-        except OSError as swap_exc:
+            os.makedirs(os.path.dirname(recovered_root), exist_ok=True)
+            if os.path.isdir(recovered_root):
+                shutil.rmtree(recovered_root)
+            os.replace(staging_root, recovered_root)
+        except OSError as recovered_exc:
             raise RuntimeError(
-                f"verified suite content could not be installed into {target_root} because the "
-                f"existing cache folder could not be replaced ({swap_exc}); close any program "
-                "holding that folder (for example an Explorer window), delete it if asked, and "
-                "start the run again"
-            ) from swap_exc
+                "verified suite content could not be installed into the primary cache "
+                f"(after re-extraction: {primary_error}) and could not be written to the recovered "
+                f"cache location {recovered_root} ({recovered_exc}) either; configure a writable "
+                "ENCODINGDB_SUITE_CACHE_DIR and start the run again"
+            ) from recovered_exc
+        preparation_progress(
+            "recovery", path=recovered_root,
+            message=f"the primary suite cache could not be used ({primary_error}); installed a fully "
+                    f"verified copy at {recovered_root} and will reuse it on future runs",
+        )
+        return os.path.join(recovered_root, "canonical")
     except BaseException:
         shutil.rmtree(staging_root, ignore_errors=True)
         raise
-    return os.path.join(target_root, "canonical")
 
 
 def _load_requests():

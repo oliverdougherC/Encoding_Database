@@ -107,7 +107,7 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.2"
+CLIENT_VERSION = "client/0.3.3"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 PUBLICATION_CONSENT_VERSION = 1
@@ -290,6 +290,9 @@ def _preparation_operation(function):
         def progress(stage, **details):
             _emit_event(sink, "preparation_progress", scope="preparation", stage=stage, **details)
             if sink is None:
+                if stage == "recovery" and details.get("message"):
+                    print_info(f"Cache recovery: {details['message']}")
+                    return
                 label = details.get("clipId") or os.path.basename(str(details.get("path") or ""))
                 done, total = details.get("completedBytes"), details.get("totalBytes")
                 amount = f" ({done}/{total} bytes)" if done is not None and total else ""
