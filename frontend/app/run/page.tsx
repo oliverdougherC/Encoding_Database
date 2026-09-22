@@ -67,7 +67,7 @@ export default function RunPage() {
         <p>Windows: SmartScreen warns because the executable is unsigned. Verify the SHA-256 above first, and continue only if you trust the source; the page gives no bypass tool or automation.</p>
 
         <h3>Superseded packaged builds ({supersededTag})</h3>
-        <p>The {supersededTag} Windows build names every failure cause but stops at a cache folder protected against the current user until that folder is deleted with administrator rights; {projectTag} recovers automatically instead, with no manual repair. Its macOS and Linux binaries are byte-identical to the current ones.</p>
+        <p>The {supersededTag} macOS build predates the preparation, retained-campaign storage, and resume repairs in {projectTag}. The verified Windows and Linux binaries are unchanged in this release.</p>
         <ul className={styles.assetList}>
           {supersededAssets.map((asset) => <li key={asset.file}>
             <a href={`${superseded}/${asset.file}`}>{asset.label}</a>{" "}
