@@ -140,6 +140,9 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             self.running = False
             self._browse_shown = False
             self._close_deadline = 0.0
+            # Causal message from the most recent run_error/unhandled failure in this
+            # run; the done handler must not replace it with a bare exit code.
+            self.last_failure: Optional[str] = None
 
             self.mode_var = tk.StringVar(value="Small")
             self.no_submit_var = tk.BooleanVar(value=bool(getattr(base_args, "no_submit", False)))
@@ -374,6 +377,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 messagebox.showerror("Unsupported configuration", "Select an available encoder and supported preset before starting.")
                 return
             self.cancel_event.clear()
+            self.last_failure = None
             self._set_running(True)
             self.summary_var.set("Run started...")
             self.stage_var.set("Starting")
@@ -627,6 +631,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             if event_type == "run_error":
                 self.stage_var.set("Error")
+                self.last_failure = str(event.get("message") or "").strip() or None
                 self.summary_var.set(str(event.get("message") or "Run failed"))
                 self._append_log(self.summary_var.get())
 
@@ -638,6 +643,8 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         self._handle_event(payload)
                     elif kind == "error":
                         self.stage_var.set("Error")
+                        first_line = str(payload).strip().splitlines()[0] if str(payload).strip() else ""
+                        self.last_failure = first_line or None
                         self.summary_var.set("Run failed. See event log.")
                         self._append_log(payload)
                     elif kind == "done":
@@ -660,7 +667,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                         elif rc == 130:
                             self.summary_var.set("Run cancelled")
                         else:
-                            self.summary_var.set(f"Run failed (exit code {rc})")
+                            if self.last_failure:
+                                failure = f"Run failed (exit code {rc}): {self.last_failure}"
+                            else:
+                                failure = f"Run failed (exit code {rc}); see event log for details"
+                            self.summary_var.set(failure)
+                            self._append_log(failure)
                         self._update_single_fields_state(preview=False)
                     elif kind == "upload_status":
                         self._append_log(payload)

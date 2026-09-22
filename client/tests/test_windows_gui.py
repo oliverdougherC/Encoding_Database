@@ -399,6 +399,36 @@ class GuiLifecycleTests(unittest.TestCase):
             bindings["<Alt-b>"](None)
         self.assertIn("Explicit measurement allowance: 15 minutes", " ".join(log_lines))
 
+    def test_run_error_cause_survives_done_and_persists_in_log(self):
+        app, _root, _bindings, _tk = self.build()
+        lines = []
+        with mock.patch.object(app, "_append_log", lines.append):
+            app._handle_event({"type": "run_error", "scope": "preparation", "code": 3,
+                               "message": "EncodingDB Test Suite v1 is unavailable: download blocked"})
+            app.event_queue.put(("done", 3))
+            app._poll_events()
+        self.assertIn("Run failed (exit code 3)", app.summary_var.get())
+        self.assertIn("download blocked", app.summary_var.get())
+        self.assertIn("Run failed (exit code 3): EncodingDB Test Suite v1 is unavailable: download blocked",
+                      " ".join(lines))
+
+    def test_generic_failure_done_appends_actionable_log_line(self):
+        app, _root, _bindings, _tk = self.build()
+        lines = []
+        with mock.patch.object(app, "_append_log", lines.append):
+            app.event_queue.put(("done", 6))
+            app._poll_events()
+        self.assertIn("exit code 6", app.summary_var.get())
+        self.assertIn("event log", app.summary_var.get())
+        self.assertTrue(any("exit code 6" in line for line in lines))
+
+    def test_start_clears_previous_failure_cause(self):
+        app, _root, bindings, _tk = self.build()
+        app.last_failure = "stale cause from a previous run"
+        with mock.patch.object(gui.threading, "Thread", FakeThread):
+            bindings["<Alt-b>"](None)
+        self.assertIsNone(app.last_failure)
+
 
 if __name__ == "__main__":
     unittest.main()

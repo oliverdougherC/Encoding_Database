@@ -966,6 +966,43 @@ def _copy_preparation_file(source, destination):
         _copy_preparation_stream(reader, writer, path=source, total=os.path.getsize(source))
 
 
+def _suite_pack_target_access_error(target_root: str) -> Optional[str]:
+    """Explain why an existing extracted root can be neither reused nor replaced.
+
+    A cache created by a different account or an administrator-privileged run is
+    invisible to os.path.exists and undeletable by the normal user; returning a
+    cause here prevents a multi-gigabyte re-extraction that cannot land anyway.
+    """
+    if not os.path.isdir(target_root):
+        return None
+    try:
+        with os.scandir(target_root) as entries:
+            for _ in entries:
+                break
+    except PermissionError as exc:
+        return (
+            f"suite cache at {target_root} exists but is not accessible to the current user ({exc}); "
+            "it was created by a different account or an administrator-privileged run - delete that "
+            "cache folder, then start the run again"
+        )
+    except OSError as exc:
+        return (
+            f"suite cache at {target_root} cannot be inspected ({exc}); delete that cache folder, "
+            "then start the run again"
+        )
+    try:
+        with open(os.path.join(target_root, "manifest.json"), "rb"):
+            return None
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        return (
+            f"suite cache at {target_root} cannot be read ({exc}); it was likely created by a "
+            "different account or an administrator-privileged run - delete that cache folder, then "
+            "start the run again"
+        )
+
+
 def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root: Optional[str] = None) -> str:
     target_root = _suite_pack_extract_root(metadata, cache_root)
     canonical_root = os.path.join(target_root, "canonical")
@@ -973,7 +1010,9 @@ def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root:
         _verify_extracted_suite_pack(target_root, metadata, verify_media=False)
         return canonical_root
     except Exception:
-        pass
+        access_error = _suite_pack_target_access_error(target_root)
+        if access_error:
+            raise RuntimeError(access_error) from None
     parent_dir = os.path.dirname(target_root)
     os.makedirs(parent_dir, exist_ok=True)
     staging_root = tempfile.mkdtemp(prefix="suite-pack-", dir=parent_dir)
@@ -989,8 +1028,17 @@ def _extract_suite_pack(pack_path: str, metadata: Mapping[str, Any], cache_root:
                 with archive.extractfile(member) as source, open(destination, "xb") as target:
                     _copy_preparation_stream(source, target, path=member.name, total=member.size)
         _verify_extracted_suite_pack(staging_root, metadata)
-        shutil.rmtree(target_root, ignore_errors=True)
-        os.replace(staging_root, target_root)
+        try:
+            if os.path.isdir(target_root):
+                shutil.rmtree(target_root)
+            os.replace(staging_root, target_root)
+        except OSError as swap_exc:
+            raise RuntimeError(
+                f"verified suite content could not be installed into {target_root} because the "
+                f"existing cache folder could not be replaced ({swap_exc}); close any program "
+                "holding that folder (for example an Explorer window), delete it if asked, and "
+                "start the run again"
+            ) from swap_exc
     except BaseException:
         shutil.rmtree(staging_root, ignore_errors=True)
         raise

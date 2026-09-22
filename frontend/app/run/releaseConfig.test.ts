@@ -45,8 +45,8 @@ describe("release configuration consistency", () => {
   });
 
   it("fails closed when the configured base names a different tag than the project", () => {
-    // Guards the live-deployment cutover: a stale rc.1 base must never yield
-    // rc.2 asset links.
+    // Guards the live-deployment cutover: a stale predecessor base must never
+    // yield current asset links.
     expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/1.3.0-rc.1` }).published).toBe(false);
     expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/${historicalTag}` }).published).toBe(false);
   });

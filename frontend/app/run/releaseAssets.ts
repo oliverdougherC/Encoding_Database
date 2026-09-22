@@ -1,25 +1,26 @@
-// Release-aware download model for the collection client (target 1.3.0-rc.2).
+// Release-aware download model for the collection client (target 1.3.0-rc.3).
 //
-// The packaged rc.2 builds - macOS DMG with a double-clickable app, Windows
-// GUI executable, Linux archive with a launcher - are being produced on the
-// client lane. They become downloadable only when the operator publishes them
-// as GitHub release assets under tag `1.3.0-rc.2` and stamps the verified
-// SHA-256 digests into `primaryAssets` during integration.
+// rc.3 is a Windows-only repair of rc.2: pre-encode failures now name their
+// cause in the GUI event log instead of a bare "Run failed (exit code 3)", and
+// a suite cache owned by another account (administrator-privileged creation)
+// reports its path and recovery instead of looping. The macOS and Linux
+// binaries are byte-identical to the accepted rc.2 builds, republished under
+// the new tag with their original source identity; the Windows GUI and console
+// are rebuilt from the repair commit.
 //
 // COLLECTION_DOWNLOAD_BASE must be the full download base for the CURRENT tag,
-// e.g. `https://github.com/<owner>/<repo>/releases/download/1.3.0-rc.2`.
-// The model fails closed on any other value: the currently deployed base
-// still points at the published 1.3.0-rc.1 assets, and rc.2 file names must
-// never be concatenated onto that path. Publication is therefore keyed to the
-// exact tag segment, not merely to a non-empty variable.
+// e.g. `https://github.com/<owner>/<repo>/releases/download/1.3.0-rc.3`.
+// The model fails closed on any other value: publication is keyed to the
+// exact tag segment, so asset names can never resolve under another tag.
 //
-// 1.3.0-rc.1 stays published as plain command-line builds (the macOS asset is
-// a bare extensionless executable); it is listed as superseded, never as the
-// recommended download. 1.2.0 (client/0.2.0, protocol 7.0) is historical and
-// cannot submit to the protocol 7.1 server.
+// 1.3.0-rc.2 stays published but superseded (its Windows build has the defect
+// above). 1.3.0-rc.1 stays published as plain command-line builds (`cliTag`),
+// never as the recommended download. 1.2.0 (client/0.2.0, protocol 7.0) is
+// historical and cannot submit to the protocol 7.1 server.
 
-export const projectTag = "1.3.0-rc.2";
-export const supersededTag = "1.3.0-rc.1";
+export const projectTag = "1.3.0-rc.3";
+export const supersededTag = "1.3.0-rc.2";
+export const cliTag = "1.3.0-rc.1";
 export const historicalTag = "1.2.0";
 export const repoReleases = "https://github.com/oliverdougherC/Encoding_Database/releases";
 
@@ -49,7 +50,7 @@ export const primaryAssets: ReleaseAsset[] = [
   {
     file: "encodingdb-client-windows.exe",
     label: "Windows (GUI)",
-    sha256: "242881ee5095703c67c134590aa96fc5545d8d865321ace84cb451955194b612",
+    sha256: "a79e188706dd64fc9669b4df346808998079cfc1eb8df8705b5407af61fb4457",
     support: "No Authenticode signature, so SmartScreen may warn at first launch. The window exposes the same Small/Medium/Large/Full sweeps as the guided interface.",
   },
   {
@@ -60,35 +61,36 @@ export const primaryAssets: ReleaseAsset[] = [
   },
 ];
 
-// Published but superseded command-line builds (client/0.3.0, protocol 7.1).
-// Checksums are the accepted release-executable identities recorded in
-// docs/operations/evidence/integration-recovery-20260920/package-acceptance.json
-// and each build's SHA256SUMS receipt (all four re-hashed on-disk 2026-09-20).
-// Keep these as documentation; they must not be presented as recommended.
+// Published but superseded packaged builds (1.3.0-rc.2, client/0.3.1, protocol 7.1).
+// Digests are the published rc.2 release-asset digests (GitHub asset digests,
+// re-read 2026-09-22). The Windows pair carries the bare-exit-code defect
+// repaired in rc.3; the macOS/Linux entries are byte-identical to the primary
+// downloads above and are listed only for checksum continuity. Keep these as
+// documentation; they must not be presented as recommended.
 export const supersededAssets: ReleaseAsset[] = [
   {
     file: "encodingdb-client-windows.exe",
-    label: "Windows GUI (rc.1)",
-    sha256: "9af36d251e94f7c261f163775db286eaf4c5988ea0d3a30f0346ba9719670cd0",
-    support: "No Authenticode signature; measured on one physical Windows 11 / RTX 5090 host (GUI acceptance r9).",
+    label: "Windows GUI (rc.2)",
+    sha256: "242881ee5095703c67c134590aa96fc5545d8d865321ace84cb451955194b612",
+    support: "No Authenticode signature; reports preparation failures as a bare exit code - replaced by rc.3.",
   },
   {
     file: "encodingdb-client-windows-console.exe",
-    label: "Windows console (rc.1)",
-    sha256: "0637ad12e31fd20adfeb4d26ea1b377d8e21c26fde1db341ead6fca0a7b4ee97",
-    support: "No Authenticode signature; same physical host and build session as the GUI executable.",
+    label: "Windows console (rc.2)",
+    sha256: "a3fd56fcfc5776d8c34dd82a45ec875a6dfc5b1a232231c2ba7180570721c424",
+    support: "No Authenticode signature; same defect as the rc.2 GUI executable.",
   },
   {
-    file: "encodingdb-client-linux",
-    label: "Linux x86-64 (rc.1)",
-    sha256: "e8927096799fc4c7592a375b0318bb2313f36fe00f950cfeb555ac93c29d5a9e",
-    support: "Unsigned; built and replay-accepted on Ubuntu 24.04 (NVIDIA NVENC host).",
+    file: "EncodingDB-macOS-arm64.dmg",
+    label: "macOS DMG (rc.2)",
+    sha256: "2ec29a38cf36920d8eb030de97113cd37c56373a277ddbd79e46d1b0336c36ef",
+    support: "Byte-identical to the current macOS download; same file republished under the rc.3 tag.",
   },
   {
-    file: "encodingdb-client-macos",
-    label: "macOS Apple Silicon (rc.1)",
-    sha256: "93339fda368d9285e8ba7d6c79d40de1a1069ca638839c126e8d5cb88f1e9a89",
-    support: "Bare extensionless executable (no app bundle) - superseded by the DMG. Ad-hoc signed (not Developer ID, not notarized); native arm64 with an embedded runtime requiring macOS 27 or later (tested on macOS 27.0 build 26A428); older macOS and Intel Macs unverified. No Rosetta.",
+    file: "encodingdb-client-linux.tar.gz",
+    label: "Linux archive (rc.2)",
+    sha256: "b1a68a039ce78a6bc9718adbae99409865326ea8a8b3fc29e47aaa090ef0f4d8",
+    support: "Byte-identical to the current Linux download; same file republished under the rc.3 tag.",
   },
 ];
 
@@ -100,7 +102,7 @@ export interface DownloadModel {
 
 // A missing/mismatched base means "assets staged, not yet published": hrefs
 // stay null so the page can stage the plan without claiming an unpublished
-// URL is live - and without ever resolving rc.2 names under another tag.
+// URL is live - and without ever resolving current asset names under another tag.
 export function downloadModel(env: Record<string, string | undefined>): DownloadModel {
   const base = (env[downloadBaseEnvVar] ?? "").trim().replace(/\/+$/, "");
   const published = base.endsWith(`/download/${projectTag}`);

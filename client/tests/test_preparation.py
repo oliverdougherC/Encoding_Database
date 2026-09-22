@@ -204,6 +204,46 @@ class PreparationTests(unittest.TestCase):
             self.assertIsNone(campaign._MEASUREMENT_BUDGET.get())
         progress.assert_called_once()
 
+    def test_sweep_suite_unavailable_surfaces_causal_run_error(self):
+        events = []
+        presets = main.load_presets_config(main.PRESETS_CONFIG_PATH)
+        with mock.patch.object(main, 'list_all_available_encoders', return_value=['libx264']), \
+             mock.patch.object(main, '_probe_encoder_usable_with_cancel', return_value=True), \
+             mock.patch.object(main, '_prepare_sweep_clips',
+                               side_effect=RuntimeError('suite pack could not be acquired: offline')):
+            rc = main.run_sweep_mode(mode='small', base_args=self.args(no_submit=True),
+                                     event_sink=events.append, presets_cfg=presets)
+        self.assertEqual(rc, 3)
+        errors = [event for event in events if event.get('type') == 'run_error']
+        self.assertEqual([event['code'] for event in errors], [3])
+        self.assertEqual(errors[0]['scope'], 'preparation')
+        self.assertIn('offline', errors[0]['message'])
+
+    def test_v7_quick_prep_failure_surfaces_causal_run_error(self):
+        events = []
+        with mock.patch.object(main, '_prepare_quick_suite_clip',
+                               side_effect=RuntimeError('pack download failed: HTTP 403')):
+            rc = main.run_v7_suite_clip_mode(base_args=self.args(no_submit=True), event_sink=events.append)
+        self.assertEqual(rc, 3)
+        errors = [event for event in events if event.get('type') == 'run_error']
+        self.assertEqual([event['code'] for event in errors], [3])
+        self.assertIn('the default quick clip', errors[0]['message'])
+        self.assertIn('HTTP 403', errors[0]['message'])
+
+    def test_batch_missing_clip_identity_surfaces_causal_run_error(self):
+        events = []
+        hardware = main.HardwareInfo('Test CPU', 'none', 16, 'TestOS')
+        with mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')):
+            rc = main.run_benchmark_batch(
+                hardware=hardware, base_url='https://invalid.example',
+                args=self.args(no_submit=True, max_attempts=100, max_duration_minutes=60),
+                tasks=[{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'rateControl': None}],
+                event_sink=events.append)
+        self.assertEqual(rc, 3)
+        errors = [event for event in events if event.get('type') == 'run_error']
+        self.assertEqual([event['code'] for event in errors], [3])
+        self.assertIn('clip identities', errors[0]['message'])
+
 
 if __name__ == '__main__':
     unittest.main()
