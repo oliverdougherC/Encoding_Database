@@ -272,6 +272,63 @@ class SuiteDistributionFailureTests(unittest.TestCase):
                 suite._extract_suite_pack(str(archive), metadata, directory)
                 self.assertEqual(notice.read_text(), "Fixture license notice")
 
+    def _fixture_pack(self, directory: str):
+        import hashlib
+        root = Path(directory) / "source"
+        root.mkdir()
+        payload = json.loads(Path(suite.get_manifest_path()).read_text())
+        for clip in payload["clips"]:
+            clip["sha256"] = hashlib.sha256(b"fixture").hexdigest()
+            clip["byteSize"] = len(b"fixture")
+        (root / "manifest.json").write_text(json.dumps(payload))
+        (root / "finalization-status.json").write_text(json.dumps({"isFrozen": True}))
+        (root / "notices").mkdir()
+        (root / "canonical").mkdir()
+        for clip in payload["clips"]:
+            (root / "notices" / f"{clip['id']}.txt").write_text("Fixture license notice")
+            (root / "canonical" / clip["fileName"]).write_bytes(b"fixture")
+        metadata = suite.build_suite_pack_metadata(str(root))
+        archive = Path(directory) / "suite.tar.gz"
+        suite.build_suite_pack_archive(str(root), str(archive))
+        return archive, metadata
+
+    def test_unreachable_stale_cache_reports_ownership_without_reextracting(self):
+        # A cache subtree created by an administrator-privileged run is invisible to
+        # os.path.exists and undeletable by the normal user; the client must name that
+        # cause instead of re-extracting gigabytes that can never be installed.
+        with tempfile.TemporaryDirectory() as directory:
+            archive, metadata = self._fixture_pack(directory)
+            target = Path(suite._suite_pack_extract_root(metadata, directory))
+            target.mkdir(parents=True)
+            (target / "manifest.json").write_text("stale bytes")
+            with mock.patch.object(suite.os, "scandir", side_effect=PermissionError(13, "Access is denied")), \
+                 mock.patch.object(tarfile, "open", side_effect=AssertionError("must not re-extract an unreachable cache")):
+                with self.assertRaisesRegex(RuntimeError, "administrator-privileged") as raised:
+                    suite._extract_suite_pack(str(archive), metadata, directory)
+            self.assertIn(str(target), str(raised.exception))
+            self.assertEqual((target / "manifest.json").read_text(), "stale bytes")
+
+    def test_locked_target_swap_reports_actionable_error_and_cleans_staging(self):
+        import shutil
+        real_rmtree = shutil.rmtree
+        with tempfile.TemporaryDirectory() as directory:
+            archive, metadata = self._fixture_pack(directory)
+            target = Path(suite._suite_pack_extract_root(metadata, directory))
+            with mock.patch.object(suite, "verify_suite_clip", return_value=suite.ClipVerificationResult(True, "fixture media verification", {})):
+                canonical = Path(suite._extract_suite_pack(str(archive), metadata, directory))
+                (canonical.parent / "manifest.json").write_text("corrupt")  # force fast-path miss
+                def deny_target(path, *args, **kwargs):
+                    if Path(path) == target:
+                        raise PermissionError(13, "Access is denied")
+                    return real_rmtree(path, *args, **kwargs)
+
+                with mock.patch.object(suite.shutil, "rmtree", side_effect=deny_target):
+                    with self.assertRaisesRegex(RuntimeError, "could not be replaced") as raised:
+                        suite._extract_suite_pack(str(archive), metadata, directory)
+            self.assertIn("Explorer", str(raised.exception))
+            self.assertEqual(list(target.parent.glob("suite-pack-*")), [])
+            self.assertTrue((target / "manifest.json").exists())
+
     def test_cached_pack_checks_all_bytes_without_reprobing_and_repairs_corruption(self):
         with small_media_fixture() as (root, manifest):
             (root / "suite-lock.json").write_text('{}')
