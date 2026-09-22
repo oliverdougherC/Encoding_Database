@@ -317,9 +317,10 @@ def run_ffmpeg_test(input_path: str, preset: str, codec: str = "libx264", crf: O
     with tempfile.TemporaryDirectory() as td:
         out_path = os.path.join(td, "out.mp4")
         cmd = build_ffmpeg_encode_cmd(input_path=input_path, output_path=out_path, encoder=codec, preset_name=preset, crf=crf)
+        spawn_options = hidden_console_kwargs()
         start = time.perf_counter()
         proc = subprocess.run(cmd, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                              **hidden_console_kwargs())
+                              **spawn_options)
         end = time.perf_counter()
         elapsed = max(0.0001, end - start)
         total_frames = _parse_frame_count(proc.stdout) or _parse_frame_count(proc.stderr)
@@ -820,12 +821,13 @@ def _run_monitored(cmd: List[str], *, encoder_name: str, host_gpu_vendors: Optio
     receipt_writer = None
     receipt_errors = []
     hw_metrics = None
+    spawn_options = hidden_console_kwargs()
     try:
         check_measurement_budget()
         start_ns = time.perf_counter_ns()
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
                                 start_new_session=os.name != "nt",
-                                **hidden_console_kwargs())
+                                **spawn_options)
         monitor._ffmpeg_pid = proc.pid
         if checkpoint_path:
             from pathlib import Path
