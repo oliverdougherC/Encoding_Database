@@ -28,6 +28,7 @@ import psutil
 
 from .config import normalize_cpu_freq_mhz
 from .energy import EnergyCollector
+from .console_policy import hidden_console_kwargs
 
 try:
     import pynvml  # type: ignore
@@ -216,6 +217,7 @@ def _run_command(cmd: List[str], timeout: float) -> str:
         stderr=subprocess.DEVNULL,
         text=True,
         timeout=timeout,
+        **hidden_console_kwargs(),
     )
     return proc.stdout or ""
 

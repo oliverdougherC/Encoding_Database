@@ -9,6 +9,7 @@ from urllib.parse import urljoin
 import subprocess
 from .campaign import (check_preparation_cancelled, preparation_progress, run_measurement_process,
                        start_owned_acquisition, wait_for_owned_acquisition)
+from .console_policy import hidden_console_kwargs
 import sys
 import tempfile
 import tarfile
@@ -556,7 +557,8 @@ def _generation_command(lavfi: str, output_path: str, frame_count: int) -> List[
 
 def _generate_clip(lavfi: str, output_path: str, frame_count: int) -> None:
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    subprocess.run(_generation_command(lavfi, output_path, frame_count), check=True)
+    subprocess.run(_generation_command(lavfi, output_path, frame_count), check=True,
+                   **hidden_console_kwargs())
 
 
 def build_manifest_data() -> Dict[str, Any]:

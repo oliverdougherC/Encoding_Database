@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from . import config
+from .console_policy import hidden_console_kwargs
 from .protocol import (ArtifactProbe, BenchmarkRunRecord, EncodeTiming, EnvironmentSnapshot,
                        ScheduledRun, ValidityReason, ValidityResult)
 
@@ -151,6 +152,8 @@ def measurement_timeout(maximum):
 
 def run_measurement_process(*args, **kwargs):
     """Own validation tools during preparation and the measured campaign allowance."""
+    for key, value in hidden_console_kwargs().items():
+        kwargs.setdefault(key, value)
     budget = _MEASUREMENT_BUDGET.get()
     if budget is None and _PREPARATION.get() is None:
         return subprocess.run(*args, **kwargs)
@@ -339,7 +342,8 @@ class CampaignJournal:
                                 from .ffmpeg import _terminate_owned_process
                                 if os.name == "nt":
                                     import subprocess
-                                    subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], check=False, capture_output=True, timeout=10)
+                                    subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"], check=False, capture_output=True, timeout=10,
+                                                   **hidden_console_kwargs())
                                 else:
                                     import signal
                                     if os.getpgid(process.pid) != process.pid:
