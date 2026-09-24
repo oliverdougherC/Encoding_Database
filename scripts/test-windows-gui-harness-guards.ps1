@@ -87,9 +87,9 @@ $script:events=@()
 function Record-Event([string]$Kind,$Data) { $script:events+=@{kind=$Kind;data=$Data} }
 function Capture-Ui([string]$Label) { return @() }
 function Run-Fixture {
-    # Exact hosted-runner geometry from CI 35651286705 prepare-stop dumps: the real three-button
-    # run row (Start 99px, Stop 76px, Retry Queued Uploads 128px), the real seven-control mode
-    # row, plus the decoy log frame whose Text child and ScrollBar child match every purely
+    # Hosted-runner geometry: the three-button run row (Start, Stop, Retry due uploads) and the
+    # current three-control guided mode row from CI 35976723286 prepare-stop dumps, plus the
+    # decoy log frame whose Text child and ScrollBar child match every purely
     # geometric rule except child count and class.
     [void][EdbWindows]::Data.Clear()
     Run-Window 1 0 @(8,8,1016,703) 'TkTopLevel'; $t=[EdbWindows]::Data[1];$t.Text='EncodingDB Windows Client'
@@ -103,11 +103,7 @@ function Run-Fixture {
     Run-Window 40 1 @(40,78,984,99) 'TkChild'
     Run-Window 41 40 @(40,79,75,98) 'TkChild'
     Run-Window 42 40 @(83,78,214,99) 'TkChild'
-    Run-Window 43 40 @(230,78,412,99) 'TkChild'
-    Run-Window 44 40 @(424,79,463,98) 'TkChild'
-    Run-Window 45 40 @(469,78,524,98) 'TkChild'
-    Run-Window 46 40 @(536,79,592,98) 'TkChild'
-    Run-Window 47 40 @(598,78,653,98) 'TkChild'
+    Run-Window 43 40 @(230,78,385,99) 'TkChild'
 }
 Case 'run-row:real-identity-with-hosted-decoys'
 Run-Fixture
@@ -135,10 +131,10 @@ Run-Fixture;[EdbWindows]::Data[12].Class='TkChild';[EdbWindows]::Data[11].Bounds
 Run-Window 13 10 @(468,490,700,673) 'TkChild'
 Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*observed 2 candidate Start/Stop rows*not established*'
 Case 'run-row:mode-row-uniform-height-never-selected'
-# Flattening every mode-row child to the mode row's uniform height must not let the seven-control
+# Flattening every mode-row child to the mode row's uniform height must not let the three-control
 # row impersonate the run row nor displace the real Start/Stop identity.
 Run-Fixture
-foreach ($id in @(41,43,44,45,46,47)) { $row1=[EdbWindows]::Data[$id]; $row1.Bounds=@($row1.Bounds[0],78,$row1.Bounds[2],99) }
+foreach ($id in @(41,43)) { $row1=[EdbWindows]::Data[$id]; $row1.Bounds=@($row1.Bounds[0],78,$row1.Bounds[2],99) }
 $obs=Get-ObservedRunControl 'Start'
 Assert-True ($obs.child -eq [IntPtr]21 -and $obs.x -eq 89 -and $obs.y -eq 179) 'The uniform-height mode row impersonated the run control.'
 Case 'run-row:reject-first-not-wider'
@@ -156,27 +152,23 @@ Assert-Throws {Get-ObservedRunControl 'Start'} '*BLOCKED_GUI_POINT*not establish
 Case 'mode-row:real-identity-after-run-row-rejection'
 $mode=Get-ObservedModeControl
 Assert-True ($mode.child -eq [IntPtr]42 -and $mode.owner -eq 42 -and $mode.x -eq 148 -and $mode.y -eq 88) 'Real mode observer picked the wrong mode combobox on the hosted geometry.'
-Case 'mode-row:reject-eight-control-row'
-Run-Fixture;Run-Window 48 40 @(660,78,715,98) 'TkChild'
+Case 'mode-row:reject-four-control-row'
+Run-Fixture;Run-Window 48 40 @(401,78,456,98) 'TkChild'
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
 Case 'mode-row:reject-mixed-class-children'
-Run-Fixture;$mflipped=[EdbWindows]::Data[44];$mflipped.Class='ScrollBar'
+Run-Fixture;$mflipped=[EdbWindows]::Data[43];$mflipped.Class='ScrollBar'
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
 Case 'mode-row:reject-overlapping-children'
 Run-Fixture;$mover=[EdbWindows]::Data[43];$mover.Bounds=@(200,78,412,99)
 Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*configuration rows*not established*'
 Case 'mode-row:reject-undersized-combobox'
 Run-Fixture;$msmall=[EdbWindows]::Data[42];$msmall.Bounds=@(83,78,110,99)
-Assert-Throws {Get-ObservedModeControl} '*unexpected size*'
-Case 'mode-row:reject-ambiguous-second-seven-control-row'
+Assert-Throws {Get-ObservedModeControl} '*BLOCKED_GUI_POINT*not established*'
+Case 'mode-row:reject-ambiguous-second-three-control-row'
 Run-Fixture;Run-Window 50 1 @(40,216,984,237) 'TkChild'
 Run-Window 51 50 @(40,217,75,236) 'TkChild'
 Run-Window 52 50 @(83,216,214,237) 'TkChild'
-Run-Window 53 50 @(230,216,412,237) 'TkChild'
-Run-Window 54 50 @(424,217,463,236) 'TkChild'
-Run-Window 55 50 @(469,216,524,236) 'TkChild'
-Run-Window 56 50 @(536,217,592,236) 'TkChild'
-Run-Window 57 50 @(598,216,653,236) 'TkChild'
+Run-Window 53 50 @(230,216,385,237) 'TkChild'
 Assert-Throws {Get-ObservedModeControl} '*observed 2 candidate configuration rows*'
 function Mode-Fixture {
     Run-Fixture
