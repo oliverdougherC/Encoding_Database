@@ -45,9 +45,16 @@ Supported builder overrides:
 
 Runtime-lock-sensitive CI does not rely on ambient `apt`, `brew`, or `choco` FFmpeg packages, because those runner packages do not consistently expose the required `xpsnr` filter.
 
-- Linux and Windows use the immutable BtbN `autobuild-2026-09-09-14-51`
-  FFmpeg `n8.1.2-51-g7ba069f4f1` GPL archives, checked against pinned upstream
-  SHA256 digests. Platform identities were generated on native runners in
+- Linux and Windows use the reviewed BtbN `autobuild-2026-09-09-14-51`
+  FFmpeg `n8.1.2-51-g7ba069f4f1` GPL runtime bytes. The original upstream
+  release tag now returns HTTP 404. CI recovers those *same* FFmpeg/FFprobe
+  bytes from the already-published [Linux candidate archive](https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-linux-candidate-ci34430919675-2d3ed7d4d167.tar.gz)
+  (SHA256 `cb2712b94b705cf447eb4b550e8f3b2be1bfcc6120db1f361a6534234bfb325c`)
+  or [Windows candidate archive](https://github.com/oliverdougherC/Encoding_Database/releases/download/encodingdb-beta-review-assets-20260909/encodingdb-windows-candidate-ci34430919675-2d3ed7d4d167.zip)
+  (SHA256 `9e00b681397044ced552ec9539d10af42c731fe5a8b583eb9efb72de917fbe05`).
+  `scripts/provision_pinned_runtime.py` hashes each archive and extracted binary
+  against the committed lock before any build or smoke test. Platform identities
+  were generated on native runners in
   [CI run 34419226010](https://github.com/oliverdougherC/Encoding_Database/actions/runs/34419226010),
   then reviewed into the committed lock. A proposed lock is not a packaged build.
 - macOS uses Evermeet `126386-gc27482a18d7`, containing libvmaf `3.2.0-13`.

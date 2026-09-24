@@ -98,6 +98,7 @@ class ReleasePackagingTests(unittest.TestCase):
 
     def test_read_client_minimum_version_is_coherent(self) -> None:
         self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.3.0")
+        self.assertEqual(release_manifest_lib.read_client_implementation_version(), "client/0.3.3")
 
     def test_client_patch_version_does_not_change_protocol_minimum(self) -> None:
         with mock.patch.object(release_manifest_lib, "read_text", side_effect=[

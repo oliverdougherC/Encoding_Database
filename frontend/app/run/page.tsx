@@ -1,5 +1,5 @@
 import styles from "./page.module.css";
-import { cliTag, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
+import { cliTag, currentWindowsConsole, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,7 @@ export default function RunPage() {
   const historical = `${repoReleases}/download/${historicalTag}`;
   const superseded = `${repoReleases}/download/${supersededTag}`;
   const cliBase = `${repoReleases}/download/${cliTag}`;
+  const currentBase = `${repoReleases}/download/${projectTag}`;
   return <div className={`page ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
@@ -28,12 +29,12 @@ export default function RunPage() {
     <section className={styles.platforms} aria-label="Primary downloads">
       {downloads.items.map((asset) => <article key={asset.file} className={styles.card}>
         <h2>{asset.label}</h2>
+        <p className={styles.support}>{asset.support}</p>
         {asset.href
           ? <a className="btn btn-primary" href={asset.href}>Download for {asset.label}</a>
           : <span className="btn" aria-disabled="true" title="Not published yet">Download for {asset.label} (pending publication)</span>}
         <p className={styles.fileName}><code>{asset.file}</code></p>
         <ol className={styles.steps}>{(platformNotes[asset.file] ?? []).map((line) => <li key={line}>{line}</li>)}</ol>
-        <p className={styles.support}>{asset.support}</p>
         <p className={styles.sha}>{asset.sha256 ? <>SHA-256 <code>{asset.sha256}</code></> : "SHA-256 published with the release."}</p>
       </article>)}
     </section>
@@ -75,8 +76,14 @@ export default function RunPage() {
           </li>)}
         </ul>
 
-        <h3>Plain command-line builds ({cliTag})</h3>
-        <p>Protocol-compatible executables that predate the packaged apps; the macOS file is a bare extensionless executable.</p>
+        <h3>Current command-line access ({projectTag})</h3>
+        <p>For Windows scripts, use the console executable from the current release. The current macOS and Linux command-line entry points are inside their packages above.</p>
+        <p>{downloads.published
+          ? <a href={`${currentBase}/${currentWindowsConsole.file}`}>Windows console ({projectTag})</a>
+          : <span>Windows console ({projectTag}) available when current downloads are enabled</span>} · <code>{currentWindowsConsole.file}</code> · SHA-256 <code>{currentWindowsConsole.sha256}</code></p>
+
+        <h3>Historical plain executables ({cliTag})</h3>
+        <p>These protocol-compatible files predate the packaged apps and current shared-core repairs. The macOS file is a bare extensionless executable. Use the current packages above for contribution.</p>
         <ul className={styles.assetList}>
           <li><a href={`${cliBase}/encodingdb-client-windows.exe`}>Windows GUI (rc.1)</a> · <code>encodingdb-client-windows.exe</code></li>
           <li><a href={`${cliBase}/encodingdb-client-windows-console.exe`}>Windows console (rc.1)</a> · <code>encodingdb-client-windows-console.exe</code></li>

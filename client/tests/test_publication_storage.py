@@ -12,6 +12,24 @@ from client.campaign import atomic_json
 MIB = 1024 * 1024
 
 
+def test_saved_publish_never_reports_success_with_unadmitted_envelopes(tmp_path):
+    campaign_id = 'campaign-0123456789abcdef'
+    root = tmp_path / 'campaigns' / campaign_id
+    root.mkdir(parents=True)
+    atomic_json(root / 'submission-000001.json', {'saved': 'immutable'})
+    with mock.patch.object(main, 'drain_committed_receipts', return_value=0), \
+         mock.patch.object(main, 'spool_payload', side_effect=spool.SpoolCapacityError('volume full')), \
+         mock.patch.object(main, 'replay_spool', return_value=spool.ReplayStats()):
+        rc, info = main.publish_saved_campaign(
+            queue_dir=str(tmp_path), campaign_id=campaign_id,
+            base_url='http://127.0.0.1:9', api_key='', max_storage_mb=2048,
+        )
+    assert rc == 10
+    assert info['status'] == 'deferred'
+    assert info['unadmitted'] == 1
+    assert info['pending'] == 0
+
+
 def payload_at(path, size=400 * 1024):
     from test_spool import SpoolTests
     path.parent.mkdir(parents=True, exist_ok=True)

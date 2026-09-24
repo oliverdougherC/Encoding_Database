@@ -1,6 +1,8 @@
+import errno
 import hashlib
 import json
 import math
+import re
 import os
 import shutil
 import queue
@@ -18,7 +20,7 @@ import binascii
 import struct
 from dataclasses import dataclass
 from fractions import Fraction
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from . import config
 
@@ -30,6 +32,11 @@ SUITE_LOCK_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "suite-loc
 SUITE_PACK_METADATA_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "suite-pack.json")
 SUITE_PACK_SCHEMA_VERSION = 1
 DEFAULT_SUITE_PACK_FILE_NAME = f"{SUITE_VERSION}.tar.gz"
+CLIP_DISTRIBUTION_RELATIVE_PATH = os.path.join("resources", "test_suite_v1", "clip-distribution.json")
+CLIP_DISTRIBUTION_SCHEMA_VERSION = 1
+SUITE_CLIP_BASE_URL_ENV = "ENCODINGDB_SUITE_CLIP_BASE_URL"
+SUITE_ALLOW_FULL_PACK_ENV = "ENCODINGDB_ALLOW_FULL_PACK"
+SUITE_MIN_FREE_MB_ENV = "ENCODINGDB_SUITE_MIN_FREE_MB"
 
 REQUIRED_CONTENT_CLASSES: Tuple[str, ...] = (
     "high-motion-sports",
@@ -226,6 +233,210 @@ def load_suite_pack_metadata(path: Optional[str] = None) -> Dict[str, Any]:
     if not isinstance(payload, dict):
         raise RuntimeError("suite pack metadata is invalid")
     return payload
+
+
+def get_clip_distribution_path() -> Optional[str]:
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), os.path.basename(CLIP_DISTRIBUTION_RELATIVE_PATH))
+        if candidate and os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def _clip_notice_asset_names(manifest: SuiteManifest, suite_root: str) -> Dict[str, List[str]]:
+    """Map each clip to its attribution notice plus the license texts it names.
+
+    Bindings come from the frozen notice bodies themselves: every clip notice
+    declares "License: <id>;" and a font notice beside that clip's license is
+    included only when the clip notice mentions the font.
+    """
+    notices_root = os.path.join(suite_root, "notices")
+    available = {name for name in os.listdir(notices_root) if name.endswith(".txt")} if os.path.isdir(notices_root) else set()
+    bindings: Dict[str, List[str]] = {}
+    for clip in manifest.clips:
+        own = f"{clip.clip_id}.txt"
+        if own not in available:
+            raise RuntimeError(f"missing attribution notice for {clip.clip_id}")
+        with open(os.path.join(notices_root, own), "r", encoding="utf-8") as handle:
+            text = handle.read()
+        names = [own]
+        license_match = re.search(r"License:\s*([^;\n]+);", text)
+        declared = license_match.group(1).strip() if license_match else ""
+        if declared:
+            license_file = f"{declared}.txt"
+            if license_file not in available:
+                raise RuntimeError(f"missing license text {license_file} for {clip.clip_id}")
+            names.append(license_file)
+        if re.search(r"plex|font", text, re.IGNORECASE):
+            for name in sorted(available):
+                if name in names or name == own:
+                    continue
+                with open(os.path.join(notices_root, name), "r", encoding="utf-8") as other_handle:
+                    other = other_handle.read(400)
+                if re.search(r"font software is licensed", other, re.IGNORECASE):
+                    names.append(name)
+        bindings[clip.clip_id] = names
+    return bindings
+
+
+def build_clip_distribution_metadata(
+    suite_root: str,
+    *,
+    manifest: Optional[SuiteManifest] = None,
+    base_url: str = "",
+    release_tag: Optional[str] = None,
+    published: bool = False,
+) -> Dict[str, Any]:
+    """Derive the per-clip distribution manifest from frozen suite resources.
+
+    Every clip/notice hash and size comes from manifest.json and notices/; the
+    canonical media bytes themselves are not required. ``path`` records the
+    logical source layout; ``downloadName`` is unique and flat for releases.
+    """
+    suite_root_abs = os.path.abspath(suite_root)
+    manifest_value = manifest
+    if manifest_value is None:
+        with open(os.path.join(suite_root_abs, "manifest.json"), "r", encoding="utf-8") as handle:
+            manifest_value = manifest_from_payload(json.load(handle))
+    manifest_path = os.path.join(suite_root_abs, "manifest.json")
+    clips: Dict[str, Any] = {}
+    for clip_id, names in _clip_notice_asset_names(manifest_value, suite_root_abs).items():
+        clip = get_clip(manifest_value, clip_id)
+        assets: List[Dict[str, Any]] = [
+            {
+                "role": "clip",
+                "path": f"{clip_id}/{clip.file_name}",
+                "downloadName": f"{clip_id}--{clip.file_name}",
+                "sha256": clip.sha256,
+                "byteSize": clip.byte_size,
+            }
+        ]
+        for name in names:
+            notice_path = os.path.join(suite_root_abs, "notices", name)
+            assets.append(
+                {
+                    "role": "notice" if name == f"{clip_id}.txt" else "license",
+                    "path": f"{clip_id}/notices/{name}",
+                    "downloadName": f"{clip_id}--{name}",
+                    "sha256": _sha256_of_file(notice_path),
+                    "byteSize": os.path.getsize(notice_path),
+                }
+            )
+        clips[clip_id] = {
+            "fileName": clip.file_name,
+            "license": str(clip.provenance.get("license") or ""),
+            "assets": assets,
+        }
+    return {
+        "schemaVersion": CLIP_DISTRIBUTION_SCHEMA_VERSION,
+        "suiteId": "encodingdb-test-suite",
+        "suiteVersion": manifest_value.suite_version,
+        "manifestVersion": manifest_value.manifest_version,
+        "source": "github-release" if published else "staged-unpublished",
+        "releaseTag": release_tag,
+        "distribution": {
+            "baseUrl": base_url,
+            "clipUrlOverrideEnv": SUITE_CLIP_BASE_URL_ENV,
+            "published": bool(published),
+        },
+        "manifest": {
+            "sha256": _sha256_of_file(manifest_path),
+            "byteSize": os.path.getsize(manifest_path),
+        },
+        "clips": clips,
+    }
+
+
+def write_clip_distribution_metadata(suite_root: str, output_path: Optional[str] = None, **kwargs: Any) -> str:
+    payload = build_clip_distribution_metadata(suite_root, **kwargs)
+    destination = os.path.abspath(output_path or os.path.join(suite_root, "clip-distribution.json"))
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    with open(destination, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=False)
+        handle.write("\n")
+    return destination
+
+
+def load_clip_distribution_metadata(path: Optional[str] = None,
+                                   manifest: Optional[SuiteManifest] = None) -> Optional[Dict[str, Any]]:
+    """Load the clip distribution manifest; None when the file is absent.
+
+    Absence only disables the per-clip route (development fixtures). A present
+    file that contradicts the frozen suite identity fails closed — it would
+    otherwise redirect acquisition to unreviewed bytes.
+    """
+    resolved = path if path is not None else get_clip_distribution_path()
+    if resolved is None:
+        return None
+    with open(resolved, "r", encoding="utf-8") as handle:
+        payload = json.load(handle)
+    if not isinstance(payload, dict):
+        raise RuntimeError("clip distribution metadata is invalid")
+    if int(payload.get("schemaVersion") or 0) != CLIP_DISTRIBUTION_SCHEMA_VERSION:
+        raise RuntimeError("clip distribution metadata has an unsupported schemaVersion")
+    suite_manifest = manifest if manifest is not None else load_default_suite_manifest()
+    if str(payload.get("suiteVersion") or "") != suite_manifest.suite_version:
+        raise RuntimeError("clip distribution metadata suite version mismatch")
+    manifest_path = os.path.join(os.path.dirname(resolved), "manifest.json")
+    record = dict(payload.get("manifest") or {})
+    if int(record.get("byteSize") or 0) != os.path.getsize(manifest_path) \
+            or str(record.get("sha256") or "").lower() != _sha256_of_file(manifest_path):
+        raise RuntimeError("clip distribution metadata manifest identity mismatch")
+    clips = dict(payload.get("clips") or {})
+    manifest_ids = {clip.clip_id for clip in suite_manifest.clips}
+    if set(clips) != manifest_ids:
+        raise RuntimeError("clip distribution metadata clip inventory mismatch")
+    bindings = _clip_notice_asset_names(suite_manifest, os.path.dirname(resolved))
+    for clip in suite_manifest.clips:
+        entry = dict(clips.get(clip.clip_id) or {})
+        if str(entry.get("fileName") or "") != clip.file_name:
+            raise RuntimeError(f"clip distribution metadata file name mismatch for {clip.clip_id}")
+        assets = list(entry.get("assets") or [])
+        roles = [str(asset.get("role") or "") for asset in assets]
+        if roles.count("clip") != 1:
+            raise RuntimeError(f"clip distribution metadata needs exactly one clip asset for {clip.clip_id}")
+        expected_names = bindings[clip.clip_id]
+        actual_names = [
+            str(asset.get("path") or "").rsplit("notices/", 1)[-1]
+            for asset in assets if str(asset.get("role") or "") in ("notice", "license")
+        ]
+        if sorted(actual_names) != sorted(expected_names):
+            raise RuntimeError(f"clip distribution metadata notice binding mismatch for {clip.clip_id}")
+        for asset in assets:
+            relative = str(asset.get("path") or "")
+            if not relative.startswith(f"{clip.clip_id}/") or ".." in relative.split("/"):
+                raise RuntimeError(f"clip distribution metadata has an unsafe asset path: {relative}")
+            expected_download_name = f"{clip.clip_id}--{relative.rsplit('/', 1)[-1]}"
+            if str(asset.get("downloadName") or "") != expected_download_name:
+                raise RuntimeError(f"clip distribution metadata download name mismatch: {relative}")
+            expected_sha = str(asset.get("sha256") or "").lower()
+            expected_bytes = int(asset.get("byteSize") or 0)
+            if str(asset.get("role") or "") == "clip":
+                if expected_bytes != clip.byte_size or expected_sha != clip.sha256.lower():
+                    raise RuntimeError(f"clip distribution metadata identity mismatch for {clip.clip_id}")
+            else:
+                notice_file = relative.rsplit("notices/", 1)[-1]
+                notice_path = os.path.join(os.path.dirname(resolved), "notices", notice_file)
+                if not os.path.isfile(notice_path) or os.path.getsize(notice_path) != expected_bytes \
+                        or _sha256_of_file(notice_path).lower() != expected_sha:
+                    raise RuntimeError(f"clip distribution metadata notice mismatch: {relative}")
+    return payload
+
+
+def clip_distribution_available(metadata: Optional[Mapping[str, Any]]) -> bool:
+    if not metadata:
+        return False
+    override = os.environ.get(SUITE_CLIP_BASE_URL_ENV, "").strip()
+    base = str(dict(metadata.get("distribution") or {}).get("baseUrl") or "").strip()
+    return bool(override or base)
+
+
+def _clip_asset_url(metadata: Mapping[str, Any], asset_path: str) -> str:
+    override = os.environ.get(SUITE_CLIP_BASE_URL_ENV, "").strip()
+    base = override or str(dict(metadata.get("distribution") or {}).get("baseUrl") or "").strip()
+    if not base:
+        raise RuntimeError("clip distribution has no base URL")
+    return urljoin(base.rstrip("/") + "/", asset_path.lstrip("/"))
 
 
 def _suite_cache_root() -> str:
@@ -1186,9 +1397,15 @@ def _suite_download_events(url: str, headers: Mapping[str, str]):
         # The reader closes it on return/timeout and cannot mutate retained data.
 
 
-def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]) -> None:
-    distribution = dict(metadata.get("distribution") or {})
-    expected_size = int(distribution.get("byteSize") or 0)
+def _download_verified_file(url: str, destination: str, *, expected_size: int,
+                            verify: "Callable[[str], ClipVerificationResult]",
+                            exceeds_message: str) -> None:
+    """Resumable, size-bounded, hash-verified download into `destination`.
+
+    Shared by the frozen suite pack and per-clip assets: one owned reader
+    thread, `.part` resume via Range, hard stop at the declared size, and a
+    caller-supplied final verification before the atomic install.
+    """
     temp_path = f"{destination}.part"
     os.makedirs(os.path.dirname(destination), exist_ok=True)
     resume_from = 0
@@ -1214,23 +1431,344 @@ def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]
                 os.remove(temp_path)
                 continue
             completed = resume_from if mode == "ab" else 0
-            with open(temp_path, mode) as handle:
-                for kind, chunk in events:
-                    if kind != "chunk":
-                        raise RuntimeError("Unexpected suite download event")
-                    check_preparation_cancelled()
-                    if completed + len(chunk) > expected_size:
-                        raise RuntimeError("Suite download exceeds declared pack size")
-                    handle.write(chunk)
-                    completed += len(chunk)
-                    preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
+            try:
+                with open(temp_path, mode) as handle:
+                    for kind, chunk in events:
+                        if kind != "chunk":
+                            raise RuntimeError("Unexpected suite download event")
+                        check_preparation_cancelled()
+                        if completed + len(chunk) > expected_size:
+                            raise RuntimeError(exceeds_message)
+                        handle.write(chunk)
+                        completed += len(chunk)
+                        preparation_progress("download", path=destination, completedBytes=completed, totalBytes=expected_size)
+            except OSError as exc:
+                if getattr(exc, "errno", None) in (errno.ENOSPC, errno.EDQUOT):
+                    raise RuntimeError(
+                        f"the suite cache volume ran out of free space while downloading "
+                        f"{destination}: {exc}; free space on that volume and start the run again"
+                    ) from exc
+                if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM, errno.EROFS):
+                    raise RuntimeError(
+                        f"suite content could not be written to {destination}: the folder is "
+                        f"write-protected or unwritable for this account ({exc})"
+                    ) from exc
+                raise
             break
         finally:
             events.close()
-    result = _verify_suite_pack_file(temp_path, metadata)
+    result = verify(temp_path)
     if not result.ok:
+        # The bytes are untrusted; never keep a corrupt partial for resume.
+        try:
+            os.remove(temp_path)
+        except FileNotFoundError:
+            pass
         raise RuntimeError(result.message)
     os.replace(temp_path, destination)
+
+
+def _suite_free_bytes(path: str) -> Optional[int]:
+    try:
+        probe_path = path
+        while not os.path.exists(probe_path):
+            parent = os.path.dirname(probe_path)
+            if parent == probe_path:
+                break
+            probe_path = parent
+        return int(shutil.disk_usage(probe_path).free)
+    except OSError:
+        return None
+
+
+def _suite_cache_write_error(cache_root: str) -> Optional[str]:
+    """Return a clear cause when the cache root cannot accept new files."""
+    try:
+        os.makedirs(cache_root, exist_ok=True)
+        probe_dir = os.path.join(cache_root, "canonical")
+        os.makedirs(probe_dir, exist_ok=True)
+        fd, probe_path = tempfile.mkstemp(prefix=".encodingdb-write-probe-", dir=probe_dir)
+        os.close(fd)
+        os.remove(probe_path)
+    except OSError as exc:
+        return f"the suite cache {cache_root} is not writable by this account ({exc})"
+    return None
+
+
+def _check_acquisition_storage(cache_root: str, required_bytes: int) -> None:
+    """Gate a costly fetch on free space + writability before the first byte.
+
+    Requires room for the transfer plus the ENCODINGDB_SUITE_MIN_FREE_MB floor
+    (default 64 MiB; 0 disables). A declared-but-unwritable cache is reported
+    as such instead of failing mid-download.
+    """
+    floor_mb = max(0, int(os.environ.get(SUITE_MIN_FREE_MB_ENV, "64") or "0"))
+    required = int(required_bytes) + floor_mb * 1024 * 1024
+    write_error = _suite_cache_write_error(cache_root)
+    if write_error is not None:
+        raise RuntimeError(write_error)
+    free = _suite_free_bytes(cache_root)
+    if free is not None and free < required:
+        raise RuntimeError(
+            f"acquiring suite content needs {required_bytes:,} bytes plus a "
+            f"{floor_mb * 1024 * 1024:,} byte free-space floor, but the volume holding "
+            f"{cache_root} has only {free:,} bytes free; free space or set "
+            f"{SUITE_MIN_FREE_MB_ENV} to 0 to override the floor"
+        )
+
+
+def _download_suite_pack(url: str, destination: str, metadata: Mapping[str, Any]) -> None:
+    distribution = dict(metadata.get("distribution") or {})
+    expected_size = int(distribution.get("byteSize") or 0)
+    _download_verified_file(
+        url,
+        destination,
+        expected_size=expected_size,
+        verify=lambda path: _verify_suite_pack_file(path, metadata),
+        exceeds_message="Suite download exceeds declared pack size",
+    )
+
+
+def _full_pack_fallback_allowed(allow_full_pack: bool) -> bool:
+    if not allow_full_pack:
+        return False
+    setting = os.environ.get(SUITE_ALLOW_FULL_PACK_ENV, "1").strip().lower()
+    return setting not in ("0", "false", "no", "off")
+
+
+def _disclose_large_download(clip: SuiteClip, pack_bytes: int, clip_error: Optional[str]) -> None:
+    """Make an unexpected full-pack transfer visible before it starts."""
+    reason = f" ({clip_error})" if clip_error else " (no per-clip assets are published for this suite yet)"
+    message = (
+        f"The small per-clip asset for {clip.clip_id} could not be acquired{reason}. "
+        f"Falling back to the full frozen suite pack: {pack_bytes:,} bytes "
+        f"(about {pack_bytes / (2 ** 30):.1f} GiB) will be transferred into the local suite cache. "
+        f"Set {SUITE_CLIP_BASE_URL_ENV} to a host with published per-clip assets to avoid this."
+    )
+    preparation_progress("large-download", clipId=clip.clip_id, totalBytes=pack_bytes, message=message)
+    print(f"EncodingDB: {message}", file=sys.stderr)
+
+
+def _clip_asset_target(cache_base: str, clip: SuiteClip, asset: Mapping[str, Any]) -> str:
+    if str(asset.get("role") or "") == "clip":
+        return clip_cache_path(clip, cache_base)
+    name = str(asset.get("path") or "").rsplit("notices/", 1)[-1]
+    return os.path.join(cache_base, "notices", name)
+
+
+def _verified_asset_result(path: str, asset: Mapping[str, Any], clip: SuiteClip) -> ClipVerificationResult:
+    if str(asset.get("role") or "") == "clip":
+        return _verify_suite_clip_bytes(path, clip)
+    if not os.path.exists(path):
+        return ClipVerificationResult(False, f"{os.path.basename(path)} not found", {"path": path})
+    actual_size = os.path.getsize(path)
+    if actual_size != int(asset.get("byteSize") or 0):
+        return ClipVerificationResult(False, f"{os.path.basename(path)} size mismatch", {"path": path})
+    if _sha256_of_file(path).lower() != str(asset.get("sha256") or "").lower():
+        return ClipVerificationResult(False, f"{os.path.basename(path)} checksum mismatch", {"path": path})
+    return ClipVerificationResult(True, "ok", {"path": path})
+
+
+def _pending_clip_assets(clip: SuiteClip, cache_base: str,
+                         assets: Sequence[Mapping[str, Any]]) -> Tuple[List[Tuple[Mapping[str, Any], str]], int]:
+    pending: List[Tuple[Mapping[str, Any], str]] = []
+    cached_bytes = 0
+    for asset in assets:
+        target = _clip_asset_target(cache_base, clip, asset)
+        if _verified_asset_result(target, asset, clip).ok:
+            cached_bytes += int(asset.get("byteSize") or 0)
+        else:
+            pending.append((asset, target))
+    return pending, cached_bytes
+
+
+def _materialize_clip_from_distribution(clip: SuiteClip, distribution: Mapping[str, Any],
+                                        cache_base: str) -> str:
+    """Fetch only this clip's canonical file plus its license notices.
+
+    Each asset resumes via its own .part, stops at the declared size, and is
+    hash-verified against the frozen manifest before the atomic install; a
+    corrupt response never installs.
+    """
+    entry = dict(distribution.get("clips") or {}).get(clip.clip_id)
+    if not entry:
+        raise RuntimeError(f"clip distribution metadata has no entry for {clip.clip_id}")
+    assets = list(dict(entry).get("assets") or [])
+    pending, _ = _pending_clip_assets(clip, cache_base, assets)
+    if not pending:
+        return clip_cache_path(clip, cache_base)
+    transfer_bytes = sum(int(asset.get("byteSize") or 0) for asset, _ in pending)
+    headroom_bytes = max(64 * 1024 * 1024, transfer_bytes // 20)
+    _check_acquisition_storage(cache_base, transfer_bytes + headroom_bytes)
+    for _, target in pending:
+        try:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+        except OSError as exc:
+            raise RuntimeError(
+                f"the suite cache folder {os.path.dirname(target)} is not writable by this account ({exc})"
+            ) from exc
+    label = f"Suite clip download for {clip.clip_id}"
+    for asset, target in pending:
+        url = _clip_asset_url(distribution, str(asset.get("downloadName") or ""))
+        _download_verified_file(
+            url,
+            target,
+            expected_size=int(asset.get("byteSize") or 0),
+            verify=lambda path, current=asset: _verified_asset_result(path, current, clip),
+            exceeds_message=f"{label} exceeds declared file size",
+        )
+    result = _verify_suite_clip_bytes(clip_cache_path(clip, cache_base), clip)
+    if not result.ok:
+        raise RuntimeError(result.message)
+    return clip_cache_path(clip, cache_base)
+
+
+def _packaged_canonical_path(clip: SuiteClip) -> Optional[str]:
+    for manifest_path in _manifest_resource_candidates():
+        candidate = os.path.join(os.path.dirname(manifest_path), "canonical", clip.file_name)
+        if os.path.exists(candidate):
+            return candidate
+    return None
+
+
+def _pack_state(pack_metadata: Mapping[str, Any], cache_base: str) -> Dict[str, bool]:
+    pack_cached = _verify_suite_pack_file(_cache_suite_pack_path(pack_metadata, cache_base), pack_metadata).ok
+    fingerprint = str(pack_metadata.get("suiteFingerprint") or "").strip()
+    # Without a fingerprint the extraction directory is unnameable; assume absent.
+    extracted = bool(fingerprint) and os.path.isdir(
+        os.path.join(_suite_pack_extract_root(pack_metadata, cache_base), "canonical"))
+    return {"packCached": pack_cached, "extracted": extracted}
+
+
+def _plan_clip_acquisition(clip: SuiteClip, cache_base: str, *, clip_route_available: bool,
+                           pack_metadata: Mapping[str, Any], pack_state: Mapping[str, bool],
+                           allow_full_pack: bool) -> Dict[str, Any]:
+    """Decide one clip's acquisition without side effects beyond hash reads."""
+    packaged = _packaged_canonical_path(clip)
+    if packaged is not None and _verify_suite_clip_bytes(packaged, clip).ok:
+        return {"source": "packaged", "transferBytes": 0, "cachedBytes": clip.byte_size, "peakBytes": 0,
+                "note": "verified canonical asset is bundled with the client"}
+    cached_path = clip_cache_path(clip, cache_base)
+    if _verify_suite_clip_bytes(cached_path, clip).ok:
+        return {"source": "cache", "transferBytes": 0, "cachedBytes": clip.byte_size, "peakBytes": 0, "note": "hash-verified cache hit"}
+    pack_bytes = int(dict(pack_metadata.get("distribution") or {}).get("byteSize") or 0)
+    if clip_route_available:
+        distribution = load_clip_distribution_metadata(manifest=None)
+        entry = dict((distribution or {}).get("clips") or {}).get(clip.clip_id) or {}
+        assets = list(dict(entry).get("assets") or [])
+        pending, cached_bytes = _pending_clip_assets(clip, cache_base, assets)
+        transfer = sum(int(asset.get("byteSize") or 0) for asset, _ in pending)
+        headroom = max(64 * 1024 * 1024, transfer // 20)
+        return {"source": "clip", "transferBytes": transfer, "cachedBytes": cached_bytes,
+                "peakBytes": transfer + headroom, "note": "per-clip assets are published for this suite"}
+    if not _full_pack_fallback_allowed(allow_full_pack):
+        return {"source": "unavailable", "transferBytes": 0, "cachedBytes": 0,
+                "peakBytes": clip.byte_size,
+                "note": (f"clip is not cached, no per-clip assets are available, and the full pack "
+                         f"({pack_bytes:,} bytes) is disabled via {SUITE_ALLOW_FULL_PACK_ENV}/allow_full_pack")}
+    transfer = 0 if pack_state.get("packCached") else pack_bytes
+    extract_bytes = 0 if pack_state.get("extracted") else pack_bytes
+    return {"source": "pack", "transferBytes": transfer, "cachedBytes": 0,
+            "peakBytes": transfer + extract_bytes + clip.byte_size,
+            "note": f"only the full frozen suite pack ({pack_bytes:,} bytes) is published for this suite"}
+
+
+def acquisition_estimate(clip_ids: Optional[Sequence[str]] = None, *,
+                         cache_root: Optional[str] = None,
+                         allow_full_pack: bool = True,
+                         manifest: Optional[SuiteManifest] = None) -> Dict[str, Any]:
+    """Truthful, side-effect-free transfer/peak-storage estimate for a fetch.
+
+    Stable read-only API for UIs: reports exactly what `ensure_suite_clip`/
+    `ensure_suite` would transfer per clip (cache hit, per-clip assets, or the
+    full pack) before any byte is downloaded.
+    """
+    suite_manifest = manifest or load_default_suite_manifest()
+    resolved_cache_root = cache_root or _suite_cache_root()
+    target_ids = list(clip_ids) if clip_ids else [clip.clip_id for clip in suite_manifest.clips]
+    distribution = load_clip_distribution_metadata(manifest=suite_manifest)
+    route_available = clip_distribution_available(distribution)
+    pack_metadata = load_suite_pack_metadata()
+    pack_state = _pack_state(pack_metadata, resolved_cache_root)
+    plans: Dict[str, Any] = {}
+    transfer_total = 0
+    cached_total = 0
+    peak_total = 0
+    warnings: List[str] = []
+    worst = "cache"
+    pack_counted = False
+    severity = {"cache": 0, "packaged": 0, "pack": 1, "clip": 1, "unavailable": 2}
+    for clip_id in target_ids:
+        clip = get_clip(suite_manifest, clip_id)
+        plan = _plan_clip_acquisition(clip, resolved_cache_root, clip_route_available=route_available,
+                                      pack_metadata=pack_metadata, pack_state=pack_state,
+                                      allow_full_pack=allow_full_pack)
+        if plan["source"] == "pack":
+            if pack_counted:
+                plan["transferBytes"] = 0
+                plan["peakBytes"] = clip.byte_size
+                plan["note"] = "shared full suite pack counted with the first missing clip"
+            pack_counted = True
+        plans[clip_id] = {"clipId": clip_id, "fileName": clip.file_name, **plan}
+        transfer_total += int(plan["transferBytes"])
+        cached_total += int(plan["cachedBytes"])
+        peak_total += int(plan["peakBytes"])
+        if severity.get(plan["source"], 0) > severity.get(worst, 0):
+            worst = plan["source"]
+        if plan["source"] in ("unavailable", "pack"):
+            warnings.append(f"{clip_id}: {plan['note']}")
+    free = _suite_free_bytes(resolved_cache_root)
+    floor_mb = max(0, int(os.environ.get(SUITE_MIN_FREE_MB_ENV, "64") or "0"))
+    storage_ok = free is None or free >= peak_total + floor_mb * 1024 * 1024
+    return {
+        "schemaVersion": 1,
+        "suiteVersion": suite_manifest.suite_version,
+        "cacheRoot": resolved_cache_root,
+        "strategy": worst,
+        "clipRouteAvailable": bool(route_available),
+        "allowFullPack": bool(_full_pack_fallback_allowed(allow_full_pack)),
+        "fullPackBytes": int(dict(pack_metadata.get("distribution") or {}).get("byteSize") or 0),
+        "bytesToTransfer": transfer_total,
+        "bytesAlreadyVerified": cached_total,
+        "peakStorageBytes": peak_total,
+        "freeBytes": free,
+        "freeFloorBytes": floor_mb * 1024 * 1024,
+        "storageOk": bool(storage_ok),
+        "clips": plans,
+        "warnings": warnings,
+    }
+
+
+def _acquire_missing_clip(clip: SuiteClip, cache_base: str, *, allow_full_pack: bool) -> str:
+    distribution = load_clip_distribution_metadata(manifest=None)
+    clip_error: Optional[str] = None
+    if clip_distribution_available(distribution):
+        try:
+            return _materialize_clip_from_distribution(clip, distribution, cache_base)
+        except RuntimeError as exc:
+            clip_error = str(exc)
+            preparation_progress("recovery", clipId=clip.clip_id,
+                                 message=f"per-clip acquisition failed ({clip_error}); considering the full pack")
+    pack_metadata = load_suite_pack_metadata()
+    pack_bytes = int(dict(pack_metadata.get("distribution") or {}).get("byteSize") or 0)
+    if not _full_pack_fallback_allowed(allow_full_pack):
+        detail = f" Per-clip download failed: {clip_error}." if clip_error else ""
+        raise RuntimeError(
+            f"suite clip {clip.clip_id} is not cached and the full frozen suite pack "
+            f"({pack_bytes:,} bytes) download is disabled. Set {SUITE_CLIP_BASE_URL_ENV} to a host with "
+            "the published per-clip assets, provide the pack via ENCODINGDB_SUITE_PACK_PATH, or allow "
+            f"{SUITE_ALLOW_FULL_PACK_ENV}." + detail
+        )
+    state = _pack_state(pack_metadata, cache_base)
+    needed = clip.byte_size
+    if not state["packCached"]:
+        needed += pack_bytes
+    if not state["extracted"]:
+        needed += pack_bytes
+    _check_acquisition_storage(cache_base, needed)
+    if not state["packCached"] or not state["extracted"]:
+        _disclose_large_download(clip, pack_bytes, clip_error)
+    return _materialize_clip_from_suite_pack(clip, pack_metadata, cache_base)
 
 
 def _local_suite_pack_candidates(file_name: str) -> List[str]:
@@ -1412,6 +1950,7 @@ def ensure_suite_clip(
     *,
     cache_root: Optional[str] = None,
     regenerate_on_mismatch: bool = True,
+    allow_full_pack: bool = True,
 ) -> PreparedSuiteClip:
     wait_for_owned_acquisition()
     resolved_cache_root = cache_root or _suite_cache_root()
@@ -1430,8 +1969,8 @@ def ensure_suite_clip(
         path = clip_cache_path(clip, resolved_cache_root)
         result = verify_suite_clip(path, clip)
         if not result.ok and regenerate_on_mismatch:
-            path = _materialize_clip_from_suite_pack(clip, load_suite_pack_metadata(), resolved_cache_root)
-            # That exact staged stream passed this clip's complete media contract.
+            path = _acquire_missing_clip(clip, resolved_cache_root, allow_full_pack=allow_full_pack)
+            # The acquired stream passed this clip's complete media contract.
             # Recheck the renamed bytes, including SHA, before reusing that result.
             result = _verify_suite_clip_bytes(path, clip)
         if not result.ok:
@@ -1474,6 +2013,7 @@ def ensure_suite(
     *,
     clip_ids: Optional[Sequence[str]] = None,
     cache_root: Optional[str] = None,
+    allow_full_pack: bool = True,
 ) -> List[PreparedSuiteClip]:
     suite = manifest or load_default_suite_manifest()
     target_ids = set(clip_ids or [clip.clip_id for clip in suite.clips])
@@ -1481,7 +2021,7 @@ def ensure_suite(
     for index, clip in enumerate(suite.clips, 1):
         preparation_progress("clip", clipId=clip.clip_id, completedClips=index - 1, totalClips=len(suite.clips))
         if clip.clip_id in target_ids:
-            prepared.append(ensure_suite_clip(clip, cache_root=cache_root))
+            prepared.append(ensure_suite_clip(clip, cache_root=cache_root, allow_full_pack=allow_full_pack))
     return prepared
 
 

@@ -167,6 +167,137 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
     encode.assert_not_called()
 
 
+def test_reconstruction_refuses_changed_runtime_identity(tmp_path):
+    from client.campaign import journal_path
+    campaign_id = 'campaign-0123456789abcdef'
+    root = journal_path(str(tmp_path), campaign_id)
+    root.mkdir(parents=True)
+    atomic_json(root / 'manifest.json', {
+        'protocolVersion': '7.1', 'runtime': {'ffmpeg': {'sha256': 'old-runtime'}},
+    })
+    with mock.patch('client.identity.runtime_identity', return_value={'ffmpeg': {'sha256': 'new-runtime'}}):
+        outcome = main._reconstruct_saved_submissions(
+            queue_dir=str(tmp_path), campaign_id=campaign_id, max_storage_mb=2048,
+        )
+    assert 'saved runtime identity differs' in outcome['failure']
+    assert outcome['reconstructed'] == 0
+
+
+def test_reconstruction_refuses_changed_client_version(tmp_path):
+    from client.campaign import journal_path
+    campaign_id = 'campaign-0123456789abcdef'
+    root = journal_path(str(tmp_path), campaign_id)
+    root.mkdir(parents=True)
+    atomic_json(root / 'manifest.json', {
+        'protocolVersion': '7.1', 'clientVersion': 'client/0.0.0',
+    })
+    outcome = main._reconstruct_saved_submissions(
+        queue_dir=str(tmp_path), campaign_id=campaign_id, max_storage_mb=2048,
+    )
+    assert 'saved client identity differs' in outcome['failure']
+    assert outcome['reconstructed'] == 0
+
+
+def test_publish_saved_rebuilds_envelopes_for_complete_group_after_controlled_stop(tmp_path):
+    # C09: a controlled stop after a group's measured attempts are durable but
+    # before submission-*.json envelopes exist must NOT publish zero groups.
+    # Restarting with the original source unavailable, Publish saved rebuilds
+    # the exact envelope (same group ID) from the retained journal with zero
+    # encodes, while the still-extendable group stays unfinished.
+    import threading
+    from test_main_routing import MainRoutingTests, _DummyDashboard
+    fixture = MainRoutingTests()
+    clip_a = fixture._quick_clip()
+    clip_b = dataclasses.replace(clip_a, clip_id="film-grain-1080p24-final",
+                                 workload_id="film-grain-1080p24-final")
+    args = fixture._batch_args(str(tmp_path), no_submit=True)
+    args.local_metrics = False
+    args.campaign_seed = 41
+    args.max_duration_minutes = 1.0
+    calls = []
+    cancel = threading.Event()
+    def encode(**kwargs):
+        calls.append(kwargs['artifact_name'])
+        if len(calls) == 6:  # stop during the first group's SECOND measured attempt
+            cancel.set()    # (its outcome is discarded; five attempts stay journaled)
+        main.check_measurement_budget()
+        artifact = Path(kwargs['out_dir']) / kwargs['artifact_name']
+        artifact.write_bytes(b'encoded')
+        return {'artifactPath': str(artifact), 'encoderUsed': 'libx264', 'presetUsed': 'fast',
+                'fileSizeBytes': 7, 'encodeStartMonotonicNs': 1_000_000_000,
+                'encodeEndMonotonicNs': 2_000_000_000, 'elapsedMs': 1000, 'error': None}
+    hardware = main.HardwareInfo('CPU', None, 16, 'OS')
+    with mock.patch.object(main, 'detect_hardware', return_value=hardware), \
+         mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
+         mock.patch.object(main, '_build_protocol_config',
+                           return_value=protocol.ProtocolConfig.for_version('7.1', max_adaptive_repeats=0)), \
+         mock.patch.object(main, 'probe_video_stream_metrics',
+                           return_value={'sourceFps': 24, 'sourceDurationSeconds': 5, 'containerFormat': 'mp4'}), \
+         mock.patch.object(main, '_probe_artifact_contract', side_effect=lambda path: fixture._artifact_contract()), \
+         mock.patch.object(main, '_capture_protocol_environment_snapshot',
+                           return_value=protocol.EnvironmentSnapshot(selected_accelerator='software')), \
+         mock.patch.object(main, 'encode_to_artifact', side_effect=encode), \
+         mock.patch.object(main, 'BatchRunDashboard', _DummyDashboard):
+        # Controlled stop: every attempt up to the pause is journalized, but the
+        # submit loop refuses before materializing any envelope.
+        assert main.run_benchmark_batch(hardware=hardware, base_url='https://example.invalid',
+                                        args=args, cancel_event=cancel,
+                                        tasks=[{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clip_a},
+                                               {'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clip_b}]) == 130
+    root = next((tmp_path / 'campaigns').iterdir())
+    measured = {}
+    for path in sorted(root.glob('attempt-*.json')):
+        data = json.loads(path.read_text())
+        schedule = data.get('schedule', {})
+        if schedule.get('phase') == 'measured':
+            measured.setdefault(schedule['recipe_id'], []).append(schedule['execution_order'])
+    complete = [rid for rid, orders in measured.items() if len(orders) >= 2]
+    partial = [rid for rid, orders in measured.items() if len(orders) == 1]
+    assert complete and partial, f"fixture must yield one complete and one partial group: {measured}"
+    assert not list(root.glob('submission-*.json')), "stop happened before envelope creation"
+    sent = []
+    def transport(base_url, submission, **kwargs):
+        sent.append(submission)
+        return {'benchmarkRun': {'id': f'run-{len(sent)}'}}
+    source = mock.Mock(side_effect=AssertionError('original source must never be re-fetched'))
+    encode_after = mock.Mock(side_effect=AssertionError('publish must never encode'))
+    with mock.patch.object(main, 'check_compatibility', return_value={}), \
+         mock.patch.object(main, '_prepare_named_suite_clip', source), \
+         mock.patch.object(main, 'encode_to_artifact', encode_after), \
+         mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
+         mock.patch.object(main, 'probe_video_stream_metrics',
+                           return_value={'sourceFps': 24, 'sourceDurationSeconds': 5, 'containerFormat': 'mp4'}), \
+         mock.patch.object(spool, 'submit_artifact_submission', side_effect=transport):
+        assert main.main(['prog', '--publish-saved', root.name,
+                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 0
+    # Rebuilt payloads carry the identical group identity the live path emits.
+    assert len(sent) == len(measured[complete[0]]), \
+        "the complete group publishes every counted attempt, once"
+    for submission in sent:
+        run_create = submission['runCreate']
+        assert run_create['measurementGroup']['repetitionGroupId'] == f"{root.name}:{complete[0]}"
+        assert run_create['measurementGroup']['completed'] is True
+    source.assert_not_called()
+    encode_after.assert_not_called()
+    accepted_orders = {path.stem.replace('submission-', '').replace('.accepted', '')
+                       for path in root.glob('submission-*.accepted.json')}
+    for order in measured[complete[0]]:
+        assert f"{order:06d}" in accepted_orders  # honest server receipts
+    for order in measured[partial[0]]:
+        assert not (root / f'submission-{order:06d}.json').exists()
+        assert not (root / f'submission-{order:06d}.accepted.json').exists()
+    assert spool.count_pending_entries(str(tmp_path)) == 0
+    # Accepted bytes retired; the unfinished group's bytes remain for resume.
+    assert (root / 'campaign-complete.json').exists() is False
+    remaining = [path for path in root.glob('*.mp4') if path.read_bytes() == b'encoded']
+    assert len(remaining) == 1, measured
+    # Second Publish saved is a no-op: accepted receipts authorize, nothing re-uploads.
+    with mock.patch.object(main, 'check_compatibility', return_value={}), \
+         mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
+         mock.patch.object(spool, 'submit_artifact_submission', side_effect=AssertionError('replay must not re-upload')):
+        assert main.main(['prog', '--publish-saved', root.name,
+                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 0
+
 def test_cancellation_stops_only_owned_process():
     import subprocess
     import sys
