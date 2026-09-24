@@ -2,13 +2,17 @@ import hashlib
 import json
 import re
 import sys
+import threading
 import time
 import warnings
-from typing import Optional, Dict, Any, List
+from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import urljoin
 
 from . import config
 
+# C12: default wall-clock bound on one submit() transaction chain (token fetches,
+# POSTs, redirects and waits). Callers may pass a shorter/longer value.
+SUBMIT_TRANSACTION_SECONDS = 90.0
 
 def _load_requests():
     with warnings.catch_warnings():
@@ -21,6 +25,16 @@ def _load_requests():
 
 
 class SubmitError(RuntimeError):
+    """Transport failure with structured fields (status_code, retry_after).
+
+    C04/C12: public text is bounded and redacted — never raw server bodies,
+    tokens or URLs. Raw response bodies stay private in `_server_body` for
+    diagnostics only; they must not reach exception text or GUI events.
+    """
+
+    _MAX_MESSAGE_CHARS = 300
+    _MAX_BODY_CHARS = 4096
+
     def __init__(
         self,
         message: str,
@@ -30,15 +44,112 @@ class SubmitError(RuntimeError):
         body: str = "",
         retry_after: float = 0.0,
     ) -> None:
-        super().__init__(message)
+        super().__init__(str(message or "")[: self._MAX_MESSAGE_CHARS])
         self.retryable = retryable
         self.status_code = status_code
-        self.body = body
+        self._server_body = str(body or "")[: self._MAX_BODY_CHARS]
         self.retry_after = retry_after
 
 
-def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
-    """Fetch and solve a one-time token for exactly one POST attempt."""
+class SubmissionCancelled(SubmitError):
+    """Cooperative cancellation (C12). Retryable by contract: the durable spool
+    keeps the entry and its localHash identity so replay is idempotent."""
+
+    def __init__(self, phase: str) -> None:
+        super().__init__(f"submission cancelled during {phase}", retryable=True)
+        self.phase = phase
+
+
+def _event_cancelled(cancel_event: Optional[Any]) -> bool:
+    if cancel_event is None:
+        return False
+    try:
+        return bool(cancel_event.is_set())
+    except Exception:
+        return False
+
+
+def _run_cancellable(func: Callable[[], Any], *, phase: str,
+                     cancel_event: Optional[Any], deadline: Optional[float],
+                     bound_seconds: float,
+                     poll_seconds: float = 0.05) -> Any:
+    """Run a blocking HTTP call in a daemon worker so cooperative cancellation
+    is observed within ~poll_seconds even while the call is socket-blocked.
+
+    The worker always carries a socket inactivity timeout at most the phase
+    budget, so an abandoned worker cannot outlive that budget against a
+    stalled peer — no orphan workers, no monkey-patching. If cancel wins the
+    race the connection may have been fully sent (ambiguous outcome); the
+    durable spool keeps the entry and replays it idempotently."""
+    done = threading.Event()
+    outcome: List[Any] = []
+
+    def _worker() -> None:
+        try:
+            outcome.append(("ok", func()))
+        except BaseException as exc:  # noqa: BLE001 — re-raised in caller
+            outcome.append(("err", exc))
+        finally:
+            done.set()
+
+    threading.Thread(target=_worker, name=f"encodingdb-{phase}", daemon=True).start()
+    while not done.wait(poll_seconds):
+        if _event_cancelled(cancel_event):
+            raise SubmissionCancelled(phase)
+        remaining = _remaining_seconds(deadline)
+        if remaining is not None and remaining <= 0:
+            raise SubmitError(f"{phase} exceeded {bound_seconds:g}s wall-clock bound",
+                              retryable=True)
+    kind, value = outcome[0]
+    if kind == "err":
+        raise value
+    return value
+
+
+def _remaining_seconds(deadline: Optional[float]) -> Optional[float]:
+    if deadline is None:
+        return None
+    return deadline - time.monotonic()
+
+
+def _check_transaction(cancel_event: Optional[Any], deadline: Optional[float],
+                       phase: str, bound: float) -> None:
+    """Cooperative cancel + wall-clock bound check between blocking steps."""
+    if _event_cancelled(cancel_event):
+        raise SubmissionCancelled(phase)
+    remaining = _remaining_seconds(deadline)
+    if remaining is not None and remaining <= 0:
+        raise SubmitError(f"{phase} exceeded {bound:g}s wall-clock bound", retryable=True)
+
+
+def _bounded_wait(seconds: float, cancel_event: Optional[Any], deadline: Optional[float],
+                  phase: str, bound: float) -> None:
+    """Backoff sleep that wakes on cancellation and respects the deadline."""
+    remaining = _remaining_seconds(deadline)
+    if remaining is not None:
+        seconds = min(seconds, max(0.0, remaining))
+    wait = getattr(cancel_event, "wait", None)
+    if callable(wait):
+        try:
+            if wait(seconds):
+                raise SubmissionCancelled(phase)
+        except SubmissionCancelled:
+            raise
+        except Exception:
+            if seconds > 0:
+                time.sleep(seconds)
+    elif seconds > 0:
+        time.sleep(seconds)
+    _check_transaction(cancel_event, deadline, phase, bound)
+
+
+def _get_submit_token_headers(requests: Any, base_url: str, *,
+                              cancel_event: Optional[Any] = None,
+                              deadline: Optional[float] = None) -> Dict[str, str]:
+    """Fetch and solve a one-time token for exactly one POST attempt.
+
+    C12: cancellation- and deadline-aware — each endpoint GET and the PoW loop
+    check cancel/deadline so a Stop does not wait out the full 30 s solve."""
     headers: Dict[str, str] = {}
     try:
         base = base_url.rstrip('/')
@@ -49,11 +160,16 @@ def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
         ]
         token_resp = None
         for endpoint in endpoints:
+            _check_transaction(cancel_event, deadline, "token fetch", SUBMIT_TRANSACTION_SECONDS)
             try:
-                response = requests.get(endpoint, timeout=10, verify=config.REQUESTS_VERIFY)
+                remaining = _remaining_seconds(deadline)
+                timeout = 10 if remaining is None else max(0.1, min(10.0, remaining))
+                response = requests.get(endpoint, timeout=timeout, verify=config.REQUESTS_VERIFY)
                 if response.status_code == 200:
                     token_resp = response
                     break
+            except SubmissionCancelled:
+                raise
             except Exception:
                 continue
         if token_resp is None:
@@ -81,6 +197,14 @@ def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
         print(f"  Solving Proof-of-Work (difficulty={difficulty})...", end='', flush=True)
         while nonce < max_iters:
             if nonce % 10000 == 0:
+                if _event_cancelled(cancel_event):
+                    print(" cancelled")
+                    raise SubmissionCancelled("proof-of-work")
+                remaining_pow = _remaining_seconds(deadline)
+                if remaining_pow is not None and remaining_pow <= 0:
+                    print(" deadline reached")
+                    raise SubmitError("proof-of-work exceeded transaction bound",
+                                      retryable=True)
                 elapsed_pow = time.time() - pow_start
                 if elapsed_pow > pow_timeout:
                     print(f" timeout after {elapsed_pow:.1f}s")
@@ -95,18 +219,66 @@ def _get_submit_token_headers(requests: Any, base_url: str) -> Dict[str, str]:
             nonce += 1
         print(f" exhausted {max_iters} iterations without solution")
         return {}
+    except SubmissionCancelled:
+        raise
+    except SubmitError:
+        raise
     except Exception as exc:
         try:
-            print(f"token fetch error: {exc}", file=sys.stderr)
+            print(f"token fetch error: {type(exc).__name__}", file=sys.stderr)
         except Exception:
             pass
         return {}
 
 
-def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3, backoff_seconds: float = 1.0, use_token: Optional[bool] = None) -> None:
+def _response_error_text(requests: Any, response: Any, cancel_event: Optional[Any],
+                         deadline: Optional[float], max_bytes: int = 65536) -> str:
+    """Read an error body for the private field, cancellable and size-capped."""
+    chunks: List[bytes] = []
+    total = 0
+    try:
+        for chunk in response.iter_content(chunk_size=8192):
+            _check_transaction(cancel_event, deadline, "response read", SUBMIT_TRANSACTION_SECONDS)
+            if not chunk:
+                continue
+            take = max(0, max_bytes - total)
+            if take:
+                chunks.append(bytes(chunk[:take]))
+            total += len(chunk)
+    except SubmissionCancelled:
+        raise
+    except Exception:
+        pass
+    text = b"".join(chunks).decode("utf-8", "replace")
+    if total > max_bytes:
+        text += f"...[truncated {total - max_bytes} bytes]"
+    return text
+
+
+def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: int = 3,
+           backoff_seconds: float = 1.0, use_token: Optional[bool] = None,
+           cancel_event: Optional[Any] = None,
+           transaction_seconds: float = SUBMIT_TRANSACTION_SECONDS) -> None:
+    """POST a payload with bounded, cancellable retries (C12).
+
+    `cancel_event` (threading.Event-like) and `transaction_seconds` cap the
+    whole attempt chain on a monotonic wall clock: every step between blocking
+    calls checks both, and each socket step gets at most the remaining budget
+    as its inactivity timeout. Cancellation raises SubmissionCancelled
+    (retryable) so the durable spool keeps identity."""
     requests = _load_requests()
     url = f"{base_url.rstrip('/')}/submit"
     payload_to_send: Dict[str, Any] = dict(payload)
+    deadline = time.monotonic() + max(1.0, float(transaction_seconds))
+
+    def step_timeout() -> float:
+        remaining = _remaining_seconds(deadline)
+        if remaining is None:
+            return 30
+        if remaining <= 0:
+            raise SubmitError(f"submit exceeded {transaction_seconds:g}s wall-clock bound",
+                              retryable=True)
+        return max(0.1, min(30.0, remaining))
 
     base_headers: Dict[str, str] = {"Content-Type": "application/json"}
     if use_token is None:
@@ -117,10 +289,12 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
     attempt = 1
     last_hmac_timestamp = 0
     while attempt <= retries:
+        _check_transaction(cancel_event, deadline, "submit", transaction_seconds)
         body = json.dumps(payload_to_send, separators=(",", ":"))
         headers = dict(base_headers)
         if use_token:
-            headers.update(_get_submit_token_headers(requests, base_url))
+            headers.update(_get_submit_token_headers(requests, base_url,
+                                                     cancel_event=cancel_event, deadline=deadline))
         if secret:
             import hmac
             ts = max(int(time.time()), last_hmac_timestamp + 1)
@@ -129,14 +303,18 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             headers["x-signature"] = sig
             headers["x-timestamp"] = str(ts)
         try:
-            r = requests.post(url, data=body, timeout=30, headers=headers, verify=config.REQUESTS_VERIFY, allow_redirects=False)
+            r = _run_cancellable(
+                lambda: requests.post(url, data=body, timeout=step_timeout(), headers=headers, verify=config.REQUESTS_VERIFY, allow_redirects=False, stream=True),
+                phase="submit", cancel_event=cancel_event, deadline=deadline,
+                bound_seconds=transaction_seconds)
             if 300 <= r.status_code < 400:
                 loc = r.headers.get('Location') or r.headers.get('location')
                 if loc:
                     redirect_url = urljoin(url, loc)
                     redirect_headers = dict(base_headers)
                     if use_token:
-                        redirect_headers.update(_get_submit_token_headers(requests, base_url))
+                        redirect_headers.update(_get_submit_token_headers(requests, base_url,
+                                                                          cancel_event=cancel_event, deadline=deadline))
                     if secret:
                         import hmac
                         redirect_ts = max(int(time.time()), last_hmac_timestamp + 1)
@@ -144,7 +322,11 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                         redirect_sig = hmac.new(secret.encode("utf-8"), f"{redirect_ts}.".encode("utf-8") + body.encode("utf-8"), hashlib.sha256).hexdigest()
                         redirect_headers["x-signature"] = redirect_sig
                         redirect_headers["x-timestamp"] = str(redirect_ts)
-                    r = requests.post(redirect_url, data=body, timeout=30, headers=redirect_headers, verify=config.REQUESTS_VERIFY, allow_redirects=False)
+                    _check_transaction(cancel_event, deadline, "submit redirect", transaction_seconds)
+                    r = _run_cancellable(
+                        lambda: requests.post(redirect_url, data=body, timeout=step_timeout(), headers=redirect_headers, verify=config.REQUESTS_VERIFY, allow_redirects=False, stream=True),
+                        phase="submit redirect", cancel_event=cancel_event, deadline=deadline,
+                        bound_seconds=transaction_seconds)
             if r.status_code == 429:
                 try:
                     ra = r.headers.get('Retry-After')
@@ -156,18 +338,20 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                         f"submit rate limited ({r.status_code})",
                         retryable=True,
                         status_code=r.status_code,
-                        body=(r.text or ""),
+                        body=_response_error_text(requests, r, cancel_event, deadline),
+                        retry_after=delay,  # durable spool keeps the server's own wait (C08)
                     )
-                time.sleep(max(0.5, delay))
+                _bounded_wait(max(0.5, delay), cancel_event, deadline, "submit retry wait", transaction_seconds)
                 attempt += 1
                 continue
             if r.status_code >= 500:
+                error_body = _response_error_text(requests, r, cancel_event, deadline)
                 if attempt >= retries:
                     raise SubmitError(
                         f"server_error {r.status_code}",
                         retryable=True,
-                        status_code=r.status_code,
-                        body=(r.text or ""),
+                        body=error_body,
+                        retry_after=retry_after_seconds(r.headers),
                     )
                 raise RuntimeError(f"server_error {r.status_code}")
             if r.status_code >= 400:
@@ -175,10 +359,12 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                     f"submit rejected ({r.status_code})",
                     retryable=False,
                     status_code=r.status_code,
-                    body=(r.text or ""),
+                    body=_response_error_text(requests, r, cancel_event, deadline),
                 )
             r.raise_for_status()
             return
+        except SubmissionCancelled:
+            raise
         except Exception as e:
             retryable = True
             status_code: Optional[int] = None
@@ -186,32 +372,37 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
             if isinstance(e, SubmitError):
                 retryable = e.retryable
                 status_code = e.status_code
-                body = e.body
+                body = e._server_body
             if attempt == retries:
+                # C04: never echo server bodies; status/content-type/length only.
+                status_for_print = status_code
+                detail = ""
                 try:
                     _req = _load_requests()
                     if isinstance(e, _req.HTTPError) and getattr(e, 'response', None) is not None:
                         resp = e.response
-                        try:
-                            err_text = resp.text
-                        except Exception:
-                            err_text = ""
-                        sent_token = 'x-ingest-token' in headers
-                        sent_nonce = 'x-ingest-nonce' in headers
-                        print(f"submit error body ({resp.status_code}): {err_text}\n(sent_token={sent_token}, sent_nonce={sent_nonce})", file=sys.stderr)
+                        status_for_print = resp.status_code
+                        detail = f" content_type={resp.headers.get('content-type', '')} bytes={len(resp.content or b'')}"
                 except Exception:
                     pass
+                sent_token = 'x-ingest-token' in headers
+                sent_nonce = 'x-ingest-nonce' in headers
+                print(
+                    f"submit failed (status={status_for_print}{detail}; sent_token={sent_token}, sent_nonce={sent_nonce})",
+                    file=sys.stderr,
+                )
                 if isinstance(e, SubmitError):
                     raise
+                # Never put exception str() (may embed URLs/tokens) straight into
+                # the message: type + safe shape only.
                 raise SubmitError(
-                    str(e),
+                    f"submit failed: {type(e).__name__}",
                     retryable=True,
                     status_code=status_code,
-                    body=body,
                 ) from e
             if isinstance(e, SubmitError) and not retryable:
                 raise
-            time.sleep(backoff_seconds * attempt)
+            _bounded_wait(backoff_seconds * attempt, cancel_event, deadline, "submit retry wait", transaction_seconds)
             attempt += 1
 
 
