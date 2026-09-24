@@ -222,3 +222,87 @@ def test_checkpoint_uploads_terminal_groups_and_retires_accepted_artifacts(tmp_p
         assert entry['artifactSha256'] != '' and len(entry['artifactSha256']) == 64
         assert not Path(entry['artifactPath']).exists()  # all accepted bytes retired
     assert (root / 'campaign-complete.json').exists()
+
+
+def test_batch_counters_reconcile_with_spool_and_journal(tmp_path):
+    # C04/C05: the end-screen counters (submitted/queued/failed) and the global
+    # task_complete progress must reconcile against real durable evidence:
+    # accepted receipts in the journal, one retryable pending queue entry, and
+    # one permanently rejected dead-letter - with safe, distinct errorCategory
+    # values and never a raw server body.
+    from dataclasses import replace
+    from test_main_routing import MainRoutingTests, _DummyDashboard
+    from client import spool
+    from client.network import SubmitError
+    fixture = MainRoutingTests()
+    clip_a = fixture._quick_clip()
+    clip_b = replace(clip_a, clip_id="film-grain-1080p24-final", workload_id="film-grain-1080p24-final")
+    args = fixture._batch_args(str(tmp_path), no_submit=False)
+    args.local_metrics = False
+    args.campaign_seed = 29
+    args.max_duration_minutes = 1.0
+    def encode(**kwargs):
+        artifact = Path(kwargs['out_dir']) / kwargs['artifact_name']
+        artifact.write_bytes(b'encoded')
+        return {'artifactPath': str(artifact), 'encoderUsed': 'libx264', 'presetUsed': 'fast', 'fileSizeBytes': 7,
+                'encodeStartMonotonicNs': 1_000_000_000, 'encodeEndMonotonicNs': 2_000_000_000,
+                'elapsedMs': 1000, 'error': None}
+    def transport(base_url, submission, **kwargs):
+        run_create = submission['runCreate']
+        group = str(run_create['repetitionGroupId'])
+        index = int(run_create['repetitionIndex'])
+        if 'athletic' in group:  # first group: both attempts accepted
+            return {'benchmarkRun': {'id': 'run-counters-ok'}}
+        if index == 1:  # transient upstream outage: durable queue must defer, not fail
+            raise SubmitError('submit failed (503)', retryable=True)
+        raise SubmitError('server rejected the evidence (400)', retryable=False)
+    events = []
+    hardware = main.HardwareInfo('CPU', None, 16, 'OS')
+    with mock.patch.object(main, 'detect_hardware', return_value=hardware), \
+         mock.patch.object(main, 'check_compatibility', return_value={}), \
+         mock.patch.object(main, 'fetch_baseline_rows', return_value=[]), \
+         mock.patch.object(spool, 'submit_artifact_submission', side_effect=transport), \
+         mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
+         mock.patch.object(main, '_build_protocol_config',
+                           return_value=protocol.ProtocolConfig.for_version('7.1', max_adaptive_repeats=0)), \
+         mock.patch.object(main, 'probe_video_stream_metrics',
+                           return_value={'sourceFps': 24, 'sourceDurationSeconds': 5, 'containerFormat': 'mp4'}), \
+         mock.patch.object(main, '_probe_artifact_contract', side_effect=lambda path: fixture._artifact_contract()), \
+         mock.patch.object(main, '_capture_protocol_environment_snapshot',
+                           return_value=protocol.EnvironmentSnapshot(selected_accelerator='software')), \
+         mock.patch.object(main, 'encode_to_artifact', side_effect=encode), \
+         mock.patch.object(main, 'BatchRunDashboard', _DummyDashboard):
+        # One accepted pair, one 503-deferred upload, one terminal 400.
+        assert main.run_benchmark_batch(hardware=hardware, base_url='https://example.invalid', args=args,
+                                        event_sink=events.append,
+                                        tasks=[{'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clip_a},
+                                               {'encoder': 'libx264', 'preset': 'fast', 'crf': 24, 'suiteClip': clip_b}]) == 1
+    counters = next(e for e in reversed(events) if e.get('type') == 'counters')
+    assert (counters['submitted'], counters['skipped'], counters['queued'], counters['failed']) == (2, 0, 1, 1)
+    complete = next(e for e in events if e.get('type') == 'run_complete')
+    assert (complete['submitted'], complete['queued'], complete['failed']) == (2, 1, 1)
+    assert complete['locallyComplete'] == 0
+    # Global progress: every measured unit of work advanced the batch, uploads included.
+    assert [e['processed'] for e in events if e.get('type') == 'task_complete' and e.get('scope') == 'batch'] == [1, 2, 3, 4]
+    outcomes = {e['status']: e for e in events if e.get('type') == 'submit_result'}
+    assert outcomes['queued']['errorCategory'] == 'server_error'
+    assert outcomes['failed']['errorCategory'] == 'protocol_rejected'
+    assert 'benchmarkRunId' in outcomes['submitted']
+    # Durable truth: journal accepted receipts, queue pending entry, dead-letter.
+    root = next((tmp_path / 'campaigns').iterdir())
+    accepted = [json.loads(p.read_text()) for p in sorted(root.glob('submission-*.accepted.json'))]
+    assert len(accepted) == 2
+    assert all(entry['benchmarkRunId'] == 'run-counters-ok' for entry in accepted)
+    assert all(not Path(entry['artifactPath']).exists() for entry in accepted)
+    pending = [json.loads(p.read_text()) for p in tmp_path.glob('*.json')
+               if p.name != 'queue' and json.loads(p.read_text()).get('payload')]
+    assert len(pending) == 1
+    assert 'film-grain' in pending[0]['payload']['runCreate']['repetitionGroupId']
+    assert int(pending[0]['payload']['runCreate']['repetitionIndex']) == 1
+    dead = [json.loads(p.read_text()) for p in (tmp_path / 'dead-letter').glob('*.json')]
+    assert len(dead) == 1
+    assert int(dead[0]['payload']['runCreate']['repetitionIndex']) == 2
+    receipts = [json.loads(p.read_text()) for p in (tmp_path / 'receipts').glob('*.json')]
+    assert len(receipts) == 2
+    assert {r['status'] for r in receipts} == {'uploaded_analysis_pending'}
+    assert 'run-counters-ok' in json.dumps(receipts)
