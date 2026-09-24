@@ -9,7 +9,7 @@ $ErrorActionPreference='Stop'
 $tokens=$null; $parseErrors=$null
 $ast=[Management.Automation.Language.Parser]::ParseFile($Harness,[ref]$tokens,[ref]$parseErrors)
 if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
-foreach ($name in @('Get-OwnedExitConfirmation','Record-CleanupFailure','Get-OwnedClientTree','Get-ObservedRunControl','Get-ObservedModeControl','Set-OwnedForeground','Select-AdvancedSingleMode','Invoke-RunAction','Wait-Until','Observe-Processes','Get-CompletionMarkers','Wait-Encoder','Wait-NoEncoders','Get-ActiveEncodeEvidence','Get-DurableMeasuredAttempts','Wait-MeasuredThenActiveEncode')) {
+foreach ($name in @('Get-OwnedExitConfirmation','Get-OwnedDownloadEstimateConfirmation','Confirm-ObservedDownloadEstimate','Record-CleanupFailure','Get-OwnedClientTree','Get-ObservedRunControl','Get-ObservedModeControl','Set-OwnedForeground','Select-AdvancedSingleMode','Invoke-RunAction','Wait-Until','Observe-Processes','Get-CompletionMarkers','Wait-Encoder','Wait-NoEncoders','Get-ActiveEncodeEvidence','Get-DurableMeasuredAttempts','Wait-MeasuredThenActiveEncode')) {
     $definitions=@($ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst] -and $node.Name -eq $name},$true))
     if ($definitions.Count -ne 1) { throw "Expected one real $name definition." }
     Invoke-Expression $definitions[0].Extent.Text
@@ -28,6 +28,8 @@ public static class EdbWindows {
  public static long ObservedFocus=0; public static string FocusFailure=null;
  public static bool SetForegroundWindow(IntPtr h){if(ActivateSucceeds){Foreground=h;return true;}return false;}
  public static IntPtr GetForegroundWindow(){return Foreground;}
+ public static long LastMessageTarget=0; public static uint LastMessage=0;
+ public static IntPtr SendMessageTimeout(IntPtr h,uint m,IntPtr w,IntPtr l,uint flags,uint timeout,out UIntPtr result){LastMessageTarget=h.ToInt64();LastMessage=m;result=new UIntPtr(1);return Data.ContainsKey(h.ToInt64())?new IntPtr(1):IntPtr.Zero;}
  public static bool GetWindowRect(IntPtr h, out Rect r){ var b=Data[h.ToInt64()].Bounds; r=new Rect{Left=b[0],Top=b[1],Right=b[2],Bottom=b[3]}; return true; }
  public static IntPtr SetThreadDpiAwarenessContext(IntPtr c){ return new IntPtr(-1); }
  public static bool ShowWindow(IntPtr h,int mode){return true;}
@@ -269,6 +271,37 @@ Assert-Throws {Get-OwnedExitConfirmation} '*multiple owned native Exit dialogs*'
 Case 'exit-confirmation:reject-two-yes-buttons'
 Ready-Fixture;[EdbWindows]::Data.Add(3,[EdbWindows]::Data[2])
 Assert-Throws {Get-OwnedExitConfirmation} '*multiple observed enabled native Yes buttons*'
+function Download-Estimate-Fixture {
+    [EdbWindows]::Data.Clear()
+    Run-Window 1 0 @(8,8,1016,703) 'TkTopLevel';[EdbWindows]::Data[1].Text='EncodingDB Windows Client'
+    Run-Window 2 0 @(317,310,722,469) '#32770';[EdbWindows]::Data[2].Text='Download and storage estimate'
+    Run-Window 3 2 @(541,429,616,452) 'Button';[EdbWindows]::Data[3].Text='&Yes';[EdbWindows]::Data[3].Control=6
+    Run-Window 4 2 @(624,429,699,452) 'Button';[EdbWindows]::Data[4].Text='&No';[EdbWindows]::Data[4].Control=7
+    Run-Window 5 2 @(387,367,686,395) 'Static';[EdbWindows]::Data[5].Text='This run may download 1.4 GB of frozen reference media. Estimated peak extra storage: 2.9 GB. Continue?'
+    [EdbWindows]::ActivateSucceeds=$true;[EdbWindows]::Foreground=[IntPtr]::Zero
+    [EdbWindows]::LastMessageTarget=0;[EdbWindows]::LastMessage=0
+    $script:harnessDeadline=[DateTime]::UtcNow.AddSeconds(30)
+    $script:events=@()
+}
+Case 'download-estimate:exact-native-dialog-and-bounded-yes'
+Download-Estimate-Fixture
+$estimate=Get-OwnedDownloadEstimateConfirmation
+Assert-True ($estimate.dialog -eq [IntPtr]2 -and $estimate.button -eq [IntPtr]3 -and $estimate.owner -eq 42) 'The estimate observer did not identify the owned Yes button.'
+Confirm-ObservedDownloadEstimate
+Assert-True ([EdbWindows]::LastMessageTarget -eq 3 -and [EdbWindows]::LastMessage -eq 0x00F5) 'The observed estimate Yes button did not receive BM_CLICK.'
+Assert-True (@($script:events | Where-Object { $_.kind -eq 'observed-download-estimate-approved' }).Count -eq 1) 'Estimate approval evidence was not recorded.'
+Case 'download-estimate:reject-unexpected-title'
+Download-Estimate-Fixture;[EdbWindows]::Data[2].Text='Allow Benchmark Publication'
+Assert-Throws {Get-OwnedDownloadEstimateConfirmation} '*unexpected owned dialog*'
+Case 'download-estimate:reject-missing-cost-disclosure'
+Download-Estimate-Fixture;[EdbWindows]::Data[5].Text='Continue?'
+Assert-Throws {Get-OwnedDownloadEstimateConfirmation} '*lacks one visible Yes/No pair and the expected cost disclosure*'
+Case 'download-estimate:reject-wrong-button-identity'
+Download-Estimate-Fixture;[EdbWindows]::Data[3].Control=7
+Assert-Throws {Get-OwnedDownloadEstimateConfirmation} '*lacks one visible Yes/No pair and the expected cost disclosure*'
+Case 'download-estimate:reject-foreign-owner'
+Download-Estimate-Fixture;[EdbWindows]::Data[5].Owner=99
+Assert-Throws {Get-OwnedDownloadEstimateConfirmation} '*owner differs from the client*'
 Case 'cleanup:primary-error-and-owned-identity-preserved'
 $script:events=@()
 $receipt=@{status='BLOCKED';error='original failure';primaryError=@{message='original failure';stage='close readiness'};cleanupErrors=@()}

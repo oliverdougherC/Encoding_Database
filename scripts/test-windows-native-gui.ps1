@@ -396,6 +396,46 @@ function Confirm-ObservedExit {
     if ($sent -eq [IntPtr]::Zero) { throw 'BLOCKED_GUI_AUTOMATION: native Yes button did not accept the bounded click.' }
     Record-Event 'observed-native-button-clicked' @{ name='Yes'; processId=$buttonOwner; dialogHandle=$dialog.ToInt64(); buttonHandle=$button.ToInt64(); controlId=6 }
 }
+function Get-OwnedDownloadEstimateConfirmation {
+    # The guided client asks before extracting the frozen media. Accept only this exact native
+    # Yes/No dialog, with its visible cost disclosure, from the owned packaged process.
+    $roots=@(Get-OwnedWindows | Where-Object { [EdbWindows]::Text($_) -eq 'EncodingDB Windows Client' })
+    if ($roots.Count -ne 1) { throw 'BLOCKED_GUI_AUTOMATION: expected one owned client window before download consent.' }
+    $dialogs=@(Get-OwnedWindows | Where-Object { $_ -ne $roots[0] })
+    if ($dialogs.Count -eq 0) { return $null }
+    if ($dialogs.Count -ne 1) { throw 'BLOCKED_GUI_AUTOMATION: multiple owned dialogs appeared before download consent.' }
+    $dialog=$dialogs[0]
+    if ([EdbWindows]::Text($dialog) -ne 'Download and storage estimate' -or [EdbWindows]::Class($dialog) -ne '#32770') {
+        throw 'BLOCKED_GUI_AUTOMATION: unexpected owned dialog before download consent.'
+    }
+    $children=@([EdbWindows]::Windows($dialog) | Where-Object { [EdbWindows]::GetParent($_) -eq $dialog })
+    $yes=@($children | Where-Object { [EdbWindows]::Class($_) -eq 'Button' -and [EdbWindows]::Text($_).Replace('&','') -eq 'Yes' -and [EdbWindows]::GetDlgCtrlID($_) -eq 6 -and [EdbWindows]::IsWindowVisible($_) -and [EdbWindows]::IsWindowEnabled($_) })
+    $no=@($children | Where-Object { [EdbWindows]::Class($_) -eq 'Button' -and [EdbWindows]::Text($_).Replace('&','') -eq 'No' -and [EdbWindows]::GetDlgCtrlID($_) -eq 7 -and [EdbWindows]::IsWindowVisible($_) -and [EdbWindows]::IsWindowEnabled($_) })
+    $disclosure=@($children | Where-Object { [EdbWindows]::Class($_) -eq 'Static' -and [EdbWindows]::Text($_) -match '^This run may download .+ of frozen reference media\. Estimated peak extra storage: .+\. Continue\?$' })
+    if ($yes.Count -ne 1 -or $no.Count -ne 1 -or $disclosure.Count -ne 1) {
+        throw 'BLOCKED_GUI_AUTOMATION: download estimate lacks one visible Yes/No pair and the expected cost disclosure.'
+    }
+    [uint32]$rootOwner=0; [void][EdbWindows]::GetWindowThreadProcessId($roots[0],[ref]$rootOwner)
+    foreach ($handle in @($dialog,$yes[0],$no[0],$disclosure[0])) {
+        [uint32]$owner=0; [void][EdbWindows]::GetWindowThreadProcessId($handle,[ref]$owner)
+        if ($owner -ne $rootOwner) { throw 'BLOCKED_GUI_AUTOMATION: download estimate control owner differs from the client.' }
+    }
+    return @{ dialog=$dialog; button=$yes[0]; owner=$rootOwner }
+}
+function Confirm-ObservedDownloadEstimate {
+    $script:operationStage='start:capture-download-estimate'
+    [void](Capture-Ui 'before-download-estimate-Yes')
+    $confirmation=Get-OwnedDownloadEstimateConfirmation
+    if ($null -eq $confirmation) { throw 'BLOCKED_GUI_AUTOMATION: owned download estimate is no longer ready.' }
+    $dialog=$confirmation.dialog; $button=$confirmation.button
+    [void][EdbWindows]::SetForegroundWindow($dialog)
+    Wait-Until { return [EdbWindows]::GetForegroundWindow() -eq $dialog } 5 'BLOCKED_GUI_FOCUS: download estimate did not receive foreground focus.'
+    [UIntPtr]$result=[UIntPtr]::Zero
+    $script:operationStage='start:click-download-estimate-yes'
+    $sent=[EdbWindows]::SendMessageTimeout($button,0x00F5,[IntPtr]::Zero,[IntPtr]::Zero,2,2000,[ref]$result)
+    if ($sent -eq [IntPtr]::Zero) { throw 'BLOCKED_GUI_AUTOMATION: download estimate Yes button did not accept the bounded click.' }
+    Record-Event 'observed-download-estimate-approved' @{ processId=$confirmation.owner; dialogHandle=$dialog.ToInt64(); buttonHandle=$button.ToInt64(); controlId=6 }
+}
 function Get-OwnedClientTree {
     # Enumerate the exact owned client window and every descendant child HWND once, in physical
     # pixels, so row-structure predicates and click coordinates share one observation space.
@@ -431,9 +471,10 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     # three, share one class and one height tightly equal to the row height, are ordered left to
     # right flush with the row's left edge with gaps <=32px, and the first button is wider than the
     # second. Start is the first; Stop is the second. Every other row fails a predicate on the
-    # hosted runner (CI 35651286705 failure.win32.json: the log frame holds only a Text child and a
-    # ScrollBar child, mixing classes; configuration rows hold 2, 7 or 8 children or mixed child
-    # heights). The former two-button contract blocked this phase at run35651286705.
+    # hosted runner (CI 35976723286 launch.win32.json: the log frame mixes a Text child and a
+    # ScrollBar child; the current three-control mode row has a narrow first label, and other
+    # configuration rows fail child count or height). The former two-button contract blocked
+    # this phase at run35651286705.
     $tree=Get-OwnedClientTree
     $rootRect=$tree.rootRect; $byHandle=$tree.byHandle
     $rootWidth=$rootRect.Right-$rootRect.Left
@@ -812,6 +853,18 @@ try {
             # default; deliberately select Single (advanced) first or Start would run a sweep.
             Select-AdvancedSingleMode
             Invoke-RunAction 'Start'
+            $script:downloadEstimateStatus=$null
+            Wait-Until {
+                $estimate=Get-OwnedDownloadEstimateConfirmation
+                if ($null -ne $estimate) { $script:downloadEstimateStatus='prompt'; return $true }
+                try {
+                    $stop=Get-ObservedRunControl 'Stop'
+                    if ($stop.childEnabled) { $script:downloadEstimateStatus='already-running'; return $true }
+                } catch { }
+                return $false
+            } 20 'BLOCKED_GUI_AUTOMATION: neither a download estimate nor an active run followed Start.'
+            if ($script:downloadEstimateStatus -eq 'prompt') { Confirm-ObservedDownloadEstimate }
+            else { Record-Event 'download-estimate-not-shown' @{ phase=$name } }
             if ($name -eq 'prepare-stop') {
                 Wait-Until { [void](Observe-Processes); return $null -ne $phase.preparationProbe } $AcquisitionSeconds 'Source preparation probe was not observed.'
                 if (@(Get-ChildItem -Path $phase.queue -Recurse -Filter 'manifest.json' -ErrorAction SilentlyContinue).Count) { throw 'Campaign already exists; preparation cancellation was not exercised.' }
