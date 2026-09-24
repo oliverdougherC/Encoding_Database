@@ -857,10 +857,14 @@ try {
             Wait-Until {
                 $estimate=Get-OwnedDownloadEstimateConfirmation
                 if ($null -ne $estimate) { $script:downloadEstimateStatus='prompt'; return $true }
-                try {
-                    $stop=Get-ObservedRunControl 'Stop'
-                    if ($stop.childEnabled) { $script:downloadEstimateStatus='already-running'; return $true }
-                } catch { }
+                # ttk's disabled visual state is not Win32 IsWindowEnabled. A grey Stop button
+                # can report enabled while this modal blocks the Tk callback. Only actual
+                # preparation or an owned encoder proves that Start passed the decision.
+                [void](Observe-Processes)
+                if ($null -ne $phase.preparationProbe) { $script:downloadEstimateStatus='already-running'; return $true }
+                $encode=Get-ActiveEncodeEvidence
+                if ($encode.identified.Count -or $encode.unidentified.Count) { $script:downloadEstimateStatus='already-running'; return $true }
+                if ($script:process.HasExited) { throw 'BLOCKED_GUI_AUTOMATION: client exited before the download decision or source preparation.' }
                 return $false
             } 20 'BLOCKED_GUI_AUTOMATION: neither a download estimate nor an active run followed Start.'
             if ($script:downloadEstimateStatus -eq 'prompt') { Confirm-ObservedDownloadEstimate }
