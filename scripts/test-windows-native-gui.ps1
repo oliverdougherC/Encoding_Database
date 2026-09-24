@@ -426,7 +426,7 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
     # Tk widgets expose no accessible name (verified: every descendant is an unnamed UIA Pane and only
     # the TkTopLevel carries window text). The guided client packs the run controls as three exact
     # native child HWNDs inside one row container (client/windows_gui.py: 'Start benchmark (Alt+B)',
-    # 'Stop (Alt+S)', 'Retry Queued Uploads'), so the controls are reobserved from that live Win32
+    # 'Stop (Alt+S)', 'Retry due uploads'), so the controls are reobserved from that live Win32
     # structure: the unique row at least half the root width whose visible children are exactly
     # three, share one class and one height tightly equal to the row height, are ordered left to
     # right flush with the row's left edge with gaps <=32px, and the first button is wider than the
@@ -476,10 +476,11 @@ function Get-ObservedRunControl([ValidateSet('Start','Stop')][string]$Action) {
 }
 function Get-ObservedModeControl {
     # The mode selector has no accessible name either, so it is identified structurally: the unique
-    # row at least half the root width whose visible same-class children are exactly seven controls
+    # row at least half the root width whose visible same-class children are exactly three controls
     # in one non-overlapping left-to-right line flush with the row's left edge (client/windows_gui.py
-    # row1: Mode label, Mode combobox, No-submit checkbutton, Retries label, Retries spinbox, Batch
-    # label, Batch spinbox; CI 35651286705 launch.win32.json row at y=78). The combobox is the
+    # row1: Mode label, Mode combobox, Save locally checkbutton; CI 35976723286 launch.win32.json
+    # row at y=78). The short label followed by the wider combobox distinguishes this row from
+    # the three-button Start/Stop row and the saved-work row. The combobox is the
     # second control from the left. The guarded click that follows must post an aligned owned popup
     # before any value-changing key is sent, so a structurally stale identity can never commit.
     $tree=Get-OwnedClientTree
@@ -491,11 +492,14 @@ function Get-ObservedModeControl {
         $pRect=$candidate.rect
         if (($pRect.Right-$pRect.Left) -lt [Math]::Floor($rootWidth*0.5)) { continue }
         $kids=@($byHandle.Values | Where-Object { $_.parent -eq $key -and $_.visible })
-        if ($kids.Count -ne 7) { continue }
+        if ($kids.Count -ne 3) { continue }
         $classes=@($kids | ForEach-Object { $_.class } | Select-Object -Unique)
         if ($classes.Count -ne 1) { continue }
         $ordered=@($kids | Sort-Object { $_.rect.Left })
         if ($ordered[0].rect.Left -ne $pRect.Left) { continue }
+        $labelWidth=$ordered[0].rect.Right-$ordered[0].rect.Left
+        $comboWidth=$ordered[1].rect.Right-$ordered[1].rect.Left
+        if ($labelWidth -lt 16 -or $labelWidth -gt 64 -or $comboWidth -lt 64 -or $comboWidth -gt 400 -or $labelWidth -ge $comboWidth) { continue }
         $inside=$true
         foreach ($kid in $ordered) {
             $r=$kid.rect
@@ -508,7 +512,7 @@ function Get-ObservedModeControl {
         if (-not $inside) { continue }
         $rows+=,@{ row=$candidate; ordered=$ordered }
     }
-    if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate configuration rows on this fresh instance; the unique seven-control mode row is not established." }
+    if ($rows.Count -ne 1) { throw "BLOCKED_GUI_POINT: observed $($rows.Count) candidate configuration rows on this fresh instance; the unique three-control mode row is not established." }
     $combo=$rows[0].ordered[1]
     $rect=$combo.rect
     $width=$rect.Right-$rect.Left; $height=$rect.Bottom-$rect.Top
