@@ -2,6 +2,7 @@
 
 import time
 import subprocess
+import io
 from types import SimpleNamespace
 from unittest import mock
 
@@ -71,3 +72,18 @@ def test_cli_queue_and_local_policy_keep_guided_menu(tmp_path):
                           "--queue-dir", str(tmp_path)]) == 37
     guided.assert_called_once()
     assert main._has_direct_single_run_intent(["--codec", "libx264", "--no-submit"])
+
+
+def test_cli_entrypoint_survives_non_ascii_output_on_windows_code_page(tmp_path):
+    bytes_out = io.BytesIO()
+    output = io.TextIOWrapper(bytes_out, encoding="cp1252", errors="strict")
+
+    def guided(_parser, _args):
+        main.print_info("about 123 MB; source ≈ estimate")
+        return 0
+
+    with mock.patch.object(main.sys, "stdout", output), \
+         mock.patch.object(main, "interactive_menu_flow", side_effect=guided):
+        assert main.main(["encodingdb", "--menu", "--queue-dir", str(tmp_path)]) == 0
+    output.flush()
+    assert b"source \\u2248 estimate" in bytes_out.getvalue()

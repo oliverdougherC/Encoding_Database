@@ -5,5 +5,5 @@
   "benchmarkProtocolVersion": "7.1",
   "plFormulaVersion": "7.0",
   "suiteVersion": "encodingdb-test-suite-v1",
-  "clientImplementationVersion": "client/0.3.4"
+  "clientImplementationVersion": "client/0.3.5"
 }

@@ -8,9 +8,11 @@ release notes until a stricter semver/tagging policy is formalized.
 ## [1.3.0-rc.6] - 2026-09-28
 
 Unpublished review candidate for the September 28 client reliability work.
-Client 0.3.4 bounds runtime preparation, carries cancellation and deadlines
+Client 0.3.5 bounds runtime preparation, carries cancellation and deadlines
 through normal uploads, reconciles saved campaign evidence and queue receipts,
 and gives Windows Overall and Batch progress declared measured-attempt units.
+It keeps the guided menu reachable with local queue settings and makes console
+output safe under Windows code pages that cannot print every Unicode symbol.
 Protocol 7.1, the frozen suite bytes and scientific admission checks are
 unchanged. Source and focused tests do not certify the native Medium, fault,
 recovery or four-asset release gates; no public asset is promoted by this note.

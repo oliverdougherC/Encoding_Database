@@ -126,7 +126,7 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.4"
+CLIENT_VERSION = "client/0.3.5"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
@@ -2784,7 +2784,7 @@ def run_benchmark_batch(
         typical = observed[len(observed) // 2] if any(observed) else 12 * 1024 * 1024
         needed = pending_attempts * typical
         if needed > remaining_bytes:
-            print_info(f"Planned attempts could need up to ≈{needed // (1024 * 1024)} MB of retention while "
+            print_info(f"Planned attempts could need up to about {needed // (1024 * 1024)} MB of retention while "
                        f"this campaign's remaining allowance is {remaining_bytes // (1024 * 1024)} MB. "
                        f"Completed groups upload and retire automatically at checkpoints; if the volume "
                        f"allows, --max-storage-mb raises the allowance.")
@@ -4586,6 +4586,14 @@ def run_windows_gui_flow(args: argparse.Namespace) -> int:
 
 
 def main(argv: List[str]) -> int:
+    # Packaged Windows console output can be CP1252 even when logs are
+    # redirected. Keep status/error reporting alive for Unicode paths and
+    # messages instead of losing the campaign to UnicodeEncodeError.
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(errors="backslashreplace")
+        except (AttributeError, OSError, ValueError):
+            pass
     if len(argv) > 1 and argv[1].startswith('--multiprocessing-fork'):
         return 0
 
