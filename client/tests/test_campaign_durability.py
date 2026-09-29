@@ -116,7 +116,7 @@ def test_retry_after_survives_restart_and_deadline_expires(tmp_path):
 
 
 def test_compatibility_refuses_old_epoch_before_campaign(tmp_path):
-    response = SimpleNamespace(status_code=200,json=lambda:{'protocolVersion':'7.0','minimumClientVersion':'client/0.2.0','encodeTimerBoundary':'old'})
+    response = SimpleNamespace(status_code=200,json=lambda:{'protocolVersion':'7.0','minimumClientVersion':'client/0.2.0','encodeTimerBoundary':'old'},close=lambda:None)
     with mock.patch('client.network._load_requests',return_value=SimpleNamespace(get=lambda *a,**k:response)):
         with pytest.raises(SubmitError): check_compatibility('http://example.invalid','client/0.3.0')
 
@@ -158,9 +158,16 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
     campaign_id='campaign-0123456789abcdef'
     root=journal_path(str(tmp_path),campaign_id)
     atomic_json(root/'campaign-complete.json',{'skipped':0,'failed':0})
-    payload={'retained':'immutable'}
+    artifact=root/'saved.mp4'
+    artifact.write_bytes(b'retained original bytes')
+    payload={'artifactPath':str(artifact),'runCreate':{'campaignId':campaign_id}}
     atomic_json(root/'submission-000001.json',payload)
-    with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',return_value=spool.ReplayStats(submitted=1)), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
+    def accepted_replay(*_args, **_kwargs):
+        local_hash=spool.local_hash_for_payload(payload)
+        atomic_json(tmp_path/'receipts'/f'{local_hash}.json',{
+            'localHash':local_hash,'response':{'benchmarkRun':{'id':'run-saved'}}})
+        return spool.ReplayStats(submitted=1)
+    with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',side_effect=accepted_replay), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
         assert main.main(['prog','--resume-campaign',campaign_id,'--submit','--queue-dir',str(tmp_path)]) == 0
     save.assert_called_once_with(str(tmp_path),payload,max_storage_mb=2048)
     source.assert_not_called()
@@ -173,7 +180,8 @@ def test_reconstruction_refuses_changed_runtime_identity(tmp_path):
     root = journal_path(str(tmp_path), campaign_id)
     root.mkdir(parents=True)
     atomic_json(root / 'manifest.json', {
-        'protocolVersion': '7.1', 'runtime': {'ffmpeg': {'sha256': 'old-runtime'}},
+        'protocolVersion': '7.1', 'clientVersion': main.CLIENT_VERSION,
+        'runtime': {'ffmpeg': {'sha256': 'old-runtime'}},
     })
     with mock.patch('client.identity.runtime_identity', return_value={'ffmpeg': {'sha256': 'new-runtime'}}):
         outcome = main._reconstruct_saved_submissions(
@@ -255,6 +263,9 @@ def test_publish_saved_rebuilds_envelopes_for_complete_group_after_controlled_st
     partial = [rid for rid, orders in measured.items() if len(orders) == 1]
     assert complete and partial, f"fixture must yield one complete and one partial group: {measured}"
     assert not list(root.glob('submission-*.json')), "stop happened before envelope creation"
+    # A damaged unrelated sibling cannot hide or block the independently
+    # complete group that still has faithful measured records and bytes.
+    (root / 'attempt-999999.json').write_text('{damaged sibling')
     sent = []
     def transport(base_url, submission, **kwargs):
         sent.append(submission)

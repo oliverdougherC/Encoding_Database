@@ -7,6 +7,8 @@ import time
 import traceback
 from typing import Any, Dict, Optional
 
+import psutil
+
 from . import main as client_main
 from . import sweep_plan
 from . import suite
@@ -30,8 +32,34 @@ GUI_MODE_BY_LABEL: Dict[str, Optional[str]] = {
     "Single (advanced)": None,
 }
 # Replay checks its time budget between entries; an in-flight request can take
-# longer. Keep the window visible until both owned workers have actually exited.
+# longer. A confirmed Close gives owned workers one finite shutdown grace.
 GUI_CLOSE_GRACE_SECONDS = 70.0
+
+
+def _terminate_owned_children() -> None:
+    """Reap FFmpeg and helper descendants before a forced process exit."""
+    try:
+        children = psutil.Process(os.getpid()).children(recursive=True)
+    except (psutil.Error, OSError):
+        return
+    for child in children:
+        try:
+            child.terminate()
+        except (psutil.Error, OSError):
+            pass
+    try:
+        _gone, alive = psutil.wait_procs(children, timeout=2)
+    except (psutil.Error, OSError):
+        alive = children
+    for child in alive:
+        try:
+            child.kill()
+        except (psutil.Error, OSError):
+            pass
+    try:
+        psutil.wait_procs(alive, timeout=1)
+    except (psutil.Error, OSError):
+        pass
 
 
 def _validated_integer(value: Any, label: str, minimum: int, maximum: int) -> int:
@@ -429,14 +457,19 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 f"{accepted} uploaded (analysis pending) · {terminal} terminal"
             )
             self.saved_campaign_ids = [str(item.get("campaignId") or "") for item in campaigns]
-            labels = [
-                f"{item.get('campaignId')} — {'measured' if item.get('complete') else 'unfinished'}, "
-                f"{int(item.get('pendingUploads') or 0)} unpublished, "
-                f"{int(item.get('queueDue') or 0)} due, "
-                f"{int(item.get('queueTerminal') or 0)} terminal, "
-                f"{int(item.get('unavailableSources') or 0)} unavailable"
-                for item in campaigns
-            ]
+            labels = []
+            for item in campaigns:
+                finished = int(item.get("completedGroups") or 0)
+                planned = int(item.get("plannedGroups") or 0)
+                coverage = (f"{finished}/{planned} finished groups" if planned
+                            else f"{finished} finished groups")
+                labels.append(
+                    f"{item.get('campaignId')} — {coverage}, "
+                    f"{int(item.get('pendingUploads') or 0)} unpublished, "
+                    f"{int(item.get('queueDue') or 0)} due, "
+                    f"{int(item.get('queueTerminal') or 0)} terminal, "
+                    f"{int(item.get('unavailableSources') or 0)} unavailable"
+                    + (" · needs original client" if item.get("measurementBlocked") else ""))
             self.saved_combo["values"] = labels
             if labels:
                 self.saved_combo.current(self.saved_campaign_ids.index(previous) if previous in self.saved_campaign_ids else 0)
@@ -713,7 +746,8 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 rc, info = client_main.publish_saved_campaign(
                     queue_dir=str(self.base_args.queue_dir), campaign_id=campaign_id,
                     base_url=base_url, api_key=api_key, retries=retries,
-                    interactive=False, cancel_event=self.upload_cancel_event,
+                    interactive=False, continue_when_open=True,
+                    cancel_event=self.upload_cancel_event,
                     event_sink=lambda event: self.event_queue.put(("event", event)),
                 )
                 self.event_queue.put(("upload_status", self._publication_result_text(rc, info)))
@@ -730,8 +764,12 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 return f"Uploaded {submitted} saved result(s); analysis pending"
             if rc == 10:
                 reason = str(info.get("deferredReason") or "uploads_pending")
+                if info.get("failure"):
+                    reason = client_main.failure_text(info["failure"])
                 return (f"Saved work retained: {pending} queued, {unadmitted} not yet staged "
                         f"({reason}); no encoding")
+            if info.get("failure"):
+                return f"Saved publication blocked: {client_main.failure_text(info['failure'])}"
             return f"Saved publication has {terminal} terminal failure(s); review saved work"
 
         def _retry_uploads(self, *, automatic: bool = False) -> None:
@@ -794,11 +832,41 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 if not self.running and not self._upload_active():
                     self._refresh_saved_work()
                     publication = self.saved_state.get("publication") or {}
-                    if (self.saved_state.get("publicationConsent") and not self.no_submit_var.get()
-                            and not self.saved_state.get("activeCollection")
-                            and not self.saved_state.get("publicationLockBusy")
-                            and int(publication.get("dueEntries") or 0)):
-                        self._retry_uploads(automatic=True)
+                    permitted = (self.saved_state.get("publicationConsent")
+                                 and not self.no_submit_var.get()
+                                 and not self.saved_state.get("activeCollection")
+                                 and not self.saved_state.get("publicationLockBusy"))
+                    if permitted:
+                        base_url = self.base_url_var.get().strip() or str(self.base_args.base_url)
+                        fingerprint = client_main.publication_endpoint_fingerprint(base_url)
+                        for campaign in self.saved_state.get("campaigns") or []:
+                            intent = campaign.get("publicationIntent") or {}
+                            if (not intent.get("active")
+                                    or intent.get("baseUrlFingerprint") != fingerprint
+                                    or float(intent.get("nextAttemptAt") or 0) > time.time()):
+                                continue
+                            campaign_id = str(campaign.get("campaignId") or "")
+                            if not campaign_id:
+                                continue
+                            try:
+                                retries = _validated_integer(self.retries_var, "Retries", 1, 10)
+                            except ValueError as exc:
+                                self.summary_var.set(f"Saved continuation paused: {exc}")
+                                break
+                            self.upload_cancel_event.clear()
+                            self.upload_thread = threading.Thread(
+                                target=self._publish_saved_worker,
+                                args=(campaign_id, base_url,
+                                      str(getattr(self.base_args, "api_key", "") or ""), retries),
+                                daemon=False,
+                            )
+                            self.upload_thread.start()
+                            self.summary_var.set(
+                                f"Continuing saved publication for {campaign_id}; no encoding")
+                            self._refresh_controls()
+                            return
+                        if int(publication.get("dueEntries") or 0):
+                            self._retry_uploads(automatic=True)
             finally:
                 self.root.after(30_000, self._idle_retry)
 
@@ -836,28 +904,53 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 return
 
             if event_type == "run_start":
-                # Batch totalTasks is an upper bound on encode attempts, while
-                # task_complete counts finished measurement groups.
-                total = max(1, int(event.get("totalGroups") or 1)) if event.get("scope") == "batch" else max(1, int(event.get("totalTasks") or 1))
+                # Overall counts confirmed measured attempts against the
+                # producer-declared bound; doneTotal carries the durable
+                # baseline so a resume segment never rewinds the bar.
+                if event.get("scope") == "batch":
+                    total = max(1, int(event.get("declaredAttempts") or event.get("totalTasks") or 1))
+                    done = max(0, int(event.get("doneTotal") or 0))
+                    self.overall_total = total
+                    self.overall_done = min(done, total)
+                    self.overall_pb.configure(maximum=self.overall_total, value=self.overall_done)
+                    unit = str(event.get("progressUnit") or "measured-attempt")
+                    self.summary_var.set(f"Running {event.get('scope', 'benchmark')} ({unit}s)")
+                    self._append_log(f"Run start: unit={unit} baseline={self.overall_done}/{self.overall_total}")
+                else:
+                    total = max(1, int(event.get("totalTasks") or 1))
+                    self.overall_total = total
+                    self.overall_done = 0
+                    self.overall_pb.configure(maximum=total, value=0)
+                    self.summary_var.set(f"Running {event.get('scope', 'benchmark')} tasks")
+                    self._append_log(f"Run start: tasks={total}")
+                return
+
+            if event_type == "campaign_progress":
+                # Sole authority for both batch bars: producer counts durable
+                # confirmations (overall) and segment reconciliations (batch).
+                total = max(1, int(event.get("total") or 1))
+                done = max(0, min(int(event.get("done") or 0), total))
+                batch_total = max(1, int(event.get("batchTotal") or 1))
+                batch_done = max(0, min(int(event.get("batchDone") or 0), batch_total))
                 self.overall_total = total
-                self.overall_done = 0
-                self.overall_pb.configure(maximum=total, value=0)
-                self.batch_pb.configure(maximum=total, value=0)
-                self.summary_var.set(f"Running {event.get('scope', 'benchmark')} measurement groups")
-                self._append_log(f"Run start: groups={total}")
+                self.overall_done = done
+                self.overall_pb.configure(maximum=total, value=done)
+                self.batch_total = batch_total
+                self.batch_done = batch_done
+                self.batch_pb.configure(maximum=batch_total, value=batch_done)
+                self.summary_var.set(f"Confirmed {done}/{total} measured attempts")
                 return
 
             if event_type == "batch_start":
-                batch_size = max(1, int(event.get("batchSize") or 1))
-                self.batch_total = batch_size
+                # A new segment restarts the batch view; Overall keeps its
+                # durable baseline (reset here would be non-monotonic).
+                batch_total = max(1, int(event.get("batchDeclaredAttempts") or event.get("batchSize") or 1))
+                self.batch_total = batch_total
                 self.batch_done = 0
-                self.batch_pb.configure(maximum=batch_size, value=0)
-                if int(event.get("totalBatches") or 1) == 1:
-                    self.overall_total = batch_size
-                    self.overall_done = min(batch_size, max(0, int(event.get("processedTotal") or 0)))
-                    self.overall_pb.configure(maximum=batch_size, value=self.overall_done)
+                self.batch_pb.configure(maximum=batch_total, value=0)
                 self._append_log(
-                    f"Batch {event.get('batchNo')}/{event.get('totalBatches')} start ({batch_size} tasks)"
+                    f"Batch {event.get('batchNo')}/{event.get('totalBatches')} start "
+                    f"({batch_total} attempts)"
                 )
                 return
 
@@ -934,21 +1027,33 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
 
             if event_type == "task_complete":
                 processed = max(0, int(event.get("processed") or 0))
-                self.overall_done = processed
-                self.overall_pb.configure(value=min(self.overall_total, processed))
-                if event.get("scope") == "batch" and self.batch_total > 0:
-                    self.batch_done = min(self.batch_total, self.batch_done + 1)
-                    self.batch_pb.configure(value=self.batch_done)
-                elif event.get("scope") == "single":
-                    self.batch_pb.configure(maximum=max(1, int(event.get("total") or 1)), value=processed)
-                self.summary_var.set(f"Completed {processed}/{self.overall_total}")
+                if event.get("scope") == "single":
+                    self.overall_pb.configure(maximum=max(1, int(event.get("total") or 1)),
+                                              value=min(max(1, int(event.get("total") or 1)), processed))
+                    self.batch_pb.configure(maximum=max(1, int(event.get("total") or 1)),
+                                            value=min(max(1, int(event.get("total") or 1)), processed))
+                    self.summary_var.set(f"Completed {processed}/{max(1, int(event.get('total') or 1))}")
+                # Batch progress is owned by campaign_progress (durable
+                # confirmations); a per-record completion must never move the
+                # bars toward 100% on its own.
                 return
 
             if event_type == "run_complete":
-                completed = event.get("completed")
                 elapsed = event.get("elapsedSeconds")
-                self.stage_var.set("Complete")
-                self.summary_var.set(f"Completed {completed} task(s) in {elapsed:.1f}s" if isinstance(elapsed, (int, float)) else "Run complete")
+                failed = int(event.get("failed") or 0) + int(event.get("skipped") or 0)
+                queued = int(event.get("queued") or 0)
+                # The loop finishing is not success: stage follows the counts,
+                # and the done payload's exit code gives the final word.
+                self.stage_var.set("Complete" if not (failed or queued) else "Finished with issues")
+                if isinstance(elapsed, (int, float)):
+                    text = f"Run loop finished in {elapsed:.1f}s"
+                else:
+                    text = "Run loop finished"
+                if failed:
+                    text += f"; {failed} attempt(s) failed or were invalid"
+                elif queued:
+                    text += f"; {queued} upload(s) still queued"
+                self.summary_var.set(text)
                 self._append_log(self.summary_var.get())
                 return
 
@@ -996,26 +1101,38 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                                 pending = 0
                             if pending:
                                 pending_note = f" — {pending} upload(s) queued; due work retries while this window is open"
+                        # Final stage is owned by the exit code: whatever the
+                        # event stream showed mid-run, the terminal state must
+                        # agree with summary, buttons and exit semantics.
                         if rc == 0:
                             if active_no_submit:
                                 saved = self._run_counts["locally_complete"]
-                                count = f"{saved} measurement group(s) " if saved else ""
+                                count = f"{saved} measured attempt(s) " if saved else ""
+                                self.stage_var.set("Complete")
                                 self.summary_var.set(f"Saved {count}locally; use Publish saved results when ready")
                             elif self._run_counts["failed"]:
+                                self.stage_var.set("Error")
                                 self.summary_var.set(self._last_submission_failure + pending_note)
                             elif self._run_counts["queued"] or pending_note:
+                                self.stage_var.set("Pending uploads")
                                 self.summary_var.set("Measurements saved; some uploads are queued" + pending_note)
                             elif self._run_counts["submitted"]:
+                                self.stage_var.set("Complete")
                                 self.summary_var.set("Uploaded; analysis pending")
                             else:
+                                self.stage_var.set("Complete")
                                 self.summary_var.set("Run finished; review saved work")
                         elif rc == 11:
+                            self.stage_var.set("Paused")
                             self.summary_var.set("Measurement allowance reached; campaign saved — starting this mode again continues it" + pending_note)
                         elif rc == 10:
-                            self.summary_var.set(f"Saved locally; upload queued{pending_note}")
+                            self.stage_var.set("Pending uploads")
+                            self.summary_var.set("Measurements retained; uploads queued for retry" + pending_note)
                         elif rc == 130:
+                            self.stage_var.set("Cancelled")
                             self.summary_var.set("Run cancelled")
                         else:
+                            self.stage_var.set("Error")
                             failure = self._last_submission_failure or self.last_failure
                             failure = f"Run failed (exit code {rc}): {failure}" if failure else f"Run failed (exit code {rc}); see event log for details"
                             self.summary_var.set(failure)
@@ -1053,8 +1170,13 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
             uploader = self._upload_active()
             if benchmark or uploader:
                 if time.monotonic() >= self._close_deadline:
-                    self.summary_var.set("Waiting for the current operation to finish safely before closing...")
-                    self._close_deadline = time.monotonic() + GUI_CLOSE_GRACE_SECONDS
+                    self.summary_var.set("Stop deadline reached; saved work remains available after restart")
+                    self._append_log("Owned work did not quiesce in the Close grace period; ending this process and its helpers.")
+                    try:
+                        _terminate_owned_children()
+                        self.root.destroy()
+                    finally:
+                        os._exit(130)
                 self.root.after(100, self._close_when_stopped)
                 return
             self.root.destroy()

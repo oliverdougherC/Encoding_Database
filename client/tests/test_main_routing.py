@@ -38,6 +38,8 @@ class _DummyDashboard:
 
     def update_counters(self, *args, **kwargs) -> None:
         self.calls.append(("update_counters", args, kwargs))
+    def set_progress(self, *args, **kwargs) -> None:
+        self.calls.append(("set_progress", args, kwargs))
 
     def advance_phase(self, *args, **kwargs) -> None:
         self.calls.append(("advance_phase", args, kwargs))
@@ -621,7 +623,10 @@ class MainRoutingTests(unittest.TestCase):
             "recipeFingerprint": "f" * 64,
         }
 
-        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token, max_storage_mb):
+        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token,
+                        max_storage_mb, cancel_event=None, deadline=None):
+            self.assertIsNone(cancel_event)
+            self.assertIsInstance(deadline, float)
             captured_submission.update(payload)
             return "submitted", "", 0
 
@@ -988,7 +993,7 @@ class GuidedFlowTests(unittest.TestCase):
 
     def test_sweep_checkpoint_without_progress_stops(self) -> None:
         calls = []
-        client_main.config._BATCH_COMPLETED_COUNT = 0
+        client_main.config._BATCH_LEDGER = None
 
         def fake_batch(**kwargs):
             calls.append(kwargs)
@@ -1003,7 +1008,7 @@ class GuidedFlowTests(unittest.TestCase):
                     rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
                                                     show_end_screen=False, interactive=False, presets_cfg={})
         finally:
-            client_main.config._BATCH_COMPLETED_COUNT = 0
+            client_main.config._BATCH_LEDGER = None
         self.assertEqual(rc, 11)
         self.assertEqual(len(calls), 1, "no-progress checkpoint must not spin")
 

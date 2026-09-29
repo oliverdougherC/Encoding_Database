@@ -76,7 +76,7 @@ class PreparationTests(unittest.TestCase):
              mock.patch.object(main, '_prepare_quick_suite_clip') as prepare, \
              mock.patch.object(main, '_preparation_runtime_integrity') as runtime:
             self.assertEqual(main.main(['prog', '--upload-only', '--resume-campaign', 'campaign-0123456789abcdef',
-                                        '--submit', '--queue-dir', directory]), 0)
+                                        '--submit', '--queue-dir', directory]), 1)
         batch.assert_not_called()
         prepare.assert_not_called()
         runtime.assert_not_called()

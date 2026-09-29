@@ -335,18 +335,46 @@ class GuiLifecycleTests(unittest.TestCase):
         self.assertIn("some uploads are queued", app.summary_var.get())
         self.assertEqual(app.upload_btn.options["state"], "normal")
 
-    def test_batch_progress_counts_groups_not_maximum_encode_attempts(self):
+    def test_campaign_progress_owns_both_bars_on_declared_attempt_units(self):
         app, _root, _bindings, _tk = self.build()
         app._handle_event({"type": "run_start", "scope": "batch", "totalTasks": 30,
-                           "totalBatches": 1})
-        app._handle_event({"type": "batch_start", "batchSize": 3,
-                           "totalBatches": 1, "processedTotal": 0})
-        app._handle_event({"type": "task_complete", "scope": "batch", "processed": 1,
+                           "declaredAttempts": 12, "totalBatches": 1,
+                           "progressUnit": "measured-attempt", "doneTotal": 0})
+        self.assertEqual(app.overall_pb.options["maximum"], 12)
+        app._handle_event({"type": "batch_start", "batchNo": 1, "totalBatches": 1,
+                           "batchDeclaredAttempts": 8})
+        self.assertEqual(app.batch_pb.options["maximum"], 8)
+        self.assertEqual(app.batch_pb.options["value"], 0)
+        # A per-record completion must never move batch bars toward 100%.
+        app._handle_event({"type": "task_complete", "scope": "batch", "processed": 5,
                            "total": 30})
-        self.assertEqual(app.overall_total, 3)
-        self.assertEqual(app.overall_pb.options["maximum"], 3)
-        self.assertEqual(app.overall_pb.options["value"], 1)
-        self.assertIn("1/3", app.summary_var.get())
+        self.assertEqual(app.overall_pb.options["value"], 0)
+        self.assertEqual(app.batch_pb.options["value"], 0)
+        app._handle_event({"type": "campaign_progress", "scope": "batch", "unit": "measured-attempt",
+                           "done": 4, "total": 12, "batchDone": 4, "batchTotal": 8,
+                           "groupsTotal": 3})
+        self.assertEqual(app.overall_pb.options["maximum"], 12)
+        self.assertEqual(app.overall_pb.options["value"], 4)
+        self.assertEqual(app.batch_pb.options["value"], 4)
+        self.assertIn("4/12", app.summary_var.get())
+
+    def test_resume_baseline_and_monotonic_bounds_survive_segments(self):
+        app, _root, _bindings, _tk = self.build()
+        # Segment 2 of a resume: run_start carries the durable baseline and a
+        # refined (smaller) declared bound; bars must not rewind below done.
+        app._handle_event({"type": "campaign_progress", "scope": "batch",
+                           "done": 6, "total": 12, "batchDone": 6, "batchTotal": 6,
+                           "groupsTotal": 3})
+        app._handle_event({"type": "run_start", "scope": "batch", "totalTasks": 30,
+                           "declaredAttempts": 9, "totalBatches": 1,
+                           "progressUnit": "measured-attempt", "doneTotal": 6})
+        self.assertEqual(app.overall_pb.options["maximum"], 9)
+        self.assertEqual(app.overall_pb.options["value"], 6)
+        # A new segment resets only the batch view.
+        app._handle_event({"type": "batch_start", "batchNo": 1, "totalBatches": 1,
+                           "batchDeclaredAttempts": 3})
+        self.assertEqual(app.batch_pb.options["value"], 0)
+        self.assertEqual(app.overall_pb.options["value"], 6)
 
     def test_invalid_typed_settings_leave_idle_without_worker(self):
         for field, value, mode in (
@@ -478,7 +506,7 @@ class GuiLifecycleTests(unittest.TestCase):
         app.event_queue.put(("event", {"type": "submit_result", "status": "locally_complete"}))
         app.event_queue.put(("done", 0))
         app._poll_events()
-        self.assertIn("2 measurement group(s) locally", app.summary_var.get())
+        self.assertIn("2 measured attempt(s) locally", app.summary_var.get())
         self.assertNotIn("Uploaded", app.summary_var.get())
 
     def test_saved_work_is_visible_and_publish_uses_zero_encode_api(self):
@@ -603,20 +631,21 @@ class GuiLifecycleTests(unittest.TestCase):
         app._close_when_stopped()
         root.destroy.assert_not_called()
         # A slow request must not outlive an apparently closed application.
-        app._close_deadline = gui.time.monotonic() - 1
-        log_lines = []
-        with mock.patch.object(app, "_append_log", log_lines.append):
-            app._close_when_stopped()
-        root.destroy.assert_not_called()
-        self.assertIn("Waiting for the current operation", app.summary_var.get())
         self.assertTrue(uploader.is_alive(), "uploader object unaffected by close bookkeeping")
         # Declining the confirmation leaves the window open.
         root.reset_mock()
         tk.messagebox.askyesno.return_value = False
         app._on_close()
         root.destroy.assert_not_called()
-        uploader.finish()
-        app._close_when_stopped()
+        # Once the original grace expires, do not renew it forever. A single
+        # confirmed Close ends the owned process and helper tree.
+        app._close_deadline = gui.time.monotonic() - 1
+        with mock.patch.object(gui, "_terminate_owned_children") as terminate, \
+             mock.patch.object(gui.os, "_exit", side_effect=SystemExit(130)) as exit_process:
+            with self.assertRaises(SystemExit):
+                app._close_when_stopped()
+        terminate.assert_called_once()
+        exit_process.assert_called_once_with(130)
         root.destroy.assert_called_once()
 
     def test_retry_exception_surfaces_and_restores_controls(self):

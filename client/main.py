@@ -1,7 +1,7 @@
 import argparse
 from functools import wraps
 import dataclasses
-import errno
+import hashlib
 import json
 import math
 import os
@@ -60,14 +60,18 @@ from .ffmpeg import (
 )
 from .artifacts import (
     AUTHORITATIVE_ANALYZER_VERSION,
+    AUTH_TIMEOUT_SECONDS,
+    CREATE_TIMEOUT_SECONDS,
+    UPLOAD_TIMEOUT_SECONDS,
     build_artifact_submission_payload,
     build_environment_bootstrap,
     build_payload_hash,
     build_recipe_bootstrap,
 )
-from .network import fetch_baseline_rows, check_compatibility
-from .campaign import (CampaignJournal, active_collection, atomic_json, directory_bytes, physical_source_id, journal_path,
-    PreparationScope, preparation_progress, check_preparation_cancelled,
+from .network import SubmitError, SubmissionCancelled, fetch_baseline_rows, check_compatibility
+from .campaign import (CampaignJournal, active_collection, atomic_json, directory_bytes, physical_source_id, journal_path, load_record,
+    PreparationScope, PreparationTimeout, preparation_progress, preparation_stage,
+    check_preparation_cancelled,
     MeasurementBudget, MeasurementBudgetExceeded, check_measurement_budget, measurement_timeout, run_measurement_process)
 from .identity import selected_device
 from .protocol import (
@@ -84,12 +88,15 @@ from .protocol import (
     campaign_result_from_records,
     generate_campaign_id,
 )
+from .recovery_projection import project_attempt_groups
+from .publication_result import failure_info, failure_text
 from .spool import (
     campaign_queue_summary,
     collector_publication_scope,
     cleanup_spool,
     count_pending_entries,
     drain_committed_receipts,
+    local_hash_for_payload,
     host_phase_busy,
     host_phase_hold,
     inspect_spool,
@@ -100,11 +107,11 @@ from .spool import (
     SpoolCapacityError,
     submit_spooled_path,
 )
+
 from .stats import should_skip_submission
 from .suite import (
     PreparedSuiteClip,
     REQUIRED_CONTENT_CLASSES,
-    ensure_suite,
     ensure_suite_clip,
     get_clip,
     get_default_quick_clip,
@@ -119,9 +126,13 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.3"
+CLIENT_VERSION = "client/0.3.4"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
+ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
+    CREATE_TIMEOUT_SECONDS + AUTH_TIMEOUT_SECONDS + UPLOAD_TIMEOUT_SECONDS
+)
+SOURCE_CLIP_BUDGET_SECONDS = 3600.0
 PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
 
@@ -163,6 +174,57 @@ def _has_publication_consent() -> bool:
     if not isinstance(payload, dict):
         return False
     return int(payload.get("version") or 0) == PUBLICATION_CONSENT_VERSION
+
+
+def publication_endpoint_fingerprint(base_url: str) -> str:
+    """Bind saved continuation to an endpoint without persisting credentials."""
+    return hashlib.sha256(str(base_url).strip().rstrip("/").encode("utf-8")).hexdigest()
+
+
+def publication_intent_state(queue_dir: str, campaign_id: str) -> Dict[str, Any]:
+    """Read one explicit, consented saved-publication continuation intent."""
+    root = journal_path(queue_dir, campaign_id)
+    try:
+        value = json.loads((root / "publication-intent.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"active": False}
+    if (not isinstance(value, dict) or value.get("schemaVersion") != 1
+            or value.get("campaignId") != campaign_id):
+        return {"active": False, "error": "saved continuation intent is invalid"}
+    return value
+
+
+def _save_publication_intent(queue_dir: str, campaign_id: str, base_url: str,
+                             *, active: bool, status: str,
+                             failure: Optional[Any] = None) -> None:
+    root = journal_path(queue_dir, campaign_id)
+    old = publication_intent_state(queue_dir, campaign_id)
+    now = time.time()
+    attempts = int(old.get("attempts") or 0) + (1 if active and status != "working" else 0)
+    next_at = now
+    if active and status != "working":
+        next_at = now + min(300, 30 * (2 ** min(attempts, 4)))
+        try:
+            due = campaign_queue_summary(queue_dir, campaign_id).get("nextAttemptAt")
+            if due:
+                next_at = max(next_at, float(due))
+        except (OSError, ValueError, TypeError):
+            pass
+    payload = {
+        "schemaVersion": 1,
+        "campaignId": campaign_id,
+        "baseUrlFingerprint": publication_endpoint_fingerprint(base_url),
+        "createdAt": float(old.get("createdAt") or now),
+        "updatedAt": now,
+        "nextAttemptAt": next_at,
+        "attempts": attempts,
+        "active": bool(active),
+        "status": str(status)[:40],
+    }
+    if failure:
+        payload["lastFailure"] = failure_info(
+            failure, operation="publish_saved", campaign_id=campaign_id)
+    atomic_json(root / "publication-intent.json", payload)
 
 
 def _store_publication_consent() -> None:
@@ -318,6 +380,11 @@ def _preparation_operation(function):
         try:
             with PreparationScope(kwargs.get("cancel_event"), progress).activate():
                 return function(*args, **kwargs)
+        except PreparationTimeout as exc:
+            message = str(exc)
+            print_error(message)
+            _emit_event(sink, "run_error", scope="preparation", code=2, message=message)
+            return 2
         except KeyboardInterrupt:
             print_info("Preparation or collection interrupted; retained downloads and campaign records can be resumed.")
             _emit_event(sink, "run_interrupted", scope="preparation")
@@ -354,14 +421,21 @@ def _preparation_runtime_integrity(event_sink=None):
     return 0
 
 
+def _prepare_source_clip(clip: Any) -> PreparedSuiteClip:
+    """Bound acquisition and complete hash/media validation for one frozen clip."""
+    with preparation_stage(f"source-{clip.clip_id}", SOURCE_CLIP_BUDGET_SECONDS):
+        preparation_progress("source", clipId=clip.clip_id)
+        return ensure_suite_clip(clip)
+
+
 def _prepare_quick_suite_clip() -> PreparedSuiteClip:
     manifest = load_default_suite_manifest()
-    return ensure_suite_clip(get_default_quick_clip(manifest))
+    return _prepare_source_clip(get_default_quick_clip(manifest))
 
 
 def _prepare_full_suite() -> List[PreparedSuiteClip]:
     manifest = load_default_suite_manifest()
-    prepared = ensure_suite(manifest)
+    prepared = [_prepare_source_clip(clip) for clip in manifest.clips]
     if not has_general_pl_coverage(prepared):
         raise RuntimeError("suite coverage is incomplete; General PL requires all declared content classes")
     return prepared
@@ -369,7 +443,7 @@ def _prepare_full_suite() -> List[PreparedSuiteClip]:
 
 def _prepare_named_suite_clip(clip_id: str) -> PreparedSuiteClip:
     manifest = load_default_suite_manifest()
-    return ensure_suite_clip(get_clip(manifest, clip_id))
+    return _prepare_source_clip(get_clip(manifest, clip_id))
 
 
 def _suite_identity_note(clip: PreparedSuiteClip) -> str:
@@ -658,6 +732,123 @@ def _emit_counters(
         queued=queued,
         failed=failed,
     )
+
+
+def _durable_campaign_ledger(queue_dir: str, campaign_id: str, journal: Any,
+                             local_only: bool) -> Dict[str, Any]:
+    """Durable end-of-run campaign view: measured vs saved vs queued vs confirmed.
+
+    Recomputed from journal + spool on every run_benchmark_batch exit so the
+    end screen never reports in-memory optimism as confirmed work. An accepted
+    receipt is server-confirmed (analysis pending), a local submission file is
+    saved work only in local-only mode, and queue entries are pending uploads.
+    """
+    measured = uploaded = saved_local = unpublishable = 0
+    groups: Dict[str, Dict[str, int]] = {}
+    legacy_reconcile: list = []
+    try:
+        records = list(journal.records.values())
+    except Exception:
+        records = []
+    for record in records:
+        try:
+            if record.schedule.phase != "measured":
+                continue
+            recipe_id = str(record.schedule.recipe_id)
+            order = int(record.schedule.execution_order)
+        except Exception:
+            continue
+        measured += 1
+        group = groups.setdefault(recipe_id, {"records": 0, "confirmed": 0})
+        group["records"] += 1
+        if record.skipped_before_encode or record.timing is None or record.overall_validity.state == "invalid":
+            unpublishable += 1
+            continue
+        try:
+            accepted = journal.accepted_receipt(record) is not None
+        except Exception:
+            accepted = False
+        if accepted:
+            uploaded += 1
+            group["confirmed"] += 1
+            continue
+        if local_only and (journal.root / f"submission-{order:06d}.json").exists():
+            saved_local += 1
+            group["confirmed"] += 1
+            continue
+        if not local_only:
+            legacy_reconcile.append((order, group))
+    # Legacy Windows/Linux campaigns hold immutable envelopes plus queue
+    # receipts (valid backend run ids) but no journal accepted markers -
+    # uploads were committed before journal self-publish existed. Reconcile
+    # by payload hash: the envelope is the immutable identity, so a receipt
+    # counts only when its hash matches the envelope exactly, the response
+    # names a real run, and no terminal verdict overrides it.
+    if legacy_reconcile:
+        receipts: Dict[str, str] = {}
+        try:
+            for receipt_file in (Path(queue_dir) / "receipts").glob("*.json"):
+                try:
+                    receipt = json.loads(receipt_file.read_text())
+                except (OSError, ValueError):
+                    continue
+                if not isinstance(receipt, dict) or receipt.get("localHash") != receipt_file.stem:
+                    continue
+                response = receipt.get("response")
+                run = response.get("benchmarkRun") if isinstance(response, dict) else None
+                run_id = str(run.get("id") or "").strip() if isinstance(run, dict) else ""
+                if run_id:
+                    receipts[receipt_file.stem] = run_id
+        except OSError:
+            receipts = {}
+        try:
+            terminal_hashes = {f.stem for f in (Path(queue_dir) / "terminal").glob("*.json")}
+        except OSError:
+            terminal_hashes = set()
+        for order, group in legacy_reconcile:
+            envelope = journal.root / f"submission-{order:06d}.json"
+            try:
+                payload = json.loads(envelope.read_text())
+            except (OSError, ValueError):
+                continue
+            if not isinstance(payload, dict):
+                continue
+            try:
+                local_hash = local_hash_for_payload(payload)
+            except Exception:
+                continue
+            if local_hash in receipts and local_hash not in terminal_hashes:
+                uploaded += 1
+                group["confirmed"] += 1
+    try:
+        queue = campaign_queue_summary(queue_dir, campaign_id)
+    except Exception:
+        queue = {}
+    projected = project_attempt_groups(journal.root, campaign_id)
+    finished_groups = set(projected["finishedGroupIds"])
+    planned_groups = int(projected["plannedGroups"] or 0)
+    try:
+        saved_manifest = json.loads((journal.root / "manifest.json").read_text(encoding="utf-8"))
+        minimum_measured = int((saved_manifest.get("protocolConfig") or {}).get("minimum_measured_runs", 2))
+    except (OSError, ValueError, TypeError, AttributeError):
+        minimum_measured = 2
+    return {
+        "campaignId": campaign_id,
+        "measuredAttempts": measured,
+        "uploaded": uploaded,
+        "savedLocal": saved_local,
+        "unpublishable": unpublishable,
+        "queued": int(queue.get("pendingEntries") or 0),
+        "terminalFailures": int(queue.get("terminalEntries") or 0),
+        "groupsTotal": planned_groups or len(groups),
+        "groupsFinished": len(finished_groups),
+        "requiredMeasured": planned_groups * minimum_measured,
+        "optionalMeasured": sum(max(0, g["records"] - minimum_measured)
+                                for g in groups.values()),
+        "groupsConfirmed": sum(1 for recipe_id, group in groups.items()
+                               if recipe_id in finished_groups and group["records"] > 0
+                               and group["confirmed"] == group["records"]),
+    }
 
 
 def _format_vmaf_model_unavailable(context: Dict[str, Any]) -> str:
@@ -1166,13 +1357,21 @@ def _replay_pending_uploads(
     api_key: str,
     retries: int,
     use_token: bool,
+    cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> int:
+    operation = {}
+    if cancel_event is not None:
+        operation["cancel_event"] = cancel_event
+    if deadline is not None:
+        operation["deadline"] = deadline
     stats = replay_spool(
         queue_dir,
         base_url=base_url,
         api_key=api_key,
         retries=max(1, retries),
         use_token=use_token,
+        **operation,
     )
     if stats.submitted:
         print_info(f"Submitted {stats.submitted} queued payload(s).")
@@ -1244,24 +1443,7 @@ def _retire_uploaded_artifact(journal_root, record: Any, artifact_sha256: str, b
 
 def _safe_failure_info(exc: BaseException) -> Dict[str, Any]:
     """Structured safe failure fields; raw server bodies and secrets never cross."""
-    from .network import SubmitError
-    info: Dict[str, Any] = {"category": "unexpected", "retryable": True}
-    if isinstance(exc, SubmitError):
-        status = exc.status_code or 0
-        info["category"] = ("rate_limited" if status == 429
-                            else "server_error" if status >= 500
-                            else "rejected" if not exc.retryable else "network")
-        info["retryable"] = bool(exc.retryable)
-        if status:
-            info["statusCode"] = status
-    elif isinstance(exc, SpoolCapacityError):
-        info["category"] = "publication_deferred"
-    elif isinstance(exc, OSError) and getattr(exc, "errno", None) in (errno.ENOSPC, errno.EDQUOT):
-        info["category"] = "storage"
-    elif isinstance(exc, (ConnectionError, TimeoutError, OSError)):
-        info["category"] = "network"
-    info["reason"] = (str(exc) or exc.__class__.__name__)[:200]
-    return info
+    return failure_info(exc, operation="saved_publication")
 
 
 def _submit_failure_fields(status: str, message: str) -> Dict[str, Any]:
@@ -1291,19 +1473,19 @@ def _submit_failure_fields(status: str, message: str) -> Dict[str, Any]:
     if text == "retry_deadline_expired":
         return {"errorCategory": "expired",
                 "safeReason": "Retry deadline expired before the server accepted the upload",
-                "recoveryAction": "Dead-lettered; resume or publish the campaign later if the evidence still matters"}
+                "recoveryAction": "Inspect expired saved evidence; do not restart its retry deadline"}
     if text in ("missing_spooled_artifact", "missing_artifact") or "missing" in lowered:
         return {"errorCategory": "unavailable_source",
                 "safeReason": text[:200] or "Queued artifact bytes are no longer on disk",
-                "recoveryAction": "Resume the campaign to re-encode only this attempt; accepted groups are unaffected"}
+                "recoveryAction": "Inspect retained artifact and queue copies; keep completed measurements unchanged"}
     if text.startswith("corrupt"):
         return {"errorCategory": "corrupt_queue",
                 "safeReason": "Queue file could not be parsed and was moved to dead-letter",
-                "recoveryAction": "Run --queue-cleanup; the campaign journal remains intact for resume"}
+                "recoveryAction": "Inspect the affected dead-letter entry; preserve unrelated saved work"}
     if "rejected" in lowered:
         return {"errorCategory": "protocol_rejected",
                 "safeReason": text[:200] or "server rejected the submission",
-                "recoveryAction": "Terminal: verify client/suite versions; resume re-encodes only if valid evidence is required"}
+                "recoveryAction": "Inspect the terminal verdict and client/suite versions; preserve rejected evidence"}
     if status == "queued":
         return {"errorCategory": "transient",
                 "safeReason": text[:200] or "upload deferred; scheduled for retry",
@@ -1348,7 +1530,9 @@ def _reconstruct_saved_submissions(
         if str(manifest.get("protocolVersion") or "") != config.BENCHMARK_PROTOCOL_VERSION:
             raise ValueError("saved protocol identity differs from this client; use the original compatible client")
         saved_client_version = str(manifest.get("clientVersion") or "")
-        if saved_client_version and saved_client_version != CLIENT_VERSION:
+        if not saved_client_version:
+            raise ValueError("saved client identity is missing; missing envelopes need the original compatible client")
+        if saved_client_version != CLIENT_VERSION:
             raise ValueError("saved client identity differs from this client; use the original client version")
         from .identity import runtime_identity
         saved_runtime = manifest.get("runtime")
@@ -1366,16 +1550,29 @@ def _reconstruct_saved_submissions(
         hardware = HardwareInfo(**{
             key: value for key, value in dict(manifest.get("hardware") or {}).items()
             if key in HardwareInfo.__dataclass_fields__})
-        # Reopen validates every retained measured member against its recorded
-        # SHA-256 and refuses bytes that vanished without an accepted receipt.
-        journal = CampaignJournal(queue_dir, campaign_id, manifest, int(max_storage_mb))
     except (ValueError, TypeError, OSError) as exc:
         outcome["failure"] = f"journal evidence cannot be reopened: {exc}"[:200]
         return outcome
-    records = sorted(
-        (record for record in journal.records.values()
-         if record.schedule.campaign_id == campaign_id),
-        key=lambda record: record.schedule.execution_order)
+    # Reopen attempt cells individually and read-only. A corrupt unrelated
+    # record cannot block an otherwise complete group or rewrite the saved
+    # budget/manifest merely because the operator chose Publish.
+    projected = project_attempt_groups(root, campaign_id)
+    excluded = {item["path"] for item in projected["corruptEntries"]}
+    record_index: Dict[int, Any] = {}
+    outcome["corruptEntries"] = list(projected["corruptEntries"])
+    for path in sorted(root.glob("attempt-*.json")):
+        if path.name in excluded:
+            continue
+        try:
+            record = load_record(json.loads(path.read_text(encoding="utf-8")))
+            order = int(path.stem.removeprefix("attempt-"))
+            if (record.schedule.campaign_id != campaign_id
+                    or record.schedule.execution_order != order):
+                raise ValueError("attempt identity mismatch")
+            record_index[order] = record
+        except (OSError, ValueError, TypeError, KeyError, AttributeError) as exc:
+            outcome["corruptEntries"].append({"path": path.name, "reason": str(exc)[:120]})
+    records = [record_index[order] for order in sorted(record_index)]
     if not records:
         return outcome
     recipe_ids: List[str] = []
@@ -1388,7 +1585,7 @@ def _reconstruct_saved_submissions(
             seed=int(manifest.get("seed") or 0),
             recipes=[RecipeSpec(recipe_id=recipe_id, expectation=StructuralExpectation())
                      for recipe_id in recipe_ids],
-            records=journal.records)
+            records=record_index)
     except (TypeError, ValueError, KeyError) as exc:
         outcome["failure"] = f"campaign evidence cannot be projected: {exc}"[:200]
         return outcome
@@ -1411,7 +1608,7 @@ def _reconstruct_saved_submissions(
         if envelope_path.is_file():
             outcome["skippedExisting"] += 1
             continue
-        if journal.accepted_receipt(record) is not None:
+        if record.schedule.execution_order in projected["acceptedOrders"]:
             outcome["skippedAccepted"] += 1
             continue  # an accepted receipt already authorizes this attempt
         if record.schedule.recipe_id in unfinished:
@@ -1430,6 +1627,11 @@ def _reconstruct_saved_submissions(
             artifact_path = str(info.get("artifactPath") or "")
             if not artifact_path or not os.path.isfile(artifact_path):
                 raise OSError("retained artifact bytes are missing")
+            artifact = Path(artifact_path).resolve()
+            if root.resolve() not in artifact.parents:
+                raise ValueError("retained artifact is outside its owned campaign")
+            if CampaignJournal.hash_file(artifact) != info.get("artifactSha256"):
+                raise ValueError("retained artifact hash differs from the durable attempt")
             artifact_probe = probe_video_stream_metrics(artifact_path)
             execution_identity_payload = build_execution_identity_payload(
                 hardware=hardware,
@@ -1483,6 +1685,7 @@ def publish_saved_campaign(
     retries: int = 1,
     use_token: bool = False,
     interactive: bool = False,
+    continue_when_open: bool = False,
     cancel_event: Optional[Any] = None,
     event_sink: Optional[Callable[[Dict[str, Any]], None]] = None,
 ) -> Tuple[int, Dict[str, Any]]:
@@ -1514,6 +1717,23 @@ def publish_saved_campaign(
     except ValueError as exc:
         info.update(status="blocked", failure=_safe_failure_info(exc))
         return 1, info
+    if not root.is_dir():
+        info.update(status="blocked", failure=failure_info(
+            "saved campaign journal was not found", operation="publish_saved",
+            campaign_id=campaign_id, category="corrupt_evidence",
+            retryable=False))
+        return 1, info
+    if continue_when_open:
+        if not _has_publication_consent():
+            info.update(status="consent_declined", deferredReason="consent_required")
+            return 10, info
+        try:
+            _save_publication_intent(queue_dir, campaign_id, base_url,
+                                     active=True, status="working")
+        except OSError as exc:
+            info.update(status="blocked", failure=failure_info(
+                exc, operation="publication_intent", campaign_id=campaign_id))
+            return 1, info
     if max_storage_mb is None:
         try:
             budget = json.loads((root / "budget.json").read_text(encoding="utf-8"))
@@ -1527,7 +1747,7 @@ def publish_saved_campaign(
         # a collector times measurements. Crash releases the flock; nothing is
         # ever deleted as "stale". Inspection failure fails closed (defer).
         with host_phase_hold("publication"):
-            return _publish_saved_campaign_gated(
+            rc, result = _publish_saved_campaign_gated(
                 queue_dir=queue_dir, campaign_id=campaign_id, base_url=base_url,
                 api_key=api_key, max_storage_mb=int(max_storage_mb), retries=retries,
                 use_token=use_token, cancel_event=cancel_event, event_sink=event_sink)
@@ -1537,7 +1757,139 @@ def publish_saved_campaign(
         _emit_event(event_sink, "publication_deferred",
                     **{k: v for k, v in info.items() if k != "failure"},
                     reason=info["deferredReason"])
-        return 10, info
+        rc, result = 10, info
+    if continue_when_open:
+        active = rc == 10 and result.get("status") not in ("cancelled", "consent_declined")
+        try:
+            _save_publication_intent(
+                queue_dir, campaign_id, base_url, active=active,
+                status=str(result.get("status") or "pending"),
+                failure=result.get("failure"),
+            )
+        except OSError as exc:
+            result.update(status="deferred", deferredReason="intent_persistence_failed",
+                          failure=failure_info(exc, operation="publication_intent",
+                                               campaign_id=campaign_id))
+            return 10, result
+    return rc, result
+
+
+def _stage_and_replay_saved_envelopes(
+    *,
+    queue_dir: str,
+    paths: List[Path],
+    base_url: str,
+    api_key: str,
+    max_storage_mb: int,
+    retries: int,
+    use_token: bool,
+    cancel_event: Optional[Any],
+    info: Dict[str, Any],
+) -> None:
+    """Interleave admission, due replay and retirement until stable.
+
+    A near-full campaign can use one-artifact headroom: drain a staged prefix,
+    let the queue retire only receipted bytes, then retry the unvisited suffix.
+    Each pass either visits a new envelope or confirms an upload; no progress
+    exits with a visible deferred/pending reason instead of spinning.
+    """
+    index = 0
+    rounds = 0
+    max_rounds = max(2, len(paths) + count_pending_entries(queue_dir) + 1)
+    while rounds < max_rounds:
+        rounds += 1
+        capacity_blocked = False
+        while index < len(paths):
+            if _is_cancelled(cancel_event):
+                info.update(status="cancelled", deferredReason="cancelled",
+                            pending=count_pending_entries(queue_dir))
+                return
+            path = paths[index]
+            receipt = path.with_name(f"{path.stem}.accepted.json")
+            if receipt.is_file():
+                info["skippedAccepted"] += 1
+                index += 1
+                continue
+            try:
+                saved = json.loads(path.read_text(encoding="utf-8"))
+                if not isinstance(saved, dict):
+                    raise ValueError("saved envelope is not an object")
+                admission = {}
+                if cancel_event is not None:
+                    admission["cancel_event"] = cancel_event
+                    admission["deadline"] = time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS
+                spooled_path, entry = spool_payload(
+                    queue_dir, saved, max_storage_mb=max_storage_mb, **admission)
+            except SpoolCapacityError as exc:
+                capacity_blocked = True
+                info.update(deferredReason="storage_or_exclusion",
+                            failure=_safe_failure_info(exc))
+                break
+            except SubmissionCancelled:
+                info.update(status="cancelled", deferredReason="cancelled",
+                            pending=count_pending_entries(queue_dir))
+                return
+            except SubmitError as exc:
+                if exc.retryable:
+                    info.update(status="deferred", deferredReason="publication_deadline",
+                                failure=_safe_failure_info(exc),
+                                unadmitted=len(paths) - index,
+                                pending=count_pending_entries(queue_dir))
+                    return
+                info["terminal"] += 1
+                index += 1
+                continue
+            except (OSError, ValueError, TypeError) as exc:
+                info["terminal"] += 1
+                info.setdefault("entryFailures", []).append(
+                    failure_info(exc, operation="saved_envelope", campaign_id=str(path.parent.name)))
+                index += 1
+                continue
+            if entry.get("terminal") is True:
+                info["terminal"] += 1
+            elif Path(spooled_path).parent.name == "receipts":
+                info["skippedAccepted"] += 1
+            else:
+                info["admitted"] += 1
+            index += 1
+        try:
+            stats = replay_spool(
+                queue_dir, base_url=base_url, api_key=api_key,
+                retries=max(1, int(retries)), use_token=use_token,
+                cancel_event=cancel_event,
+            )
+        except SpoolCapacityError as exc:
+            info.update(status="deferred", deferredReason="measurement_exclusion",
+                        failure=_safe_failure_info(exc),
+                        unadmitted=len(paths) - index,
+                        pending=count_pending_entries(queue_dir))
+            return
+        for key, value in (("submitted", stats.submitted), ("retained", stats.retained),
+                           ("deadLettered", stats.dead_lettered), ("corrupt", stats.corrupt),
+                           ("deferred", stats.deferred), ("cancelled", stats.cancelled)):
+            info[key] = int(info.get(key) or 0) + int(value)
+        if stats.submitted:
+            info["drainedResiduals"] = int(info.get("drainedResiduals") or 0) + drain_committed_receipts(queue_dir)
+        if stats.cancelled or _is_cancelled(cancel_event):
+            info.update(status="cancelled", deferredReason="cancelled",
+                        pending=count_pending_entries(queue_dir))
+            return
+        if capacity_blocked:
+            if stats.submitted:
+                continue
+            info.update(status="deferred", unadmitted=len(paths) - index,
+                        deferredReason="storage_or_exclusion",
+                        pending=count_pending_entries(queue_dir))
+            return
+        if index < len(paths):
+            continue
+        if stats.submitted and count_pending_entries(queue_dir):
+            continue  # More due entries may sit beyond replay_spool's window.
+        break
+    if index < len(paths):
+        info.update(status="deferred", unadmitted=len(paths) - index,
+                    deferredReason="publication_budget")
+    info["pending"] = count_pending_entries(queue_dir)
 
 
 def _publish_saved_campaign_gated(
@@ -1557,7 +1909,7 @@ def _publish_saved_campaign_gated(
                             "admitted": 0, "skippedAccepted": 0, "terminal": 0,
                             "unadmitted": 0,
                             "deferredReason": None, "failure": None,
-                            "maxStorageMb": int(max_storage_mb)}
+                            "maxStorageMb": int(max_storage_mb), "pending": 0}
     root = journal_path(queue_dir, campaign_id)
     try:
         marker = root / "campaign-complete.json"
@@ -1567,84 +1919,71 @@ def _publish_saved_campaign_gated(
         # Drain crash-residual receipted entries BEFORE staging (C10): committed
         # acceptances own no new bytes and free budget for genuinely new work.
         info["drainedResiduals"] = drain_committed_receipts(queue_dir)
-        # C09: complete groups whose envelopes never materialized (controlled
-        # stop / disk cap before envelope creation) are rebuilt from retained
-        # journal records here - never encoded, never re-sourced - so the
-        # admission loop below publishes the same group identity the live path
-        # would have submitted.
-        recon = _reconstruct_saved_submissions(
-            queue_dir=queue_dir, campaign_id=campaign_id,
-            max_storage_mb=int(max_storage_mb), cancel_event=cancel_event)
+        before = campaign_recovery_state(queue_dir, campaign_id) or {}
+        accepted_before = int(before.get("acceptedUploads") or 0)
+        existing = [path for path in sorted(root.glob("submission-*.json"))
+                    if not path.name.endswith(".accepted.json")]
+        _stage_and_replay_saved_envelopes(
+            queue_dir=queue_dir, paths=existing, base_url=base_url,
+            api_key=api_key, max_storage_mb=max_storage_mb, retries=retries,
+            use_token=use_token, cancel_event=cancel_event, info=info)
+        if info["status"] in ("cancelled", "deferred"):
+            return 10, info
+        # Reconstruct genuinely missing envelopes only AFTER intact saved
+        # payloads have had their independent publication chance. A runtime or
+        # journal problem in one group cannot strand the existing envelopes.
+        projected = project_attempt_groups(root, campaign_id)
+        missing_orders = [
+            order for order in projected["candidateOrders"]
+            if not (root / f"submission-{order:06d}.json").is_file()
+            and not (root / f"submission-{order:06d}.accepted.json").is_file()
+        ]
+        recon = ({"reconstructed": 0, "failure": None, "cancelled": False}
+                 if not missing_orders else _reconstruct_saved_submissions(
+                     queue_dir=queue_dir, campaign_id=campaign_id,
+                     max_storage_mb=int(max_storage_mb), cancel_event=cancel_event))
         info["reconstructedGroups"] = int(recon.get("reconstructed", 0))
         info["reconstruction"] = {k: v for k, v in recon.items() if k != "reconstructed"}
         if recon.get("failure"):
-            info.update(status="blocked", failure=str(recon["failure"])[:200])
+            info.update(status="blocked", failure=failure_info(
+                str(recon["failure"]), operation="reconstruct", campaign_id=campaign_id))
+            info["submitted"] = max(0, int((campaign_recovery_state(queue_dir, campaign_id) or {}).get("acceptedUploads") or 0) - accepted_before)
             return 1, info
         if recon.get("cancelled"):
             info.update(status="cancelled", deferredReason="cancelled")
             return 10, info
-        submission_paths = sorted(root.glob("submission-*.json"))
-        for index, path in enumerate(submission_paths):
-            if _is_cancelled(cancel_event):
-                info.update(status="cancelled", deferredReason="cancelled")
-                return 10, info
-            if path.name.endswith(".accepted.json"):
-                continue
-            receipt = path.with_name(f"{path.stem}.accepted.json")
-            if receipt.exists():
-                info["skippedAccepted"] += 1
-                continue
-            try:
-                saved = json.loads(path.read_text())
-            except (OSError, ValueError):
-                info["terminal"] += 1
-                continue
-            if not isinstance(saved, dict):
-                info["terminal"] += 1
-                continue
-            try:
-                _spooled_path, entry = spool_payload(queue_dir, saved, max_storage_mb=int(max_storage_mb))
-            except SpoolCapacityError as exc:
-                info.update(status="deferred", deferredReason="storage_or_exclusion",
-                            failure=_safe_failure_info(exc))
-                info["unadmitted"] = sum(
-                    not item.name.endswith(".accepted.json") and not item.with_name(f"{item.stem}.accepted.json").exists()
-                    for item in submission_paths[index:]
-                )
-                break
-            if entry.get("terminal") is True:
-                info["terminal"] += 1
-            else:
-                info["admitted"] += 1
+        if recon.get("reconstructed"):
+            newly_materialized = [
+                root / f"submission-{order:06d}.json" for order in missing_orders
+                if (root / f"submission-{order:06d}.json").is_file()
+            ]
+            _stage_and_replay_saved_envelopes(
+                queue_dir=queue_dir, paths=newly_materialized, base_url=base_url,
+                api_key=api_key, max_storage_mb=max_storage_mb, retries=retries,
+                use_token=use_token, cancel_event=cancel_event, info=info)
     except Exception as exc:  # unreadable journal root: honest stop, never encode
         info.update(status="blocked", failure=_safe_failure_info(exc))
         return 1, info
-    try:
-        stats = replay_spool(queue_dir, base_url=base_url, api_key=api_key,
-                             retries=max(1, int(retries)), use_token=use_token,
-                             cancel_event=cancel_event)
-    except SpoolCapacityError as exc:
-        info.update(status="deferred", deferredReason="measurement_exclusion",
-                    failure=_safe_failure_info(exc))
-        _emit_event(event_sink, "publication_deferred", **{k: v for k, v in info.items() if k != "failure"},
-                    reason=info["deferredReason"])
+    after = campaign_recovery_state(queue_dir, campaign_id) or {}
+    info["submitted"] = max(0, int(after.get("acceptedUploads") or 0) - accepted_before)
+    info["selectedPending"] = int(after.get("logicalPendingUploads") or 0)
+    info["unavailableSources"] = int(after.get("unavailableSources") or 0)
+    info["pending"] = count_pending_entries(queue_dir)
+    if info["status"] in ("cancelled", "deferred"):
         return 10, info
-    info.update(submitted=stats.submitted, retained=stats.retained,
-                deadLettered=stats.dead_lettered, corrupt=stats.corrupt,
-                deferred=stats.deferred, cancelled=stats.cancelled,
-                pending=count_pending_entries(queue_dir))
-    if stats.corrupt or stats.dead_lettered or info["terminal"] or info.get("campaignFailures"):
-        info["status"] = "corrupt" if stats.corrupt and not (stats.dead_lettered or info["terminal"]) else "terminal_failures"
+    if info.get("corrupt") or info.get("deadLettered") or info["terminal"] or info.get("campaignFailures"):
+        info["status"] = "terminal_failures"
+        return 1, info
+    if info["unavailableSources"]:
+        info.update(status="blocked", failure=failure_info(
+            "retained artifact bytes are missing from saved work",
+            operation="publish_saved", campaign_id=campaign_id,
+            category="corrupt_evidence", retryable=False))
         return 1, info
     if info["unadmitted"]:
-        # Draining the staged prefix cannot make unvisited journal envelopes
-        # published. Keep the normal Publish saved action available for the
-        # remaining groups; never return a green result for a partial pass.
         info.update(status="deferred", deferredReason=info["deferredReason"] or "storage_or_exclusion")
         return 10, info
-    if info["pending"]:
-        # Retained, deferred and cancelled work remains pending in the queue;
-        # pending count is the durable truth for the operator's next step.
+    if info["selectedPending"] or info["pending"]:
         info.update(status="pending", deferredReason=info["deferredReason"] or "uploads_pending")
         return 10, info
     info["status"] = "published"
@@ -1689,42 +2028,114 @@ def retry_due_uploads(
 
 
 def campaign_recovery_state(queue_dir: str, campaign_id: str) -> Optional[Dict[str, Any]]:
-    """Read-only journal projection for one campaign; None when no journal exists.
+    """Project one campaign's logical work from attempts, envelopes and queue.
 
-    Completed groups (saved submissions), accepted uploads, genuinely missing
-    sources and queue-side publication counters are all reported, so an
-    operator sees what resume/publish will do before running it. Nothing here
-    mutates state; rejected/expired evidence stays visible, never revived."""
+    One saved envelope and its spool copy are one upload. Complete attempt
+    groups remain discoverable before envelopes exist; accepted receipts win
+    even when an older journal lacks its self-published marker. This is read
+    only and never asks FFmpeg or the original source to prepare.
+    """
     try:
         root = journal_path(queue_dir, campaign_id)
     except ValueError:
         return None
     if not root.is_dir():
         return None
-    state: Dict[str, Any] = {"campaignId": campaign_id, "journalBytes": directory_bytes(str(root))}
+    try:
+        journal_bytes = directory_bytes(str(root))
+    except OSError:
+        journal_bytes = None
+    state: Dict[str, Any] = {"campaignId": campaign_id, "journalBytes": journal_bytes}
     try:
         state["savedBudgetMb"] = int(json.loads((root / "budget.json").read_text()).get("maxStorageMb") or 0)
     except (OSError, ValueError, TypeError):
         state["savedBudgetMb"] = None
     state["complete"] = (root / "campaign-complete.json").is_file()
-    state["attempts"] = sum(1 for p in root.glob("attempt-*.json") if p.is_file())
-    accepted = {p.stem.replace(".accepted", "") for p in root.glob("submission-*.accepted.json")}
-    submissions = [p for p in sorted(root.glob("submission-*.json")) if not p.name.endswith(".accepted.json")]
-    state["completedGroups"] = len(submissions)
-    state["acceptedUploads"] = len(accepted)
-    unuploaded = [p for p in submissions if p.stem not in accepted]
-    missing_source = 0
-    for path in unuploaded:
+    state["publicationIntent"] = publication_intent_state(queue_dir, campaign_id)
+    projected = project_attempt_groups(root, campaign_id)
+    state["plannedGroups"] = projected["plannedGroups"]
+    state["attempts"] = projected["attempts"]
+    if state["attempts"]:
         try:
-            saved = json.loads(path.read_text())
-        except (OSError, ValueError):
-            missing_source += 1
+            saved_manifest = json.loads((root / "manifest.json").read_text(encoding="utf-8"))
+            if not str((saved_manifest or {}).get("clientVersion") or "").strip():
+                state["measurementBlocked"] = (
+                    "saved client identity is missing; use the original compatible client to resume")
+        except (OSError, ValueError, TypeError, AttributeError):
+            state["measurementBlocked"] = "saved plan identity is unreadable"
+    state["completedGroups"] = len(projected["finishedGroupIds"])
+    state["incompleteGroups"] = len(projected["incompleteGroupIds"])
+    corrupt_entries = list(projected["corruptEntries"])
+    if projected["failure"]:
+        corrupt_entries.append({"path": "manifest.json", "reason": projected["failure"]})
+    accepted_orders = set(projected["acceptedOrders"])
+    pending_orders = set(projected["candidateOrders"])
+    unavailable_orders = set(projected["unavailableOrders"])
+    terminal_orders = set()
+    envelope_orders = set()
+    queue_root = Path(queue_dir)
+    for path in sorted(root.glob("submission-*.json")):
+        if path.name.endswith(".accepted.json"):
             continue
-        artifact = str((saved or {}).get("artifactPath") or "") if isinstance(saved, dict) else ""
-        if not artifact or not os.path.isfile(artifact):
-            missing_source += 1
-    state["pendingUploads"] = len(unuploaded) - missing_source
-    state["unavailableSources"] = missing_source
+        try:
+            order = int(path.stem.removeprefix("submission-"))
+            saved = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(saved, dict):
+                raise ValueError("saved envelope is not an object")
+            local_hash = local_hash_for_payload(saved)
+        except (OSError, ValueError, TypeError) as exc:
+            corrupt_entries.append({"path": path.name, "reason": str(exc)[:120]})
+            continue
+        envelope_orders.add(order)
+        if order in accepted_orders:
+            pending_orders.discard(order)
+            unavailable_orders.discard(order)
+            continue
+        receipt_path = queue_root / "receipts" / f"{local_hash}.json"
+        try:
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            response = receipt.get("response") if isinstance(receipt, dict) else None
+            run = response.get("benchmarkRun") if isinstance(response, dict) else None
+            run_id = str(run.get("id") or "").strip() if isinstance(run, dict) else ""
+            receipted = (isinstance(receipt, dict)
+                         and receipt.get("localHash") == local_hash and bool(run_id))
+        except (OSError, ValueError):
+            receipted = False
+        if receipted:
+            accepted_orders.add(order)
+            pending_orders.discard(order)
+            unavailable_orders.discard(order)
+            continue
+        if (queue_root / "terminal" / f"{local_hash}.json").is_file():
+            terminal_orders.add(order)
+            pending_orders.discard(order)
+            unavailable_orders.discard(order)
+            continue
+        artifact = str(saved.get("artifactPath") or "")
+        available = bool(artifact and os.path.isfile(artifact))
+        queued_path = queue_root / f"{local_hash}.json"
+        if queued_path.is_file():
+            try:
+                entry = json.loads(queued_path.read_text(encoding="utf-8"))
+                staged = entry.get("payload") if isinstance(entry, dict) else None
+                staged_path = str(staged.get("artifactPath") or "") if isinstance(staged, dict) else ""
+                available = available or bool(staged_path and os.path.isfile(staged_path))
+            except (OSError, ValueError):
+                corrupt_entries.append({"path": queued_path.name, "reason": "queued entry is unreadable"})
+        if available:
+            pending_orders.add(order)
+            unavailable_orders.discard(order)
+        else:
+            pending_orders.discard(order)
+            unavailable_orders.add(order)
+    pending_orders.difference_update(accepted_orders | terminal_orders)
+    unavailable_orders.difference_update(accepted_orders | terminal_orders)
+    state["savedEnvelopes"] = len(envelope_orders)
+    state["acceptedUploads"] = len(accepted_orders)
+    state["pendingUploads"] = len(pending_orders)
+    state["logicalPendingUploads"] = len(pending_orders)
+    state["unavailableSources"] = len(unavailable_orders)
+    state["corruptEntries"] = corrupt_entries
     queue_view = campaign_queue_summary(queue_dir, campaign_id)
     state["queuePending"] = queue_view["pendingEntries"]
     state["queueDue"] = queue_view["dueEntries"]
@@ -1732,18 +2143,22 @@ def campaign_recovery_state(queue_dir: str, campaign_id: str) -> Optional[Dict[s
     state["queueTerminal"] = queue_view["terminalEntries"]
     state["nextAttemptAt"] = queue_view["nextAttemptAt"]
     actions: List[Dict[str, str]] = []
-    if queue_view["terminalEntries"]:
+    if queue_view["terminalEntries"] or terminal_orders:
         actions.append({"action": "review_terminal",
                         "why": "a rejected or expired upload is terminal evidence; inspect dead-letter before deciding"})
-    if state["pendingUploads"] or queue_view["pendingEntries"]:
+    if state["logicalPendingUploads"]:
         actions.append({"action": "publish_saved",
-                        "why": "completed groups can be published with zero encodes via --upload-only/--publish-saved"})
-    if state["unavailableSources"]:
-        actions.append({"action": "resume",
-                        "why": "attempts without accepted receipts and missing artifacts re-encode on resume"})
+                        "why": "completed measured work can publish with zero encodes"})
+    if state["unavailableSources"] or corrupt_entries:
+        actions.append({"action": "inspect_evidence",
+                        "why": "inspect blocked saved entries; keep other completed work available"})
     if not state["complete"]:
-        actions.append({"action": "resume",
-                        "why": "campaign never reached its completion marker; resume continues saved plan"})
+        if state.get("measurementBlocked"):
+            actions.append({"action": "inspect_evidence",
+                            "why": state["measurementBlocked"]})
+        else:
+            actions.append({"action": "resume",
+                            "why": "campaign never reached its completion marker; resume continues saved plan"})
     if queue_view["nextAttemptAt"]:
         actions.append({"action": "wait",
                         "why": f"earliest Retry-After arrives at {int(queue_view['nextAttemptAt'])}"})
@@ -1818,13 +2233,14 @@ def _report_recovery_result(info: Dict[str, Any]) -> None:
     elif status == "cancelled":
         print_warning("Publishing cancelled; accepted uploads remain recorded and retries stay durable.")
     elif status == "deferred":
-        reason = (info.get("failure") or {}).get("reason") or info.get("deferredReason") or "storage or exclusion"
+        reason = (failure_text(info["failure"]) if info.get("failure")
+                  else str(info.get("deferredReason") or "storage or exclusion"))
         print_warning(f"Publishing deferred: {reason}")
     elif status == "terminal_failures":
         print_warning(f"{info.get('terminal', 0)} terminal and {info.get('corrupt', 0)} corrupt entr(ies); "
                       "inspect dead-letter before retrying.")
     elif status == "blocked":
-        print_error((info.get("failure") or {}).get("reason") or "campaign journal unavailable")
+        print_error(failure_text(info.get("failure") or "campaign journal unavailable"))
     else:
         print_info(f"Publishing status: {status} ({info.get('pending', 0)} upload(s) still pending)")
 
@@ -1838,8 +2254,16 @@ def _submit_payload_with_spool(
     retries: int,
     use_token: bool,
     max_storage_mb: int = 2048,
+    cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> Tuple[str, str, int]:
-    path, _entry = spool_payload(queue_dir, payload, max_storage_mb=max_storage_mb)
+    operation = {}
+    if cancel_event is not None:
+        operation["cancel_event"] = cancel_event
+    if deadline is not None:
+        operation["deadline"] = deadline
+    path, _entry = spool_payload(queue_dir, payload, max_storage_mb=max_storage_mb,
+                                 **operation)
     status, message = submit_spooled_path(
         path,
         queue_dir=queue_dir,
@@ -1847,6 +2271,7 @@ def _submit_payload_with_spool(
         api_key=api_key,
         retries=max(1, retries),
         use_token=use_token,
+        **operation,
     )
     return status, message, count_pending_entries(queue_dir)
 
@@ -1880,14 +2305,14 @@ def _prepare_sweep_clips(clip_policy: str) -> List[PreparedSuiteClip]:
     """Resolve the frozen suite clips a sweep mode covers, in stable order."""
     manifest = load_default_suite_manifest()
     if clip_policy == sweep_plan.CLIP_POLICY_QUICK:
-        return [ensure_suite_clip(get_default_quick_clip(manifest))]
+        return [_prepare_source_clip(get_default_quick_clip(manifest))]
     if clip_policy == sweep_plan.CLIP_POLICY_CLASSES:
         prepared: List[PreparedSuiteClip] = []
         for content_class in REQUIRED_CONTENT_CLASSES:
             clip = next((c for c in manifest.clips if c.canonical_content_class == content_class), None)
             if clip is None:
                 raise RuntimeError(f"EncodingDB Test Suite v1 is missing the {content_class} clip")
-            prepared.append(ensure_suite_clip(clip))
+            prepared.append(_prepare_source_clip(clip))
         return prepared
     return _prepare_full_suite()
 
@@ -2065,9 +2490,9 @@ def run_sweep_mode(
     print_info(f"Active limits: storage budget {storage_mb} MB, attempts cap {attempts_cap}.")
     config._BATCH_ACTIVE = True
     config._BATCH_START_TS = time.perf_counter()
-    config._BATCH_COMPLETED_COUNT = 0
+    config._BATCH_LEDGER = None
     config._BATCH_ATTEMPTS_RECORDED = 0
-    total_submitted = 0
+    ledger: Dict[str, Any] = {}
     try:
         segment = 0
         while True:
@@ -2096,7 +2521,7 @@ def run_sweep_mode(
                 cancel_event=cancel_event,
                 plan_metadata=plan_metadata,
             )
-            total_submitted += int(getattr(config, "_BATCH_COMPLETED_COUNT", 0))
+            ledger = getattr(config, "_BATCH_LEDGER", None) or {}
             if rc != 11 or explicit_duration or _is_cancelled(cancel_event):
                 if rc == 11 and _is_cancelled(cancel_event):
                     rc = 130
@@ -2110,7 +2535,7 @@ def run_sweep_mode(
                 print("Safety segment limit reached; campaign remains saved and continues on the next start.",
                       file=sys.stderr)
                 break
-            config._BATCH_COMPLETED_COUNT = 0
+            config._BATCH_LEDGER = None
             print_info(f"Time checkpoint reached; continuing the campaign from retained evidence (segment {segment + 1}).")
             _emit_event(event_sink, "campaign_checkpoint_continue", segment=segment + 1)
         elapsed_sec = max(0.0, time.perf_counter() - config._BATCH_START_TS)
@@ -2119,12 +2544,19 @@ def run_sweep_mode(
             end_status = ("complete" if rc == 0 else
                           "paused" if rc in (10, 11) else
                           "interrupted" if rc == 130 else "failed")
-            print_end_screen(total_submitted, elapsed_sec, status=end_status,
-                             recovery=None if rc == 0 else
-                             ("Retained campaign saved; start this mode again to continue it."
-                              if rc in (10, 11, 130) else
-                              "Nothing was marked complete; fix the error above and start again — "
-                              "the retained campaign continues from its journal."))
+            confirmed = int(ledger.get("uploaded") or 0) + int(ledger.get("savedLocal") or 0)
+            if rc == 0:
+                recovery = None
+            elif rc in (10, 11, 130):
+                recovery = "Retained campaign saved; start this mode again to continue it."
+            elif confirmed > 0:
+                recovery = (f"{confirmed} attempt(s) already confirmed or saved; fix the cause and start "
+                            "again — the retained campaign continues from its journal.")
+            else:
+                recovery = ("Nothing was marked complete; fix the error above and start again — "
+                            "the retained campaign continues from its journal.")
+            print_end_screen(int(ledger.get("uploaded") or 0), elapsed_sec, status=end_status,
+                             recovery=recovery, ledger=ledger or None)
             try:
                 if os.name == "nt" and (bool(getattr(base_args, "pause_on_exit", False)) or bool(getattr(sys, "frozen", False))):
                     input("Press Enter to exit...")
@@ -2322,6 +2754,13 @@ def run_benchmark_batch(
             prior_version = str(json.loads(existing_manifest.read_text()).get("clientVersion") or "")
         except (OSError, ValueError, TypeError, AttributeError):
             prior_version = ""  # CampaignJournal reports an unreadable manifest below.
+        if not prior_version and any(existing_manifest.parent.glob("attempt-*.json")):
+            message = ("Saved client identity is missing for measured attempts; "
+                       "use the original compatible client to resume measurement. "
+                       "Intact saved envelopes can still be published without encoding.")
+            _emit_event(event_sink, "run_error", scope="batch", code=6, message=message)
+            print(message, file=sys.stderr)
+            return 6
         if prior_version and prior_version != client_version:
             message = f"Saved campaign requires {prior_version}; this client is {client_version}. Use the original client."
             _emit_event(event_sink, "run_error", scope="batch", code=6, message=message)
@@ -2366,6 +2805,8 @@ def run_benchmark_batch(
             api_key=args.api_key,
             retries=max(1, args.retries),
             use_token=use_token,
+            cancel_event=cancel_event,
+            deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
         )
     if not getattr(args, 'no_submit', False):
         baseline_rows = fetch_baseline_rows(base_url)
@@ -2376,15 +2817,73 @@ def run_benchmark_batch(
     skipped_count = 0
     failed_count = 0
     locally_complete_count = 0
+    measured_cap = int(protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats)
+    groups_total = len(recipe_specs)
+    # Progress baseline: attempts already durably confirmed before this
+    # segment (accepted receipts, or saved submissions in local-only mode).
+    # Bars seed from this so a resume segment never rewinds a completed group.
+    progress_confirmed: set = set()
+    local_only_run = bool(getattr(args, "no_submit", False))
+    for prior in journal.records.values():
+        try:
+            if prior.schedule.phase != "measured":
+                continue
+            if journal.accepted_receipt(prior) is not None or (
+                    local_only_run
+                    and (journal.root / f"submission-{prior.schedule.execution_order:06d}.json").exists()):
+                progress_confirmed.add(int(prior.schedule.execution_order))
+        except Exception:
+            continue
+    done_before = len(progress_confirmed)
+    attempts_done = done_before
+    batch_done = 0
+    declared_attempts = max(1, groups_total * measured_cap)
+    batch_attempts_total = declared_attempts
+    declared_batches_total = declared_attempts
+    progress: Optional[Any] = None
+
+    def _emit_progress() -> None:
+        total_n = max(1, declared_attempts)
+        done_n = max(0, min(attempts_done, total_n))
+        batch_total_n = max(1, batch_attempts_total)
+        batch_done_n = max(0, min(batch_done, batch_total_n))
+        _emit_event(
+            event_sink,
+            "campaign_progress",
+            scope="batch",
+            campaignId=campaign_id,
+            unit="measured-attempt",
+            done=done_n,
+            total=total_n,
+            batchDone=batch_done_n,
+            batchTotal=batch_total_n,
+            groupsTotal=groups_total,
+        )
+        if progress is not None:
+            progress.set_progress(done=done_n, total=total_n,
+                                  batch_done=batch_done_n, batch_total=batch_total_n)
+
+    def _confirm_attempt(order: int) -> None:
+        # Idempotent: a resume replays records already confirmed in the
+        # baseline; counting them twice would overstate overall progress.
+        nonlocal attempts_done
+        if order not in progress_confirmed:
+            progress_confirmed.add(order)
+            attempts_done += 1
+
     _emit_event(
         event_sink,
         "run_start",
         scope="batch",
         totalTasks=total_tasks,
+        declaredAttempts=declared_attempts,
         totalBatches=total_batches,
         workers=workers,
         noSubmit=bool(getattr(args, "no_submit", False)),
         maxDurationMinutes=duration_minutes,
+        campaignId=campaign_id,
+        progressUnit="measured-attempt",
+        doneTotal=done_before,
         protocol={
             "version": protocol_config.version,
             "warmupRuns": protocol_config.warmup_runs,
@@ -2404,26 +2903,28 @@ def run_benchmark_batch(
 
     def _batch_status(stage: str, index: int, codec: str = "", preset: str = "") -> str:
         label = f"{codec} {preset}".strip()
-        stats = f"ok={submitted_count} skip={skipped_count} queue={queued_count} fail={failed_count}"
+        stats = f"ok={submitted_count} local={locally_complete_count} skip={skipped_count} queue={queued_count} fail={failed_count}"
         total = max(1, total_tasks)
         if label:
             return f"{stage} {index}/{total}: {label} | {stats}"
         return f"{stage} {index}/{total} | {stats}"
+    _emit_progress()
 
     try:
         with journal.measurement_lock(), nullcontext(str(journal.root)) as batch_dir, \
                 BatchRunDashboard(total_tasks=total_tasks, total_batches=total_batches, hardware=hardware) as progress:
             print_info(f"Batch 1/{total_batches}: {len(recipe_specs)} protocol recipe(s)")
-            progress.start_batch(batch_no=1, batch_size=total_tasks)
+            progress.start_batch(batch_no=1, batch_size=declared_batches_total)
             progress.set_description(_batch_status("Batch 1/1 preparing", 1))
             _emit_event(
                 event_sink,
                 "batch_start",
                 batchNo=1,
                 totalBatches=total_batches,
-                batchSize=len(recipe_specs),
-                processedTotal=processed_total,
+                batchDeclaredAttempts=declared_batches_total,
+                campaignId=campaign_id,
             )
+            _emit_progress()
 
             def _task_from_recipe(recipe: RecipeSpec) -> Dict[str, Any]:
                 return {
@@ -2671,6 +3172,14 @@ def run_benchmark_batch(
                 for record in recipe_result.runs:
                     if record.schedule.phase == "measured":
                         measured_records.append((recipe, record))
+            # Declared bound now that the measurement phase is settled: every
+            # terminal group's actual attempts plus the full cap for groups a
+            # checkpoint may still extend. Shrink-only across segments, so the
+            # confirmed fraction never decreases.
+            terminal_orders = {int(r.schedule.execution_order) for _recipe, r in measured_records}
+            declared_attempts = max(1, len(terminal_orders) + len(unfinished_recipes) * measured_cap)
+            batch_attempts_total = max(1, len(measured_records))
+            _emit_progress()
 
             for recipe, record in measured_records:
                 if not getattr(args, "local_metrics", False):
@@ -2738,7 +3247,11 @@ def run_benchmark_batch(
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
                 if journal.accepted_receipt(record) is not None:
-                    continue  # Faithful accepted receipt from an earlier segment.
+                    # Faithful accepted receipt from an earlier segment: it is
+                    # already counted in the baseline; only the batch view reconciles.
+                    batch_done += 1
+                    _emit_progress()
+                    continue
                 task = _task_from_recipe(recipe)
                 info = dict(record.metadata.get("info") or {})
                 codec_label = str(info.get('encoderUsed') or task['encoder'])
@@ -2778,6 +3291,7 @@ def run_benchmark_batch(
                     progress.update_counters(
                         submitted=submitted_count, skipped=skipped_count,
                         queued=queued_count, failed=failed_count,
+                        locally=locally_complete_count,
                     )
                     _emit_event(
                         event_sink,
@@ -2799,8 +3313,10 @@ def run_benchmark_batch(
                         failed=failed_count,
                     )
                     processed_total += 1
+                    # A protocol-invalid attempt is never confirmable work: it
+                    # cannot raise either confirmed bar, so a run that ends on
+                    # invalid evidence honestly stays below 100%.
                     progress.advance(description=_batch_status("Completed", processed_total, codec_label, preset_label))
-                    _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)
                     continue
 
                 prepared_clip = task.get("suiteClip")
@@ -2943,6 +3459,7 @@ def run_benchmark_batch(
                     progress.update_counters(
                         submitted=submitted_count, skipped=skipped_count,
                         queued=queued_count, failed=failed_count,
+                        locally=locally_complete_count,
                     )
                     _emit_event(
                         event_sink,
@@ -3001,6 +3518,9 @@ def run_benchmark_batch(
                             locally_complete_count += 1
                             completed_count_local += 1
                             processed_total += 1
+                            _confirm_attempt(int(record.schedule.execution_order))
+                            batch_done += 1
+                            _emit_progress()
                             progress.advance(description=_batch_status("Locally complete", processed_total))
                             _emit_event(
                                 event_sink,
@@ -3026,6 +3546,8 @@ def run_benchmark_batch(
                             api_key=args.api_key,
                             retries=max(1, args.retries),
                             use_token=use_token,
+                            cancel_event=cancel_event,
+                            deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
                         )
                         if status == "submitted":
                             submitted_count += 1
@@ -3099,6 +3621,7 @@ def run_benchmark_batch(
                     progress.update_counters(
                         submitted=submitted_count, skipped=skipped_count,
                         queued=queued_count, failed=failed_count,
+                        locally=locally_complete_count,
                     )
                 _emit_counters(
                     event_sink,
@@ -3107,12 +3630,16 @@ def run_benchmark_batch(
                     queued=queued_count,
                     failed=failed_count,
                 )
-
                 if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
                     completed_count_local += 1
-                    if config._BATCH_ACTIVE:
-                        with config._GLOBAL_STATE_LOCK:
-                            config._BATCH_COMPLETED_COUNT += 1
+                if status == "submitted":
+                    # Only a durable confirmation (accepted receipt / local save)
+                    # moves either bar; queued or failed work keeps both below
+                    # 100% so a pending/failed run never claims completion.
+                    _confirm_attempt(int(record.schedule.execution_order))
+                    batch_done += 1
+                    _emit_progress()
+
 
                 processed_total += 1
                 progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
@@ -3168,8 +3695,14 @@ def run_benchmark_batch(
         return 6
     except KeyboardInterrupt:
         print_warning("Batch run interrupted by user.")
+        _emit_progress()
         _emit_event(event_sink, "run_interrupted", scope="batch", processed=processed_total, total=total_tasks)
         return 130
+    finally:
+        # Durable truth for the end screen: recomputed from journal + spool on
+        # every exit path, including cancel and budget pause.
+        config._BATCH_LEDGER = _durable_campaign_ledger(
+            args.queue_dir, campaign_id, journal, local_only_run)
 
     atomic_json(journal.root / "campaign-complete.json", {"campaignId": campaign_id, "skipped": skipped_count, "failed": failed_count})
     elapsed_seconds = max(0.0, time.perf_counter() - run_started_at)
@@ -3490,6 +4023,8 @@ def run_legacy_diagnostic(
             api_key=args.api_key,
             retries=max(1, args.retries),
             use_token=use_token,
+            cancel_event=cancel_event,
+            deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
         )
     submitted_count = 0
     skipped_count = 0
@@ -3600,9 +4135,6 @@ def run_legacy_diagnostic(
 
             if float(payload.get("fps", 0.0)) > 0.0 and int(payload.get("fileSizeBytes", 0)) > 0:
                 completed_count += 1
-                if config._BATCH_ACTIVE:
-                    with config._GLOBAL_STATE_LOCK:
-                        config._BATCH_COMPLETED_COUNT += 1
 
             if args.no_submit:
                 print_info(f"Dry-run: not submitting preset={effective_preset}")
@@ -3631,6 +4163,8 @@ def run_legacy_diagnostic(
                     api_key=args.api_key,
                     retries=max(1, args.retries),
                     use_token=use_token,
+                    cancel_event=cancel_event,
+                    deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
                 )
                 if status == "submitted":
                     queued_count = _replay_pending_uploads(
@@ -3639,6 +4173,8 @@ def run_legacy_diagnostic(
                         api_key=args.api_key,
                         retries=max(1, args.retries),
                         use_token=use_token,
+                        cancel_event=cancel_event,
+                        deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
                     )
                     submitted_count += 1
                     print_success("Submitted Results")
@@ -3672,6 +4208,8 @@ def run_legacy_diagnostic(
             api_key=args.api_key,
             retries=max(1, args.retries),
             use_token=use_token,
+            cancel_event=cancel_event,
+            deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
         )
         _emit_counters(event_sink, submitted=submitted_count, skipped=skipped_count, queued=queued_count, failed=failed_count)
     elapsed_sec = max(0.0, time.perf_counter() - benchmark_start_ts)
@@ -3748,17 +4286,13 @@ def _incomplete_campaigns(queue_dir: str) -> List[Tuple[str, float]]:
                 continue
             found.append((name, os.path.getmtime(entry)))
         found.sort(key=lambda item: item[1], reverse=True)
-        return found[:5]
+        return found
     except Exception:
         return []
 
 
 def _publishable_campaigns(queue_dir: str) -> List[Tuple[str, float, int]]:
-    """Completed campaigns whose journals still hold un-uploaded submissions.
-
-    These publish with zero encodes (C06/C09): the projection says how many
-    completed groups await upload, so the menu offers it only where real
-    pending work exists."""
+    """All campaigns with logical finished work available for zero-encode Publish."""
     try:
         root = os.path.join(queue_dir, "campaigns")
         if not os.path.isdir(root):
@@ -3768,15 +4302,18 @@ def _publishable_campaigns(queue_dir: str) -> List[Tuple[str, float, int]]:
             entry = os.path.join(root, name)
             if not os.path.isdir(entry):
                 continue
-            state = campaign_recovery_state(queue_dir, name)
-            if state is None or not state.get("complete"):
+            try:
+                state = campaign_recovery_state(queue_dir, name)
+            except (OSError, ValueError):
+                continue  # A damaged sibling must not hide other saved work.
+            if state is None:
                 continue
-            pending = int(state.get("pendingUploads") or 0) + int(state.get("queuePending") or 0)
+            pending = int(state.get("logicalPendingUploads") or 0)
             if pending <= 0:
                 continue
             found.append((name, os.path.getmtime(entry), pending))
         found.sort(key=lambda item: item[1], reverse=True)
-        return found[:5]
+        return found
     except Exception:
         return []
 
@@ -3874,6 +4411,34 @@ def interactive_menu_flow(parser: argparse.ArgumentParser, base_args: argparse.N
             subprocess.run(["stty", "sane"], check=False)
     except Exception:
         pass
+    # Saved envelopes require neither a measurement runtime nor source media.
+    # Offer their normal recovery actions before any FFmpeg/encoder discovery.
+    saved_root = Path(base_args.queue_dir) / "campaigns"
+    if saved_root.is_dir() and any(path.is_dir() for path in saved_root.iterdir()):
+        early_actions: List[Tuple[str, Optional[str]]] = []
+        early_labels: List[str] = []
+        for campaign_id, _mtime, pending in _publishable_campaigns(base_args.queue_dir):
+            early_actions.append(("publish", campaign_id))
+            early_labels.append(
+                f"Publish saved work for {campaign_id} ({pending} upload(s), no encoding)")
+        early_actions.extend([("recovery", None), ("continue", None), ("exit", None)])
+        early_labels.extend(["Show saved-work status", "Continue to contributions", "Exit"])
+        early_choice = prompt_choice("Saved work is available", early_labels, default_index=0)
+        early_action, early_campaign = early_actions[early_choice]
+        if early_action == "publish":
+            rc, info = publish_saved_campaign(
+                queue_dir=base_args.queue_dir, campaign_id=str(early_campaign),
+                base_url=base_args.base_url, api_key=base_args.api_key,
+                retries=max(1, int(getattr(base_args, "retries", 1) or 1)),
+                use_token=bool(getattr(base_args, "use_token", False)),
+                interactive=True)
+            _report_recovery_result(info)
+            return rc
+        if early_action == "recovery":
+            _print_recovery_state(base_args.queue_dir, "")
+            return 0
+        if early_action == "exit":
+            return 0
     ffmpeg_ok, _ffmpeg_version = ensure_ffmpeg_and_ffprobe()
     if not ffmpeg_ok:
         print_error("ffmpeg/ffprobe were not found in PATH. Install ffmpeg (https://ffmpeg.org/download.html), then start EncodingDB again.")

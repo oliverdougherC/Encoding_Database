@@ -4,8 +4,9 @@ import os
 import time
 from typing import Any, Callable, Dict, Optional
 
-from .network import (SubmissionCancelled, SubmitError, _event_cancelled, _load_requests,
-                       _response_error_text, _run_cancellable, retry_after_seconds)
+from .network import (SubmissionCancelled, SubmitError, _bounded_error_body,
+                      _event_cancelled, _load_requests, _read_response_body,
+                      _run_cancellable, retry_after_seconds)
 
 # C12: bounded, cooperatively cancellable artifact transport. Each phase runs
 # its blocking HTTP call in a daemon worker so a cancel_event (threading.Event
@@ -198,11 +199,21 @@ def build_artifact_submission_payload(
 
 
 class _PhaseBudget:
-    """Monotonic wall-clock budget for one transport phase (C12)."""
+    """Monotonic wall-clock budget for one transport phase (C12).
 
-    def __init__(self, seconds: float) -> None:
+    R03: an external caller `deadline` (monotonic) tightens the phase budget;
+    the effective deadline is the earlier of phase-budget and caller deadline.
+    `seconds` stays the configured budget for messages."""
+
+    def __init__(self, seconds: float, *, deadline: Optional[float] = None,
+                 phase: str = "phase") -> None:
         self.seconds = max(0.05, float(seconds))
         self.deadline = time.monotonic() + self.seconds
+        if deadline is not None:
+            self.deadline = min(self.deadline, deadline)
+        if self.deadline <= time.monotonic():
+            raise SubmitError(f"{phase} exceeded caller deadline before start",
+                              retryable=True)
 
     def remaining(self) -> float:
         return self.deadline - time.monotonic()
@@ -211,7 +222,7 @@ class _PhaseBudget:
         """Socket inactivity timeout clamped to the remaining budget.
 
         A stalled transaction therefore self-limits to at most the phase
-        budget even if no cancel ever arrives."""
+        budget (or the caller deadline) even if no cancel ever arrives."""
         remaining = self.remaining()
         if remaining <= 0:
             raise SubmitError(f"{phase} exceeded {self.seconds:g}s phase budget", retryable=True)
@@ -276,9 +287,12 @@ class _UploadBody:
 
 def _read_json_bounded(response: Any, *, phase: str, budget: _PhaseBudget,
                        cancel_event: Optional[Any]) -> Any:
-    """Parse a JSON response body with cancel checks and a size cap."""
-    text = _response_error_text(_load_requests(), response, cancel_event, budget.deadline,
-                                max_bytes=1 << 22)
+    """Parse a JSON response body under the actual deadline with a size cap
+    (R04): the shared reader consumes at most the cap bytes, stops at the
+    real remaining deadline/cancel, and closes the response."""
+    text = _read_response_body(_load_requests(), response, cancel_event,
+                               budget.deadline,
+                               max_bytes=1 << 22)
     try:
         return json.loads(text)
     except Exception:
@@ -295,6 +309,7 @@ def submit_artifact_submission(
     create_seconds: float = CREATE_TIMEOUT_SECONDS,
     auth_seconds: float = AUTH_TIMEOUT_SECONDS,
     upload_seconds: float = UPLOAD_TIMEOUT_SECONDS,
+    deadline: Optional[float] = None,
 ) -> Dict[str, Any]:
     """Create run → authorize → upload, each phase bounded and cancellable.
 
@@ -303,9 +318,11 @@ def submit_artifact_submission(
     ~50 ms even mid-socket-wait, and immediately between phases/chunks. The
     worker's own socket inactivity timeout never exceeds its phase budget, so
     nothing outlives create 30 s + auth 30 s + upload 120 s even with no
-    cancel. On cancel/timeout the error is retryable, so the durable spool
-    keeps the entry and its localHash; an accepted-but-lost response replays
-    idempotently against the same run.
+    cancel. `deadline` (monotonic) is a real caller deadline: it tightens
+    every phase budget and every response-body read (R03/R04). Every
+    response is closed on every path. On cancel/timeout the error is
+    retryable, so the durable spool keeps the entry and its localHash; an
+    accepted-but-lost response replays idempotently against the same run.
     Progress: `progress(phase, sent_bytes, total_bytes)` during upload only.
     """
     artifact_path = str(submission.get("artifactPath") or "").strip()
@@ -328,7 +345,9 @@ def submit_artifact_submission(
     for attempt in range(1, 2):
         if _event_cancelled(cancel_event):
             raise SubmissionCancelled("run create")
-        create_budget = _PhaseBudget(create_seconds)
+        create_budget = _PhaseBudget(create_seconds, deadline=deadline,
+                                     phase="run create")
+        create_response = None
         try:
             create_response = _run_cancellable(
                 lambda: requests.post(
@@ -346,28 +365,33 @@ def submit_artifact_submission(
             last_error = _safe_request_error(exc)
             continue
 
-        if create_response.status_code in (429,) or create_response.status_code >= 500:
-            last_error = SubmitError(
-                f"run create failed ({create_response.status_code})",
-                retryable=True,
-                status_code=create_response.status_code,
-                body=_response_error_text(requests, create_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(create_response.headers),
-            )
-            continue
-        if create_response.status_code >= 400:
-            raise SubmitError(
-                f"run create rejected ({create_response.status_code})",
-                retryable=False,
-                status_code=create_response.status_code,
-                body=_response_error_text(requests, create_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(create_response.headers),
-            )
-
-        create_json = _read_json_bounded(create_response, phase="run create",
-                                         budget=create_budget, cancel_event=cancel_event)
+        try:
+            if create_response.status_code in (429,) or create_response.status_code >= 500:
+                last_error = SubmitError(
+                    f"run create failed ({create_response.status_code})",
+                    retryable=True,
+                    status_code=create_response.status_code,
+                    body=_bounded_error_body(requests, create_response, cancel_event,
+                                             create_budget.deadline),
+                    retry_after=retry_after_seconds(create_response.headers),
+                )
+                continue
+            if create_response.status_code >= 400:
+                raise SubmitError(
+                    f"run create rejected ({create_response.status_code})",
+                    retryable=False,
+                    status_code=create_response.status_code,
+                    body=_bounded_error_body(requests, create_response, cancel_event,
+                                             create_budget.deadline),
+                    retry_after=retry_after_seconds(create_response.headers),
+                )
+            create_json = _read_json_bounded(create_response, phase="run create",
+                                             budget=create_budget, cancel_event=cancel_event)
+        finally:
+            try:
+                create_response.close()
+            except Exception:
+                pass
         if not isinstance(create_json, dict):
             last_error = SubmitError("run create response invalid JSON", retryable=True)
             continue
@@ -386,7 +410,9 @@ def submit_artifact_submission(
 
         if _event_cancelled(cancel_event):
             raise SubmissionCancelled("upload authorization")
-        auth_budget = _PhaseBudget(auth_seconds)
+        auth_budget = _PhaseBudget(auth_seconds, deadline=deadline,
+                                   phase="upload authorization")
+        auth_response = None
         try:
             auth_response = _run_cancellable(
                 lambda: requests.post(
@@ -407,28 +433,33 @@ def submit_artifact_submission(
         except Exception as exc:
             last_error = _safe_request_error(exc)
             continue
-
-        if auth_response.status_code in (429,) or auth_response.status_code >= 500:
-            last_error = SubmitError(
-                f"upload authorization failed ({auth_response.status_code})",
-                retryable=True,
-                status_code=auth_response.status_code,
-                body=_response_error_text(requests, auth_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(auth_response.headers),
-            )
-            continue
-        if auth_response.status_code >= 400:
-            raise SubmitError(
-                f"upload authorization rejected ({auth_response.status_code})",
-                retryable=False,
-                status_code=auth_response.status_code,
-                body=_response_error_text(requests, auth_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(auth_response.headers),
-            )
-        auth_json = _read_json_bounded(auth_response, phase="upload authorization",
-                                       budget=auth_budget, cancel_event=cancel_event)
+        try:
+            if auth_response.status_code in (429,) or auth_response.status_code >= 500:
+                last_error = SubmitError(
+                    f"upload authorization failed ({auth_response.status_code})",
+                    retryable=True,
+                    status_code=auth_response.status_code,
+                    body=_bounded_error_body(requests, auth_response, cancel_event,
+                                             auth_budget.deadline),
+                    retry_after=retry_after_seconds(auth_response.headers),
+                )
+                continue
+            if auth_response.status_code >= 400:
+                raise SubmitError(
+                    f"upload authorization rejected ({auth_response.status_code})",
+                    retryable=False,
+                    status_code=auth_response.status_code,
+                    body=_bounded_error_body(requests, auth_response, cancel_event,
+                                             auth_budget.deadline),
+                    retry_after=retry_after_seconds(auth_response.headers),
+                )
+            auth_json = _read_json_bounded(auth_response, phase="upload authorization",
+                                           budget=auth_budget, cancel_event=cancel_event)
+        finally:
+            try:
+                auth_response.close()
+            except Exception:
+                pass
         if not isinstance(auth_json, dict):
             last_error = SubmitError("upload authorization response invalid JSON", retryable=True)
             continue
@@ -442,7 +473,9 @@ def submit_artifact_submission(
 
         if _event_cancelled(cancel_event):
             raise SubmissionCancelled("artifact upload")
-        upload_budget = _PhaseBudget(upload_seconds)
+        upload_budget = _PhaseBudget(upload_seconds, deadline=deadline,
+                                     phase="artifact upload")
+        upload_response = None
         try:
             upload_response = _run_cancellable(
                 lambda: requests.put(
@@ -469,28 +502,33 @@ def submit_artifact_submission(
                 cause = getattr(cause, "__cause__", None) or getattr(cause, "__context__", None)
             last_error = _safe_request_error(exc)
             continue
-
-        if upload_response.status_code in (429,) or upload_response.status_code >= 500:
-            last_error = SubmitError(
-                f"artifact upload failed ({upload_response.status_code})",
-                retryable=True,
-                status_code=upload_response.status_code,
-                body=_response_error_text(requests, upload_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(upload_response.headers),
-            )
-            continue
-        if upload_response.status_code >= 400:
-            raise SubmitError(
-                f"artifact upload rejected ({upload_response.status_code})",
-                retryable=False,
-                status_code=upload_response.status_code,
-                body=_response_error_text(requests, upload_response, cancel_event,
-                                          None),
-                retry_after=retry_after_seconds(upload_response.headers),
-            )
-        upload_json = _read_json_bounded(upload_response, phase="artifact upload",
-                                         budget=upload_budget, cancel_event=cancel_event)
+        try:
+            if upload_response.status_code in (429,) or upload_response.status_code >= 500:
+                last_error = SubmitError(
+                    f"artifact upload failed ({upload_response.status_code})",
+                    retryable=True,
+                    status_code=upload_response.status_code,
+                    body=_bounded_error_body(requests, upload_response, cancel_event,
+                                             upload_budget.deadline),
+                    retry_after=retry_after_seconds(upload_response.headers),
+                )
+                continue
+            if upload_response.status_code >= 400:
+                raise SubmitError(
+                    f"artifact upload rejected ({upload_response.status_code})",
+                    retryable=False,
+                    status_code=upload_response.status_code,
+                    body=_bounded_error_body(requests, upload_response, cancel_event,
+                                             upload_budget.deadline),
+                    retry_after=retry_after_seconds(upload_response.headers),
+                )
+            upload_json = _read_json_bounded(upload_response, phase="artifact upload",
+                                             budget=upload_budget, cancel_event=cancel_event)
+        finally:
+            try:
+                upload_response.close()
+            except Exception:
+                pass
         if not isinstance(upload_json, dict):
             last_error = SubmitError("artifact upload response invalid JSON", retryable=True)
             continue

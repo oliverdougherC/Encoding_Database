@@ -134,7 +134,10 @@ def test_checkpoint_uploads_terminal_groups_and_retires_accepted_artifacts(tmp_p
         return {'artifactPath': str(artifact), 'encoderUsed': 'libx264', 'presetUsed': 'fast', 'fileSizeBytes': 7,
                 'encodeStartMonotonicNs': 1_000_000_000, 'encodeEndMonotonicNs': 2_000_000_000,
                 'elapsedMs': 1000, 'error': None}
-    def submit(queue_dir, *, base_url, payload, max_storage_mb, api_key, retries, use_token):
+    def submit(queue_dir, *, base_url, payload, max_storage_mb, api_key, retries,
+               use_token, cancel_event=None, deadline=None):
+        assert cancel_event is None
+        assert isinstance(deadline, float)
         submissions.append(payload)
         return "submitted", "run-checkpoint-test", 0
     hardware = main.HardwareInfo('CPU', None, 16, 'OS')

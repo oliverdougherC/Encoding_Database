@@ -12,9 +12,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
+from . import network
 from .artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND, submit_artifact_submission
 from .campaign import directory_bytes
-from .network import SubmitError, submit
+from .network import SubmissionCancelled, SubmitError, submit
 
 SPOOL_VERSION = 1
 MANAGED_ARTIFACT_DIRNAME = "artifacts"
@@ -186,10 +187,14 @@ def host_phase_hold(role: str = "publication"):
         raise SpoolCapacityError(
             "A collector is measuring on this host; publication defers to its next checkpoint") from exc
     token = _HOST_PHASE_HELD.set(True)
-    try:
-        yield True
-    finally:
-        _HOST_PHASE_HELD.reset(token)
+    # R05: every transport worker started inside this hold is owned by it. On
+    # release the workers are reaped (bounded sync join); if one is still
+    # mid-I/O, the kernel lock stays held (escalated to exclusive, deferred
+    # releaser) until the worker is quiescent — a collector can never start
+    # while a cancelled/timed-out worker still owns live transport I/O.
+    worker_phase = network.begin_owned_worker_phase()
+
+    def _release_kernel_lock() -> None:
         try:
             if os.name == "nt":
                 import msvcrt
@@ -200,6 +205,26 @@ def host_phase_hold(role: str = "publication"):
                 fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
         finally:
             handle.close()
+
+    try:
+        yield True
+    finally:
+        _HOST_PHASE_HELD.reset(token)
+        if not network.end_owned_worker_phase(worker_phase, _release_kernel_lock):
+            _escalate_deferred_phase_lock(handle)
+
+
+def _escalate_deferred_phase_lock(handle) -> None:
+    """Best-effort SH→EX escalation while a deferred releaser still owns the
+    phase (POSIX flock conversion). Other publishers may keep coexisting when
+    escalation is impossible; deferral of this hold still blocks collectors."""
+    if os.name == "nt":
+        return
+    try:
+        import fcntl
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        pass
 
 
 class SpoolCapacityError(OSError):
@@ -535,19 +560,35 @@ def _managed_artifact_path(queue_dir: str, artifact_sha256: str, source_path: st
     return os.path.join(_managed_artifact_dir(queue_dir), f"{artifact_sha256}{ext.lower()}")
 
 
-def spool_payload(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int = 2048) -> Tuple[str, Dict[str, Any]]:
+def _admission_guard(cancel_event: Optional[Any], deadline: Optional[float],
+                     phase: str) -> None:
+    """R03: cooperative cancel + real caller deadline between blocking local
+    steps (capacity scan, artifact staging copy, replay hashing)."""
+    if _event_cancelled(cancel_event):
+        raise SubmissionCancelled(phase)
+    if deadline is not None and time.monotonic() >= deadline:
+        raise SubmitError(f"{phase} exceeded caller deadline", retryable=True)
+
+
+def spool_payload(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int = 2048,
+                  cancel_event: Optional[Any] = None,
+                  deadline: Optional[float] = None) -> Tuple[str, Dict[str, Any]]:
+    _admission_guard(cancel_event, deadline, "queue admission")
     try:
         with host_phase_hold("publication"):
             _refuse_publication_during_measurement(queue_dir)
             with _spool_write_lock(queue_dir):
-                return _spool_payload_locked(queue_dir, payload, max_storage_mb=max_storage_mb)
+                return _spool_payload_locked(queue_dir, payload, max_storage_mb=max_storage_mb,
+                                             cancel_event=cancel_event, deadline=deadline)
     except OSError as exc:
         if exc.errno in (errno.ENOSPC, errno.EDQUOT):
             raise SpoolCapacityError("Publication ran out of disk space; free space and resume the retained campaign") from exc
         raise
 
 
-def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any], *,
+                                 cancel_event: Optional[Any] = None,
+                                 deadline: Optional[float] = None) -> Dict[str, Any]:
     if payload.get("submissionKind") != AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
         return dict(payload)
     artifact_path = str(payload.get("artifactPath") or "").strip()
@@ -567,7 +608,11 @@ def _preserve_artifact_for_spool(queue_dir: str, payload: Dict[str, Any]) -> Dic
                     raise ValueError("Retained artifact size differs from immutable upload metadata")
                 copied = 0
                 with open(artifact_path, "rb") as source, open(tmp_path, "xb") as target:
-                    for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                    while True:
+                        _admission_guard(cancel_event, deadline, "artifact staging")
+                        chunk = source.read(1024 * 1024)
+                        if not chunk:
+                            break
                         copied += len(chunk)
                         if copied > expected_size:
                             raise ValueError("Retained artifact grew during bounded upload staging")
@@ -615,7 +660,9 @@ def _terminal_spool_entry_locked(queue_dir: str, local_hash: str) -> Optional[Tu
 
 
 
-def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int) -> Tuple[str, Dict[str, Any]]:
+def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int,
+                          cancel_event: Optional[Any] = None,
+                          deadline: Optional[float] = None) -> Tuple[str, Dict[str, Any]]:
     receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash_for_payload(payload)}.json")
     if os.path.isfile(receipt_path):
         return receipt_path, _envelope_for_payload(payload)
@@ -634,7 +681,10 @@ def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storag
                 raise ValueError("Corrupt upload could not retain terminal identity")
             return terminal
     _check_spool_capacity(queue_dir, payload, max_storage_mb)
-    spool_payload_value = _preserve_artifact_for_spool(queue_dir, payload)
+    _admission_guard(cancel_event, deadline, "queue admission")
+    spool_payload_value = _preserve_artifact_for_spool(queue_dir, payload,
+                                                       cancel_event=cancel_event,
+                                                       deadline=deadline)
     envelope = _envelope_for_payload(spool_payload_value)
     _write_json_atomic(path, envelope)
     return path, envelope
@@ -753,7 +803,9 @@ def _is_managed_artifact_path(queue_dir: str, artifact_path: str) -> bool:
     return common == managed_root
 
 
-def _validate_managed_artifact_for_replay(queue_dir: str, payload: Dict[str, Any]) -> None:
+def _validate_managed_artifact_for_replay(queue_dir: str, payload: Dict[str, Any], *,
+                                          cancel_event: Optional[Any] = None,
+                                          deadline: Optional[float] = None) -> None:
     artifact_path = str(payload.get("artifactPath") or "").strip()
     if not artifact_path or not _is_managed_artifact_path(queue_dir, artifact_path):
         raise SubmitError("spooled artifact path is outside the managed queue", retryable=False)
@@ -764,7 +816,14 @@ def _validate_managed_artifact_for_replay(queue_dir: str, payload: Dict[str, Any
     digest = hashlib.sha256()
     observed_size = 0
     with open(artifact_path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+        while True:
+            # R03: replay hashing can run over multi-GB artifacts; check
+            # cancel/deadline between chunks so a Stop does not wait for the
+            # full hash. Raised errors are retryable -> entry is retained.
+            _admission_guard(cancel_event, deadline, "replay artifact validation")
+            chunk = handle.read(1024 * 1024)
+            if not chunk:
+                break
             observed_size += len(chunk)
             digest.update(chunk)
     if observed_size != expected_size or digest.hexdigest() != expected_hash:
@@ -1118,15 +1177,20 @@ def submit_spooled_path(
     retries: int,
     use_token: bool,
     cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> Tuple[str, str]:
     # C11: the whole network transaction must live inside the host publication
     # phase; otherwise a collector could start mid-upload through the very disk
     # and network path the upload is saturating. In-process re-entry (a
     # collector's checkpoint upload, or replay_spool's pass-level hold) is free.
+    # R03: `deadline` (monotonic) is a real caller deadline honoured before any
+    # I/O and through every transport phase; R05: the hold reaps (or defers
+    # around) any worker this transaction leaves behind.
     with host_phase_hold("publication"):
         return _submit_spooled_path_unheld(
             path, queue_dir=queue_dir, base_url=base_url, api_key=api_key,
-            retries=retries, use_token=use_token, cancel_event=cancel_event)
+            retries=retries, use_token=use_token, cancel_event=cancel_event,
+            deadline=deadline)
 
 
 def _submit_spooled_path_unheld(
@@ -1138,6 +1202,7 @@ def _submit_spooled_path_unheld(
     retries: int,
     use_token: bool,
     cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> Tuple[str, str]:
     try:
         with _spool_write_lock(queue_dir):
@@ -1156,8 +1221,15 @@ def _submit_spooled_path_unheld(
                     _move_to_dead_letter_locked(queue_dir, path, entry, "missing_spooled_artifact")
                     return "dead_lettered", "missing_spooled_artifact"
                 try:
-                    _validate_managed_artifact_for_replay(queue_dir, payload)
+                    _validate_managed_artifact_for_replay(queue_dir, payload,
+                                                          cancel_event=cancel_event,
+                                                          deadline=deadline)
                 except SubmitError as exc:
+                    if exc.retryable:
+                        # R03: cancel/deadline interrupted replay hashing —
+                        # retain with identity intact, perform no network I/O.
+                        _retain_entry(path, entry, str(exc))
+                        return "retained", str(exc)
                     _move_to_dead_letter_locked(queue_dir, path, entry, str(exc))
                     return "dead_lettered", str(exc)
                 except Exception as exc:
@@ -1168,12 +1240,18 @@ def _submit_spooled_path_unheld(
         response: Any = None
         error: Optional[Exception] = None
         try:
+            if deadline is not None and time.monotonic() >= deadline:
+                raise SubmitError("spool transport deadline reached before network",
+                                  retryable=True)
+            if _event_cancelled(cancel_event):
+                raise SubmissionCancelled("spool transport")
             if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
                 response = submit_artifact_submission(base_url, payload, retries=retries,
-                                                      cancel_event=cancel_event)
+                                                      cancel_event=cancel_event,
+                                                      deadline=deadline)
             else:
                 submit(base_url, payload, api_key=api_key, retries=retries, use_token=use_token,
-                       cancel_event=cancel_event)
+                       cancel_event=cancel_event, deadline=deadline)
         except Exception as exc:
             error = exc
         with _spool_write_lock(queue_dir):
@@ -1215,6 +1293,7 @@ def replay_spool(
     limit: int = REPLAY_WINDOW,
     time_budget: float = REPLAY_SECONDS,
     cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> ReplayStats:
     """Bounded, cancellable, due-first replay (C08/C11/C12).
 
@@ -1232,7 +1311,7 @@ def replay_spool(
         return _replay_spool_unheld(
             queue_dir, base_url=base_url, api_key=api_key, retries=retries,
             use_token=use_token, limit=limit, time_budget=time_budget,
-            cancel_event=cancel_event)
+            cancel_event=cancel_event, deadline=deadline)
 
 
 def _replay_spool_unheld(
@@ -1245,6 +1324,7 @@ def _replay_spool_unheld(
     limit: int = REPLAY_WINDOW,
     time_budget: float = REPLAY_SECONDS,
     cancel_event: Optional[Any] = None,
+    deadline: Optional[float] = None,
 ) -> ReplayStats:
     stats = ReplayStats()
     _refuse_publication_during_measurement(queue_dir)
@@ -1258,6 +1338,11 @@ def _replay_spool_unheld(
             stats.cancelled += 1
             stats.deferred += len(files) - index - 1
             break
+        if deadline is not None and time.monotonic() >= deadline:
+            # R03: real caller deadline (monotonic wall-clock), distinct from
+            # the per-pass throughput budget below.
+            stats.deferred += len(files) - index
+            break
         if time.monotonic() - started >= time_budget:
             stats.deferred += len(files) - index
             break
@@ -1269,6 +1354,7 @@ def _replay_spool_unheld(
             retries=retries,
             use_token=use_token,
             cancel_event=cancel_event,
+            deadline=deadline,
         )
         if status == "submitted":
             stats.submitted += 1
