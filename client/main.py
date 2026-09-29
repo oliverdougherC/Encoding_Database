@@ -126,7 +126,7 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.5"
+CLIENT_VERSION = "client/0.3.6"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
@@ -2814,27 +2814,19 @@ def run_benchmark_batch(
     locally_complete_count = 0
     measured_cap = int(protocol_config.minimum_measured_runs + protocol_config.max_adaptive_repeats)
     groups_total = len(recipe_specs)
-    # Progress baseline: attempts already durably confirmed before this
-    # segment (accepted receipts, or saved submissions in local-only mode).
-    # Bars seed from this so a resume segment never rewinds a completed group.
-    progress_confirmed: set = set()
+    # Both bars show measurement work, not publication. Seed from every
+    # durable attempt so warmups move the batch bar and resume never rewinds.
+    recorded_orders = set(journal.records)
+    warmups_done = sum(record.schedule.phase == "warmup" for record in journal.records.values())
+    measured_done = sum(record.schedule.phase == "measured" for record in journal.records.values())
     local_only_run = bool(getattr(args, "no_submit", False))
-    for prior in journal.records.values():
-        try:
-            if prior.schedule.phase != "measured":
-                continue
-            if journal.accepted_receipt(prior) is not None or (
-                    local_only_run
-                    and (journal.root / f"submission-{prior.schedule.execution_order:06d}.json").exists()):
-                progress_confirmed.add(int(prior.schedule.execution_order))
-        except Exception:
-            continue
-    done_before = len(progress_confirmed)
+    done_before = len(recorded_orders)
     attempts_done = done_before
     batch_done = 0
-    declared_attempts = max(1, groups_total * measured_cap)
-    batch_attempts_total = declared_attempts
-    declared_batches_total = declared_attempts
+    per_recipe_cap = int(protocol_config.warmup_runs) + measured_cap
+    declared_attempts = max(1, groups_total * per_recipe_cap)
+    batch_attempts_total = max(1, declared_attempts - done_before)
+    declared_batches_total = batch_attempts_total
     progress: Optional[Any] = None
 
     def _emit_progress() -> None:
@@ -2847,37 +2839,45 @@ def run_benchmark_batch(
             "campaign_progress",
             scope="batch",
             campaignId=campaign_id,
-            unit="measured-attempt",
+            unit="durable-attempt",
             done=done_n,
             total=total_n,
             batchDone=batch_done_n,
             batchTotal=batch_total_n,
             groupsTotal=groups_total,
+            warmupsDone=warmups_done,
+            measuredDone=measured_done,
         )
         if progress is not None:
             progress.set_progress(done=done_n, total=total_n,
                                   batch_done=batch_done_n, batch_total=batch_total_n)
 
-    def _confirm_attempt(order: int) -> None:
-        # Idempotent: a resume replays records already confirmed in the
-        # baseline; counting them twice would overstate overall progress.
-        nonlocal attempts_done
-        if order not in progress_confirmed:
-            progress_confirmed.add(order)
+    def _record_attempt(record: Any) -> None:
+        nonlocal attempts_done, batch_done, warmups_done, measured_done
+        order = int(record.schedule.execution_order)
+        if order not in recorded_orders:
+            recorded_orders.add(order)
             attempts_done += 1
+            batch_done += 1
+            if record.schedule.phase == "warmup":
+                warmups_done += 1
+            elif record.schedule.phase == "measured":
+                measured_done += 1
+            _emit_progress()
 
     _emit_event(
         event_sink,
         "run_start",
         scope="batch",
         totalTasks=total_tasks,
+        totalGroups=groups_total,
         declaredAttempts=declared_attempts,
         totalBatches=total_batches,
         workers=workers,
         noSubmit=bool(getattr(args, "no_submit", False)),
         maxDurationMinutes=duration_minutes,
         campaignId=campaign_id,
-        progressUnit="measured-attempt",
+        progressUnit="durable-attempt",
         doneTotal=done_before,
         protocol={
             "version": protocol_config.version,
@@ -3111,6 +3111,7 @@ def run_benchmark_batch(
 
             def _journal_attempt(record: Any) -> None:
                 journal.save(record)
+                _record_attempt(record)
                 if record.schedule.execution_order not in recorded_before:
                     with config._GLOBAL_STATE_LOCK:
                         config._BATCH_ATTEMPTS_RECORDED += 1
@@ -3167,13 +3168,17 @@ def run_benchmark_batch(
                 for record in recipe_result.runs:
                     if record.schedule.phase == "measured":
                         measured_records.append((recipe, record))
-            # Declared bound now that the measurement phase is settled: every
-            # terminal group's actual attempts plus the full cap for groups a
-            # checkpoint may still extend. Shrink-only across segments, so the
-            # confirmed fraction never decreases.
-            terminal_orders = {int(r.schedule.execution_order) for _recipe, r in measured_records}
-            declared_attempts = max(1, len(terminal_orders) + len(unfinished_recipes) * measured_cap)
-            batch_attempts_total = max(1, len(measured_records))
+            # Optional adaptive slots disappear only after a group is terminal.
+            # Remaining unfinished groups retain their frozen maximum; totals
+            # shrink rather than pretending unused optional encodes were done.
+            record_counts: Dict[str, int] = {}
+            for recorded in journal.records.values():
+                key = str(recorded.schedule.recipe_id)
+                record_counts[key] = record_counts.get(key, 0) + 1
+            remaining = sum(max(0, per_recipe_cap - record_counts.get(recipe_id, 0))
+                            for recipe_id in unfinished_recipes)
+            declared_attempts = max(1, attempts_done + remaining)
+            batch_attempts_total = max(1, declared_attempts - done_before)
             _emit_progress()
 
             for recipe, record in measured_records:
@@ -3242,10 +3247,8 @@ def run_benchmark_batch(
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
                 if journal.accepted_receipt(record) is not None:
-                    # Faithful accepted receipt from an earlier segment: it is
-                    # already counted in the baseline; only the batch view reconciles.
-                    batch_done += 1
-                    _emit_progress()
+                    # Publication is already reconciled in the durable ledger;
+                    # it does not change measurement progress.
                     continue
                 task = _task_from_recipe(recipe)
                 info = dict(record.metadata.get("info") or {})
@@ -3308,9 +3311,8 @@ def run_benchmark_batch(
                         failed=failed_count,
                     )
                     processed_total += 1
-                    # A protocol-invalid attempt is never confirmable work: it
-                    # cannot raise either confirmed bar, so a run that ends on
-                    # invalid evidence honestly stays below 100%.
+                    # Invalid evidence remains a durable measurement attempt
+                    # in the bars, but never advances publication counters.
                     progress.advance(description=_batch_status("Completed", processed_total, codec_label, preset_label))
                     continue
 
@@ -3513,9 +3515,6 @@ def run_benchmark_batch(
                             locally_complete_count += 1
                             completed_count_local += 1
                             processed_total += 1
-                            _confirm_attempt(int(record.schedule.execution_order))
-                            batch_done += 1
-                            _emit_progress()
                             progress.advance(description=_batch_status("Locally complete", processed_total))
                             _emit_event(
                                 event_sink,
@@ -3627,15 +3626,6 @@ def run_benchmark_batch(
                 )
                 if float(payload.get('fps', 0.0)) > 0.0 and int(payload.get('fileSizeBytes', 0)) > 0:
                     completed_count_local += 1
-                if status == "submitted":
-                    # Only a durable confirmation (accepted receipt / local save)
-                    # moves either bar; queued or failed work keeps both below
-                    # 100% so a pending/failed run never claims completion.
-                    _confirm_attempt(int(record.schedule.execution_order))
-                    batch_done += 1
-                    _emit_progress()
-
-
                 processed_total += 1
                 progress.advance(description=_batch_status("Completed", processed_total, str(payload['codec']), str(payload['preset'])))
                 _emit_event(event_sink, "task_complete", scope="batch", processed=processed_total, total=total_tasks)

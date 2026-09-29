@@ -6,11 +6,12 @@ one warmup and two required measured repetitions per recipe by clip group;
 up to two adaptive repetitions are optional and run only while needed for
 stability. A maximum encode estimate is a storage/time bound, not a count of
 required uploads.
-The Windows Overall bar must declare frozen recipe by clip groups as its unit;
-the Batch bar must declare its own attempt or current-group unit in producer
-events. A measured repetition cannot advance a group bar, and a checkpoint
-cannot reset already durable campaign progress. Publication status and analysis
-status remain separate from both measurement bars.
+The Windows Overall bar declares durable warmup and measured attempts against
+the frozen maximum; the Batch bar shows durable attempts in the current segment.
+The producer declares these units in each event. Unused optional adaptive slots
+leave the maximum only when the measurement plan settles, and a checkpoint
+cannot reset already durable campaign progress. Finished recipe by clip groups
+are reported separately from both bars, as are publication and analysis status.
 
 | Stage | Durable evidence | Allowed recovery |
 | --- | --- | --- |

@@ -904,7 +904,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 return
 
             if event_type == "run_start":
-                # Overall counts confirmed measured attempts against the
+                # Overall counts durably recorded warmup and measured attempts against the
                 # producer-declared bound; doneTotal carries the durable
                 # baseline so a resume segment never rewinds the bar.
                 if event.get("scope") == "batch":
@@ -913,7 +913,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                     self.overall_total = total
                     self.overall_done = min(done, total)
                     self.overall_pb.configure(maximum=self.overall_total, value=self.overall_done)
-                    unit = str(event.get("progressUnit") or "measured-attempt")
+                    unit = str(event.get("progressUnit") or "durable-attempt")
                     self.summary_var.set(f"Running {event.get('scope', 'benchmark')} ({unit}s)")
                     self._append_log(f"Run start: unit={unit} baseline={self.overall_done}/{self.overall_total}")
                 else:
@@ -926,8 +926,8 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 return
 
             if event_type == "campaign_progress":
-                # Sole authority for both batch bars: producer counts durable
-                # confirmations (overall) and segment reconciliations (batch).
+                # Sole authority for both bars: producer counts durable
+                # measurement attempts; publication has separate counters.
                 total = max(1, int(event.get("total") or 1))
                 done = max(0, min(int(event.get("done") or 0), total))
                 batch_total = max(1, int(event.get("batchTotal") or 1))
@@ -938,7 +938,11 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                 self.batch_total = batch_total
                 self.batch_done = batch_done
                 self.batch_pb.configure(maximum=batch_total, value=batch_done)
-                self.summary_var.set(f"Confirmed {done}/{total} measured attempts")
+                self.summary_var.set(
+                    f"Recorded {done}/{total} attempts "
+                    f"({int(event.get('warmupsDone') or 0)} warmups, "
+                    f"{int(event.get('measuredDone') or 0)} measured)"
+                )
                 return
 
             if event_type == "batch_start":
@@ -1034,7 +1038,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
                                             value=min(max(1, int(event.get("total") or 1)), processed))
                     self.summary_var.set(f"Completed {processed}/{max(1, int(event.get('total') or 1))}")
                 # Batch progress is owned by campaign_progress (durable
-                # confirmations); a per-record completion must never move the
+                # attempts); a per-record completion must never move the
                 # bars toward 100% on its own.
                 return
 

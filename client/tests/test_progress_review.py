@@ -83,13 +83,13 @@ def test_adaptive_group_bars_wait_for_actual_terminal_attempt(tmp_path):
     root = _campaign_root(tmp_path)
     assert len(list(root.glob("attempt-*.json"))) == 5  # warmup + four measured
     progress = [event for event in events if event.get("type") == "campaign_progress"]
-    assert progress[-1]["done"] == progress[-1]["total"] == 4
-    assert all(event["done"] < event["total"] for event in progress[:-1])
+    assert progress[-1]["done"] == progress[-1]["total"] == 5
+    assert any(0 < event["done"] < event["total"] for event in progress)
     app = _drive_gui(_build_gui_app(), events)
-    assert app.overall_pb.options["maximum"] == 4
-    assert app.overall_pb.options["value"] == 4
-    assert app.batch_pb.options["maximum"] == 4
-    assert app.batch_pb.options["value"] == 4
+    assert app.overall_pb.options["maximum"] == 5
+    assert app.overall_pb.options["value"] == 5
+    assert app.batch_pb.options["maximum"] == 5
+    assert app.batch_pb.options["value"] == 5
 
 
 def test_durable_ledger_never_calls_one_repetition_a_finished_group(tmp_path):

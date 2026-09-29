@@ -30,7 +30,7 @@ class AssembleClientReleaseTests(unittest.TestCase):
             manifest = {
                 "schemaVersion": 1, "source": {"revision": "a" * 40, "trackedChanges": False},
                 "projectVersion": "1.3.0-rc.6", "platform": platform,
-                "protocol": {"clientVersion": "client/0.3.5", "benchmarkProtocolVersion": "7.1",
+                "protocol": {"clientVersion": "client/0.3.6", "benchmarkProtocolVersion": "7.1",
                              "minimumClientVersion": "client/0.3.0"},
                 "suite": {"suiteVersion": "encodingdb-test-suite-v1", "manifestVersion": 2,
                           "suiteFingerprint": "f" * 64, "isFrozen": True},
@@ -67,7 +67,7 @@ class AssembleClientReleaseTests(unittest.TestCase):
     def test_assembles_four_verified_assets_from_one_clean_identity(self):
         release = assemble(self.spec(), self.root)
         self.assertEqual(release["sourceRevision"], "a" * 40)
-        self.assertEqual(release["clientVersion"], "client/0.3.5")
+        self.assertEqual(release["clientVersion"], "client/0.3.6")
         self.assertEqual(len(release["assets"]), 4)
         self.assertEqual(release["lifecycle"], {
             "builtFromReviewedSource": True,

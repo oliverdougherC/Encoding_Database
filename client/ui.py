@@ -540,7 +540,7 @@ class BatchRunDashboard:
         self._overall_task_id = None
         self._batch_task_id = None
 
-        # Bar bounds are durable truth (confirmed measured attempts), set only
+        # Bar bounds are durable measurement attempts, set only
         # via set_progress. Legacy counters below drive descriptions only.
         self._display_done = 0
         self._display_total = self.total_tasks
@@ -659,8 +659,8 @@ class BatchRunDashboard:
     ) -> None:
         """Move both bars using producer-declared durable-truth bounds.
 
-        ``done`` counts confirmed attempts (accepted receipt or locally
-        complete); ``total`` is the declared attempt bound. The producer keeps
+        ``done`` counts journaled warmup and measured attempts; ``total`` is
+        the declared attempt bound. The producer keeps
         both monotonic per campaign; this clamps display only.
         """
         total_n = max(1, int(total))

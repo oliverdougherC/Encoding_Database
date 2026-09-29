@@ -1,8 +1,8 @@
 """R06/R07: the real run_benchmark_batch producer and the real GUI consumer.
 
 Every assertion here compares the GUI's observable bar state against durable
-evidence written by the producer (journal accepted receipts, saved submissions,
-spool queue entries). A mock that agreed with itself could not catch a unit
+attempts written by the producer, while publication and receipt state stay in
+the separate ledger. A mock that agreed with itself could not catch a unit
 mismatch between producer and consumer.
 """
 import argparse
@@ -129,13 +129,14 @@ def test_local_only_success_bars_match_durable_saves(tmp_path):
     progress = [e for e in events if e.get('type') == 'campaign_progress']
     assert progress, "producer must emit campaign_progress"
     final = progress[-1]
-    # Durable truth: every measured attempt was saved locally, and the final
-    # declared totals equal the confirmed count exactly on success.
+    # Progress counts every durable encode attempt. Publication is a separate
+    # ledger, so the two measured envelopes must not drive the bars.
     assert len(attempts) == 3  # 1 warmup + 2 measured
-    assert final['total'] == len(saved) == 2
+    assert len(saved) == 2
+    assert final['total'] == len(attempts) == 3
     assert final['done'] == final['total']
-    assert final['batchDone'] == final['batchTotal'] == 2
-    assert final['unit'] == 'measured-attempt'
+    assert final['batchDone'] == final['batchTotal'] == 3
+    assert final['unit'] == 'durable-attempt'
     # Monotonic: both fractions never decrease across the whole event stream.
     overall = [(e['done'], e['total']) for e in progress]
     batch = [(e['batchDone'], e['batchTotal']) for e in progress]
@@ -143,17 +144,38 @@ def test_local_only_success_bars_match_durable_saves(tmp_path):
     assert all(a[0] / a[1] <= b[0] / b[1] + 1e-9 for a, b in zip(batch, batch[1:]))
     # The real GUI consumer ends at 100% with matching options.
     app = _drive_gui(_build_gui_app(), events)
-    assert app.overall_pb.options['maximum'] == 2
-    assert app.overall_pb.options['value'] == 2
-    assert app.batch_pb.options['value'] == 2
+    assert app.overall_pb.options['maximum'] == 3
+    assert app.overall_pb.options['value'] == 3
+    assert app.batch_pb.options['value'] == 3
     # task_complete after the final progress must not push past the maximum.
     app._handle_event({'type': 'task_complete', 'scope': 'batch', 'processed': 99, 'total': 9})
-    assert app.overall_pb.options['value'] == 2
+    assert app.overall_pb.options['value'] == 3
     # Durable ledger for the end screen: saved, nothing uploaded.
     ledger = main._durable_campaign_ledger(str(tmp_path), root.name, _journal_for(tmp_path, root), True)
     assert ledger['savedLocal'] == 2
     assert ledger['uploaded'] == 0
     assert ledger['queued'] == 0
+
+
+def test_warmup_and_measured_attempts_advance_bars_before_publication(tmp_path, monkeypatch):
+    monkeypatch.setenv('ENCODINGDB_HOST_PHASE_DIR', str(tmp_path / 'host-phase'))
+    events = []
+    assert _run_batch(tmp_path, seed=405, events=events) == 0
+    app = _build_gui_app()
+    progress_before_next_encode = {}
+    for event in events:
+        app._handle_event(event)
+        if event.get('type') == 'encode_start':
+            progress_before_next_encode[event['index']] = (
+                app.overall_pb.options['value'], app.batch_pb.options['value'])
+    # The first warmup and first measured attempt are durably recorded before
+    # the following encode starts; a publication-only bar stayed at (0, 0).
+    assert progress_before_next_encode[2] == (1, 1)
+    assert progress_before_next_encode[3] == (2, 2)
+    assert app.overall_pb.options['maximum'] == 3
+    assert app.overall_pb.options['value'] == 3
+    assert app.batch_pb.options['maximum'] == 3
+    assert app.batch_pb.options['value'] == 3
 
 
 def test_local_only_resume_baseline_never_rewinds_or_double_counts(tmp_path):
@@ -164,9 +186,8 @@ def test_local_only_resume_baseline_never_rewinds_or_double_counts(tmp_path):
     assert _run_batch(tmp_path, seed=42, events=resume_events) == 0
     recorded = len(list(root.glob('attempt-*.json')))
     progress = [e for e in resume_events if e.get('type') == 'campaign_progress']
-    assert progress[0]['done'] == 2, "resume must start from the durable baseline"
-    assert progress[-1]['done'] == progress[-1]['total'] == 2
-    assert progress[-1]['done'] <= recorded - 1  # never counts warmup
+    assert progress[0]['done'] == 3, "resume must start from the durable baseline"
+    assert progress[-1]['done'] == progress[-1]['total'] == recorded == 3
     # GUI consumer: overall starts at the durable baseline and never drops.
     values = []
     app = _build_gui_app()
@@ -174,11 +195,38 @@ def test_local_only_resume_baseline_never_rewinds_or_double_counts(tmp_path):
         app._handle_event(event)
         if event.get('type') in ('run_start', 'campaign_progress'):
             values.append(app.overall_pb.options['value'])
-    assert values and values[0] == 2
+    assert values and values[0] == 3
     assert all(a <= b for a, b in zip(values, values[1:]))
 
 
-def test_partial_upload_run_bars_stay_below_100(tmp_path):
+def test_interrupted_resume_keeps_overall_baseline_and_restarts_batch(tmp_path, monkeypatch):
+    monkeypatch.setenv('ENCODINGDB_HOST_PHASE_DIR', str(tmp_path / 'host-phase'))
+    cancel = threading.Event()
+
+    class StopAfterFirstSave(list):
+        def append(self, event):
+            super().append(event)
+            if event.get('type') == 'campaign_progress' and event.get('done') == 1:
+                cancel.set()
+
+    first = StopAfterFirstSave()
+    assert _run_batch(tmp_path, seed=404, events=first, cancel_event=cancel) == 130
+    root = _campaign_root(tmp_path)
+    assert len(list(root.glob('attempt-*.json'))) == 1
+
+    resumed = []
+    assert _run_batch(tmp_path, seed=404, events=resumed) == 0
+    progress = [event for event in resumed if event.get('type') == 'campaign_progress']
+    assert (progress[0]['done'], progress[0]['batchDone']) == (1, 0)
+    assert any((event['done'], event['batchDone']) == (2, 1) for event in progress)
+    assert (progress[-1]['done'], progress[-1]['total']) == (3, 3)
+    assert (progress[-1]['batchDone'], progress[-1]['batchTotal']) == (2, 2)
+    app = _drive_gui(_build_gui_app(), resumed)
+    assert app.overall_pb.options['value'] == 3
+    assert app.batch_pb.options['value'] == 2
+
+
+def test_partial_upload_run_measurement_bars_finish_but_publication_does_not(tmp_path):
     from test_main_routing import MainRoutingTests
     fixture = MainRoutingTests()
     clip_a = fixture._quick_clip()
@@ -205,16 +253,14 @@ def test_partial_upload_run_bars_stay_below_100(tmp_path):
     assert len(accepted) == 2  # only the athletic group confirmed
     progress = [e for e in events if e.get('type') == 'campaign_progress']
     final = progress[-1]
-    # Declared covers both groups (2 measured each); confirmed is only the
-    # accepted pair: the GUI must NOT show 100% with queued/failed work.
-    assert final['total'] == 4
-    assert final['done'] == len(accepted) == 2
-    assert final['done'] < final['total']
+    # Six warmup/measured attempts are recorded even though only two uploads
+    # are acknowledged. The GUI separates measurement progress from delivery.
+    assert final['total'] == final['done'] == 6
     app = _drive_gui(_build_gui_app(), events)
-    assert app.overall_pb.options['maximum'] == 4
-    assert app.overall_pb.options['value'] == 2
-    assert app.overall_pb.options['value'] < app.overall_pb.options['maximum']
-    assert app.batch_pb.options['value'] < app.batch_pb.options['maximum']
+    assert app.overall_pb.options['maximum'] == 6
+    assert app.overall_pb.options['value'] == 6
+    assert app.batch_pb.options['value'] == app.batch_pb.options['maximum'] == 6
+    assert app.stage_var.get() == 'Finished with issues'
     overall = [(e['done'], e['total']) for e in progress]
     assert all(a[0] / a[1] <= b[0] / b[1] + 1e-9 for a, b in zip(overall, overall[1:]))
     ledger = main._durable_campaign_ledger(str(tmp_path), root.name, _journal_for(tmp_path, root), False)
@@ -223,7 +269,7 @@ def test_partial_upload_run_bars_stay_below_100(tmp_path):
     assert ledger['terminalFailures'] == 1
 
 
-def test_terminal_cancellation_bars_match_confirmed_work(tmp_path):
+def test_terminal_cancellation_bars_match_durable_attempts(tmp_path):
     # The GUI Stop path: cancel_event set mid-run; the producer exits 130 and
     # the bars must reflect only durably saved work.
     calls = []
@@ -244,12 +290,14 @@ def test_terminal_cancellation_bars_match_confirmed_work(tmp_path):
     progress = [e for e in events if e.get('type') == 'campaign_progress']
     final = progress[-1]
     root = _campaign_root(tmp_path)
-    saved = len(list(root.glob('submission-*.json')))
-    # Whatever the consumer shows equals what is durably on disk.
-    assert final['done'] == saved
+    recorded = len(list(root.glob('attempt-*.json')))
+    # The first warmup is durable; the interrupted measured output is not.
+    assert final['done'] == recorded == 1
+    assert final['warmupsDone'] == 1
+    assert final['measuredDone'] == 0
     app = _drive_gui(_build_gui_app(), events)
-    assert app.overall_pb.options['value'] == saved
-    if saved < final['total']:
+    assert app.overall_pb.options['value'] == recorded
+    if recorded < final['total']:
         assert app.overall_pb.options['value'] < app.overall_pb.options['maximum']
 
 
