@@ -1983,7 +1983,7 @@ def _publish_saved_campaign_gated(
     if info["unadmitted"]:
         info.update(status="deferred", deferredReason=info["deferredReason"] or "storage_or_exclusion")
         return 10, info
-    if info["selectedPending"] or info["pending"]:
+    if info["selectedPending"]:
         info.update(status="pending", deferredReason=info["deferredReason"] or "uploads_pending")
         return 10, info
     info["status"] = "published"
@@ -2242,7 +2242,7 @@ def _report_recovery_result(info: Dict[str, Any]) -> None:
     elif status == "blocked":
         print_error(failure_text(info.get("failure") or "campaign journal unavailable"))
     else:
-        print_info(f"Publishing status: {status} ({info.get('pending', 0)} upload(s) still pending)")
+        print_info(f"Publishing status: {status} ({info.get('selectedPending', 0)} campaign upload(s) still pending)")
 
 
 def _submit_payload_with_spool(

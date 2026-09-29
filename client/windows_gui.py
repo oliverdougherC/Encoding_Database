@@ -757,7 +757,7 @@ def launch_windows_gui(base_args: argparse.Namespace) -> int:
         @staticmethod
         def _publication_result_text(rc: int, info: Dict[str, Any]) -> str:
             submitted = int(info.get("submitted") or 0)
-            pending = int(info.get("pending") or 0)
+            pending = int(info.get("selectedPending") or 0)
             unadmitted = int(info.get("unadmitted") or 0)
             terminal = int(info.get("terminal") or 0) + int(info.get("deadLettered") or 0)
             if rc == 0:

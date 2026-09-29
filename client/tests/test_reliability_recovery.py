@@ -40,13 +40,15 @@ def test_intact_saved_envelope_publishes_with_old_runtime_and_client(tmp_path):
 
     with mock.patch.object(main, "spool_payload", return_value=("queued", {})) as stage, \
          mock.patch.object(main, "replay_spool", side_effect=accepted_replay), \
-         mock.patch.object(main, "count_pending_entries", return_value=0), \
+         mock.patch.object(main, "count_pending_entries", return_value=1), \
          mock.patch.object(main, "ensure_ffmpeg_and_ffprobe", side_effect=AssertionError("runtime not needed")):
         rc, info = main._publish_saved_campaign_gated(
             queue_dir=str(tmp_path), campaign_id=campaign_id,
             base_url="http://127.0.0.1:9", api_key="", max_storage_mb=2048,
         )
     assert rc == 0, info
+    assert info["selectedPending"] == 0
+    assert info["pending"] == 1  # An unrelated campaign remains queued.
     stage.assert_called_once_with(str(tmp_path), payload, max_storage_mb=2048)
     assert artifact.read_bytes() == b"retained original bytes"
 
