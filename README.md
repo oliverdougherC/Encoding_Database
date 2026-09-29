@@ -127,29 +127,38 @@ For authoritative V7 submissions, the client also uploads the encoded benchmark 
 
 ## Client downloads and candidate commands
 
-Published **1.2.0 / client/0.2.0** downloads: [Windows GUI](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-windows.exe),
-[Windows console](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-windows-console.exe),
-[Linux](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-linux),
-and [macOS](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.2.0/encodingdb-client-macos).
-These historical builds do not implement the corrected campaign interface below
-and cannot establish the protocol 7.1 epoch. Their unsigned/notarization and
-translated-helper limits remain in the published release notes.
+The current public download is [1.3.0-rc.5](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.5).
+Verify its `SHA256SUMS` before use. Its macOS DMG contains the September 22
+resume repair; the Windows GUI/console binaries were carried forward from
+rc.4, and the Linux archive from an rc.2-era build. These assets do not share
+one corrected client source. Draft PR #22 contains later unpublished candidate
+work and is not part of any public download. The September 28 failed Medium
+sweeps and current readiness limits are recorded in
+[the original incident ledger](docs/collection-readiness/reliability-20260928/ORIGINAL-INCIDENTS.md).
+Per-clip assets in PR #22 remain staged with `published=false`, so a cold
+public guided run can still require the full roughly 1.51 GB frozen suite pack.
 
-Application candidate `b3ef24a` now has physical Windows seven-clip software and
+Published **1.2.0 / client/0.2.0** downloads remain available as historical
+assets in their [release](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0).
+They do not implement the protocol 7.1 campaign interface.
+
+Historical application candidate `b3ef24a` has physical Windows seven-clip software and
 NVENC evidence: 63 VALID attempts, 42 measured runs and 21 stable groups across
 three campaigns, plus four controlled recovery/failure cases. Hosted Windows
-seven-clip console acceptance also passed; final GUI acceptance remains pending.
+seven-clip console acceptance also passed; GUI acceptance was pending at that
+checkpoint.
 The [Mac package smoke](docs/collection-readiness/mac-build-b3ef24a/README.md) passed
 with native ARM64 helpers and a **macOS 27.0** runtime floor; signing is ad hoc,
 with no Developer ID signature or notarization. Both b3 Mac seven-clip campaigns
 finished: 46 artifacts verified, with two unstable software groups and six
-GPU-suspect hardware measurements retained. Publication remains unverified.
+GPU-suspect hardware measurements retained. Publication was unverified at that
+checkpoint.
 The Linux candidate build, migrations,
-trusted TLS and isolated restore passed; final native acceptance is now running
-after the capacity trial. These results do not establish collection readiness or validated
+trusted TLS and isolated restore passed; final native acceptance was still
+running after the capacity trial. These results do not establish collection readiness or validated
 PL. See the [current evidence and open gates](docs/FINAL_RELEASE_HANDOFF.md).
 
-From the corrected source checkout with client requirements installed and a
+From a source checkout with client requirements installed and a
 compatible local staging server, run one clip without publication:
 
 ```bash
@@ -280,9 +289,10 @@ V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to si
 
 ## Version identities
 
-- Published project release: `1.3.0-rc.4` / `2026-09-22` in `release.json`; client/0.3.3, protocol `7.1`.
+- Published project release: `1.3.0-rc.5` / `2026-09-22`, protocol `7.1`. Its macOS and Windows assets identify `client/0.3.3`; the carried Linux asset identifies `client/0.3.1` in retained native envelopes.
+- Unpublished review candidate: proposed `1.3.0-rc.6` / `client/0.3.4`, protocol `7.1`; native acceptance and promotion remain open.
 - Historical project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
-- Candidate client implementation/minimum version: `client/0.3.0`.
+- Minimum accepted client implementation version: `client/0.3.0`.
 - Candidate benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.
 - PL formula version: `7.0`.
 - Test-suite version: EncodingDB Test Suite v1 (`encodingdb-test-suite-v1`).

@@ -24,6 +24,12 @@ if str(ROOT_DIR) not in sys.path:
 from scripts.release_manifest_lib import atomic_write_json, sha256_path
 
 ROLES = {"macos-dmg", "windows-gui", "windows-console", "linux-archive"}
+EXECUTABLE_SUPPORT = {
+    "macos-dmg": ("Mach-O", "arm64"),
+    "windows-gui": ("PE", "x86_64"),
+    "windows-console": ("PE", "x86_64"),
+    "linux-archive": ("ELF", "x86_64"),
+}
 
 
 def _path(base: Path, value: Any) -> Path:
@@ -57,6 +63,27 @@ def _source_revision(receipt: dict[str, Any]) -> str:
     if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision) or source.get("trackedChanges") is not False:
         raise ValueError("native receipt must identify a clean committed source revision")
     return revision
+
+
+def _support(role: str, binary: dict[str, Any], package: dict[str, Any] | None) -> dict[str, str]:
+    observed = binary.get("executableIdentity") or {}
+    expected_format, expected_arch = EXECUTABLE_SUPPORT[role]
+    if observed.get("format") != expected_format or observed.get("architecture") != expected_arch:
+        raise ValueError(f"{role} executable header differs from its supported architecture")
+    if role == "macos-dmg":
+        minimum = (package or {}).get("minimumSystemVersion")
+        if not isinstance(minimum, str) or not re.fullmatch(r"\d+(?:\.\d+){1,2}", minimum):
+            raise ValueError("macOS package lacks a verified minimum OS version")
+        # The current frozen helper bundle was qualified at macOS 27.0.
+        if tuple(int(part) for part in minimum.split(".")) < (27, 0):
+            raise ValueError("macOS package minimum is below the qualified runtime floor")
+        return {"operatingSystem": "macOS", "architecture": expected_arch,
+                "minimumVersion": minimum}
+    if role in ("windows-gui", "windows-console"):
+        return {"operatingSystem": "Windows", "architecture": expected_arch,
+                "supportedVersion": "11", "otherVersions": "unverified"}
+    return {"operatingSystem": "Ubuntu Linux", "architecture": expected_arch,
+            "supportedVersion": "24.04", "otherDistributions": "unverified"}
 
 
 def assemble(spec: dict[str, Any], base: Path) -> dict[str, Any]:
@@ -114,6 +141,7 @@ def assemble(spec: dict[str, Any], base: Path) -> dict[str, Any]:
 
         binary = receipt.get("artifact") or {}
         wrapper = None
+        package = None
         if role in {"macos-dmg", "linux-archive"}:
             package = _read_json(_path(base, entry.get("packageInfo")))
             if package.get("provisional") is not False or _source_revision(package) != identity["sourceRevision"]:
@@ -141,10 +169,21 @@ def assemble(spec: dict[str, Any], base: Path) -> dict[str, Any]:
             "sha256": artifact_sha, "byteSize": artifact.stat().st_size,
             "embeddedExecutableSha256": binary.get("sha256"),
             "runtimeFingerprint": runtime["fingerprint"],
+            "support": _support(role, binary, package),
         })
     if roles_seen != ROLES or common is None:
         raise ValueError("native release roles are incomplete")
-    return {"schemaVersion": 1, **common, "assets": sorted(assets, key=lambda item: item["role"])}
+    return {
+        "schemaVersion": 1,
+        **common,
+        "lifecycle": {
+            "builtFromReviewedSource": True,
+            "nativeAcceptance": "not_certified",
+            "published": False,
+            "independentRedownloadVerified": False,
+        },
+        "assets": sorted(assets, key=lambda item: item["role"]),
+    }
 
 
 def main() -> int:

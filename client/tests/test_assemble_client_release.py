@@ -35,7 +35,11 @@ class AssembleClientReleaseTests(unittest.TestCase):
                 "suite": {"suiteVersion": "encodingdb-test-suite-v1", "manifestVersion": 2,
                           "suiteFingerprint": "f" * 64, "isFrozen": True},
                 "runtime": {"fingerprint": platform + "-runtime"},
-                "artifact": {"fileName": name, "sha256": binary_sha, "byteSize": len(data)},
+                "artifact": {"fileName": name, "sha256": binary_sha, "byteSize": len(data),
+                             "executableIdentity": {
+                                 "format": {"mac": "Mach-O", "win": "PE", "linux": "ELF"}[platform],
+                                 "architecture": "arm64" if platform == "mac" else "x86_64",
+                             }},
             }
             manifest_path = self.root / f"{name}.release-manifest.json"
             manifest_path.write_text(json.dumps(manifest))
@@ -45,7 +49,8 @@ class AssembleClientReleaseTests(unittest.TestCase):
                 if role == "macos-dmg":
                     wrapper["readOnlyMountVerification"] = {"mounted": True, "innerSha256": binary_sha}
                     package = {"provisional": False, "source": manifest["source"], "dmg": wrapper,
-                               "cliEmbeddedSha256": binary_sha, "cliBytesChangedByPackaging": False}
+                               "cliEmbeddedSha256": binary_sha, "cliBytesChangedByPackaging": False,
+                               "minimumSystemVersion": "27.0"}
                 else:
                     wrapper["members"] = [{"sha256": binary_sha}]
                     package = {"provisional": False, "source": manifest["source"], "archive": wrapper,
@@ -64,8 +69,23 @@ class AssembleClientReleaseTests(unittest.TestCase):
         self.assertEqual(release["sourceRevision"], "a" * 40)
         self.assertEqual(release["clientVersion"], "client/0.3.4")
         self.assertEqual(len(release["assets"]), 4)
+        self.assertEqual(release["lifecycle"], {
+            "builtFromReviewedSource": True,
+            "nativeAcceptance": "not_certified",
+            "published": False,
+            "independentRedownloadVerified": False,
+        })
         self.assertEqual({asset["role"] for asset in release["assets"]},
                          {"macos-dmg", "windows-gui", "windows-console", "linux-archive"})
+        support = {asset["role"]: asset["support"] for asset in release["assets"]}
+        self.assertEqual(support["macos-dmg"], {
+            "operatingSystem": "macOS", "architecture": "arm64", "minimumVersion": "27.0"})
+        self.assertEqual(support["windows-gui"], {
+            "operatingSystem": "Windows", "architecture": "x86_64", "supportedVersion": "11",
+            "otherVersions": "unverified"})
+        self.assertEqual(support["linux-archive"], {
+            "operatingSystem": "Ubuntu Linux", "architecture": "x86_64",
+            "supportedVersion": "24.04", "otherDistributions": "unverified"})
 
     def test_rejects_tampered_asset_and_mixed_revision(self):
         (self.root / "encodingdb-client-windows.exe").write_bytes(b"different")
@@ -101,6 +121,26 @@ class AssembleClientReleaseTests(unittest.TestCase):
         receipt["runtime"]["fingerprint"] = "other-runtime"
         path.write_text(json.dumps(receipt))
         with self.assertRaisesRegex(ValueError, "different win runtime identities"):
+            assemble(self.spec(), self.root)
+
+    def test_rejects_architecture_or_macos_floor_missing_from_native_receipts(self):
+        path = self.root / "encodingdb-client-windows.exe.release-manifest.json"
+        receipt = json.loads(path.read_text())
+        receipt["artifact"]["executableIdentity"]["architecture"] = "arm64"
+        path.write_text(json.dumps(receipt))
+        with self.assertRaisesRegex(ValueError, "supported architecture"):
+            assemble(self.spec(), self.root)
+        receipt["artifact"]["executableIdentity"]["architecture"] = "x86_64"
+        path.write_text(json.dumps(receipt))
+        package_path = self.root / "EncodingDB-macOS-arm64.dmg.package-info.json"
+        package = json.loads(package_path.read_text())
+        package.pop("minimumSystemVersion")
+        package_path.write_text(json.dumps(package))
+        with self.assertRaisesRegex(ValueError, "minimum OS version"):
+            assemble(self.spec(), self.root)
+        package["minimumSystemVersion"] = "26.0"
+        package_path.write_text(json.dumps(package))
+        with self.assertRaisesRegex(ValueError, "qualified runtime floor"):
             assemble(self.spec(), self.root)
 
 

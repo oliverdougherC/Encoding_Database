@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.6] - 2026-09-28
+
+Unpublished review candidate for the September 28 client reliability work.
+Client 0.3.4 bounds runtime preparation, carries cancellation and deadlines
+through normal uploads, reconciles saved campaign evidence and queue receipts,
+and gives Windows Overall and Batch progress declared measured-attempt units.
+Protocol 7.1, the frozen suite bytes and scientific admission checks are
+unchanged. Source and focused tests do not certify the native Medium, fault,
+recovery or four-asset release gates; no public asset is promoted by this note.
+
+## [1.3.0-rc.5] - 2026-09-22
+
+Published macOS resume and storage repair from source `b0607f0`. The Windows
+GUI and console assets carried the rc.4 binaries; Linux carried an rc.2-era
+binary. This release did not contain the later draft PR #22 client work, and
+the four assets did not share one updated client source.
+
 ## [1.3.0-rc.4] - 2026-09-22
 
 Windows-focused repair with automatic recovery. A suite-cache extraction folder
