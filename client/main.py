@@ -133,6 +133,7 @@ ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
     CREATE_TIMEOUT_SECONDS + AUTH_TIMEOUT_SECONDS + UPLOAD_TIMEOUT_SECONDS
 )
 SOURCE_CLIP_BUDGET_SECONDS = 3600.0
+SOURCE_CONTRACT_BUDGET_SECONDS = 600.0
 PUBLICATION_CONSENT_VERSION = 1
 PUBLICATION_CONSENT_FILENAME = "publication-consent.json"
 
@@ -1189,14 +1190,15 @@ def _build_protocol_recipe_specs(
         contract_key = _source_contract_cache_key(effective_input)
         source_probe = _SOURCE_CONTRACT_CACHE.get(contract_key)
         if source_probe is None:
-            preparation_progress(
-                "source-contract",
-                clipId=(prepared_clip.clip_id if isinstance(prepared_clip, PreparedSuiteClip)
-                        else os.path.basename(effective_input)),
-                completed=contracts_done + 1,
-                total=contract_total,
-            )
-            source_probe = _probe_artifact_contract(effective_input)
+            with preparation_stage("source-contract", SOURCE_CONTRACT_BUDGET_SECONDS):
+                preparation_progress(
+                    "source-contract",
+                    clipId=(prepared_clip.clip_id if isinstance(prepared_clip, PreparedSuiteClip)
+                            else os.path.basename(effective_input)),
+                    completed=contracts_done + 1,
+                    total=contract_total,
+                )
+                source_probe = _probe_artifact_contract(effective_input)
             _SOURCE_CONTRACT_CACHE[contract_key] = source_probe
             contracts_done += 1
         source_duration = source_probe.duration_s
