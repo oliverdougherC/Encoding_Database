@@ -56,9 +56,10 @@ class PreparationTimeout(RuntimeError):
         self.stage = str(stage)
         self.budget_seconds = float(seconds)
         self.kind = kind
-        verb = "exceeded" if kind == "budget" else "went silent for"
-        super().__init__(f"preparation stage '{self.stage}' {verb} its "
-                         f"{self.budget_seconds:g}s {kind} budget; the storage, cache, "
+        limit = (f"exceeded its {self.budget_seconds:g}s wall-clock budget"
+                 if kind == "budget" else
+                 f"went silent for {self.budget_seconds:g}s")
+        super().__init__(f"preparation stage '{self.stage}' {limit}; the storage, cache, "
                          "or runtime it touched is unresponsive — retry after freeing that resource")
 
 

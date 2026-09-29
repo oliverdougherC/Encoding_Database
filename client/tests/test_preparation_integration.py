@@ -62,3 +62,12 @@ def test_encoder_discovery_timeout_is_actionable(operation, stage):
         with campaign.PreparationScope(heartbeat_path=None).activate():
             with pytest.raises(campaign.PreparationBudgetExceeded, match=stage):
                 operation()
+
+
+def test_cli_queue_and_local_policy_keep_guided_menu(tmp_path):
+    with mock.patch.object(main, "interactive_menu_flow", return_value=37) as guided, \
+         mock.patch.object(main, "run_with_args", side_effect=AssertionError("single flow")):
+        assert main.main(["encodingdb", "--cli", "--no-submit",
+                          "--queue-dir", str(tmp_path)]) == 37
+    guided.assert_called_once()
+    assert main._has_direct_single_run_intent(["--codec", "libx264", "--no-submit"])

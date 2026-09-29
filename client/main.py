@@ -2280,17 +2280,10 @@ def _submit_payload_with_spool(
 
 def _has_direct_single_run_intent(raw_args: List[str]) -> bool:
     """Return True when CLI args explicitly request direct single-run execution."""
-    direct_flags = (
-        "--codec",
-        "--presets",
-        "--crf",
-        "--submit",
-        "--no-submit",
-        "--use-token",
-        "--retries",
-        "--queue-dir",
-        "--batch-size",
-    )
+    # Storage and submission policy configure either flow; they do not choose
+    # a single recipe. Treating --queue-dir/--no-submit as single-run intent
+    # bypassed the guided sweep and failed only after source acquisition.
+    direct_flags = ("--codec", "--presets", "--crf", "--target-bitrate-kbps", "--submit")
     for token in raw_args:
         for flag in direct_flags:
             if token == flag or token.startswith(flag + "="):
