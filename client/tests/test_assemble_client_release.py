@@ -29,8 +29,8 @@ class AssembleClientReleaseTests(unittest.TestCase):
             binary_sha = digest((role + "-binary").encode()) if role in {"macos-dmg", "linux-archive"} else digest(data)
             manifest = {
                 "schemaVersion": 1, "source": {"revision": "a" * 40, "trackedChanges": False},
-                "projectVersion": "1.3.0-rc.7", "platform": platform,
-                "protocol": {"clientVersion": "client/0.3.7", "benchmarkProtocolVersion": "7.1",
+                "projectVersion": "1.3.0-rc.8", "platform": platform,
+                "protocol": {"clientVersion": "client/0.3.8", "benchmarkProtocolVersion": "7.1",
                              "minimumClientVersion": "client/0.3.0"},
                 "suite": {"suiteVersion": "encodingdb-test-suite-v1", "manifestVersion": 2,
                           "suiteFingerprint": "f" * 64, "isFrozen": True},
@@ -61,13 +61,13 @@ class AssembleClientReleaseTests(unittest.TestCase):
             self.entries.append(entry)
 
     def spec(self):
-        return {"expectedSourceRevision": "a" * 40, "expectedProjectVersion": "1.3.0-rc.7",
+        return {"expectedSourceRevision": "a" * 40, "expectedProjectVersion": "1.3.0-rc.8",
                 "assets": self.entries}
 
     def test_assembles_four_verified_assets_from_one_clean_identity(self):
         release = assemble(self.spec(), self.root)
         self.assertEqual(release["sourceRevision"], "a" * 40)
-        self.assertEqual(release["clientVersion"], "client/0.3.7")
+        self.assertEqual(release["clientVersion"], "client/0.3.8")
         self.assertEqual(len(release["assets"]), 4)
         self.assertEqual(release["lifecycle"], {
             "builtFromReviewedSource": True,

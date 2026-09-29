@@ -95,6 +95,7 @@ cd "$ROOT_DIR"
 "${PYI_CMD[@]}" \
   --clean \
   --onefile \
+  --bootloader-ignore-signals \
   --name "$APP_NAME" \
   --distpath "$PYI_DIST_DIR" \
   --workpath "$PYI_WORK_DIR" \

@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.8] - 2026-09-29
+
+Unpublished review candidate. Client 0.3.8 builds console onefile launchers
+without forwarding process-group signals twice. The exact rc.7 Mac DMG exited
+130 when its child alone received SIGINT during a held upload response, but a
+terminal-style group SIGINT left the child waiting; the saved queue survived.
+This packaging correction leaves Windows GUI Stop/Close on its own owned
+cancellation event. Protocol 7.1 and the frozen suite remain unchanged.
+
 ## [1.3.0-rc.7] - 2026-09-29
 
 Unpublished review candidate. Client 0.3.7 gives terminal Publish/Retry a
