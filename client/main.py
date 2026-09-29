@@ -6,9 +6,11 @@ import json
 import math
 import os
 import re
+import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import secrets
 from contextlib import nullcontext
@@ -126,7 +128,7 @@ from .ui import (
     print_info, print_success, print_warning, print_error, print_batch_summary,
 )
 
-CLIENT_VERSION = "client/0.3.6"
+CLIENT_VERSION = "client/0.3.7"
 # UI/package patches do not change the server's frozen protocol 7.1 contract.
 PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
@@ -4643,18 +4645,28 @@ def main(argv: List[str]) -> int:
     if args.upload_only:
         if args.no_submit:
             parser.error("--upload-only cannot be combined with --no-submit")
+        cancel_event = threading.Event()
+        previous_sigint = None
         try:
             check_compatibility(args.base_url, CLIENT_VERSION)
+            if threading.current_thread() is threading.main_thread():
+                previous_sigint = signal.getsignal(signal.SIGINT)
+                signal.signal(signal.SIGINT, lambda _signum, _frame: cancel_event.set())
             storage_mb = (int(args.max_storage_mb) if bool(getattr(args, "max_storage_mb_explicit", False))
                           else None)
             if args.resume_campaign:
                 rc, info = publish_saved_campaign(
                     queue_dir=args.queue_dir, campaign_id=args.resume_campaign,
                     base_url=args.base_url, api_key=args.api_key,
-                    max_storage_mb=storage_mb, retries=max(1, args.retries))
+                    max_storage_mb=storage_mb, retries=max(1, args.retries),
+                    cancel_event=cancel_event)
             else:
                 rc, info = retry_due_uploads(queue_dir=args.queue_dir, base_url=args.base_url,
-                                             api_key=args.api_key, retries=max(1, args.retries))
+                                             api_key=args.api_key, retries=max(1, args.retries),
+                                             cancel_event=cancel_event)
+            if cancel_event.is_set() or info.get("status") == "cancelled":
+                print_warning("Upload cancelled; saved work remains recoverable.")
+                return 130
             for warning in (("Retained uploads are terminal; inspect the dead-letter before retrying."
                              if info.get("deadLettered") else ""),
                             (f"Corrupt queue files moved to dead-letter: {info.get('corrupt')}."
@@ -4666,9 +4678,16 @@ def main(argv: List[str]) -> int:
             if info.get("deferredReason") == "storage_or_exclusion":
                 print_warning(f"Upload deferred: {(info.get('failure') or {}).get('reason') or 'storage budget'}")
             return rc
+        except KeyboardInterrupt:
+            cancel_event.set()
+            print_warning("Upload cancelled; saved work remains recoverable.")
+            return 130
         except Exception as exc:
             print(f"Upload deferred: {exc}", file=sys.stderr)
             return 10
+        finally:
+            if previous_sigint is not None:
+                signal.signal(signal.SIGINT, previous_sigint)
     if args.resume_campaign:
         return _resume_campaign(args)
     if getattr(args, "v7_suite_clip", ""):

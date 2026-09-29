@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.7] - 2026-09-29
+
+Unpublished review candidate. Client 0.3.7 gives terminal Publish/Retry a
+scoped interrupt signal that cancels and reaps owned network work before it
+returns exit 130. A held-response native fault exposed an unhandled interrupt
+in rc.6; its queue remained durable, but the exit and traceback were wrong.
+The measurement protocol, frozen suite and scientific checks are unchanged.
+No public asset is promoted by this note.
+
 ## [1.3.0-rc.6] - 2026-09-28
 
 Unpublished review candidate for the September 28 client reliability work.
