@@ -169,7 +169,11 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
         return spool.ReplayStats(submitted=1)
     with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',side_effect=accepted_replay), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
         assert main.main(['prog','--resume-campaign',campaign_id,'--submit','--queue-dir',str(tmp_path)]) == 0
-    save.assert_called_once_with(str(tmp_path),payload,max_storage_mb=2048)
+    save.assert_called_once()
+    assert save.call_args.args == (str(tmp_path), payload)
+    assert save.call_args.kwargs['max_storage_mb'] == 2048
+    assert not save.call_args.kwargs['cancel_event'].is_set()
+    assert isinstance(save.call_args.kwargs['deadline'], float)
     source.assert_not_called()
     encode.assert_not_called()
 
