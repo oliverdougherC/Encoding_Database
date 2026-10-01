@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [Unreleased] - 2026-10-01
+
+PR #23 reliability corrections F1/F2 (review PLA-547). Publication holds no
+longer attempt a POSIX SH→EX escalation when a deferred releaser outlives
+the call: on Linux a failed nonblocking conversion can drop the descriptor's
+shared lock, letting a collector take the exclusive host phase while an
+owned transport worker still performs upload/response-read/close I/O. The
+original shared lock is now retained until quiescence (shared already
+excludes measurement), and publication coexistence is preserved. Collector
+batches gained an explicit bounded publication-to-measurement quiescence
+barrier before timed work and before every encode, so a replay or checkpoint
+worker abandoned by its deadline (without user cancellation) can never
+overlap a timed encode; past the barrier window the campaign pauses safely
+with the durable queue and journal retained instead of waiting unbounded.
+Response-body close watchers now remain owned until connection close finishes,
+including after their bounded join returns. Protocol 7.1, the frozen suite
+and scientific checks are unchanged.
+
 ## [1.3.0-rc.8] - 2026-09-29
 
 Unpublished review candidate. Client 0.3.8 builds console onefile launchers

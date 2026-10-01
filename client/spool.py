@@ -189,9 +189,15 @@ def host_phase_hold(role: str = "publication"):
     token = _HOST_PHASE_HELD.set(True)
     # R05: every transport worker started inside this hold is owned by it. On
     # release the workers are reaped (bounded sync join); if one is still
-    # mid-I/O, the kernel lock stays held (escalated to exclusive, deferred
-    # releaser) until the worker is quiescent — a collector can never start
-    # while a cancelled/timed-out worker still owns live transport I/O.
+    # mid-I/O, the ORIGINAL kernel lock stays held (deferred releaser) until
+    # the worker is quiescent — a collector can never start while a
+    # cancelled/timed-out worker still owns live transport I/O. F1: the
+    # deferred releaser never attempts an SH→EX conversion. On Linux a failed
+    # nonblocking conversion can DROP the descriptor's shared lock (letting a
+    # collector take EX the moment other publishers exit, while the deferred
+    # worker is still doing I/O), and a successful one serializes every other
+    # publisher. The retained SH already excludes measurement EX, which is
+    # all quiescence needs.
     worker_phase = network.begin_owned_worker_phase()
 
     def _release_kernel_lock() -> None:
@@ -210,21 +216,7 @@ def host_phase_hold(role: str = "publication"):
         yield True
     finally:
         _HOST_PHASE_HELD.reset(token)
-        if not network.end_owned_worker_phase(worker_phase, _release_kernel_lock):
-            _escalate_deferred_phase_lock(handle)
-
-
-def _escalate_deferred_phase_lock(handle) -> None:
-    """Best-effort SH→EX escalation while a deferred releaser still owns the
-    phase (POSIX flock conversion). Other publishers may keep coexisting when
-    escalation is impossible; deferral of this hold still blocks collectors."""
-    if os.name == "nt":
-        return
-    try:
-        import fcntl
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        pass
+        network.end_owned_worker_phase(worker_phase, _release_kernel_lock)
 
 
 class SpoolCapacityError(OSError):

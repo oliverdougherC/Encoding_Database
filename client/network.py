@@ -126,6 +126,23 @@ def begin_owned_worker_phase() -> Optional[WorkerGroup]:
     return group
 
 
+def await_owned_worker_quiescence(timeout_seconds: float) -> bool:
+    """F2 barrier: bounded wait until the calling thread's active owned-worker
+    phase is quiescent.
+
+    True when every worker registered with the active phase finished within
+    the window; False when a straggler is still mid-I/O (upload, response
+    read or connection close). A caller about to start timing-sensitive work
+    must not proceed on False — it defers/pauses instead, keeping the
+    durable queue and journal intact. No active phase means quiescence:
+    workers owned by a closed phase are already retained by their deferred
+    releaser, which holds that phase's exclusion until they finish."""
+    group = _ACTIVE_WORKER_PHASE.get()
+    if group is None:
+        return True
+    return group.await_quiescence(timeout_seconds)
+
+
 def end_owned_worker_phase(group: Optional[WorkerGroup],
                            release: Callable[[], None]) -> bool:
     """Close an owned-worker phase; run `release` only once owned workers are
@@ -473,9 +490,28 @@ def _read_response_body(requests: Any, response: Any, cancel_event: Optional[Any
 
     watcher = None
     if cancel_event is not None or deadline is not None:
-        watcher = threading.Thread(target=_watch,
+        # The watcher can still be closing the connection after its bounded
+        # join returns. Register it in the caller's phase before starting it,
+        # so measurement and phase release wait for that close as well.
+        record = _WorkerRecord("response read close")
+
+        def _owned_watch() -> None:
+            try:
+                _watch()
+            finally:
+                record.done.set()
+                _unregister_worker(record)
+
+        watcher = threading.Thread(target=_owned_watch,
                                    name="encodingdb-error-body-watch", daemon=True)
-        watcher.start()
+        record.thread = watcher
+        _register_worker(record)
+        try:
+            watcher.start()
+        except BaseException:
+            record.done.set()
+            _unregister_worker(record)
+            raise
     chunks: List[bytes] = []
     total = 0
     overshoot = 0

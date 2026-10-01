@@ -70,7 +70,7 @@ from .artifacts import (
     build_payload_hash,
     build_recipe_bootstrap,
 )
-from .network import SubmitError, SubmissionCancelled, fetch_baseline_rows, check_compatibility
+from .network import SubmitError, SubmissionCancelled, fetch_baseline_rows, check_compatibility, await_owned_worker_quiescence
 from .campaign import (CampaignJournal, active_collection, atomic_json, directory_bytes, physical_source_id, journal_path, load_record,
     PreparationScope, PreparationTimeout, preparation_progress, preparation_stage,
     check_preparation_cancelled,
@@ -134,6 +134,11 @@ PROTOCOL_MINIMUM_CLIENT_VERSION = "client/0.3.0"
 ACTIVE_PUBLICATION_DEADLINE_SECONDS = (
     CREATE_TIMEOUT_SECONDS + AUTH_TIMEOUT_SECONDS + UPLOAD_TIMEOUT_SECONDS
 )
+# F2: bounded publication-to-measurement quiescence barrier. Owned transport
+# workers that outlive their call (deadline/abandon races) must finish before
+# any timed encode; past this window the campaign pauses safely instead of
+# waiting unbounded (the deferred releaser keeps the kernel phase meanwhile).
+PUBLICATION_QUIESCENCE_BARRIER_SECONDS = 2.0
 SOURCE_CLIP_BUDGET_SECONDS = 3600.0
 SOURCE_CONTRACT_BUDGET_SECONDS = 600.0
 PUBLICATION_CONSENT_VERSION = 1
@@ -1384,6 +1389,26 @@ def _replay_pending_uploads(
     if stats.corrupt:
         print_warning(f"Moved {stats.corrupt} corrupt queue file(s) to dead-letter.")
     return count_pending_entries(queue_dir)
+
+
+def _await_publication_quiescence(phase: str) -> None:
+    """F2: bounded publication-to-measurement quiescence barrier.
+
+    Owned transport workers that outlived their call (deadline/abandon races
+    in replay or checkpoint submission register with the collector's outer
+    worker phase and keep performing upload/response-read/connection-close
+    I/O. Timed work must never overlap that I/O: wait a bounded window for
+    quiescence, otherwise raise SpoolCapacityError so the campaign pauses
+    safely with the durable queue and journal retained. The wait is bounded
+    (never a hung UI); the deferred releaser retains the kernel phase lock
+    past this window, so the next segment re-refuses to start (exit 6)
+    instead of timing encodes beside live transport I/O."""
+    if await_owned_worker_quiescence(PUBLICATION_QUIESCENCE_BARRIER_SECONDS):
+        return
+    raise SpoolCapacityError(
+        "Publication transport I/O has not reached quiescence before "
+        f"{phase}; the campaign pauses safely with the durable queue and "
+        "journal retained")
 
 
 def _persist_protocol_attempt_evidence(queue_dir: str, campaign_result: Any) -> str:
@@ -2908,6 +2933,7 @@ def run_benchmark_batch(
     _emit_progress()
 
     try:
+        _await_publication_quiescence("the measurement phase")
         with journal.measurement_lock(), nullcontext(str(journal.root)) as batch_dir, \
                 BatchRunDashboard(total_tasks=total_tasks, total_batches=total_batches, hardware=hardware) as progress:
             print_info(f"Batch 1/{total_batches}: {len(recipe_specs)} protocol recipe(s)")
@@ -2969,6 +2995,12 @@ def run_benchmark_batch(
             def _encode_protocol_run(schedule: Any, recipe: RecipeSpec) -> EncodeOutcome:
                 if _is_cancelled(cancel_event):
                     raise KeyboardInterrupt
+                # F2: every transition back from publication to timed work
+                # passes the bounded quiescence barrier — a checkpoint or
+                # replay worker abandoned by its deadline can still own
+                # upload/response-read/close I/O through the reused outer
+                # worker phase, and no encode interval may overlap it.
+                _await_publication_quiescence("an encode")
                 task = _task_from_recipe(recipe)
                 encoder = task["encoder"]
                 preset = task["preset"]
