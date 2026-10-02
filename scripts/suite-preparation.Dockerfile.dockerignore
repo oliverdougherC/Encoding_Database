@@ -4,6 +4,8 @@
 !client/config.py
 !client/suite.py
 !client/campaign.py
+!client/acknowledgments.py
+!client/console_policy.py
 !client/protocol.py
 !scripts/
 !scripts/materialize_final_suite.py
