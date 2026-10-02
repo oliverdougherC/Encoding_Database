@@ -1,118 +1,118 @@
 {
-  "schemaVersion": 1,
-  "task": "EncodingDB PR23 targeted reliability continuation",
-  "readiness": "NOT_CERTIFIED",
+  "schemaVersion": 2,
+  "task": "EncodingDB PR23 targeted reliability corrections",
+  "readiness": "SOURCE_CORRECTED_NATIVE_ACCEPTANCE_OPEN",
   "prDraft": true,
   "merged": false,
   "productionOrReleaseChanges": false,
   "reviewedInitialHead": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
-  "currentIntegratedHead": "1a6b89763f5e8adc5ca01839876f5fb92a80510c",
-  "generatedUtc": "2026-10-02T00:35:31.328280+00:00",
-  "localAgentModel": "Qwen3.8-Flash-Next",
-  "nestedDelegation": false,
-  "unitEvidence": {
-    "clientSuite": {
-      "passed": 638,
-      "log": "f1-f2-primary-full-suite-after-storage.log"
-    },
-    "linuxKernelInitialRegression": {
-      "beforeFailed": 5,
-      "beforePassed": 2,
-      "afterAffectedPassed": 61,
-      "physicalNativePackage": false,
-      "initialPatchSha256": "32f3cdccbdb43d9d46afbeeaa44fd2fd6dd68b151b233cd27c058c08cd4fa97b"
-    },
-    "linuxContinuationAndCloseAfter": {
-      "passed": 8,
-      "log": "f1-f2-continuation-property-linux.log"
-    },
-    "responseCloseBefore": {
-      "actualLoopbackHTTP": true,
-      "importedProductionReader": true,
-      "operatorCancellation": false,
-      "closeStarted": true,
-      "closeStillActive": true,
-      "ownedWorkerCensus": 0,
-      "barrierReturnsQuiescent": true,
-      "closeStillActiveAfterHostRelease": true,
-      "collectorAcquiredDuringClose": true
-    },
-    "responseCloseAfter": {
-      "actualLoopbackHTTP": true,
-      "importedProductionReader": true,
-      "operatorCancellation": false,
-      "closeStarted": true,
-      "closeStillActive": true,
-      "ownedWorkerCensus": 1,
-      "barrierReturnsQuiescent": false,
-      "closeStillActiveAfterHostRelease": false,
-      "collectorAcquiredDuringClose": false
-    },
-    "f3RejectedInitialLateDNS": {
-      "cliExit": 10,
-      "cliReturned": true,
-      "ownedWorkersAfterDeadline": 1,
-      "collectorAcquiredAfterDeadline": true,
-      "httpRequestAfterDeadlineDuringMeasurement": true,
-      "actualRequestsReceived": 1,
-      "finalOwnedWorkers": 0
-    },
-    "f4ReceiptRetirementBefore": {
-      "source": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
-      "productionModulesImported": true,
-      "sourceExcerptsOrStubs": false,
-      "networkOrEncodesPerformed": false,
-      "cases": [
-        {
-          "case": "truncated",
-          "drained": 1,
-          "pendingSurvives": false,
-          "queuedBytesSurvive": false,
-          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
-          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
-          "originalIntentionallyAbsent": true,
-          "acknowledgmentVerified": false,
-          "requirementPasses": false
-        },
-        {
-          "case": "empty",
-          "drained": 1,
-          "pendingSurvives": false,
-          "queuedBytesSurvive": false,
-          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
-          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
-          "originalIntentionallyAbsent": true,
-          "acknowledgmentVerified": false,
-          "requirementPasses": false
-        },
-        {
-          "case": "wrong-local-identity",
-          "drained": 1,
-          "pendingSurvives": false,
-          "queuedBytesSurvive": false,
-          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
-          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
-          "originalIntentionallyAbsent": true,
-          "acknowledgmentVerified": false,
-          "requirementPasses": false
-        }
-      ]
-    }
-  },
+  "reviewedInitialMergeBuildSource": "f805c177d8eba1c98c91ac83e2fb4967ee0303e3",
+  "sourceCorrectionHead": "8d4841b5c6bb33255e3610bed90b2ffeb1b82306",
+  "clientGitTree": "6814ea3be9ba5f7a7f849d8958414859b42d203e",
+  "clientImplementationVersion": "client/0.3.9",
+  "projectVersion": "1.3.0-rc.9",
+  "generatedUtc": "2026-10-02T23:40:13.539038+00:00",
+  "scope": "User requested code completion and explicit native acceptance gaps; no further physical sweeps in this wrap-up.",
   "dispositions": {
-    "F1": "original SH retained; source fix integrated, native/full-I/O acceptance pending",
-    "F2": "bounded timing barriers and caller-phase response-close ownership integrated; stronger actual batch/replay HTTP coverage pending",
-    "F3": "initial socket-abort design rejected after normal CLI deadline still allowed late HTTP during measurement; local agent revising for bounded stopped/reaped metadata work",
-    "F4": "open; imported-production negative fixture confirms unverified retirement of only queued copy"
+    "F1": "SOURCE_CORRECTED_REGRESSIONS_PASS",
+    "F2": "SOURCE_CORRECTED_REGRESSIONS_PASS",
+    "F3": "SOURCE_CORRECTED_REGRESSIONS_PASS",
+    "F4": "SOURCE_CORRECTED_REGRESSIONS_PASS"
   },
-  "physicalGUIAccess": "existing desktop automation probe confirmed same-user non-elevated Windows session1; not native package acceptance",
-  "newFinalPackagesBuilt": false,
-  "newOnlineMediumRunsExecuted": false,
-  "nativeAcceptanceGaps": [
-    "four final packages from one reviewed source",
-    "full ONLINE Medium/recovery Windows GUI and console, macOS app/Terminal, physical Linux launcher",
-    "final-package online preparation/create/auth/PUT/read Stop/Close",
-    "client-to-server run/artifact/analysis reconciliation and same-ID zero-encode replay"
+  "verification": {
+    "clientFull": {
+      "passed": 730,
+      "seconds": 287.66,
+      "log": "evidence/client-full.log",
+      "scope": "Full integrated suite before the final version bump and historical-group counter correction; those final changes passed focused checks below."
+    },
+    "server": {
+      "passed": 237,
+      "skipped": 6,
+      "failed": 0,
+      "log": "evidence/server-full.log"
+    },
+    "linuxPublication": {
+      "beforeHead": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
+      "beforeFailed": 8,
+      "beforePassed": 2,
+      "afterPassed": 10,
+      "log": "evidence/publication-linux-before-after.log",
+      "actualMultiprocessLocks": true,
+      "actualLoopbackHttp": true,
+      "actualBatchAndCliContinuation": true,
+      "nativeBenchmark": false,
+      "fixtureEncodes": true
+    },
+    "acknowledgmentBinding": {
+      "beforeFailed": 9,
+      "afterAckSuitePassed": 51,
+      "finalBindingProgressPassed": 16,
+      "beforeSource": "rejected F4 draft based on 5a5528d; full modules/patch/provenance retained in evidence"
+    },
+    "finalPublicationVersion": {
+      "passed": 18,
+      "log": "evidence/final-publication-version.log"
+    },
+    "staticChecks": [
+      "Python 3.11 compileall",
+      "git diff --check",
+      "server TypeScript build through npm test"
+    ]
+  },
+  "nativePackages": {
+    "finalSameSourcePackageHashes": null,
+    "physicalOnlineMedium": "NOT_RUN",
+    "preparationCreateAuthPutReadStopClose": "NOT_RUN_ON_FINAL_PACKAGES",
+    "clientServerReconciliation": "NOT_COMPLETE",
+    "sameIdNativeReplayZeroEncodes": "NOT_RUN",
+    "priorLocalOnlyMatrixIsNotSubstituted": true
+  },
+  "remainingGaps": [
+    "Final-source CI/native builds; exact four candidate artifact hashes and frozen bootstrap proof",
+    "Physical Windows GUI/console, macOS app/Terminal and Linux full ONLINE Medium/recovery matrix",
+    "Final-package normal preparation/create/auth/PUT/read Stop/Close and ownership traces",
+    "Client attempts/envelopes/receipts to server run/artifact/analysis reconciliation and native same-ID replay",
+    "Compatible isolated backend must receive only additive serializer fields on top of preserved 3e6bb08 keyframe fix; no backend rollout performed",
+    "Inherited Node dependency audit failure remains unwaived"
   ],
-  "ciGap": "unchanged Node locks now fail audit on Next/brace-expansion advisories; audit policy not weakened"
+  "evidenceSha256": {
+    "evidence/acknowledgment-after.log": "ebb740cbd6d14fcdede8411aab66236463ef82cb29062b44640296856169c737",
+    "evidence/acknowledgment-binding-before.log": "219647aa8a6d79ebed9b736622c5d63aab919b88e585beb9014e3a97e3b7d22e",
+    "evidence/acknowledgments-before.py": "19991ede17499a5c530d1c9c93fae61220c6efa6e2ea95c9836f020a23faca29",
+    "evidence/binding-after.json": "b84a416ba47178fa87b2e40ea1017ccb123cdbdea553047bc18c51d74a642402",
+    "evidence/binding-before.json": "c4da0442a26e71e0e81daf9181df6f39f73e63c6510f34ce1dc12ca0eef06b9e",
+    "evidence/client-full.log": "f648ab9eff1174ca53428d15540276065530ffbe8fbfb7b0a42a6fc3848f7f7c",
+    "evidence/f4-rejected-source-provenance.json": "fafaceab7ee554527dd8a3deac832a29516513601448fef2708701c1067b69fc",
+    "evidence/f4-rejected-source.patch": "19333be2d31707aa378b374aac42af77e8053e18e726b1d1a83837d3e9d3328e",
+    "evidence/final-binding-progress.log": "c018e871956ec1c81b8d47f6b7e25524940d4be5325dfe6036f6a4594c785204",
+    "evidence/final-publication-version.log": "0c15f6df465a2457debe7d49cff64f3ea67789fb7014b61e606a356e821079fd",
+    "evidence/metadata-exclusion-after.log": "fb9f4833ec108937050465e52b6621ab8e602a363b84195e69739696eeb7595e",
+    "evidence/metadata-exclusion-before.log": "2aa889f7dfcccd31e2e19f3a7c85a0f2eef1f65dab14fdec0534aa0ea3997063",
+    "evidence/metadata-late-dns-after.json": "ee9eca7cce8d80783a4cfdf15da6a943444ef94c3aab82510cc9b48735c86d29",
+    "evidence/metadata-late-dns-before.json": "8dcfd2659f98b0e8a44c8221ec84c386e8bb5224889fe2f490f2acc0eb9845c9",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/collector1.ctl": "7ef6f378c9c5b909bd4d7b326efe7075eea0c0e0fab22dbf22a4db3ef8d0a0e4",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/collector1.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/collector2.ctl": "7bed41190a50c9922f4512dfa9839367c6ac279379a5a15207a36e21cd225a04",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/collector2.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/deferred.ctl": "bf5a5a83217303fbf7105811b55b5fa5acbf0a0b34606162e283e5ac847258a2",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/deferred.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/plain.ctl": "5e13e0d7d58e6a153724971e1dd005dbec228cee5d243f6f5f43df056f2113db",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe0/publisher.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/collector1.ctl": "b3fa6a337e379dbb44efb4572795d8797cde5a5b4a682d91c7829698145c2f97",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/collector1.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/collector2.ctl": "ab661a3b49c6a7a6df3acb42858ad0e03f6ad5cce878c7f39628a3560a321e85",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/collector2.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/deferred.ctl": "07088bd53bee1abd37029d59efa1926140bcd6c2cc9d3c8be929eee2651c5253",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/deferred.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/plain.ctl": "c4eb8a5aead75f652539a8ca9384c08ee7323741a4e1d6b62bf7a47113bc20f1",
+    "evidence/ownership-traces/test_f1_collector_excluded_whe1/publisher.log": "930f15ae5f2800e365a68f347aa8614f369aef37bd54570b40be008f1ad24f45",
+    "evidence/publication-linux-before-after.log": "d855d2690e9aedd24232fb17dd25c28e569683cf1494dc29f36a5e284f75fbda",
+    "evidence/receipt-after.json": "b54849ac310e960bee6e9d71823edfc4113137e7b3379a6928581779b4f4b0a4",
+    "evidence/receipt-before.json": "7e1b63be8b06cab2e7dcf983b2e0e740c82b2f75a180cac0f35a817a5e9157e3",
+    "evidence/response-close-after.json": "50caacf12ff14e3ca411fc7d63c40ea08c40ef1fb5ef0b8a4fa5200076859be4",
+    "evidence/response-close-before.json": "89fed71753070e1076daf5464bb1e4b02b1c1646227ad0d66fb20e37176cd500",
+    "evidence/server-full.log": "0f6dc87199c76f7f72eabdabd25f511251c383b67877c2b48ea9452eb1b37b74",
+    "evidence/test-acknowledgment-retirement-before.py": "e7460a773673d1e8866570ec801b7f6be749abd862e5ed13e5cf82d9d7577618"
+  }
 }

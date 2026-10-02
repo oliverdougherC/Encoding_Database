@@ -1,0 +1,11 @@
+{
+  "actualLoopbackHTTP": true,
+  "importedProductionReader": true,
+  "operatorCancellation": false,
+  "closeStarted": true,
+  "closeStillActive": true,
+  "ownedWorkerCensus": 0,
+  "barrierReturnsQuiescent": true,
+  "closeStillActiveAfterHostRelease": true,
+  "collectorAcquiredDuringClose": true
+}
