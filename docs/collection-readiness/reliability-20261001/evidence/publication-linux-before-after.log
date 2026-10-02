@@ -1,0 +1,867 @@
+WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv
+Python 3.11.16
+6.8.0-142-generic
+AFTER SOURCE TESTS
+============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-8.4.2, pluggy-1.6.0 -- /usr/local/bin/python3
+rootdir: /proof/after/client
+configfile: pytest.ini
+collecting ... collected 10 items
+
+client/tests/test_publication_quiescence.py::test_f1_collector_excluded_when_plain_publisher_exits_first PASSED [ 10%]
+client/tests/test_publication_quiescence.py::test_f1_collector_excluded_when_plain_publisher_outlives_worker PASSED [ 20%]
+client/tests/test_publication_quiescence.py::test_f1_deferred_release_preserves_shared_lock_and_coexistence PASSED [ 30%]
+client/tests/test_publication_quiescence.py::test_f2_deadline_hit_replay_worker_cannot_overlap_timed_encodes PASSED [ 40%]
+client/tests/test_publication_quiescence.py::test_f2_batch_pauses_when_owned_worker_outlives_barrier PASSED [ 50%]
+client/tests/test_publication_quiescence.py::test_f2_checkpoint_straggler_pauses_continuation_segment PASSED [ 60%]
+client/tests/test_publication_quiescence.py::test_f2_checkpoint_continuation_replay_worker_cannot_overlap_encodes PASSED [ 70%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_replay_deadline_straggler_never_overlaps_encodes PASSED [ 80%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_transport_pause_retains_queue_bytes_and_ids PASSED [ 90%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_checkpoint_upload_continuation_zero_repeated_encodes PASSED [100%]
+
+======================== 10 passed in 61.75s (0:01:01) =========================
+AFTER_EXIT=0
+BEFORE SOURCE TESTS
+============================= test session starts ==============================
+platform linux -- Python 3.11.16, pytest-8.4.2, pluggy-1.6.0 -- /usr/local/bin/python3
+rootdir: /proof/before/client
+configfile: pytest.ini
+collecting ... collected 10 items
+
+client/tests/test_publication_quiescence.py::test_f1_collector_excluded_when_plain_publisher_exits_first FAILED [ 10%]
+client/tests/test_publication_quiescence.py::test_f1_collector_excluded_when_plain_publisher_outlives_worker PASSED [ 20%]
+client/tests/test_publication_quiescence.py::test_f1_deferred_release_preserves_shared_lock_and_coexistence FAILED [ 30%]
+client/tests/test_publication_quiescence.py::test_f2_deadline_hit_replay_worker_cannot_overlap_timed_encodes FAILED [ 40%]
+client/tests/test_publication_quiescence.py::test_f2_batch_pauses_when_owned_worker_outlives_barrier FAILED [ 50%]
+client/tests/test_publication_quiescence.py::test_f2_checkpoint_straggler_pauses_continuation_segment FAILED [ 60%]
+client/tests/test_publication_quiescence.py::test_f2_checkpoint_continuation_replay_worker_cannot_overlap_encodes FAILED [ 70%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_replay_deadline_straggler_never_overlaps_encodes FAILED [ 80%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_transport_pause_retains_queue_bytes_and_ids FAILED [ 90%]
+client/tests/test_publication_transport_acceptance.py::test_f2_real_checkpoint_upload_continuation_zero_repeated_encodes PASSED [100%]
+
+=================================== FAILURES ===================================
+_________ test_f1_collector_excluded_when_plain_publisher_exits_first __________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f1_collector_excluded_whe0')
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX flock semantics")
+    def test_f1_collector_excluded_when_plain_publisher_exits_first(tmp_path):
+        # Review's reproduction order: the plain publisher exits BEFORE the
+        # deferred worker's I/O ends; a dropped shared lock lets the collector
+        # slip in exactly that gap.
+>       _run_f1_matrix(tmp_path, plain_publisher_exits_first=True)
+
+client/tests/test_publication_quiescence.py:302: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f1_collector_excluded_whe0')
+plain_publisher_exits_first = True
+
+    def _run_f1_matrix(tmp_path, plain_publisher_exits_first):
+        """Two SH publishers + deferred worker (REAL I/O) + competing collector.
+    
+        Both publisher finish orders are explicit handshakes:
+        - acquired (both SH owners) -> server-observed worker I/O start ->
+          caller abandonment (deadline, no cancel) -> publisher exit and/or
+          server-observed worker I/O end, in the order the case selects.
+        The collector probes EX right after abandonment while the harness server
+        still holds the worker's I/O open (must be EXCLUDED: this is the exact
+        window the lossy SH->EX conversion dropped), and probes again after ALL
+        publication I/O stopped and every owner exited (must be ACQUIRED:
+        liveness).
+        """
+        phase_dir = str(tmp_path / "phase")
+        os.makedirs(phase_dir, exist_ok=True)
+        server = PublicationIOServer()
+        children = {}
+        try:
+            deferred_ctl = str(tmp_path / "deferred.ctl")
+            plain_ctl = str(tmp_path / "plain.ctl")
+            children["deferred"] = _spawn_f1_child(
+                phase_dir, "deferred", deferred_ctl, server.port,
+                str(tmp_path / "deferred.log"))
+            children["publisher"] = _spawn_f1_child(
+                phase_dir, "publisher", plain_ctl, server.port,
+                str(tmp_path / "publisher.log"))
+            # Deterministic precondition: BOTH SH owners acquired before any
+            # abandonment or escalation attempt.
+            _wait_event(children, "ACQUIRED", deferred_ctl,
+                        owner=children["deferred"][0])
+            _wait_event(children, "ACQUIRED", plain_ctl,
+                        owner=children["publisher"][0])
+            Path(deferred_ctl + ".start").touch()
+            # The deferred worker's REAL publication I/O has started (observed by
+            # the server socket, not guessed from startup-relative time).
+            assert server.io_started.wait(15), \
+                f"worker I/O never started: {_child_diagnostics(children)}"
+            _wait_event(children, "ABANDONED", deferred_ctl,
+                        owner=children["deferred"][0])
+    
+            _wait_event(children, "HOLD-RETURNED", deferred_ctl,
+                        owner=children["deferred"][0])
+            if plain_publisher_exits_first:
+                Path(plain_ctl + ".go").touch()
+                _wait_event(children, "PUBLISHER-EXIT", plain_ctl,
+                            owner=children["publisher"][0])
+    
+            # Mid-I/O exclusion probe: the plain publisher holds SH (second
+            # order) or already exited while the deferred worker's I/O is still
+            # open (first order — the review's exact reproduction window). The
+            # worker's server-observed I/O end is the true boundary; the probe
+            # verdict is resolved before any release, so ACQUIRED-EX here is a
+            # genuine exclusion violation, never a startup-jitter artifact.
+            assert not server.io_ended.is_set(), (
+                "harness window closed before the mid-I/O probe resolved")
+            collector1_ctl = str(tmp_path / "collector1.ctl")
+            children["collector1"] = _spawn_f1_child(
+                phase_dir, "collector", collector1_ctl, server.port,
+                str(tmp_path / "collector1.log"))
+            verdict = _wait_event_any(children, collector1_ctl,
+                                      ("EXCLUDED", "ACQUIRED-EX"),
+                                      owner=children["collector1"][0])
+>           assert verdict == "EXCLUDED", (
+                "collector obtained EX while the deferred owned worker still "
+                "owned live publication I/O: a lossy SH->EX conversion dropped "
+                "the shared lock at abandonment")
+E               AssertionError: collector obtained EX while the deferred owned worker still owned live publication I/O: a lossy SH->EX conversion dropped the shared lock at abandonment
+E               assert 'ACQUIRED-EX' == 'EXCLUDED'
+E                 
+E                 - EXCLUDED
+E                 + ACQUIRED-EX
+
+client/tests/test_publication_quiescence.py:246: AssertionError
+________ test_f1_deferred_release_preserves_shared_lock_and_coexistence ________
+
+role = 'publication'
+
+    @contextmanager
+    def host_phase_hold(role: str = "publication"):
+        """Kernel-backed host phase lock for one collector batch or one publication
+        pass (C11).
+    
+        Measurement takes the lock exclusively and publication shared, so a held
+        collector defers publishers and a held publisher defers the next collector,
+        in either start order: the non-blocking acquire is the atomic arbiter, so
+        neither side can slip between the other's probe and acquisition. Two
+        publishers coexist (uploads are idempotent and time-insensitive); only
+        measurement timing needs the exclusive phase. (msvcrt has no shared lock,
+        so on Windows publishers serialize - deferral is always safe.) A busy lock
+        raises SpoolCapacityError - publishers defer, collectors exit 6 - while any
+        other inspection failure also fails closed. The kernel releases flock
+        ownership on process death; no stale-lock deletion exists. Re-entry inside
+        the same process/thread (collector checkpoint upload, publish wrapper
+        around replay) reuses the held lock. Only acquisition errors are wrapped:
+        an OSError raised by the body propagates unchanged."""
+        if _HOST_PHASE_HELD.get():
+            yield False
+            return
+        path = _host_phase_lock_path()
+        try:
+            handle = open(path, "a+b")
+        except OSError as exc:
+            raise SpoolCapacityError(f"Cannot inspect host phase lock: {exc}") from exc
+        try:
+            if os.fstat(handle.fileno()).st_size == 0:
+                handle.write(b"0")
+                handle.flush()
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                mode = fcntl.LOCK_EX if role == "measurement" else fcntl.LOCK_SH
+>               fcntl.flock(handle.fileno(), mode | fcntl.LOCK_NB)
+E               BlockingIOError: [Errno 11] Resource temporarily unavailable
+
+client/spool.py:173: BlockingIOError
+
+The above exception was the direct cause of the following exception:
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f1_deferred_release_prese0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc9cbd0>
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX flock semantics")
+    def test_f1_deferred_release_preserves_shared_lock_and_coexistence(tmp_path, monkeypatch):
+        """While a deferred releaser waits for its owned worker: a fresh
+        descriptor must be refused EX (ownership retained) AND a second publisher
+        must still obtain SH (shared publication coexistence).
+    
+        Before the fix the releaser escalated SH->EX when it could, serializing
+        every other publisher for the worker's whole I/O window; on Linux the
+        failed-conversion path additionally DROPS the shared lock entirely. The
+        deferred worker performs REAL loopback publication I/O whose start/end
+        are observed by the harness server, so the probe window is anchored to
+        actual I/O, not a guessed sleep."""
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        monkeypatch.setattr(network, "WORKER_QUIESCE_SYNC_JOIN_SECONDS", 0.1)
+        server = PublicationIOServer()
+        try:
+            def publication_io():
+                with socket.create_connection(("127.0.0.1", server.port),
+                                              timeout=15) as sock:
+                    sock.sendall(b"PUB-IO\n")
+                    return sock.recv(8)
+    
+            stop = threading.Event()
+            stop.set()
+            with spool.host_phase_hold("publication"):
+                with pytest.raises(network.SubmissionCancelled):
+                    network._run_cancellable(
+                        publication_io, phase="f1b-deferred-io",
+                        cancel_event=stop, deadline=time.monotonic() + 30,
+                        bound_seconds=30)
+            # The hold returned with its owned worker still mid-I/O (deferred
+            # release); the worker stays live until the server releases the
+            # transaction below.
+            assert network.owned_worker_census() >= 1
+            assert server.io_started.wait(10), "deferred worker I/O never started"
+            threading.Timer(0.6, server.release).start()
+            deadline = time.monotonic() + 0.5  # inside the worker's live window
+            while time.monotonic() < deadline:
+                with open(os.path.join(str(tmp_path / "phase"), "phase.lock"),
+                          "a+b") as probe:
+                    with pytest.raises(BlockingIOError):
+                        fcntl.flock(probe.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                # Shared publication must still coexist with the deferred releaser.
+>               with spool.host_phase_hold("publication") as acquired:
+
+client/tests/test_publication_quiescence.py:360: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/usr/local/lib/python3.11/contextlib.py:137: in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+role = 'publication'
+
+    @contextmanager
+    def host_phase_hold(role: str = "publication"):
+        """Kernel-backed host phase lock for one collector batch or one publication
+        pass (C11).
+    
+        Measurement takes the lock exclusively and publication shared, so a held
+        collector defers publishers and a held publisher defers the next collector,
+        in either start order: the non-blocking acquire is the atomic arbiter, so
+        neither side can slip between the other's probe and acquisition. Two
+        publishers coexist (uploads are idempotent and time-insensitive); only
+        measurement timing needs the exclusive phase. (msvcrt has no shared lock,
+        so on Windows publishers serialize - deferral is always safe.) A busy lock
+        raises SpoolCapacityError - publishers defer, collectors exit 6 - while any
+        other inspection failure also fails closed. The kernel releases flock
+        ownership on process death; no stale-lock deletion exists. Re-entry inside
+        the same process/thread (collector checkpoint upload, publish wrapper
+        around replay) reuses the held lock. Only acquisition errors are wrapped:
+        an OSError raised by the body propagates unchanged."""
+        if _HOST_PHASE_HELD.get():
+            yield False
+            return
+        path = _host_phase_lock_path()
+        try:
+            handle = open(path, "a+b")
+        except OSError as exc:
+            raise SpoolCapacityError(f"Cannot inspect host phase lock: {exc}") from exc
+        try:
+            if os.fstat(handle.fileno()).st_size == 0:
+                handle.write(b"0")
+                handle.flush()
+            if os.name == "nt":
+                import msvcrt
+                handle.seek(0)
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                mode = fcntl.LOCK_EX if role == "measurement" else fcntl.LOCK_SH
+                fcntl.flock(handle.fileno(), mode | fcntl.LOCK_NB)
+        except OSError as exc:
+            busy = getattr(exc, "errno", None) in (errno.EAGAIN, errno.EACCES, errno.EWOULDBLOCK,
+                                                   errno.EDEADLK) or type(exc).__name__ == "BlockingIOError"
+            try:
+                handle.close()
+            except OSError:
+                pass
+            if not busy:
+                raise SpoolCapacityError(f"Cannot inspect host phase lock: {exc}") from exc
+            if role == "measurement":
+                raise SpoolCapacityError(
+                    "A publication or measurement pass owns this host right now; "
+                    "wait for it to finish before starting collection") from exc
+>           raise SpoolCapacityError(
+                "A collector is measuring on this host; publication defers to its next checkpoint") from exc
+E           client.spool.SpoolCapacityError: A collector is measuring on this host; publication defers to its next checkpoint
+
+client/spool.py:187: SpoolCapacityError
+_______ test_f2_deadline_hit_replay_worker_cannot_overlap_timed_encodes ________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_deadline_hit_replay_wo0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc09410>
+
+    def test_f2_deadline_hit_replay_worker_cannot_overlap_timed_encodes(tmp_path, monkeypatch):
+        """Lifecycle sentinel: deadline WITHOUT user cancellation + delayed
+        sentinel I/O: the batch must quiesce the preceding owned worker before
+        the first timed encode."""
+        from test_main_routing import _DummyDashboard
+        fixture, args = _fixture_and_args(tmp_path, 41)
+        timeline = _Timeline()
+        hardware = main.HardwareInfo("CPU", None, 16, "OS")
+        worker = _owned_io_worker(timeline, 0.6, "replay")
+    
+        def replay(queue_dir, **kwargs):
+            # One entry hit its deadline (retryable, no cancel); replay returns
+            # while its owned worker is still mid-I/O.
+            _spawn_straggler(worker)
+            return 1
+    
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        events = []
+        with _batch_patches(fixture, timeline, _slow_encode(timeline),
+                            extra=[mock.patch.object(main, "_replay_pending_uploads",
+                                                     side_effect=replay),
+                                   mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append,
+                tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
+                        "suiteClip": fixture._quick_clip()}])
+        assert rc == 0, events[-5:]
+>       _assert_no_encode_overlaps_owned_io(timeline)
+
+client/tests/test_publication_quiescence.py:531: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+timeline = <test_publication_quiescence._Timeline object at 0x7750dd19ab50>
+
+    def _assert_no_encode_overlaps_owned_io(timeline):
+        encode_windows = list(zip(timeline.of("encode-start"),
+                                  timeline.of("encode-end")))
+        assert encode_windows, "no timed encodes ran"
+        io_spans = list(zip(timeline.of("transport-io-start"),
+                            timeline.of("transport-io-end")))
+        assert io_spans, "the owned worker never logged its I/O window"
+        for io_start, io_end in io_spans:
+            for enc_start, enc_end in encode_windows:
+>               assert io_end <= enc_start or io_start >= enc_end, (
+                    f"owned transport I/O [{io_start:.3f},{io_end:.3f}] overlaps "
+                    f"encode window [{enc_start:.3f},{enc_end:.3f}]")
+E               AssertionError: owned transport I/O [625496.377,625496.977] overlaps encode window [625496.696,625496.796]
+E               assert (625496.977391424 <= 625496.695972808 or 625496.377290075 >= 625496.79643832)
+
+client/tests/test_publication_quiescence.py:497: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-7cdabade661efddb: at most 3 encodes; resume with --resume-campaign campaign-7cdabade661efddb
+Batch 1/1: 1 protocol recipe(s)
+Authoritative benchmark run recorded as run-f2.
+Authoritative benchmark run recorded as run-f2.
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 0
+  Server-confirmed: 2 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 4s
+  Throughput: 1677.4 attempts/hour
+___________ test_f2_batch_pauses_when_owned_worker_outlives_barrier ____________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_batch_pauses_when_owne0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaa9010>
+
+    def test_f2_batch_pauses_when_owned_worker_outlives_barrier(tmp_path, monkeypatch):
+        """A straggler longer than the bounded barrier: pause safely with the
+        retained journal/queue and a truthful typed message — never time encodes
+        beside it, never hang."""
+        from test_main_routing import _DummyDashboard
+        fixture, args = _fixture_and_args(tmp_path, 42)
+        timeline = _Timeline()
+        hardware = main.HardwareInfo("CPU", None, 16, "OS")
+        worker = _owned_io_worker(timeline, 4.0, "pause")
+    
+        def replay(queue_dir, **kwargs):
+            _spawn_straggler(worker)
+            return 1
+    
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        events = []
+        started = time.monotonic()
+        patches = _batch_patches(fixture, timeline,
+                                 lambda **kw: pytest.fail("no encode may run"),
+                                 extra=[mock.patch.object(main, "_replay_pending_uploads",
+                                                          side_effect=replay),
+                                        mock.patch.object(main, "BatchRunDashboard",
+                                                          _DummyDashboard)])
+        with patches:
+>           rc = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append,
+                tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
+                        "suiteClip": fixture._quick_clip()}])
+
+client/tests/test_publication_quiescence.py:558: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/main.py:385: in wrapped
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:2661: in wrapped
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:3124: in run_benchmark_batch
+    campaign_result = execute_protocol_campaign(
+client/protocol.py:1010: in execute_protocol_campaign
+    outcome = encode_runner(schedule, recipe_map[recipe_id])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:3022: in _encode_protocol_run
+    info = encode_to_artifact(
+/usr/local/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kw = {'artifact_name': '001-libx264-fast-24-warmup-r1.mp4', 'cancel_event': None, 'checkpoint_path': '/tmp/evidence/reviewe..._pauses_when_owne0/campaigns/campaign-f361454928d1ce40/001-libx264-fast-24-warmup-r1.mp4.process.json', 'crf': 24, ...}
+
+>   lambda **kw: pytest.fail("no encode may run"),
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    extra=[mock.patch.object(main, "_replay_pending_uploads",
+                             side_effect=replay),
+           mock.patch.object(main, "BatchRunDashboard",
+                             _DummyDashboard)])
+E                            Failed: no encode may run
+
+client/tests/test_publication_quiescence.py:552: Failed
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-f361454928d1ce40: at most 3 encodes; resume with --resume-campaign campaign-f361454928d1ce40
+Batch 1/1: 1 protocol recipe(s)
+___________ test_f2_checkpoint_straggler_pauses_continuation_segment ___________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_checkpoint_straggler_p0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbe467d0>
+
+    def test_f2_checkpoint_straggler_pauses_continuation_segment(tmp_path, monkeypatch):
+        """A checkpoint submission whose owned worker outlives the batch (deadline
+        race, no cancel) must not let the SAME collector time the continuation
+        segment beside its live I/O: the deferred releaser retains the kernel
+        phase, so the next segment pauses (exit 6, retained journal/queue) and
+        only the quiescent third segment completes."""
+        from test_main_routing import _DummyDashboard
+        from dataclasses import replace
+        fixture, args = _fixture_and_args(tmp_path, 43)
+        args.max_duration_minutes = 0.5
+        clip_b = replace(fixture._quick_clip(), clip_id="film-grain-1080p24-final",
+                         workload_id="film-grain-1080p24-final")
+        timeline = _Timeline()
+        hardware = main.HardwareInfo("CPU", None, 16, "OS")
+        clock = [0.0]
+        worker = _owned_io_worker(timeline, 2.5, "checkpoint")
+        injected = []
+    
+        def new_budget(minutes, **kwargs):
+            return campaign.MeasurementBudget(minutes, clock=lambda: clock[0], **kwargs)
+    
+        def encode(**kwargs):
+            clock[0] += 5
+            campaign.check_measurement_budget()
+            return _slow_encode(timeline, 0.05)(**kwargs)
+    
+        def submit(**kwargs):
+            # The first checkpoint submission leaves a live owned worker behind
+            # when its deadline races the response read (entry retained, no
+            # user cancellation).
+            if not injected:
+                injected.append(True)
+                _spawn_straggler(worker)
+            return "submitted", "run-f2-mid", 0
+    
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        events = []
+        tasks = [{"encoder": "libx264", "preset": "fast", "crf": 24,
+                  "suiteClip": fixture._quick_clip()},
+                 {"encoder": "libx264", "preset": "fast", "crf": 24,
+                  "suiteClip": clip_b}]
+        # Segment 1: pauses at its checkpoint with a terminal group submitted and
+        # one owned worker still mid-I/O.
+        with mock.patch.object(main, "MeasurementBudget", side_effect=new_budget), \
+             _batch_patches(fixture, timeline, encode,
+                            extra=[mock.patch.object(main, "_submit_payload_with_spool",
+                                                     side_effect=submit),
+                                   mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc1 = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append, tasks=tasks)
+        assert rc1 == 11
+        assert injected, "checkpoint straggler never injected"
+        # Segment 2 may be refused while I/O remains, or proceed if preparation
+        # and the bounded release join have already let that worker finish.
+        # Both outcomes are safe; timing must never overlap its actual I/O span.
+        with mock.patch.object(main, "MeasurementBudget", side_effect=new_budget), \
+             _batch_patches(fixture, timeline, encode,
+                            extra=[mock.patch.object(main, "_submit_payload_with_spool",
+                                                     side_effect=submit),
+                                   mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc2 = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append, tasks=tasks)
+        assert rc2 in (0, 6), events[-5:]
+        if rc2 == 6:
+            refusal = [e for e in events if e.get("type") == "run_error" and e.get("code") == 6]
+            assert refusal and "owns this host" in refusal[-1]["message"]
+        # Segment 3: after quiescence the same campaign continues and completes.
+        deadline = time.monotonic() + 5.0
+        while network.owned_worker_census() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        clock[0] = 1000.0
+        with mock.patch.object(main, "MeasurementBudget", side_effect=new_budget), \
+             _batch_patches(fixture, timeline, encode,
+                            extra=[mock.patch.object(main, "_submit_payload_with_spool",
+                                                     side_effect=submit),
+                                   mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc3 = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append, tasks=tasks)
+>       assert rc3 == 0, events[-5:]
+E       AssertionError: [{'campaignId': 'campaign-ed16539352773cd5', 'monotonicNs': 625511297700915, 'path': '/tmp/evidence/reviewed-before/test_f2_checkpoint_straggler_p0/protocol-attempts/campaign-ed16539352773cd5.json', 'seed': 43, ...}, {'campaignId': 'campaign-ed16539352773cd5', 'measuredRunsCompleted': 2, 'measuredRunsCounted': 2, 'monotonicNs': 625511297790742, ...}, {'campaignId': 'campaign-ed16539352773cd5', 'measuredRunsCompleted': 2, 'measuredRunsCounted': 2, 'monotonicNs': 625511297819459, ...}, {'batchDone': 0, 'batchTotal': 1, 'campaignId': 'campaign-ed16539352773cd5', 'done': 6, ...}, {'completed': 0, 'elapsedSeconds': 0.08480178005993366, 'failed': 0, 'locallyComplete': 0, ...}]
+E       assert 1 == 0
+
+client/tests/test_publication_quiescence.py:655: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-ed16539352773cd5: at most 6 encodes; resume with --resume-campaign campaign-ed16539352773cd5
+Batch 1/1: 2 protocol recipe(s)
+Authoritative benchmark run recorded as run-f2-mid.
+Authoritative benchmark run recorded as run-f2-mid.
+Checkpoint reached: 2 accepted upload(s) this segment; the retained campaign continues automatically (campaign-ed16539352773cd5).
+Campaign campaign-ed16539352773cd5: at most 6 encodes; resume with --resume-campaign campaign-ed16539352773cd5
+Batch 1/1: 2 protocol recipe(s)
+Authoritative benchmark run recorded as run-f2-mid.
+Authoritative benchmark run recorded as run-f2-mid.
+Batch Summary
+  Planned attempts: 6
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 0
+  Server-confirmed: 2 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 4s
+  Throughput: 1943.5 attempts/hour
+Campaign campaign-ed16539352773cd5: at most 6 encodes; resume with --resume-campaign campaign-ed16539352773cd5
+Batch 1/1: 2 protocol recipe(s)
+Batch Summary
+  Planned attempts: 6
+  Batches: 1
+  Measured processed: 0
+  Saved locally: 0
+  Server-confirmed: 0 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 0s
+  Throughput: 0.0 attempts/hour
+_____ test_f2_checkpoint_continuation_replay_worker_cannot_overlap_encodes _____
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_checkpoint_continuatio0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc47e50>
+
+    def test_f2_checkpoint_continuation_replay_worker_cannot_overlap_encodes(tmp_path, monkeypatch):
+        """Lifecycle sentinel for checkpoint continuation through the normal CLI
+        entry: segment 1 pauses at its time budget; the resumed segment's pre-run
+        replay may not begin timed encodes while its own owned worker is still
+        mid-I/O."""
+        from test_main_routing import _DummyDashboard
+        fixture, args = _fixture_and_args(tmp_path, 44)
+        args.max_duration_minutes = 0.5
+        timeline = _Timeline()
+        hardware = main.HardwareInfo("CPU", None, 16, "OS")
+        clock = [0.0]
+        worker = _owned_io_worker(timeline, 0.6, "resume")
+    
+        def new_budget(minutes, **kwargs):
+            return campaign.MeasurementBudget(minutes, clock=lambda: clock[0], **kwargs)
+    
+        def encode(**kwargs):
+            clock[0] += 10
+            campaign.check_measurement_budget()
+            return _slow_encode(timeline, 0.05)(**kwargs)
+    
+        def replay(queue_dir, **kwargs):
+            _spawn_straggler(worker)
+            return 1
+    
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        events = []
+        # Segment 1: pauses at the checkpoint (budget exhausted at +30s).
+        with mock.patch.object(main, "MeasurementBudget", side_effect=new_budget), \
+             _batch_patches(fixture, timeline, encode,
+                            extra=[mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc1 = main.run_benchmark_batch(
+                hardware=hardware, base_url="https://example.invalid", args=args,
+                event_sink=events.append,
+                tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
+                        "suiteClip": fixture._quick_clip()}])
+        assert rc1 == 11
+        campaign_id = next((tmp_path / "campaigns").iterdir()).name
+        # Segment 2: continuation via the real CLI entry point; its pre-run
+        # replay leaves an owned worker mid-I/O before any encode may start.
+        clock[0] = 1000.0
+        with mock.patch.object(main, "MeasurementBudget", side_effect=new_budget), \
+             _batch_patches(fixture, timeline, encode,
+                            extra=[mock.patch.object(main, "_replay_pending_uploads",
+                                                     side_effect=replay),
+                                   mock.patch.object(main, "BatchRunDashboard",
+                                                     _DummyDashboard)]):
+            rc2 = main.main(["prog", "--resume-campaign", campaign_id, "--submit",
+                             "--max-duration-minutes", "0.5",
+                             "--queue-dir", str(tmp_path)])
+        assert rc2 == 0
+>       _assert_no_encode_overlaps_owned_io(timeline)
+
+client/tests/test_publication_quiescence.py:711: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+timeline = <test_publication_quiescence._Timeline object at 0x7750dbc45a10>
+
+    def _assert_no_encode_overlaps_owned_io(timeline):
+        encode_windows = list(zip(timeline.of("encode-start"),
+                                  timeline.of("encode-end")))
+        assert encode_windows, "no timed encodes ran"
+        io_spans = list(zip(timeline.of("transport-io-start"),
+                            timeline.of("transport-io-end")))
+        assert io_spans, "the owned worker never logged its I/O window"
+        for io_start, io_end in io_spans:
+            for enc_start, enc_end in encode_windows:
+>               assert io_end <= enc_start or io_start >= enc_end, (
+                    f"owned transport I/O [{io_start:.3f},{io_end:.3f}] overlaps "
+                    f"encode window [{enc_start:.3f},{enc_end:.3f}]")
+E               AssertionError: owned transport I/O [625511.655,625512.255] overlaps encode window [625512.019,625512.070]
+E               assert (625512.255451259 <= 625512.0191287 or 625511.655343468 >= 625512.069525723)
+
+client/tests/test_publication_quiescence.py:497: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-198501b8c09b83f0: at most 3 encodes; resume with --resume-campaign campaign-198501b8c09b83f0
+Batch 1/1: 1 protocol recipe(s)
+Checkpoint reached: 0 accepted upload(s) this segment; the retained campaign continues automatically (campaign-198501b8c09b83f0).
+Preparing: compatibility 
+Restoring this campaign's original 2048 MB storage allowance for resume.
+Preparing: compatibility 
+Preparing: journal-reopen 002-libx264-fast-24-measured-r1.mp4
+Campaign campaign-198501b8c09b83f0: at most 3 encodes; resume with --resume-campaign campaign-198501b8c09b83f0
+Batch 1/1: 1 protocol recipe(s)
+Authoritative benchmark run recorded as run-f2.
+Authoritative benchmark run recorded as run-f2.
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 0
+  Server-confirmed: 2 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 4s
+  Throughput: 1810.1 attempts/hour
+________ test_f2_real_replay_deadline_straggler_never_overlaps_encodes _________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_real_replay_deadline_s0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
+
+    def test_f2_real_replay_deadline_straggler_never_overlaps_encodes(tmp_path, monkeypatch):
+        """Production `_replay_pending_uploads` replays a durable entry through
+        real create-auth-PUT transport against loopback HTTP. The create response
+        is dripped, so the deadline (WITHOUT user cancellation) aborts the real
+        bounded reader while the owned body-watcher is still closing the
+        connection. The batch barrier must quiesce that close before ANY encode
+        window opens; the retained entry keeps its identity/bytes/deadline; a
+        later production retry uploads it exactly once and retires the bytes."""
+        fixture, args = _fixture_and_args(tmp_path, 61)
+        backend = ArtifactBackend()
+        timeline = Timeline()
+        clock = [0.0]
+        try:
+            monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+            # A near-expiry publication deadline (production reads this at call
+            # time); the drip outlasts it so the real reader hits its deadline.
+            monkeypatch.setattr(main, "ACTIVE_PUBLICATION_DEADLINE_SECONDS", 1.0)
+            instrument_transport(monkeypatch, timeline, watcher_close_delay=1.2)
+            backend.drip_first_create(2.2)
+    
+            artifact = tmp_path / "queued-artifact.mp4"
+            artifact.write_bytes(artifact_bytes())
+            payload = build_submission_payload(
+                artifact_path=artifact, campaign_id="campaign-real",
+                recipe_id="recipe-queued", repetition_index=1)
+            spool.spool_payload(str(tmp_path), payload)
+            local_hash, entry = _retained_entry(str(tmp_path), payload)
+            deadline_before = entry["retryDeadlineAt"]
+            queued_bytes = _managed_artifact_bytes(
+                str(tmp_path), entry["payload"])
+            assert queued_bytes == artifact_bytes()
+    
+            events = []
+            replay_started_epoch = time.time()
+            with _acceptance_patches(fixture, _acceptance_encode(timeline, clock)):
+                rc = main.run_benchmark_batch(
+                    hardware=main.HardwareInfo("CPU", None, 16, "OS"),
+                    base_url=backend.base_url, args=args, event_sink=events.append,
+                    tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
+                            "suiteClip": fixture._quick_clip()}])
+            # The replayed entry is retained (retryable deadline, no cancel), so
+            # the batch honestly reports queued work; encodes still completed.
+            assert rc in (0, 10), events[-5:]
+    
+            # Deadline forced WITHOUT operator cancellation: the real bounded
+            # reader ran and the real connection close ran.
+            assert timeline.spans("response-read"), "real reader never ran"
+            assert timeline.spans("close"), "real connection close never ran"
+            run_id = backend.wait_for_run(0)
+            run = next(r for r in backend.runs.values() if r["id"] == run_id)
+            assert run["uploaded"] is False  # create response was never parsed
+    
+            # Safe pause of the replayed payload: entry + stable IDs + bytes +
+            # retry deadline survive; nothing was double-submitted.
+            _hash2, retained = _retained_entry(str(tmp_path), payload)
+            assert _hash2 == local_hash
+            assert retained["payload"]["runCreate"]["payloadHash"] == \
+                payload["runCreate"]["payloadHash"]
+            assert retained["retryDeadlineAt"] == deadline_before
+            # Absolute retry time is preserved even if the subsequent batch
+            # lasts longer than the backoff; it must follow this replay attempt.
+            assert retained["nextAttemptAt"] > replay_started_epoch
+            assert _managed_artifact_bytes(str(tmp_path),
+                                           retained["payload"]) == queued_bytes
+    
+            # No encode interval overlaps owned upload / response-read / close.
+>           assert_no_encode_overlap(timeline)
+
+client/tests/test_publication_transport_acceptance.py:213: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+timeline = <_publication_acceptance_support.Timeline object at 0x7750dbaaa990>
+
+    def assert_no_encode_overlap(timeline: Timeline) -> None:
+        """No encode interval may overlap ANY recorded owned transport interval."""
+        encode_windows = timeline.encode_windows()
+        assert encode_windows, "no timed encodes ran"
+        for kind in ("upload", "response-read", "close"):
+            for start, end in timeline.spans(kind):
+                for enc_start, enc_end in encode_windows:
+>                   assert end <= enc_start or start >= enc_end, (
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        f"owned {kind} I/O [{start:.3f},{end:.3f}] overlaps "
+                        f"encode window [{enc_start:.3f},{enc_end:.3f}]")
+E                   AssertionError: owned close I/O [625516.749,625517.949] overlaps encode window [625517.271,625517.322]
+
+client/tests/_publication_acceptance_support.py:75: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-350631eee1913d04: at most 3 encodes; resume with --resume-campaign campaign-350631eee1913d04
+Batch 1/1: 1 protocol recipe(s)
+Authoritative benchmark run recorded as run-2.
+Authoritative benchmark run recorded as run-3.
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 0
+  Server-confirmed: 2 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 1
+  Terminal failures: 0
+  Elapsed: 5s
+  Throughput: 1321.0 attempts/hour
+___________ test_f2_real_transport_pause_retains_queue_bytes_and_ids ___________
+
+tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f2_real_transport_pause_r0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbac0b50>
+
+    def test_f2_real_transport_pause_retains_queue_bytes_and_ids(tmp_path, monkeypatch):
+        """Same real transport, but the dripped response + delayed watcher close
+        outlive the bounded quiescence barrier: the batch must pause (rc 6,
+        typed message) WITHOUT timing any encode, bounded, and the queued entry
+        must survive with its bytes, stable IDs and retry deadline intact."""
+        fixture, args = _fixture_and_args(tmp_path, 62)
+        backend = ArtifactBackend()
+        timeline = Timeline()
+        clock = [0.0]
+        try:
+            monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+            monkeypatch.setattr(main, "ACTIVE_PUBLICATION_DEADLINE_SECONDS", 0.8)
+            instrument_transport(monkeypatch, timeline, watcher_close_delay=2.6)
+            backend.drip_first_create(6.0)
+    
+            artifact = tmp_path / "queued-artifact.mp4"
+            artifact.write_bytes(artifact_bytes(b"pause-payload"))
+            payload = build_submission_payload(
+                artifact_path=artifact, campaign_id="campaign-real",
+                recipe_id="recipe-queued", repetition_index=1)
+            spool.spool_payload(str(tmp_path), payload)
+            local_hash, entry = _retained_entry(str(tmp_path), payload)
+            deadline_before = entry["retryDeadlineAt"]
+            queued_bytes = _managed_artifact_bytes(str(tmp_path), entry["payload"])
+    
+            events = []
+            started = time.monotonic()
+            with _acceptance_patches(fixture,
+                                     lambda **kw: pytest.fail("no encode may run")):
+>               rc = main.run_benchmark_batch(
+                    hardware=main.HardwareInfo("CPU", None, 16, "OS"),
+                    base_url=backend.base_url, args=args, event_sink=events.append,
+                    tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
+                            "suiteClip": fixture._quick_clip()}])
+
+client/tests/test_publication_transport_acceptance.py:278: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/main.py:385: in wrapped
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:2661: in wrapped
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:3124: in run_benchmark_batch
+    campaign_result = execute_protocol_campaign(
+client/protocol.py:1010: in execute_protocol_campaign
+    outcome = encode_runner(schedule, recipe_map[recipe_id])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+client/main.py:3022: in _encode_protocol_run
+    info = encode_to_artifact(
+/usr/local/lib/python3.11/unittest/mock.py:1124: in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1128: in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/usr/local/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
+    result = effect(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+kw = {'artifact_name': '001-libx264-fast-24-warmup-r1.mp4', 'cancel_event': None, 'checkpoint_path': '/tmp/evidence/reviewe...transport_pause_r0/campaigns/campaign-6aa2e82800da2416/001-libx264-fast-24-warmup-r1.mp4.process.json', 'crf': 24, ...}
+
+>   lambda **kw: pytest.fail("no encode may run")):
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   Failed: no encode may run
+
+client/tests/test_publication_transport_acceptance.py:277: Failed
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-6aa2e82800da2416: at most 3 encodes; resume with --resume-campaign campaign-6aa2e82800da2416
+Batch 1/1: 1 protocol recipe(s)
+=========================== short test summary info ============================
+FAILED client/tests/test_publication_quiescence.py::test_f1_collector_excluded_when_plain_publisher_exits_first
+FAILED client/tests/test_publication_quiescence.py::test_f1_deferred_release_preserves_shared_lock_and_coexistence
+FAILED client/tests/test_publication_quiescence.py::test_f2_deadline_hit_replay_worker_cannot_overlap_timed_encodes
+FAILED client/tests/test_publication_quiescence.py::test_f2_batch_pauses_when_owned_worker_outlives_barrier
+FAILED client/tests/test_publication_quiescence.py::test_f2_checkpoint_straggler_pauses_continuation_segment
+FAILED client/tests/test_publication_quiescence.py::test_f2_checkpoint_continuation_replay_worker_cannot_overlap_encodes
+FAILED client/tests/test_publication_transport_acceptance.py::test_f2_real_replay_deadline_straggler_never_overlaps_encodes
+FAILED client/tests/test_publication_transport_acceptance.py::test_f2_real_transport_pause_retains_queue_bytes_and_ids
+========================= 8 failed, 2 passed in 47.57s =========================
+BEFORE_EXIT=1

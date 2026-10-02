@@ -84,7 +84,7 @@
     "evidence/binding-before.json": "c4da0442a26e71e0e81daf9181df6f39f73e63c6510f34ce1dc12ca0eef06b9e",
     "evidence/client-full.log": "f648ab9eff1174ca53428d15540276065530ffbe8fbfb7b0a42a6fc3848f7f7c",
     "evidence/f4-rejected-source-provenance.json": "fafaceab7ee554527dd8a3deac832a29516513601448fef2708701c1067b69fc",
-    "evidence/f4-rejected-source.patch": "19333be2d31707aa378b374aac42af77e8053e18e726b1d1a83837d3e9d3328e",
+    "evidence/f4-rejected-source.patch.gz": "aea384f0cdae690ba1bc4045c52100d39da3e91ff8922f90d64850bc2c4ade30",
     "evidence/final-binding-progress.log": "c018e871956ec1c81b8d47f6b7e25524940d4be5325dfe6036f6a4594c785204",
     "evidence/final-publication-version.log": "0c15f6df465a2457debe7d49cff64f3ea67789fb7014b61e606a356e821079fd",
     "evidence/metadata-exclusion-after.log": "fb9f4833ec108937050465e52b6621ab8e602a363b84195e69739696eeb7595e",
