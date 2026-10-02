@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from . import network
+from . import acknowledgments
 from .artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND, submit_artifact_submission
 from .campaign import directory_bytes
 from .network import SubmissionCancelled, SubmitError, submit
@@ -351,7 +352,9 @@ def _payload_hash_material(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def local_hash_for_payload(payload: Dict[str, Any]) -> str:
-    return hashlib.sha256(_canonical_payload_json(payload).encode("utf-8")).hexdigest()
+    # Single canonical implementation lives in the F4 validator so receipt
+    # binding and queue identity can never drift apart.
+    return acknowledgments.local_payload_hash(payload)
 
 
 def _queue_path(queue_dir: str, local_hash: str) -> str:
@@ -655,10 +658,20 @@ def _terminal_spool_entry_locked(queue_dir: str, local_hash: str) -> Optional[Tu
 def _spool_payload_locked(queue_dir: str, payload: Dict[str, Any], *, max_storage_mb: int,
                           cancel_event: Optional[Any] = None,
                           deadline: Optional[float] = None) -> Tuple[str, Dict[str, Any]]:
-    receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash_for_payload(payload)}.json")
-    if os.path.isfile(receipt_path):
-        return receipt_path, _envelope_for_payload(payload)
     local_hash = local_hash_for_payload(payload)
+    receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash}.json")
+    if os.path.isfile(receipt_path):
+        # F4: only a VERIFIED receipt may short-circuit admission. An
+        # unverified one is retained as evidence while the real pending entry
+        # (re)forms so replay reconciles the same localHash idempotently.
+        if receipt_verdict(receipt_path, payload).startswith("verified"):
+            return receipt_path, _envelope_for_payload(payload)
+        queue_path = _queue_path(queue_dir, local_hash)
+        if os.path.isfile(queue_path):
+            try:
+                return queue_path, load_spool_entry(queue_path)
+            except Exception:
+                pass
     terminal = _terminal_spool_entry_locked(queue_dir, local_hash)
     if terminal is not None:
         return terminal
@@ -901,6 +914,106 @@ def _submission_success_message(payload: Dict[str, Any], response: Any) -> str:
     return ""
 
 
+def _load_receipt(receipt_path: str) -> Optional[Any]:
+    try:
+        return json.loads(Path(receipt_path).read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def receipt_verdict(receipt_path: str, payload: Optional[Dict[str, Any]]) -> str:
+    """F4: classify a durable receipt against the payload it claims to cover.
+
+    ``verified`` is returned only when the receipt rebinds the queue's
+    localHash AND the server response proves the run/artifact identity for
+    that payload together with the receipt's own persisted bound
+    acknowledgment (or is a faithful legacy ingest receipt with no response
+    body). Everything else is ``unverified:<why>`` / ``orphan:<why>`` and
+    authorizes nothing.
+    """
+    receipt = _load_receipt(receipt_path)
+    return acknowledgments.receipt_verdict(Path(receipt_path).stem, receipt, payload)
+
+
+def _envelope_payload_for(queue_dir: str, local_hash: str) -> Optional[Dict[str, Any]]:
+    """The saved campaign envelope whose canonical local identity is this
+    hash, when one exists. Historical/retired receipts reconcile against
+    this immutable identity instead of trusting response bytes payload-free.
+    """
+    try:
+        campaigns = Path(queue_dir) / "campaigns"
+        for envelope_file in sorted(campaigns.glob("*/submission-*.json")):
+            if envelope_file.name.endswith(".accepted.json"):
+                continue
+            try:
+                envelope = json.loads(envelope_file.read_text())
+            except (OSError, ValueError):
+                continue
+            if isinstance(envelope, dict) and acknowledgments.local_payload_hash(envelope) == local_hash:
+                return envelope
+    except OSError:
+        return None
+    return None
+
+
+def verified_receipt_evidence(queue_dir: str, local_hash: str,
+                              payload: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    """Bound acknowledgment evidence of a verified receipt, else None.
+
+    Only the receipt's own persisted acknowledgment (cross-checked against
+    its embedded response) qualifies; a response without that proof is
+    never trusted payload-free.
+    """
+    receipt_path = os.path.join(queue_dir, "receipts", f"{local_hash}.json")
+    if not os.path.isfile(receipt_path):
+        return None
+    pending_path = os.path.join(queue_dir, f"{local_hash}.json")
+    if payload is None and os.path.isfile(pending_path):
+        try:
+            payload = load_spool_entry(pending_path).get("payload")
+        except Exception:
+            payload = None
+    if payload is None:
+        payload = _envelope_payload_for(queue_dir, local_hash)
+    if not receipt_verdict(receipt_path, payload).startswith("verified"):
+        return None
+    receipt = _load_receipt(receipt_path) or {}
+    acknowledgment = receipt.get("acknowledgment")
+    if isinstance(acknowledgment, dict) and acknowledgments.validate_acknowledgment(
+            acknowledgment, payload=payload or receipt.get("payloadIdentity"),
+            response=receipt.get("response")):
+        return acknowledgment
+    return None
+
+
+def receipt_reconciliation_state(queue_dir: str) -> List[Dict[str, Any]]:
+    """Receipts that cannot prove acknowledgment: actionable repair state.
+
+    Pending entries and managed artifacts behind these receipts are retained
+    with stable IDs; replay supersedes them idempotently once the server
+    re-acknowledges the same payloadHash. Nothing here deletes evidence.
+    """
+    items: List[Dict[str, Any]] = []
+    receipts_dir = Path(queue_dir) / "receipts"
+    try:
+        files = sorted(receipts_dir.glob("*.json"))
+    except OSError:
+        return items
+    for receipt_file in files:
+        payload: Optional[Dict[str, Any]] = None
+        pending_path = Path(queue_dir) / receipt_file.name
+        if pending_path.is_file():
+            try:
+                payload = load_spool_entry(str(pending_path)).get("payload")
+            except Exception:
+                payload = None
+        verdict = receipt_verdict(str(receipt_file), payload)
+        if not verdict.startswith("verified"):
+            items.append({"path": str(receipt_file), "localHash": receipt_file.stem,
+                          "verdict": verdict})
+    return items
+
+
 def _journal_self_publish(queue_dir: str, payload: Dict[str, Any], response: Any) -> None:
     """Commit journal acceptance evidence for a completed queue upload (C11).
 
@@ -912,9 +1025,10 @@ def _journal_self_publish(queue_dir: str, payload: Dict[str, Any], response: Any
     receipt simply wins (idempotent replay)."""
     if payload.get("submissionKind") != AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
         return
-    run_id = _submission_success_message(payload, response)
-    if not run_id:
+    acknowledgment = acknowledgments.validate_upload_response(payload, response)
+    if acknowledgment is None:
         return
+    run_id = acknowledgment["benchmarkRunId"]
     local_hash = local_hash_for_payload(payload)
     campaigns = Path(queue_dir) / "campaigns"
     run_create = payload.get("runCreate") if isinstance(payload.get("runCreate"), dict) else {}
@@ -948,14 +1062,39 @@ def _journal_self_publish(queue_dir: str, payload: Dict[str, Any], response: Any
         if (not artifact_path or not artifact_sha or ":" not in repetition_group
                 or str((run_create or {}).get("campaignId") or "") != candidate.parent.name):
             continue
-        _write_json_atomic(str(candidate.with_name(f"submission-{order_value:06d}.accepted.json")),
-                           {"schemaVersion": 1,
-                            "executionOrder": order_value,
-                            "recipeId": repetition_group.split(":", 1)[1],
-                            "artifactPath": artifact_path,
-                            "artifactSha256": artifact_sha,
-                            "benchmarkRunId": run_id,
-                            "acceptedAt": time.time()})
+        marker_path = candidate.with_name(f"submission-{order_value:06d}.accepted.json")
+        receipt_payload_hash = acknowledgment["payloadHash"]
+        marker = {"schemaVersion": 2,
+                  "executionOrder": order_value,
+                  "recipeId": repetition_group.split(":", 1)[1],
+                  "artifactPath": artifact_path,
+                  "artifactSha256": artifact_sha,
+                  "benchmarkRunId": run_id,
+                  "payloadHash": receipt_payload_hash,
+                  "artifactId": acknowledgment["artifactId"],
+                  "artifactByteSize": acknowledgment["artifactByteSize"],
+                  "uploadConfirmed": True,
+                  "analysisAccepted": acknowledgment["analysisAccepted"],
+                  "acknowledgment": acknowledgment, "response": response,
+                  "acceptedAt": time.time()}
+        prior_bytes = None
+        if marker_path.is_file():
+            try:
+                prior_bytes = marker_path.read_text()
+                prior = json.loads(prior_bytes)
+            except (OSError, ValueError):
+                prior = None
+            if acknowledgments.journal_marker_verdict(
+                    prior, execution_order=order_value,
+                    recipe_id=repetition_group.split(":", 1)[1],
+                    artifact_path=artifact_path, artifact_sha256=artifact_sha,
+                    payload_hash=receipt_payload_hash, payload=journal_payload) == "verified" \
+                    and str((prior or {}).get("benchmarkRunId") or "") == run_id:
+                marker = prior  # faithful receipt already wins; never rewrite
+            elif prior_bytes is not None:
+                # Corrupt/unrelated marker: supersede with proof, keep evidence.
+                marker["superseded"] = {"priorEvidence": prior_bytes}
+        _write_json_atomic(str(marker_path), marker)
         owned = Path(artifact_path).resolve()
         if candidate.parent.resolve() in owned.parents and owned.is_file():
             try:
@@ -966,12 +1105,17 @@ def _journal_self_publish(queue_dir: str, payload: Dict[str, Any], response: Any
 
 
 def drain_committed_receipts(queue_dir: str) -> int:
-    """Retire pending entries whose acceptance receipt is already committed (C10).
+    """Retire pending entries whose VERIFIED acceptance receipt is committed (C10/F4).
 
-    A crash between receipt commit and entry unlink leaves both files; the
-    receipt is terminal evidence, so the entry (and its managed staging copy)
+    A crash between receipt commit and entry unlink leaves both files; a
+    receipt that provably binds the server run/artifact identity to this
+    payload is terminal evidence, so the entry (and its managed staging copy)
     must drain BEFORE new staging consumes the storage budget. Journal
-    self-publish runs here too, covering a crash inside the other process."""
+    self-publish runs here too, covering a crash inside the other process.
+    F4: an unverified receipt (malformed, empty, wrong local identity, or an
+    acknowledgment for unrelated bytes) authorizes NOTHING - the pending
+    entry, managed artifact and the corrupt receipt evidence all survive with
+    stable IDs so replay can reconcile idempotently."""
     drained = 0
     with _spool_write_lock(queue_dir):
         try:
@@ -989,12 +1133,14 @@ def drain_committed_receipts(queue_dir: str) -> int:
                 entry = load_spool_entry(path)
             except Exception:
                 entry = None
+            if entry is None:
+                continue
+            payload = entry.get("payload")
+            if not receipt_verdict(receipt_path, payload).startswith("verified"):
+                continue  # retain everything; reconciliation state reports this
             if entry is not None:
-                try:
-                    receipt = json.loads(Path(receipt_path).read_text())
-                except (OSError, ValueError):
-                    receipt = {}
-                _journal_self_publish(queue_dir, entry.get("payload") or {}, receipt.get("response"))
+                receipt = _load_receipt(receipt_path) or {}
+                _journal_self_publish(queue_dir, payload or {}, receipt.get("response"))
                 _cleanup_managed_artifact_if_unreferenced(queue_dir, entry, excluding_entry_path=path)
             try:
                 os.remove(path)
@@ -1011,7 +1157,7 @@ def campaign_queue_summary(queue_dir: str, campaign_id: str) -> Dict[str, Any]:
     terminal dead letters. Measurement counters live in the journal; this view
     shows what publication actually holds for the campaign right now."""
     summary = {"pendingEntries": 0, "pendingBytes": 0, "dueEntries": 0, "acceptedReceipts": 0,
-               "terminalEntries": 0, "nextAttemptAt": None}
+               "unverifiedReceipts": 0, "terminalEntries": 0, "nextAttemptAt": None}
     now = time.time()
     def belongs(payload: Any) -> bool:
         run_create = payload.get("runCreate") if isinstance(payload, dict) else None
@@ -1039,16 +1185,35 @@ def campaign_queue_summary(queue_dir: str, campaign_id: str) -> Dict[str, Any]:
             if summary["nextAttemptAt"] is None or next_at < summary["nextAttemptAt"]:
                 summary["nextAttemptAt"] = next_at
     receipts = Path(queue_dir) / "receipts"
+    envelopes: Dict[str, Dict[str, Any]] = {}
     try:
-        for receipt_file in sorted(receipts.glob("*.json")):
+        for envelope_file in sorted((Path(queue_dir) / "campaigns" / campaign_id)
+                                    .glob("submission-*.json")):
+            if envelope_file.name.endswith(".accepted.json"):
+                continue
             try:
-                receipt = json.loads(receipt_file.read_text())
+                envelope = json.loads(envelope_file.read_text())
             except (OSError, ValueError):
                 continue
-            response = receipt.get("response") if isinstance(receipt, dict) else None
-            run_id = _submission_success_message({"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, response)
-            if run_id and _receipt_matches_campaign(queue_dir, receipt_file.stem, campaign_id):
+            if isinstance(envelope, dict):
+                try:
+                    envelopes[local_hash_for_payload(envelope)] = envelope
+                except Exception:
+                    continue
+    except OSError:
+        envelopes = {}
+    try:
+        for receipt_file in sorted(receipts.glob("*.json")):
+            # F4: bind to this campaign's envelope when one exists; otherwise
+            # only internal self-consistency is provable. Unverified receipts
+            # are repair work, never acceptance.
+            if receipt_file.stem not in envelopes:
+                continue
+            verdict = receipt_verdict(str(receipt_file), envelopes[receipt_file.stem])
+            if verdict.startswith("verified"):
                 summary["acceptedReceipts"] += 1
+            else:
+                summary["unverifiedReceipts"] += 1
     except OSError:
         pass
     terminal_dir = Path(queue_dir) / "terminal"
@@ -1085,7 +1250,7 @@ def _receipt_matches_campaign(queue_dir: str, local_hash: str, campaign_id: str)
 def queue_recovery_summary(queue_dir: str) -> Dict[str, Any]:
     """Read-only queue-wide publication view for status/recovery projection (C06)."""
     summary = {"pendingEntries": 0, "pendingBytes": 0, "dueEntries": 0, "acceptedReceipts": 0,
-               "terminalEntries": 0, "nextAttemptAt": None}
+               "unverifiedReceipts": 0, "terminalEntries": 0, "nextAttemptAt": None}
     now = time.time()
     try:
         names = sorted(os.listdir(queue_dir))
@@ -1110,7 +1275,18 @@ def queue_recovery_summary(queue_dir: str) -> Dict[str, Any]:
         elif summary["nextAttemptAt"] is None or next_at < summary["nextAttemptAt"]:
             summary["nextAttemptAt"] = next_at
     try:
-        summary["acceptedReceipts"] = sum(1 for f in (Path(queue_dir) / "receipts").glob("*.json") if f.is_file())
+        for receipt_file in sorted((Path(queue_dir) / "receipts").glob("*.json")):
+            payload: Optional[Dict[str, Any]] = None
+            pending_path = Path(queue_dir) / receipt_file.name
+            if pending_path.is_file():
+                try:
+                    payload = load_spool_entry(str(pending_path)).get("payload")
+                except Exception:
+                    payload = None
+            if receipt_verdict(str(receipt_file), payload).startswith("verified"):
+                summary["acceptedReceipts"] += 1
+            else:
+                summary["unverifiedReceipts"] += 1
     except OSError:
         pass
     try:
@@ -1125,19 +1301,32 @@ def _current_spooled_entry_locked(path: str, queue_dir: str):
     # progress. Its receipt/terminal verdict wins; never recreate stale entries.
     receipt_path = os.path.join(queue_dir, "receipts", os.path.basename(path))
     if os.path.isfile(receipt_path):
-        receipt = json.loads(Path(receipt_path).read_text())
         pending_path = _queue_path(queue_dir, Path(path).stem)
+        pending: Optional[Dict[str, Any]] = None
         if os.path.isfile(pending_path):
             try:
                 pending = load_spool_entry(pending_path)
             except ValueError:
                 pending = None
-            if pending is not None:
-                # Crash recovery (C11): the other process committed the receipt but may
-                # have died before publishing journal acceptance. Replay the journal
-                # receipt from the still-pending payload before releasing its bytes.
-                _journal_self_publish(queue_dir, pending.get("payload") or {}, receipt.get("response"))
-                _cleanup_managed_artifact_if_unreferenced(queue_dir, pending, excluding_entry_path=pending_path)
+        verdict = receipt_verdict(receipt_path, (pending or {}).get("payload"))
+        if not verdict.startswith("verified"):
+            # F4: a corrupt/mismatched receipt never claims this transaction
+            # complete. Retain the pending entry (stable IDs) and fall
+            # through: the caller re-attempts the transport, which supersedes
+            # the bad receipt idempotently with a verified one.
+            try:
+                return load_spool_entry(path), None
+            except Exception as exc:
+                _move_to_dead_letter_locked(queue_dir, path, None, f"corrupt_spool:{exc}")
+                return None, ("corrupt", str(exc))
+        receipt = _load_receipt(receipt_path) or {}
+        if pending is not None:
+            # Crash recovery (C11): the other process committed the receipt but may
+            # have died before publishing journal acceptance. Replay the journal
+            # receipt from the still-pending payload before releasing its bytes.
+            _journal_self_publish(queue_dir, pending.get("payload") or {}, receipt.get("response"))
+            _cleanup_managed_artifact_if_unreferenced(queue_dir, pending, excluding_entry_path=pending_path)
+        if os.path.isfile(pending_path):
             os.remove(pending_path)
         return None, ("submitted", _submission_success_message(
             {"submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND}, receipt.get("response")))
@@ -1256,9 +1445,37 @@ def _submit_spooled_path_unheld(
                     return "dead_lettered", str(error)
                 _retain_entry(path, entry, str(error), getattr(error, "retry_after", 0.0))
                 return "retained", str(error)
-            _write_json_atomic(os.path.join(queue_dir, "receipts", os.path.basename(path)),
-                               {"localHash": entry["localHash"], "uploadedAt": time.time(), "response": response,
-                                "status": "uploaded_analysis_pending"})
+            acknowledgment: Optional[Dict[str, Any]] = None
+            if payload.get("submissionKind") == AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND:
+                # F4: an HTTP 200 alone never confirms upload. The response
+                # must bind this payload's run/artifact identity; anything
+                # else ({}, a bare run id, an unrelated acknowledgment)
+                # retains the entry with stable IDs for idempotent replay.
+                acknowledgment = acknowledgments.validate_upload_response(payload, response)
+                if acknowledgment is None:
+                    _retain_entry(path, entry,
+                                  "unverified server acknowledgment: response does not bind "
+                                  "this payload's run/artifact identity")
+                    return "retained", ("unverified server acknowledgment for localHash "
+                                        f"{entry['localHash']}: entry retained, no retirement")
+            receipt_value: Dict[str, Any] = {
+                "localHash": entry["localHash"], "uploadedAt": time.time(), "response": response,
+                "payloadIdentity": acknowledgments.local_hash_material(payload),
+                "status": "uploaded_analysis_pending"}
+            if acknowledgment is not None:
+                receipt_value["acknowledgment"] = acknowledgment
+            stale_path = os.path.join(queue_dir, "receipts", os.path.basename(path))
+            if os.path.isfile(stale_path):
+                stale = _load_receipt(stale_path)
+                if stale is None or not receipt_verdict(stale_path, payload).startswith("verified"):
+                    # Never silently destroy corrupt receipt evidence: keep it
+                    # inside the superseding verified receipt.
+                    receipt_value["superseded"] = {
+                        "reason": "unverified-receipt-replaced-by-verified-acknowledgment",
+                        "supersededAt": time.time(),
+                        "corruptEvidence": (Path(stale_path).read_text(errors="replace")
+                                            if os.path.isfile(stale_path) else None)}
+            _write_json_atomic(stale_path, receipt_value)
             # Publish journal acceptance while the pending entry still exists: a crash
             # here leaves replayable state (receipt + pending), never a journal that
             # lost its artifact without a receipt.

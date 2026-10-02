@@ -10,6 +10,7 @@ import pytest
 from client import ffmpeg, main, protocol, spool, runtime_lock
 from client.campaign import CampaignJournal, atomic_json, physical_source_id
 from client.network import SubmitError, check_compatibility, retry_after_seconds
+from test_spool import server_bundle
 
 
 def test_process_interval_includes_launch_and_flush_excludes_monitor():
@@ -179,7 +180,7 @@ def test_completed_local_campaign_publishes_without_source_or_encoder(tmp_path):
     def accepted_replay(*_args, **_kwargs):
         local_hash=spool.local_hash_for_payload(payload)
         atomic_json(tmp_path/'receipts'/f'{local_hash}.json',{
-            'localHash':local_hash,'response':{'benchmarkRun':{'id':'run-saved'}}})
+            'localHash':local_hash,'status':'uploaded_analysis_pending','response':None})
         return spool.ReplayStats(submitted=1)
     with mock.patch.object(main,'check_compatibility'), mock.patch.object(main,'spool_payload',return_value=('retained.json',{})) as save, mock.patch.object(main,'replay_spool',side_effect=accepted_replay), mock.patch.object(main,'_prepare_named_suite_clip') as source, mock.patch.object(main,'run_benchmark_batch') as encode:
         assert main.main(['prog','--resume-campaign',campaign_id,'--submit','--queue-dir',str(tmp_path)]) == 0
@@ -287,7 +288,7 @@ def test_publish_saved_rebuilds_envelopes_for_complete_group_after_controlled_st
     sent = []
     def transport(base_url, submission, **kwargs):
         sent.append(submission)
-        return {'benchmarkRun': {'id': f'run-{len(sent)}'}}
+        return server_bundle(submission, f'run-{len(sent)}')
     source = mock.Mock(side_effect=AssertionError('original source must never be re-fetched'))
     encode_after = mock.Mock(side_effect=AssertionError('publish must never encode'))
     with mock.patch.object(main, 'check_compatibility', return_value={}), \

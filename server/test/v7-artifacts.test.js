@@ -1884,3 +1884,61 @@ test('operator requeue returns a defect-rejected run to PENDING preserving immut
   assert.equal(reRejected.artifact.stateDetails.operatorRequeue.reason, 'server-side media validation defect repaired; requeued for validated reupload');
   assert.equal(reRejected.artifact.stateDetails.uploadedAt, 'fixture-completion');
 });
+
+test('F4: create and upload-not-required responses bind payload and artifact identity', async (t) => {
+  // The client may only retire evidence when the response proves the binding
+  // between the immutable runCreate payloadHash and the server's run/artifact
+  // identities. These minimum immutable response fields are contract; they
+  // are asserted on the actual HTTP bodies, not internal helpers.
+  const harness = await createHarness({ autoAnalyzeOnUpload: false });
+  t.after(() => harness.close());
+  const created = await createRun(harness.baseUrl, harness.fixtures, { payloadHash: 'f'.repeat(64) });
+  assert.equal(created.response.status, 201);
+  assert.ok(created.json.benchmarkRun.id.startsWith('run-'));
+  assert.equal(created.json.benchmarkRun.payloadHash, 'f'.repeat(64));
+  assert.equal(created.json.artifact.benchmarkRunId, created.json.benchmarkRun.id);
+  assert.ok(created.json.artifact.id.startsWith('artifact-'));
+
+  const runId = created.json.benchmarkRun.id;
+  const stored = await harness.persistence.getRunArtifact(runId, 'ENCODED');
+  await harness.persistence.markArtifactUploaded({
+    artifactId: stored.artifact.id,
+    sha256: ARTIFACT_SHA256,
+    byteSize: ARTIFACT_BYTES.length,
+    mediaContainer: 'mp4',
+    storageProvider: 'localfs',
+    storageBucket: null,
+    storageKey: 'objects/f4-contract',
+    storageUrl: null,
+    stateDetails: {},
+  });
+  const authorization = await requestJson(harness.baseUrl, `/v7/benchmark-runs/${runId}/artifacts/ENCODED/upload-authorizations`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ sha256: ARTIFACT_SHA256, byteSize: ARTIFACT_BYTES.length, contentType: 'video/mp4' }),
+  });
+  assert.equal(authorization.status, 200, JSON.stringify(authorization.json));
+  assert.equal(authorization.json.uploadRequired, false);
+  assert.equal(authorization.json.reason, 'artifact-already-bound');
+  assert.equal(authorization.json.benchmarkRun.payloadHash, 'f'.repeat(64));
+  assert.equal(authorization.json.artifact.benchmarkRunId, runId);
+  assert.equal(authorization.json.artifact.id, stored.artifact.id);
+
+  // F4 reconciliation contract: the metadata-only analysis-status body must
+  // carry the minimal immutable payload/artifact identity so a client can
+  // prove the server still retains THIS artifact for THIS payloadHash
+  // without re-uploading bytes.
+  const status = await requestJson(harness.baseUrl, `/v7/benchmark-runs/${runId}/artifacts/ENCODED/analysis-status`);
+  assert.equal(status.status, 200, JSON.stringify(status.json));
+  assert.equal(status.json.artifactId, stored.artifact.id);
+  assert.equal(status.json.benchmarkRunId, runId);
+  assert.equal(status.json.artifactStorageState, 'UPLOADED');
+  assert.equal(status.json.payloadHash, 'f'.repeat(64));
+  assert.equal(status.json.artifactSha256, ARTIFACT_SHA256);
+  assert.equal(status.json.artifactByteSize, ARTIFACT_BYTES.length);
+  assert.ok(Array.isArray(status.json.analyses));
+
+  // Unknown runs stay an honest 404 (never a fabricated acknowledgment).
+  const missing = await requestJson(harness.baseUrl, '/v7/benchmark-runs/run-does-not-exist/artifacts/ENCODED/analysis-status');
+  assert.equal(missing.status, 404);
+});

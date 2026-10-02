@@ -5,7 +5,7 @@ import hashlib
 import json
 from unittest import mock
 
-from client import main, protocol, spool
+from client import acknowledgments, main, protocol, spool
 from client.campaign import CampaignJournal, atomic_json
 from test_progress_contract import (_build_gui_app, _campaign_root, _drive_gui,
                                     _encode, _journal_for, _run_batch)
@@ -48,12 +48,18 @@ def test_end_ledger_counts_queue_receipt_when_old_journal_marker_is_missing(tmp_
     events = []
     assert _run_batch(tmp_path, seed=501, events=events) == 0
     root = _campaign_root(tmp_path)
+    from test_spool import server_bundle
     for index, path in enumerate(sorted(root.glob("submission-*.json")), start=1):
         payload = json.loads(path.read_text())
         local_hash = spool.local_hash_for_payload(payload)
+        response = server_bundle(payload, f"run-older-{index}")
+        # Faithful verified receipt: production persists the validated
+        # bound acknowledgment alongside the response.
         atomic_json(tmp_path / "receipts" / f"{local_hash}.json", {
             "localHash": local_hash,
-            "response": {"benchmarkRun": {"id": f"run-older-{index}"}},
+            "status": "uploaded_analysis_pending",
+            "response": response,
+            "acknowledgment": acknowledgments.validate_upload_response(payload, response),
         })
     ledger = main._durable_campaign_ledger(
         str(tmp_path), root.name, _journal_for(tmp_path, root), False,
@@ -121,7 +127,10 @@ def test_durable_ledger_never_calls_one_repetition_a_finished_group(tmp_path):
     })
     journal = CampaignJournal(str(tmp_path), campaign_id, manifest, 2048)
     ledger = main._durable_campaign_ledger(str(tmp_path), campaign_id, journal, False)
-    assert ledger["uploaded"] == 1
+    # F4: a v1 marker is readable provenance, not a fresh verified ack: it
+    # is reported as reconciliation work instead of silently uploaded.
+    assert ledger["uploaded"] == 0
+    assert ledger["awaitingReconciliation"] == 1
     assert ledger["groupsTotal"] == 1
     assert ledger["groupsConfirmed"] == 0
     assert ledger["requiredMeasured"] == 2

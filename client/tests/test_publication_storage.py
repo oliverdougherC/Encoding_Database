@@ -6,8 +6,10 @@ from unittest import mock
 
 import pytest
 
-from client import main, spool
+from client import acknowledgments, main, spool
+from client.artifacts import build_payload_hash
 from client.campaign import atomic_json
+from test_spool import server_bundle
 
 MIB = 1024 * 1024
 
@@ -88,9 +90,20 @@ def test_pending_receipted_and_terminal_payloads_ignore_new_capacity_without_res
         assert terminal['retryDeadlineAt'] == 123456
         assert terminal['attempts'] == 7
         assert Path(terminal_path).parent.name == 'terminal'
-        receipt_payload = dict(payload, runCreate={'payloadHash': 'other-receipt'})
-        receipt = queue / 'receipts' / (spool.local_hash_for_payload(receipt_payload) + '.json')
-        atomic_json(receipt, {'benchmarkRunId': 'already-submitted'})
+        # A verified receipt for a DIFFERENT authoritative payload: identity
+        # must be contract-faithful (recomputed payloadHash + bound response
+        # + persisted acknowledgment) exactly like production writes it.
+        receipt_run_create = dict(payload['runCreate'], campaignId='campaign-receipted')
+        receipt_run_create['payloadHash'] = build_payload_hash(receipt_run_create)
+        receipt_payload = dict(payload, runCreate=receipt_run_create)
+        receipt_hash = spool.local_hash_for_payload(receipt_payload)
+        receipt_response = server_bundle(receipt_payload, 'run-receipted')
+        receipt = queue / 'receipts' / f'{receipt_hash}.json'
+        atomic_json(receipt, {'localHash': receipt_hash,
+                              'status': 'uploaded_analysis_pending',
+                              'response': receipt_response,
+                              'acknowledgment': acknowledgments.validate_upload_response(
+                                  receipt_payload, receipt_response)})
         original = receipt.read_bytes()
         assert spool.spool_payload(str(queue), receipt_payload, max_storage_mb=0)[0] == str(receipt)
         assert receipt.read_bytes() == original
@@ -125,6 +138,10 @@ def test_upload_only_capacity_pause_preserves_pending_deadline_and_resumes_witho
     campaign_id = 'campaign-0123456789abcdef'
     root = queue / 'campaigns' / campaign_id
     payload = payload_at(root / 'retained.mp4', 600 * 1024)
+    payload['runCreate']['campaignId'] = campaign_id
+    payload['runCreate']['repetitionGroupId'] = f'{campaign_id}:recipe-1'
+    # Faithful contract: payloadHash recomputed AFTER identity mutations.
+    payload['runCreate']['payloadHash'] = build_payload_hash(payload['runCreate'])
     atomic_json(root / 'campaign-complete.json', {'failed': 0, 'skipped': 0})
     atomic_json(root / 'submission-000001.json', payload)
     # Prior queued work remains due later and cannot acquire a new deadline.
@@ -135,16 +152,24 @@ def test_upload_only_capacity_pause_preserves_pending_deadline_and_resumes_witho
     argv = ['prog', '--upload-only', '--resume-campaign', campaign_id, '--queue-dir', str(queue)]
     with mock.patch.object(main, 'check_compatibility'), \
          mock.patch.object(main, 'run_benchmark_batch') as encode, \
-         mock.patch.object(spool, 'submit_artifact_submission', return_value='test-run') as send:
+         mock.patch.object(spool, 'submit_artifact_submission',
+                           side_effect=lambda _base, submission, **_kw: server_bundle(submission, 'test-run')) as send:
         assert main.main(argv + ['--max-storage-mb', '1']) == 10
         send.assert_not_called()
         assert not (queue / 'artifacts').exists()
         assert not (queue / 'terminal').exists()
+        assert snapshot(root) == before  # deferred attempt wrote nothing
         assert spool.load_spool_entry(prior) == entry
-        assert main.main(argv + ['--max-storage-mb', '2']) == 10  # the original future retry is still pending
+        # With a faithful acknowledgment the campaign publishes completely:
+        # the run id proves identity, so the envelope retires behind its
+        # bound journal marker instead of staying falsely "pending".
+        assert main.main(argv + ['--max-storage-mb', '2']) == 0
         send.assert_called_once()
         encode.assert_not_called()
-    assert snapshot(root) == before
+    assert json.loads((root / 'submission-000001.json').read_text()) == payload
+    marker = json.loads((root / 'submission-000001.accepted.json').read_text())
+    assert marker['benchmarkRunId'] == 'test-run' and marker['schemaVersion'] == 2
+    assert not (root / 'retained.mp4').exists()  # owned copy retired behind the receipt
     assert spool.load_spool_entry(prior) == entry
     assert len(list((queue / 'receipts').glob('*.json'))) == 1
 
@@ -274,7 +299,8 @@ def test_shared_artifact_cannot_be_removed_between_admission_and_entry_commit(tm
     elif mutation == 'dead_letter':
         spool.move_to_dead_letter(queue, first_path, first_entry, 'fixture-rejection')
     else:
-        with mock.patch.object(spool, 'submit_artifact_submission', return_value={}):
+        with mock.patch.object(spool, 'submit_artifact_submission',
+                               side_effect=lambda _base, submission, **_kw: server_bundle(submission, 'fixture-shared')):
             assert spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
                 api_key='', retries=0, use_token=False)[0] == 'submitted'
     assert Path(new_path).is_file()
@@ -310,7 +336,7 @@ def test_replay_finishing_during_admission_defers_commit_without_deleting_shared
         sending.set()
         if not finish.wait(5):
             raise AssertionError('test network was not released')
-        return {'benchmarkRun': {'id': 'first'}}
+        return server_bundle(args[1], 'first')
     def replay():
         results.append(spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
                        api_key='', retries=0, use_token=False))
@@ -334,7 +360,8 @@ def test_replay_finishing_during_admission_defers_commit_without_deleting_shared
             finish.set()
             thread.join(5)
     assert spool.load_spool_entry(first_path)['retryDeadlineAt'] == first['retryDeadlineAt']
-    with mock.patch.object(spool, 'submit_artifact_submission', return_value={}):
+    with mock.patch.object(spool, 'submit_artifact_submission',
+                           side_effect=lambda _base, submission, **_kw: server_bundle(submission, 'fixture-replay')):
         assert spool.submit_spooled_path(first_path, queue_dir=queue, base_url='unused',
             api_key='', retries=0, use_token=False)[0] == 'submitted'
     assert Path(second_path).is_file()
@@ -357,7 +384,7 @@ def test_stale_network_response_cannot_replace_committed_publication_verdict(tmp
                 assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
                     api_key='', retries=0, use_token=False)[0] == 'submitted'
             raise SubmitError('stale failure', retryable=True)
-        return {'benchmarkRun': {'id': 'fixture-receipt'}}
+        return server_bundle(args[1], 'fixture-receipt')
     with mock.patch.object(spool, 'submit_artifact_submission', side_effect=network):
         status, _ = spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
             api_key='', retries=0, use_token=False)
@@ -375,7 +402,14 @@ def test_replay_recovers_receipt_committed_before_pending_cleanup(tmp_path):
     payload = payload_at(tmp_path / 'source.mp4', 5)
     path, entry = spool.spool_payload(queue, payload)
     receipt = Path(queue) / 'receipts' / Path(path).name
-    atomic_json(receipt, {'response': {'benchmarkRun': {'id': 'committed-before-crash'}}})
+    response = server_bundle(payload, 'committed-before-crash')
+    # Faithful crash-residual receipt: production persists the validated
+    # bound acknowledgment alongside the response.
+    atomic_json(receipt, {'localHash': Path(path).stem,
+                          'status': 'uploaded_analysis_pending',
+                          'response': response,
+                          'acknowledgment': acknowledgments.validate_upload_response(
+                              payload, response)})
     with mock.patch.object(spool, 'submit_artifact_submission') as send:
         assert spool.submit_spooled_path(path, queue_dir=queue, base_url='unused',
             api_key='', retries=0, use_token=False) == ('submitted', 'committed-before-crash')

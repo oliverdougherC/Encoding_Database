@@ -4,6 +4,7 @@ import os
 import time
 from typing import Any, Callable, Dict, Optional
 
+from . import acknowledgments
 from .network import (SubmissionCancelled, SubmitError, _bounded_error_body,
                       _event_cancelled, _load_requests, _read_response_body,
                       _run_cancellable, retry_after_seconds)
@@ -324,6 +325,14 @@ def submit_artifact_submission(
     retryable, so the durable spool keeps the entry and its localHash; an
     accepted-but-lost response replays idempotently against the same run.
     Progress: `progress(phase, sent_bytes, total_bytes)` during upload only.
+
+    F4: the created run id binds every later phase, and EVERY returned
+    success must acknowledge this submission's immutable identity
+    (runCreate.payloadHash + artifact role/SHA-256/byte size + a confirmed
+    storage state + artifact.benchmarkRunId == run id). An HTTP 200 whose
+    body is empty, malformed or names unrelated bytes/runs raises a retryable
+    SubmitError; the durable spool retains the entry and replays the same
+    payloadHash idempotently instead of retiring it on unproven evidence.
     """
     artifact_path = str(submission.get("artifactPath") or "").strip()
     if not artifact_path:
@@ -405,7 +414,19 @@ def submit_artifact_submission(
         artifact = create_json.get("artifact")
         artifact_state = str((artifact or {}).get("storageState") or "").strip().upper()
         analyses = create_json.get("analyses")
+        # F4: the run AND artifact identities this response names become the
+        # bound contract for every later phase; a response that flips to a
+        # different artifact id under the same run is rejected downstream.
+        create_artifact_id = str((artifact or {}).get("id") or "").strip()
         if artifact_state in ("RETAINED", "VERIFIED") and isinstance(analyses, list) and analyses:
+            # F4: an already-retained short-circuit is a success only when it
+            # acknowledges THIS payload's identity for the run just created.
+            if acknowledgments.validate_upload_response(submission, create_json,
+                                                        bound_run_id=run_id,
+                                                        bound_artifact_id=create_artifact_id) is None:
+                raise SubmitError(
+                    "run create short-circuit acknowledgment does not bind this "
+                    "submission's identity", retryable=True)
             return create_json
 
         if _event_cancelled(cancel_event):
@@ -464,6 +485,17 @@ def submit_artifact_submission(
             last_error = SubmitError("upload authorization response invalid JSON", retryable=True)
             continue
         if auth_json.get("uploadRequired") is False:
+            # F4: "already bound / deduplicated by sha256" must prove the
+            # binding to the run AND artifact this transport created AND to
+            # this payload; same bytes on an unrelated run/campaign are not
+            # an ack, and a different artifact id under the same run is not
+            # either.
+            if acknowledgments.validate_upload_response(submission, auth_json,
+                                                        bound_run_id=run_id,
+                                                        bound_artifact_id=create_artifact_id) is None:
+                raise SubmitError(
+                    "upload-not-required acknowledgment does not bind this "
+                    "submission's run and identity", retryable=True)
             return auth_json
 
         token = str(auth_json.get("token") or "").strip()
@@ -532,8 +564,49 @@ def submit_artifact_submission(
         if not isinstance(upload_json, dict):
             last_error = SubmitError("artifact upload response invalid JSON", retryable=True)
             continue
+        if acknowledgments.validate_upload_response(submission, upload_json,
+                                                    bound_run_id=run_id,
+                                                    bound_artifact_id=create_artifact_id) is None:
+            # The PUT was accepted but the body proves nothing ({} or an
+            # unrelated acknowledgment). Treat as ambiguous: retryable, so
+            # the durable spool retains identity and replays idempotently.
+            last_error = SubmitError(
+                "artifact upload acknowledgment does not bind this submission's "
+                "run and identity", retryable=True)
+            continue
         return upload_json
 
     if last_error is not None:
       raise last_error
     raise SubmitError("artifact submission failed", retryable=True)
+
+
+RETENTION_TIMEOUT_SECONDS = 30.0
+
+
+def fetch_retention_status(base_url: str, benchmark_run_id: str, *,
+                           timeout_seconds: float = RETENTION_TIMEOUT_SECONDS,
+                           deadline: Optional[float] = None,
+                           cancel_event: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+    """Metadata-only GET of an artifact's analysis-status (F4 reconciliation).
+
+    Returns the raw status body proving the server still holds the ENCODED
+    artifact for ``benchmark_run_id``, or None when the run is unknown or
+    the answer cannot be trusted. Bounded and cancellable like every other
+    transport phase; no artifact bytes ever leave the client, and a missing
+    run is an honest None, never a fabricated acknowledgment.
+    """
+    from .network import _fetch_metadata_json
+    run_id = benchmark_run_id.strip() if isinstance(benchmark_run_id, str) else ""
+    if not run_id or any(c not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for c in run_id):
+        return None
+    try:
+        body = _fetch_metadata_json(base_url,
+                f"/v7/benchmark-runs/{run_id}/artifacts/ENCODED/analysis-status",
+                phase="retention status", cancel_event=cancel_event,
+                deadline=deadline, transaction_seconds=timeout_seconds)
+    except SubmitError as exc:
+        if exc.status_code == 404:
+            return None
+        raise
+    return body if isinstance(body, dict) else None

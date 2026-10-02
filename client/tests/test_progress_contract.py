@@ -16,6 +16,7 @@ from unittest import mock
 from client import main, protocol, spool
 from client import windows_gui as gui
 from client.network import SubmitError
+from test_spool import server_bundle
 
 
 def _build_gui_app():
@@ -238,7 +239,7 @@ def test_partial_upload_run_measurement_bars_finish_but_publication_does_not(tmp
         group = str(run_create['repetitionGroupId'])
         index = int(run_create['repetitionIndex'])
         if 'athletic' in group:
-            return {'benchmarkRun': {'id': 'run-progress-ok'}}
+            return server_bundle(submission, 'run-progress-ok')
         if index == 1:
             raise SubmitError('submit failed (503)', retryable=True)
         raise SubmitError('server rejected the evidence (400)', retryable=False)

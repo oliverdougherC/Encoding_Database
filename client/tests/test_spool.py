@@ -9,8 +9,51 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import ClassVar, Optional
 from unittest import mock
 
-from client.artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND
+
+from client.artifacts import AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND, build_payload_hash
 from client.spool import cleanup_spool, collector_publication_scope, count_pending_entries, due_first_queue_paths, inspect_spool, load_spool_entry, replay_spool, spool_payload
+
+# Faithful server success evidence mirrors server/src/v7/artifacts.ts
+# bundleToResponse: benchmarkRun{id,payloadHash}, artifact{id,benchmarkRunId,
+# role,sha256,byteSize,storageState}. Fixtures MUST stay byte-faithful to that
+# serializer so client validation is tested against the real contract.
+
+
+def server_bundle(payload: dict, run_id: str, *, storage_state: str = "RETAINED",
+                  run_overrides: Optional[dict] = None,
+                  artifact_overrides: Optional[dict] = None) -> dict:
+    run_create = payload.get("runCreate") or {}
+    artifact_meta = run_create.get("artifact") or {}
+    bundle = {
+        "benchmarkRun": {
+            "id": run_id,
+            "status": "PENDING",
+            "statusReason": None,
+            "workloadId": None,
+            "payloadHash": run_create.get("payloadHash"),
+        },
+        "artifact": {
+            "id": f"artifact-{run_id}",
+            "benchmarkRunId": run_id,
+            "role": artifact_meta.get("role") or "ENCODED",
+            "sha256": payload.get("artifactSha256") or artifact_meta.get("sha256"),
+            "byteSize": payload.get("artifactByteSize") or artifact_meta.get("byteSize"),
+            "storageState": storage_state,
+            "stateReason": None,
+            "mediaContainer": artifact_meta.get("mediaContainer"),
+            "storageKey": "objects/test",
+            "uploadedAt": None,
+            "verifiedAt": None,
+            "retainedAt": None,
+            "deletedAt": None,
+        },
+        "analyses": [],
+    }
+    if run_overrides:
+        bundle["benchmarkRun"].update(run_overrides)
+    if artifact_overrides:
+        bundle["artifact"].update(artifact_overrides)
+    return bundle
 
 
 class _SpoolHandler(BaseHTTPRequestHandler):
@@ -46,16 +89,19 @@ class _SpoolHandler(BaseHTTPRequestHandler):
 class SpoolTests(unittest.TestCase):
     def _authoritative_payload(self, artifact_path: str) -> dict:
         artifact_bytes = open(artifact_path, "rb").read() if os.path.exists(artifact_path) else b"test"
+        run_create = {
+            "artifact": {"sha256": hashlib.sha256(artifact_bytes).hexdigest(), "byteSize": len(artifact_bytes), "mediaContainer": "mp4"},
+        }
+        # Faithful contract: the stored payloadHash is the canonical hash
+        # of the runCreate object, exactly as the client/server compute it.
+        run_create["payloadHash"] = build_payload_hash(run_create)
         return {
             "submissionKind": AUTHORITATIVE_ARTIFACT_SUBMISSION_KIND,
             "artifactPath": artifact_path,
             "artifactSha256": hashlib.sha256(artifact_bytes).hexdigest(),
             "artifactByteSize": len(artifact_bytes),
             "contentType": "video/mp4",
-            "runCreate": {
-                "payloadHash": "b" * 64,
-                "artifact": {"sha256": hashlib.sha256(artifact_bytes).hexdigest(), "byteSize": len(artifact_bytes), "mediaContainer": "mp4"},
-            },
+            "runCreate": run_create,
         }
 
     def _start_server(self) -> tuple[HTTPServer, threading.Thread, str]:
@@ -229,7 +275,9 @@ class SpoolTests(unittest.TestCase):
             def fake_submit(*args, **kwargs):
                 outcome = side_effects.pop(0)
                 if outcome is None:
-                    return {"analyses": [{"vmafMean": 95.25}]}
+                    # Faithful authoritative acknowledgment: the server binds
+                    # this payload's payloadHash and artifact identity.
+                    return server_bundle(args[1], "run-retry-ok")
                 raise outcome
 
             with mock.patch("client.spool.submit_artifact_submission", side_effect=fake_submit):
@@ -311,7 +359,7 @@ class SpoolTests(unittest.TestCase):
             managed_path = load_spool_entry(path)["payload"]["artifactPath"]
             self.assertTrue(os.path.exists(managed_path))
             with mock.patch("client.spool.submit_artifact_submission",
-                            return_value={"analyses": [{"vmafMean": 95.25}]}):
+                            return_value=server_bundle(payload, "run-unrelated-ok")):
                 stats = replay_spool(queue_dir, base_url="http://127.0.0.1:9", api_key="",
                                      retries=1, use_token=False)
             self.assertEqual(stats.submitted, 1)

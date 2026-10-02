@@ -6,6 +6,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict
 
+from . import acknowledgments
 from .campaign import load_record
 from .protocol import (
     EnvironmentThresholds,
@@ -41,6 +42,7 @@ def project_attempt_groups(root: Path, campaign_id: str) -> Dict[str, Any]:
         "plannedGroups": 0,
         "attempts": 0,
         "finishedGroupIds": [],
+        "historicalOrders": [],
         "acceptedOrders": [],
         "candidateOrders": [],
         "unavailableOrders": [],
@@ -126,17 +128,43 @@ def project_attempt_groups(root: Path, campaign_id: str) -> Dict[str, Any]:
             if receipt_path.is_file():
                 try:
                     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-                    if (receipt.get("schemaVersion") == 1
-                            and receipt.get("executionOrder") == order
-                            and receipt.get("recipeId") == recipe.recipe_id
-                            and receipt.get("artifactPath") == info.get("artifactPath")
-                            and receipt.get("artifactSha256") == info.get("artifactSha256")
-                            and str(receipt.get("benchmarkRunId") or "").strip()):
+                    envelope_payload_hash = None
+                    envelope = None
+                    if isinstance(receipt, dict) and receipt.get("schemaVersion") == 2:
+                        try:
+                            envelope = json.loads((root / f"submission-{order:06d}.json").read_text(encoding="utf-8"))
+                            if isinstance(envelope, dict) and isinstance(envelope.get("runCreate"), dict):
+                                candidate = str(envelope["runCreate"].get("payloadHash") or "").strip().lower()
+                                envelope_payload_hash = candidate or None
+                        except (OSError, ValueError):
+                            envelope_payload_hash = None
+                    verdict = acknowledgments.journal_marker_verdict(
+                            receipt, execution_order=order, recipe_id=recipe.recipe_id,
+                            artifact_path=str(info.get("artifactPath") or ""),
+                            artifact_sha256=str(info.get("artifactSha256") or ""),
+                            payload_hash=envelope_payload_hash, payload=envelope)
+                    if verdict == "verified":
                         result["acceptedOrders"].append(order)
                         continue
-                    raise ValueError("accepted marker does not match attempt")
+                    if verdict == "historical":
+                        # F4: v1 provenance keeps the attempt readable and
+                        # its identity intact, but it is NOT a fresh verified
+                        # acknowledgment. The attempt stays publishable (the
+                        # normal byte/receipt path reconciles it, or the
+                        # metadata-only retention check upgrades the marker
+                        # before staging) and it is surfaced separately
+                        # instead of silently counted as verified.
+                        result["historicalOrders"].append(order)
+                    # A retirement marker honestly awaiting a verified
+                    # receipt carries reconciliationState: reconciliation
+                    # work, not corruption; it falls through to the
+                    # byte/receipt checks below. Any other failed v2 marker
+                    # that cannot even record its state is corrupt.
+                    elif not str(receipt.get("reconciliationState") or ""):
+                        raise ValueError(f"accepted marker does not match attempt: {verdict}")
                 except (OSError, ValueError, TypeError, AttributeError) as exc:
                     result["corruptEntries"].append({"path": receipt_path.name, "reason": str(exc)[:120]})
+                    continue
             artifact = Path(str(info.get("artifactPath") or ""))
             try:
                 available = artifact.is_file() and root_resolved in artifact.resolve().parents

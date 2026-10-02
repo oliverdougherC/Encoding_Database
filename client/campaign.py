@@ -15,7 +15,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Optional
 
-from . import config
+from . import acknowledgments, config
 from .console_policy import hidden_console_kwargs
 from .protocol import (ArtifactProbe, BenchmarkRunRecord, EncodeTiming, EnvironmentSnapshot,
                        ScheduledRun, ValidityReason, ValidityResult)
@@ -505,12 +505,31 @@ class CampaignJournal:
         return self.root / f"submission-{execution_order:06d}.accepted.json"
 
     def accepted_receipt(self, record):
-        """Return the accepted-upload receipt only when it is faithful to the attempt.
+        """Return the accepted-upload receipt when it is faithful to the attempt.
 
-        A receipt counts when it names the same execution order, recipe, exact
-        artifact path and SHA-256 as the journaled record and carries the
-        server's run id. Corrupt, empty, partial or mismatched receipts never
-        authorize skipping an upload or trusting a released artifact."""
+        A v1 receipt counts when it names the same execution order, recipe,
+        exact artifact path and SHA-256 as the journaled record and carries
+        the server's run id (historical provenance stays valid). A v2 receipt
+        additionally binds the immutable runCreate payloadHash to the saved
+        envelope plus the server artifact identity (F4). Corrupt, empty,
+        partial or mismatched receipts never authorize skipping an upload or
+        trusting a released artifact. Historical (v1) markers keep the
+        attempt readable and its released bytes explainable, but consumers
+        that need a FRESH verified acknowledgment must gate on
+        ``accepted_receipt_verdict(record) == "verified"`` instead.
+        """
+        return self.accepted_receipt_for_verdict(record, "verified", "historical")
+
+    def accepted_receipt_verdict(self, record) -> str:
+        """``verified`` / ``historical`` / ``unverified:<why>`` for the record."""
+        receipt = self.accepted_receipt_for_verdict(record, "verified", "historical")
+        if receipt is None:
+            return "unverified:journal-receipt-missing-or-unfaithful"
+        verdict = self._receipt_verdict(record, receipt)
+        return verdict
+
+    def accepted_receipt_for_verdict(self, record, *verdicts: str):
+        """Return the marker only when its verdict is one of `verdicts`."""
         info = record.metadata.get("info") or {}
         artifact_path = str(info.get("artifactPath") or "").strip()
         artifact_sha = info.get("artifactSha256")
@@ -520,15 +539,31 @@ class CampaignJournal:
             receipt = json.loads(self._receipt_path(record.schedule.execution_order).read_text())
         except (OSError, ValueError):
             return None
-        if (isinstance(receipt, dict)
-                and receipt.get("schemaVersion") == 1
-                and receipt.get("executionOrder") == record.schedule.execution_order
-                and receipt.get("recipeId") == record.schedule.recipe_id
-                and receipt.get("artifactPath") == artifact_path
-                and receipt.get("artifactSha256") == artifact_sha
-                and str(receipt.get("benchmarkRunId") or "").strip()):
-            return receipt
-        return None
+        if not isinstance(receipt, dict) or receipt.get("schemaVersion") not in (1, 2):
+            return None
+        if self._receipt_verdict(record, receipt) not in verdicts:
+            return None
+        return receipt
+
+    def _receipt_verdict(self, record, receipt):
+        info = record.metadata.get("info") or {}
+        envelope_payload_hash: Optional[str] = None
+        envelope = None
+        if receipt.get("schemaVersion") == 2:
+            try:
+                envelope = json.loads((self.root / f"submission-{record.schedule.execution_order:06d}.json").read_text())
+                if isinstance(envelope, dict) and isinstance(envelope.get("runCreate"), dict):
+                    candidate = str(envelope["runCreate"].get("payloadHash") or "").strip().lower()
+                    envelope_payload_hash = candidate or None
+            except (OSError, ValueError):
+                envelope_payload_hash = None
+        return acknowledgments.journal_marker_verdict(
+            receipt, execution_order=record.schedule.execution_order,
+            recipe_id=record.schedule.recipe_id,
+            artifact_path=str(info.get("artifactPath") or ""),
+            artifact_sha256=str(info.get("artifactSha256") or ""),
+            payload_hash=envelope_payload_hash if receipt.get("schemaVersion") == 2 else None,
+            payload=envelope)
 
     def _warmup_released(self, record) -> bool:
         info = record.metadata.get("info") or {}

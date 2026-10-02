@@ -7,8 +7,10 @@ from unittest import mock
 
 import pytest
 
-from client import campaign, ffmpeg, main, protocol
+from client import acknowledgments, campaign, ffmpeg, main, protocol, spool
+from client.campaign import atomic_json
 from client.hardware_monitor import HardwareMetrics
+from test_spool import server_bundle
 
 
 @pytest.mark.parametrize('value', ['0','-1','nan','inf','1e308'])
@@ -139,6 +141,14 @@ def test_checkpoint_uploads_terminal_groups_and_retires_accepted_artifacts(tmp_p
         assert cancel_event is None
         assert isinstance(deadline, float)
         submissions.append(payload)
+        # Faithful: production only reports "submitted" after the durable
+        # verified receipt (bound run/artifact acknowledgment) is committed.
+        local_hash = spool.local_hash_for_payload(payload)
+        response = server_bundle(payload, "run-checkpoint-test")
+        atomic_json(Path(queue_dir) / "receipts" / f"{local_hash}.json", {
+            "localHash": local_hash, "status": "uploaded_analysis_pending",
+            "response": response,
+            "acknowledgment": acknowledgments.validate_upload_response(payload, response)})
         return "submitted", "run-checkpoint-test", 0
     hardware = main.HardwareInfo('CPU', None, 16, 'OS')
     budget_stack = mock.patch.object(main, 'MeasurementBudget', side_effect=new_budget)
@@ -255,7 +265,7 @@ def test_batch_counters_reconcile_with_spool_and_journal(tmp_path):
         group = str(run_create['repetitionGroupId'])
         index = int(run_create['repetitionIndex'])
         if 'athletic' in group:  # first group: both attempts accepted
-            return {'benchmarkRun': {'id': 'run-counters-ok'}}
+            return server_bundle(submission, 'run-counters-ok')
         if index == 1:  # transient upstream outage: durable queue must defer, not fail
             raise SubmitError('submit failed (503)', retryable=True)
         raise SubmitError('server rejected the evidence (400)', retryable=False)

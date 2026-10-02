@@ -5,7 +5,9 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
-## [Unreleased] - 2026-10-01
+## [1.3.0-rc.9] - 2026-10-02
+
+Unpublished client 0.3.9 review candidate. Physical online acceptance remains open.
 
 PR #23 reliability corrections F1/F2 (review PLA-547). Publication holds no
 longer attempt a POSIX SH→EX escalation when a deferred releaser outlives
@@ -28,6 +30,41 @@ size-bounded subprocesses with absolute deadlines and Stop/Close handling.
 A metadata child is reaped before timing starts; exceptional retained work
 keeps host exclusion until its death is confirmed. Failed optional baseline
 lookups allow contribution to continue, and compatibility still fails closed.
+F4 receipt/acknowledgment retirement (review PLA-547). A malformed, empty,
+truncated or wrong-identity durable receipt - and any HTTP 200 body that does
+not prove the binding between the immutable runCreate payloadHash and the
+server's run/artifact identities - can no longer retire the pending queue
+entry, the managed staged artifact or journal evidence. A new centralized
+validator (client/acknowledgments.py) classifies every upload response,
+durable receipt and journal accepted marker; fresh successes, the
+uploadRequired=false shortcut, crash recovery, drain, replay and counters all
+route through it, so only an acknowledgment bound to THIS payload's run and
+artifact authorizes retirement. Unverified receipts are reported as actionable
+reconciliation state (unverifiedReceipts, reconcile_receipts) while entries
+keep stable IDs and retry deadlines and replay idempotently without
+re-encoding; corrupt receipt evidence is preserved inside the superseding
+verified receipt instead of being deleted. Journal accepted markers gained a
+schemaVersion 2 that additionally binds payloadHash, the server artifact id
+and an explicit uploadConfirmed flag; schemaVersion 1 markers stay readable
+historical provenance ("historical") but never authorize a fresh verified
+claim - publish-saved skips, ledger uploaded counts and recovery acceptance
+gate on full v2 proof, and historical or awaiting-reconciliation markers are
+surfaced as reconciliation work (awaitingReconciliation) instead of silently
+verified. Releasing the ONLY local copy of an artifact now requires verified
+durable receipt evidence naming the same run and artifact. Historical
+campaigns whose bytes were already retired reconcile through a bounded,
+metadata-only analysis-status lookup that upgrades a v1 marker to v2 only
+when the server proves it still retains this exact payloadHash/artifact -
+bytes are never demanded again and no acknowledgment is fabricated. Upload
+confirmation is kept distinct from analysis acceptance (an ACCEPTED run and
+a COMPLETE analysis bound to the same run and artifact are required). The transport binds the run AND artifact ids from the
+create response through authorization and upload, rejecting any later phase
+that names a different identity. The server's bundle responses carry the
+minimum immutable evidence this validation needs
+(benchmarkRun.payloadHash, artifact.benchmarkRunId), and the
+analysis-status route now also returns payloadHash, artifactSha256 and
+artifactByteSize for trustworthy metadata-only reconciliation; protocol
+semantics, hashes and scientific checks are unchanged.
 
 ## [1.3.0-rc.8] - 2026-09-29
 

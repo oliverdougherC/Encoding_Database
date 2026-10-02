@@ -34,8 +34,13 @@ def _submission(tmp_path, run_create=None):
     }
     create = dict(create)
     create.setdefault("payloadHash", build_payload_hash(create))
+    # Faithful production shape: the outer envelope repeats the immutable
+    # artifact identity that build_artifact_submission_payload binds.
     return {"submissionKind": "authoritative-artifact-run-v1",
-            "artifactPath": str(path), "contentType": "video/mp4", "runCreate": create}
+            "artifactPath": str(path),
+            "artifactSha256": create["artifact"]["sha256"],
+            "artifactByteSize": create["artifact"]["byteSize"],
+            "contentType": "video/mp4", "runCreate": create}
 
 
 class _Server(ThreadingHTTPServer):
@@ -275,12 +280,18 @@ def test_lost_response_after_acceptance_replays_same_identity(tmp_path):
                     _IdempotentFlow.runs[key] = run
                 state = "RETAINED" if _IdempotentFlow.uploaded else "PENDING"
                 analyses = [{"id": "analysis-1", "status": "COMPLETE"}] if _IdempotentFlow.uploaded else []
+                artifact_meta = payload.get("artifact") or {}
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
                 self.end_headers()
                 self.wfile.write(json.dumps({
-                    "benchmarkRun": {"id": run["id"]},
-                    "artifact": {"storageState": state},
+                    "benchmarkRun": {"id": run["id"],
+                                     "payloadHash": payload.get("payloadHash")},
+                    "artifact": {"id": f"artifact-{run['id']}", "benchmarkRunId": run["id"],
+                                 "role": "ENCODED",
+                                 "sha256": artifact_meta.get("sha256"),
+                                 "byteSize": artifact_meta.get("byteSize"),
+                                 "storageState": state},
                     "analyses": analyses,
                 }).encode())
                 return

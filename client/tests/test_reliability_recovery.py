@@ -8,7 +8,9 @@ from pathlib import Path
 from unittest import mock
 
 from client import main, protocol, recovery_projection, spool
+from client.artifacts import build_payload_hash
 from client.campaign import atomic_json
+from test_spool import server_bundle
 
 
 def _root(tmp_path: Path, suffix: int = 1) -> tuple[str, Path]:
@@ -34,7 +36,8 @@ def test_intact_saved_envelope_publishes_with_old_runtime_and_client(tmp_path):
         local_hash = spool.local_hash_for_payload(payload)
         atomic_json(tmp_path / "receipts" / f"{local_hash}.json", {
             "localHash": local_hash,
-            "response": {"benchmarkRun": {"id": "run-original"}},
+            "status": "uploaded_analysis_pending",
+            "response": None,
         })
         return spool.ReplayStats(submitted=1)
 
@@ -82,7 +85,8 @@ def test_one_saved_publish_restages_after_queue_retirement(tmp_path):
             local_hash = spool.local_hash_for_payload(payload)
             atomic_json(tmp_path / "receipts" / f"{local_hash}.json", {
                 "localHash": local_hash,
-                "response": {"benchmarkRun": {"id": f"run-{order}"}},
+                "status": "uploaded_analysis_pending",
+                "response": None,
             })
             receipted.add(order)
         return spool.ReplayStats(submitted=len(admissions))
@@ -108,12 +112,13 @@ def test_one_saved_publish_drains_real_staged_bytes_to_admit_suffix(tmp_path):
         artifact.write_bytes(byte * (600 * 1024))
         payload = SpoolTests()._authoritative_payload(str(artifact))
         payload["runCreate"]["campaignId"] = campaign_id
-        payload["runCreate"]["payloadHash"] = f"{order:064x}"
+        # Faithful contract: recomputed AFTER identity mutations.
+        payload["runCreate"]["payloadHash"] = build_payload_hash(payload["runCreate"])
         atomic_json(root / f"submission-{order:06d}.json", payload)
 
     run_ids = iter(("run-1", "run-2"))
     with mock.patch.object(spool, "submit_artifact_submission",
-                           side_effect=lambda *_args, **_kwargs: {"benchmarkRun": {"id": next(run_ids)}}) as send:
+                           side_effect=lambda _base, submission, **_kw: server_bundle(submission, next(run_ids))) as send:
         rc, info = main.publish_saved_campaign(
             queue_dir=str(tmp_path), campaign_id=campaign_id,
             base_url="http://127.0.0.1:9", api_key="", max_storage_mb=2,
@@ -252,7 +257,8 @@ def test_queue_receipt_wins_over_unmarked_saved_envelope(tmp_path):
     receipt_hash = spool.local_hash_for_payload(payload)
     atomic_json(tmp_path / "receipts" / f"{receipt_hash}.json", {
         "localHash": receipt_hash,
-        "response": {"benchmarkRun": {"id": "run-already-accepted"}},
+        "status": "uploaded_analysis_pending",
+        "response": None,
     })
     state = main.campaign_recovery_state(str(tmp_path), campaign_id)
     assert state is not None
