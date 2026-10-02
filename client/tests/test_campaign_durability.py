@@ -116,9 +116,23 @@ def test_retry_after_survives_restart_and_deadline_expires(tmp_path):
 
 
 def test_compatibility_refuses_old_epoch_before_campaign(tmp_path):
-    response = SimpleNamespace(status_code=200,json=lambda:{'protocolVersion':'7.0','minimumClientVersion':'client/0.2.0','encodeTimerBoundary':'old'},close=lambda:None)
-    with mock.patch('client.network._load_requests',return_value=SimpleNamespace(get=lambda *a,**k:response)):
-        with pytest.raises(SubmitError): check_compatibility('http://example.invalid','client/0.3.0')
+    # F3: the metadata GET runs in an owned child process, so an in-process
+    # requests fake cannot intercept it; drive the real transport over
+    # loopback HTTP and assert the parent-side fail-closed contract.
+    import threading as _threading
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    body = json.dumps({'protocolVersion':'7.0','minimumClientVersion':'client/0.2.0','encodeTimerBoundary':'old'}).encode()
+    class H(BaseHTTPRequestHandler):
+        protocol_version = 'HTTP/1.1'
+        def do_GET(self):
+            self.send_response(200); self.send_header('Content-Length', str(len(body))); self.end_headers(); self.wfile.write(body)
+        def log_message(self, *a): return
+    server = ThreadingHTTPServer(('127.0.0.1', 0), H); server.daemon_threads = True
+    _threading.Thread(target=server.serve_forever, daemon=True).start()
+    try:
+        with pytest.raises(SubmitError): check_compatibility(f'http://127.0.0.1:{server.server_address[1]}','client/0.3.0')
+    finally:
+        server.shutdown(); server.server_close()
 
 
 def test_runtime_dependency_changes_and_missing_files_are_rejected(tmp_path):

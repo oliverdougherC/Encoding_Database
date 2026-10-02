@@ -1,8 +1,11 @@
+import base64
 import contextvars
 import hashlib
 import json
+import os
 import re
 import socket
+import subprocess
 import sys
 import threading
 import time
@@ -30,6 +33,15 @@ WORKER_QUIESCE_SYNC_JOIN_SECONDS = 1.0
 # closed to interrupt any blocked read and return the connection.
 ERROR_BODY_HARD_CAP_BYTES = 65536
 JSON_BODY_HARD_CAP_BYTES = 1 << 22
+# F3: bounded synchronous quiescence wait offered to the measurement barrier
+# before any timed encode (retained metadata cleanup windows).
+METADATA_QUIESCE_WAIT_SECONDS = 5.0
+
+# F3: default wall-clock bound on ONE online bootstrap metadata GET
+# (compatibility/baseline) — DNS, connect, headers and body TOGETHER. Unlike
+# a requests per-inactivity timeout, this absolute deadline is enforced even
+# while bytes keep arriving, and Stop interrupts it at any phase.
+METADATA_TRANSACTION_SECONDS = 10.0
 
 
 _OWNED_WORKERS: set = set()
@@ -225,6 +237,21 @@ class SubmissionCancelled(SubmitError):
 
     def __init__(self, phase: str) -> None:
         super().__init__(f"submission cancelled during {phase}", retryable=True)
+        self.phase = phase
+
+
+
+class MetadataRetentionHeld(SubmitError):
+    """F3 fail-closed: metadata child cleanup could NOT confirm actual
+    child/reader quiescence (kill/wait/close failed). The child stays
+    registered and its deferred reaper is an owned worker, so the caller
+    must pause rather than treat the lookup as merely absent — a retryable
+    transport failure must never let timed encodes start against live
+    owned transport I/O."""
+
+    def __init__(self, phase: str) -> None:
+        super().__init__(f"{phase} retained owned transport work; pausing",
+                         retryable=True)
         self.phase = phase
 
 
@@ -743,7 +770,490 @@ def submit(base_url: str, payload: Dict[str, Any], api_key: str = "", retries: i
                     pass
 
 
-def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
+METADATA_CHILD_ARGV = "--metadata-child"
+_OWNED_METADATA_CHILDREN: set = set()
+_OWNED_METADATA_CHILDREN_LOCK = threading.Lock()
+
+
+def owned_metadata_children() -> int:
+    """Live owned metadata child processes (quiescence census for F3)."""
+    with _OWNED_METADATA_CHILDREN_LOCK:
+        return sum(1 for proc in _OWNED_METADATA_CHILDREN if proc.poll() is None)
+
+
+def _register_metadata_child(proc: Any) -> None:
+    with _OWNED_METADATA_CHILDREN_LOCK:
+        _OWNED_METADATA_CHILDREN.add(proc)
+
+
+def _unregister_metadata_child(proc: Any) -> None:
+    with _OWNED_METADATA_CHILDREN_LOCK:
+        _OWNED_METADATA_CHILDREN.discard(proc)
+
+
+def metadata_child_invocation_phase(argv: List[str]) -> Optional[str]:
+    """Recognize the private child-dispatch shape at startup (F3).
+
+    Position-anchored and length-exact — exactly `[executable,
+    --metadata-child, <phase>]` as spawned by `_run_owned_metadata_child`
+    — checked against the RAW OS argv of each entry point BEFORE the GUI
+    wrapper prepends `--gui`. Ordinary CLI values can never enter the
+    helper and block on stdin: `--base-url --metadata-child`, a bare
+    trailing marker, or a marker behind `--gui` is rejected and reaches
+    argparse as an unknown argument instead."""
+    if len(argv) != 3 or argv[1] != METADATA_CHILD_ARGV:
+        return None
+    phase = argv[2]
+    if not phase or phase.startswith("-"):
+        return None
+    return phase
+
+
+def wait_for_metadata_quiescence(timeout_seconds: float,
+                                 cancel_event: Optional[Any] = None) -> bool:
+    """True once every owned metadata child is CONFIRMED dead (census 0).
+
+    The measurement-side F3 barrier: children unregister only after actual
+    death is observed, so census 0 means no owned metadata transport I/O
+    can still be in flight. Used before any timed encode starts. Returns
+    False on operator Stop so the caller surfaces the interrupt rather than
+    waiting out the bound."""
+    until = time.monotonic() + max(0.0, float(timeout_seconds))
+    while True:
+        if owned_metadata_children() == 0:
+            return True
+        if _event_cancelled(cancel_event):
+            return False
+        if time.monotonic() >= until:
+            return owned_metadata_children() == 0
+        time.sleep(0.05)
+
+
+def _reap_metadata_child(proc: Any, reader: Optional[threading.Thread],
+                         record: "_WorkerRecord") -> None:
+    """Deferred cleanup owner for one RETAINED metadata child.
+
+    Reached only when synchronous cleanup could not confirm actual child
+    death (kill/wait failed — SIGKILL-ignored or pathological). Keeps
+    polling until proc.poll() reports a real exit, joins the pipe reader
+    (it quiesces at child death / EOF), and only then unregisters from
+    the children census, so the census never undercounts live transport
+    work. The record's done latch is set only after confirmed death, so
+    the owning WorkerGroup defers its release (and the measurement
+    barrier keeps waiting) until this reap finishes."""
+    try:
+        while proc.poll() is None:
+            try:
+                proc.kill()
+            except OSError:
+                pass
+            try:
+                proc.wait(timeout=1.0)
+            except subprocess.TimeoutExpired:
+                time.sleep(0.25)  # a stubbed/pathological wait may raise instantly
+                continue
+            except Exception:
+                time.sleep(0.25)
+        if reader is not None:
+            reader.join()
+    finally:
+        _unregister_metadata_child(proc)
+        _unregister_worker(record)
+        record.done.set()
+
+
+def _retain_metadata_child(proc: Any, reader: Optional[threading.Thread],
+                           phase: str) -> None:
+    """Fail-closed retention: hand an unconfirmed-dead child to a deferred
+    reaper registered as an OWNED WORKER (F1 group semantics).
+
+    If a WorkerGroup is active on this thread (collector publication hold /
+    preparation transport), the reaper record joins it, so releasing that
+    phase — including the kernel host-phase lock — is deferred until the
+    reaper confirms actual child death. The children census keeps counting
+    the child until then, so the F3 measurement barrier (`wait_for_metadata_
+    quiescence`) refuses to start timed encodes against it. Registration is
+    safe from concurrent joins: the group's owner thread is the caller and
+    cannot be inside `await_quiescence` while this runs."""
+    record = _WorkerRecord(phase)
+    reaper = threading.Thread(target=_reap_metadata_child,
+                              args=(proc, reader, record),
+                              name=f"encodingdb-metadata-reap-{phase}",
+                              daemon=True)
+    record.thread = reaper
+    _register_worker(record)
+    reaper.start()
+
+
+METADATA_CHILD_STALL_ENV = "ENCODINGDB_METADATA_CHILD_STALL_FILE"
+
+
+def _child_maybe_stall() -> None:
+    """TEST-ONLY fault hook: when ENCODINGDB_METADATA_CHILD_STALL_FILE names
+    a control file, wait until that file appears before issuing the GET.
+    It emulates the deterministic core of a hung resolver / stalled connect:
+    a phase with NO allocated socket, which only killing this process can
+    stop. Production never sets the variable; the hook is inert otherwise."""
+    control = os.environ.get(METADATA_CHILD_STALL_ENV)
+    if not control:
+        return
+    deadline = time.monotonic() + 60.0
+    while not os.path.exists(control) and time.monotonic() < deadline:
+        time.sleep(0.02)
+
+
+def _child_perform_get(request: Dict[str, Any]) -> Dict[str, Any]:
+    """One streaming metadata GET inside the owned child process.
+
+    Trust boundaries are unchanged: original URL (so hostname, SNI and
+    certificate verification are exactly requests' own), `verify=
+    config.REQUESTS_VERIFY` (bundled certifi / CA-bundle pin) and
+    `allow_redirects=False`. Proxy behavior is requests' default: the child
+    inherits the parent environment, so HTTP(S)_PROXY/NO_PROXY apply as
+    before. Errors leave as TYPE NAME only (C04 redaction)."""
+    _child_maybe_stall()
+    requests = _load_requests()
+    url = str(request["url"])
+    max_bytes = int(request["maxBytes"])
+    remaining = float(request.get("remainingSeconds") or 0.0)
+    timeout = max(0.1, min(5.0, remaining)) if remaining > 0 else 5.0
+    session = requests.Session()
+    try:
+        response = session.get(url, timeout=timeout, stream=True,
+                               verify=config.REQUESTS_VERIFY,
+                               allow_redirects=False)
+        try:
+            status = int(response.status_code)
+            # HARD consumption cap (F3): the child reads AT MOST this many
+            # body bytes via raw.read(amt) — never one full chunk past the
+            # cap. One byte past the JSON cap is proof of overflow, so an
+            # exactly-cap body still parses. Non-200 bodies are diagnostic
+            # only and capped at ERROR_BODY_HARD_CAP_BYTES. Consumption
+            # stops at the cap; the finally below closes the socket, so a
+            # server still writing sees EPIPE (no unbounded dribble).
+            budget = max_bytes + 1 if status == 200 else ERROR_BODY_HARD_CAP_BYTES
+            declared = str(response.headers.get("Content-Length") or "").strip()
+            try:
+                declared_over = bool(declared) and int(declared) > max_bytes
+            except ValueError:
+                declared_over = False
+            if status == 200 and declared_over:
+                # Fail closed from headers alone — never stream the body.
+                return {"status": status,
+                        "headers": {str(k): str(v) for k, v in response.headers.items()},
+                        "body": "", "truncated": True}
+            chunks: List[bytes] = []
+            total = 0
+            raw = response.raw
+            while total < budget:
+                piece = raw.read(min(65536, budget - total), decode_content=True)
+                if not piece:
+                    break
+                chunks.append(piece)
+                total += len(piece)
+            truncated = total > max_bytes if status == 200 else total >= budget
+            return {"status": status,
+                    "headers": {str(k): str(v) for k, v in response.headers.items()},
+                    "body": base64.b64encode(b"".join(chunks)).decode("ascii"),
+                    "truncated": truncated}
+        finally:
+            try:
+                response.close()
+            except Exception:
+                pass
+    except BaseException as exc:  # noqa: BLE001 — envelope, never a traceback
+        return {"transportError": {"kind": type(exc).__name__}}
+    finally:
+        try:
+            session.close()
+        except Exception:
+            pass
+
+
+def metadata_child_main() -> int:
+    """Startup-only bootstrap for the owned metadata child process.
+
+    Dispatched from main() BEFORE any argument parsing, GUI launch or
+    campaign routing, so a re-executed frozen executable (any of the four
+    packages or source entry points) can never recursively open a GUI, a
+    run or a queue. Reads one JSON request from stdin until EOF, performs
+    exactly one bounded GET, writes one JSON envelope to fd 1 and
+    `os._exit`s — skipping interpreter shutdown keeps the exit immediate
+    even if a daemon thread lingered. A watchdog self-terminates an orphan
+    (parent died before kill) at bound+5s; stdin EOF with no request exits
+    at once."""
+    # Startup watchdog: an orphan (parent hard-crashed before EOF/kill)
+    # must never linger blocked on stdin. Generous: a healthy child parses
+    # the request and completes the GET within the transaction bound.
+    startup = threading.Timer(30.0, lambda: os._exit(6))
+    startup.daemon = True
+    startup.start()
+    data = b""
+    while True:
+        try:
+            chunk = os.read(0, 65536)
+        except OSError:
+            chunk = b""
+        if not chunk:
+            break
+        data += chunk
+        if len(data) > 65536:
+            os._exit(2)
+    if not data:
+        os._exit(2)
+    try:
+        request = json.loads(data.decode("utf-8"))
+        assert isinstance(request, dict) and request.get("url")
+    except Exception:
+        os._exit(2)
+    bound = float(request.get("boundSeconds") or METADATA_TRANSACTION_SECONDS)
+    watchdog = threading.Timer(bound + 5.0, lambda: os._exit(3))
+    watchdog.daemon = True
+    watchdog.start()
+    envelope = _child_perform_get(request)
+    payload = json.dumps(envelope).encode("utf-8")
+    try:
+        view = memoryview(payload)
+        while view:
+            written = os.write(1, view)
+            view = view[written:]
+    except OSError:
+        os._exit(4)
+    os._exit(0)
+
+
+def _run_owned_metadata_child(request: Dict[str, Any], *, phase: str,
+                              cancel_event: Optional[Any],
+                              deadline: Optional[float],
+                              bound_seconds: float) -> Dict[str, Any]:
+    """Run one metadata GET in an owned child process with a HARD total
+    deadline (F3 acceptance): DNS, connect, headers and body all die with
+    `kill()` — including a hung resolver or a connect whose socket has not
+    been allocated yet, which no in-process thread interrupt can stop.
+
+    ONE cleanup owner covers EVERY post-spawn path (success, Stop, deadline,
+    oversize, stdin/reader setup failure, exception): kill → bounded wait →
+    reader join → pipe close. The child leaves the owned-children census
+    ONLY after its death is CONFIRMED. If kill/wait cannot confirm death
+    (pathological SIGKILL-ignored process), the child stays registered and
+    a deferred reaper — registered as an owned worker in the ambient
+    WorkerGroup, the same F1 deferral that keeps the host phase lock held —
+    finishes the reap; this call then raises `MetadataRetentionHeld` so the
+    caller pauses instead of treating the lookup as merely absent. A Close
+    grace timeout additionally reaps live children through
+    `_terminate_owned_children` (psutil recursive children)."""
+    from .console_policy import hidden_console_kwargs
+    # Frozen (any of the four PyInstaller packages): re-executing
+    # `sys.executable` re-enters the packaged entry, whose startup dispatch
+    # (before any GUI/campaign routing) claims `--metadata-child`. Source:
+    # `python -m client` with the package parent pinned on PYTHONPATH, so
+    # the child works regardless of the parent's cwd or install layout.
+    child_env = os.environ.copy()
+    if getattr(sys, "frozen", False):
+        argv = [sys.executable, METADATA_CHILD_ARGV, phase]
+    else:
+        executable = sys.executable
+        if not executable:
+            raise SubmitError(f"{phase} metadata transport unavailable: no interpreter",
+                              retryable=True)
+        package_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        existing = child_env.get("PYTHONPATH") or ""
+        child_env["PYTHONPATH"] = (package_parent + os.pathsep + existing
+                                   if existing else package_parent)
+        argv = [executable, "-m", "client", METADATA_CHILD_ARGV, phase]
+    request_bytes = json.dumps(request).encode("utf-8")
+    # Tiny by construction (URL + caps). Bound it BEFORE spawn so the stdin
+    # write can never block on a full pipe outside any deadline owner.
+    if len(request_bytes) > 2048 or len(str(request.get("url") or "")) > 1024:
+        raise SubmitError(f"{phase} metadata request exceeds the transport cap",
+                          retryable=False)
+    try:
+        proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, env=child_env,
+                                **hidden_console_kwargs())
+    except OSError as exc:
+        # C04: type name only (never a path or command line).
+        raise SubmitError(f"{phase} failed: {type(exc).__name__}",
+                          retryable=True) from exc
+    _register_metadata_child(proc)
+    limit = int(request["maxBytes"]) * 2 + 65536  # base64 + envelope headroom
+    chunks: List[bytes] = []
+    overflow = {"flag": False}
+    state = {"retained": False}
+    outcome: Optional[str] = None
+    reader: Optional[threading.Thread] = None
+
+    def _reader() -> None:
+        total = 0
+        try:
+            while True:
+                chunk = proc.stdout.read(65536)
+                if not chunk:
+                    break
+                chunks.append(chunk)
+                total += len(chunk)
+                if total > limit:
+                    overflow["flag"] = True
+                    break
+        except (OSError, ValueError):
+            pass  # pipe closed by the abandon path — outcome already decided
+
+    def _cleanup() -> None:
+        """Single owner for every post-spawn path; runs exactly once."""
+        dead = proc.poll() is not None
+        if not dead:
+            try:
+                proc.kill()
+            except ProcessLookupError:
+                dead = True
+            except OSError:
+                pass  # kill failed; retention decision below
+            if not dead:
+                try:
+                    proc.wait(timeout=5)
+                    dead = True
+                except (subprocess.TimeoutExpired, OSError):
+                    pass
+        if reader is not None and reader.ident is not None:
+            reader.join(2.0)
+        try:
+            proc.stdout.close()
+        except Exception:
+            pass
+        if reader is not None and reader.ident is not None:
+            # Closing the pipe interrupts a reader still blocked on I/O.
+            reader.join(2.0)
+            if reader.is_alive():
+                dead = False
+        if dead:
+            _unregister_metadata_child(proc)
+        else:
+            state["retained"] = True
+            _retain_metadata_child(proc, reader, phase)
+
+    try:
+        try:
+            proc.stdin.write(request_bytes)
+        except OSError:
+            pass  # child died early; the reader sees EOF and we report below
+        try:
+            proc.stdin.close()
+        except OSError:
+            pass
+        reader = threading.Thread(target=_reader,
+                                  name=f"encodingdb-metadata-read-{phase}",
+                                  daemon=True)
+        reader.start()
+        while reader.is_alive():
+            if _event_cancelled(cancel_event):
+                outcome = "cancelled"
+                break
+            remaining = _remaining_seconds(deadline)
+            if remaining is not None and remaining <= 0:
+                outcome = "deadline"
+                break
+            reader.join(0.05)
+        if outcome is None and overflow["flag"]:
+            outcome = "oversize"
+    finally:
+        _cleanup()
+    if state["retained"]:
+        raise MetadataRetentionHeld(phase)
+    if outcome == "cancelled":
+        raise SubmissionCancelled(phase)
+    if outcome == "deadline":
+        raise SubmitError(f"{phase} exceeded {bound_seconds:g}s wall-clock bound",
+                          retryable=True)
+    if outcome == "oversize":
+        raise SubmitError(f"{phase} response exceeds the transport byte cap",
+                          retryable=False)
+    data = b"".join(chunks)
+    if not data:
+        raise SubmitError(f"{phase} failed: child-exited", retryable=True)
+    try:
+        envelope = json.loads(data.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise SubmitError(f"{phase} failed: malformed-transport-envelope",
+                          retryable=True) from exc
+    if not isinstance(envelope, dict):
+        raise SubmitError(f"{phase} failed: malformed-transport-envelope",
+                          retryable=True)
+    return envelope
+
+
+def _fetch_metadata_json(base_url: str, path: str, *, phase: str,
+                         cancel_event: Optional[Any],
+                         deadline: Optional[float],
+                         transaction_seconds: Optional[float] = None,
+                         max_bytes: int = JSON_BODY_HARD_CAP_BYTES) -> Any:
+    """One owned, cancellable, HARD-deadline, size-bounded metadata GET.
+
+    F3 replaces the synchronous eager `requests.get(timeout=10/15)` used by
+    compatibility/baseline (per-inactivity timeouts reset forever while a
+    peer dribbles bytes, and Stop/DNS/connect could not be interrupted).
+    The GET runs in an owned child process (see
+    `_run_owned_metadata_child`); this function enforces the contract on
+    the returned envelope: fail-closed size cap, non-200 -> retryable
+    SubmitError, malformed JSON -> non-retryable SubmitError, transport
+    faults -> retryable SubmitError (type name only), Stop ->
+    SubmissionCancelled. Contract validation stays in the parent."""
+    transaction_seconds = (METADATA_TRANSACTION_SECONDS if transaction_seconds is None
+                           else float(transaction_seconds))
+    bound_deadline = time.monotonic() + max(1.0, transaction_seconds)
+    deadline = bound_deadline if deadline is None else min(deadline, bound_deadline)
+    _check_transaction(cancel_event, deadline, phase, transaction_seconds)
+    remaining = _remaining_seconds(deadline) or 0.0
+    request = {"url": f"{base_url.rstrip('/')}{path}", "phase": phase,
+               "maxBytes": int(max_bytes), "remainingSeconds": remaining,
+               "boundSeconds": transaction_seconds}
+    # Standalone bootstrap also owns real host exclusion. A retained reaper
+    # must keep that lock until death is confirmed, including outside a batch.
+    from .spool import host_phase_hold
+    with host_phase_hold("publication"):
+        envelope = _run_owned_metadata_child(request, phase=phase,
+                                             cancel_event=cancel_event,
+                                             deadline=deadline,
+                                             bound_seconds=transaction_seconds)
+    transport_error = envelope.get("transportError")
+    if isinstance(transport_error, dict):
+        raise SubmitError(f"{phase} failed: {transport_error.get('kind') or 'unknown'}",
+                          retryable=True)
+    status = int(envelope.get("status") or 0)
+    headers = envelope.get("headers") or {}
+    try:
+        body = base64.b64decode(envelope.get("body") or "")
+    except Exception as exc:
+        raise SubmitError(f"{phase} failed: malformed-transport-envelope",
+                          retryable=True) from exc
+    if status != 200:
+        raise SubmitError(f"{phase} returned {status}", retryable=True,
+                          status_code=status,
+                          body=body[:ERROR_BODY_HARD_CAP_BYTES].decode("utf-8", "replace"))
+    declared = str(headers.get("Content-Length") or "").strip()
+    try:
+        if declared and int(declared) > max_bytes:
+            raise SubmitError(f"{phase} response exceeds {max_bytes} bytes",
+                              retryable=False)
+    except ValueError:
+        pass
+    if envelope.get("truncated") or len(body) > max_bytes:
+        raise SubmitError(f"{phase} response exceeds {max_bytes} bytes",
+                          retryable=False)
+    try:
+        return json.loads(body.decode("utf-8", "replace"))
+    except ValueError as exc:
+        raise SubmitError(f"{phase} returned malformed JSON", retryable=False) from exc
+
+
+def fetch_baseline_rows(base_url: str, *, cancel_event: Optional[Any] = None,
+                        deadline: Optional[float] = None,
+                        transaction_seconds: Optional[float] = None
+                        ) -> List[Dict[str, Any]]:
+    """Optional baseline lookup: bounded and cancellable (F3), never fatal.
+
+    Raises SubmitError/SubmissionCancelled for the caller to treat as
+    "no baseline this round"; a FAILED lookup is never cached, so it cannot
+    poison the TTL window — only a genuine 200 list is."""
     with config._GLOBAL_STATE_LOCK:
         if config._BASELINE_ROWS_CACHE is not None:
             elapsed = time.time() - config._BASELINE_ROWS_CACHE_TS
@@ -752,42 +1262,36 @@ def fetch_baseline_rows(base_url: str) -> List[Dict[str, Any]]:
             # TTL expired — clear cache and re-fetch
             config._BASELINE_ROWS_CACHE = None
 
-    try:
-        requests = _load_requests()
-        url = f"{base_url.rstrip('/')}/query?limit=500"
-        r = requests.get(url, timeout=15, verify=config.REQUESTS_VERIFY)
-        try:
-            if r.status_code == 200:
-                data = r.json()
-                if isinstance(data, list):
-                    with config._GLOBAL_STATE_LOCK:
-                        config._BASELINE_ROWS_CACHE = data
-                        config._BASELINE_ROWS_CACHE_TS = time.time()
-                    return data
-        finally:
-            r.close()
-    except Exception:
-        pass
-
+    data = _fetch_metadata_json(base_url, "/query?limit=500",
+                                phase="baseline query",
+                                cancel_event=cancel_event, deadline=deadline,
+                                transaction_seconds=transaction_seconds)
+    if not isinstance(data, list):
+        raise SubmitError("baseline query returned a non-list body", retryable=False)
     with config._GLOBAL_STATE_LOCK:
-        config._BASELINE_ROWS_CACHE = []
+        config._BASELINE_ROWS_CACHE = data
         config._BASELINE_ROWS_CACHE_TS = time.time()
-    return []
+    return data
 
 
-def check_compatibility(base_url: str, client_version: str) -> Dict[str, Any]:
+def check_compatibility(base_url: str, client_version: str, *,
+                        cancel_event: Optional[Any] = None,
+                        deadline: Optional[float] = None,
+                        transaction_seconds: Optional[float] = None
+                        ) -> Dict[str, Any]:
     from .suite import load_suite_pack_metadata, SUITE_VERSION
-    response = _load_requests().get(f"{base_url.rstrip('/')}/v7/compatibility", timeout=10,
-                                    verify=config.REQUESTS_VERIFY, allow_redirects=False)
-    try:
-        if response.status_code != 200:
-            raise SubmitError(f"Compatibility endpoint returned {response.status_code}", retryable=True,
-                              status_code=response.status_code)
-        contract = response.json()
-    finally:
-        response.close()
+    contract = _fetch_metadata_json(base_url, "/v7/compatibility",
+                                    phase="compatibility check",
+                                    cancel_event=cancel_event, deadline=deadline,
+                                    transaction_seconds=transaction_seconds)
+    if not isinstance(contract, dict):
+        raise SubmitError("Compatibility endpoint returned a non-object body",
+                          retryable=False)
     def version(value):
-        return tuple(int(part) for part in str(value).removeprefix("client/").split("."))
+        try:
+            return tuple(int(part) for part in str(value).removeprefix("client/").split("."))
+        except ValueError as exc:
+            raise SubmitError("Client/protocol incompatible with current collection epoch; update the client", retryable=False) from exc
     if (contract.get("protocolVersion") != config.BENCHMARK_PROTOCOL_VERSION
             or contract.get("encodeTimerBoundary") != "ffmpeg-process-v1"
             or contract.get("sourceSuiteVersion") != SUITE_VERSION

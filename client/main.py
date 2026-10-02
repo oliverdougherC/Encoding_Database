@@ -70,7 +70,10 @@ from .artifacts import (
     build_payload_hash,
     build_recipe_bootstrap,
 )
-from .network import SubmitError, SubmissionCancelled, fetch_baseline_rows, check_compatibility, await_owned_worker_quiescence
+from .network import (SubmitError, SubmissionCancelled, MetadataRetentionHeld, fetch_baseline_rows,
+                      check_compatibility, METADATA_QUIESCE_WAIT_SECONDS,
+                      metadata_child_invocation_phase, metadata_child_main,
+                      wait_for_metadata_quiescence, await_owned_worker_quiescence)
 from .campaign import (CampaignJournal, active_collection, atomic_json, directory_bytes, physical_source_id, journal_path, load_record,
     PreparationScope, PreparationTimeout, preparation_progress, preparation_stage,
     check_preparation_cancelled,
@@ -400,12 +403,17 @@ def _preparation_operation(function):
     return wrapped
 
 
-def _preparation_preflight(args, *, base_url=None, event_sink=None):
+def _preparation_preflight(args, *, base_url=None, event_sink=None, cancel_event=None):
     check_preparation_cancelled()
     if not getattr(args, "no_submit", False):
         preparation_progress("compatibility")
         try:
-            check_compatibility(base_url or args.base_url, CLIENT_VERSION)
+            # F3: the compatibility GET is cancellable and absolutely bounded;
+            # operator Stop must surface as an interrupt (130), not a failure.
+            check_compatibility(base_url or args.base_url, CLIENT_VERSION,
+                                cancel_event=cancel_event)
+        except SubmissionCancelled:
+            raise KeyboardInterrupt
         except Exception as exc:
             message = f"Compatibility check failed before preparation: {exc}. Use --no-submit for local collection."
             print(message, file=sys.stderr)
@@ -2385,7 +2393,8 @@ def run_sweep_mode(
     if refused:
         return refused
     base_args = _apply_submission_policy(base_args, interactive=interactive)
-    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink)
+    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink,
+                                          cancel_event=cancel_event)
     if preflight_rc:
         return preflight_rc
     presets_cfg = presets_cfg if presets_cfg is not None else load_presets_config(PRESETS_CONFIG_PATH)
@@ -2711,7 +2720,8 @@ def run_benchmark_batch(
         _emit_event(event_sink, "run_error", scope="batch", code=4, message=message)
         return 4
     campaign_paused = False
-    preflight_rc = _preparation_preflight(args, base_url=base_url, event_sink=event_sink)
+    preflight_rc = _preparation_preflight(args, base_url=base_url, event_sink=event_sink,
+                                          cancel_event=cancel_event)
     if preflight_rc:
         return preflight_rc
     ok, ffmpeg_version = ensure_ffmpeg_and_ffprobe()
@@ -2831,7 +2841,32 @@ def run_benchmark_batch(
             deadline=time.monotonic() + ACTIVE_PUBLICATION_DEADLINE_SECONDS,
         )
     if not getattr(args, 'no_submit', False):
-        baseline_rows = fetch_baseline_rows(base_url)
+        # F3: the baseline is OPTIONAL — a failed or timed-out lookup must
+        # never block useful contribution — but operator Stop still lands
+        # promptly (the fetch is cancellable and absolutely bounded).
+        try:
+            baseline_rows = fetch_baseline_rows(base_url, cancel_event=cancel_event)
+        except SubmissionCancelled:
+            raise KeyboardInterrupt
+        except MetadataRetentionHeld:
+            # F3 fail-closed: child cleanup could not confirm quiescence.
+            # Pausing is safer than encoding against live owned transport
+            # I/O; the barrier below re-checks before any timed work.
+            raise KeyboardInterrupt
+        except SubmitError as exc:
+            baseline_rows = []
+            message = f"Baseline lookup unavailable; continuing without comparison rows: {exc}"
+            print_warning(message)
+            _emit_event(event_sink, "preparation_progress", scope="batch",
+                        stage="baseline_unavailable")
+        # F3 measurement barrier: no timed encode may start while an owned
+        # metadata child (compat/baseline transport) is unconfirmed-dead.
+        # Census 0 means every child's death was CONFIRMED; a lingering
+        # retained child (deferred reaper) pauses the batch as an interrupt
+        # instead of letting measurement race live transport I/O.
+        if not wait_for_metadata_quiescence(METADATA_QUIESCE_WAIT_SECONDS,
+                                            cancel_event=cancel_event):
+            raise KeyboardInterrupt
 
     completed_count_local = 0
     processed_total = 0
@@ -3771,7 +3806,8 @@ def run_v7_suite_clip_mode(
     interactive: bool = False,
 ) -> int:
     base_args = _apply_submission_policy(base_args, interactive=interactive)
-    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink)
+    preflight_rc = _preparation_preflight(base_args, event_sink=event_sink,
+                                          cancel_event=cancel_event)
     if preflight_rc:
         return preflight_rc
     clip_id = str(getattr(base_args, "v7_suite_clip", "") or "").strip()
@@ -3865,7 +3901,8 @@ def _resume_campaign(args, *, event_sink=None, cancel_event=None, interactive=Fa
     if refused:
         return refused
     args = _apply_submission_policy(args, interactive=interactive)
-    preflight_rc = _preparation_preflight(args, event_sink=event_sink)
+    preflight_rc = _preparation_preflight(args, event_sink=event_sink,
+                                          cancel_event=cancel_event)
     if preflight_rc:
         return preflight_rc
     try:
@@ -4610,6 +4647,17 @@ def run_windows_gui_flow(args: argparse.Namespace) -> int:
 
 
 def main(argv: List[str]) -> int:
+    # F3: startup-only owned metadata child dispatch — BEFORE argument
+    # parsing, GUI launch or campaign routing, so a re-executed frozen
+    # executable (any package entry) can never recursively open a GUI, a
+    # run or a queue. The shape is position-anchored and length-exact
+    # (`[executable, --metadata-child, <phase>]`) and every entry checks
+    # the RAW OS argv before wrapping, so an ordinary CLI value such as
+    # `--base-url --metadata-child` never enters the helper or blocks on
+    # stdin; argparse rejects it instead. The GUI entry dispatches before
+    # it prepends `--gui`.
+    if metadata_child_invocation_phase(argv) is not None:
+        return metadata_child_main()
     # Packaged Windows console output can be CP1252 even when logs are
     # redirected. Keep status/error reporting alive for Unicode paths and
     # messages instead of losing the campaign to UnicodeEncodeError.
@@ -4680,10 +4728,15 @@ def main(argv: List[str]) -> int:
         cancel_event = threading.Event()
         previous_sigint = None
         try:
-            check_compatibility(args.base_url, CLIENT_VERSION)
+            # F3: SIGINT must cover the compatibility GET too — the install
+            # used to happen after it, so Ctrl-C there was a raw crash or a
+            # hang. The fetch is cancellable and absolutely bounded, so Stop
+            # lands within ~poll and a silent peer still returns on deadline.
             if threading.current_thread() is threading.main_thread():
                 previous_sigint = signal.getsignal(signal.SIGINT)
                 signal.signal(signal.SIGINT, lambda _signum, _frame: cancel_event.set())
+            check_compatibility(args.base_url, CLIENT_VERSION,
+                                cancel_event=cancel_event)
             storage_mb = (int(args.max_storage_mb) if bool(getattr(args, "max_storage_mb_explicit", False))
                           else None)
             if args.resume_campaign:
@@ -4710,6 +4763,10 @@ def main(argv: List[str]) -> int:
             if info.get("deferredReason") == "storage_or_exclusion":
                 print_warning(f"Upload deferred: {(info.get('failure') or {}).get('reason') or 'storage budget'}")
             return rc
+        except SubmissionCancelled:
+            cancel_event.set()
+            print_warning("Upload cancelled; saved work remains recoverable.")
+            return 130
         except KeyboardInterrupt:
             cancel_event.set()
             print_warning("Upload cancelled; saved work remains recoverable.")

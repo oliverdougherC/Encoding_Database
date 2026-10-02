@@ -23,6 +23,12 @@ Response-body close watchers now remain owned until connection close finishes,
 including after their bounded join returns. Protocol 7.1, the frozen suite
 and scientific checks are unchanged.
 
+Online compatibility and optional baseline metadata now run in owned,
+size-bounded subprocesses with absolute deadlines and Stop/Close handling.
+A metadata child is reaped before timing starts; exceptional retained work
+keeps host exclusion until its death is confirmed. Failed optional baseline
+lookups allow contribution to continue, and compatibility still fails closed.
+
 ## [1.3.0-rc.8] - 2026-09-29
 
 Unpublished review candidate. Client 0.3.8 builds console onefile launchers
