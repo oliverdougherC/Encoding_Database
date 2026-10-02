@@ -51,15 +51,15 @@ tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f1_collector_excluded_w
         # slip in exactly that gap.
 >       _run_f1_matrix(tmp_path, plain_publisher_exits_first=True)
 
-client/tests/test_publication_quiescence.py:302: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_quiescence.py:302:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 tmp_path = PosixPath('/tmp/evidence/reviewed-before/test_f1_collector_excluded_whe0')
 plain_publisher_exits_first = True
 
     def _run_f1_matrix(tmp_path, plain_publisher_exits_first):
         """Two SH publishers + deferred worker (REAL I/O) + competing collector.
-    
+
         Both publisher finish orders are explicit handshakes:
         - acquired (both SH owners) -> server-observed worker I/O start ->
           caller abandonment (deadline, no cancel) -> publisher exit and/or
@@ -96,14 +96,14 @@ plain_publisher_exits_first = True
                 f"worker I/O never started: {_child_diagnostics(children)}"
             _wait_event(children, "ABANDONED", deferred_ctl,
                         owner=children["deferred"][0])
-    
+
             _wait_event(children, "HOLD-RETURNED", deferred_ctl,
                         owner=children["deferred"][0])
             if plain_publisher_exits_first:
                 Path(plain_ctl + ".go").touch()
                 _wait_event(children, "PUBLISHER-EXIT", plain_ctl,
                             owner=children["publisher"][0])
-    
+
             # Mid-I/O exclusion probe: the plain publisher holds SH (second
             # order) or already exited while the deferred worker's I/O is still
             # open (first order — the review's exact reproduction window). The
@@ -125,7 +125,7 @@ plain_publisher_exits_first = True
                 "the shared lock at abandonment")
 E               AssertionError: collector obtained EX while the deferred owned worker still owned live publication I/O: a lossy SH->EX conversion dropped the shared lock at abandonment
 E               assert 'ACQUIRED-EX' == 'EXCLUDED'
-E                 
+E
 E                 - EXCLUDED
 E                 + ACQUIRED-EX
 
@@ -138,7 +138,7 @@ role = 'publication'
     def host_phase_hold(role: str = "publication"):
         """Kernel-backed host phase lock for one collector batch or one publication
         pass (C11).
-    
+
         Measurement takes the lock exclusively and publication shared, so a held
         collector defers publishers and a held publisher defers the next collector,
         in either start order: the non-blocking acquire is the atomic arbiter, so
@@ -186,7 +186,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc9cbd0>
         """While a deferred releaser waits for its owned worker: a fresh
         descriptor must be refused EX (ownership retained) AND a second publisher
         must still obtain SH (shared publication coexistence).
-    
+
         Before the fix the releaser escalated SH->EX when it could, serializing
         every other publisher for the worker's whole I/O window; on Linux the
         failed-conversion path additionally DROPS the shared lock entirely. The
@@ -202,7 +202,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc9cbd0>
                                               timeout=15) as sock:
                     sock.sendall(b"PUB-IO\n")
                     return sock.recv(8)
-    
+
             stop = threading.Event()
             stop.set()
             with spool.host_phase_hold("publication"):
@@ -226,12 +226,12 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc9cbd0>
                 # Shared publication must still coexist with the deferred releaser.
 >               with spool.host_phase_hold("publication") as acquired:
 
-client/tests/test_publication_quiescence.py:360: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_quiescence.py:360:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 /usr/local/lib/python3.11/contextlib.py:137: in __enter__
     return next(self.gen)
            ^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 role = 'publication'
 
@@ -239,7 +239,7 @@ role = 'publication'
     def host_phase_hold(role: str = "publication"):
         """Kernel-backed host phase lock for one collector batch or one publication
         pass (C11).
-    
+
         Measurement takes the lock exclusively and publication shared, so a held
         collector defers publishers and a held publisher defers the next collector,
         in either start order: the non-blocking acquire is the atomic arbiter, so
@@ -305,13 +305,13 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc09410>
         timeline = _Timeline()
         hardware = main.HardwareInfo("CPU", None, 16, "OS")
         worker = _owned_io_worker(timeline, 0.6, "replay")
-    
+
         def replay(queue_dir, **kwargs):
             # One entry hit its deadline (retryable, no cancel); replay returns
             # while its owned worker is still mid-I/O.
             _spawn_straggler(worker)
             return 1
-    
+
         monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
         events = []
         with _batch_patches(fixture, timeline, _slow_encode(timeline),
@@ -327,8 +327,8 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc09410>
         assert rc == 0, events[-5:]
 >       _assert_no_encode_overlaps_owned_io(timeline)
 
-client/tests/test_publication_quiescence.py:531: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_quiescence.py:531:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 timeline = <test_publication_quiescence._Timeline object at 0x7750dd19ab50>
 
@@ -378,11 +378,11 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaa9010>
         timeline = _Timeline()
         hardware = main.HardwareInfo("CPU", None, 16, "OS")
         worker = _owned_io_worker(timeline, 4.0, "pause")
-    
+
         def replay(queue_dir, **kwargs):
             _spawn_straggler(worker)
             return 1
-    
+
         monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
         events = []
         started = time.monotonic()
@@ -399,8 +399,8 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaa9010>
                 tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
                         "suiteClip": fixture._quick_clip()}])
 
-client/tests/test_publication_quiescence.py:558: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_quiescence.py:558:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 client/main.py:385: in wrapped
     return function(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -423,7 +423,7 @@ client/main.py:3022: in _encode_protocol_run
 /usr/local/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
     result = effect(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 kw = {'artifact_name': '001-libx264-fast-24-warmup-r1.mp4', 'cancel_event': None, 'checkpoint_path': '/tmp/evidence/reviewe..._pauses_when_owne0/campaigns/campaign-f361454928d1ce40/001-libx264-fast-24-warmup-r1.mp4.process.json', 'crf': 24, ...}
 
@@ -461,15 +461,15 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbe467d0>
         clock = [0.0]
         worker = _owned_io_worker(timeline, 2.5, "checkpoint")
         injected = []
-    
+
         def new_budget(minutes, **kwargs):
             return campaign.MeasurementBudget(minutes, clock=lambda: clock[0], **kwargs)
-    
+
         def encode(**kwargs):
             clock[0] += 5
             campaign.check_measurement_budget()
             return _slow_encode(timeline, 0.05)(**kwargs)
-    
+
         def submit(**kwargs):
             # The first checkpoint submission leaves a live owned worker behind
             # when its deadline races the response read (entry retained, no
@@ -478,7 +478,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbe467d0>
                 injected.append(True)
                 _spawn_straggler(worker)
             return "submitted", "run-f2-mid", 0
-    
+
         monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
         events = []
         tasks = [{"encoder": "libx264", "preset": "fast", "crf": 24,
@@ -584,19 +584,19 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc47e50>
         hardware = main.HardwareInfo("CPU", None, 16, "OS")
         clock = [0.0]
         worker = _owned_io_worker(timeline, 0.6, "resume")
-    
+
         def new_budget(minutes, **kwargs):
             return campaign.MeasurementBudget(minutes, clock=lambda: clock[0], **kwargs)
-    
+
         def encode(**kwargs):
             clock[0] += 10
             campaign.check_measurement_budget()
             return _slow_encode(timeline, 0.05)(**kwargs)
-    
+
         def replay(queue_dir, **kwargs):
             _spawn_straggler(worker)
             return 1
-    
+
         monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
         events = []
         # Segment 1: pauses at the checkpoint (budget exhausted at +30s).
@@ -626,8 +626,8 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbc47e50>
         assert rc2 == 0
 >       _assert_no_encode_overlaps_owned_io(timeline)
 
-client/tests/test_publication_quiescence.py:711: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_quiescence.py:711:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 timeline = <test_publication_quiescence._Timeline object at 0x7750dbc45a10>
 
@@ -651,9 +651,9 @@ client/tests/test_publication_quiescence.py:497: AssertionError
 Campaign campaign-198501b8c09b83f0: at most 3 encodes; resume with --resume-campaign campaign-198501b8c09b83f0
 Batch 1/1: 1 protocol recipe(s)
 Checkpoint reached: 0 accepted upload(s) this segment; the retained campaign continues automatically (campaign-198501b8c09b83f0).
-Preparing: compatibility 
+Preparing: compatibility
 Restoring this campaign's original 2048 MB storage allowance for resume.
-Preparing: compatibility 
+Preparing: compatibility
 Preparing: journal-reopen 002-libx264-fast-24-measured-r1.mp4
 Campaign campaign-198501b8c09b83f0: at most 3 encodes; resume with --resume-campaign campaign-198501b8c09b83f0
 Batch 1/1: 1 protocol recipe(s)
@@ -694,7 +694,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
             monkeypatch.setattr(main, "ACTIVE_PUBLICATION_DEADLINE_SECONDS", 1.0)
             instrument_transport(monkeypatch, timeline, watcher_close_delay=1.2)
             backend.drip_first_create(2.2)
-    
+
             artifact = tmp_path / "queued-artifact.mp4"
             artifact.write_bytes(artifact_bytes())
             payload = build_submission_payload(
@@ -706,7 +706,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
             queued_bytes = _managed_artifact_bytes(
                 str(tmp_path), entry["payload"])
             assert queued_bytes == artifact_bytes()
-    
+
             events = []
             replay_started_epoch = time.time()
             with _acceptance_patches(fixture, _acceptance_encode(timeline, clock)):
@@ -718,7 +718,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
             # The replayed entry is retained (retryable deadline, no cancel), so
             # the batch honestly reports queued work; encodes still completed.
             assert rc in (0, 10), events[-5:]
-    
+
             # Deadline forced WITHOUT operator cancellation: the real bounded
             # reader ran and the real connection close ran.
             assert timeline.spans("response-read"), "real reader never ran"
@@ -726,7 +726,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
             run_id = backend.wait_for_run(0)
             run = next(r for r in backend.runs.values() if r["id"] == run_id)
             assert run["uploaded"] is False  # create response was never parsed
-    
+
             # Safe pause of the replayed payload: entry + stable IDs + bytes +
             # retry deadline survive; nothing was double-submitted.
             _hash2, retained = _retained_entry(str(tmp_path), payload)
@@ -739,12 +739,12 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbaaa5d0>
             assert retained["nextAttemptAt"] > replay_started_epoch
             assert _managed_artifact_bytes(str(tmp_path),
                                            retained["payload"]) == queued_bytes
-    
+
             # No encode interval overlaps owned upload / response-read / close.
 >           assert_no_encode_overlap(timeline)
 
-client/tests/test_publication_transport_acceptance.py:213: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_transport_acceptance.py:213:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 timeline = <_publication_acceptance_support.Timeline object at 0x7750dbaaa990>
 
@@ -797,7 +797,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbac0b50>
             monkeypatch.setattr(main, "ACTIVE_PUBLICATION_DEADLINE_SECONDS", 0.8)
             instrument_transport(monkeypatch, timeline, watcher_close_delay=2.6)
             backend.drip_first_create(6.0)
-    
+
             artifact = tmp_path / "queued-artifact.mp4"
             artifact.write_bytes(artifact_bytes(b"pause-payload"))
             payload = build_submission_payload(
@@ -807,7 +807,7 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbac0b50>
             local_hash, entry = _retained_entry(str(tmp_path), payload)
             deadline_before = entry["retryDeadlineAt"]
             queued_bytes = _managed_artifact_bytes(str(tmp_path), entry["payload"])
-    
+
             events = []
             started = time.monotonic()
             with _acceptance_patches(fixture,
@@ -818,8 +818,8 @@ monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7750dbac0b50>
                     tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24,
                             "suiteClip": fixture._quick_clip()}])
 
-client/tests/test_publication_transport_acceptance.py:278: 
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+client/tests/test_publication_transport_acceptance.py:278:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 client/main.py:385: in wrapped
     return function(*args, **kwargs)
            ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -842,7 +842,7 @@ client/main.py:3022: in _encode_protocol_run
 /usr/local/lib/python3.11/unittest/mock.py:1189: in _execute_mock_call
     result = effect(*args, **kwargs)
              ^^^^^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 kw = {'artifact_name': '001-libx264-fast-24-warmup-r1.mp4', 'cancel_event': None, 'checkpoint_path': '/tmp/evidence/reviewe...transport_pause_r0/campaigns/campaign-6aa2e82800da2416/001-libx264-fast-24-warmup-r1.mp4.process.json', 'crf': 24, ...}
 
