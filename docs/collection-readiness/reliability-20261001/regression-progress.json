@@ -1,0 +1,118 @@
+{
+  "schemaVersion": 1,
+  "task": "EncodingDB PR23 targeted reliability continuation",
+  "readiness": "NOT_CERTIFIED",
+  "prDraft": true,
+  "merged": false,
+  "productionOrReleaseChanges": false,
+  "reviewedInitialHead": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
+  "currentIntegratedHead": "1a6b89763f5e8adc5ca01839876f5fb92a80510c",
+  "generatedUtc": "2026-10-02T00:35:31.328280+00:00",
+  "localAgentModel": "Qwen3.8-Flash-Next",
+  "nestedDelegation": false,
+  "unitEvidence": {
+    "clientSuite": {
+      "passed": 638,
+      "log": "f1-f2-primary-full-suite-after-storage.log"
+    },
+    "linuxKernelInitialRegression": {
+      "beforeFailed": 5,
+      "beforePassed": 2,
+      "afterAffectedPassed": 61,
+      "physicalNativePackage": false,
+      "initialPatchSha256": "32f3cdccbdb43d9d46afbeeaa44fd2fd6dd68b151b233cd27c058c08cd4fa97b"
+    },
+    "linuxContinuationAndCloseAfter": {
+      "passed": 8,
+      "log": "f1-f2-continuation-property-linux.log"
+    },
+    "responseCloseBefore": {
+      "actualLoopbackHTTP": true,
+      "importedProductionReader": true,
+      "operatorCancellation": false,
+      "closeStarted": true,
+      "closeStillActive": true,
+      "ownedWorkerCensus": 0,
+      "barrierReturnsQuiescent": true,
+      "closeStillActiveAfterHostRelease": true,
+      "collectorAcquiredDuringClose": true
+    },
+    "responseCloseAfter": {
+      "actualLoopbackHTTP": true,
+      "importedProductionReader": true,
+      "operatorCancellation": false,
+      "closeStarted": true,
+      "closeStillActive": true,
+      "ownedWorkerCensus": 1,
+      "barrierReturnsQuiescent": false,
+      "closeStillActiveAfterHostRelease": false,
+      "collectorAcquiredDuringClose": false
+    },
+    "f3RejectedInitialLateDNS": {
+      "cliExit": 10,
+      "cliReturned": true,
+      "ownedWorkersAfterDeadline": 1,
+      "collectorAcquiredAfterDeadline": true,
+      "httpRequestAfterDeadlineDuringMeasurement": true,
+      "actualRequestsReceived": 1,
+      "finalOwnedWorkers": 0
+    },
+    "f4ReceiptRetirementBefore": {
+      "source": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
+      "productionModulesImported": true,
+      "sourceExcerptsOrStubs": false,
+      "networkOrEncodesPerformed": false,
+      "cases": [
+        {
+          "case": "truncated",
+          "drained": 1,
+          "pendingSurvives": false,
+          "queuedBytesSurvive": false,
+          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+          "originalIntentionallyAbsent": true,
+          "acknowledgmentVerified": false,
+          "requirementPasses": false
+        },
+        {
+          "case": "empty",
+          "drained": 1,
+          "pendingSurvives": false,
+          "queuedBytesSurvive": false,
+          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+          "originalIntentionallyAbsent": true,
+          "acknowledgmentVerified": false,
+          "requirementPasses": false
+        },
+        {
+          "case": "wrong-local-identity",
+          "drained": 1,
+          "pendingSurvives": false,
+          "queuedBytesSurvive": false,
+          "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+          "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+          "originalIntentionallyAbsent": true,
+          "acknowledgmentVerified": false,
+          "requirementPasses": false
+        }
+      ]
+    }
+  },
+  "dispositions": {
+    "F1": "original SH retained; source fix integrated, native/full-I/O acceptance pending",
+    "F2": "bounded timing barriers and caller-phase response-close ownership integrated; stronger actual batch/replay HTTP coverage pending",
+    "F3": "initial socket-abort design rejected after normal CLI deadline still allowed late HTTP during measurement; local agent revising for bounded stopped/reaped metadata work",
+    "F4": "open; imported-production negative fixture confirms unverified retirement of only queued copy"
+  },
+  "physicalGUIAccess": "existing desktop automation probe confirmed same-user non-elevated Windows session1; not native package acceptance",
+  "newFinalPackagesBuilt": false,
+  "newOnlineMediumRunsExecuted": false,
+  "nativeAcceptanceGaps": [
+    "four final packages from one reviewed source",
+    "full ONLINE Medium/recovery Windows GUI and console, macOS app/Terminal, physical Linux launcher",
+    "final-package online preparation/create/auth/PUT/read Stop/Close",
+    "client-to-server run/artifact/analysis reconciliation and same-ID zero-encode replay"
+  ],
+  "ciGap": "unchanged Node locks now fail audit on Next/brace-expansion advisories; audit policy not weakened"
+}
