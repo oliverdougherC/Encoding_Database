@@ -1938,7 +1938,13 @@ def _reconcile_historical_envelope(*, base_url: str, envelope_path: Path,
         body = fetch_retention_status(base_url, run_id, cancel_event=cancel_event)
     except SubmissionCancelled:
         raise
-    except SubmitError:
+    except SubmitError as exc:
+        # F6: 404/410 mean the server says this run/artifact is GONE — a
+        # permanent per-record absence (honest reconciliation work, never a
+        # fabricated confirmation). Transport failures and 5xx stay
+        # "unreachable" so the record can be retried later.
+        if exc.status_code in (404, 410):
+            return "unavailable"
         return "unreachable"
     evidence = acknowledgments.validate_retention_response(envelope, marker, body)
     if evidence is None:
@@ -2008,15 +2014,25 @@ def _stage_and_replay_saved_envelopes(
                     index += 1
                     continue
                 if outcome == "unreachable":
-                    info.update(status="deferred",
-                                deferredReason="reconciliation_unreachable",
-                                unadmitted=len(paths) - index,
-                                pending=count_pending_entries(queue_dir))
-                    return
+                    # F6: a transport/5xx failure on ONE historical record is
+                    # that record's own deferred disposition. Keep its marker
+                    # and envelope untouched (no fake confirmation, no
+                    # re-encode), count it visibly, and let the healthy
+                    # suffix and staged prefix keep progressing.
+                    info["reconciliationUnreachable"] = int(info.get("reconciliationUnreachable") or 0) + 1
+                    unresolved = list(info.get("unresolvedReconciliationPaths") or [])
+                    unresolved.append(path.name)
+                    info["unresolvedReconciliationPaths"] = unresolved
+                    index += 1
+                    continue
                 if outcome == "unavailable":
-                    # Server cannot prove retention; report reconciliation
-                    # work, keep the envelope + marker, stage nothing.
+                    # Server cannot prove retention (or says the run is
+                    # gone): reconciliation work on THIS record. Keep the
+                    # envelope + marker, stage nothing, stay visible.
                     info["awaitingReconciliation"] = int(info.get("awaitingReconciliation") or 0) + 1
+                    awaiting = list(info.get("unresolvedReconciliationPaths") or [])
+                    awaiting.append(path.name)
+                    info["unresolvedReconciliationPaths"] = awaiting
                     index += 1
                     continue
                 # "publishable": intact bytes fall through to normal
@@ -2145,10 +2161,13 @@ def _publish_saved_campaign_gated(
         # payloads have had their independent publication chance. A runtime or
         # journal problem in one group cannot strand the existing envelopes.
         projected = project_attempt_groups(root, campaign_id)
+        # F5: a `.accepted.json` marker file is NOT proof of acceptance;
+        # only the projection's validated `acceptedOrders` (full v2 identity
+        # verdict) may suppress reconstruction. Corrupt/truncated markers
+        # beside intact artifacts must not strand completed work.
         missing_orders = [
             order for order in projected["candidateOrders"]
             if not (root / f"submission-{order:06d}.json").is_file()
-            and not (root / f"submission-{order:06d}.accepted.json").is_file()
         ]
         recon = ({"reconstructed": 0, "failure": None, "cancelled": False}
                  if not missing_orders else _reconstruct_saved_submissions(
@@ -2181,12 +2200,76 @@ def _publish_saved_campaign_gated(
     info["selectedPending"] = int(after.get("logicalPendingUploads") or 0)
     info["unavailableSources"] = int(after.get("unavailableSources") or 0)
     info["pending"] = count_pending_entries(queue_dir)
+    # Re-project after recovery/staging: unresolved journal evidence must
+    # never vanish from the final result. An unreadable projection is itself
+    # evidence — never an empty list.
+    try:
+        final_projection = project_attempt_groups(root, campaign_id)
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        final_projection = {"corruptEntries": [
+            {"path": "journal", "reason": f"journal cannot be projected: {exc}"[:120]}],
+            "failure": None, "attempts": 0}
+    unresolved = list(final_projection.get("corruptEntries") or [])
+    if final_projection.get("failure") and any(root.glob("attempt-*.json")):
+        # Journaled attempts require a readable frozen plan; a manifest
+        # failure beside legacy envelope-only journals is not corruption.
+        unresolved.append({"path": "manifest.json",
+                           "reason": str(final_projection["failure"])[:120]})
+    if unresolved:
+        info["unresolvedJournalCorruption"] = unresolved
     if info["status"] in ("cancelled", "deferred"):
         return 10, info
     if info.get("corrupt") or info.get("deadLettered") or info["terminal"] or info.get("campaignFailures"):
         info["status"] = "terminal_failures"
         return 1, info
     if info["unavailableSources"]:
+        # Missing bytes count against the campaign only when the entry is
+        # not already proven accepted (verified marker, verified durable
+        # receipt, or terminal verdict) — those artifacts were legitimately
+        # retired. A historical record whose retention answer could not be
+        # fetched THIS pass is deferred reconciliation work, not proven
+        # absence; anything else stays honest corrupt evidence (blocked).
+        queue_root = Path(queue_dir)
+        unresolved_missing = []
+        for env_path in sorted(root.glob("submission-*.json")):
+            if env_path.name.endswith(".accepted.json"):
+                continue
+            try:
+                saved_env = json.loads(env_path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                unresolved_missing.append(env_path.name)
+                continue
+            if not isinstance(saved_env, dict):
+                unresolved_missing.append(env_path.name)
+                continue
+            if _journal_marker_state(env_path)[0] == "verified":
+                continue
+            try:
+                local_hash = local_hash_for_payload(saved_env)
+            except (TypeError, ValueError):
+                unresolved_missing.append(env_path.name)
+                continue
+            receipt_path = queue_root / "receipts" / f"{local_hash}.json"
+            if (receipt_path.is_file()
+                    and receipt_verdict(str(receipt_path), saved_env).startswith("verified")):
+                continue
+            if (queue_root / "terminal" / f"{local_hash}.json").is_file():
+                continue
+            artifact = str(saved_env.get("artifactPath") or "")
+            if not artifact or not os.path.isfile(artifact):
+                unresolved_missing.append(env_path.name)
+        pending_reconciliation = (int(info.get("reconciliationUnreachable") or 0)
+                                  + int(info.get("awaitingReconciliation") or 0))
+        if (pending_reconciliation and unresolved_missing
+                and set(unresolved_missing) <= set(info.get("unresolvedReconciliationPaths") or [])):
+            # Every missing-bytes entry is a historical record awaiting its
+            # own reconciliation retry (transient or permanent absence); the
+            # campaign defers with backoff instead of claiming completion or
+            # asserting proven absence.
+            info.update(status="deferred", deferredReason=(
+                "reconciliation_unreachable" if int(info.get("reconciliationUnreachable") or 0)
+                else "awaiting_reconciliation"))
+            return 10, info
         info.update(status="blocked", failure=failure_info(
             "retained artifact bytes are missing from saved work",
             operation="publish_saved", campaign_id=campaign_id,
@@ -2198,6 +2281,21 @@ def _publish_saved_campaign_gated(
     if info["selectedPending"]:
         info.update(status="pending", deferredReason=info["deferredReason"] or "uploads_pending")
         return 10, info
+    if info.get("reconciliationUnreachable"):
+        # F6: per-record transport failures stay visible as deferred work
+        # with backoff; the campaign is never reported complete.
+        info.update(status="deferred", deferredReason="reconciliation_unreachable")
+        return 10, info
+    if unresolved:
+        # Independent uploads keep their confirmations (info["submitted"]),
+        # but unresolved journal evidence forbids claiming the whole
+        # publication succeeded; healthy siblings stay recoverable.
+        info.update(status="blocked", failure=failure_info(
+            "unresolved journal evidence remains; intact work was published "
+            "or stays recoverable",
+            operation="publish_saved", campaign_id=campaign_id,
+            category="corrupt_evidence", retryable=False))
+        return 1, info
     info["status"] = "published"
     _emit_event(event_sink, "publication_complete", campaignId=campaign_id,
                 submitted=info.get("submitted", 0))
@@ -2216,15 +2314,23 @@ def retry_due_uploads(
     """Retry DUE queued uploads without encodes and without touching campaigns (C12).
 
     Bounded (due-first window, time budget) and cancellable; ambiguous network
-    outcomes stay durable for idempotent retry. Exit codes match publish_saved_campaign."""
-    drained = drain_committed_receipts(queue_dir)
+    outcomes stay durable for idempotent retry. Exit codes match publish_saved_campaign.
+
+    F7: the host-level publication exclusion gates the WHOLE lifecycle before
+    its first mutation: the receipt drain writes journal markers and deletes
+    acknowledged artifacts, so it must never run while a collector owns the
+    exclusive measurement phase on this host. replay_spool re-enters the same
+    held lock (documented re-entry), and its per-queue measurement refusal
+    still applies inside the hold."""
     try:
-        stats = replay_spool(queue_dir, base_url=base_url, api_key=api_key,
-                             retries=max(1, int(retries)), use_token=use_token,
-                             cancel_event=cancel_event)
+        with host_phase_hold("publication"):
+            drained = drain_committed_receipts(queue_dir)
+            stats = replay_spool(queue_dir, base_url=base_url, api_key=api_key,
+                                 retries=max(1, int(retries)), use_token=use_token,
+                                 cancel_event=cancel_event)
     except SpoolCapacityError as exc:
         return 10, {"status": "deferred", "deferredReason": "measurement_exclusion",
-                    "drainedResiduals": drained, "failure": _safe_failure_info(exc)}
+                    "drainedResiduals": 0, "failure": _safe_failure_info(exc)}
     pending = count_pending_entries(queue_dir)
     result = {"status": "pending" if pending else "published",
               "drainedResiduals": drained, "submitted": stats.submitted,

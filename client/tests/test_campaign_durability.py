@@ -298,8 +298,11 @@ def test_publish_saved_rebuilds_envelopes_for_complete_group_after_controlled_st
          mock.patch.object(main, 'probe_video_stream_metrics',
                            return_value={'sourceFps': 24, 'sourceDurationSeconds': 5, 'containerFormat': 'mp4'}), \
          mock.patch.object(spool, 'submit_artifact_submission', side_effect=transport):
+        # Damaged sibling = unresolved journal evidence: the complete group
+        # still publishes (asserted below), but the overall run is an honest
+        # non-success rather than a silent 'published'.
         assert main.main(['prog', '--publish-saved', root.name,
-                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 0
+                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 1
     # Rebuilt payloads carry the identical group identity the live path emits.
     assert len(sent) == len(measured[complete[0]]), \
         "the complete group publishes every counted attempt, once"
@@ -326,7 +329,7 @@ def test_publish_saved_rebuilds_envelopes_for_complete_group_after_controlled_st
          mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
          mock.patch.object(spool, 'submit_artifact_submission', side_effect=AssertionError('replay must not re-upload')):
         assert main.main(['prog', '--publish-saved', root.name,
-                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 0
+                          '--queue-dir', str(tmp_path), '--base-url', 'https://example.invalid']) == 1
 
 def test_cancellation_stops_only_owned_process():
     import subprocess

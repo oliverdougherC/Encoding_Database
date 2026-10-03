@@ -163,8 +163,12 @@ def project_attempt_groups(root: Path, campaign_id: str) -> Dict[str, Any]:
                     elif not str(receipt.get("reconciliationState") or ""):
                         raise ValueError(f"accepted marker does not match attempt: {verdict}")
                 except (OSError, ValueError, TypeError, AttributeError) as exc:
+                    # F5: a corrupt accepted marker is recorded, but it does
+                    # NOT authorize skipping the rest of this attempt. The
+                    # retained artifact is still inspected independently:
+                    # intact bytes stay recoverable candidates (marker
+                    # existence is not proof, and corruption is not proof).
                     result["corruptEntries"].append({"path": receipt_path.name, "reason": str(exc)[:120]})
-                    continue
             artifact = Path(str(info.get("artifactPath") or ""))
             try:
                 available = artifact.is_file() and root_resolved in artifact.resolve().parents

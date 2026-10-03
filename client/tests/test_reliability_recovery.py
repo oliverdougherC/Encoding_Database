@@ -49,7 +49,12 @@ def test_intact_saved_envelope_publishes_with_old_runtime_and_client(tmp_path):
             queue_dir=str(tmp_path), campaign_id=campaign_id,
             base_url="http://127.0.0.1:9", api_key="", max_storage_mb=2048,
         )
-    assert rc == 0, info
+    # The intact envelope published (staged once, receipt committed), but the
+    # damaged attempt sibling is unresolved journal evidence: the run must
+    # stay a visible non-success, never a silent "published".
+    assert rc == 1, info
+    assert info["status"] == "blocked"
+    assert [item["path"] for item in info["unresolvedJournalCorruption"]] == ["attempt-000002.json"]
     assert info["selectedPending"] == 0
     assert info["pending"] == 1  # An unrelated campaign remains queued.
     stage.assert_called_once_with(str(tmp_path), payload, max_storage_mb=2048)

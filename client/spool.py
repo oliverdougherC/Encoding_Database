@@ -465,8 +465,13 @@ def inspect_spool(queue_dir: str) -> QueueStatus:
 
 
 def cleanup_spool(queue_dir: str) -> CleanupStats:
-    with _spool_write_lock(queue_dir):
-        return _cleanup_spool_locked(queue_dir)
+    # F7: cleanup deletes dead-letter media and orphaned managed artifacts.
+    # Like every other publication-side mutation it must hold the host-level
+    # publication exclusion FIRST, so a collector's measurement phase on this
+    # host can never race file removal out from under a timing-sensitive run.
+    with host_phase_hold("publication"):
+        with _spool_write_lock(queue_dir):
+            return _cleanup_spool_locked(queue_dir)
 
 
 def _cleanup_spool_locked(queue_dir: str) -> CleanupStats:
