@@ -4,7 +4,7 @@ F1–F4 are corrected in source; native acceptance remains open. The client is a
 **unpublished client/0.3.9 / 1.3.0-rc.9 review candidate**. The PR remains draft.
 No release, production deployment, merge or physical Medium run was performed.
 
-Corrected source: `8d4841b5c6bb33255e3610bed90b2ffeb1b82306`. Client Git tree: `6814ea3be9ba5f7a7f849d8958414859b42d203e`.
+Corrected source: `c797ef3e38c1d52e25758abf582215a2cb38bc3d`. Client Git tree: `af9a9a2da954b6cfce4e711e2f2d8956f0c473d7`.
 The initial reviewed head was `73ede395c5ce7053a9c25d67c5d6371fa4a91117`;
 its CI merge build was `f805c177d8eba1c98c91ac83e2fb4967ee0303e3`.
 The commit containing this report adds documentation only to that corrected source.
@@ -36,6 +36,7 @@ The commit containing this report adds documentation only to that corrected sour
 | Additional F4 binding regressions | rejected draft: 9 failed; corrected acknowledgment suite: 51 passed |
 | Final binding/progress checks | 16 passed |
 | Final publication/version checks | 18 passed |
+| Isolated clean-preparation import and deployment boundaries | 5 passed |
 | Python 3.11 compilation / whitespace checks | passed |
 
 The full 730-test run preceded the final version bump and the one-line historical
@@ -64,6 +65,12 @@ The additional F4 before run used the completed but rejected draft, not the init
 reviewed head. Its complete validator, fixture module, tracked-source patch and file
 hash manifest are retained in `evidence/` so that provenance stays explicit.
 
+The first final CI clean-deployment build exposed a missing acknowledgment module
+in the minimal preparation container. Its COPY/context list is corrected; the
+actual entry point fails with the prior declared inputs and passes with the new
+ones in isolation. [Before](evidence/preparation-import-before.log),
+[after](evidence/preparation-import-after.log). The complete CI rerun remains pending.
+
 ## Acceptance gaps
 
 Final-source CI and all four exact candidate package hashes remain to be collected.
@@ -79,6 +86,9 @@ preserving its `3e6bb0846ec3f1b396c9c8de513a5e6b6a2ed3c8` keyframe correction,
 existing volumes, quota, TLS and scientific settings. No backend rollout occurred.
 The inherited Node dependency audit failure is not waived. Keep the PR draft until
 applicable acceptance and audit blockers are resolved.
+
+The final packaging fix additionally changes `scripts/suite-preparation.Dockerfile`,
+its `.dockerignore`, and `client/tests/test_deployment_preparation.py`.
 
 ## Changed files
 
