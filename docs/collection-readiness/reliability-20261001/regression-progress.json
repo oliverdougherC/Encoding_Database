@@ -7,8 +7,8 @@
   "productionOrReleaseChanges": false,
   "reviewedInitialHead": "73ede395c5ce7053a9c25d67c5d6371fa4a91117",
   "reviewedInitialMergeBuildSource": "f805c177d8eba1c98c91ac83e2fb4967ee0303e3",
-  "sourceCorrectionHead": "c797ef3e38c1d52e25758abf582215a2cb38bc3d",
-  "clientGitTree": "af9a9a2da954b6cfce4e711e2f2d8956f0c473d7",
+  "sourceCorrectionHead": "70cea499c0a4f2a817ec6dc1a092cf8aab0579bc",
+  "clientGitTree": "98de0e6f8d65cb72651d1a425618ca3088db1eb3",
   "clientImplementationVersion": "client/0.3.9",
   "projectVersion": "1.3.0-rc.9",
   "generatedUtc": "2026-10-02T23:40:13.539038+00:00",
@@ -63,6 +63,11 @@
       "before": "Actual CI and isolated declared-COPY context failed with missing acknowledgment module",
       "afterPassed": 5,
       "log": "evidence/preparation-import-after.log"
+    },
+    "finalCiContractChecks": {
+      "passed": 22,
+      "log": "evidence/final-ci-contract-checks.log",
+      "note": "Remaining live-version assertions aligned; isolated preparation COPY closure verified. Complete CI rerun pending."
     }
   },
   "nativePackages": {
@@ -91,6 +96,7 @@
     "evidence/f4-rejected-source-provenance.json": "fafaceab7ee554527dd8a3deac832a29516513601448fef2708701c1067b69fc",
     "evidence/f4-rejected-source.patch.gz": "aea384f0cdae690ba1bc4045c52100d39da3e91ff8922f90d64850bc2c4ade30",
     "evidence/final-binding-progress.log": "c018e871956ec1c81b8d47f6b7e25524940d4be5325dfe6036f6a4594c785204",
+    "evidence/final-ci-contract-checks.log": "0515d01b36cb2506098b15a5e16ca3c9ba5b44e3b0206647135fdf8937a7a655",
     "evidence/final-publication-version.log": "0c15f6df465a2457debe7d49cff64f3ea67789fb7014b61e606a356e821079fd",
     "evidence/metadata-exclusion-after.log": "fb9f4833ec108937050465e52b6621ab8e602a363b84195e69739696eeb7595e",
     "evidence/metadata-exclusion-before.log": "2aa889f7dfcccd31e2e19f3a7c85a0f2eef1f65dab14fdec0534aa0ea3997063",

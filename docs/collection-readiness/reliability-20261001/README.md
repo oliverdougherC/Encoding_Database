@@ -4,7 +4,7 @@ F1–F4 are corrected in source; native acceptance remains open. The client is a
 **unpublished client/0.3.9 / 1.3.0-rc.9 review candidate**. The PR remains draft.
 No release, production deployment, merge or physical Medium run was performed.
 
-Corrected source: `c797ef3e38c1d52e25758abf582215a2cb38bc3d`. Client Git tree: `af9a9a2da954b6cfce4e711e2f2d8956f0c473d7`.
+Corrected source: `70cea499c0a4f2a817ec6dc1a092cf8aab0579bc`. Client Git tree: `98de0e6f8d65cb72651d1a425618ca3088db1eb3`.
 The initial reviewed head was `73ede395c5ce7053a9c25d67c5d6371fa4a91117`;
 its CI merge build was `f805c177d8eba1c98c91ac83e2fb4967ee0303e3`.
 The commit containing this report adds documentation only to that corrected source.
@@ -37,6 +37,7 @@ The commit containing this report adds documentation only to that corrected sour
 | Final binding/progress checks | 16 passed |
 | Final publication/version checks | 18 passed |
 | Isolated clean-preparation import and deployment boundaries | 5 passed |
+| Final CI encoding/release/preparation contract checks | 22 passed |
 | Python 3.11 compilation / whitespace checks | passed |
 
 The full 730-test run preceded the final version bump and the one-line historical
@@ -69,7 +70,9 @@ The first final CI clean-deployment build exposed a missing acknowledgment modul
 in the minimal preparation container. Its COPY/context list is corrected; the
 actual entry point fails with the prior declared inputs and passes with the new
 ones in isolation. [Before](evidence/preparation-import-before.log),
-[after](evidence/preparation-import-after.log). The complete CI rerun remains pending.
+[after](evidence/preparation-import-after.log). The complete CI rerun remains pending. Remaining rc.8/client/0.3.8 live-version
+assertions exposed by CI are aligned with the unpublished candidate; the 22 related
+encoding/release/preparation checks pass. Historical replay fixtures stay unchanged.
 
 ## Acceptance gaps
 
