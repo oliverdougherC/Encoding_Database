@@ -138,10 +138,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
           cd "$RUNNER_TEMP/ffmpeg-runtime"
-          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
-            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
-          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
-          tar -xf ffmpeg-linux.tar.xz
+          python -m pip install --disable-pip-version-check pyinstaller==6.19.0
+          python "$GITHUB_WORKSPACE/scripts/provision_pinned_runtime.py" --platform linux --output-root "$PWD"
           bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
           test -x "$bundle_dir/bin/ffmpeg"
           test -x "$bundle_dir/bin/ffprobe"
@@ -172,10 +170,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
           cd "$RUNNER_TEMP/ffmpeg-runtime"
-          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
-            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
-          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
-          tar -xf ffmpeg-linux.tar.xz
+          python -m pip install --disable-pip-version-check pyinstaller==6.19.0
+          python "$GITHUB_WORKSPACE/scripts/provision_pinned_runtime.py" --platform linux --output-root "$PWD"
           bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
           test -x "$bundle_dir/bin/ffmpeg"
           test -x "$bundle_dir/bin/ffprobe"
@@ -323,13 +319,8 @@ jobs:
         run: |
           $runtimeDir = Join-Path $env:RUNNER_TEMP "ffmpeg-runtime"
           New-Item -ItemType Directory -Path $runtimeDir -Force | Out-Null
-          $archive = Join-Path $runtimeDir "ffmpeg-win.zip"
-          Invoke-WebRequest -Uri "https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-win64-gpl-8.1.zip" -OutFile $archive
-          $actualHash = (Get-FileHash -Algorithm SHA256 -Path $archive).Hash.ToLowerInvariant()
-          if ($actualHash -ne "4e40699fa864811312d6c1895ea4873beaf8475e1188563fee57fac860554601") {
-            throw "Unexpected FFmpeg archive hash: $actualHash"
-          }
-          Expand-Archive -LiteralPath $archive -DestinationPath $runtimeDir -Force
+          python -m pip install --disable-pip-version-check pyinstaller==6.19.0
+          python scripts/provision_pinned_runtime.py --platform win --output-root $runtimeDir
           $bundleDir = Get-ChildItem -LiteralPath $runtimeDir -Directory | Where-Object { $_.Name -like "ffmpeg-*" } | Select-Object -First 1
           if (-not $bundleDir) { throw "Expanded FFmpeg bundle directory not found" }
           $ffmpeg = Join-Path $bundleDir.FullName "bin\\ffmpeg.exe"
@@ -535,10 +526,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/ffmpeg-runtime"
           cd "$RUNNER_TEMP/ffmpeg-runtime"
-          curl -L --fail --silent --show-error -o ffmpeg-linux.tar.xz \
-            https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2026-09-09-14-51/ffmpeg-n8.1.2-51-g7ba069f4f1-linux64-gpl-8.1.tar.xz
-          echo "1288c1e46efce263651f5b10755f9ef11419a91558407fe61cc178aa9869fa1b  ffmpeg-linux.tar.xz" | shasum -a 256 -c -
-          tar -xf ffmpeg-linux.tar.xz
+          python -m pip install --disable-pip-version-check pyinstaller==6.19.0
+          python "$GITHUB_WORKSPACE/scripts/provision_pinned_runtime.py" --platform linux --output-root "$PWD"
           bundle_dir="$(find "$PWD" -mindepth 1 -maxdepth 1 -type d -name 'ffmpeg-*' -print -quit)"
           test -x "$bundle_dir/bin/ffmpeg"
           test -x "$bundle_dir/bin/ffprobe"

@@ -1,0 +1,187 @@
+/opt/homebrew/lib/python3.11/site-packages/pytest_asyncio/plugin.py:207: PytestDeprecationWarning: The configuration option "asyncio_default_fixture_loop_scope" is unset.
+The event loop scope for asynchronous fixtures will default to the fixture caching scope. Future versions of pytest-asyncio will default the loop scope for asynchronous fixtures to function scope. Set the default fixture loop scope explicitly in order to avoid unexpected behavior in the future. Valid fixture loop scopes are: "function", "class", "module", "package", "session"
+
+  warnings.warn(PytestDeprecationWarning(_DEFAULT_FIXTURE_LOOP_SCOPE_UNSET))
+FFFFFFFFF                                                                [100%]
+=================================== FAILURES ===================================
+______ test_receipt_without_local_identity_cannot_retire_foreign_payload _______
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_receipt_without_local_ide0')
+
+    def test_receipt_without_local_identity_cannot_retire_foreign_payload(tmp_path):
+        campaign = "campaign-000000000000001f"
+        root = tmp_path / "campaigns" / campaign
+        root.mkdir(parents=True)
+        payload = _submission_payload(root, payload_hash="a" * 64, campaign_id=campaign)
+        foreign = _submission_payload(tmp_path, name="foreign.mp4", payload_hash="b" * 64,
+                                      campaign_id="campaign-000000000000001e")
+        response = server_bundle(foreign, "foreign-run")
+        local_hash = spool.local_hash_for_payload(payload)
+        receipt = {"localHash": local_hash, "status": "uploaded_analysis_pending",
+                   "response": response, "acknowledgment": ack.validate_upload_response(foreign, response)}
+        queue = tmp_path / "queue"
+        atomic_json(queue / "receipts" / (local_hash + ".json"), receipt)
+>       assert ack.receipt_verdict(local_hash, receipt, None) != "verified"
+E       AssertionError: assert 'verified' != 'verified'
+E        +  where 'verified' = <function receipt_verdict at 0x1066842c0>('fe2e3073f6c9cf66eb8699044a859a9929610cb4fbe062544243e78a95838feb', {'acknowledgment': {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifa...757c88e4cd149c691e93c24bf2bf', 'status': 'PENDING', 'statusReason': None, ...}}, 'status': 'uploaded_analysis_pending'}, None)
+E        +    where <function receipt_verdict at 0x1066842c0> = ack.receipt_verdict
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:23: AssertionError
+______________ test_response_rejects_coerced_identifiers[bad_id0] ______________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_response_rejects_coerced_0')
+bad_id = {'bad': 1}
+
+    @pytest.mark.parametrize("bad_id", [{"bad": 1}, ["bad"], True, 1])
+    def test_response_rejects_coerced_identifiers(tmp_path, bad_id):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["id"] = bad_id
+        response["artifact"]["benchmarkRunId"] = bad_id
+>       assert ack.validate_upload_response(payload, response) is None
+E       AssertionError: assert {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} is None
+E        +  where {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} = <function validate_upload_response at 0x106684180>({'artifactByteSize': 28, 'artifactPath': '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pyte... 'artifactSha256': '5ddb1f418402af3de3e0817df382856899ea660f0ebd79bb58bcb3c0689d3444', 'contentType': 'video/mp4', ...}, {'analyses': [], 'artifact': {'benchmarkRunId': {'bad': 1}, 'byteSize': 28, 'deletedAt': None, 'id': 'artifact-own-run...': '4d6641dab1adc17a072d8924a4f074e3cae841995a26a6c8104560e8634f71f3', 'status': 'PENDING', 'statusReason': None, ...}})
+E        +    where <function validate_upload_response at 0x106684180> = ack.validate_upload_response
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:38: AssertionError
+______________ test_response_rejects_coerced_identifiers[bad_id1] ______________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_response_rejects_coerced_1')
+bad_id = ['bad']
+
+    @pytest.mark.parametrize("bad_id", [{"bad": 1}, ["bad"], True, 1])
+    def test_response_rejects_coerced_identifiers(tmp_path, bad_id):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["id"] = bad_id
+        response["artifact"]["benchmarkRunId"] = bad_id
+>       assert ack.validate_upload_response(payload, response) is None
+E       AssertionError: assert {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} is None
+E        +  where {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} = <function validate_upload_response at 0x106684180>({'artifactByteSize': 28, 'artifactPath': '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pyte... 'artifactSha256': '5ddb1f418402af3de3e0817df382856899ea660f0ebd79bb58bcb3c0689d3444', 'contentType': 'video/mp4', ...}, {'analyses': [], 'artifact': {'benchmarkRunId': ['bad'], 'byteSize': 28, 'deletedAt': None, 'id': 'artifact-own-run', ...': '4d6641dab1adc17a072d8924a4f074e3cae841995a26a6c8104560e8634f71f3', 'status': 'PENDING', 'statusReason': None, ...}})
+E        +    where <function validate_upload_response at 0x106684180> = ack.validate_upload_response
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:38: AssertionError
+_______________ test_response_rejects_coerced_identifiers[True] ________________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_response_rejects_coerced_2')
+bad_id = True
+
+    @pytest.mark.parametrize("bad_id", [{"bad": 1}, ["bad"], True, 1])
+    def test_response_rejects_coerced_identifiers(tmp_path, bad_id):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["id"] = bad_id
+        response["artifact"]["benchmarkRunId"] = bad_id
+>       assert ack.validate_upload_response(payload, response) is None
+E       AssertionError: assert {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} is None
+E        +  where {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} = <function validate_upload_response at 0x106684180>({'artifactByteSize': 28, 'artifactPath': '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pyte... 'artifactSha256': '5ddb1f418402af3de3e0817df382856899ea660f0ebd79bb58bcb3c0689d3444', 'contentType': 'video/mp4', ...}, {'analyses': [], 'artifact': {'benchmarkRunId': True, 'byteSize': 28, 'deletedAt': None, 'id': 'artifact-own-run', ......': '4d6641dab1adc17a072d8924a4f074e3cae841995a26a6c8104560e8634f71f3', 'status': 'PENDING', 'statusReason': None, ...}})
+E        +    where <function validate_upload_response at 0x106684180> = ack.validate_upload_response
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:38: AssertionError
+_________________ test_response_rejects_coerced_identifiers[1] _________________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_response_rejects_coerced_3')
+bad_id = 1
+
+    @pytest.mark.parametrize("bad_id", [{"bad": 1}, ["bad"], True, 1])
+    def test_response_rejects_coerced_identifiers(tmp_path, bad_id):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["id"] = bad_id
+        response["artifact"]["benchmarkRunId"] = bad_id
+>       assert ack.validate_upload_response(payload, response) is None
+E       AssertionError: assert {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} is None
+E        +  where {'analysisAccepted': False, 'analysisStatus': 'NONE', 'artifactByteSize': 28, 'artifactId': 'artifact-own-run', ...} = <function validate_upload_response at 0x106684180>({'artifactByteSize': 28, 'artifactPath': '/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pyte... 'artifactSha256': '5ddb1f418402af3de3e0817df382856899ea660f0ebd79bb58bcb3c0689d3444', 'contentType': 'video/mp4', ...}, {'analyses': [], 'artifact': {'benchmarkRunId': 1, 'byteSize': 28, 'deletedAt': None, 'id': 'artifact-own-run', ...}, ...': '4d6641dab1adc17a072d8924a4f074e3cae841995a26a6c8104560e8634f71f3', 'status': 'PENDING', 'statusReason': None, ...}})
+E        +    where <function validate_upload_response at 0x106684180> = ack.validate_upload_response
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:38: AssertionError
+_ test_analysis_acceptance_requires_same_accepted_run_and_artifact[PENDING-False] _
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_analysis_acceptance_requi0')
+run_status = 'PENDING', foreign = False
+
+    @pytest.mark.parametrize("run_status,foreign", [("PENDING", False), ("SUSPECT", False),
+                                                    ("ACCEPTED", True)])
+    def test_analysis_acceptance_requires_same_accepted_run_and_artifact(tmp_path, run_status, foreign):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["status"] = run_status
+        response["analyses"] = [{"id": "analysis", "metricModelId": "model", "status": "COMPLETE",
+                                 "benchmarkRunId": "foreign" if foreign else "own-run",
+                                 "artifactId": "foreign" if foreign else response["artifact"]["id"]}]
+        evidence = ack.validate_upload_response(payload, response)
+        assert evidence["uploadConfirmed"] is True
+>       assert evidence["analysisAccepted"] is False
+E       assert True is False
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:52: AssertionError
+_ test_analysis_acceptance_requires_same_accepted_run_and_artifact[SUSPECT-False] _
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_analysis_acceptance_requi1')
+run_status = 'SUSPECT', foreign = False
+
+    @pytest.mark.parametrize("run_status,foreign", [("PENDING", False), ("SUSPECT", False),
+                                                    ("ACCEPTED", True)])
+    def test_analysis_acceptance_requires_same_accepted_run_and_artifact(tmp_path, run_status, foreign):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["status"] = run_status
+        response["analyses"] = [{"id": "analysis", "metricModelId": "model", "status": "COMPLETE",
+                                 "benchmarkRunId": "foreign" if foreign else "own-run",
+                                 "artifactId": "foreign" if foreign else response["artifact"]["id"]}]
+        evidence = ack.validate_upload_response(payload, response)
+        assert evidence["uploadConfirmed"] is True
+>       assert evidence["analysisAccepted"] is False
+E       assert True is False
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:52: AssertionError
+_ test_analysis_acceptance_requires_same_accepted_run_and_artifact[ACCEPTED-True] _
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_analysis_acceptance_requi2')
+run_status = 'ACCEPTED', foreign = True
+
+    @pytest.mark.parametrize("run_status,foreign", [("PENDING", False), ("SUSPECT", False),
+                                                    ("ACCEPTED", True)])
+    def test_analysis_acceptance_requires_same_accepted_run_and_artifact(tmp_path, run_status, foreign):
+        payload = _submission_payload(tmp_path, payload_hash="a" * 64)
+        response = server_bundle(payload, "own-run")
+        response["benchmarkRun"]["status"] = run_status
+        response["analyses"] = [{"id": "analysis", "metricModelId": "model", "status": "COMPLETE",
+                                 "benchmarkRunId": "foreign" if foreign else "own-run",
+                                 "artifactId": "foreign" if foreign else response["artifact"]["id"]}]
+        evidence = ack.validate_upload_response(payload, response)
+        assert evidence["uploadConfirmed"] is True
+>       assert evidence["analysisAccepted"] is False
+E       assert True is False
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:52: AssertionError
+______________ test_bare_marker_never_shortcuts_saved_publication ______________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-155/test_bare_marker_never_shortcu0')
+
+    def test_bare_marker_never_shortcuts_saved_publication(tmp_path):
+        root = tmp_path / "campaigns" / "campaign-000000000000001f"
+        root.mkdir(parents=True)
+        payload = _submission_payload(root, payload_hash="a" * 64, campaign_id=root.name)
+        envelope = root / "submission-000001.json"
+        atomic_json(envelope, payload)
+        marker = {"schemaVersion": 2, "executionOrder": 1, "recipeId": "recipe-1",
+                  "artifactPath": payload["artifactPath"], "artifactSha256": payload["artifactSha256"],
+                  "payloadHash": payload["runCreate"]["payloadHash"], "artifactByteSize": payload["artifactByteSize"],
+                  "benchmarkRunId": "invented", "artifactId": "invented", "uploadConfirmed": True}
+        atomic_json(root / "submission-000001.accepted.json", marker)
+>       assert main._journal_marker_state(envelope)[0] != "verified"
+E       AssertionError: assert 'verified' != 'verified'
+
+.omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py:69: AssertionError
+=========================== short test summary info ============================
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_receipt_without_local_identity_cannot_retire_foreign_payload
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_response_rejects_coerced_identifiers[bad_id0]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_response_rejects_coerced_identifiers[bad_id1]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_response_rejects_coerced_identifiers[True]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_response_rejects_coerced_identifiers[1]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_analysis_acceptance_requires_same_accepted_run_and_artifact[PENDING-False]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_analysis_acceptance_requires_same_accepted_run_and_artifact[SUSPECT-False]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_analysis_acceptance_requires_same_accepted_run_and_artifact[ACCEPTED-True]
+FAILED .omx/reliability-20261001/f4-final-review-rejected-source/client/tests/test_acknowledgment_binding.py::test_bare_marker_never_shortcuts_saved_publication
+9 failed in 0.18s

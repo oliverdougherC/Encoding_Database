@@ -98,6 +98,7 @@ class ReleasePackagingTests(unittest.TestCase):
 
     def test_read_client_minimum_version_is_coherent(self) -> None:
         self.assertEqual(release_manifest_lib.read_client_minimum_version(), "client/0.3.0")
+        self.assertEqual(release_manifest_lib.read_client_implementation_version(), "client/0.3.9")
 
     def test_client_patch_version_does_not_change_protocol_minimum(self) -> None:
         with mock.patch.object(release_manifest_lib, "read_text", side_effect=[
@@ -231,6 +232,7 @@ class ReleasePackagingTests(unittest.TestCase):
         self.assertIn('"--gui"', gui_entry)
         console_entry = (root / "client/_pyinstaller_entry.py").read_text(encoding="utf-8")
         self.assertIn("from client.main import main", console_entry)
+
         for relative_path in ("packaging/macos/launcher.sh",
                               "packaging/macos/EncodingDB.command",
                               "packaging/linux/start.sh"):
@@ -251,6 +253,15 @@ class ReleasePackagingTests(unittest.TestCase):
         from scripts import macos_client_package
         self.assertEqual(macos_client_package.format_version(
             macos_client_package.DOCUMENTED_MACOS_FLOOR), "27.0")
+
+    def test_console_onefile_builds_handle_process_group_interrupt_once(self) -> None:
+        root = release_manifest_lib.ROOT_DIR
+        for name in ("build_macos_client.sh", "build_linux_client.sh"):
+            script = (root / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn("--bootloader-ignore-signals", script)
+        windows = (root / "scripts/build_windows_client.ps1").read_text(encoding="utf-8")
+        self.assertIn('if ($Windowed) {', windows)
+        self.assertIn('$buildArgs += "--bootloader-ignore-signals"', windows)
 
 
 if __name__ == "__main__":

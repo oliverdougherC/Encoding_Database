@@ -1,0 +1,283 @@
+..FFF..FFF......                                                         [100%]
+=================================== FAILURES ===================================
+___ test_damaged_attempt_sibling_uploads_intact_group_but_stays_non_success ____
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_damaged_attempt_sibling_u0')
+
+    def test_damaged_attempt_sibling_uploads_intact_group_but_stays_non_success(tmp_path):
+        """Attempt-level damage must not HIDE or skip the intact group beside it
+        — those uploads still happen and keep their confirmations — but the
+        unresolved damaged attempt forbids claiming the whole publication
+        succeeded."""
+        root, measured, _by_order = _complete_journal(tmp_path)
+        (root / "attempt-999999.json").write_text("{damaged sibling")
+        sent = []
+    
+        def transport(_base, submission, **_kw):
+            sent.append(submission)
+            return server_bundle(submission, f"run-sib-{len(sent)}")
+    
+        with mock.patch.object(main, "check_compatibility", return_value={}), \
+             mock.patch.object(main, "ensure_ffmpeg_and_ffprobe", return_value=(True, "ffmpeg test")), \
+             mock.patch.object(main, "probe_video_stream_metrics",
+                               return_value={"sourceFps": 24, "sourceDurationSeconds": 5,
+                                             "containerFormat": "mp4"}), \
+             mock.patch.object(spool, "submit_artifact_submission", side_effect=transport):
+            rc, info = main._publish_saved_campaign_gated(
+                queue_dir=str(tmp_path), campaign_id=root.name,
+                base_url="https://example.invalid", api_key="", max_storage_mb=2048)
+        # The intact group still published, once, with its confirmations kept.
+        assert len(sent) == len(measured)
+        assert int(info.get("submitted") or 0) == len(measured)
+        # Unresolved damage is visible and the overall outcome is non-success.
+>       assert rc == 1, info
+E       AssertionError: {'admitted': 2, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+E       assert 0 == 1
+
+tests/test_publication_recovery_integrity.py:279: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-44f37410a481dd64: at most 3 encodes; resume with --resume-campaign campaign-44f37410a481dd64
+Batch 1/1: 1 protocol recipe(s)
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 2
+  Server-confirmed: 0 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 0s
+  Throughput: 84597.3 attempts/hour
+_________ test_manifest_projection_failure_is_unresolved_not_published _________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_manifest_projection_failu0')
+
+    def test_manifest_projection_failure_is_unresolved_not_published(tmp_path):
+        """A damaged frozen plan beside journaled attempts is unresolved
+        projection failure: intact envelopes may upload, but the run must never
+        claim 'published'."""
+        root, measured, _by_order = _complete_journal(tmp_path)
+        (root / "manifest.json").write_text("{truncated plan")
+        sent = []
+    
+        def transport(_base, submission, **_kw):
+            sent.append(submission)
+            return server_bundle(submission, f"run-man-{len(sent)}")
+    
+        with mock.patch.object(main, "check_compatibility", return_value={}), \
+             mock.patch.object(main, "ensure_ffmpeg_and_ffprobe", return_value=(True, "ffmpeg test")), \
+             mock.patch.object(main, "probe_video_stream_metrics",
+                               return_value={"sourceFps": 24, "sourceDurationSeconds": 5,
+                                             "containerFormat": "mp4"}), \
+             mock.patch.object(spool, "submit_artifact_submission", side_effect=transport):
+            rc, info = main._publish_saved_campaign_gated(
+                queue_dir=str(tmp_path), campaign_id=root.name,
+                base_url="https://example.invalid", api_key="", max_storage_mb=2048)
+>       assert rc == 1, info
+E       AssertionError: {'admitted': 0, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+E       assert 0 == 1
+
+tests/test_publication_recovery_integrity.py:311: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-44f37410a481dd64: at most 3 encodes; resume with --resume-campaign campaign-44f37410a481dd64
+Batch 1/1: 1 protocol recipe(s)
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 2
+  Server-confirmed: 0 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 0s
+  Throughput: 83609.2 attempts/hour
+__________ test_unreadable_journal_root_never_yields_empty_corruption __________
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_unreadable_journal_root_n0')
+
+    def test_unreadable_journal_root_never_yields_empty_corruption(tmp_path):
+        """A projection that raises must surface as evidence, never as an empty
+        corruptEntries list that lets 'published' slip through."""
+        root, measured, _by_order = _complete_journal(tmp_path)
+        sent = []
+    
+        def transport(_base, submission, **_kw):
+            sent.append(submission)
+            return server_bundle(submission, f"run-exc-{len(sent)}")
+    
+        real_project = main.project_attempt_groups
+        calls = {"n": 0}
+    
+        def flaky_project(*args, **kwargs):
+            calls["n"] += 1
+            if calls["n"] >= 5:  # before/gate-start/reconstruct/after succeed;
+                raise OSError("journal unreadable")  # the FINAL re-projection fails
+            return real_project(*args, **kwargs)
+    
+        with mock.patch.object(main, "check_compatibility", return_value={}), \
+             mock.patch.object(main, "ensure_ffmpeg_and_ffprobe", return_value=(True, "ffmpeg test")), \
+             mock.patch.object(main, "probe_video_stream_metrics",
+                               return_value={"sourceFps": 24, "sourceDurationSeconds": 5,
+                                             "containerFormat": "mp4"}), \
+             mock.patch.object(main, "project_attempt_groups", side_effect=flaky_project), \
+             mock.patch.object(spool, "submit_artifact_submission", side_effect=transport):
+            rc, info = main._publish_saved_campaign_gated(
+                queue_dir=str(tmp_path), campaign_id=root.name,
+                base_url="https://example.invalid", api_key="", max_storage_mb=2048)
+>       assert rc == 1, info
+E       AssertionError: {'admitted': 2, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+E       assert 0 == 1
+
+tests/test_publication_recovery_integrity.py:346: AssertionError
+----------------------------- Captured stdout call -----------------------------
+Campaign campaign-44f37410a481dd64: at most 3 encodes; resume with --resume-campaign campaign-44f37410a481dd64
+Batch 1/1: 1 protocol recipe(s)
+Batch Summary
+  Planned attempts: 3
+  Batches: 1
+  Measured processed: 2
+  Saved locally: 2
+  Server-confirmed: 0 (analysis pending)
+  Protocol invalid: 0
+  Queued for upload: 0
+  Terminal failures: 0
+  Elapsed: 0s
+  Throughput: 83757.1 attempts/hour
+____ test_permanent_absence_reports_reconciliation_work_not_transport[404] _____
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_permanent_absence_reports0')
+code = 404
+
+    @pytest.mark.parametrize("code", [404, 410])
+    def test_permanent_absence_reports_reconciliation_work_not_transport(tmp_path, code):
+        """A 404/410 through the FULL publisher (server says this run/artifact is
+        gone) is counted as reconciliation work on that record only; the healthy
+        suffix still stages and replays."""
+        rc, info, staged, replays, root, fetch = _historical_case(
+            tmp_path, retention_error=SubmitError("gone", retryable=False, status_code=code))
+        assert staged == [2] and replays
+        assert int(info.get("awaitingReconciliation") or 0) == 1
+        assert not info.get("reconciliationUnreachable")
+>       assert info["unresolvedReconciliationPaths"] == ["submission-000001.json"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'unresolvedReconciliationPaths'
+
+tests/test_publication_recovery_integrity.py:422: KeyError
+____ test_permanent_absence_reports_reconciliation_work_not_transport[410] _____
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_permanent_absence_reports1')
+code = 410
+
+    @pytest.mark.parametrize("code", [404, 410])
+    def test_permanent_absence_reports_reconciliation_work_not_transport(tmp_path, code):
+        """A 404/410 through the FULL publisher (server says this run/artifact is
+        gone) is counted as reconciliation work on that record only; the healthy
+        suffix still stages and replays."""
+        rc, info, staged, replays, root, fetch = _historical_case(
+            tmp_path, retention_error=SubmitError("gone", retryable=False, status_code=code))
+        assert staged == [2] and replays
+        assert int(info.get("awaitingReconciliation") or 0) == 1
+        assert not info.get("reconciliationUnreachable")
+>       assert info["unresolvedReconciliationPaths"] == ["submission-000001.json"]
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       KeyError: 'unresolvedReconciliationPaths'
+
+tests/test_publication_recovery_integrity.py:422: KeyError
+____ test_verified_retired_prefix_does_not_block_transient_historical_defer ____
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-211/test_verified_retired_prefix_d0')
+
+    def test_verified_retired_prefix_does_not_block_transient_historical_defer(tmp_path):
+        """A previously accepted (verified, receipt-bound) entry whose bytes were
+        LEGITIMATELY retired must not be misclassified as missing evidence when a
+        DIFFERENT historical record hits a transient 503. The healthy suffix
+        stages/replays, the accepted prefix stays accepted with stable IDs, zero
+        encodes, zero re-uploads, and the run defers on the unresolved record."""
+        campaign_id = "campaign-000000000000f602"
+        queue = tmp_path / "queue"
+        root = queue / "campaigns" / campaign_id
+        root.mkdir(parents=True)
+        # Order 1: verified accepted earlier; its artifact was retired normally.
+        art1 = root / "measured-1.mp4"
+        art1.write_bytes(b"accepted-and-retired")
+        env1 = _submission(campaign_id, art1, 1)
+        atomic_json(root / "submission-000001.json", env1)
+        response1 = server_bundle(env1, "run-accepted")
+        local1 = spool.local_hash_for_payload(env1)
+        atomic_json(queue / "receipts" / f"{local1}.json", {
+            "localHash": local1,
+            "payloadIdentity": acknowledgments.local_hash_material(env1),
+            "status": "uploaded_analysis_pending",
+            "response": response1,
+            "acknowledgment": acknowledgments.validate_upload_response(env1, response1)})
+        ack1 = acknowledgments.validate_upload_response(env1, response1)
+        atomic_json(root / "submission-000001.accepted.json", {
+            "schemaVersion": 2, "executionOrder": 1, "recipeId": "recipe-1",
+            "artifactPath": str(art1), "artifactSha256": _sha(art1.read_bytes()),
+            "benchmarkRunId": "run-accepted",
+            "payloadHash": env1["runCreate"]["payloadHash"],
+            "artifactId": "artifact-run-accepted", "uploadConfirmed": True,
+            "artifactByteSize": art1.stat().st_size,
+            "acknowledgment": ack1, "response": response1})
+        art1.unlink()
+        # Order 2: historical v1 marker, retired bytes, retention fetch FAILS 503.
+        art2 = root / "measured-2.mp4"
+        art2.write_bytes(b"historical-unknown")
+        env2 = _submission(campaign_id, art2, 2)
+        atomic_json(root / "submission-000002.json", env2)
+        atomic_json(root / "submission-000002.accepted.json", {
+            "schemaVersion": 1, "executionOrder": 2, "recipeId": "recipe-1",
+            "artifactPath": str(art2), "artifactSha256": _sha(art2.read_bytes()),
+            "benchmarkRunId": "run-ancient"})
+        art2.unlink()
+        # Order 3: healthy suffix with intact bytes.
+        art3 = root / "measured-3.mp4"
+        art3.write_bytes(b"healthy-suffix")
+        env3 = _submission(campaign_id, art3, 3)
+        atomic_json(root / "submission-000003.json", env3)
+        staged, replays, encodes = [], [], []
+    
+        def stage(_queue, payload, **_kw):
+            staged.append(payload["runCreate"]["repetitionIndex"])
+            return f"queued-{payload['runCreate']['repetitionIndex']}", {}
+    
+        def replay(*_a, **_kw):
+            replays.append(len(staged))
+            return spool.ReplayStats(submitted=len(staged))
+    
+        errors = []
+        def retention(*_a, **_kw):
+            errors.append(SubmitError("retention lookup failed", retryable=True,
+                                      status_code=503))
+            raise errors[-1]
+    
+        with mock.patch.object(main, "fetch_retention_status", side_effect=retention), \
+             mock.patch.object(main, "spool_payload", side_effect=stage), \
+             mock.patch.object(main, "replay_spool", side_effect=replay), \
+             mock.patch.object(main, "encode_to_artifact", side_effect=encodes.append), \
+             mock.patch.object(main, "count_pending_entries", return_value=0):
+            rc, info = main._publish_saved_campaign_gated(
+                queue_dir=str(queue), campaign_id=campaign_id,
+                base_url="http://127.0.0.1:9", api_key="", max_storage_mb=2048)
+        assert not encodes  # zero encodes, ever
+        assert staged == [3] and replays  # healthy suffix staged and replayed
+>       assert rc == 10, info
+E       AssertionError: {'admitted': 1, 'campaignId': 'campaign-000000000000f602', 'cancelled': 0, 'corrupt': 0, ...}
+E       assert 1 == 10
+
+tests/test_publication_recovery_integrity.py:506: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_publication_recovery_integrity.py::test_damaged_attempt_sibling_uploads_intact_group_but_stays_non_success - AssertionError: {'admitted': 2, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+assert 0 == 1
+FAILED tests/test_publication_recovery_integrity.py::test_manifest_projection_failure_is_unresolved_not_published - AssertionError: {'admitted': 0, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+assert 0 == 1
+FAILED tests/test_publication_recovery_integrity.py::test_unreadable_journal_root_never_yields_empty_corruption - AssertionError: {'admitted': 2, 'campaignFailures': False, 'campaignId': 'campaign-44f37410a481dd64', 'cancelled': 0, ...}
+assert 0 == 1
+FAILED tests/test_publication_recovery_integrity.py::test_permanent_absence_reports_reconciliation_work_not_transport[404] - KeyError: 'unresolvedReconciliationPaths'
+FAILED tests/test_publication_recovery_integrity.py::test_permanent_absence_reports_reconciliation_work_not_transport[410] - KeyError: 'unresolvedReconciliationPaths'
+FAILED tests/test_publication_recovery_integrity.py::test_verified_retired_prefix_does_not_block_transient_historical_defer - AssertionError: {'admitted': 1, 'campaignId': 'campaign-000000000000f602', 'cancelled': 0, 'corrupt': 0, ...}
+assert 1 == 10
+6 failed, 10 passed in 0.91s
+EXIT=1

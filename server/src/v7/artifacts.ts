@@ -1600,6 +1600,7 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
   return {
     benchmarkRun: {
       id: bundle.run.id,
+      payloadHash: bundle.run.payloadHash,
       status: bundle.run.status,
       statusReason: bundle.run.statusReason,
       workloadId: bundle.run.workloadId,
@@ -1611,6 +1612,7 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
     },
     artifact: {
       id: bundle.artifact.id,
+      benchmarkRunId: bundle.artifact.benchmarkRunId,
       role: bundle.artifact.role,
       sha256: bundle.artifact.sha256,
       byteSize: bundle.artifact.byteSize,
@@ -1628,6 +1630,8 @@ function bundleToResponse(bundle: RunArtifactBundle): JsonObject {
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime())
       .map((analysis) => ({
         id: analysis.id,
+        benchmarkRunId: analysis.benchmarkRunId,
+        artifactId: analysis.artifactId,
         status: analysis.status,
         metricModelId: analysis.metricModelId,
         qualityContextId: analysis.qualityContextId,
@@ -2666,6 +2670,12 @@ export function createArtifactPipelineRouter(options: ArtifactPipelineOptions = 
         artifactStorageState: bundle.artifact.storageState,
         benchmarkRunStatus: bundle.run.status,
         benchmarkRunStatusReason: bundle.run.statusReason,
+        // F4: minimal immutable payload/artifact identity so a client can
+        // prove the server still retains THIS artifact for THIS payload
+        // (metadata-only reconciliation) without re-uploading bytes.
+        payloadHash: bundle.run.payloadHash,
+        artifactSha256: bundle.artifact.sha256,
+        artifactByteSize: bundle.artifact.byteSize,
         analyses: bundleToResponse(bundle).analyses,
         measurementGroup: bundle.measurementGroup ?? null,
       });

@@ -1,0 +1,23 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____ test_standalone_metadata_retains_kernel_exclusion_until_child_is_dead _____
+
+tmp_path = PosixPath('/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/pytest-of-ofhd/pytest-95/test_standalone_metadata_retai0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x109468710>
+
+    def test_standalone_metadata_retains_kernel_exclusion_until_child_is_dead(tmp_path, monkeypatch):
+        monkeypatch.setenv("ENCODINGDB_HOST_PHASE_DIR", str(tmp_path / "phase"))
+        proc = _StubbornProc()
+        try:
+            with mock.patch.object(network.subprocess, "Popen", return_value=proc):
+                with pytest.raises(network.MetadataRetentionHeld):
+                    network.check_compatibility("http://127.0.0.1:9", "client/0.3.8",
+                                                transaction_seconds=0.1)
+            assert network.owned_metadata_children() == 1
+>           with pytest.raises(spool.SpoolCapacityError):
+E           Failed: DID NOT RAISE <class 'client.spool.SpoolCapacityError'>
+
+client/tests/test_metadata_host_exclusion.py:21: Failed
+=========================== short test summary info ============================
+FAILED client/tests/test_metadata_host_exclusion.py::test_standalone_metadata_retains_kernel_exclusion_until_child_is_dead
+1 failed in 3.39s

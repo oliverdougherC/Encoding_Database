@@ -36,15 +36,22 @@ export const primaryAssets: ReleaseAsset[] = [
     file: "encodingdb-client-windows.exe",
     label: "Windows (GUI)",
     sha256: "2ec0a4bcb7d94af340e61a1837bfc9380b51b2dd60bbd1f48eb023dfa24c0379",
-    support: "No Authenticode signature, so SmartScreen may warn at first launch. The window exposes the same Small/Medium/Large/Full sweeps as the guided interface and recovers automatically from a cache folder protected against the current user.",
+    support: "Tested on Windows 11 x86-64; other Windows versions are unverified. No Authenticode signature, so SmartScreen may warn at first launch. The window exposes the same Small/Medium/Large/Full sweeps as the guided interface and recovers automatically from a cache folder protected against the current user.",
   },
   {
     file: "encodingdb-client-linux.tar.gz",
     label: "Linux (x86-64)",
     sha256: "b1a68a039ce78a6bc9718adbae99409865326ea8a8b3fc29e47aaa090ef0f4d8",
-    support: "Unsigned archive; unpack it and run the launcher inside. Same guided flow; includes the command-line entry point for scripts.",
+    support: "Tested on Ubuntu 24.04 x86-64; other Linux distributions are unverified. Unsigned archive; unpack it and run the launcher inside. Same guided flow; includes the command-line entry point for scripts.",
   },
 ];
+
+export const currentWindowsConsole: ReleaseAsset = {
+  file: "encodingdb-client-windows-console.exe",
+  label: "Windows console",
+  sha256: "05189da160c876f812cd16ae228b76df50bac8925d5763bb3d49ea9f0e42a60e",
+  support: "Command-line entry point from the current release, built alongside the Windows GUI.",
+};
 
 // Preserve the actual published rc.4 asset identities for rollback and verification.
 export const supersededAssets: ReleaseAsset[] = [

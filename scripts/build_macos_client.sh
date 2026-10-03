@@ -103,6 +103,7 @@ fi
 cd "$ROOT_DIR"
 "$BUILD_PYTHON" -m PyInstaller.utils.cliutils.makespec \
   --onefile \
+  --bootloader-ignore-signals \
   --name "$APP_NAME" \
   --specpath "$PYI_SPEC_DIR" \
   --paths "$ROOT_DIR" \

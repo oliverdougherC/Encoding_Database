@@ -288,8 +288,15 @@ def _format_duration(seconds: float) -> str:
 
 
 def print_end_screen(completed_count: int, elapsed_seconds: float, status: str = "complete",
-                     recovery: Optional[str] = None) -> None:
-    """Render the terminal state honestly; only rc-0 work may claim completion."""
+                     recovery: Optional[str] = None,
+                     ledger: Optional[Dict[str, Any]] = None) -> None:
+    """Render the terminal state honestly; only rc-0 work may claim completion.
+
+    `ledger` is the durable campaign view (journal + queue). When present it
+    replaces the single "Submitted data points" line with distinct counters so
+    measured, locally-saved, queued and server-confirmed work are never
+    conflated; an accepted upload is analysis-pending, not an accepted result.
+    """
     time_str = _format_duration(elapsed_seconds)
     headline, title, plain = {
         "complete": ("[ok] Benchmark run complete [/ok]", "Thank You", "Benchmark complete."),
@@ -301,14 +308,49 @@ def print_end_screen(completed_count: int, elapsed_seconds: float, status: str =
                    "Run did not complete; nothing was marked finished."),
     }.get(status, ("[accent] Run ended with an unknown state [/accent]", "Failed",
                    "Run ended with an unknown state."))
+    counts_line: Optional[str] = None
+    coverage_line: Optional[str] = None
+    if isinstance(ledger, dict):
+        uploaded = int(ledger.get("uploaded") or 0)
+        saved_local = int(ledger.get("savedLocal") or 0)
+        queued = int(ledger.get("queued") or 0)
+        terminal = int(ledger.get("terminalFailures") or 0)
+        measured = int(ledger.get("measuredAttempts") or 0)
+        if status == "failed" and uploaded + saved_local > 0:
+            headline = "[accent] Run finished with failures — retained evidence remains actionable [/accent]"
+            plain = "Run finished with failures; retained evidence remains actionable."
+        counts_line = (
+            f"Measured attempts: {measured} · Saved locally: {saved_local} · "
+            f"Queued for upload: {queued} · Server-confirmed: {uploaded} (analysis pending) · "
+            f"Terminal failures: {terminal}"
+        )
+        planned = int(ledger.get("groupsTotal") or 0)
+        finished = int(ledger.get("groupsFinished") or 0)
+        required = int(ledger.get("requiredMeasured") or 0)
+        optional = int(ledger.get("optionalMeasured") or 0)
+        if planned:
+            coverage_line = (f"Frozen groups: {finished}/{planned} finished · "
+                             f"Required measured floor: {required} · "
+                             f"Optional adaptive attempts used: {optional}")
     recovery_line = f"\n[muted]{recovery}[/muted]" if recovery else ""
     if _rich_tty():
-        body = (
-            f"{headline}\n\n"
-            f"[muted]Submitted data points:[/muted] [accent]{completed_count}[/accent]\n"
-            f"[muted]Time donated:[/muted] [accent2]{time_str}[/accent2]{recovery_line}"
-        )
+        if counts_line is not None:
+            body = f"{headline}\n\n[muted]{counts_line}[/muted]\n"
+            if coverage_line:
+                body += f"[muted]{coverage_line}[/muted]\n"
+            body += f"[muted]Time donated:[/muted] [accent2]{time_str}[/accent2]{recovery_line}"
+        else:
+            body = (
+                f"{headline}\n\n"
+                f"[muted]Submitted data points:[/muted] [accent]{completed_count}[/accent]\n"
+                f"[muted]Time donated:[/muted] [accent2]{time_str}[/accent2]{recovery_line}"
+            )
         _console.print(_Panel(body, title=f"[title] {title} [/title]", border_style="accent2"))
+    elif counts_line is not None:
+        print(f"{plain} {counts_line}"
+              + (f" {coverage_line}." if coverage_line else "")
+              + f" in {time_str}."
+              + (f" {recovery}" if recovery else ""))
     else:
         print(f"{plain} Submitted {completed_count} data points in {time_str}."
               + (f" {recovery}" if recovery else ""))
@@ -406,40 +448,36 @@ def print_batch_summary(summary: Dict[str, Any]) -> None:
     total_batches = int(summary.get("totalBatches") or 0)
     completed = int(summary.get("completed") or 0)
     submitted = int(summary.get("submitted") or 0)
+    locally_complete = int(summary.get("locallyComplete") or 0)
     skipped = int(summary.get("skipped") or 0)
     queued = int(summary.get("queued") or 0)
     failed = int(summary.get("failed") or 0)
     elapsed_seconds = float(summary.get("elapsedSeconds") or 0.0)
     throughput_per_hour = float(summary.get("throughputPerHour") or 0.0)
+    rows = [
+        ("Planned attempts", str(total)),
+        *( [("Batches", str(total_batches))] if total_batches > 0 else [] ),
+        ("Measured processed", str(completed)),
+        ("Saved locally", str(locally_complete)),
+        ("Server-confirmed", f"{submitted} (analysis pending)"),
+        ("Protocol invalid", str(skipped)),
+        ("Queued for upload", str(queued)),
+        ("Terminal failures", str(failed)),
+    ]
+    if elapsed_seconds > 0:
+        rows.append(("Elapsed", _format_duration(elapsed_seconds)))
+        rows.append(("Throughput", f"{throughput_per_hour:.1f} attempts/hour"))
     if _rich_tty():
         table = _Table(show_header=False, box=None, pad_edge=False)
         table.add_column(style="muted", width=22)
         table.add_column(style="accent", justify="right")
-        table.add_row("Planned Tasks", str(total))
-        if total_batches > 0:
-            table.add_row("Batches", str(total_batches))
-        table.add_row("Completed Encodes", str(completed))
-        table.add_row("Submitted", str(submitted))
-        table.add_row("Skipped", str(skipped))
-        table.add_row("Queued", str(queued))
-        table.add_row("Failures", str(failed))
-        if elapsed_seconds > 0:
-            table.add_row("Elapsed", _format_duration(elapsed_seconds))
-            table.add_row("Throughput", f"{throughput_per_hour:.1f} encodes/hour")
+        for label, value in rows:
+            table.add_row(label, value)
         _console.print(_Panel(table, title="[title] Batch Summary [/title]", border_style="accent2"))
         return
     print("Batch Summary")
-    print(f"  Planned Tasks: {total}")
-    if total_batches > 0:
-        print(f"  Batches: {total_batches}")
-    print(f"  Completed Encodes: {completed}")
-    print(f"  Submitted: {submitted}")
-    print(f"  Skipped: {skipped}")
-    print(f"  Queued: {queued}")
-    print(f"  Failures: {failed}")
-    if elapsed_seconds > 0:
-        print(f"  Elapsed: {_format_duration(elapsed_seconds)}")
-        print(f"  Throughput: {throughput_per_hour:.1f} encodes/hour")
+    for label, value in rows:
+        print(f"  {label}: {value}")
 
 
 class BenchmarkProgress:
@@ -495,7 +533,6 @@ class BatchRunDashboard:
         self.total_tasks = max(1, int(total_tasks))
         self.total_batches = max(1, int(total_batches))
         self.hardware = hardware
-        self._phase_steps_per_task = 3  # encode + metrics + submit
 
         self._live = None
         self._overall_progress = None
@@ -503,16 +540,20 @@ class BatchRunDashboard:
         self._overall_task_id = None
         self._batch_task_id = None
 
-        self._overall_phase_steps = 0
-        self._batch_phase_steps = 0
-        self._overall_count = 0
-        self._batch_count = 0
+        # Bar bounds are durable measurement attempts, set only
+        # via set_progress. Legacy counters below drive descriptions only.
+        self._display_done = 0
+        self._display_total = self.total_tasks
+        self._display_batch_done = 0
+        self._display_batch_total = 1
         self._batch_no = 1
         self._batch_size = 1
         self._description = "Preparing batch..."
         self._task_info: Dict[str, Any] = {}
         self._metrics: Dict[str, Any] = {}
-        self._counters: Dict[str, int] = {"submitted": 0, "skipped": 0, "queued": 0, "failed": 0}
+        self._counters: Dict[str, int] = {
+            "submitted": 0, "locally": 0, "skipped": 0, "queued": 0, "failed": 0,
+        }
         self._prev_sigwinch: Any = None
         self._sigwinch_installed = False
 
@@ -545,16 +586,18 @@ class BatchRunDashboard:
             # teardown/interrupt on some terminals.
             self._overall_task_id = self._overall_progress.add_task(
                 "Overall progress",
-                total=self.total_tasks * self._phase_steps_per_task,
-                display_done=0,
-                display_total=self.total_tasks,
+                total=self._display_total,
+                completed=self._display_done,
+                display_done=self._display_done,
+                display_total=self._display_total,
                 label="Overall",
             )
             self._batch_task_id = self._batch_progress.add_task(
                 "Batch progress",
-                total=max(1, self._batch_size * self._phase_steps_per_task),
-                display_done=0,
-                display_total=self._batch_size,
+                total=self._display_batch_total,
+                completed=self._display_batch_done,
+                display_done=self._display_batch_done,
+                display_total=self._display_batch_total,
                 label="Batch",
             )
             self._live = _Live(
@@ -592,17 +635,57 @@ class BatchRunDashboard:
     def start_batch(self, batch_no: int, batch_size: int) -> None:
         self._batch_no = max(1, int(batch_no))
         self._batch_size = max(1, int(batch_size))
-        self._batch_count = 0
-        self._batch_phase_steps = 0
+        self._display_batch_done = 0
+        self._display_batch_total = self._batch_size
         if self._batch_progress is not None and self._batch_task_id is not None:
             self._batch_progress.reset(
                 self._batch_task_id,
-                total=max(1, self._batch_size * self._phase_steps_per_task),
+                total=self._display_batch_total,
                 completed=0,
                 description=f"Batch {self._batch_no}/{self.total_batches}",
                 display_done=0,
-                display_total=self._batch_size,
+                display_total=self._display_batch_total,
                 label="Batch",
+            )
+        self._refresh()
+
+    def set_progress(
+        self,
+        *,
+        done: int,
+        total: int,
+        batch_done: int,
+        batch_total: int,
+    ) -> None:
+        """Move both bars using producer-declared durable-truth bounds.
+
+        ``done`` counts journaled warmup and measured attempts; ``total`` is
+        the declared attempt bound. The producer keeps
+        both monotonic per campaign; this clamps display only.
+        """
+        total_n = max(1, int(total))
+        done_n = max(0, min(int(done), total_n))
+        batch_total_n = max(1, int(batch_total))
+        batch_done_n = max(0, min(int(batch_done), batch_total_n))
+        self._display_total = total_n
+        self._display_done = done_n
+        self._display_batch_total = batch_total_n
+        self._display_batch_done = batch_done_n
+        if self._overall_progress is not None and self._overall_task_id is not None:
+            self._overall_progress.update(
+                self._overall_task_id,
+                total=total_n,
+                completed=done_n,
+                display_done=done_n,
+                display_total=total_n,
+            )
+        if self._batch_progress is not None and self._batch_task_id is not None:
+            self._batch_progress.update(
+                self._batch_task_id,
+                total=batch_total_n,
+                completed=batch_done_n,
+                display_done=batch_done_n,
+                display_total=batch_total_n,
             )
         self._refresh()
 
@@ -625,9 +708,11 @@ class BatchRunDashboard:
         self._metrics = dict(metrics or {})
         self._refresh()
 
-    def update_counters(self, *, submitted: int, skipped: int, queued: int, failed: int) -> None:
+    def update_counters(self, *, submitted: int, skipped: int, queued: int, failed: int,
+                        locally: int = 0) -> None:
         self._counters = {
             "submitted": max(0, int(submitted)),
+            "locally": max(0, int(locally)),
             "skipped": max(0, int(skipped)),
             "queued": max(0, int(queued)),
             "failed": max(0, int(failed)),
@@ -635,66 +720,20 @@ class BatchRunDashboard:
         self._refresh()
 
     def advance_phase(self, description: Optional[str] = None, step: int = 1) -> None:
-        step_n = max(1, int(step))
-        self._overall_phase_steps += step_n
-        self._batch_phase_steps += step_n
+        """Phase chatter: updates the description only. Bars follow set_progress."""
         if description:
             self._description = description
-        display_overall = min(self.total_tasks, max(self._overall_count, self._overall_phase_steps))
-        display_batch = min(self._batch_size, max(self._batch_count, self._batch_phase_steps))
-
-        if self._overall_progress is not None and self._overall_task_id is not None:
-            kwargs: Dict[str, Any] = {
-                "advance": step_n,
-                "display_done": display_overall,
-                "display_total": self.total_tasks,
-            }
-            if description:
-                kwargs["description"] = description
-            self._overall_progress.update(self._overall_task_id, **kwargs)
-
-        if self._batch_progress is not None and self._batch_task_id is not None:
-            self._batch_progress.update(
-                self._batch_task_id,
-                advance=step_n,
-                display_done=display_batch,
-                display_total=self._batch_size,
-            )
-        self._refresh()
+            self.set_description(description)
 
     def advance(self, description: Optional[str] = None, step: int = 1) -> None:
-        step_n = max(1, int(step))
-        self._overall_count += step_n
-        self._batch_count += step_n
-        self._overall_phase_steps += step_n
-        self._batch_phase_steps += step_n
+        """Legacy task step: description only; bars follow set_progress."""
         if description:
             self._description = description
-        display_overall = min(self.total_tasks, max(self._overall_count, self._overall_phase_steps))
-        display_batch = min(self._batch_size, max(self._batch_count, self._batch_phase_steps))
-
-        if self._overall_progress is not None and self._overall_task_id is not None:
-            kwargs: Dict[str, Any] = {
-                "advance": step_n,
-                "display_done": display_overall,
-                "display_total": self.total_tasks,
-            }
-            if description:
-                kwargs["description"] = description
-            self._overall_progress.update(self._overall_task_id, **kwargs)
-        if self._batch_progress is not None and self._batch_task_id is not None:
-            self._batch_progress.update(
-                self._batch_task_id,
-                advance=step_n,
-                display_done=display_batch,
-                display_total=self._batch_size,
-            )
-
         if not _rich_tty():
             if description:
-                print(f"Progress: {self._overall_count}/{self.total_tasks} - {description}")
+                print(f"Progress: {self._display_done}/{self._display_total} - {description}")
             else:
-                print(f"Progress: {self._overall_count}/{self.total_tasks}")
+                print(f"Progress: {self._display_done}/{self._display_total}")
         self._refresh()
 
     def _install_resize_handler(self) -> None:
@@ -825,7 +864,8 @@ class BatchRunDashboard:
             f"[muted]Encoder:[/muted] [vanilla]{enc}[/vanilla]",
             f"[muted]Preset:[/muted] {preset}    [muted]CRF:[/muted] {crf if crf is not None else '-'}",
             f"[muted]Mode:[/muted] CRF (1-pass)",
-            f"[muted]Queue:[/muted] ok={self._counters['submitted']} skip={self._counters['skipped']} queue={self._counters['queued']} fail={self._counters['failed']}",
+            f"[muted]Queue:[/muted] confirmed={self._counters['submitted']} local={self._counters['locally']} "
+            f"invalid={self._counters['skipped']} queued={self._counters['queued']} fail={self._counters['failed']}",
             f"[muted]Now:[/muted] {self._description}",
         ]
         if compact:

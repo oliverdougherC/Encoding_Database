@@ -45,7 +45,7 @@ run_root() {
   (
     cd "$ROOT_DIR"
     "$@"
-  )
+  ) || die "command failed: $*"
 }
 
 run_shell() {
@@ -53,7 +53,7 @@ run_shell() {
   (
     cd "$ROOT_DIR"
     bash -c "$*"
-  )
+  ) || die "command failed: $*"
 }
 
 json_field() {
@@ -89,8 +89,8 @@ check_metadata() {
   [[ -f "$ROOT_DIR/CHANGELOG.md" ]] || die "CHANGELOG.md missing"
   [[ -f "$ROOT_DIR/release.json" ]] || die "release.json missing"
 
-  python3 - "$ROOT_DIR/release.json" "$ROOT_DIR/client/resources/test_suite_v1/finalization-status.json" "$ROOT_DIR/CHANGELOG.md" <<'PY'
-import json, sys
+  python3 - "$ROOT_DIR/release.json" "$ROOT_DIR/client/resources/test_suite_v1/finalization-status.json" "$ROOT_DIR/CHANGELOG.md" "$ROOT_DIR/client/main.py" <<'PY' || die "metadata identity check failed"
+import json, re, sys
 payload = json.load(open(sys.argv[1], encoding="utf-8"))
 status = json.load(open(sys.argv[2], encoding="utf-8"))
 changelog = open(sys.argv[3], encoding="utf-8").read()
@@ -98,11 +98,14 @@ expected = {
     "benchmarkProtocolVersion": "7.1",
     "plFormulaVersion": "7.0",
     "suiteVersion": "encodingdb-test-suite-v1",
-    "clientImplementationVersion": "client/0.3.1",
 }
 for key, value in expected.items():
     if payload.get(key) != value:
         raise SystemExit(f"release.json {key} must be {value}")
+client_source = open(sys.argv[4], encoding="utf-8").read()
+client_match = re.search(r'^CLIENT_VERSION\s*=\s*"([^"]+)"', client_source, re.MULTILINE)
+if not client_match or payload.get("clientImplementationVersion") != client_match.group(1):
+    raise SystemExit("release.json clientImplementationVersion must match client/main.py")
 if payload.get("projectVersion") is not None and not isinstance(payload["projectVersion"], str):
     raise SystemExit("release.json projectVersion must be a string or null")
 if payload.get("releaseDate") is not None and not isinstance(payload["releaseDate"], str):

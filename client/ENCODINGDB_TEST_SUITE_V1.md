@@ -18,7 +18,9 @@ python3 scripts/test_suite_drift_check.py
 
 The materializer verifies archive, metadata, notices and every reference, then installs matching client/server resources. Run it before native builds or Docker builds. Frozen references have no synthetic fallback; `build_test_suite_v1.py --rewrite-manifest` refuses a frozen suite.
 
-Packaged clients obtain the archive beside the executable or through the manifest download URLs, with verified cache reuse and atomic extraction. Explicit overrides: `ENCODINGDB_SUITE_CACHE_DIR`, `ENCODINGDB_SUITE_PACK_PATH`, `ENCODINGDB_SUITE_PACK_URL`, and `ENCODINGDB_QUICK_CLIP_ID`.
+Packaged clients reuse hash-verified cached clips and prefer the separately addressable clips declared in `clip-distribution.json` when those assets are published. The checked-in per-clip inventory is staged but **not published** yet; current public clients still use the external 1.51 GB pack. A full-pack fallback states its transfer size before downloading. `ENCODINGDB_ALLOW_FULL_PACK=0` refuses that fallback, and `ENCODINGDB_SUITE_CLIP_BASE_URL` selects a staged per-clip host for testing. Other overrides: `ENCODINGDB_SUITE_CACHE_DIR`, `ENCODINGDB_SUITE_PACK_PATH`, `ENCODINGDB_SUITE_PACK_URL`, and `ENCODINGDB_QUICK_CLIP_ID`.
+
+`scripts/prepare_client_suite_distribution.py --clip-bundle-out DIR` stages flat, unique release-asset filenames with exactly the frozen clip bytes and bound license notices. Staging does not upload them or activate public URLs. Publication and actual download verification belong to the release gate in PLA-90.
 
 Per-clip attributions, modification notices and license texts travel inside the pack and are hash-bound to its inventory. Third-party CC BY media is not relabeled CC0 or covered by Apache-2.0.
 
