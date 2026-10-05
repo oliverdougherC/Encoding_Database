@@ -391,6 +391,7 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
   run_step "Client: import core modules" "python3 -c \"import client.config, client.network, client.ffmpeg, client.main\""
   run_step "Client: CLI help and localhost base URL wiring" "BASE_URL=http://127.0.0.1:${SERVER_PORT} scripts/client_test.sh --help"
   run_step "Client: pytest suite" "cd \"$ROOT_DIR/client\" && python3 -m pytest -q"
+  run_step "Client: upload conservation regressions" "cd \"$ROOT_DIR\" && python3 -m unittest discover -s scripts -p test_native_upload_conservation.py"
 
   run_step "Server: npm ci" "cd \"$ROOT_DIR/server\" && npm ci --no-audit --no-fund"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
