@@ -11,13 +11,24 @@ vi.mock("./lib/api", () => {
 afterEach(cleanup);
 describe("unavailable data", () => {
   it.each([
-    ["browse", Home, "/"], ["hardware", HardwarePage, "/hardware"],
-    ["encoders", EncodersPage, "/encoders"], ["leaderboards", LeaderboardsPage, "/leaderboards"],
-  ] as const)("keeps %s navigable with a safe retry and no fabricated counts", async (_name, Page, href) => {
-    render(await Page({}));
-    expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", href);
-    expect(document.body).not.toHaveTextContent("http://internal");
-    expect(document.body).not.toHaveTextContent("503");
-    expect(screen.queryByLabelText("Hardware corpus summary")).not.toBeInTheDocument();
+    ["browse", Home, "/", "Unable to load benchmark results"],
+    ["hardware", HardwarePage, "/hardware", "Unable to load hardware coverage"],
+    ["encoders", EncodersPage, "/encoders", "Unable to load encoder coverage"],
+    ["leaderboards", LeaderboardsPage, "/leaderboards", "Unable to load leaderboards"],
+  ] as const)("keeps %s navigable with a safe retry and no fabricated counts", async (_name, Page, href, diagnosticMessage) => {
+    const diagnostic = vi.spyOn(console, "error").mockImplementationOnce(() => {});
+    try {
+      render(await Page({}));
+      expect(screen.getByRole("link", { name: "Try again" })).toHaveAttribute("href", href);
+      expect(document.body).not.toHaveTextContent("http://internal");
+      expect(document.body).not.toHaveTextContent("503");
+      expect(screen.queryByLabelText("Hardware corpus summary")).not.toBeInTheDocument();
+      expect(diagnostic).toHaveBeenCalledExactlyOnceWith(
+        diagnosticMessage,
+        expect.objectContaining({ message: "Failed http://internal:3000/private: 503" }),
+      );
+    } finally {
+      diagnostic.mockRestore();
+    }
   });
 });

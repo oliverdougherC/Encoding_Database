@@ -418,7 +418,8 @@ if [[ "$PRECHECK_OK" -eq 1 ]]; then
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     FRONTEND_BUILD_OK=0
   fi
-  run_step "Frontend: unit tests" "cd \"$ROOT_DIR/frontend\" && npm test"
+  # Agent reporters suppress passing-test diagnostics; the strict gate must see them.
+  run_step "Frontend: unit tests" "cd \"$ROOT_DIR/frontend\" && npm test -- --reporter=default --silent=false"
   if [[ "$LAST_STATUS" == "FAIL" || "$LAST_STATUS" == "BLOCKED" ]]; then
     FRONTEND_BUILD_OK=0
   fi
