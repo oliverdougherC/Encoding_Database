@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { downloadBaseEnvVar, downloadModel, historicalTag, primaryAssets, projectTag, repoReleases, supersededAssets } from "./releaseAssets";
+import { downloadBaseEnvVar, downloadModel, historicalTag, primaryAssets, projectTag, repoReleases, supersededAssets, supersededTag, currentWindowsConsole } from "./releaseAssets";
 
 // These tests exist to catch drift between the page model, the publication
 // tag convention and the deployment wiring - the class of inconsistency root
@@ -49,5 +49,41 @@ describe("release configuration consistency", () => {
     // yield current asset links.
     expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/1.3.0-rc.1` }).published).toBe(false);
     expect(downloadModel({ [downloadBaseEnvVar]: `${repoReleases}/download/${historicalTag}` }).published).toBe(false);
+  });
+});
+
+// Pinned to the independently re-downloaded public rc.10 manifest, not CI filenames alone.
+describe("public rc.10 asset stamp", () => {
+  it("matches the published filenames, SHA-256 and byte lengths for all four roles", () => {
+    expect(projectTag).toBe("1.3.0-rc.10");
+    expect([...primaryAssets, currentWindowsConsole].map(({file, sha256, byteSize}) => ({file, sha256, byteSize})).sort((a,b) => a.file.localeCompare(b.file))).toEqual([
+    {
+        "file": "encodingdb-client-linux.tar.gz",
+        "sha256": "a774c16250ffd84b545a304e35c25be856fd3ef219d522d0f85cfd8be04b8777",
+        "byteSize": 201072452
+    },
+    {
+        "file": "encodingdb-client-windows-console.exe",
+        "sha256": "ed7e18064ee99459301cf4c7c464827114b9d77e9d02543ce7f39fcbba6d2098",
+        "byteSize": 182731033
+    },
+    {
+        "file": "encodingdb-client-windows.exe",
+        "sha256": "55f9c0ad6f874023395a0b9b7e99c90f30a0dc22fecab20268e336d52c2efc47",
+        "byteSize": 182728034
+    },
+    {
+        "file": "EncodingDB-macOS-arm64.dmg",
+        "sha256": "90dc77afbb208a0312595b63df76f9b647cb7110991ef8a9e5c46291ccb6f34c",
+        "byteSize": 129845535
+    }
+].sort((a,b) => a.file.localeCompare(b.file)));
+  });
+  it("preserves actual rc.5 rollback identities without claiming they are current bytes", () => {
+    expect(supersededTag).toBe("1.3.0-rc.5");
+    expect(supersededAssets.find(asset => asset.file === "EncodingDB-macOS-arm64.dmg")?.sha256).toBe("cc6c6503293c8f01b223e1fac9a5da56888352d39c5e777cf90d23acec8aa8c6");
+    for (const previous of supersededAssets) {
+      expect(previous.sha256).not.toBe([...primaryAssets, currentWindowsConsole].find(asset => asset.file === previous.file)?.sha256);
+    }
   });
 });
