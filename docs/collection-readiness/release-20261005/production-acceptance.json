@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f",
+  "frontendSourceRevision": "6ca1b4285d85a3d70b24f91023548b0e9b85de40",
+  "passed": true,
+  "defaultTlsTrust": true,
+  "preexistingSelectedRows": 0,
+  "newProductionContributions": 6,
+  "physicalHostCount": 3,
+  "acceptedRuns": 6,
+  "retainedArtifacts": 6,
+  "authoritativeAnalysisComplete": 6,
+  "newEncodes": 0,
+  "originalPhysicalSourceIdsPreserved": true,
+  "originalRunCreateAndPayloadHashesPreserved": true,
+  "originalQueuesMutated": false,
+  "candidateAnalysisWindowMutated": false,
+  "observedArtifactPUTs": 2,
+  "artifactTransferNote": "Server content-addressed deduplication reused already-retained bytes; six contributions do not imply six PUTs.",
+  "roles": {
+    "linux": {
+      "passed": true,
+      "exitCode": 0,
+      "pending": 0,
+      "contributionCount": 2,
+      "executableSha256": "8320f76edeacfd441c1ac95cc7c78126593f535f478e6493c98ab36416d8f2c7"
+    },
+    "mac": {
+      "passed": true,
+      "exitCode": 0,
+      "pending": 0,
+      "contributionCount": 2,
+      "executableSha256": "96d3a42dacf828ea75675668537a01e3e26559644e2c8d312cec22b0d562a39b"
+    },
+    "winconsole": {
+      "passed": true,
+      "exitCode": 0,
+      "pending": 0,
+      "contributionCount": 2,
+      "executableSha256": "ed7e18064ee99459301cf4c7c464827114b9d77e9d02543ce7f39fcbba6d2098"
+    }
+  },
+  "windowsGui": {
+    "passed": true,
+    "sameProductionBindingsAsConsole": true,
+    "newArtifactPUTs": 0,
+    "newRows": 0,
+    "newAttemptRecords": 0,
+    "pending": 0,
+    "exitCode": 0,
+    "forcedCleanup": false
+  },
+  "cutovers": {
+    "server": {
+      "sourceRevision": "daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f",
+      "originalContributionsPreserved": true,
+      "counts": {
+        "runs": 507,
+        "artifacts": 507,
+        "analyses": 507
+      }
+    },
+    "frontend": {
+      "sourceRevision": "6ca1b4285d85a3d70b24f91023548b0e9b85de40",
+      "originalContributionsPreserved": true,
+      "counts": {
+        "runs": 513,
+        "artifacts": 513,
+        "analyses": 513
+      }
+    }
+  },
+  "liveUi": {
+    "publicDownloadTag": "1.3.0-rc.10",
+    "mobileViewportWidth": 390,
+    "horizontalOverflow": false,
+    "realClientDownloadHrefs": 4,
+    "reviewedBy": "release coordinator",
+    "desktopViewportWidth": 1280,
+    "mobileMenuHardwareGroupCount": 6,
+    "newAcceptedBrowseGroups": 3
+  },
+  "publicProductionSmoke": {
+    "passed": true,
+    "workflowRun": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37361212102",
+    "scope": "Non-mutating public API and frontend checks with verified TLS"
+  }
+}

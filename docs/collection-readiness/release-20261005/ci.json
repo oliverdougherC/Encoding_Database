@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-05T19:15:33.181615+00:00",
+  "releaseSourceRevision": "daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f",
+  "releaseSourceChecksPassed": 13,
+  "releaseSourceRuns": [
+    {
+      "id": "37346194069",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "client-native-windows-build",
+          "conclusion": "success"
+        },
+        {
+          "name": "client",
+          "conclusion": "success"
+        },
+        {
+          "name": "frontend",
+          "conclusion": "success"
+        },
+        {
+          "name": "clean-production-deployment",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-native-macos-build",
+          "conclusion": "success"
+        },
+        {
+          "name": "stack-smoke",
+          "conclusion": "success"
+        },
+        {
+          "name": "client-native-linux-build",
+          "conclusion": "success"
+        },
+        {
+          "name": "server",
+          "conclusion": "success"
+        },
+        {
+          "name": "migration",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "37346194168",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "preflight",
+          "conclusion": "success"
+        },
+        {
+          "name": "Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": "37346194151",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "audit-node",
+          "conclusion": "success"
+        },
+        {
+          "name": "audit-python",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "frontendSourceRevision": "6ca1b4285d85a3d70b24f91023548b0e9b85de40",
+  "frontendRevisionChecks": [
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37361212102/job/111935983003",
+      "name": "smoke",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960966",
+      "name": "stack-smoke",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358223018/job/111925960865",
+      "name": "audit-python",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960741",
+      "name": "client-native-macos-build",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222967/job/111925960645",
+      "name": "preflight",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358223018/job/111925960630",
+      "name": "audit-node",
+      "status": "completed"
+    },
+    {
+      "conclusion": null,
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960629",
+      "name": "client-native-windows-build",
+      "status": "in_progress"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960552",
+      "name": "server",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960494",
+      "name": "migration",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960468",
+      "name": "client-native-linux-build",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960458",
+      "name": "client",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960410",
+      "name": "clean-production-deployment",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222808/job/111925960266",
+      "name": "frontend",
+      "status": "completed"
+    },
+    {
+      "conclusion": "success",
+      "html_url": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37358222967/job/111925959935",
+      "name": "Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)",
+      "status": "completed"
+    }
+  ],
+  "allFrontendRevisionChecksComplete": false
+}
