@@ -1,0 +1,117 @@
+{
+  "actualBuildRevision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+  "logicalReviewedPRHead": "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+  "auditSourceHead": "2b8240006bcd1c2d0e70d0f638f58c74e34803af",
+  "buildFullTree": "5f94abd5e1e994a494fb2d9090627c87da91465b",
+  "reviewedFullTree": "5f94abd5e1e994a494fb2d9090627c87da91465b",
+  "clientTrees": {
+    "build": "fb49268dab61478beff268d9c73eeac4aefadb8e",
+    "reviewed": "fb49268dab61478beff268d9c73eeac4aefadb8e",
+    "auditHead": "fb49268dab61478beff268d9c73eeac4aefadb8e"
+  },
+  "packagingTrees": {
+    "build": "ffdad2df5442f9020f57f08043fe6eecf4cdd941",
+    "reviewed": "ffdad2df5442f9020f57f08043fe6eecf4cdd941",
+    "auditHead": "ffdad2df5442f9020f57f08043fe6eecf4cdd941"
+  },
+  "manifests": [
+    {
+      "manifestSha256": "7b55f2e960177425f9832b34cf9323727d6e34f0c7d3ba6f6cc2c3dfad1d078c",
+      "platform": "linux",
+      "artifact": {
+        "fileName": "encodingdb-client-linux",
+        "sha256": "74b8a102b1c26d11bb932db348ac47371143f11b532f9ee609a60b407b303b37",
+        "byteSize": 201826640,
+        "mode": 493,
+        "executableIdentity": {
+          "format": "ELF",
+          "architecture": "x86_64",
+          "minimumOsFromHeader": null
+        }
+      },
+      "source": {
+        "revision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+        "trackedChanges": false,
+        "buildPythonVersion": "3.11.16"
+      }
+    },
+    {
+      "manifestSha256": "06ccaebfb7e372cb9244c61a6c3252c83628b7837e7255bb26aca1506fc67b65",
+      "platform": "mac",
+      "artifact": {
+        "fileName": "encodingdb-client-macos",
+        "sha256": "e3e2f72c916d8b7dc898540bbc2e6257a6279537ac6b96cc20bd196f6ea999fc",
+        "byteSize": 128686992,
+        "mode": 493,
+        "executableIdentity": {
+          "format": "Mach-O",
+          "architecture": "arm64",
+          "minimumOsFromHeader": "11.0.0"
+        }
+      },
+      "source": {
+        "revision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+        "trackedChanges": false,
+        "buildPythonVersion": "3.11.9"
+      }
+    },
+    {
+      "manifestSha256": "624b8cae6c4386b31ef5bb7334dcc1d7b3996d40b6e515992a4ff554f17aa2e6",
+      "platform": "win",
+      "artifact": {
+        "fileName": "encodingdb-client-windows-console.exe",
+        "sha256": "754270ad3f14c20475a7004c09ed02dd50858971bda7e222b0f7897d01135e50",
+        "byteSize": 182730807,
+        "mode": 511,
+        "executableIdentity": {
+          "format": "PE",
+          "architecture": "x86_64",
+          "minimumOsFromHeader": null
+        }
+      },
+      "source": {
+        "revision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+        "trackedChanges": false,
+        "buildPythonVersion": "3.11.9"
+      }
+    },
+    {
+      "manifestSha256": "79721beb9d274b4446d9096a2f1efafd29ceb9586b1058379b4878011acd3ad7",
+      "platform": "win",
+      "artifact": {
+        "fileName": "encodingdb-client-windows.exe",
+        "sha256": "d69e20b323cdafe538450b6958141d21af93727de5b5489238c9111539005114",
+        "byteSize": 182727332,
+        "mode": 511,
+        "executableIdentity": {
+          "format": "PE",
+          "architecture": "x86_64",
+          "minimumOsFromHeader": null
+        }
+      },
+      "source": {
+        "revision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+        "trackedChanges": false,
+        "buildPythonVersion": "3.11.9"
+      }
+    }
+  ],
+  "rawOriginalsModified": false,
+  "freshMeasurementsOrTestsExecuted": false,
+  "executableEmbedsReviewedHeadClaimSupported": false,
+  "provenanceBasis": "Native executable digests bound to external build manifests; runtime evidence does not establish an embedded Git revision",
+  "preparationProof": {
+    "status": "STOP-PREPARATION-QUIESCED",
+    "packageSha256": "d69e20b323cdafe538450b6958141d21af93727de5b5489238c9111539005114",
+    "observedStage": "source-athletic-action-1080p24-final",
+    "observedFinalStatus": "aborted",
+    "qualification": "Stop during preparation; Close after quiescence. Not Close during active preparation."
+  },
+  "guiMetadataIPCProof": {
+    "kind": "normal online path exercised; source-grounded inference from mandatory fail-closed preflight",
+    "packageSha256": "d69e20b323cdafe538450b6958141d21af93727de5b5489238c9111539005114",
+    "confirmedMeasured": 282,
+    "standaloneMetadataChildTraceFound": false,
+    "standaloneNativeMetadataChildCancellationClaimed": false
+  }
+}
