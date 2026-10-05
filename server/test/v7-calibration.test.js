@@ -274,3 +274,21 @@ for (const [name, mutate, code] of [
     assert.ok(assessment.errors.some(finding => finding.code === code), JSON.stringify(assessment.errors));
   });
 }
+
+test('validation-only holdout workloads cannot replace canonical fitting coverage', () => {
+  const document = completeDocument();
+  const extra = evidence(100, { workloadId: 'validation-sports-30s', partition: 'HOLDOUT', sourceSuiteVersion: 'encodingdb-validation-holdouts-v1', sourceSha256: 'a'.repeat(64), sourceRegistrationHash: 'b'.repeat(64) });
+  const coverage = corpus => assessCalibrationEvidence({ ...document, corpus }, requirements).errors.filter(f => f.code === 'rate_quality_coverage').map(f => f.message).sort();
+  assert.deepEqual(coverage([...document.corpus, extra]), []);
+  assert.deepEqual(coverage([extra, ...document.corpus]), []);
+});
+
+test('each canonical fitting workload must establish its own rate curve regardless of row order', () => {
+  const document = completeDocument();
+  const sparse = evidence(101, { workloadId: 'sports-second-canonical', partition: 'CALIBRATION' });
+  const coverage = corpus => assessCalibrationEvidence({ ...document, corpus }, requirements).errors.filter(f => f.code === 'rate_quality_coverage').map(f => f.message).sort();
+  const first = coverage([sparse, ...document.corpus]);
+  const last = coverage([...document.corpus, sparse]);
+  assert.ok(first.some(message => message.includes('sports-second-canonical')));
+  assert.deepEqual(first, last);
+});

@@ -50,11 +50,13 @@ function numeric(value, field, evidenceId) {
 const flags = parseArgs(process.argv.slice(2));
 const protocolIds = flags.has('--benchmark-protocol-ids') ? JSON.parse(readFileSync(path.resolve(flags.get('--benchmark-protocol-ids')), 'utf8')) : [flags.get('--benchmark-protocol-id')];
 if (!Array.isArray(protocolIds) || !protocolIds.length || protocolIds.some(id => typeof id !== 'string' || !id)) throw new Error('Invalid protocol ID list');
+const physicalSourceIds = flags.has('--physical-source-ids') ? JSON.parse(readFileSync(path.resolve(flags.get('--physical-source-ids')), 'utf8')) : null;
+if (physicalSourceIds !== null && (!Array.isArray(physicalSourceIds) || !physicalSourceIds.length || new Set(physicalSourceIds).size !== physicalSourceIds.length || physicalSourceIds.some(id => typeof id !== 'string' || !/^[a-zA-Z0-9:_-]{1,200}$/.test(id)))) throw new Error('Invalid explicit physical source ID list');
 const outputPath = path.resolve(process.cwd(), flags.get('--output'));
 const since = flags.get('--since') ? new Date(flags.get('--since')) : null;
 if (since && Number.isNaN(since.getTime())) throw new Error('--since must be an ISO-8601 timestamp');
 
-const [{ prisma }, calibration, { loadMeasurementGroupEligibility }] = await Promise.all([
+const [{ prisma }, calibration, { createMeasurementGroupVerifier }] = await Promise.all([
   import(path.join(serverRoot, 'dist', 'db.js')),
   import(path.join(serverRoot, 'dist', 'v7', 'calibration.js')),
   import(path.join(serverRoot, 'dist', 'v7', 'measurementGroup.js')),
@@ -64,6 +66,7 @@ try {
   const runs = await prisma.benchmarkRun.findMany({
     where: {
       benchmarkProtocolId: { in: protocolIds },
+      ...(physicalSourceIds ? { physicalSourceId: { in: physicalSourceIds } } : {}),
       ...(since ? { createdAt: { gte: since } } : {}),
       status: { in: ['ACCEPTED', 'SUSPECT'] },
       artifacts: {
@@ -80,19 +83,31 @@ try {
         },
       },
     },
-    include: {
-      benchmarkProtocol: true,
-      testClip: true,
-      recipe: true,
-      environment: true,
+    // Per-frame distributions and raw client logs can be megabytes per run.
+    // The calibration document uses summary metrics and immutable identities only.
+    select: {
+      id: true, updatedAt: true, status: true, physicalSourceId: true,
+      benchmarkProtocolId: true, testClipId: true, recipeId: true, environmentId: true,
+      campaignId: true, repetitionGroupId: true, repetitionIndex: true,
+      encodeWallTimeMs: true, preRunEnvironmentCheck: true,
+      realTimeRatio: true, encodeFps: true, sourceFps: true, workloadId: true,
+      benchmarkProtocol: { select: { protocolVersion: true, sourceSuiteVersion: true } },
+      testClip: { select: { suiteVersion: true, sha256: true, sourceProvenance: true, contentClass: true } },
+      recipe: { select: { encoderImplementation: true, codecFamily: true, fingerprint: true, requestedRateControl: true, preset: true } },
+      environment: { select: { fingerprint: true } },
       artifacts: {
         where: { role: 'ENCODED', storageState: { in: ['RETAINED', 'VERIFIED'] }, sha256: { not: null } },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        select: { id: true, sha256: true, storageState: true, updatedAt: true },
       },
       qualityAnalyses: {
-        include: { evidenceReviews: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }] } },
+        select: { id: true, artifactId: true, status: true, updatedAt: true,
+          analysisWorkerVersion: true, vmafMean: true, vmafP5: true, xpsnr: true,
+          videoBitrateBps: true,
+          evidenceReviews: { orderBy: [{ createdAt: 'desc' }, { id: 'desc' }], select: { id: true }, take: 1 } },
         where: { metricModelId: flags.get('--quality-model-id') },
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        take: 1,
       },
     },
     orderBy: [{ workloadId: 'asc' }, { id: 'asc' }],
@@ -100,7 +115,8 @@ try {
 
   const timestamps = [];
   const groupEligibility = new Map();
-  for (const run of runs) groupEligibility.set(run.id, await loadMeasurementGroupEligibility(prisma, run, { metricModelId: flags.get('--quality-model-id') }));
+  const verifyGroup = createMeasurementGroupVerifier(prisma, { metricModelId: flags.get('--quality-model-id') });
+  for (const run of runs) groupEligibility.set(run.id, await verifyGroup(run));
   const corpus = runs.flatMap((run) => {
     if (!groupEligibility.get(run.id).eligible) return [];
     const analysis = run.qualityAnalyses[0];

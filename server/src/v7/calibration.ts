@@ -357,16 +357,27 @@ export function assessCalibrationEvidence(
     ...requirements.requiredSoftwareImplementations,
     ...hardwareImplementations,
   ]);
-  const workloadByClass = new Map<string, string>();
-  for (const evidence of corpus) workloadByClass.set(evidence.contentClass, evidence.workloadId);
+  // Validation-only holdouts cannot supply or replace a canonical fitting curve.
+  // Check every declared fitting workload; selecting one per class is order-dependent
+  // and can hide an incomplete curve when multiple workloads share a class.
+  const workloadsByClass = new Map<string, Set<string>>();
+  for (const evidence of fitting) {
+    const workloads = workloadsByClass.get(evidence.contentClass) ?? new Set<string>();
+    workloads.add(evidence.workloadId);
+    workloadsByClass.set(evidence.contentClass, workloads);
+  }
   for (const implementation of implementationsRequiringCurves) {
     for (const contentClass of requirements.requiredContentClasses) {
-      const workloadId = workloadByClass.get(contentClass);
-      if (!workloadId) continue;
-      const key = `${workloadId}\u241f${implementation}`;
-      const fingerprints = rateGroups.get(key) ?? new Set<string>();
-      if (fingerprints.size < requirements.minimumRatePointsPerWorkloadImplementation) {
-        addFinding(errors, 'rate_quality_coverage', `${key} has ${fingerprints.size} accepted recipe point(s); need ${requirements.minimumRatePointsPerWorkloadImplementation}`);
+      const workloads = [...(workloadsByClass.get(contentClass) ?? [])].sort();
+      if (!workloads.length) {
+        addFinding(errors, 'rate_quality_coverage', `${contentClass} has no canonical fitting workload for ${implementation}`);
+      }
+      for (const workloadId of workloads) {
+        const key = `${workloadId}\u241f${implementation}`;
+        const fingerprints = rateGroups.get(key) ?? new Set<string>();
+        if (fingerprints.size < requirements.minimumRatePointsPerWorkloadImplementation) {
+          addFinding(errors, 'rate_quality_coverage', `${key} has ${fingerprints.size} accepted recipe point(s); need ${requirements.minimumRatePointsPerWorkloadImplementation}`);
+        }
       }
     }
   }
