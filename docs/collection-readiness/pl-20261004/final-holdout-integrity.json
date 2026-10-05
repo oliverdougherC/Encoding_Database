@@ -1,0 +1,414 @@
+{
+  "checkedAtUTC": "2026-10-05T12:14:24.177Z",
+  "observations": 74,
+  "uniqueMeasuredRunIds": 74,
+  "groups": 37,
+  "eligibleGroups": 16,
+  "ineligibleGroups": 21,
+  "analysisStates": {
+    "COMPLETE": 32,
+    "SUSPECT": 42
+  },
+  "artifactStorageStates": {
+    "RETAINED": 32,
+    "VERIFIED": 42
+  },
+  "uniqueEncodedObjectsVerified": 37,
+  "allArtifactBindingsSizesAndSha256Verified": true,
+  "allObservations720FramesWithExactModelWorkerAndTimerBoundary": true,
+  "activeLeases": 0,
+  "groupFindings": [
+    {
+      "campaignId": "campaign-df397ec20c07e046",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_1393f7efed8f9a7693bcab8d3ad58af84771adc8f5c5fa49473199b516932009",
+        "validation_64eca94cb85b922575501218269af94290ba9c7e008815b904b5166e314abbf4"
+      ],
+      "analysisIds": [
+        "cmuut9t4b0007o51jrtkiacrd",
+        "cmuutc0cd000co51j2yk7q4k7"
+      ]
+    },
+    {
+      "campaignId": "campaign-9a26cf495e2ec8fb",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_c52b7db59b6fc191f2976b7bff3c60771852780896e690eea92b09488980ef27",
+        "validation_c77744aa22ebab34318907a70e2118834fc2c526134a8bbccb2ccae3f8b5ab35"
+      ],
+      "analysisIds": [
+        "cmuute4mc0007o542x33mo1pd",
+        "cmuutgb4k000co542r8svvxsr"
+      ]
+    },
+    {
+      "campaignId": "campaign-8f63e85863ec69c2",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_bbbdcb252dd49dcab5375648c8fb1d19148be13f18c516605246f1181d23aabd",
+        "validation_26ea1bcfe9dbe6fdefc924aa1eca68102de10d7885075b16c507a8a4acf053f7"
+      ],
+      "analysisIds": [
+        "cmuutihvb0007o56mrv4kg8nq",
+        "cmuutknls000co56m1hapl6nu"
+      ]
+    },
+    {
+      "campaignId": "campaign-92e3e8c570112037",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_b89cb75fcd807bf7fb27456d76fefb780330391b3d4570a2d09bdfce4abda09c",
+        "validation_520eda99fa32c455df0a54f1e8c8603ceeb6a53e002969258a2019e44973d9d6"
+      ],
+      "analysisIds": [
+        "cmuutmuns0007o595mkohpydt",
+        "cmuutozxt000co595v4suo7ap"
+      ]
+    },
+    {
+      "campaignId": "campaign-1a52ebb5369ed69f",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_5b6e49cd831ddc6aec56d164443614948b2fa2be64a829fa24d00d807e10bb88",
+        "validation_b92e6fd4c725c32f2e5327b3fe2d58869256c22621724e78cd763f224b4fa40f"
+      ],
+      "analysisIds": [
+        "cmuutr7ti0007o5bou0yac96l",
+        "cmuuttglh000co5bomjo0lo1k"
+      ]
+    },
+    {
+      "campaignId": "campaign-c8073827a2d558e4",
+      "workloadId": "validation-atlas-receipts-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_f958bbf59bacdd1912a2aaba3efa09c3f8c277a3656eab655f7f77a27d74fc03",
+        "validation_e1f7e4bcceafd43fea46ccfadd68338e249ad574593f40ef03f16cb57088049a"
+      ],
+      "analysisIds": [
+        "cmuutvqtl0007o5e7rwdgf7u2",
+        "cmuuty0ee000co5e7ws4lf1dd"
+      ]
+    },
+    {
+      "campaignId": "campaign-d56fa8c6414d58e9",
+      "workloadId": "validation-chimera-fountain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-768cfe79509f5d03",
+      "workloadId": "validation-chimera-fountain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-b76e44dedb3a6b65",
+      "workloadId": "validation-chimera-fountain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-4a65ae2c4e7612ca",
+      "workloadId": "validation-chimera-fountain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-322417f075296a31",
+      "workloadId": "validation-chimera-fountain-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_631c4cf861c1c4a5818f50db3547f60e43d413b46b0ce136d40eb94b7cb48ad7",
+        "validation_dcc841736f9fa920794e7460a6681d7331ead243878edfec6d7891f3eba0057b"
+      ],
+      "analysisIds": [
+        "cmuuw5i0t0007ldc1hh4z1jfk",
+        "cmuuwcr2s000cldc1nunoqrch"
+      ]
+    },
+    {
+      "campaignId": "campaign-56dd17e5ab228f75",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-ac0c6686d0548ef7",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-f19e6d9a7ba7fa6c",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-610ccf26c8d43dfb",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_242c9ed61db028b42aaec00ac64233f19e46c51432a15efbe8a996861d788a8d",
+        "validation_d240127dda4dbfb0bd0a7685a91475e15aa466623babe6cf6edaedaa98a98552"
+      ],
+      "analysisIds": [
+        "cmuuxsxdt0007ldmgi18h2f7w",
+        "cmuuxzy1f000cldmglphoghzb"
+      ]
+    },
+    {
+      "campaignId": "campaign-d050ffb2b969abb5",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-07c030703d38f61c",
+      "workloadId": "validation-nocturne-ballet-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-3e55ae2546334bf2",
+      "workloadId": "validation-nocturne-grain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-5d1886ffd9f44091",
+      "workloadId": "validation-nocturne-grain-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_4a79ffa44af8baf6191a6a7dc328d00856cd68334b98da6ce3a210d3b4f17ed8",
+        "validation_2aaa037cdf612bac8f1b38e6b40a876aea8487d3b6fdce365595de016da08eda"
+      ],
+      "analysisIds": [
+        "cmuuzf5bw0007ldwwfti6122y",
+        "cmuuzluac000cldww4ljjf752"
+      ]
+    },
+    {
+      "campaignId": "campaign-2bec02bda9625fe9",
+      "workloadId": "validation-nocturne-grain-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-008b9899531fb6d4",
+      "workloadId": "validation-nocturne-grain-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_4790f1915b857e329440f759b92a2f8d25c2faadf5d04dbac42ac645b6b5295e",
+        "validation_9941f71cfdf5b92d38333844874a289caa1ded61dce462a4ea9664927046d830"
+      ],
+      "analysisIds": [
+        "cmuv082ex0007ld2511bn3pax",
+        "cmuv0eybq000cld25wzbm88mh"
+      ]
+    },
+    {
+      "campaignId": "campaign-5c5f1ff12287d123",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-25e0544e3c4e065c",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-d5af9d1a0e3c052f",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-a315690648ac16aa",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-0947a90cc08eef47",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-b446807155f18d4f",
+      "workloadId": "validation-nocturne-lowlight-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-9ca40bab8913e8cb",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_24d93063fdfeb36966d38da05f65db1112318977460f563d462884bbc0cfd114",
+        "validation_4b24c264e11d6d797284a6f7bd667b9b804f01b116b6759ad3cd79933711af13"
+      ],
+      "analysisIds": [
+        "cmuv33gr70007ldkip5tvtpwr",
+        "cmuv3b8og000cldkimm71ytl8"
+      ]
+    },
+    {
+      "campaignId": "campaign-90f08bbad3272e9f",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_f46bd6f02e547b3005cc2811353847c18cc35c55d6dbbc010182fdaa4bfbc6f4",
+        "validation_e9df970eac641a04fb9a35f2134edb98fcc9dfd9f4200df5ae4ac645121d2bbb"
+      ],
+      "analysisIds": [
+        "cmuv3j2op0007ldn6dqggxwf0",
+        "cmuv3qmmf000cldn6zrhq6afp"
+      ]
+    },
+    {
+      "campaignId": "campaign-acca4a343b3b7cc3",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_bf48290246a22192f6255c8b7ba6f14eba7b22a8a09a135ef3eb6e5cc576d706",
+        "validation_9ef3eee25d5d8a4cef2f024a127d1f4a342a71df319e675311d8c5c853e39e15"
+      ],
+      "analysisIds": [
+        "cmuv3y9800007ldptedc7w68m",
+        "cmuv45zag000cldptnx9pkgan"
+      ]
+    },
+    {
+      "campaignId": "campaign-1bedfcae9d516aaa",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_d95f9757fccc8be4de540e2c1ce71a871911762c7b7a2460b75e2ffc2ffb0818",
+        "validation_7c9f97175cbbf78112160c0ed6a8e97cc46f59cfeec826a43cb500654845bcd8"
+      ],
+      "analysisIds": [
+        "cmuv4drs80007ldsgurkh8krk",
+        "cmuv4l7g3000cldsghuun854p"
+      ]
+    },
+    {
+      "campaignId": "campaign-522045c67808ad8a",
+      "workloadId": "validation-sol-cave-forest-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_cb72f5b4a52917d0d13a22310d97073474fe36e7c4d64d12586573abc63e7856",
+        "validation_2286bc8e39eb063ea427aa178522816f95f510b55a6f955c0f45e9f0acbba154"
+      ],
+      "analysisIds": [
+        "cmuv4sn8y0007ldv3pny7tq65",
+        "cmuv50mt2000cldv3ashn58h7"
+      ]
+    },
+    {
+      "campaignId": "campaign-2963aeb0ebc98f4a",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-5b53f11eed54f9b2",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-398c2f02e5825466",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-38367f7915503d3b",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "eligible": false,
+      "reason": "ineligible-member",
+      "memberRunIds": [],
+      "analysisIds": []
+    },
+    {
+      "campaignId": "campaign-ee1deee20a0cd59c",
+      "workloadId": "validation-tos-outdoor-dialogue-30s",
+      "eligible": true,
+      "reason": "complete-stable-retained-group",
+      "memberRunIds": [
+        "validation_cc2b379a4c15100203c497f43d521f582cb7a74d1d9613a40a1b0a91cbfa1284",
+        "validation_a6e4dcb9dbe6df159805b096bc86e7efbfb439e8d4cbd93b0e2dd4de06e88b95"
+      ],
+      "analysisIds": [
+        "cmuv6ft0z0007ld7xr6sffqom",
+        "cmuv6l55e000cld7x8q5knmgd"
+      ]
+    }
+  ]
+}

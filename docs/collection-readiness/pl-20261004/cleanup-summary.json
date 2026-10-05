@@ -1,0 +1,24 @@
+{
+  "completedAtUTC": "2026-10-05T12:20:54.700094+00:00",
+  "taskContainersPreserved": 17,
+  "taskContainersStoppedNow": 1,
+  "remainingRunningTaskContainers": 0,
+  "containersRemoved": 0,
+  "databasesOrVolumesDeleted": 0,
+  "pendingTaskAnalyses": 0,
+  "allNewMeasurementRowsPreserved": 26,
+  "receiptChecksBeforeShutdown": [
+    200,
+    200
+  ],
+  "sharedOriginalCandidateAndPostgresRemainRunning": true,
+  "localTaskPortsStopped": [
+    8768,
+    8769,
+    3495
+  ],
+  "remainingTaskListeners": [],
+  "rootPreviewTouched": false,
+  "privateRemoteReceiptSha256": "0f3d11ad4aaff79fd718b190db3fcc1b1f35ca56c0cb020f53ccb4241c0c69cf",
+  "privateLocalReceiptSha256": "9b2f9f7615bf733acf16551bd4f6b7e7fccebfba34bcd481b41c99efb912e611"
+}

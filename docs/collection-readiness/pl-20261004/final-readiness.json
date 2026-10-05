@@ -1,0 +1,122 @@
+{
+  "status": "OBJECTIVE_ANALYSIS_COMPLETE_CALIBRATION_NOT_READY",
+  "completedAtUTC": "2026-10-05T12:02:17.755Z",
+  "canonicalFittingRows": 220,
+  "canonicalFittingClasses": [
+    "animation-flat-fields",
+    "film-grain-noise",
+    "fine-natural-detail",
+    "high-motion-sports",
+    "screen-text",
+    "talking-head"
+  ],
+  "verifiedPhysicalMachines": 3,
+  "hardwareFamilies": [
+    "nvenc",
+    "videotoolbox"
+  ],
+  "retainedHoldoutMeasuredObservations": 74,
+  "holdoutAnalysisStatuses": {
+    "COMPLETE": 32,
+    "SUSPECT": 42
+  },
+  "qualifiedHoldoutRows": 32,
+  "qualifiedHoldoutClasses": [
+    "animation-flat-fields",
+    "film-grain-noise",
+    "fine-natural-detail",
+    "high-motion-sports",
+    "screen-text",
+    "talking-head"
+  ],
+  "eligibleHoldoutGroups": 16,
+  "originalTimingUnstableCellsExcluded": 5,
+  "canonicalRefresh": {
+    "checkedAtUTC": "2026-10-05T12:07:27.020240+00:00",
+    "protocolVersion": "7.1",
+    "sourceSuiteVersion": "encodingdb-test-suite-v1",
+    "qualityModelId": "vmaf-v1-sdr-1080p",
+    "verifiedPhysicalSources": 3,
+    "eligibleOriginalCanonicalRows": 214,
+    "newlyQualifiedRows": 0,
+    "removedQualifiedRows": 0,
+    "changedEvidenceRecords": 0,
+    "sourceScopeSha256": "4a3bdf7bf040231bf904ecf8d2a25fd05995d620a0a7da352123ec0aa01e149a",
+    "terminalNativeCohortRuns": 1042,
+    "terminalNativeAnalysisStatuses": {
+      "COMPLETE": 512,
+      "SUSPECT": 530
+    },
+    "terminalNativeIdentityFileSha256": "0a8f48b6ed5cbb534632dc93fe451128adf984d67feb7a23418bb2bcedfde409",
+    "originalDatabaseMutated": false,
+    "newCanonicalExportsRequired": false
+  },
+  "referenceConstruction": {
+    "sourceEvidenceHash": "6df50685b93a83e7f337bf631fe88ef92105f1a224488a6ef09a764e822e842b",
+    "calibrationRecordCount": 220,
+    "holdoutRowsExcludedFromFitting": 32,
+    "liveRetainedBytesVerified": false,
+    "productionActivationPerformed": false,
+    "parameters": "Unchanged provisional defaults, not newly calibrated constants",
+    "perWorkloadDiagnostics": [
+      {
+        "workloadId": "athletic-action-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 2495586.545553,
+        "frontierPoints": 9
+      },
+      {
+        "workloadId": "natural-detail-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 3390726.230028,
+        "frontierPoints": 8
+      },
+      {
+        "workloadId": "film-grain-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 8287042.317466,
+        "frontierPoints": 7
+      },
+      {
+        "workloadId": "dark-gradients-1080p24-final",
+        "status": "BLOCKED",
+        "reason": "No retained accepted benchmark evidence is available"
+      },
+      {
+        "workloadId": "animation-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 9905347.184332,
+        "frontierPoints": 8
+      },
+      {
+        "workloadId": "screen-text-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 103702.552355,
+        "frontierPoints": 5
+      },
+      {
+        "workloadId": "talking-head-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 1062203.986015,
+        "frontierPoints": 3
+      }
+    ],
+    "status": "CONTEXT_BLOCKED",
+    "reason": "Missing retained authoritative evidence for workload dark-gradients-1080p24-final"
+  },
+  "findingsByCode": {
+    "missing_content_class": 1,
+    "preset_rate_quality_coverage": 8,
+    "rate_quality_coverage": 20,
+    "missing_golden_scenario": 4,
+    "missing_holdout_dimension": 4,
+    "top_result_review": 10,
+    "missing_metric_sanity_case": 4,
+    "freeze_record": 1
+  },
+  "combinedDraftEvidenceHash": "6df50685b93a83e7f337bf631fe88ef92105f1a224488a6ef09a764e822e842b",
+  "readyForProductionFreeze": false,
+  "humanDecisionsRecorded": 0,
+  "newMeasurementRoundsAuthorized": 0,
+  "productionActivated": false
+}

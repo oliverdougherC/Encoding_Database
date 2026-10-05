@@ -14,7 +14,7 @@
 
 [Client acceptance summary](client-acceptance-summary.json) records exact receipt → run → artifact/payload binding and confirmed retention, with 1,042 distinct server run IDs. Recovery completed 136 previously pending uploads through ordinary backoff/quota behavior, without new encodes or changes to original measurement evidence. GUI campaign recovery used the pinned console package against its existing queue; actual GUI Retry/Stop behavior was tested separately below.
 
-**Upload success is separate from scientific acceptance.** During the recorded observation window, October 5 06:11:40–06:41:16 UTC, server runs were 414 accepted, 432 suspect and 196 pending. These are historical observations, not a current queue snapshot. Suspect results are not accepted results. All 1,042 had bound analysis rows. Later analysis and PL disposition remain separate; see the [PL objective preparation and remaining gates](../pl-20261004/README.md).
+**Upload success is separate from scientific acceptance.** During the recorded observation window, October 5 06:11:40–06:41:16 UTC, server runs were 414 accepted, 432 suspect and 196 pending. These are historical observations. The [final terminal analysis snapshot](final-analysis-summary.json), captured October 5 at 11:11:52 UTC, records **512 COMPLETE/ACCEPTED and 530 SUSPECT**, zero pending analyses/leases/recomputations, and no identity or retention failures across all 1,042 runs. Suspect results are not accepted results. All 1,042 had bound analysis rows. The [isolated analysis window was closed](analysis-window-closure.json), with application concurrency restored to 0 and image, storage, TLS, scientific settings and all 18 public-table row counts preserved. Later analysis and PL disposition remain separate; see the [PL objective preparation and remaining gates](../pl-20261004/README.md).
 
 ## Fault and restart coverage
 
@@ -42,7 +42,7 @@ Package manifests record build revision `3e798c70be64bf87bc821cb629aebbc68cdc381
 
 UI checks covered filter navigation, contained wide tables, comparison focus trapping and Escape/restore, result-details focus restoration, mobile navigation, methodology interaction and directory links. Real read-only API/UI checks showed six hardware groups and eleven encoder groups. Those directories show observed coverage and accepted/suspect counts, without cross-workload averages or implied recommendations.
 
-At head `2b82400`, stack-smoke/preflight flagged the intentional error emitted by an unavailable-corpus test. Test-only correction `7559b2b` asserts and captures that exact diagnostic; all 93 frontend tests, lint/typecheck and the unchanged strict warning scanner pass. Its integrated CI rerun is pending. **This is not an all-CI-green claim.** Consult current PR checks for the integrated revision.
+All **13 CI checks passed at source revision `a5b38ab`**, including strict preflight, stack-smoke, independent audits and all three native build jobs. [Exact CI receipt](ci-source-verification.json). The runner uses the same explicit reporter locally and in CI; deliberate diagnostics are asserted, while unexpected errors remain visible.
 
 ### Selected screenshots
 
@@ -64,4 +64,6 @@ These are unchanged captures from local production-build previews. See [screensh
 
 [Private evidence checksums](private-evidence-checksums.json) bind selected original conservation reports, bound-server observations, native fault results, package manifests, test logs and screenshots. Logical evidence IDs replace private paths. Raw run/installation identifiers, session details, host paths and credentials are not copied into this packet; originals remain intact with the task owner. Hashes establish correspondence with those retained snapshots, not independent certification.
 
-This packet records the tested source/package scope. It does not claim untested hardware/OS combinations, production deployment, release publication, final analysis drain, or scientific recommendation eligibility. PL remains **not recommendation-ready** until its independent evidence requirements pass.
+This packet records the tested source/package scope. It does not claim untested hardware/OS combinations, production deployment, release publication or scientific recommendation eligibility. PL remains **not recommendation-ready** until its independent evidence requirements pass.
+
+The temporary frontend previews and read-only API preview were [stopped after verification](preview-cleanup.json); screenshots and source evidence remain preserved.

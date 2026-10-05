@@ -44,10 +44,10 @@
     "environment": "isolated throwaway test databases and container"
   },
   "ci": {
-    "allChecksPassedClaimed": false,
-    "snapshotHead": "2b82400",
-    "status": "Expected test diagnostic asserted and captured; 93 frontend tests, lint/typecheck and strict scanner pass. Integrated CI rerun pending.",
-    "repairHead": "7559b2b"
+    "allChecksPassedClaimed": true,
+    "verifiedSourceHead": "a5b38ab46e030de635f5701b9319c8314d01e4e5",
+    "checksPassed": 13,
+    "status": "All13 checks passed including preflight, stack-smoke, audits and all3 native builds. Subsequent evidence-only documentation changes do not alter this tested source."
   },
   "recommendationReady": false,
   "releaseOrMergeApproval": false

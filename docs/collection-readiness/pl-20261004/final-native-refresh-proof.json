@@ -1,0 +1,20 @@
+{
+  "checkedAtUTC": "2026-10-05T12:07:27.020240+00:00",
+  "protocolVersion": "7.1",
+  "sourceSuiteVersion": "encodingdb-test-suite-v1",
+  "qualityModelId": "vmaf-v1-sdr-1080p",
+  "verifiedPhysicalSources": 3,
+  "eligibleOriginalCanonicalRows": 214,
+  "newlyQualifiedRows": 0,
+  "removedQualifiedRows": 0,
+  "changedEvidenceRecords": 0,
+  "sourceScopeSha256": "4a3bdf7bf040231bf904ecf8d2a25fd05995d620a0a7da352123ec0aa01e149a",
+  "terminalNativeCohortRuns": 1042,
+  "terminalNativeAnalysisStatuses": {
+    "COMPLETE": 512,
+    "SUSPECT": 530
+  },
+  "terminalNativeIdentityFileSha256": "0a8f48b6ed5cbb534632dc93fe451128adf984d67feb7a23418bb2bcedfde409",
+  "originalDatabaseMutated": false,
+  "newCanonicalExportsRequired": false
+}

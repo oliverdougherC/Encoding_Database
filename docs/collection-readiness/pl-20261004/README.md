@@ -1,72 +1,90 @@
 # PL objective preparation — October 4–5, 2026
 
-**PL remains provisional.** This packet records actual progress and remaining
-objective and human-review requirements. Nothing was promoted or deployed.
-The retained holdout analysis was still running at the dated checkpoint below.
+**The retained-data analysis is complete; PL remains provisional.**
+The [final report](final-readiness.json) separates completed evidence work from
+remaining objective coverage and genuine review requirements. Nothing was
+promoted, merged or deployed by this calibration lane.
 
-## Verified progress
+## Final evidence
 
-- Fixed fitting-coverage order dependence and excessive calibration-export memory
-  use; no scoring constants or eligibility thresholds changed.
-- Fixed incomplete validation-import protocol metadata. Original databases and
-  snapshots remain untouched; derived snapshots carry audited protocol aliases.
-  All six initial retained holdout groups pass the unchanged complete-group and
-  byte/hash checks after that correction.
-- Full server checks: 275 passed,zero failed,seven database-dependent skips.
-  A separate live PostgreSQL calibration run passed 40 with one unrelated
-  three-database snapshot skip; the new protocol-repair regressions passed 13.
-- Original/new exporter documents are identical for a real four-row fixture
-  spanning two complete groups and H264/AV1.
-- Eleven distinct new Mac recipe cells retained 37 attempts and 26 measured rows.
-  All measured rows uploaded and received authoritative analysis. Only three
-  cells/six measured rows qualify for fitting. Raw ACCEPTED status does not
-  override an unstable or incomplete measurement group.
+- **220 qualified canonical fitting observations**, six content classes, three
+  verified physical machines and two hardware families. The real reference
+  builder finds a 90-VMAF frontier bracket for each covered class.
+- **74 longer-scene measured observations analyzed and preserved:** 32 COMPLETE,
+  42 SUSPECT. Sixteen complete groups / 32 rows qualify for holdout use. The five
+  original timing-unstable cells remain excluded.
+- The now-terminal original candidate was refreshed using the same protocol,
+  model and three verified source IDs. Its **214 eligible original canonical
+  records are unchanged**, with no newly qualified or altered evidence records.
+  The combined fitting set additionally contains six qualifying new observations.
+- Eleven distinct new Mac cells retained 37 attempts / 26 measured observations.
+  Raw analyses were 15 ACCEPTED and 11 SUSPECT. Only three cells / six rows passed
+  complete-group eligibility: x264-fast screen CRF38, x264-fast grain CRF14 and
+  x265-fast talking-head CRF30. All negative results remain preserved.
 
-The actual packaged build revision is `3e798c70be64bf87bc821cb629aebbc68cdc3819`.
-The operator's logical reviewed-head label was
-`44b9e1501bc1bbdc2133317bd83ce5d847ad4103`; their complete Git trees are identical.
-The additive [provenance correction](package-provenance-correction.json) leaves
-all original measured records unchanged.
+The analysis completion checkpoint and the earlier interim assessment are retained
+as historical evidence; they do not supersede these final counts.
 
-## Remaining gates
+## Why activation is still blocked
 
-The [interim assessment](interim-readiness.json) contains 220 qualified canonical
-observations from three verified physical machines, covering six content classes.
-The real reference builder finds a 90-VMAF frontier bracket for each of those six
-classes. **Dark gradients still has no qualified fitting evidence.** Its two
-high-quality CRF14 groups, using distinct fast/slow presets, failed the unchanged
-3% timing rule at 5.61% and 6.62%. No further measurement rounds were performed.
+**Dark gradients has no qualified fitting evidence.** Its high-quality CRF14
+fast/slow groups failed the unchanged 3% timing rule at 5.61% and 6.62%.
+Human metric review cannot rehabilitate unstable timing. No further measurement
+rounds were performed.
 
-There are also 20 rate-coverage findings and eight within-preset findings (some
-refer to overlapping gaps). Full reference construction, independently fitted
-held-out evaluations, genuine golden/top-family judgments, metric-sanity review
-and a reviewed freeze remain incomplete. Three global machines do not imply
-independent corroboration for every individual recipe/environment cohort.
+There are also **20 rate-coverage and eight within-preset findings** (some overlap),
+no completed independently fitted holdout evaluations, no genuine golden or
+family-choice judgments, and no reviewed freeze. Three global machines do not
+establish independent corroboration for every recipe/environment cohort. The
+[exact assessment](final-assessment.json) remains `readyForProductionFreeze=false`.
+Held-out observations were never relabeled as fitting evidence to fill a gap.
 
-At **2026-10-05 07:44 UTC**, 14 of 37 previously stable longer-scene cells had completed
-authoritative analysis: 28 of 74 measured observations. The remaining 23 cells were
-still processing. Five original timing-unstable cells remain excluded. See the
-[checkpoint](holdout-analysis-checkpoint.json); it is a dated snapshot, not a claim
-that the job has finished. The held-out rows must never be relabeled as canonical
-fitting evidence merely to fill the missing class.
+## Correctness and provenance
 
-## Review artifacts and evidence
+Fitting-coverage order dependence, excessive export memory use and incomplete
+validation-import protocol metadata were corrected without changing score
+constants or eligibility thresholds. Original source databases and snapshots are
+unchanged; new derived snapshots bind audited protocol aliases, original receipt
+hashes, exact measurement identities and retained bytes. All 37 analyzed groups
+were imported with their quality flags intact.
 
-An immutable 218-row local inspection catalog preserves 97 representative original videos and seven
-pixel-identical lossless reference previews (1,632 frame hashes verified).
-A separate diagnostic page exposes three cases ready for genuine expert
-adjudication now, covering six exact analysis bindings: dark gradients/tails,
-grain, and talking-head detail. All six diagnostic players passed actual decoding,
-playback and midpoint seeking; the [browser proof](diagnostic-browser-proof.json)
-records the assertions. Source originals remain available unchanged.
+Calibration-lane source checks passed 275 server tests with zero failures and seven
+conditional database skips. A separate real PostgreSQL calibration run passed
+40 with one unrelated three-database snapshot skip. The new metadata-repair
+regressions passed 13. The later integrated server run passed all 285 tests with real PostgreSQL bindings; see the [integrated verification](../overnight-20261004/verification-summary.json). An original/new exporter comparison matched complete JSON
+and hashes for four real rows spanning two complete H264/AV1 groups.
 
-Diagnostic review can resolve a specific metric disagreement. It cannot repair
-unstable timing, substitute for an independent fold, or approve the global score.
-Final calibration sign-off remains visibly blocked; identities, judgments and
-response templates are blank. No AI judgment is represented as human review.
+The actual package build revision is `3e798c70be64bf87bc821cb629aebbc68cdc3819`;
+`44b9e1501bc1bbdc2133317bd83ce5d847ad4103` was the logical review-head label.
+Their complete Git trees are identical. The
+[additive correction](package-provenance-correction.json) preserves measured records.
 
-The original media remain in task-owned evidence storage; they are not added to
-Git. JSON receipts here contain identifiers, hashes, measurements and validation
-results, not database credentials. The [redaction manifest](redaction-manifest.json)
-binds copies whose private absolute paths were replaced by logical evidence names. The task coordinator retains exact completion
-and finalization commands for the still-running analysis job.
+## Human review prepared, not invented
+
+The local catalog retains 97 representative original videos and seven lossless
+reference previews with 1,632 identical decoded-frame hashes. Three diagnostic
+cases are ready for genuine expert review now, with six exact analysis bindings,
+actual metric bands and blank responses. All six diagnostic players passed
+actual decoding, playback and midpoint seeking; see the
+[browser proof](diagnostic-browser-proof.json).
+
+Those judgments can clear specific metric concerns. They cannot fix timing,
+replace independent folds or approve the global score. Final sign-off stays
+blocked. Media remain in task-owned evidence storage; no media or credentials
+were added to Git, and the existing public-path redactions remain intact.
+
+## Final integrity and shutdown
+
+The [final integrity check](final-holdout-integrity.json) verifies all 74 exact
+run/analysis/artifact bindings, 720 frames per observation, the prescribed model,
+worker and timing boundary, and every encoded object's byte size and SHA256.
+The 74 artifact bindings reference 37 unique encoded objects; repeated observations
+remain separate records and do not count as independent machines. All 37 measurement groups were checked;
+16 qualify and 21 remain ineligible because of their preserved metric flags.
+Storage states remain 32 RETAINED and 42 VERIFIED; those states are not conflated.
+
+After final reads, the [cleanup receipt](cleanup-summary.json) records zero pending
+task analyses, 17 preserved task containers, no running task containers/listeners,
+and no removed databases or volumes. The shared original candidate, PostgreSQL
+and root preview were untouched. Review files remain available as local artifacts;
+viewing helpers can be restarted explicitly if needed.
