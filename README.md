@@ -9,29 +9,24 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 
 ## Current release status
 
-**1.3.0-rc.2 is the current published release** ([release](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.2),
-client/0.3.1, protocol 7.1): packaged macOS DMG, Windows GUI executable and Linux
-archive with verified SHA-256 digests on the [run page](/run). Collection readiness
-and validated PL remain BLOCKED pending the remaining empirical gates; PL rows stay
-unscored. 1.3.0-rc.1 stays published as superseded plain command-line builds.
+**[1.3.0-rc.10 is published](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.10)** and the updated website is deployed. Download the macOS DMG, Windows GUI/console or Linux archive from the [live run page](https://encodingdb.platinumlabs.dev/run), and verify the published SHA-256 checksums. The release is marked prerelease.
 
-The corrected candidate uses `client/0.3.0`, benchmark protocol `7.1`, and the
-`ffmpeg-process-v1` encode timer. It preserves the frozen seven-clip Test Suite v1
-and `vmaf-v1-sdr-1080p` model. The declared validation scope is 1920×1080, 24 fps,
-SDR BT.709; 4K, HDR and HFR transfer are outside this release's validated scope.
+Collection and production upload acceptance passed for the named release builds. **PL remains provisional**, and scheduled production backup/failure-alert integration is still open; this is not yet an unattended-operations completion claim. See the [current release handoff](docs/FINAL_RELEASE_HANDOFF.md).
+
+All four clients share one clean release source and retain `client/0.3.9`, protocol `7.1` and the `ffmpeg-process-v1` timer. The frozen suite and `vmaf-v1-sdr-1080p` model remain unchanged. The declared scope is 1920×1080, 24 fps SDR BT.709; 4K, HDR and HFR transfer remain outside validation.
 
 - Ordinary CLI, Single and GUI contribution use the authoritative artifact flow,
   with bounded campaigns, checkpoints and independent upload resume.
 - Intake checks complete frame coverage and timing consistency; admission,
   retries, leases and recomputation have PostgreSQL fault regressions.
 - Exact-analysis reviews, immutable score contexts, disjoint fitting/holdout
-  membership and hash-bound scoring/evidence policy remain release gates.
+  membership and hash-bound scoring/evidence policy remain PL activation gates.
 - Public rows distinguish accepted/suspect measurements, byte integrity,
   retention, PL availability and confidence. Sparse or incompatible rows remain
   provisional or ineligible even after a future calibrated release.
 
 See [Final Release Handoff](docs/FINAL_RELEASE_HANDOFF.md) for executed evidence,
-platform limits, remaining approvals and the exact promotion procedure. The
+platform limits and remaining scientific/operational work. The historical
 [integrated check receipt](docs/collection-readiness/integrated-4348ca8/receipt.json)
 records 219 server, 217 client and 56 frontend tests for its stated source snapshot. Canonical
 source acquisition, provenance and freeze are complete; no new filming is required.
@@ -125,18 +120,11 @@ For authoritative V7 submissions, the client also uploads the encoded benchmark 
 - It improves outlier detection and submission confidence.
 - It supports hardware recommendation and reliability analysis.
 
-## Client downloads and candidate commands
+## Client downloads and commands
 
-The current public download is [1.3.0-rc.5](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.5).
-Verify its `SHA256SUMS` before use. Its macOS DMG contains the September 22
-resume repair; the Windows GUI/console binaries were carried forward from
-rc.4, and the Linux archive from an rc.2-era build. These assets do not share
-one corrected client source. Draft PR #22 contains later unpublished candidate
-work and is not part of any public download. The September 28 failed Medium
-sweeps and current readiness limits are recorded in
-[the original incident ledger](docs/collection-readiness/reliability-20260928/ORIGINAL-INCIDENTS.md).
-Per-clip assets in PR #22 remain staged with `published=false`, so a cold
-public guided run can still require the full roughly 1.51 GB frozen suite pack.
+The current public download is [1.3.0-rc.10](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.10). All four native assets were built from `daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f` and independently downloaded again to verify their hashes. See [release acceptance](docs/collection-readiness/release-20261005/README.md) for new native F8 recovery cases and genuine production contribution/replay evidence.
+
+Original failures and earlier candidates remain in [the incident ledger](docs/collection-readiness/reliability-20260928/ORIGINAL-INCIDENTS.md) and the separate [rc.9 acceptance packet](docs/collection-readiness/overnight-20261004/README.md). They are historical evidence, not the identities of current downloads.
 
 Published **1.2.0 / client/0.2.0** downloads remain available as historical
 assets in their [release](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.2.0).
@@ -181,12 +169,12 @@ python -m client --queue-status
 Publishing a completed campaign reuses retained measurements and artifacts; it does
 not repeat the encode. An upload receipt means analysis is pending, not acceptance.
 Offline/backpressured uploads remain queued. Acceptance, SUSPECT/review, rejection,
-cancellation and local completion are distinct outcomes. Change the destination to
-production only after the reviewed release and production gates are satisfied.
+cancellation and local completion are distinct outcomes. Published clients default
+to the production endpoint; the examples above select an isolated local endpoint.
 
 Other useful flags: `--max-attempts`, `--max-duration-minutes`, `--max-storage-mb`,
 `--queue-dir`, `--local-metrics` (opt-in diagnostics), `--target-bitrate-kbps` for
-native bitrate modes, `--gui`, `--cli` and `--menu`. Use the current candidate's
+native bitrate modes, `--gui`, `--cli` and `--menu`. Use the current release's
 `python -m client --help`; do not apply these examples to the older downloads.
 
 ## Local development
@@ -289,11 +277,11 @@ V7 artifact authorization uses `ARTIFACT_UPLOAD_SECRET` only on the server to si
 
 ## Version identities
 
-- Published project release: `1.3.0-rc.5` / `2026-09-22`, protocol `7.1`. Its macOS and Windows assets identify `client/0.3.3`; the carried Linux asset identifies `client/0.3.1` in retained native envelopes.
-- Unpublished review candidate: proposed `1.3.0-rc.9` / `client/0.3.9`, protocol `7.1`; native acceptance and promotion remain open. The rc.6 and rc.7 builds are retained as diagnostic evidence.
+- Published project release: `1.3.0-rc.10` / `2026-10-05`, protocol `7.1`; all four native artifacts use `client/0.3.9` and the same clean source revision.
+- The rc.9 and earlier candidate packages remain diagnostic evidence; their hashes are not relabeled as current release builds.
 - Historical project release: `1.2.0` / `client/0.2.0`, protocol `7.0` (historical timing).
 - Minimum accepted client implementation version: `client/0.3.0`.
-- Candidate benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.
+- Current benchmark protocol version: `7.1`, timer boundary `ffmpeg-process-v1`.
 - PL formula version: `7.0`.
 - Test-suite version: EncodingDB Test Suite v1 (`encodingdb-test-suite-v1`).
 
@@ -393,13 +381,13 @@ deployment entry point, verifies all seven source hashes inside the image, and
 checks that missing, unreachable and corrupt packs cannot change running services.
 Its test volumes, network, ports and credentials are isolated from production.
 
-Production env validation, named-volume backup/restore, pre-V7 migration
+Production env validation, coherent database/artifact backup/restore, pre-V7 migration
 rehearsal, and the later PL activation procedure are documented in
 [PL production activation](docs/PL_V7_PRODUCTION_ACTIVATION.md). Collection can
-operate with PL unavailable after its own acceptance gate, but the full release
-objective and PLA-70 remain open until calibrated PL also passes. Genuine reviews,
-longer/disjoint holdouts and final production authority cannot be replaced by
-unit tests or a completed source-preparation document.
+operate with PL unavailable: the rc.10 collection/UI release has passed its own
+acceptance and is deployed. Validated PL remains a separate open gate. Genuine
+reviews and independent holdout evaluation cannot be replaced by unit tests or
+a source-preparation document.
 
 Keep `ARTIFACT_UPLOAD_SECRET` and `V7_OPERATOR_TOKEN` on the server; ordinary
 contributors do not need operator accounts or credentials. Set `TRUST_PROXY` to

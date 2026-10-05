@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "sourceRevision": "daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f",
+  "projectVersion": "1.3.0-rc.10",
+  "clientVersion": "client/0.3.9",
+  "passed": true,
+  "scope": "16 F8 recovery cases on genuine copied journals against explicit controlled retention fixtures; 32 publication attempts, zero new encodes",
+  "caseCount": 16,
+  "publicationAttempts": 32,
+  "newEncodes": 0,
+  "packageHashes": {
+    "linux-archive": "a774c16250ffd84b545a304e35c25be856fd3ef219d522d0f85cfd8be04b8777",
+    "macos-dmg": "90dc77afbb208a0312595b63df76f9b647cb7110991ef8a9e5c46291ccb6f34c",
+    "windows-console": "ed7e18064ee99459301cf4c7c464827114b9d77e9d02543ce7f39fcbba6d2098",
+    "windows-gui": "55f9c0ad6f874023395a0b9b7e99c90f30a0dc22fecab20268e336d52c2efc47"
+  },
+  "executableHashes": {
+    "linux-archive": "8320f76edeacfd441c1ac95cc7c78126593f535f478e6493c98ab36416d8f2c7",
+    "macos-dmg": "96d3a42dacf828ea75675668537a01e3e26559644e2c8d312cec22b0d562a39b",
+    "windows-console": "ed7e18064ee99459301cf4c7c464827114b9d77e9d02543ce7f39fcbba6d2098",
+    "windows-gui": "55f9c0ad6f874023395a0b9b7e99c90f30a0dc22fecab20268e336d52c2efc47"
+  },
+  "cases": [
+    {
+      "role": "macos-dmg",
+      "case": "hash-mismatch-first",
+      "rawProofSha256": "dff809345f363c2de6657ff4ce09ff8c1ae5eaabfab785b3c4a84b3bacb991f2",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "macos-dmg",
+      "case": "hash-mismatch-later",
+      "rawProofSha256": "b7d827c88a19dadbfcd221d9d163eade2ec5b327321a257f3d8de274990dfa8b",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "macos-dmg",
+      "case": "missing-first",
+      "rawProofSha256": "f4585b3aacd071b76cc6732284997efca9b663c1ebe89a64a6a5797ac4230eb9",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "macos-dmg",
+      "case": "missing-later",
+      "rawProofSha256": "12f627f0a99f1b4d616fb9945f344b77308ebb7e17f2a72c5236bccd38d8ac3f",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "linux-archive",
+      "case": "hash-mismatch-first",
+      "rawProofSha256": "0579097eb16dff54c9e10fb20549980e39d49211f89fbd7df26699a52638b3b9",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "linux-archive",
+      "case": "hash-mismatch-later",
+      "rawProofSha256": "5b002a287a880670bbd502bb39cea83349f8daf3d2307fe86fb16c3f1ef88023",
+      "healthyPublishedOnce": 4,
+      "passed": true
+    },
+    {
+      "role": "linux-archive",
+      "case": "missing-first",
+      "rawProofSha256": "361ba8c4a9b2fe6e6829d950582d58bfa02e9b64e7103c69b68d239da5808374",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "linux-archive",
+      "case": "missing-later",
+      "rawProofSha256": "c74c9c12611f040cf622fbed46b792714238ba42c4078f497196df0bee62deff",
+      "healthyPublishedOnce": 4,
+      "passed": true
+    },
+    {
+      "role": "windows-console",
+      "case": "hash-mismatch-first",
+      "rawProofSha256": "f95a0decfc9fef1355c3d069c58310a02ebb1823820eaf610716f3cb2e9bcd65",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-console",
+      "case": "hash-mismatch-later",
+      "rawProofSha256": "4f13a4b043804be946cdfc9a4df3ad617534a17a2ea539681b854cea92909272",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-console",
+      "case": "missing-first",
+      "rawProofSha256": "7701e7eb6900405562b0c1ad189e40d8c38add429a723a0556fea1f64dc195b4",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-console",
+      "case": "missing-later",
+      "rawProofSha256": "cef74e74b204324552c5eb1938485bfe0ce454439bee19e20baabecb2fc67221",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-gui",
+      "case": "hash-mismatch-first",
+      "rawProofSha256": "ac3bcdd68c2325b5693e0617ebdb2a03c4999960a412615f1db814818b5afafe",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-gui",
+      "case": "hash-mismatch-later",
+      "rawProofSha256": "02f23a30fc1957e68f76fd3b678246f71ef6c59a4f81881feb6a36c46902df6d",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-gui",
+      "case": "missing-first",
+      "rawProofSha256": "07efa11227b195b8c94291514de2d550c0b5aba0ba2741c007dd87033da0f1bf",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    },
+    {
+      "role": "windows-gui",
+      "case": "missing-later",
+      "rawProofSha256": "452c9ddc382b9e6c0fc080f2bf375f19f40fa2af4a269baae10f393e74dca6d7",
+      "healthyPublishedOnce": 2,
+      "passed": true
+    }
+  ],
+  "plRecommendationReady": false,
+  "priorRc9EvidenceRelabeled": false
+}

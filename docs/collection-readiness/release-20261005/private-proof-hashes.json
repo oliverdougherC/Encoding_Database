@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "note": "Logical proof names replace private locations and identifiers. Hashes bind retained originals; they are not an independent certification.",
+  "proofs": {
+    "main-native-acceptance": {
+      "sha256": "4da6e835b8086862dcb09ffe34c64b9160098bf6e00542c0b6e75ce0472601de",
+      "byteSize": 6197
+    },
+    "production-saved-contribution-smoke": {
+      "sha256": "cd1462fc7995d6bd5bf8a1f013d2550a7113c68c027005b0c4bd35e8dd7f162b",
+      "byteSize": 5379
+    },
+    "production-smoke-provenance-notes": {
+      "sha256": "c12ada6cb65a86f2357296e291ccee62977210a7c84eaee99ed22a3f2fac0d8c",
+      "byteSize": 3438
+    },
+    "production-public-identities": {
+      "sha256": "18dc52dabf3af0ca387017c3e7f62b2898dcc34b4a1a0ffcbc8fb9d88595dbf1",
+      "byteSize": 1649
+    },
+    "server-cutover": {
+      "sha256": "52b0dd209917cf8f18b085bca5189528661444c24a10ed48aa7e56ff797b454a",
+      "byteSize": 1343
+    },
+    "frontend-cutover": {
+      "sha256": "249d34d96a2794d4f5cffb795a75accee3ddf8f1ef204411fd1343510d70e73d",
+      "byteSize": 1344
+    },
+    "paired-backup-restore": {
+      "sha256": "68884db1c3a7b7c1fc643a920ecfebed94e0e5ec38089dba87fa629c17aa372b",
+      "byteSize": 1724
+    },
+    "private-offhost-copy": {
+      "sha256": "28c04d04f8b376f7e2e042122729edfe56d4e28aaf009fcda13f9daa6e197f09",
+      "byteSize": 1602
+    },
+    "anonymous-public-redownload": {
+      "sha256": "abc94f3e24251d9f6fdb51505d23e1497d097dfbc0c2667dbc71648154ad38a4",
+      "byteSize": 1985
+    },
+    "live-downloads-desktop": {
+      "sha256": "8fb1fabfd27c8d95987cba336261e904afea5dfa198093137aed3a3a54bb6e04",
+      "byteSize": 91794
+    },
+    "live-downloads-mobile": {
+      "sha256": "b88e1d7bfc4638bf548e09645947b836df257c06b145181bf84259362fa57393",
+      "byteSize": 49460
+    },
+    "live-browse-desktop": {
+      "sha256": "f7e735284f857f8a1ab7842e8ed3208b43e42aaedda774006bdf5defb6dd7539",
+      "byteSize": 87002
+    },
+    "live-hardware-mobile": {
+      "sha256": "d4cdf064c3437fbc99f3f0eaacc804013749257fa7979662ad646bf2f4a72f34",
+      "byteSize": 37366
+    }
+  }
+}

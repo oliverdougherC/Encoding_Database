@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "pairedBackupPassed": true,
+  "isolatedRestorePassed": true,
+  "allTableInventoryMatched": true,
+  "artifactCount": 507,
+  "tableCount": 18,
+  "rowCount": 1904,
+  "sequenceCount": 0,
+  "quiescenceSeconds": 59,
+  "artifactArchiveBytes": 1979337418,
+  "databaseDumpBytes": 2547004,
+  "privateOffhostCopyVerified": true,
+  "offhostManifestMatched": true,
+  "scheduledBackupInstalled": false,
+  "healthFailureAlertsInstalled": false,
+  "monitoringIntegrationStatus": "User selected an existing webhook/monitoring service; its service/configuration reference remains pending.",
+  "passiveOperationsComplete": false
+}
