@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog, and this repository uses date-stamped
 release notes until a stricter semver/tagging policy is formalized.
 
+## [1.3.0-rc.10] - 2026-10-05
+
+Release candidate for the targeted PR #23 recovery correction (F8). Publish
+saved now isolates missing or damaged artifacts to their recipe group, allowing
+independent complete groups to reconstruct and upload in the same pass. Unresolved
+evidence remains preserved and visible, and the campaign still reports failure.
+Repeated recovery preserves payload identities and does not re-encode accepted work.
+
+The package release advances while the measurement identity remains client/0.3.9,
+so compatible saved campaigns remain recoverable. Protocol 7.1, the frozen suite,
+and scientific validation are unchanged; PL recommendations remain provisional.
+The deployment storage guard also recognizes the production bind-mount topology
+without replacing retained data or weakening mount validation.
+
 ## [1.3.0-rc.9] - 2026-10-02
 
 Unpublished client 0.3.9 review candidate. Physical online acceptance remains open.
