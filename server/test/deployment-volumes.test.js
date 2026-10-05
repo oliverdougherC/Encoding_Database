@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtemp, mkdir, readFile, writeFile, copyFile, access, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, writeFile, copyFile, access, rm, symlink, realpath } from 'node:fs/promises';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import os from 'node:os';
@@ -24,6 +24,67 @@ test('existing database and artifact volume identities must both be preserved', 
 test('existing named evidence mounts cannot be replaced with a bind or removed', () => {
   const changed = structuredClone(config); changed.services.server.volumes = [];
   assert.throws(() => verifyDeploymentVolumes(changed, existing), /must preserve/);
+});
+
+test('existing bind mounts preserve both canonical data directories, including symlink aliases', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-bind-guard-'));
+  try {
+    const proposed = structuredClone(config);
+    const running = structuredClone(existing);
+    for (const [index, service] of ['db', 'server'].entries()) {
+      const source = path.join(root, service);
+      await mkdir(source);
+      await symlink(source, `${source}-alias`, 'dir');
+      proposed.services[service].volumes[0] = { type: 'bind', source: `${source}-alias`, target: existing[index].Mounts[0].Destination };
+      running[index].Mounts[0] = { Type: 'bind', Source: source, Destination: existing[index].Mounts[0].Destination };
+    }
+    const result = verifyDeploymentVolumes(proposed, running);
+    assert.equal(result.checked.length, 2);
+    assert.deepEqual(result.checked.map(item => item.source), await Promise.all(['db', 'server'].map(service => realpath(path.join(root, service)))));
+    assert.ok(result.checked.every(item => item.type === 'bind'));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('existing bind data cannot switch source, mount type, destination or missing storage', async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'encodingdb-bind-refusal-'));
+  try {
+    const proposed = structuredClone(config);
+    const running = structuredClone(existing);
+    await mkdir(path.join(root, 'other'));
+    for (const [index, service] of ['db', 'server'].entries()) {
+      const source = path.join(root, service);
+      await mkdir(source);
+      proposed.services[service].volumes[0] = { type: 'bind', source, target: existing[index].Mounts[0].Destination };
+      running[index].Mounts[0] = { Type: 'bind', Source: source, Destination: existing[index].Mounts[0].Destination };
+    }
+    for (const service of ['db', 'server']) {
+      for (const change of [
+        mount => { mount.source = path.join(root, 'other'); },
+        mount => { mount.source = ''; },
+        mount => { mount.source = 'relative-data'; },
+        mount => { mount.source = path.join(root, 'absent'); },
+        mount => { mount.type = 'volume'; mount.source = 'new_default_data'; },
+        mount => { mount.target += '-different'; },
+      ]) {
+        const changed = structuredClone(proposed); change(changed.services[service].volumes[0]);
+        assert.throws(() => verifyDeploymentVolumes(changed, running), /Refusing rollout/, service);
+      }
+      const duplicate = structuredClone(proposed);
+      duplicate.services[service].volumes.push(structuredClone(duplicate.services[service].volumes[0]));
+      assert.throws(() => verifyDeploymentVolumes(duplicate, running), /Refusing rollout/);
+    }
+    const missingActual = structuredClone(running); missingActual[0].Mounts[0].Source = '';
+    assert.throws(() => verifyDeploymentVolumes(proposed, missingActual), /Refusing rollout/);
+    const changedType = structuredClone(config);
+    changedType.services.db.volumes[0] = proposed.services.db.volumes[0];
+    assert.throws(() => verifyDeploymentVolumes(changedType, existing), /Refusing rollout/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test('empty named-volume sources fail closed even if the derived default would match', () => {
+  const changed = structuredClone(config); changed.services.db.volumes[0].source = '';
+  const running = structuredClone(existing); running[0].Mounts[0].Name = 'encodingdb_';
+  assert.throws(() => verifyDeploymentVolumes(changed, running), /Refusing rollout/);
 });
 
 test('actual deploy entry point rejects mismatched data before build or rollout', async () => {
