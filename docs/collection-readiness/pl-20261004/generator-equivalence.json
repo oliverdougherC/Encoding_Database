@@ -1,0 +1,7 @@
+{
+  "passed": true,
+  "corpusCount": 1,
+  "evidenceHash": "7f017546f8bbe548487af6a986908b5f72f897453fac518c91ceac39c48b187b",
+  "since": "2026-10-03T20:53:52.720Z",
+  "comparison": "Complete canonical document equality using real retained selected newest cohort; exact group verified against full combined snapshot"
+}

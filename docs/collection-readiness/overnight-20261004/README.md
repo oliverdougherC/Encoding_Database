@@ -14,7 +14,7 @@
 
 [Client acceptance summary](client-acceptance-summary.json) records exact receipt → run → artifact/payload binding and confirmed retention, with 1,042 distinct server run IDs. Recovery completed 136 previously pending uploads through ordinary backoff/quota behavior, without new encodes or changes to original measurement evidence. GUI campaign recovery used the pinned console package against its existing queue; actual GUI Retry/Stop behavior was tested separately below.
 
-**Upload success is separate from scientific acceptance.** During the recorded observation window, October 5 06:11:40–06:41:16 UTC, server runs were 414 accepted, 432 suspect and 196 pending. These are historical observations, not a current queue snapshot. Suspect results are not accepted results. All 1,042 had bound analysis rows. Later analysis and PL disposition remain separate; the PL evidence packet will document its independent requirements.
+**Upload success is separate from scientific acceptance.** During the recorded observation window, October 5 06:11:40–06:41:16 UTC, server runs were 414 accepted, 432 suspect and 196 pending. These are historical observations, not a current queue snapshot. Suspect results are not accepted results. All 1,042 had bound analysis rows. Later analysis and PL disposition remain separate; see the [PL objective preparation and remaining gates](../pl-20261004/README.md).
 
 ## Fault and restart coverage
 

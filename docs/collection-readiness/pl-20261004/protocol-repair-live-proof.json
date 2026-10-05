@@ -1,0 +1,279 @@
+{
+  "before": {
+    "eligible": false,
+    "reason": "incompatible-protocol",
+    "expectedCount": 2,
+    "observedCount": 2,
+    "relativeSpread": null,
+    "threshold": 0.03,
+    "memberRunIds": [],
+    "analysisIds": []
+  },
+  "after": {
+    "eligible": true,
+    "reason": "complete-stable-retained-group",
+    "expectedCount": 2,
+    "observedCount": 2,
+    "relativeSpread": 0.010096861547798354,
+    "threshold": 0.03,
+    "memberRunIds": [
+      "validation_1393f7efed8f9a7693bcab8d3ad58af84771adc8f5c5fa49473199b516932009",
+      "validation_64eca94cb85b922575501218269af94290ba9c7e008815b904b5166e314abbf4"
+    ],
+    "analysisIds": [
+      "cmuut9t4b0007o51jrtkiacrd",
+      "cmuutc0cd000co51j2yk7q4k7"
+    ]
+  },
+  "live": {
+    "eligible": true,
+    "reason": "complete-stable-retained-group",
+    "expectedCount": 2,
+    "observedCount": 2,
+    "relativeSpread": 0.010096861547798354,
+    "threshold": 0.03,
+    "memberRunIds": [
+      "validation_1393f7efed8f9a7693bcab8d3ad58af84771adc8f5c5fa49473199b516932009",
+      "validation_64eca94cb85b922575501218269af94290ba9c7e008815b904b5166e314abbf4"
+    ],
+    "analysisIds": [
+      "cmuut9t4b0007o51jrtkiacrd",
+      "cmuutc0cd000co51j2yk7q4k7"
+    ]
+  },
+  "sourceSnapshotHash": "a47edd86aa6fc8d9ebd9b780189c6f439884e00ad820d5d6b9e6819cd7da53ae",
+  "derivedSnapshotHash": "ec457adc9f7bcd47d27946b5f97bfdcd55bf12945d2afc99d71fc61719dd1032",
+  "protocolMetadataRepair": {
+    "schemaVersion": "encodingdb-validation-protocol-metadata-repair/v1",
+    "sourceSnapshotHash": "a47edd86aa6fc8d9ebd9b780189c6f439884e00ad820d5d6b9e6819cd7da53ae",
+    "reason": "Importer omitted predeclared maxAdaptiveRepeats/stabilityThresholdRatio; original campaign receipts prove unchanged measurement rules",
+    "protocolAliases": [
+      {
+        "originalProtocolId": "cmuut9sxg0000o51jj6abpryy",
+        "derivedProtocolId": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94",
+        "originalRules": {
+          "warmupRuns": 1,
+          "validationOnly": true,
+          "minimumMeasuredRuns": 2
+        },
+        "derivedRules": {
+          "validationOnly": true,
+          "warmupRuns": 1,
+          "minimumMeasuredRuns": 2,
+          "stabilityThresholdRatio": 0.03,
+          "maxAdaptiveRepeats": 2
+        },
+        "originalRuleHash": "559adb00bd131c946991659261532c3539fc0cef20b2d5a458cf81a8f66ecfa0",
+        "derivedRuleHash": "7ced5774c331bc8ffd8908fc95b2f3474447412a28a8ce2efa621947006d7b35"
+      }
+    ],
+    "campaignReceipts": [
+      {
+        "originalPath": "[private-evidence]/validation-campaign.json",
+        "sha256": "83bf105d63357b7f407eea97d53256bc0d6d888ab8abca43a76d027e38a16028",
+        "sourceRegistrationHash": "6ade8586cef599d0503677b89b2ad49ec434712eec10c81a335a0a452a15e71c",
+        "protocolConfigHash": "06d4273a8ce8440be7844748d3190d2542ea08892671a927e8996b529c80cfcb"
+      }
+    ],
+    "runAliases": [
+      {
+        "runId": "validation_1393f7efed8f9a7693bcab8d3ad58af84771adc8f5c5fa49473199b516932009",
+        "beforeHash": "455ee796e1ed1def5f3f426cd96a1c8dea2462bd688b7b50834c93e82d140508",
+        "afterHash": "44b6442790bdd35350a57e3616c91381ac4d29623620b67225d6525f7bf82e02",
+        "preservedPayloadHash": "f3e9bdee62fed6d763781834f2129a05da7a6f5a5df202021315156fcf7e3266",
+        "changedFields": [
+          "benchmarkProtocolId"
+        ]
+      },
+      {
+        "runId": "validation_64eca94cb85b922575501218269af94290ba9c7e008815b904b5166e314abbf4",
+        "beforeHash": "1331c2d0033f4a63c09cccd606dcd8d3acd198be1436f8e0d76af1f53535c356",
+        "afterHash": "25feec4426126db91ff104989dadcfe11c7390d27101b95fd8af28e745c3aad5",
+        "preservedPayloadHash": "63af36095637094c00eed7fc2dc645f7db1f909f6e340c4429177b5241e80e58",
+        "changedFields": [
+          "benchmarkProtocolId"
+        ]
+      }
+    ],
+    "unchangedAnalysisTableHash": "ab5561183c76775314e236db085678b61a825f6edca6231ec781ed8c25a71cb1",
+    "unchangedArtifactTableHash": "0f6b3b5590edb557301433401477385107357344767c9166b4e393567a1b5270",
+    "payloadHashContract": "Recomputed from original schedule,timing,counted measurement group,recipe fingerprint,environment fingerprint,source registration,physical source and artifact SHA. Database protocol FK is absent from this original contract."
+  },
+  "importedRunCount": 12,
+  "imports": [
+    {
+      "snapshotHash": "ec457adc9f7bcd47d27946b5f97bfdcd55bf12945d2afc99d71fc61719dd1032",
+      "preservedRunIds": [
+        "validation_1393f7efed8f9a7693bcab8d3ad58af84771adc8f5c5fa49473199b516932009",
+        "validation_64eca94cb85b922575501218269af94290ba9c7e008815b904b5166e314abbf4"
+      ],
+      "preservedArtifactIds": [
+        "cmuut9t1p0005o51jap5pww51",
+        "cmuutc0af000ao51j50nevabv"
+      ],
+      "preservedAnalysisIds": [
+        "cmuut9t4b0007o51jrtkiacrd",
+        "cmuutc0cd000co51j2yk7q4k7"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuut9szc0003o51jsxzpd3wa": "cmuut9szc0003o51jsxzpd3wa"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    },
+    {
+      "snapshotHash": "cb5e4bb00c3faab0e2f6b3dbe0489bf82fdbbefec4f834f5414c743e816764ac",
+      "preservedRunIds": [
+        "validation_c52b7db59b6fc191f2976b7bff3c60771852780896e690eea92b09488980ef27",
+        "validation_c77744aa22ebab34318907a70e2118834fc2c526134a8bbccb2ccae3f8b5ab35"
+      ],
+      "preservedArtifactIds": [
+        "cmuute4jz0005o542ie7vmor1",
+        "cmuutgb2f000ao5423j84j8cv"
+      ],
+      "preservedAnalysisIds": [
+        "cmuute4mc0007o542x33mo1pd",
+        "cmuutgb4k000co542r8svvxsr"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuute4hw0003o542j8dcztbp": "cmuute4hw0003o542j8dcztbp"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    },
+    {
+      "snapshotHash": "9e91b83c887b97ccfc5ce358a862083e72084752fa87e9c10e197d15d1ce7bcb",
+      "preservedRunIds": [
+        "validation_26ea1bcfe9dbe6fdefc924aa1eca68102de10d7885075b16c507a8a4acf053f7",
+        "validation_bbbdcb252dd49dcab5375648c8fb1d19148be13f18c516605246f1181d23aabd"
+      ],
+      "preservedArtifactIds": [
+        "cmuutihsx0005o56morkif5ch",
+        "cmuutknjo000ao56mz5c1xauw"
+      ],
+      "preservedAnalysisIds": [
+        "cmuutihvb0007o56mrv4kg8nq",
+        "cmuutknls000co56m1hapl6nu"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuutihqk0003o56muljroqnh": "cmuutihqk0003o56muljroqnh"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    },
+    {
+      "snapshotHash": "26012786a5e1669b29abe0bc5185031da29243a515e34d42675472b5b0a44543",
+      "preservedRunIds": [
+        "validation_520eda99fa32c455df0a54f1e8c8603ceeb6a53e002969258a2019e44973d9d6",
+        "validation_b89cb75fcd807bf7fb27456d76fefb780330391b3d4570a2d09bdfce4abda09c"
+      ],
+      "preservedArtifactIds": [
+        "cmuutmukq0005o595mlicqv3m",
+        "cmuutozv4000ao595ues485op"
+      ],
+      "preservedAnalysisIds": [
+        "cmuutmuns0007o595mkohpydt",
+        "cmuutozxt000co595v4suo7ap"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuutmuiu0003o595gjn5grgl": "cmuutmuiu0003o595gjn5grgl"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    },
+    {
+      "snapshotHash": "ae730539e67389eac158058308f1aaa04a68801f3fef6332743d43ab22d8975e",
+      "preservedRunIds": [
+        "validation_5b6e49cd831ddc6aec56d164443614948b2fa2be64a829fa24d00d807e10bb88",
+        "validation_b92e6fd4c725c32f2e5327b3fe2d58869256c22621724e78cd763f224b4fa40f"
+      ],
+      "preservedArtifactIds": [
+        "cmuutr7qu0005o5bojbx70m7y",
+        "cmuuttgjr000ao5boozgldnvy"
+      ],
+      "preservedAnalysisIds": [
+        "cmuutr7ti0007o5bou0yac96l",
+        "cmuuttglh000co5bomjo0lo1k"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuutr7nq0003o5bosi8e7mtz": "cmuutr7nq0003o5bosi8e7mtz"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    },
+    {
+      "snapshotHash": "3e9503d7bed15c3e9fabd287de8cbc728b7c887ae0022f2aaf0090a7e8104c89",
+      "preservedRunIds": [
+        "validation_e1f7e4bcceafd43fea46ccfadd68338e249ad574593f40ef03f16cb57088049a",
+        "validation_f958bbf59bacdd1912a2aaba3efa09c3f8c277a3656eab655f7f77a27d74fc03"
+      ],
+      "preservedArtifactIds": [
+        "cmuutvqqz0005o5e7cymyl43q",
+        "cmuuty0cd000ao5e7p46x2iyu"
+      ],
+      "preservedAnalysisIds": [
+        "cmuutvqtl0007o5e7rwdgf7u2",
+        "cmuuty0ee000co5e7ws4lf1dd"
+      ],
+      "dimensionAliases": {
+        "protocols": {
+          "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94": "calibration_protocol_85a54ed40375e7cbb9a614f96b0a0d58e643021f10e0d4bbd9f379bfaa500a94"
+        },
+        "clips": {
+          "cmuut9sxy0001o51jyajtha76": "cmuut9sxy0001o51jyajtha76"
+        },
+        "recipes": {
+          "cmuutvqom0003o5e76ptd0wfr": "cmuutvqom0003o5e76ptd0wfr"
+        },
+        "environments": {
+          "cmuut9sy90002o51jceq5bs6h": "cmuut9sy90002o51jceq5bs6h"
+        }
+      }
+    }
+  ]
+}

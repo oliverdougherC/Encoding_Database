@@ -1,0 +1,25 @@
+{
+  "scope": "Private absolute operational paths replaced with logical evidence basenames; identifiers, measurements and validation outcomes unchanged. Original task evidence remains preserved.",
+  "files": [
+    {
+      "file": "anchor-timing-summary.json",
+      "sourceSha256": "5475c272e12da4e78d5643b8a3ba3dae8c6eca40054594fa1ab04d850c72cc90",
+      "redactedSha256": "c2824221dca87c3b599e0674dc68f9c76c70c42789aad7db8d83d30a0bdc0bc5"
+    },
+    {
+      "file": "distinct-extension-timing.json",
+      "sourceSha256": "9e93074948005056446128ac4742515d9a21e64ce54064b5461f73a6b9b1cd49",
+      "redactedSha256": "aff1898e66c6364d01a92963d6a9abb7fddb6faea2752ff9f6402dfc91798731"
+    },
+    {
+      "file": "anchor-predeclared-plan.json",
+      "sourceSha256": "17e1bb6eec98752cdeb46c6169588a4d85c00a0e57da39bc91b35d617db30215",
+      "redactedSha256": "86fec0a860c354e3b032a35258e54d2be7629ed0040c666d32dc8422bef6b6cb"
+    },
+    {
+      "file": "protocol-repair-live-proof.json",
+      "sourceSha256": "9f51ce9cea3a98ca7f39ba6b09fdb7bb249d0652e2ea44240cf0c3dcf5b142cd",
+      "redactedSha256": "5446f4445b45c2328d10e42bd48b0c3693c017cf540a158b2d519fcf9b8d2a3c"
+    }
+  ]
+}

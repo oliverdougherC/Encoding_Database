@@ -1,0 +1,312 @@
+{
+  "capturedAt": "2026-10-05T06:26:57.918Z",
+  "expected": 16,
+  "count": 16,
+  "pending": 0,
+  "rows": [
+    {
+      "id": "cmuuubev8001qmn018w5bazeb",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-3d198272c999ba62",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuubf1l001tmn01kgi6hb6u",
+          "status": "SUSPECT",
+          "vmafMean": 89.349037,
+          "vmafP5": 82.641845,
+          "xpsnr": 36.7962,
+          "videoBitrateBps": 41780599.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuuay0c001lmn013ku1p06f",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-3d198272c999ba62",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuubelv001omn01xosa6x61",
+          "status": "SUSPECT",
+          "vmafMean": 89.349037,
+          "vmafP5": 82.641845,
+          "xpsnr": 36.7962,
+          "videoBitrateBps": 41780599.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuuabdh001amn01s7a46zsi",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-541f3ac1ad119be8",
+      "workloadId": "film-grain-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuuatu9001dmn01mgsfy2xq",
+          "status": "SUSPECT",
+          "vmafMean": 96.912824,
+          "vmafP5": 94.305589,
+          "xpsnr": 37.4111,
+          "videoBitrateBps": 46289296.8,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuuau37001fmn015uvpf725",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-541f3ac1ad119be8",
+      "workloadId": "film-grain-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuuau8r001imn01hmyddbn2",
+          "status": "SUSPECT",
+          "vmafMean": 96.912824,
+          "vmafP5": 94.305589,
+          "xpsnr": 37.4111,
+          "videoBitrateBps": 46289296.8,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuua7sl0014mn01kst7tft0",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-9b25c358996ed042",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuua8090017mn01a79g3ume",
+          "status": "SUSPECT",
+          "vmafMean": 86.079605,
+          "vmafP5": 84.753108,
+          "xpsnr": 31.6731,
+          "videoBitrateBps": 853935.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuua22u000zmn01i8je4vmk",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-9b25c358996ed042",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuua7b30012mn01o0bctzap",
+          "status": "SUSPECT",
+          "vmafMean": 86.079605,
+          "vmafP5": 84.753108,
+          "xpsnr": 31.6731,
+          "videoBitrateBps": 853935.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuubipb001wmn0157ni7n3b",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-9f7ca8e91b4d61db",
+      "workloadId": "screen-text-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuubju0001zmn01d19veq1l",
+          "status": "COMPLETE",
+          "vmafMean": 58.527788,
+          "vmafP5": 55.20774,
+          "xpsnr": 24.6569,
+          "videoBitrateBps": 68206.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuubk330021mn01zt958jzg",
+      "status": "SUSPECT",
+      "statusReason": "Client measurement/environment validity is suspect, missing or unknown",
+      "campaignId": "campaign-9f7ca8e91b4d61db",
+      "workloadId": "screen-text-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuubkab0024mn01m8j1gplu",
+          "status": "COMPLETE",
+          "vmafMean": 58.527788,
+          "vmafP5": 55.20774,
+          "xpsnr": 24.6569,
+          "videoBitrateBps": 68206.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu92850002mn01reg3nqp1",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-a2c20c5dfa44a3c6",
+      "workloadId": "screen-text-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu93b40005mn010wy5zsri",
+          "status": "COMPLETE",
+          "vmafMean": 81.560288,
+          "vmafP5": 79.353233,
+          "xpsnr": 32.1287,
+          "videoBitrateBps": 89559.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu93m60007mn01xbrapgi6",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-a2c20c5dfa44a3c6",
+      "workloadId": "screen-text-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu93u7000amn01hxrjq7x9",
+          "status": "COMPLETE",
+          "vmafMean": 81.560288,
+          "vmafP5": 79.353233,
+          "xpsnr": 32.1287,
+          "videoBitrateBps": 89559.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu9779000emn01eqa1ace1",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-b145c70099c5a602",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu9wue000hmn01ridivggv",
+          "status": "COMPLETE",
+          "vmafMean": 95.240774,
+          "vmafP5": 91.423793,
+          "xpsnr": 42.1641,
+          "videoBitrateBps": 95789970.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu9x8m000jmn01awdxnr0d",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-b145c70099c5a602",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu9xi7000mmn014sdhyjbb",
+          "status": "COMPLETE",
+          "vmafMean": 95.240774,
+          "vmafP5": 91.423793,
+          "xpsnr": 42.1641,
+          "videoBitrateBps": 95789970.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu9y50000tmn01ywo9gi0k",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-b145c70099c5a602",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu9ybq000wmn01wr0jvd7p",
+          "status": "COMPLETE",
+          "vmafMean": 95.240774,
+          "vmafP5": 91.423793,
+          "xpsnr": 42.1641,
+          "videoBitrateBps": 95789970.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuu9xr1000omn01q7ltub86",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-b145c70099c5a602",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuu9xwt000rmn01hpv7jdsc",
+          "status": "COMPLETE",
+          "vmafMean": 95.240774,
+          "vmafP5": 91.423793,
+          "xpsnr": 42.1641,
+          "videoBitrateBps": 95789970.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuubnyd0027mn01cp91e3ho",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-fe6fbf8efc896812",
+      "workloadId": "film-grain-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuucun2002amn01q9ka609i",
+          "status": "COMPLETE",
+          "vmafMean": 99.305495,
+          "vmafP5": 97.384095,
+          "xpsnr": 42.062,
+          "videoBitrateBps": 99512215.2,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuucux6002cmn01ijrtbh5u",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-fe6fbf8efc896812",
+      "workloadId": "film-grain-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuucv3p002fmn017wzr9cln",
+          "status": "COMPLETE",
+          "vmafMean": 99.305495,
+          "vmafP5": 97.384095,
+          "xpsnr": 42.062,
+          "videoBitrateBps": 99512215.2,
+          "lastError": null
+        }
+      ]
+    }
+  ]
+}

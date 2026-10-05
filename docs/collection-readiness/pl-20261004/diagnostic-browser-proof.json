@@ -1,0 +1,72 @@
+{
+  "videoCount": 6,
+  "allPassed": true,
+  "results": [
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/dark-gradients-1080p24-final.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.36167,
+      "decodedFrames": 17,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    },
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/21bf0dd228c8ce0e5516a1d17623c29c7097e3f8fdbcc7e5726716aaf3e589c3.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.480829,
+      "decodedFrames": 20,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    },
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/film-grain-1080p24-final.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.32821,
+      "decodedFrames": 7,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    },
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/75675c0dbe6b93881b0ced29942499381027c16abffff6bb2c4f3bb9545fb877.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.48032,
+      "decodedFrames": 10,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    },
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/talking-head-1080p24-final.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.386275,
+      "decodedFrames": 12,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    },
+    {
+      "url": "http://127.0.0.1:8769/diagnostics/media/b676b78f6253e6fbbcaf485befebe7f63bdc839575dcb89caec109a48667c49d.mp4",
+      "width": 1920,
+      "height": 1080,
+      "duration": 10,
+      "played": 0.49046,
+      "decodedFrames": 10,
+      "seekTarget": 5,
+      "seekActual": 5,
+      "passed": true
+    }
+  ]
+}

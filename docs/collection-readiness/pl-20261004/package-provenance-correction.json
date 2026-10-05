@@ -1,0 +1,8 @@
+{
+  "actualPackagedBuildRevision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+  "logicalReviewedHead": "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+  "gitTree": "5f94abd5e1e994a494fb2d9090627c87da91465b",
+  "fullTreesEqual": true,
+  "measuredExecutableSha256": "e3e2f72c916d8b7dc898540bbc2e6257a6279537ac6b96cc20bd196f6ea999fc",
+  "explanation": "The runner clientSourceSha argument and earlier operator plan labeled the logical review head44b9e15. The actual package release manifest identifies CI merge3e798c70. Their complete Git trees are identical. This correction is additive; original measured records and manifests are not rewritten."
+}

@@ -1,0 +1,390 @@
+{
+  "exit": {
+    "startedAt": "2026-10-05T05:45:32.692879+00:00",
+    "supervisorPid": 51911,
+    "command": [
+      "python3",
+      "scripts/run-calibration-matrix.py",
+      "--matrix",
+      "[private-evidence]/matrix.json",
+      "--cli",
+      "/Volumes/EncodingDB 1/EncodingDB.app/Contents/Resources/encodingdb",
+      "--client-source-sha",
+      "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+      "--source-slot",
+      "source-a",
+      "--sessions",
+      "1",
+      "--seed",
+      "20261004",
+      "--output",
+      "[private-evidence]/measurement",
+      "--max-cells",
+      "7",
+      "--max-duration-minutes",
+      "35",
+      "--cell-minutes",
+      "5",
+      "--max-storage-mb",
+      "8192",
+      "--cell-storage-mb",
+      "1024",
+      "--disk-reserve-mb",
+      "5120",
+      "--execute"
+    ],
+    "mode": "QUIET_WINDOW_NO_SUBMIT",
+    "maxMinutes": 35,
+    "pid": 51921,
+    "exitCode": 0,
+    "finishedAt": "2026-10-05T05:56:04.691698+00:00"
+  },
+  "cells": [
+    {
+      "cell": "source-a/session-1/anchor-dark-gradients-1080p24-final-libx264-fast-crf14",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-b145c70099c5a602",
+      "completion": {
+        "campaignId": "campaign-b145c70099c5a602",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "69d6e95d8106371373f7d535824b4a272ac234af96485dfbc36b8211caf1db3d",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "9833afa8e48cf021fde3af8b4c8f03fe61aec13f00d1c8925aaea74dcc00b1dc"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "19e9e3d6f81c32d1e8fc65d4d0384783407dd08dca0995440d48b2c8b97474f3",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "9833afa8e48cf021fde3af8b4c8f03fe61aec13f00d1c8925aaea74dcc00b1dc"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "d9414c19e8944f33b76e6100faa09be28b0fbca01ee4005f95f3d5f9665aae98",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "9833afa8e48cf021fde3af8b4c8f03fe61aec13f00d1c8925aaea74dcc00b1dc"
+        },
+        {
+          "path": "[private-evidence]/attempt-000004.json",
+          "sha256": "c30ca150e534206a7de5bbce3544bd745a4765f377af4185f194aa7d412f9519",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "9833afa8e48cf021fde3af8b4c8f03fe61aec13f00d1c8925aaea74dcc00b1dc"
+        },
+        {
+          "path": "[private-evidence]/attempt-000005.json",
+          "sha256": "5d7b96471faad9202901cc4d4026441cc3b834fc007a92ab994b296b16813b33",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "9833afa8e48cf021fde3af8b4c8f03fe61aec13f00d1c8925aaea74dcc00b1dc"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-dark-gradients-1080p24-final-libx264-fast-crf18",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-3d198272c999ba62",
+      "completion": {
+        "campaignId": "campaign-3d198272c999ba62",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "a3219a1b95ab4e01dc3ff199b6bb82d96d7d9a81c2033f6fd8bbbc3d215d1851",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "21bf0dd228c8ce0e5516a1d17623c29c7097e3f8fdbcc7e5726716aaf3e589c3"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "55720058e33be4374cb94fbd7881963f6431c18de3bf65a785f2938914836c1a",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "21bf0dd228c8ce0e5516a1d17623c29c7097e3f8fdbcc7e5726716aaf3e589c3"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "ffdc2694c59fed2ff293e5f535204aad39e5fc6d046d5af160a43d63eac1cb85",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "21bf0dd228c8ce0e5516a1d17623c29c7097e3f8fdbcc7e5726716aaf3e589c3"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-film-grain-1080p24-final-libx264-fast-crf14",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-fe6fbf8efc896812",
+      "completion": {
+        "campaignId": "campaign-fe6fbf8efc896812",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "5c413e72ed67cc97dfd96ce3d4e0da951941825ad5dcd3f4d0e0e0f0836f8673",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1740e71c85a295dcc5144275e09a15dfb7a85f50277ab95acc77d5a6a8600428"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "3d8b521533bbf47c52754f74bb87428ebae05ffa6e26234634803a1eb79714d2",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1740e71c85a295dcc5144275e09a15dfb7a85f50277ab95acc77d5a6a8600428"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "4d50e7bd472a33f3df9a37c593ed5ddc9e8fd45125f58293d465b1ff6aef82c9",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1740e71c85a295dcc5144275e09a15dfb7a85f50277ab95acc77d5a6a8600428"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-film-grain-1080p24-final-libx264-fast-crf18",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-541f3ac1ad119be8",
+      "completion": {
+        "campaignId": "campaign-541f3ac1ad119be8",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "a644ceb75d81e3ed9050b67cdba49c9b8d2c91322056295f7ac1faba4eced417",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "75675c0dbe6b93881b0ced29942499381027c16abffff6bb2c4f3bb9545fb877"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "7ceda339e5afa7b3bf2d4e4fb760a8d2746b4d6088a7c00dc6ff6f3f31ed72b5",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "75675c0dbe6b93881b0ced29942499381027c16abffff6bb2c4f3bb9545fb877"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "94499874f3ed9f6bd3236e998880977f72befd3a9150381af1b45cc5f25852a6",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "75675c0dbe6b93881b0ced29942499381027c16abffff6bb2c4f3bb9545fb877"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-screen-text-1080p24-final-libx264-fast-crf38",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-a2c20c5dfa44a3c6",
+      "completion": {
+        "campaignId": "campaign-a2c20c5dfa44a3c6",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "34e464c01e0076e91ebb792b5d12c7f311db4167d1b580e6f39159d3cb7479fa",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1b6e8ba479e6d6c6c2a074afec5cf8d8465255b6637b19faca21c0aeb10471b6"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "91f8b342cf84322f147bf12efa3a1da2051304bc549b72bc4c707d6e0a98b692",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1b6e8ba479e6d6c6c2a074afec5cf8d8465255b6637b19faca21c0aeb10471b6"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "b90386c3db99fee98761a075a0e815bbf8036c51e9d40640b50cfd76a946c28e",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "1b6e8ba479e6d6c6c2a074afec5cf8d8465255b6637b19faca21c0aeb10471b6"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-screen-text-1080p24-final-libx264-fast-crf46",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-9f7ca8e91b4d61db",
+      "completion": {
+        "campaignId": "campaign-9f7ca8e91b4d61db",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "0bc9887799aae0c31533cd7ea020268f986e5308713243bc88b7a7736cc26a54",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "b2186d4101f92a843e06d68aee9854d912b2c0fe29845f0c76a1a200265f7d2a"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "09fcc2a7d7f1e384b2ed534cb6e7933e2ce61180396f51bdc67b6f4c2d6885b7",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "b2186d4101f92a843e06d68aee9854d912b2c0fe29845f0c76a1a200265f7d2a"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "3cef7d31bba1842c987d3001594818d4c702ccf03c7fcc9cc634140c70e1323c",
+          "phase": "measured",
+          "validity": {
+            "reasons": [
+              {
+                "actual": 58.85,
+                "code": "background-cpu-suspect",
+                "message": "Background CPU load exceeded the suspect threshold.",
+                "metric": "backgroundCpuPct",
+                "severity": "suspect",
+                "threshold": 35.0
+              }
+            ],
+            "state": "suspect"
+          },
+          "artifact": "b2186d4101f92a843e06d68aee9854d912b2c0fe29845f0c76a1a200265f7d2a"
+        }
+      ]
+    },
+    {
+      "cell": "source-a/session-1/anchor-talking-head-1080p24-final-libx264-fast-crf30",
+      "timingComplete": true,
+      "calls": [
+        0
+      ],
+      "campaignId": "campaign-9b25c358996ed042",
+      "completion": {
+        "campaignId": "campaign-9b25c358996ed042",
+        "failed": 0,
+        "skipped": 0
+      },
+      "attempts": [
+        {
+          "path": "[private-evidence]/attempt-000001.json",
+          "sha256": "7f9f2caeb6c791f48efd6b56fe6df2f9bd3571da702e825e9c4d0b3eec8d7b13",
+          "phase": "warmup",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "b676b78f6253e6fbbcaf485befebe7f63bdc839575dcb89caec109a48667c49d"
+        },
+        {
+          "path": "[private-evidence]/attempt-000002.json",
+          "sha256": "6b9848d79d3da1b2620efbd39e3803465753c73f8006ccf84bf06da1890b987b",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "b676b78f6253e6fbbcaf485befebe7f63bdc839575dcb89caec109a48667c49d"
+        },
+        {
+          "path": "[private-evidence]/attempt-000003.json",
+          "sha256": "6efdc54486dc1fd1510f22fbc4673e31383bcd0734236935e3e8faf2f170765d",
+          "phase": "measured",
+          "validity": {
+            "reasons": [],
+            "state": "valid"
+          },
+          "artifact": "b676b78f6253e6fbbcaf485befebe7f63bdc839575dcb89caec109a48667c49d"
+        }
+      ]
+    }
+  ],
+  "completeCount": 7,
+  "attemptCount": 23
+}

@@ -1,0 +1,92 @@
+{
+  "execution": {
+    "startedAt": "2026-10-05T06:47:10.327895+00:00",
+    "supervisorPid": 63540,
+    "command": [
+      "python3",
+      "scripts/run-calibration-matrix.py",
+      "--matrix",
+      "[private-evidence]/matrix.json",
+      "--cli",
+      "/Volumes/EncodingDB 1/EncodingDB.app/Contents/Resources/encodingdb",
+      "--client-source-sha",
+      "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+      "--source-slot",
+      "source-a",
+      "--sessions",
+      "1",
+      "--seed",
+      "20261004",
+      "--output",
+      "[private-evidence]/measurement",
+      "--max-cells",
+      "4",
+      "--max-duration-minutes",
+      "40",
+      "--cell-minutes",
+      "10",
+      "--max-storage-mb",
+      "8192",
+      "--cell-storage-mb",
+      "1024",
+      "--disk-reserve-mb",
+      "5120",
+      "--execute"
+    ],
+    "mode": "QUIET_WINDOW_NO_SUBMIT",
+    "maxMinutes": 40,
+    "pid": 63570,
+    "exitCode": 0,
+    "finishedAt": "2026-10-05T06:55:29.223442+00:00"
+  },
+  "cells": [
+    {
+      "cell": "source-a/session-1/distinct-dark-gradients-1080p24-final-libx264-slow-crf14",
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "timingComplete": true,
+      "attempts": 5,
+      "counted": 4,
+      "relativeSpread": 0.06621049510686072,
+      "allCountedValid": true,
+      "exitCodes": [
+        0
+      ]
+    },
+    {
+      "cell": "source-a/session-1/distinct-dark-gradients-1080p24-final-libx264-slow-crf20",
+      "campaignId": "campaign-b8361a4b22783c05",
+      "timingComplete": true,
+      "attempts": 3,
+      "counted": 2,
+      "relativeSpread": 0.025429045080850827,
+      "allCountedValid": true,
+      "exitCodes": [
+        0
+      ]
+    },
+    {
+      "cell": "source-a/session-1/distinct-talking-head-1080p24-final-libx265-fast-crf30",
+      "campaignId": "campaign-003783b958dac812",
+      "timingComplete": true,
+      "attempts": 3,
+      "counted": 2,
+      "relativeSpread": 0.00027680586192254633,
+      "allCountedValid": true,
+      "exitCodes": [
+        0
+      ]
+    },
+    {
+      "cell": "source-a/session-1/distinct-talking-head-1080p24-final-libx265-fast-crf34",
+      "campaignId": "campaign-64ab5105b58bc379",
+      "timingComplete": true,
+      "attempts": 3,
+      "counted": 2,
+      "relativeSpread": 0.005673537870884081,
+      "allCountedValid": true,
+      "exitCodes": [
+        0
+      ]
+    }
+  ]
+}
