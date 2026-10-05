@@ -1628,7 +1628,7 @@ def _reconstruct_saved_submissions(
     rebuilt - never a silent drop."""
     outcome = {"reconstructed": 0, "skippedExisting": 0, "skippedAccepted": 0,
                "skippedIncomplete": 0, "skippedInvalid": 0,
-               "cancelled": False, "failure": None}
+               "cancelled": False, "failure": None, "failures": []}
     root = journal_path(queue_dir, campaign_id)
     manifest_path = root / "manifest.json"
     if not manifest_path.is_file():
@@ -1708,6 +1708,11 @@ def _reconstruct_saved_submissions(
     if not ffmpeg_ok:
         outcome["failure"] = "ffmpeg/ffprobe unavailable; toolchain identity cannot be reconstructed faithfully"
         return outcome
+    # Validate every reconstructable member before writing any new envelope
+    # from its group. Damage in one group must neither publish a partial rebuilt
+    # group nor prevent an independently complete group from making progress.
+    pending_groups: Dict[str, List[Any]] = {}
+    failed_groups = set()
     for record in records:
         if _is_cancelled(cancel_event):
             outcome["cancelled"] = True
@@ -1777,11 +1782,36 @@ def _reconstruct_saved_submissions(
                 run_create=run_create,
             )
         except (OSError, ValueError, TypeError, KeyError, RuntimeError, AttributeError) as exc:
-            outcome["failure"] = (
+            outcome["failures"].append({
+                "recipeId": record.schedule.recipe_id,
+                "executionOrder": record.schedule.execution_order,
+                "path": f"attempt-{record.schedule.execution_order:06d}.json",
+                "reason": str(exc)[:120],
+            })
+            failed_groups.add(record.schedule.recipe_id)
+            outcome["failure"] = outcome["failure"] or (
                 f"completed group {record.schedule.recipe_id} cannot be reconstructed: {exc}"[:200])
-            return outcome
-        atomic_json(envelope_path, submission)
-        outcome["reconstructed"] += 1
+            continue
+        pending_groups.setdefault(record.schedule.recipe_id, []).append(
+            (record.schedule.execution_order, envelope_path, submission))
+    for recipe_id, submissions in pending_groups.items():
+        if recipe_id in failed_groups:
+            continue
+        for order, envelope_path, submission in submissions:
+            if _is_cancelled(cancel_event):
+                outcome["cancelled"] = True
+                return outcome
+            try:
+                atomic_json(envelope_path, submission)
+            except (OSError, ValueError, TypeError) as exc:
+                outcome["failures"].append({
+                    "recipeId": recipe_id, "executionOrder": order,
+                    "path": envelope_path.name, "reason": str(exc)[:120],
+                })
+                outcome["failure"] = outcome["failure"] or (
+                    f"completed group {recipe_id} envelopes cannot be saved: {exc}"[:200])
+                break
+            outcome["reconstructed"] += 1
     return outcome
 
 
@@ -2175,11 +2205,6 @@ def _publish_saved_campaign_gated(
                      max_storage_mb=int(max_storage_mb), cancel_event=cancel_event))
         info["reconstructedGroups"] = int(recon.get("reconstructed", 0))
         info["reconstruction"] = {k: v for k, v in recon.items() if k != "reconstructed"}
-        if recon.get("failure"):
-            info.update(status="blocked", failure=failure_info(
-                str(recon["failure"]), operation="reconstruct", campaign_id=campaign_id))
-            info["submitted"] = max(0, int((campaign_recovery_state(queue_dir, campaign_id) or {}).get("acceptedUploads") or 0) - accepted_before)
-            return 1, info
         if recon.get("cancelled"):
             info.update(status="cancelled", deferredReason="cancelled")
             return 10, info
@@ -2219,6 +2244,13 @@ def _publish_saved_campaign_gated(
         info["unresolvedJournalCorruption"] = unresolved
     if info["status"] in ("cancelled", "deferred"):
         return 10, info
+    # Healthy reconstructed groups have had their publication chance and the
+    # counters now describe the whole campaign. Unresolved reconstruction
+    # evidence still forbids success, without overriding cancellation/deferral.
+    if recon.get("failure"):
+        info.update(status="blocked", failure=failure_info(
+            str(recon["failure"]), operation="reconstruct", campaign_id=campaign_id))
+        return 1, info
     if info.get("corrupt") or info.get("deadLettered") or info["terminal"] or info.get("campaignFailures"):
         info["status"] = "terminal_failures"
         return 1, info

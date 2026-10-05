@@ -44,7 +44,7 @@ def _submission(campaign_id: str, artifact: Path, order: int) -> dict:
         artifact_path=str(artifact), media_container="mp4", run_create=run_create)
 
 
-def _complete_journal(tmp_path: Path):
+def _complete_journal(tmp_path: Path, *, crfs=(24,), captured_envelopes=None):
     """REAL batch with no_submit: durable attempts for one complete group,
     zero envelopes — exactly the state the review's F5 case corrupts."""
     from test_main_routing import MainRoutingTests, _DummyDashboard
@@ -80,7 +80,8 @@ def _complete_journal(tmp_path: Path):
          mock.patch.object(main, "BatchRunDashboard", _DummyDashboard):
         assert main.run_benchmark_batch(
             hardware=hardware, base_url="https://example.invalid", args=args,
-            tasks=[{"encoder": "libx264", "preset": "fast", "crf": 24, "suiteClip": clip}]) == 0
+            tasks=[{"encoder": "libx264", "preset": "fast", "crf": crf, "suiteClip": clip}
+                   for crf in crfs]) == 0
     root = next((tmp_path / "campaigns").iterdir())
     artifacts_by_order = {}
     for path in root.glob("attempt-*.json"):
@@ -93,6 +94,8 @@ def _complete_journal(tmp_path: Path):
     # Recreate the review's crash state: durable attempts + intact bytes but
     # NO envelopes yet (the live path wrote them only after the group ended).
     for path in root.glob("submission-*.json"):
+        if captured_envelopes is not None:
+            captured_envelopes[path.name] = json.loads(path.read_text())
         path.unlink()
     assert not list(root.glob("submission-*.json"))
     return root, measured, artifacts_by_order
