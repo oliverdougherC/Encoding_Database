@@ -96,13 +96,14 @@ describe("RunPage", () => {
   it("documents superseded and historical builds without presenting them as recommended", () => {
     render(<RunPage />);
     // The superseded release keeps its verified digests and links under its
-    // own published tag. macOS/Linux digests intentionally equal the primary
-    // ones (byte-identical republish), so match with getAllByText.
+    // own published tag. These rollback bytes differ from the current release.
     for (const asset of supersededAssets) {
       expect(asset.sha256).toMatch(/^[0-9a-f]{64}$/);
       expect(screen.getAllByText(new RegExp(String(asset.sha256).slice(0, 16))).length).toBeGreaterThan(0);
       expect(document.querySelector(`a[href='${repoReleases}/download/${supersededTag}/${asset.file}']`)).not.toBeNull();
     }
+    expect(screen.getByText(/Earlier published builds are retained for rollback/)).toBeInTheDocument();
+    expect(screen.queryByText(/binaries are unchanged/)).not.toBeInTheDocument();
     expect(screen.getByText(/bare extensionless executable/)).toBeInTheDocument();
     // 1.2.0 stays honest about incompatibility.
     expect(screen.getByText(/cannot submit to the server version shipped with this page/)).toBeInTheDocument();
