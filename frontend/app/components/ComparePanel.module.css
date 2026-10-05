@@ -38,7 +38,7 @@
   border-radius: 8px;
   width: 100%;
   max-width: 980px;
-  max-height: 80vh;
+  max-height: calc(100dvh - 40px);
   overflow: auto;
   background: var(--surface);
   border: 1px solid var(--border-strong);
@@ -49,7 +49,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid color-mix(in srgb, var(--stroke-soft) 78%, transparent);
+  border-bottom: 1px solid var(--border);
   border-top: 3px solid var(--accent);
   position: sticky;
   top: 0;
@@ -59,8 +59,8 @@
 
 .panelTitle {
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  letter-spacing: -.01em;
+  text-transform: none;
   font-family: inherit;
 }
 
@@ -105,3 +105,7 @@
 
 .compareTable td { overflow-wrap:anywhere; min-width:120px; }
 @media(max-width:600px){.panelHeader{align-items:flex-start;gap:12px;flex-direction:column}.panelTitle{font-size:13px}.panelBody{padding:12px}}
+
+.compareTable th small { display:block; margin-top:3px; color:var(--muted); font-size:11px; font-weight:400; white-space:normal; }.evidenceDetails { margin-top:18px; border-top:1px solid var(--border); }.evidenceDetails summary { padding:14px 0; color:var(--muted); font-size:13px; }.panelTitle { font-size:16px; }.stickyBar { max-width:480px; margin:0 auto; }.panelHeader { gap:12px; }.panelBody { min-width:0; }
+
+@media(max-width:600px) { .pairTable { table-layout:fixed; font-size:12px; }.pairTable th,.pairTable td { width:33.333%; min-width:0; padding:9px 7px; white-space:normal; overflow-wrap:anywhere; }.pairTable th small { overflow-wrap:anywhere; }.panelBackdrop { padding:10px; }.panelTitle { font-size:15px; } }

@@ -1,26 +1,40 @@
-import { fetchHardwareAnalytics } from "../lib/api";
-import { parseAnalyticsSearchParams } from "../lib/queryState";
-import type { HardwareAnalyticsRow } from "../lib/types";
+import { fetchHardwareDirectory } from "../lib/api";
+import type { HardwareDirectory } from "../lib/types";
 import { realGpu } from "../lib/hardwareLabel";
+import DataUnavailable from "../components/DataUnavailable";
 import styles from "./page.module.css";
 
-export const revalidate=60;
-const params=(raw:Record<string,string|string[]|undefined>|undefined)=>{const p=new URLSearchParams();for(const[k,v]of Object.entries(raw||{})){const x=Array.isArray(v)?v[0]:v;if(x)p.set(k,x)}return p};
+export const dynamic = "force-dynamic";
 
-export default async function HardwarePage({searchParams}:{searchParams?:Promise<Record<string,string|string[]|undefined>>}) {
-  let rows:HardwareAnalyticsRow[]=[];let error:string|null=null;
-  try{rows=await fetchHardwareAnalytics(parseAnalyticsSearchParams(params(searchParams?await searchParams:undefined)))}catch(e){error=e instanceof Error?e.message:"Unable to load hardware"}
-  const groups=new Map<string,HardwareAnalyticsRow[]>();
-  rows.forEach(row=>{const name=realGpu(row.gpuModel)||row.cpuModel;groups.set(name,[...(groups.get(name)||[]),row])});
-  const entities=[...groups.entries()].sort((a,b)=>b[1].reduce((sum,row)=>sum+row.sampleCount,0)-a[1].reduce((sum,row)=>sum+row.sampleCount,0));
-  const runs=rows.reduce((sum,row)=>sum+row.sampleCount,0), encoders=new Set(rows.map(row=>row.encoderName)).size, codecs=new Set(rows.map(row=>row.codecFamily)).size;
+export default async function HardwarePage(_props: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
+  let directory: HardwareDirectory | null = null;
+  try { directory = await fetchHardwareDirectory(); }
+  catch (error) { console.error("Unable to load hardware coverage", error); }
   return <div className={`page ${styles.page}`}>
-    <header className={styles.header}><div><p className={styles.kicker}>Entity index</p><h1>Hardware</h1><p>Browse hardware represented in the benchmark corpus. Entity summaries show observed encoder coverage and performance—without turning measurements into purchase recommendations.</p></div></header>
-    <section className={styles.stats} aria-label="Hardware corpus summary"><Stat label="Hardware entities" value={entities.length} note="represented in this corpus slice"/><Stat label="Verified runs" value={runs} note="across aggregate configurations"/><Stat label="Encoder coverage" value={encoders} note={`${codecs} codec families represented`}/><Stat label="Data refresh" value="60s" note="cached analytics interval"/></section>
-    <div className={styles.sectionHead}><div><h2>Hardware in corpus</h2><p>Sorted by number of accepted benchmark runs.</p></div></div>
-    {error?<p className={styles.error}>{error}</p>:<section className={styles.list}>{entities.map(([name,items])=>{const samples=items.reduce((sum,row)=>sum+row.sampleCount,0);return <article key={name} className={styles.item}><span className={styles.entityIcon} aria-hidden="true">{name.replace(/[^A-Za-z0-9]/g,"").slice(0,2).toUpperCase()}</span><div className={styles.entityMain}><h2>{name}</h2><p>{realGpu(items[0].gpuModel)?items[0].cpuModel:"GPU not reported"} · {new Set(items.map(row=>row.codecFamily.toUpperCase())).size} codec families</p></div><dl><div><dt>Verified runs</dt><dd>{samples}</dd></div><div><dt>Encoders</dt><dd>{new Set(items.map(row=>row.encoderName)).size}</dd></div><div><dt>Mean FPS</dt><dd>{(items.reduce((sum,row)=>sum+row.avgFps,0)/items.length).toFixed(1)}</dd></div></dl></article>})}{entities.length===0&&<p className={styles.empty}>No verified hardware results are available for this benchmark slice yet.</p>}</section>}
-    <aside className={styles.note}>Hardware pages report observed data; they do not make purchasing recommendations.</aside>
-  </div>
+    <header className={styles.header}><div><p className={styles.kicker}>Community coverage</p><h1>Hardware</h1><p>Explore the machines behind the measurements. Open a hardware group to inspect its results.</p></div></header>
+    {directory ? <>
+      <section className={styles.stats} aria-label="Hardware corpus summary">
+        <span className={styles.stat}><strong>{directory.items.length.toLocaleString()}</strong> hardware groups{directory.truncated ? " shown" : ""}</span>
+        <span className={styles.stat}>Accepted and suspect runs are counted separately.</span>
+      </section>
+      {directory.truncated && <p className={styles.note}>Showing a limited directory. <a href="/">Browse all results</a> to find more hardware.</p>}
+      <section className={styles.list} aria-label="Hardware groups">
+        {directory.items.map(item => {
+          const gpu = realGpu(item.gpuModel);
+          const name = gpu || item.cpuModel;
+          const subtitle = gpu
+            ? gpu === item.cpuModel ? "GPU / accelerator" : item.cpuModel
+            : item.gpuModel?.trim().toLowerCase() === "not-applicable" ? "GPU not applicable" : "GPU not reported";
+          const href = `/?${new URLSearchParams(item.browseFilters).toString()}`;
+          return <article key={item.id} className={styles.item}>
+            <div className={styles.entityMain}><h2>{name}</h2><p>{subtitle}</p><p>{item.encoderCount} encoder{item.encoderCount === 1 ? "" : "s"} · {item.codecFamilies.map(codec => codec.toUpperCase()).join(", ")}</p></div>
+            <div className={styles.counts}><span><strong>{item.acceptedCount.toLocaleString()}</strong> accepted</span><span><strong>{item.suspectCount.toLocaleString()}</strong> suspect</span><span>{item.configurationCount.toLocaleString()} configuration{item.configurationCount === 1 ? "" : "s"}</span></div>
+            <a className="btn" href={href} aria-label={`Browse results for ${name}`}>Browse results</a>
+          </article>;
+        })}
+        {directory.items.length === 0 && <p className={styles.empty}>No hardware measurements are available yet. <a href="/run">Contribute a benchmark</a>.</p>}
+      </section>
+      <aside className={styles.note}>These counts describe corpus coverage, not hardware rankings. Compare measurements only within a matching workload and environment.</aside>
+    </> : <DataUnavailable href="/hardware" subject="Hardware results" />}
+  </div>;
 }
-
-function Stat({label,value,note}:{label:string;value:number|string;note:string}){return <div className={styles.stat}><span>{label}</span><strong>{typeof value==="number"?value.toLocaleString():value}</strong><small>{note}</small></div>}

@@ -6,6 +6,7 @@ import type {
 } from "./types";
 import { WORKBENCH_PAGE_SIZE, type AnalyticsSearchState, type WorkbenchSearchState } from "./queryState";
 import {
+  buildMockCoverage,
   buildMockEncoders,
   buildMockHardware,
   buildMockLeaderboards,
@@ -88,6 +89,10 @@ function readMock<T>(endpointPath: string, params?: URLSearchParams | Record<str
   }
   if (endpointPath === "/analytics/leaderboards") {
     return { data: buildMockLeaderboards() as T, totalCount: null };
+  }
+  const query = params instanceof URLSearchParams ? params : new URLSearchParams(toSearchString(params));
+  if (query.get("mode") === "coverage" && ["/analytics/hardware", "/analytics/encoders"].includes(endpointPath)) {
+    return { data: buildMockCoverage(endpointPath.endsWith("hardware") ? "hardware" : "encoders") as T, totalCount: null };
   }
   if (endpointPath === "/analytics/hardware") {
     return { data: buildMockHardware() as T, totalCount: null };
@@ -183,5 +188,17 @@ export function encodeCorpusIdPathSegment(id: string): string {
 }
 export async function fetchCorpusResult(id: string): Promise<Benchmark | null> {
   const { data } = await fetchJson<Benchmark | null>(`/corpus/${encodeCorpusIdPathSegment(id)}`, undefined, true);
+  return data;
+}
+
+/** Coverage directories deliberately do not request a scored or exact-environment slice. */
+export async function fetchHardwareDirectory(): Promise<import("./types").HardwareDirectory> {
+  const { data } = await fetchJson<import("./types").HardwareDirectory>("/analytics/hardware", { mode: "coverage" });
+  if (data?.kind !== "hardware" || !Array.isArray(data.items)) throw new Error("Hardware coverage is unavailable from this server version");
+  return data;
+}
+export async function fetchEncoderDirectory(): Promise<import("./types").EncoderDirectory> {
+  const { data } = await fetchJson<import("./types").EncoderDirectory>("/analytics/encoders", { mode: "coverage" });
+  if (data?.kind !== "encoders" || !Array.isArray(data.items)) throw new Error("Encoder coverage is unavailable from this server version");
   return data;
 }

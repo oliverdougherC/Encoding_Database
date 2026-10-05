@@ -35,7 +35,7 @@ export default function LeaderboardsPanel({
       <div>
         <p className={styles.kicker}>Recommendation layer</p>
         <h1>Leaderboards</h1>
-        <p className={styles.copy}>PL Score stays fixed. PL Fit applies hard constraints and user intent on top of that public score without rewriting the underlying benchmark evidence.</p>
+        <p className={styles.copy}>Find the best fit for one workload and environment. PL Fit reflects your priorities; PL Score remains fixed.</p>
       </div>
       <aside className={styles.banner}>
         <strong>Recommendation</strong>
@@ -72,12 +72,12 @@ export default function LeaderboardsPanel({
       </label>
       <label>Workload ID<input name="workloadId" placeholder="sports-action-960x540-24p" defaultValue={searchState?.workloadId ?? ""} /></label>
       <label>Resolution<input name="resolution" defaultValue={searchState?.resolution ?? "1080p"} /></label>
-      <label>Minimum quality<input name="minimumQuality" type="number" step="0.1" defaultValue={searchState?.minimumQuality ?? ""} /></label>
+      <details className={styles.constraints}><summary>Quality, speed &amp; format limits</summary><div className={styles.constraintFields}><label>Minimum quality<input name="minimumQuality" type="number" step="0.1" defaultValue={searchState?.minimumQuality ?? ""} /></label>
       <label>Minimum realtime<input name="minimumRealtimeRatio" type="number" step="0.1" defaultValue={searchState?.minimumRealtimeRatio ?? ""} /></label>
       <label>Maximum Mbps<input name="maximumBitrateMbps" type="number" step="0.1" defaultValue={searchState?.maximumBitrateMbps ?? ""} /></label>
       <label>Compatible codecs<input name="compatibleCodecFamilies" placeholder="h264,hevc,av1" defaultValue={searchState?.compatibleCodecFamilies ?? ""} /></label>
-      <label className={styles.checkbox}><input name="requireRecommendationEligibility" type="checkbox" value="1" defaultChecked={searchState?.requireRecommendationEligibility} /> Require recommendation-grade evidence</label>
-      <button type="submit">Apply exact scope</button>
+      </div></details><label className={styles.checkbox}><input name="requireRecommendationEligibility" type="checkbox" value="1" defaultChecked={searchState?.requireRecommendationEligibility} /> Require recommendation-grade evidence</label>
+      <button className="btn btn-primary" type="submit">Apply exact scope</button>
     </form>
 
     {!payload.environmentScope.exact ? <p className={styles.withheld}>Ranking and Pareto analysis are withheld until one immutable Environment is selected. Results from different machines are never compared.</p> : null}
@@ -89,7 +89,7 @@ export default function LeaderboardsPanel({
       <small>Hard constraints are applied before ranking. Recommendation eligibility remains separate from desirability.</small>
     </div>
 
-    <div className={styles.tableWrap}>
+    <div className={styles.tableWrap} role="region" aria-label="Leaderboard results" tabIndex={0}>
       <table className={styles.table}>
         <thead>
           <tr>
@@ -97,16 +97,15 @@ export default function LeaderboardsPanel({
             <th>Encoder</th>
             <th>PL Score</th>
             <th>PL Fit</th>
-            <th>Canonical Q/B/S</th>
             <th>Bitrate</th>
             <th>Realtime</th>
             <th>Evidence</th>
             <th>Pareto</th>
-            <th>BD-rate</th>
-            <th>Scope</th>
+            <th>Details</th>
           </tr>
         </thead>
         <tbody>
+          {rows.length === 0 && <tr><td colSpan={9} className={styles.empty}>No results match this scope. Adjust your filters to explore available measurements.</td></tr>}
           {rows.map((row) => {
             const fit = row.fit.modes[selectedMode];
             return <tr key={row.rowId} className={!row.pareto.efficient ? styles.dominated : undefined}>
@@ -122,7 +121,6 @@ export default function LeaderboardsPanel({
                 <strong>{modeSummary(row, selectedMode)}</strong>
                 {!fit.eligible && fit.reasons.length > 0 ? <div>{fit.reasons[0]}</div> : null}
               </td>
-              <td>{formatScore(row.plScoreComponents?.quality ?? null)} / {formatScore(row.plScoreComponents?.bitrate ?? null)} / {formatScore(row.plScoreComponents?.speed ?? null)}</td>
               <td>{formatBitrate(row.avgVideoBitrateBps)}</td>
               <td>{row.realtimeRatio == null ? "Unavailable" : `${row.realtimeRatio.toFixed(2)}x`}</td>
               <td>
@@ -130,14 +128,15 @@ export default function LeaderboardsPanel({
                 <div>{row.evidence.eligibleForDefaultRecommendation ? "Recommendation-eligible" : "Provisional"}</div>
               </td>
               <td>{row.pareto.available ? (row.pareto.efficient ? "Efficient" : "Dominated") : row.pareto.unavailableReason}</td>
-              <td>{row.bdRate.available ? `${row.bdRate.valuePercent!.toFixed(2)}% vs ${row.bdRate.versusLabel}` : row.bdRate.unavailableReason}</td>
-              <td>
-                <strong>{row.hardwareLabel}</strong>
-                <div>{row.workloadId}</div>
-                <div>{row.context.referenceContextVersion ?? "No reference context"} / formula {row.context.formulaVersion ?? "unknown"}</div>
-                <div>{row.context.benchmarkProtocolVersion ?? "No protocol"} / {row.context.sourceSuiteVersion ?? "No suite"}</div>
-                <div>{row.context.qualityModelId ?? "No model"} / {row.context.scoreContextId}</div>
-              </td>
+              <td><details className={styles.rowDetails}><summary>Scope &amp; metrics</summary><dl>
+                <dt>Environment</dt><dd>{row.hardwareLabel}</dd>
+                <dt>Workload</dt><dd>{row.workloadId}</dd>
+                <dt>Canonical Q/B/S</dt><dd>{formatScore(row.plScoreComponents?.quality ?? null)} / {formatScore(row.plScoreComponents?.bitrate ?? null)} / {formatScore(row.plScoreComponents?.speed ?? null)}</dd>
+                <dt>BD-rate</dt><dd>{row.bdRate.available ? `${row.bdRate.valuePercent!.toFixed(2)}% vs ${row.bdRate.versusLabel}` : row.bdRate.unavailableReason}</dd>
+                <dt>Reference / formula</dt><dd>{row.context.referenceContextVersion ?? "No reference context"} / {row.context.formulaVersion ?? "unknown"}</dd>
+                <dt>Protocol / suite</dt><dd>{row.context.benchmarkProtocolVersion ?? "No protocol"} / {row.context.sourceSuiteVersion ?? "No suite"}</dd>
+                <dt>Quality model / context</dt><dd>{row.context.qualityModelId ?? "No model"} / {row.context.scoreContextId}</dd>
+              </dl></details></td>
             </tr>;
           })}
         </tbody>

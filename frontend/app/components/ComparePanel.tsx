@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useDialogFocus } from "./useDialogFocus";
 import type { Benchmark } from "./BenchmarksTable";
 import { measurementBasis, artifactIntegrity, artifactRetention, hasPublicPl } from "../lib/evidence";
 import { realGpu } from "../lib/hardwareLabel";
@@ -93,22 +93,7 @@ export default function ComparePanel({
   onClose: () => void;
   onClear: () => void;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    panelRef.current?.focus();
-  }, []);
-
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  const panelRef = useDialogFocus<HTMLDivElement>(onClose);
 
   const incompatible = hasIncompatibleWorkloads(rows);
   return (
@@ -135,17 +120,29 @@ export default function ComparePanel({
           {incompatible ? <p className={styles.compatibilityWarning}>Different workload, environment, or measurement protocol. Values are shown without winner highlights.</p> : null}
           {!incompatible && !canCompareMetric(rows, "measurement") ? <p className={styles.compatibilityWarning}>Suspect or unknown measurement basis. Values are shown for inspection only.</p> : null}
           {canCompareMetric(rows, "measurement") && !canCompareMetric(rows, "quality") ? <p className={styles.compatibilityWarning}>Quality model or analysis version differs or is unknown. Quality values have no winner highlights.</p> : null}
-          <table className={styles.compareTable}>
+          <ComparisonTable rows={rows} metrics={METRICS.filter(metric => !DETAIL_METRICS.has(metric.label))} />
+          <details className={styles.evidenceDetails}><summary>Identity &amp; artifact details</summary>
+            <ComparisonTable rows={rows} metrics={METRICS.filter(metric => DETAIL_METRICS.has(metric.label))} />
+          </details>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const DETAIL_METRICS = new Set(["Recipe fingerprint", "File Size (MB)", "Artifact integrity", "Artifact retention", "Repetitions"]);
+function ComparisonTable({rows,metrics}:{rows:CompareRow[];metrics:Metric[]}) {
+  return (<table className={`${styles.compareTable} ${rows.length <= 2 ? styles.pairTable : ""}`}>
             <thead>
               <tr>
                 <th>Metric</th>
                 {rows.map((r, i) => (
-                  <th key={r.id}>Row {String.fromCharCode(65 + i)}</th>
+                  <th key={r.id}><span>Row {String.fromCharCode(65 + i)}</span><small>{r.encoderName} · {r.preset}</small></th>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {METRICS.map(metric => {
+              {metrics.map(metric => {
                 const bestIdx = findBestIndex(rows, metric);
                 return (
                   <tr key={metric.label}>
@@ -159,11 +156,7 @@ export default function ComparePanel({
                 );
               })}
             </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+          </table>);
 }
 
 export function CompareStickyBar({

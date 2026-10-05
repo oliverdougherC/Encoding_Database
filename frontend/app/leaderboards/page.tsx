@@ -1,5 +1,6 @@
 import { fetchLeaderboards } from "../lib/api";
 import { buildAnalyticsSearchString, parseAnalyticsSearchParams, type PlFitMode } from "../lib/queryState";
+import DataUnavailable from "../components/DataUnavailable";
 import LeaderboardsPanel from "../components/LeaderboardsPanel";
 
 function toParams(raw: Record<string, string | string[] | undefined> | undefined) {
@@ -19,7 +20,13 @@ export default async function LeaderboardsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const state = parseAnalyticsSearchParams(toParams(searchParams ? await searchParams : undefined));
-  const payload = await fetchLeaderboards(state);
+  let payload;
+  try { payload = await fetchLeaderboards(state); }
+  catch (error) {
+    console.error("Unable to load leaderboards", error);
+    const search = toParams(searchParams ? await searchParams : undefined).toString();
+    return <div className="page"><header className="page-heading"><h1>Leaderboards</h1><p>Rankings for a specific workload, environment, and score context.</p></header><DataUnavailable href={search ? `/leaderboards?${search}` : "/leaderboards"} subject="Rankings" /></div>;
+  }
   const modeLinks = Object.fromEntries(MODE_ORDER.map((mode) => [
     mode,
     `/leaderboards?${buildAnalyticsSearchString({ ...state, fitMode: mode })}`,

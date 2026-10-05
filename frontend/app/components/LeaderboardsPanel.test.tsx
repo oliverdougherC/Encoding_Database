@@ -48,9 +48,9 @@ describe("LeaderboardsPanel", () => {
     expect(screen.getByText(recommendation)).toBeInTheDocument();
     const activeMode = document.querySelector('nav[aria-label="PL Fit modes"] [aria-current="page"]');
     expect(activeMode?.textContent).toMatch(new RegExp(`^${mode}$`, "i"));
-    expect(screen.getByText(/PL Score stays fixed/i)).toBeInTheDocument();
+    expect(screen.getByText(/PL Score remains fixed/i)).toBeInTheDocument();
     expect(screen.getAllByText(/CONSTANT_QUALITY 24/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/reference-frontier-v1 \/ formula 7.0/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/reference-frontier-v1 \/ 7.0/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/benchmark-protocol-v1 \/ encodingdb-test-suite-v1/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/vmaf-v1 \/ score-context-v1/i).length).toBeGreaterThan(0);
   });

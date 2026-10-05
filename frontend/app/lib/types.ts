@@ -352,3 +352,20 @@ export type EncoderAnalyticsRow = {
   avgPsnr: number | null;
   avgSizeBytes: number;
 };
+
+export type CorpusCoverageCounts = {
+  id: string;
+  acceptedCount: number;
+  suspectCount: number;
+  configurationCount: number;
+  browseFilters: { cpu?: string; gpu?: string; search?: string };
+};
+export type HardwareCoverage = CorpusCoverageCounts & {
+  cpuModel: string;
+  gpuModel: string | null;
+  encoderCount: number;
+  codecFamilies: string[];
+};
+export type EncoderCoverage = CorpusCoverageCounts & { encoderName: string; codecFamily: string };
+export type HardwareDirectory = { kind: "hardware"; items: HardwareCoverage[]; truncated: boolean };
+export type EncoderDirectory = { kind: "encoders"; items: EncoderCoverage[]; truncated: boolean };
