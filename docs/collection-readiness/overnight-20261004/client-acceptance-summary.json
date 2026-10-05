@@ -60,8 +60,8 @@
     "to": "2026-10-05T06:41:16.745179+00:00"
   },
   "scientificAcceptanceIsSeparate": true,
-  "packagedNativeFixtureCasesPassed": 15,
-  "realBackendPostCommitLostAckExecuted": false,
+  "packagedNativeFixtureCasesPassed": 17,
+  "realBackendPostCommitLostAckExecuted": true,
   "windowsGuiStopPhasesExecuted": [
     "create",
     "authorization",
@@ -90,5 +90,8 @@
     "clientGitTree": "fb49268dab61478beff268d9c73eeac4aefadb8e",
     "wholeServerTreeIdentityClaimed": false,
     "note": "Build revision comes from package manifests; the reviewed client/packaging trees are equivalent. A historical handoff misidentified the reviewed revision as embedded build revision; this summary corrects that claim."
-  }
+  },
+  "actualBackendLossReplayCasesPassed": 1,
+  "directCloseDuringActivePreparationExecuted": true,
+  "dedicatedNativeMetadataChildCancellationExecuted": true
 }

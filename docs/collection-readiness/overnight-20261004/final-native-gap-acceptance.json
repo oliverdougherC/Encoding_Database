@@ -1,0 +1,71 @@
+{
+  "cases": {
+    "direct-close": {
+      "passed": true,
+      "packageSha256": "d69e20b323cdafe538450b6958141d21af93727de5b5489238c9111539005114",
+      "metadataChildrenAfterClose": 0,
+      "queueUnchanged": true,
+      "newAttempts": 0,
+      "closeExitCode": 0,
+      "secondsFromMetadataRequestToClose": 0.37912774085998535,
+      "withoutPriorStop": true,
+      "secondsFromPreparationStartToClose": 0.6672186851501465,
+      "beforeTenSecondMetadataDeadline": true
+    },
+    "metadata-stop": {
+      "passed": true,
+      "packageSha256": "d69e20b323cdafe538450b6958141d21af93727de5b5489238c9111539005114",
+      "metadataChildrenAfterClose": 0,
+      "queueUnchanged": true,
+      "newAttempts": 0,
+      "closeExitCode": 0,
+      "secondsFromMetadataRequestToClose": 0.7401835918426514,
+      "withoutPriorStop": false,
+      "secondsFromPreparationStartToClose": 1.0347540378570557,
+      "beforeTenSecondMetadataDeadline": true
+    },
+    "actual-backend-commit-drop-replay": {
+      "passed": true,
+      "backend": "real production server/routes/serializer in new isolated empty namespace",
+      "analysisConcurrency": 0,
+      "copiedAuthenticMeasurement": true,
+      "newMeasurements": 0,
+      "changedImmutablePayload": false,
+      "originalCandidateDataChanged": false,
+      "tlsVerified": true,
+      "firstExitCode": 10,
+      "replayExitCode": 0,
+      "exitCodeAndRetainedBytesEvidence": "run.py passed its explicit first==10 + retained-entry/media/no-receipt assertions and second==0 + identical-binding assertions before the final overly-narrow HTTP200 selector failed; see preserved run.py and trace note",
+      "bytesRetainedBeforeAcknowledgment": true,
+      "actualDatabaseCommitVerifiedBeforeDrop": true,
+      "actualUploadResponseStatus": 202,
+      "successfulPutCount": 1,
+      "runCount": 1,
+      "artifactCount": 1,
+      "sameRunAndArtifactAfterReplay": true,
+      "storedArtifactSha256Verified": true,
+      "scientificAnalysisAcceptanceClaimed": false,
+      "payloadHash": "c9b8e4c5599fb4be355af741d14af9f616c46d2470c619226c1b2b1f402d127d",
+      "packageSha256": "74b8a102b1c26d11bb932db348ac47371143f11b532f9ee609a60b407b303b37"
+    }
+  },
+  "newMeasurements": 0,
+  "sourceCodeChanged": false,
+  "originalCandidateAnalysisConcurrency": 0,
+  "originalCandidateDataUnchanged": true,
+  "recommendationReadyClaimed": false,
+  "cleanup": {
+    "cleaned": true,
+    "taskTlsListenerStopped": true,
+    "taskPrivateKeyPersisted": false,
+    "taskDatabaseDumpSha256": "9ea165b6a93596f91ee5231226899ae0e81da71283bdf62758a639a6660375c5",
+    "taskArtifactAndClientEvidenceRetained": true,
+    "originalAnalysisConcurrency": 0,
+    "allPublicTableRowCountsIdenticalToClosedWindow": true,
+    "tlsAndCompatibilityIdentical": true,
+    "originalQueuesNeverUsed": true,
+    "newNamespaceRunCount": 1
+  },
+  "privateSourceSummarySha256": "c82ffd6abedcacf0f56669c4a5ba131975dcc70d9e689eec5456addda5c1bbd7",
+  "leaderVerifiedActualBackendBindingAndProductionReceipt": true
+}

@@ -181,6 +181,36 @@
       "evidenceId": "frontend-warning-fix-lint.log",
       "sha256": "a65870662de82e9ac786152289f9cf2450996b34e06522b8b3d5d1a055f6c469",
       "bytes": 117
+    },
+    {
+      "evidenceId": "client-final-gap-closure-summary.json",
+      "sha256": "c82ffd6abedcacf0f56669c4a5ba131975dcc70d9e689eec5456addda5c1bbd7",
+      "bytes": 3392
+    },
+    {
+      "evidenceId": "client-final-gap-closure-HANDOFF.md",
+      "sha256": "1b51a0aad7b944fb2c1f56a5ff46eb91a31463fea37420012442589e756b0049",
+      "bytes": 5864
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-independent-validation.json",
+      "sha256": "ad09e796a92b8fd8caeae52ae47567e082386f94db7a484e8fee8582fa04d88a",
+      "bytes": 171
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-tls-proxy-events-final.jsonl",
+      "sha256": "7f4d061193ad54664cf91debc1ebf79aceaf948de13932abe81b9ef9ea01eb93",
+      "bytes": 1803
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-actual-commit-before-response-drop.json",
+      "sha256": "4765e9dab5d178d98180b97b522945e287d8c5fa8e1554365b764882fb66aa8c",
+      "bytes": 366
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-cleanup-proof.json",
+      "sha256": "76eb54b0c116fb37c36770a8e047e70e4ea37a4248f630825f4e6c2d8f0d64c5",
+      "bytes": 774
     }
   ]
 }

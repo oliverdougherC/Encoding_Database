@@ -18,13 +18,21 @@
 
 ## Fault and restart coverage
 
-[Native fixture summary](native-fixture-summary.json) contains 15 passing cases using real pinned executables and copied authentic envelopes/media against an **explicit loopback fixture backend**:
+[Native fixture summary](native-fixture-summary.json) contains the original 15 passing cases using real pinned executables and copied authentic envelopes/media against an **explicit loopback fixture backend**:
 
 - macOS and Linux: interruption at create, authorization, PUT and response-read, plus commit/drop-response/replay — five cases each.
 - Windows console: commit/drop-response/replay — one case.
 - Windows GUI: ordinary manual Retry, Stop at each of the four network barriers, clean Close, restart and Retry — four cases.
 
-Each passing case retained unacknowledged bytes, recovered the original identity, recorded one PUT and created zero new attempt records. Original fixture inputs remained unchanged. Prior exact-package evidence also covers Windows preparation Stop, 180-second quiescence and subsequent Close. Normal GUI metadata IPC is evidenced through successful mandatory online preflight (a source-grounded inference). Direct Close during active preparation and a dedicated native metadata-child cancellation trace remain unexecuted. Earlier failed harness runs remain preserved; the fixture was corrected to model server deduplication after commit. **Real-backend post-commit lost-response injection was not executed.** These fixture cases supplement, rather than replace, the 1,042 actual isolated-backend upload bindings.
+Each passing case retained unacknowledged bytes, recovered the original identity, recorded one PUT and created zero new attempt records. Original fixture inputs remained unchanged. Earlier failed harness runs remain preserved; the fixture was corrected to model server deduplication after commit.
+
+The [final native acceptance addendum](final-native-gap-acceptance.json) closes the remaining three named cases:
+
+- **Direct Close during active Windows preparation**, without prior Stop: the actual frozen metadata child was observed at a compatibility barrier, Close exited 0 before the timeout, no child survived, and the durable queue remained unchanged with zero attempts.
+- **Dedicated frozen metadata-child Stop/IPC trace:** the separate case confirmed child quiescence, subsequent clean Close and unchanged evidence before measurement could begin.
+- **Actual production-backend commit/drop/replay:** an unchanged server image in a new empty test namespace committed an authentic copied artifact. A TLS-validating proxy verified the database commit before dropping its 202 response. The pinned client retained its unacknowledged bytes and returned 10; ordinary same-ID replay returned 0 with exactly one run, one artifact and one PUT. The production acknowledgment validator verified the durable receipt. Analysis remained disabled in this copied namespace; this is upload-recovery evidence, not another scientific contribution.
+
+The finite executed total is **17 controlled native fixture cases plus one actual-backend loss/recovery case**. An initial report incorrectly required HTTP 200 instead of the server's valid 202; the preserved raw traces were corrected by read-only review, without another submission. The temporary namespace and listeners were removed after its database dump, artifact and evidence were preserved. The original 1,042-run candidate, queues, TLS and closed analysis setting remained unchanged.
 
 Package manifests record build revision `3e798c70be64bf87bc821cb629aebbc68cdc3819`. The reviewed client/packaging trees at `44b9e1501bc1bbdc2133317bd83ce5d847ad4103` are equivalent; that reviewed revision must not be described as an embedded executable revision. Provenance is established by [release manifests and executable digests](package-provenance.json). The client Git tree is `fb49268dab61478beff268d9c73eeac4aefadb8e`. Executable SHA-256 values appear per case. No whole-server-tree equivalence is claimed.
 
