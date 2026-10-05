@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 export function assertIsolatedCorpusDatabase(url) {
   const parsed = new URL(url);
   if (!['127.0.0.1', 'localhost', '[::1]'].includes(parsed.hostname) || !/^\/encodingdb_corpus(?:_[a-z0-9_]+)?$/.test(parsed.pathname)) {
@@ -24,7 +25,7 @@ export async function seedCorpusFixture(db, prefix = 'corpus-test') {
   } })));
   const environment = await db.environment.create({ data: {
     id: `${prefix}-env`, fingerprint: digest(`${prefix}-env`), canonicalJson: {}, cpuModel: 'Fixture CPU 100%_literal', cpuArchitecture: 'x86_64',
-    gpuModel: 'Fixture GPU', osName: 'Linux', osVersion: 'fixture', ffmpegBuildFingerprint: digest('fixture-ffmpeg'),
+    gpuModel: `Fixture GPU ${prefix}`, osName: 'Linux', osVersion: 'fixture', ffmpegBuildFingerprint: digest('fixture-ffmpeg'),
     ffmpegVersion: 'fixture', clientVersion: '0.3.0',
   } });
   for (let i = 0; i < 20; i++) {
@@ -53,6 +54,22 @@ export async function seedCorpusFixture(db, prefix = 'corpus-test') {
 }
 // Keep append-only reviews intact even in test databases. Retiring the isolated
 // protocol removes a fixture from public queries without deleting its audit trail.
-export async function removeCorpusFixture(db, prefix = 'corpus-test') {
-  await db.benchmarkProtocol.updateMany({ where: { id: { startsWith: prefix } }, data: { state: 'RETIRED' } });
+export async function removeCorpusFixture(db, prefix) {
+  if (typeof prefix !== 'string' || !/^corpus-test-[a-zA-Z0-9_-]+$/.test(prefix)) {
+    throw new Error('Corpus cleanup requires an explicit owned fixture prefix');
+  }
+  await db.benchmarkProtocol.updateMany({ where: { id: `${prefix}-protocol` }, data: { state: 'RETIRED' } });
+}
+
+// Parallel fixtures share the durable projection, so a peer can dirty it mid-read.
+// Readiness is the only retryable state; assertion failures and other DB errors propagate.
+export async function readSettledCorpus(read) {
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    try { return await read(); }
+    catch (error) {
+      if (error.code !== 'CORPUS_REBUILD_PENDING' || Date.now() >= deadline) throw error;
+      await delay(10);
+    }
+  }
 }

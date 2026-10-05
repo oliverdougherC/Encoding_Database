@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { randomUUID } from 'node:crypto';
 import { PrismaClient } from '@prisma/client';
 import { buildPublicCorpusRows, buildPublicCorpusWhere, sortPublicCorpusRows, buildPublicCorpusOrderBy } from '../dist/v7/corpus.js';
 import { isPublicCorpusBusyError, loadPublicCorpusPage, publicCorpusReadiness } from '../dist/v7/corpusQuery.js';
-import { assertIsolatedCorpusDatabase, seedCorpusFixture, removeCorpusFixture } from './fixtures/corpus-postgres.mjs';
+import { assertIsolatedCorpusDatabase, seedCorpusFixture, removeCorpusFixture, readSettledCorpus } from './fixtures/corpus-postgres.mjs';
 
 test('bounded query exhaustion reports recoverable capacity only', () => {
   assert.equal(isPublicCorpusBusyError({ code: 'P2010', meta: { code: '57014' } }), true);
@@ -15,9 +16,10 @@ const url = process.env.CORPUS_TEST_DATABASE_URL;
 test('PostgreSQL corpus matches complete-history reference, bounds pages, and follows review/reanalysis', { skip: !url }, async () => {
   assertIsolatedCorpusDatabase(url);
   const db = new PrismaClient({ datasources: { db: { url } } });
+  const prefix = `corpus-test-${randomUUID()}`;
+  const readPage = (...args) => readSettledCorpus(() => loadPublicCorpusPage(...args));
   try {
-    await removeCorpusFixture(db);
-    const fixture = await seedCorpusFixture(db, `corpus-test-${Date.now()}`);
+    const fixture = await seedCorpusFixture(db, prefix);
     const queries = [{}, { encoderType: 'hardware' }, { encoderType: 'software' }, { preset: 'slow' },
       { search: 'libx264' }, { cpu: '100%_literal' }, { cpu: 'CPU%' }, { gpu: 'not present' }, { search: "' OR 1=1 --" }];
     for (const query of queries) {
@@ -27,16 +29,16 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
       for (const sort of ['fps', 'vmaf', 'fileSizeBytes', 'videoBitrateBps', 'samples', 'cpuModel', 'gpuModel', 'codec', 'preset', 'createdAt']) {
         for (const dir of ['asc', 'desc']) {
           const expected = sortPublicCorpusRows(reference, buildPublicCorpusOrderBy(sort, dir));
-          const actual = await loadPublicCorpusPage(db, { ...query, sort, dir, search: query.search ?? fixture.prefix }, { take: 2, skip: 1, publicReferenceContextVersions: new Set() });
+          const actual = await readPage(db, { ...query, gpu: query.gpu ?? fixture.environment.gpuModel, sort, dir, search: query.search ?? fixture.prefix }, { take: 2, skip: 1, publicReferenceContextVersions: new Set() });
           assert.equal(actual.totalCount, expected.length, JSON.stringify({ query, sort, dir }));
           assert.deepEqual(actual.rows, expected.slice(1, 3), JSON.stringify({ query, sort, dir }));
         }
       }
     }
-    const all = await loadPublicCorpusPage(db, { search: fixture.prefix }, { take: 100, publicReferenceContextVersions: new Set() });
-    const detail = await loadPublicCorpusPage(db, {}, { take: 1, id: all.rows[0].id, publicReferenceContextVersions: new Set() });
+    const all = await readPage(db, { search: fixture.prefix }, { take: 100, publicReferenceContextVersions: new Set() });
+    const detail = await readPage(db, {}, { take: 1, id: all.rows[0].id, publicReferenceContextVersions: new Set() });
     assert.deepEqual(detail.rows, [all.rows[0]]);
-    assert.deepEqual((await loadPublicCorpusPage(db, { search: fixture.prefix }, { take: 5, skip: 100, publicReferenceContextVersions: new Set() })), { rows: [], totalCount: 4 });
+    assert.deepEqual((await readPage(db, { search: fixture.prefix }, { take: 5, skip: 100, publicReferenceContextVersions: new Set() })), { rows: [], totalCount: 4 });
     // A public score may be shown only for the current exact accepted member set.
     const context = await db.scoreContext.create({ data: {
       id: `${fixture.prefix}-context`, benchmarkProtocolId: fixture.protocol.id, formulaVersion: '7.0', contextVersion: `${fixture.prefix}-production`,
@@ -51,7 +53,7 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
       members: { create: accepted.map(run => ({ benchmarkRunId: run.id, qualityAnalysisId: run.qualityAnalyses[0].id })) },
     } });
     const scoredId = `${fixture.protocol.id}::${fixture.prefix}::${fixture.recipes[1].id}::${fixture.environment.id}::fixture-model`;
-    const readScore = async () => (await loadPublicCorpusPage(db, {}, { take: 1, id: scoredId, publicReferenceContextVersions: new Set([context.contextVersion]) })).rows[0];
+    const readScore = async () => (await readPage(db, {}, { take: 1, id: scoredId, publicReferenceContextVersions: new Set([context.contextVersion]) })).rows[0];
     assert.equal((await readScore()).pl.total, 75);
     assert.equal((await readScore()).status.evidenceTier, 'HIGH');
     await db.derivedResult.update({ where: { id: derived.id }, data: { invalidatedAt: new Date(), invalidationReason: 'isolated regression' } });
@@ -69,7 +71,7 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
       }
       return query(args);
     } } } });
-    const during = await loadPublicCorpusPage(concurrentClient, {}, { take: 1, id: scoredId, publicReferenceContextVersions: new Set([context.contextVersion]) });
+    const during = await readPage(concurrentClient, {}, { take: 1, id: scoredId, publicReferenceContextVersions: new Set([context.contextVersion]) });
     assert.equal(changedDuringHydration, true);
     assert.deepEqual(during.rows, [beforeConcurrentChange], 'page and hydration must share the pre-change snapshot');
     assert.equal((await readScore()).sampleCounts.accepted, beforeConcurrentChange.sampleCounts.accepted - 1);
@@ -81,7 +83,7 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
       reviewerId: 'isolated-test-reviewer', rationale: 'Automated lifecycle fixture; not human approval', evidenceLinks: [], decision,
     } });
     const rowId = `${fixture.protocol.id}::${fixture.prefix}::${fixture.recipes[3].id}::${fixture.environment.id}::fixture-model`;
-    const read = async () => (await loadPublicCorpusPage(db, {}, { take: 1, id: rowId, publicReferenceContextVersions: new Set() })).rows[0];
+    const read = async () => (await readPage(db, {}, { take: 1, id: rowId, publicReferenceContextVersions: new Set() })).rows[0];
     assert.equal((await read()).sampleCounts.accepted, 0);
     await review('EXPECTED');
     assert.equal((await read()).sampleCounts.accepted, 1);
@@ -94,11 +96,13 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
     assert.equal((await read()).sampleCounts.suspect, 4);
     await review('REVOKE');
     assert.equal((await read()).sampleCounts.suspect, 5);
-    await db.qualityAnalysis.update({ where: { id: target.id }, data: { status: 'PENDING' } });
-    assert.equal((await publicCorpusReadiness(db)).ready, false, 'source mutation durably queues its exact identity');
+    await db.$transaction(async tx => {
+      await tx.qualityAnalysis.update({ where: { id: target.id }, data: { status: 'PENDING' } });
+      assert.equal((await publicCorpusReadiness(tx)).ready, false, 'source mutation durably queues its exact identity before any other worker can consume it');
+    });
     const restarted = new PrismaClient({ datasources: { db: { url } } });
     try {
-      const recovered = await loadPublicCorpusPage(restarted, {}, { take: 1, id: rowId, publicReferenceContextVersions: new Set() });
+      const recovered = await readPage(restarted, {}, { take: 1, id: rowId, publicReferenceContextVersions: new Set() });
       assert.equal(recovered.rows[0].sampleCounts.suspect, 4);
       assert.equal((await publicCorpusReadiness(restarted)).ready, true);
     } finally { await restarted.$disconnect(); }
@@ -116,7 +120,7 @@ test('PostgreSQL corpus matches complete-history reference, bounds pages, and fo
     assert.equal((await read()).sampleCounts.suspect, 5);
     assert.equal((await read()).sampleCounts.accepted, 0, 'new analysis must not inherit old exact-analysis review');
   } finally {
-    await removeCorpusFixture(db);
+    await removeCorpusFixture(db, prefix);
     await db.$disconnect();
   }
 });
