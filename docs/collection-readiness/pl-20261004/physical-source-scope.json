@@ -1,0 +1,31 @@
+{
+  "scope": "Conservative calibration fitting scope; original observations remain immutable",
+  "criterion": "Only one persistent source identity for each positively identified distinct physical host. Selection is based on operator host provenance, not scores or stability outcomes.",
+  "included": [
+    {
+      "host": "Mac physical ARM64 laptop",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "basis": "Existing 20261002 native acceptance state copied byte-identically for additive targeted cells"
+    },
+    {
+      "host": "P910 physical Linux workstation",
+      "physicalSourceId": "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+      "basis": "Historical canonical execution and corrected37stable holdout provenance explicitly bind same P910 machine"
+    },
+    {
+      "host": "Windows physical workstation100.80.56.105",
+      "physicalSourceId": "installation-816441fa39f02e9649bc586b8078f17693c08b92f0ba1980ab05d1f402dbd81b",
+      "basis": "client-windows-physical-binding.json: persisted state matches frozen console campaign-771f1a8a7cacd85d SHA1008d0708d193ba3f3ce4dffcd88ae914ed817351df0c0ef88a34929d57e845c; nonce-bound ordinarysession1 launcher+sameSID.264 retained measured receipts."
+    }
+  ],
+  "excludedKnownAlias": {
+    "physicalSourceId": "installation-17a3f0bdfe484d859dc5daf069d82ef5d3580563d7c33e0ed2cbe15b7746b7f6",
+    "basis": "Historical Mac execution used this older source identity on same physical laptop. It is not a third machine."
+  },
+  "otherSourceIds": "Retained in original raw snapshot, excluded from fitting pending exact physical-host alias reconciliation. Do not count eight installation IDs as eight machines.",
+  "noOriginalIdentityRewritten": true,
+  "excludedWindowsGuiAlias": {
+    "physicalSourceId": "installation-f9538b042b5d7a35b6c156a4a49ca6fff3f02c055a61d0173be004de1ed66aac",
+    "basis": "Same100.80.56.105, SID and7950X/5090 as consolecohort; not anothermachine."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "kind": "exact-native1042-authoritative-analysis-monitor",
+  "checkedAtUTC": "2026-10-05T11:11:52.402468+00:00",
+  "expectedRuns": 1042,
+  "expectedIdentityFileSha256": "0a8f48b6ed5cbb534632dc93fe451128adf984d67feb7a23418bb2bcedfde409",
+  "terminal": true,
+  "latestBoundQualityAnalysisStatuses": {
+    "COMPLETE": 512,
+    "SUSPECT": 530
+  },
+  "benchmarkRunStatuses": {
+    "ACCEPTED": 512,
+    "SUSPECT": 530
+  },
+  "storageStates": {
+    "RETAINED": 512,
+    "VERIFIED": 530
+  },
+  "unsettledLatestAnalyses": 0,
+  "identityFailures": [],
+  "retentionFailures": [],
+  "ownedAnalysisRows": 1042,
+  "pendingWorkerRows": 0,
+  "activeLeases": 0,
+  "delayedPendingRows": 0,
+  "duePendingRows": 0,
+  "retryLimitPendingRows": 0,
+  "derivedRecomputeRows": 0,
+  "unexpectedTerminalLeases": 0,
+  "scientificSuccessClaimed": false,
+  "analysisConcurrencyChanged": false,
+  "rawEvidenceSha256": "e7f5c4274a052d577e65c06d5a3034140cb4083df889aea05016a76060d22a92",
+  "meaning": "Terminal scientific disposition is separate from upload success; SUSPECT remains excluded from accepted evidence."
+}

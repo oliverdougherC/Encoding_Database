@@ -2,6 +2,7 @@ import hashlib
 import itertools
 import json
 import os
+import signal
 import tempfile
 import unittest
 from contextlib import ExitStack
@@ -38,6 +39,8 @@ class _DummyDashboard:
 
     def update_counters(self, *args, **kwargs) -> None:
         self.calls.append(("update_counters", args, kwargs))
+    def set_progress(self, *args, **kwargs) -> None:
+        self.calls.append(("set_progress", args, kwargs))
 
     def advance_phase(self, *args, **kwargs) -> None:
         self.calls.append(("advance_phase", args, kwargs))
@@ -218,6 +221,60 @@ class MainRoutingTests(unittest.TestCase):
                 rc = client_main.main(["prog", "--queue-status", "--queue-dir", queue_dir])
         self.assertEqual(rc, 0)
         run_mock.assert_not_called()
+
+    def test_saved_publish_sigint_cancels_owned_upload_and_returns_130(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            previous = signal.getsignal(signal.SIGINT)
+
+            def publish(**kwargs):
+                cancel = kwargs.get("cancel_event")
+                self.assertIsNotNone(cancel)
+                handler = signal.getsignal(signal.SIGINT)
+                self.assertIsNot(handler, previous)
+                handler(signal.SIGINT, None)
+                self.assertTrue(cancel.is_set())
+                return 10, {"status": "cancelled", "pending": 1}
+
+            with mock.patch.object(client_main, "check_compatibility"), \
+                    mock.patch.object(client_main, "publish_saved_campaign", side_effect=publish):
+                rc = client_main.main(["prog", "--cli", "--publish-saved", "campaign-saved",
+                                       "--queue-dir", queue_dir])
+
+            self.assertEqual(rc, 130)
+            self.assertIs(signal.getsignal(signal.SIGINT), previous)
+
+    def test_retry_sigint_cancels_owned_upload_and_returns_130(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            previous = signal.getsignal(signal.SIGINT)
+
+            def retry(**kwargs):
+                cancel = kwargs.get("cancel_event")
+                self.assertIsNotNone(cancel)
+                handler = signal.getsignal(signal.SIGINT)
+                self.assertIsNot(handler, previous)
+                handler(signal.SIGINT, None)
+                self.assertTrue(cancel.is_set())
+                return 10, {"status": "pending", "cancelled": 1}
+
+            with mock.patch.object(client_main, "check_compatibility"), \
+                    mock.patch.object(client_main, "retry_due_uploads", side_effect=retry):
+                rc = client_main.main(["prog", "--cli", "--upload-only",
+                                       "--queue-dir", queue_dir])
+
+            self.assertEqual(rc, 130)
+            self.assertIs(signal.getsignal(signal.SIGINT), previous)
+
+    def test_upload_interrupt_during_compatibility_returns_130(self) -> None:
+        with tempfile.TemporaryDirectory() as queue_dir:
+            previous = signal.getsignal(signal.SIGINT)
+            with mock.patch.object(client_main, "check_compatibility",
+                                   side_effect=KeyboardInterrupt), \
+                    mock.patch.object(client_main, "retry_due_uploads") as retry:
+                rc = client_main.main(["prog", "--cli", "--upload-only",
+                                       "--queue-dir", queue_dir])
+            self.assertEqual(rc, 130)
+            self.assertIs(signal.getsignal(signal.SIGINT), previous)
+            retry.assert_not_called()
 
     def test_authoritative_run_create_carries_canonical_energy_and_decode_evidence(self) -> None:
         record = BenchmarkRunRecord(
@@ -621,7 +678,10 @@ class MainRoutingTests(unittest.TestCase):
             "recipeFingerprint": "f" * 64,
         }
 
-        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token, max_storage_mb):
+        def fake_submit(*, queue_dir, base_url, payload, api_key, retries, use_token,
+                        max_storage_mb, cancel_event=None, deadline=None):
+            self.assertIsNone(cancel_event)
+            self.assertIsInstance(deadline, float)
             captured_submission.update(payload)
             return "submitted", "", 0
 
@@ -988,7 +1048,7 @@ class GuidedFlowTests(unittest.TestCase):
 
     def test_sweep_checkpoint_without_progress_stops(self) -> None:
         calls = []
-        client_main.config._BATCH_COMPLETED_COUNT = 0
+        client_main.config._BATCH_LEDGER = None
 
         def fake_batch(**kwargs):
             calls.append(kwargs)
@@ -1003,7 +1063,7 @@ class GuidedFlowTests(unittest.TestCase):
                     rc = client_main.run_sweep_mode(mode="small", base_args=self.args(queue_dir=queue_dir),
                                                     show_end_screen=False, interactive=False, presets_cfg={})
         finally:
-            client_main.config._BATCH_COMPLETED_COUNT = 0
+            client_main.config._BATCH_LEDGER = None
         self.assertEqual(rc, 11)
         self.assertEqual(len(calls), 1, "no-progress checkpoint must not spin")
 

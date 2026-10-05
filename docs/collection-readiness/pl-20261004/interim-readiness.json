@@ -1,0 +1,101 @@
+{
+  "status": "DRAFT_OBJECTIVE_AND_HUMAN_GATES_REMAIN",
+  "canonicalFittingRows": 220,
+  "canonicalFittingClasses": [
+    "animation-flat-fields",
+    "film-grain-noise",
+    "fine-natural-detail",
+    "high-motion-sports",
+    "screen-text",
+    "talking-head"
+  ],
+  "confirmedPhysicalMachines": 3,
+  "hardwareFamilies": [
+    "nvenc",
+    "videotoolbox"
+  ],
+  "referenceDiagnostics": {
+    "sourceEvidenceHash": "ebc02906ed8789a08a4f9fa3681283c3ae90b09f2306e39dd63119cd487d770a",
+    "calibrationRecordCount": 220,
+    "holdoutRowsExcludedFromFitting": 0,
+    "liveRetainedBytesVerified": false,
+    "productionActivationPerformed": false,
+    "parameters": "Unchanged provisional defaults, not newly calibrated constants",
+    "perWorkloadDiagnostics": [
+      {
+        "workloadId": "athletic-action-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 2495586.545553,
+        "frontierPoints": 9
+      },
+      {
+        "workloadId": "natural-detail-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 3390726.230028,
+        "frontierPoints": 8
+      },
+      {
+        "workloadId": "film-grain-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 8287042.317466,
+        "frontierPoints": 7
+      },
+      {
+        "workloadId": "dark-gradients-1080p24-final",
+        "status": "BLOCKED",
+        "reason": "No retained accepted benchmark evidence is available"
+      },
+      {
+        "workloadId": "animation-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 9905347.184332,
+        "frontierPoints": 8
+      },
+      {
+        "workloadId": "screen-text-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 103702.552355,
+        "frontierPoints": 5
+      },
+      {
+        "workloadId": "talking-head-1080p24-final",
+        "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+        "referenceBitrateBps": 1062203.986015,
+        "frontierPoints": 3
+      }
+    ],
+    "status": "CONTEXT_BLOCKED",
+    "reason": "Missing retained authoritative evidence for workload dark-gradients-1080p24-final"
+  },
+  "findingsByCode": {
+    "missing_content_class": 1,
+    "preset_rate_quality_coverage": 8,
+    "rate_quality_coverage": 20,
+    "missing_golden_scenario": 4,
+    "missing_holdout_dimension": 4,
+    "top_result_review": 10,
+    "missing_metric_sanity_case": 4,
+    "freeze_record": 1
+  },
+  "newMeasurementSummary": {
+    "distinctCells": 11,
+    "retainedAttempts": 37,
+    "measuredRows": 26,
+    "rawAccepted": 15,
+    "rawSuspect": 11,
+    "qualifiedCells": 3,
+    "qualifiedMeasuredRows": 6,
+    "qualifiedRecipes": [
+      "screen-text / x264 fast CRF38",
+      "film-grain / x264 fast CRF14",
+      "talking-head / x265 fast CRF30"
+    ],
+    "darkHighPointTimingSpreads": [
+      0.05607640121054329,
+      0.06621049510686072
+    ]
+  },
+  "humanReviewsRecorded": 0,
+  "newMeasurementRoundsAllowed": 0,
+  "productionActivationPerformed": false
+}

@@ -1,0 +1,156 @@
+{
+  "createdAt": "2026-10-05T05:44:21.199579+00:00",
+  "matrixHash": "dba9189be061da24a128d828152a3cf1540f19b57c1e41a1bd4107515f45bd8c",
+  "clientPath": "/Volumes/EncodingDB 1/EncodingDB.app/Contents/Resources/encodingdb",
+  "clientSha256": "e3e2f72c916d8b7dc898540bbc2e6257a6279537ac6b96cc20bd196f6ea999fc",
+  "clientSourceSha": "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+  "copiedPhysicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+  "originalStateReadOnly": "[private-evidence]/physical-source-id",
+  "historicalNineCellNames": [
+    "source-a/session-1/fit-animation-1080p24-final-libsvtav1-6-crf20",
+    "videotoolbox-host/session-1/fit-talking-head-1080p24-final-h264_videotoolbox-default-vbr12000",
+    "videotoolbox-host/session-1/fit-dark-gradients-1080p24-final-h264_videotoolbox-default-vbr12000",
+    "source-a/session-1/fit-athletic-action-1080p24-final-libsvtav1-6-crf44",
+    "source-a/session-1/fit-talking-head-1080p24-final-libx265-fast-crf28",
+    "source-a/session-1/fit-screen-text-1080p24-final-libsvtav1-8-crf20",
+    "source-a/session-1/fit-natural-detail-1080p24-final-libsvtav1-8-crf20",
+    "source-a/session-1/fit-dark-gradients-1080p24-final-libx265-slow-crf23",
+    "source-a/session-1/fit-talking-head-1080p24-final-libx264-fast-crf28"
+  ],
+  "historicalDedupLimit": "Original live ledger no longer at recorded path. Frozen historical9completed-cell order reconstructed from exact original matrix/seed; none overlap. No completed cell intentionally rerun.",
+  "newCells": [
+    {
+      "cellId": "anchor-dark-gradients-1080p24-final-libx264-fast-crf14",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 14
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-dark-gradients-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "dark-gradients-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-film-grain-1080p24-final-libx264-fast-crf14",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 14
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-film-grain-1080p24-final-libx264-fast-crf18",
+      "partition": "CALIBRATION",
+      "workloadId": "film-grain-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 18
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-screen-text-1080p24-final-libx264-fast-crf38",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 38
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-screen-text-1080p24-final-libx264-fast-crf46",
+      "partition": "CALIBRATION",
+      "workloadId": "screen-text-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 46
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    },
+    {
+      "cellId": "anchor-talking-head-1080p24-final-libx264-fast-crf30",
+      "partition": "CALIBRATION",
+      "workloadId": "talking-head-1080p24-final",
+      "encoderImplementation": "libx264",
+      "preset": "fast",
+      "nativeRateControl": {
+        "mode": "crf",
+        "qualityValue": 30
+      },
+      "physicalSourceSlots": [
+        "source-a"
+      ],
+      "warmupsPerSession": 1,
+      "measuredRunsPerSession": 2,
+      "sessionsPerSource": 2,
+      "maximumAdaptiveAdditionalRunsPerSession": 2,
+      "status": "UNEXECUTED"
+    }
+  ]
+}

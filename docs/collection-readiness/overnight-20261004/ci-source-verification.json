@@ -1,0 +1,71 @@
+{
+  "head": "a5b38ab46e030de635f5701b9319c8314d01e4e5",
+  "allPassed": true,
+  "checks": [
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497418/job/111689778681",
+      "name": "Release sentinel (FINAL_TEST_SUITE_NOT_FROZEN expected pre-freeze)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779198",
+      "name": "client-native-macos-build",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779056",
+      "name": "client-native-windows-build",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779225",
+      "name": "frontend",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497376/job/111689778082",
+      "name": "audit-python",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779022",
+      "name": "clean-production-deployment",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689778821",
+      "name": "server",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779106",
+      "name": "client",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779041",
+      "name": "client-native-linux-build",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497418/job/111689778926",
+      "name": "preflight",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497376/job/111689778428",
+      "name": "audit-node",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779115",
+      "name": "migration",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/oliverdougherC/Encoding_Database/actions/runs/37287497391/job/111689779044",
+      "name": "stack-smoke",
+      "state": "SUCCESS"
+    }
+  ]
+}

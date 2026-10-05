@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "corpusCount": 4,
+  "encoderFamilies": [
+    "h264",
+    "av1"
+  ],
+  "explicitRunIds": [
+    "cmu9ovg2w0015lqdwnr1pwwgg",
+    "cmu9ovjq0001alqdwbz7m66hm",
+    "cmusi5tfb02wlo4dwscxfphry",
+    "cmusmv9s5033yo4dw62ncidym"
+  ],
+  "evidenceHash": "e486f1e075d54da089b77ff2bd890f332be37ee7931c64e7c1c76bf8b16f6ae4",
+  "completeMeasuredGroups": 2,
+  "comparison": "Full canonical document equality across two complete two-member real retained groups in distinct encoder families; original and summary-projection generators"
+}

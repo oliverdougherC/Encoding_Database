@@ -1,0 +1,216 @@
+{
+  "algorithm": "SHA-256",
+  "description": "Content hashes of retained private source artifacts. Evidence IDs are redacted logical names, not filesystem paths. Hashes bind the snapshots used by this packet; they do not independently establish the claims. Raw artifacts remain with the task owner.",
+  "artifacts": [
+    {
+      "evidenceId": "client-final-acceptance",
+      "sha256": "05ed125746374d366f8560b96f160da9b4ae26a25762dc69b992bbf651ca29a4",
+      "bytes": 2635
+    },
+    {
+      "evidenceId": "client-bound-server-observations",
+      "sha256": "199e9a3b65f17a312c7f380415ac7eaf873d1eb86e9f87930a6c10bc9e021c47",
+      "bytes": 35403717
+    },
+    {
+      "evidenceId": "client-linux-strict-final-conservation",
+      "sha256": "4a6391416f3b799c19e125637c4e0e32742adc56ce135ebbe43b2addfa18542c",
+      "bytes": 278978
+    },
+    {
+      "evidenceId": "client-mac-strict-final-conservation",
+      "sha256": "23249a9077e78da2ac021997a190a9dc9a496b2be4e1956d00cc00de2b694aa9",
+      "bytes": 214372
+    },
+    {
+      "evidenceId": "client-winconsole-strict-final-conservation",
+      "sha256": "53cf934a93b5af78e7ae24307621734fa63451a92710ca890e8feb7b13ecedf7",
+      "bytes": 267025
+    },
+    {
+      "evidenceId": "client-wingui-strict-final-conservation",
+      "sha256": "fee6c711597b88258ad4d0c2370c9542a54967db15dc9da749da4e41eae9b52b",
+      "bytes": 282750
+    },
+    {
+      "evidenceId": "fixture-input-immutability",
+      "sha256": "2b4241de90863ac8f41cc95d70bd599fec5008d38b553cb749b22588766d9235",
+      "bytes": 1490
+    },
+    {
+      "evidenceId": "windows-gui-auth-put-independent-verification",
+      "sha256": "f491ea2e6992df24527748382f2d4b220547af67107ee889602587d719dd7086",
+      "bytes": 1082
+    },
+    {
+      "evidenceId": "mac-fixture-create",
+      "sha256": "aab11f67f808b63dce55b52026beb7e35b850b7690b19aca99328e63a39cf8aa",
+      "bytes": 1377
+    },
+    {
+      "evidenceId": "mac-fixture-auth",
+      "sha256": "36254d974e872be50afbae858dccba45b5e8d9a4feef007fc4720bdd807f5bbc",
+      "bytes": 1441
+    },
+    {
+      "evidenceId": "mac-fixture-put",
+      "sha256": "e10609daea717194280a809f284b438b6761ff593ae4612cd06f64fd607d6c0b",
+      "bytes": 1371
+    },
+    {
+      "evidenceId": "mac-fixture-read",
+      "sha256": "54aa328253b53ad54379ee929849582b3695a3f6a77d07680a23a37f049787fa",
+      "bytes": 1374
+    },
+    {
+      "evidenceId": "mac-fixture-lost-ack",
+      "sha256": "d908d7e5586a85bd46514b921d43f2d2e2c67f1df3de5316da89d13b7368d8cb",
+      "bytes": 1394
+    },
+    {
+      "evidenceId": "linux-fixture-create",
+      "sha256": "c5c218bf48ea90b0510c85f94a9bb209eee83395409e46dae29c06c859c8d850",
+      "bytes": 1381
+    },
+    {
+      "evidenceId": "linux-fixture-auth",
+      "sha256": "c643e962dba3dd450af22d2b5b2a62c4961372a439dfa7294717b33b4a5510ff",
+      "bytes": 1444
+    },
+    {
+      "evidenceId": "linux-fixture-put",
+      "sha256": "503997684879bc84bf362243f9a20560a6bd8d8f73a982f933eea11154102a5e",
+      "bytes": 1374
+    },
+    {
+      "evidenceId": "linux-fixture-read",
+      "sha256": "90eefc57472ca0d880d727e73b13ff55c6a0ffc5cf0148190d90cdc3caeb335f",
+      "bytes": 1376
+    },
+    {
+      "evidenceId": "linux-fixture-lost-ack",
+      "sha256": "d977c5107d8745c5b601575a1d76241cd898b37b91d512e686cb986acdc79da2",
+      "bytes": 1402
+    },
+    {
+      "evidenceId": "winconsole-fixture-lost-ack",
+      "sha256": "96cf4703d9bd64434c5c7f2b2a9fbd3185e88965de7b265f1b77ac2880f8905a",
+      "bytes": 1455
+    },
+    {
+      "evidenceId": "wingui-fixture-create",
+      "sha256": "34e6d5849f8f87b889fd3fd18fb1229cb85c43e6a53fa1144808e93158b38c99",
+      "bytes": 5960
+    },
+    {
+      "evidenceId": "wingui-fixture-auth",
+      "sha256": "c5b765ff7ac0fec313fab310cb06d59ceb10f39e2708ed1204572cbae49705b8",
+      "bytes": 6028
+    },
+    {
+      "evidenceId": "wingui-fixture-put",
+      "sha256": "c5a0d7cbc24aabc59140c46d96fff7e93985482811ffe45a8893e87e51299835",
+      "bytes": 6105
+    },
+    {
+      "evidenceId": "wingui-fixture-read",
+      "sha256": "dc23d94c0ff761c51a42c778d587cc3ed40576eee14a1d7047edea074bd0c053",
+      "bytes": 5961
+    },
+    {
+      "evidenceId": "frontend-tests",
+      "sha256": "c2f547113f715248cfc65cc188a6f58cdabc8c36a77270c5a5bd2f736d8e7212",
+      "bytes": 303
+    },
+    {
+      "evidenceId": "frontend-lint-typecheck",
+      "sha256": "a65870662de82e9ac786152289f9cf2450996b34e06522b8b3d5d1a055f6c469",
+      "bytes": 117
+    },
+    {
+      "evidenceId": "frontend-production-build",
+      "sha256": "60c44479401928e0c148f45360a54bccf3c65af5c178bc4d735c499f3e0fd6e6",
+      "bytes": 1070
+    },
+    {
+      "evidenceId": "client-full-tests",
+      "sha256": "c71aefda65fe0ff4ed02e0707e0d139c0145640ec49b707787ff37fd6b2767a5",
+      "bytes": 953
+    },
+    {
+      "evidenceId": "server-real-postgres-suite",
+      "sha256": "4a7e0f4a81e9624694d49d9a3549319a52a6b7920cd5382a3b03249a03ebea05",
+      "bytes": 98356
+    },
+    {
+      "evidenceId": "screenshot-browse-desktop-fixture.png",
+      "sha256": "a2a922693c7817fcc57e9951f7441a74ce2494d674847b4b1ff01420a81bd8c9",
+      "bytes": 94569
+    },
+    {
+      "evidenceId": "screenshot-downloads-desktop.png",
+      "sha256": "d7e2814226dee4483948eef87fac12b9e514fb39512102bf003c3ce3f042e85d",
+      "bytes": 144164
+    },
+    {
+      "evidenceId": "screenshot-encoders-mobile-real-data.png",
+      "sha256": "2decf2c2fc181ef344ad982a595dac584d0d8c3b1c48ad957a28fc2281432feb",
+      "bytes": 91141
+    },
+    {
+      "evidenceId": "windows-gui-package-manifest",
+      "sha256": "79721beb9d274b4446d9096a2f1efafd29ceb9586b1058379b4878011acd3ad7",
+      "bytes": 4492
+    },
+    {
+      "evidenceId": "windows-console-package-manifest",
+      "sha256": "624b8cae6c4386b31ef5bb7334dcc1d7b3996d40b6e515992a4ff554f17aa2e6",
+      "bytes": 4500
+    },
+    {
+      "evidenceId": "client-package-provenance-audit.json",
+      "sha256": "6966f97d74af032df275892456911a560603f8fbc08b7830674b16374e05baa0",
+      "bytes": 5060
+    },
+    {
+      "evidenceId": "frontend-warning-fix-tests.log",
+      "sha256": "6e092a74a1cf81d2b93a41509422ac2c9fa2644c99be881f8ab05752b055e976",
+      "bytes": 303
+    },
+    {
+      "evidenceId": "frontend-warning-fix-lint.log",
+      "sha256": "a65870662de82e9ac786152289f9cf2450996b34e06522b8b3d5d1a055f6c469",
+      "bytes": 117
+    },
+    {
+      "evidenceId": "client-final-gap-closure-summary.json",
+      "sha256": "c82ffd6abedcacf0f56669c4a5ba131975dcc70d9e689eec5456addda5c1bbd7",
+      "bytes": 3392
+    },
+    {
+      "evidenceId": "client-final-gap-closure-HANDOFF.md",
+      "sha256": "1b51a0aad7b944fb2c1f56a5ff46eb91a31463fea37420012442589e756b0049",
+      "bytes": 5864
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-independent-validation.json",
+      "sha256": "ad09e796a92b8fd8caeae52ae47567e082386f94db7a484e8fee8582fa04d88a",
+      "bytes": 171
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-tls-proxy-events-final.jsonl",
+      "sha256": "7f4d061193ad54664cf91debc1ebf79aceaf948de13932abe81b9ef9ea01eb93",
+      "bytes": 1803
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-actual-commit-before-response-drop.json",
+      "sha256": "4765e9dab5d178d98180b97b522945e287d8c5fa8e1554365b764882fb66aa8c",
+      "bytes": 366
+    },
+    {
+      "evidenceId": "client-final-gap-evidence-real-backend-final-cleanup-proof.json",
+      "sha256": "76eb54b0c116fb37c36770a8e047e70e4ea37a4248f630825f4e6c2d8f0d64c5",
+      "bytes": 774
+    }
+  ]
+}

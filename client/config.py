@@ -68,7 +68,11 @@ BENCHMARK_PROTOCOL_VERSION = "7.1"
 # Batch aggregation for Small/Full multi-run flows
 _BATCH_ACTIVE: bool = False
 _BATCH_START_TS: float = 0.0
-_BATCH_COMPLETED_COUNT: int = 0
+
+# Durable end-of-run campaign view (journal + spool), recomputed by
+# run_benchmark_batch on every exit path. Transient per-segment counters were
+# replaced by this because they conflated measured, queued and confirmed work.
+_BATCH_LEDGER: Optional[Dict[str, Any]] = None
 
 # New-attempt heartbeat across checkpoint segments; resumed attempts do not count.
 _BATCH_ATTEMPTS_RECORDED: int = 0

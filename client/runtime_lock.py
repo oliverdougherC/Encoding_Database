@@ -3,7 +3,8 @@ import json
 import os
 import shutil
 import subprocess
-from .campaign import check_preparation_cancelled, run_measurement_process
+from .campaign import (check_preparation_cancelled, preparation_heartbeat,
+                       preparation_stage, run_measurement_process)
 import sys
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
@@ -18,6 +19,10 @@ RUNTIME_LOCK_SIDECAR_CANDIDATES: Sequence[str] = (
     "runtime-lock.json",
 )
 REQUIRED_FILTERS: Sequence[str] = ("libvmaf", "xpsnr")
+RUNTIME_PROBE_TIMEOUT_SECONDS = 30.0
+RUNTIME_BINARY_HASH_BUDGET_SECONDS = 300.0
+RUNTIME_DEPENDENCY_HASH_BUDGET_SECONDS = 300.0
+RUNTIME_PROBE_STAGE_BUDGET_SECONDS = 240.0
 PLATFORM_REQUIRED_ENCODERS: Mapping[str, Sequence[str]] = {
     "linux": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
     "mac": ("libaom-av1", "libsvtav1", "libvpx-vp9", "libx264", "libx265"),
@@ -76,10 +81,13 @@ def _canonical_json(value: Any) -> str:
 
 def _sha256_path(path: str) -> str:
     digest = hashlib.sha256()
+    completed = 0
     with open(path, "rb") as handle:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             check_preparation_cancelled()
             digest.update(chunk)
+            completed += len(chunk)
+            preparation_heartbeat(path=path, completedBytes=completed)
     return digest.hexdigest()
 
 
@@ -123,13 +131,22 @@ def runtime_capability_requirements(platform_key: Optional[str] = None) -> Dict[
 
 
 def _run_text(command: Sequence[str]) -> str:
-    proc = run_measurement_process(
-        list(command),
-        check=False,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
+    # Every runtime probe owns a finite wall-clock budget even outside a
+    # preparation scope (release tooling, bare CLI): a hung ffmpeg/ffprobe
+    # must fail the check with the command named, never pin the caller.
+    try:
+        proc = run_measurement_process(
+            list(command),
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=RUNTIME_PROBE_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeLockError(
+            f"{command[0]} exceeded its {RUNTIME_PROBE_TIMEOUT_SECONDS:g}s probe budget; "
+            "the runtime binary did not respond and was terminated")
     if proc.returncode != 0:
         detail = (proc.stderr or proc.stdout or "").strip()
         raise RuntimeLockError(f"{command[0]} failed with exit code {proc.returncode}: {detail}")
@@ -187,6 +204,7 @@ def runtime_dependency_records(ffmpeg_path: str) -> List[Dict[str, Any]]:
                 path = os.path.join(current, name)
                 if os.path.commonpath([os.path.realpath(root), os.path.realpath(path)]) != os.path.realpath(root):
                     raise RuntimeLockError("runtime dependency escapes bundled binary directory")
+                preparation_heartbeat(path=path, substage="dependencies")
                 records.append({"relativePath": os.path.relpath(path, root).replace(os.sep, "/"),
                                 "sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
     return records
@@ -203,6 +221,30 @@ def _verify_dependencies(ffmpeg_path: str, expected: Any) -> None:
 
 
 def probe_runtime_identity(
+    *,
+    ffmpeg_path: str,
+    ffprobe_path: str,
+    platform_key: Optional[str] = None,
+    required_filters: Optional[Iterable[str]] = None,
+    required_encoders: Optional[Iterable[str]] = None,
+    optional_encoders: Optional[Iterable[str]] = None,
+    smoke_test_encoders: Optional[Iterable[str]] = None,
+) -> Dict[str, Any]:
+    # The whole identity check is one bounded preparation stage; each probe
+    # inside also owns its own finite probe timeout.
+    with preparation_stage("runtime-probe", RUNTIME_PROBE_STAGE_BUDGET_SECONDS):
+        return _probe_runtime_identity(
+            ffmpeg_path=ffmpeg_path,
+            ffprobe_path=ffprobe_path,
+            platform_key=platform_key,
+            required_filters=required_filters,
+            required_encoders=required_encoders,
+            optional_encoders=optional_encoders,
+            smoke_test_encoders=smoke_test_encoders,
+        )
+
+
+def _probe_runtime_identity(
     *,
     ffmpeg_path: str,
     ffprobe_path: str,
@@ -462,9 +504,11 @@ def verify_runtime_lock(
 
     resolved_ffmpeg = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffmpeg_path, entry=expected_ffmpeg)
     resolved_ffprobe = _resolve_binary_path(lock_path=resolved_lock_path, explicit_path=ffprobe_path, entry=expected_ffprobe)
-    for label, path, expected in (("ffmpeg", resolved_ffmpeg, expected_ffmpeg), ("ffprobe", resolved_ffprobe, expected_ffprobe)):
-        _assert_binary_bytes(label, path, expected, {"sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
-    _verify_dependencies(resolved_ffmpeg, platform_entry.get("runtimeDependencies"))
+    with preparation_stage("runtime-binary-hash", RUNTIME_BINARY_HASH_BUDGET_SECONDS):
+        for label, path, expected in (("ffmpeg", resolved_ffmpeg, expected_ffmpeg), ("ffprobe", resolved_ffprobe, expected_ffprobe)):
+            _assert_binary_bytes(label, path, expected, {"sha256": _sha256_path(path), "byteSize": os.path.getsize(path)})
+    with preparation_stage("runtime-dependency-hash", RUNTIME_DEPENDENCY_HASH_BUDGET_SECONDS):
+        _verify_dependencies(resolved_ffmpeg, platform_entry.get("runtimeDependencies"))
     default_requirements = runtime_capability_requirements(selected_platform)
     observed = probe_runtime_identity(
         ffmpeg_path=resolved_ffmpeg,

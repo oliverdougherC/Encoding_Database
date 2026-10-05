@@ -127,6 +127,16 @@ def read_client_minimum_version() -> str:
     return client_match.group(1)
 
 
+def read_client_implementation_version() -> str:
+    source = read_text(ROOT_DIR / "client" / "main.py")
+    match = re.search(r'^CLIENT_VERSION\s*=\s*"([^"]+)"', source, re.MULTILINE)
+    release = json.loads(read_text(ROOT_DIR / "release.json"))
+    version = release.get("clientImplementationVersion")
+    if not match or not isinstance(version, str) or match.group(1) != version:
+        raise RuntimeError("client implementation version differs from release.json")
+    return version
+
+
 def load_vmaf_manifest() -> Dict[str, Any]:
     with (ROOT_DIR / "client" / "resources" / "vmaf" / "manifest.json").open("r", encoding="utf-8") as handle:
         payload = json.load(handle)
@@ -405,6 +415,7 @@ def build_release_manifest(
             "executableIdentity": executable_identity(artifact_path),
         },
         "protocol": {
+            "clientVersion": read_client_implementation_version(),
             "benchmarkProtocolVersion": config.BENCHMARK_PROTOCOL_VERSION,
             "minimumClientVersion": read_client_minimum_version(),
         },

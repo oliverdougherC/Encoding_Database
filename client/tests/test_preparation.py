@@ -76,7 +76,7 @@ class PreparationTests(unittest.TestCase):
              mock.patch.object(main, '_prepare_quick_suite_clip') as prepare, \
              mock.patch.object(main, '_preparation_runtime_integrity') as runtime:
             self.assertEqual(main.main(['prog', '--upload-only', '--resume-campaign', 'campaign-0123456789abcdef',
-                                        '--submit', '--queue-dir', directory]), 0)
+                                        '--submit', '--queue-dir', directory]), 1)
         batch.assert_not_called()
         prepare.assert_not_called()
         runtime.assert_not_called()
@@ -86,7 +86,7 @@ class PreparationTests(unittest.TestCase):
         with mock.patch.object(main, 'ensure_ffmpeg_and_ffprobe', return_value=(True, 'ffmpeg test')), \
              mock.patch.object(main, 'detect_hardware', return_value=hardware), \
              mock.patch.object(main, 'list_all_available_encoders', return_value=['libx264']), \
-             mock.patch.object(main, 'prompt_choice', return_value=5), \
+             mock.patch.object(main, 'prompt_choice', return_value=6), \
              mock.patch.object(main.sys, 'stdin', None), \
              mock.patch.object(main, '_prepare_quick_suite_clip') as prepare, \
              mock.patch.object(main, 'is_hardware_encoder_usable') as probe:

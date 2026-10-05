@@ -187,6 +187,8 @@ function Invoke-PyInstallerBuild {
     )
     if ($Windowed) {
         $buildArgs += "--windowed"
+    } else {
+        $buildArgs += "--bootloader-ignore-signals"
     }
     $buildArgs += $Entrypoint
 

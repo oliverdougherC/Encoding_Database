@@ -1,0 +1,41 @@
+{
+  "coverageRegression": {
+    "baseline": {
+      "passed": 19,
+      "failed": 2
+    },
+    "after": {
+      "passed": 21,
+      "failed": 0
+    }
+  },
+  "fullServer": {
+    "passed": 262,
+    "failed": 0,
+    "skipped": 7,
+    "total": 269
+  },
+  "liveGenerator": {
+    "before": "OOM exit137 on full native corpus with broad includes",
+    "after": "384 qualified rows exported after selecting summary metrics and exact identities",
+    "equivalence": "generator-equivalence.json: full document and evidence hash equality on real newest retained cohort",
+    "multifamilyEquivalence": "generator-equivalence-multifamily.json:4real retained rows,2complete groups,H264+AV1,complete JSON/hash equality"
+  },
+  "gatePolicy": "Unchanged; no fitted constants, human judgments or production flags invented",
+  "fullServerFinal": {
+    "passed": 275,
+    "failed": 0,
+    "skipped": 7,
+    "total": 282
+  },
+  "newProtocolRepairRegressions": {
+    "passed": 13,
+    "failed": 0
+  },
+  "liveCalibrationFocused": {
+    "passed": 40,
+    "failed": 0,
+    "skipped": 1,
+    "note": "Earlier focused real-PostgreSQL run; separate live repair proves all6 retained groups after the new correction."
+  }
+}

@@ -42,7 +42,7 @@ describe("RunPage", () => {
     render(<RunPage />);
     for (const asset of primaryAssets) {
       expect(screen.getAllByText(asset.file).length).toBeGreaterThan(0);
-      expect(screen.getAllByText(/pending publication/).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Download unavailable/).length).toBeGreaterThan(0);
       if (asset.sha256) {
         expect(screen.getAllByText(new RegExp(asset.sha256)).length).toBeGreaterThan(0);
       }
@@ -69,9 +69,9 @@ describe("RunPage", () => {
   it("does not activate current downloads when the environment still names the superseded base", () => {
     vi.stubEnv("COLLECTION_DOWNLOAD_BASE", `${repoReleases}/download/${supersededTag}`);
     render(<RunPage />);
-    expect(screen.getByText(/is being prepared/)).toBeInTheDocument();
+    expect(screen.getByText(/Downloads are temporarily unavailable/)).toBeInTheDocument();
     expect(document.querySelector(`a[href*='download/${projectTag}/']`)).toBeNull();
-    expect(screen.getAllByText(/pending publication/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Download unavailable/).length).toBeGreaterThan(0);
   });
 
   it("activates the primary downloads and release-notes link once the deployment names the current tag", () => {
@@ -82,8 +82,15 @@ describe("RunPage", () => {
     expect(screen.getByRole("link", { name: "Download for macOS (Apple Silicon)" })).toHaveAttribute("href", `${plannedBase}/EncodingDB-macOS-arm64.dmg`);
     expect(screen.getByRole("link", { name: "Download for Windows (GUI)" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-windows.exe`);
     expect(screen.getByRole("link", { name: "Download for Linux (x86-64)" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-linux.tar.gz`);
+    expect(screen.getByRole("link", { name: `Windows console (${projectTag})` })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-windows-console.exe`);
+    const macCard = screen.getByRole("link", { name: "Download for macOS (Apple Silicon)" }).closest("article");
+    expect(macCard?.textContent?.indexOf("requires macOS 27 or later")).toBeLessThan(macCard?.textContent?.indexOf("Download for macOS") ?? 0);
+    const windowsCard = screen.getByRole("link", { name: "Download for Windows (GUI)" }).closest("article");
+    expect(windowsCard?.textContent?.indexOf("Windows 11 x86-64")).toBeLessThan(windowsCard?.textContent?.indexOf("Download for Windows") ?? 0);
+    const linuxCard = screen.getByRole("link", { name: "Download for Linux (x86-64)" }).closest("article");
+    expect(linuxCard?.textContent?.indexOf("Ubuntu 24.04 x86-64")).toBeLessThan(linuxCard?.textContent?.indexOf("Download for Linux") ?? 0);
     expect(screen.getByRole("link", { name: new RegExp(`Release notes, checksums, and build evidence`) })).toHaveAttribute("href", `${repoReleases}/tag/${projectTag}`);
-    expect(screen.queryByText(/pending publication/)).toBeNull();
+    expect(screen.queryByText(/Download unavailable/)).toBeNull();
   });
 
   it("documents superseded and historical builds without presenting them as recommended", () => {

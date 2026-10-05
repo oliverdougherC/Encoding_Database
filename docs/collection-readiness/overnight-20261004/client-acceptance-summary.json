@@ -1,0 +1,97 @@
+{
+  "uploadAcceptancePassed": true,
+  "expectedMeasured": 1042,
+  "confirmedBoundUploads": 1042,
+  "unresolvedValidMeasured": 0,
+  "newlyRecovered": 136,
+  "allOriginalMeasurementEvidenceUnchanged": true,
+  "profiles": {
+    "linux": {
+      "passed": true,
+      "attempts": 396,
+      "counts": {
+        "warmup": 112,
+        "upload-confirmed": 284
+      },
+      "confirmed": 284,
+      "unresolved": 0,
+      "errors": [],
+      "immutableMeasurementEvidenceUnchanged": true
+    },
+    "mac": {
+      "passed": true,
+      "attempts": 310,
+      "counts": {
+        "warmup": 98,
+        "upload-confirmed": 212
+      },
+      "confirmed": 212,
+      "unresolved": 0,
+      "errors": [],
+      "immutableMeasurementEvidenceUnchanged": true
+    },
+    "winconsole": {
+      "passed": true,
+      "attempts": 390,
+      "counts": {
+        "warmup": 126,
+        "upload-confirmed": 264
+      },
+      "confirmed": 264,
+      "unresolved": 0,
+      "errors": [],
+      "immutableMeasurementEvidenceUnchanged": true
+    },
+    "wingui": {
+      "passed": true,
+      "attempts": 408,
+      "counts": {
+        "warmup": 126,
+        "upload-confirmed": 282
+      },
+      "confirmed": 282,
+      "unresolved": 0,
+      "errors": [],
+      "immutableMeasurementEvidenceUnchanged": true
+    }
+  },
+  "analysisObservationWindowUTC": {
+    "from": "2026-10-05T06:11:40.349917+00:00",
+    "to": "2026-10-05T06:41:16.745179+00:00"
+  },
+  "scientificAcceptanceIsSeparate": true,
+  "packagedNativeFixtureCasesPassed": 17,
+  "realBackendPostCommitLostAckExecuted": true,
+  "windowsGuiStopPhasesExecuted": [
+    "create",
+    "authorization",
+    "PUT",
+    "response-read"
+  ],
+  "windowsGuiStopPhasesUnexecuted": [],
+  "productionClientSourceChanged": false,
+  "releaseOrMergeApproval": false,
+  "distinctServerRunIds": 1042,
+  "benchmarkRunStatusesAsObserved": {
+    "ACCEPTED": 414,
+    "SUSPECT": 432,
+    "PENDING": 196
+  },
+  "qualityAnalysisStatusesAsObserved": {
+    "COMPLETE": 414,
+    "SUSPECT": 432,
+    "PENDING": 196
+  },
+  "runsWithoutBoundAnalysisRow": 0,
+  "unboundAnalysisRows": 0,
+  "provenance": {
+    "actualManifestBuildRevision": "3e798c70be64bf87bc821cb629aebbc68cdc3819",
+    "reviewedEquivalentClientAndPackagingRevision": "44b9e1501bc1bbdc2133317bd83ce5d847ad4103",
+    "clientGitTree": "fb49268dab61478beff268d9c73eeac4aefadb8e",
+    "wholeServerTreeIdentityClaimed": false,
+    "note": "Build revision comes from package manifests; the reviewed client/packaging trees are equivalent. A historical handoff misidentified the reviewed revision as embedded build revision; this summary corrects that claim."
+  },
+  "actualBackendLossReplayCasesPassed": 1,
+  "directCloseDuringActivePreparationExecuted": true,
+  "dedicatedNativeMetadataChildCancellationExecuted": true
+}

@@ -1,0 +1,49 @@
+{
+  "closed": true,
+  "actualNodeAnalysisConcurrency": "0",
+  "containerEnvironmentAnalysisConcurrency": "0",
+  "sameServerImage": true,
+  "sameMountsAndNetworks": true,
+  "sameTLSCertificateAndCompatibility": true,
+  "allPublicTableRowCountsIdentical": true,
+  "otherEnvironmentAndScienceConfigurationIdentical": true,
+  "databaseAndNginxContainersUnchanged": true,
+  "onlyServerRecreated": true,
+  "exactOwnedAnalysisTerminal": {
+    "kind": "exact-native1042-authoritative-analysis-monitor",
+    "checkedAtUTC": "2026-10-05T12:05:50.538982+00:00",
+    "expectedRuns": 1042,
+    "expectedIdentityFileSha256": "0a8f48b6ed5cbb534632dc93fe451128adf984d67feb7a23418bb2bcedfde409",
+    "terminal": true,
+    "latestBoundQualityAnalysisStatuses": {
+      "COMPLETE": 512,
+      "SUSPECT": 530
+    },
+    "benchmarkRunStatuses": {
+      "ACCEPTED": 512,
+      "SUSPECT": 530
+    },
+    "storageStates": {
+      "RETAINED": 512,
+      "VERIFIED": 530
+    },
+    "unsettledLatestAnalyses": 0,
+    "identityFailures": [],
+    "retentionFailures": [],
+    "ownedAnalysisRows": 1042,
+    "pendingWorkerRows": 0,
+    "activeLeases": 0,
+    "delayedPendingRows": 0,
+    "duePendingRows": 0,
+    "retryLimitPendingRows": 0,
+    "derivedRecomputeRows": 0,
+    "unexpectedTerminalLeases": 0,
+    "scientificSuccessClaimed": false,
+    "analysisConcurrencyChanged": false
+  },
+  "recommendationReadyClaimed": false,
+  "checkedAtEpoch": 1791201950.6752687,
+  "publicTablesCompared": 18,
+  "rawClosureProofSha256": "770b40e07d52b121759b9eccab3d7d31514dc4ddb2b9708de7d1302a9daa5085",
+  "leaderIndependentChecks": "Compared all18 table counts, TLS/readiness/compatibility and DB/nginx snapshots; independently inspected running server image and concurrency0."
+}

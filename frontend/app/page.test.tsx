@@ -160,9 +160,16 @@ describe("corpus disposition totals", () => {
 
 describe("unavailable corpus", () => {
   it("does not describe a fetch failure as an empty accepted corpus", async () => {
-    vi.mocked(fetchWorkbenchPage).mockRejectedValueOnce(new Error("Offline"));
-    render(await Home({}));
-    expect(screen.getByText("Corpus counts temporarily unavailable")).toBeInTheDocument();
-    expect(screen.queryByText(/runs on this page/)).not.toBeInTheDocument();
+    const cause = new Error("Offline");
+    const diagnostic = vi.spyOn(console, "error").mockImplementationOnce(() => {});
+    try {
+      vi.mocked(fetchWorkbenchPage).mockRejectedValueOnce(cause);
+      render(await Home({}));
+      expect(screen.getByText("Corpus counts temporarily unavailable")).toBeInTheDocument();
+      expect(screen.queryByText(/runs on this page/)).not.toBeInTheDocument();
+      expect(diagnostic).toHaveBeenCalledExactlyOnceWith("Unable to load benchmark results", cause);
+    } finally {
+      diagnostic.mockRestore();
+    }
   });
 });

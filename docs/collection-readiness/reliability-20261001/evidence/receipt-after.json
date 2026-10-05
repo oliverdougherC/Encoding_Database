@@ -1,0 +1,41 @@
+{
+  "source": "8d4841b5c6bb33255e3610bed90b2ffeb1b82306",
+  "productionModulesImported": true,
+  "sourceExcerptsOrStubs": false,
+  "networkOrEncodesPerformed": false,
+  "cases": [
+    {
+      "case": "truncated",
+      "drained": 0,
+      "pendingSurvives": true,
+      "queuedBytesSurvive": true,
+      "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+      "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+      "originalIntentionallyAbsent": true,
+      "acknowledgmentVerified": false,
+      "requirementPasses": true
+    },
+    {
+      "case": "empty",
+      "drained": 0,
+      "pendingSurvives": true,
+      "queuedBytesSurvive": true,
+      "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+      "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+      "originalIntentionallyAbsent": true,
+      "acknowledgmentVerified": false,
+      "requirementPasses": true
+    },
+    {
+      "case": "wrong-local-identity",
+      "drained": 0,
+      "pendingSurvives": true,
+      "queuedBytesSurvive": true,
+      "localHash": "c713c0ac3287c3748a8fe44a298bb1cff7572377f0202d2a111904c43f56d6f8",
+      "payloadHash": "2f8147b7746caa208c9a86eb05ba22824e6e2cd856fdce4e54daf8e030164456",
+      "originalIntentionallyAbsent": true,
+      "acknowledgmentVerified": false,
+      "requirementPasses": true
+    }
+  ]
+}

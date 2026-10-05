@@ -1,0 +1,12 @@
+{
+  "childHeldResolverWindow": true,
+  "cliExit": 10,
+  "cliReturned": true,
+  "ownedWorkersAfterDeadline": 0,
+  "ownedMetadataChildrenAfterDeadline": 0,
+  "collectorAcquiredAfterDeadline": true,
+  "httpRequestAfterDeadlineDuringMeasurement": false,
+  "actualRequestsReceived": 0,
+  "finalOwnedWorkers": 0,
+  "finalOwnedMetadataChildren": 0
+}

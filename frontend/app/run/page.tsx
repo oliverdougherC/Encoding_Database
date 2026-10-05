@@ -1,8 +1,13 @@
 import styles from "./page.module.css";
-import { cliTag, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
+import { cliTag, currentWindowsConsole, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
 
 export const dynamic = "force-dynamic";
 
+const platformSummary: Record<string, string> = {
+  "EncodingDB-macOS-arm64.dmg": "Apple Silicon · requires macOS 27 or later. Guided Terminal app; not notarized.",
+  "encodingdb-client-windows.exe": "Windows 11 x86-64 · desktop app. Unsigned; SmartScreen may warn.",
+  "encodingdb-client-linux.tar.gz": "Ubuntu 24.04 x86-64 · guided Terminal client. Other distributions unverified.",
+};
 const platformNotes: Record<string, string[]> = {
   "EncodingDB-macOS-arm64.dmg": ["Open the disk image and drag EncodingDB to Applications.", "Open EncodingDB from Applications; it launches the guided menu in Terminal.", "First launch blocked by macOS? Use the first-launch help under build details below."],
   "encodingdb-client-windows.exe": ["Run the downloaded file.", "Windows warns because the build is unsigned; verify the SHA-256 below before continuing.", "Choose a sweep size in the window and press Start."],
@@ -14,35 +19,36 @@ export default function RunPage() {
   const historical = `${repoReleases}/download/${historicalTag}`;
   const superseded = `${repoReleases}/download/${supersededTag}`;
   const cliBase = `${repoReleases}/download/${cliTag}`;
+  const currentBase = `${repoReleases}/download/${projectTag}`;
   return <div className={`page ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
       <h1>Contribute your results.</h1>
-      <p>Download the client and follow the launch steps for your system. Choose Small, Medium, Large, or Full; the client detects usable encoders and submits finished measurements automatically once you approve uploads.</p>
+      <p>Choose your platform. The client detects available encoders, guides your benchmark, and retries interrupted uploads.</p>
     </header>
 
     {downloads.published
-      ? <p className={styles.callout}><strong>Version {projectTag} is published.</strong> The downloads below are the packaged builds for the current server (protocol 7.1). Verify each file against the SHA-256 listed on the release page before running.</p>
-      : <p className={styles.callout}><strong>Version {projectTag} is being prepared.</strong> The packaged builds below are staged and their file names are final, but the download buttons activate only once they are published under tag {projectTag}. Checksums are published with the release, never before it.</p>}
+      ? <p className={styles.callout}><strong>Version {projectTag} is published.</strong> Packaged clients for protocol 7.1. Check system requirements below.</p>
+      : <p className={styles.callout}><strong>Downloads are temporarily unavailable on this site.</strong> Version {projectTag} is selected, but its download configuration has not been enabled.</p>}
 
     <section className={styles.platforms} aria-label="Primary downloads">
       {downloads.items.map((asset) => <article key={asset.file} className={styles.card}>
         <h2>{asset.label}</h2>
+        <p className={styles.summary}>{platformSummary[asset.file]}</p>
         {asset.href
           ? <a className="btn btn-primary" href={asset.href}>Download for {asset.label}</a>
-          : <span className="btn" aria-disabled="true" title="Not published yet">Download for {asset.label} (pending publication)</span>}
-        <p className={styles.fileName}><code>{asset.file}</code></p>
+          : <span className="btn" aria-disabled="true" title="Downloads not enabled">Download unavailable</span>}
+
         <ol className={styles.steps}>{(platformNotes[asset.file] ?? []).map((line) => <li key={line}>{line}</li>)}</ol>
-        <p className={styles.support}>{asset.support}</p>
-        <p className={styles.sha}>{asset.sha256 ? <>SHA-256 <code>{asset.sha256}</code></> : "SHA-256 published with the release."}</p>
+        <details className={styles.platformDetails}><summary>Compatibility &amp; checksum</summary><div><p className={styles.support}>{asset.support}</p><p className={styles.fileName}><code>{asset.file}</code></p><p className={styles.sha}>{asset.sha256 ? <>SHA-256 <code>{asset.sha256}</code></> : "SHA-256 published with the release."}</p></div></details>
       </article>)}
     </section>
 
     <section className={styles.howto} aria-label="How a run works">
-      <div><strong>1 · Choose a sweep</strong><span>Small, Medium, Large, or Full — increasing coverage of canonical clips and presets. The client prints the plan (time and disk budget) before it encodes anything.</span></div>
-      <div><strong>2 · Press start</strong><span>Encoders are detected on your machine; only usable ones are measured. You can review the numbers locally before anything leaves your machine.</span></div>
-      <div><strong>3 · Approve uploads once</strong><span>One consent, then finished measurements submit automatically. An upload receipt means analysis is pending; results may be accepted, suspect and awaiting review, or rejected.</span></div>
-      <div><strong>4 · Continue after an interruption</strong><span>Sweeps checkpoint as they go and queued uploads retry, so resuming the run finishes the work without re-encoding.</span></div>
+      <div><strong>1 · Choose a sweep</strong><span>Small, Medium, Large, or Full. Review the time and disk estimate before starting.</span></div>
+      <div><strong>2 · Press start</strong><span>Only usable encoders are measured. Review results locally before sharing.</span></div>
+      <div><strong>3 · Approve uploads once</strong><span>Finished measurements submit automatically after your consent. A receipt confirms upload; server analysis follows.</span></div>
+      <div><strong>4 · Continue after an interruption</strong><span>Resume a saved run. Completed encodes are kept and queued uploads retry.</span></div>
     </section>
 
     <aside className={styles.beforeRun}>
@@ -75,8 +81,14 @@ export default function RunPage() {
           </li>)}
         </ul>
 
-        <h3>Plain command-line builds ({cliTag})</h3>
-        <p>Protocol-compatible executables that predate the packaged apps; the macOS file is a bare extensionless executable.</p>
+        <h3>Current command-line access ({projectTag})</h3>
+        <p>For Windows scripts, use the console executable from the current release. The current macOS and Linux command-line entry points are inside their packages above.</p>
+        <p>{downloads.published
+          ? <a href={`${currentBase}/${currentWindowsConsole.file}`}>Windows console ({projectTag})</a>
+          : <span>Windows console ({projectTag}) available when current downloads are enabled</span>} · <code>{currentWindowsConsole.file}</code> · SHA-256 <code>{currentWindowsConsole.sha256}</code></p>
+
+        <h3>Historical plain executables ({cliTag})</h3>
+        <p>These protocol-compatible files predate the packaged apps and current shared-core repairs. The macOS file is a bare extensionless executable. Use the current packages above for contribution.</p>
         <ul className={styles.assetList}>
           <li><a href={`${cliBase}/encodingdb-client-windows.exe`}>Windows GUI (rc.1)</a> · <code>encodingdb-client-windows.exe</code></li>
           <li><a href={`${cliBase}/encodingdb-client-windows-console.exe`}>Windows console (rc.1)</a> · <code>encodingdb-client-windows-console.exe</code></li>

@@ -1,0 +1,252 @@
+{
+  "readyForProductionFreeze": false,
+  "calculatedEvidenceHash": "6df50685b93a83e7f337bf631fe88ef92105f1a224488a6ef09a764e822e842b",
+  "errors": [
+    {
+      "code": "missing_content_class",
+      "message": "Missing canonical content class dark-gradients-shadows"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "animation-1080p24-final:libvpx-vp9:4 lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "film-grain-1080p24-final:libopenh264:default lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "film-grain-1080p24-final:nvenc:p4 lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "film-grain-1080p24-final:videotoolbox:default lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "natural-detail-1080p24-final:libaom-av1:4 lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "screen-text-1080p24-final:libopenh264:default lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "talking-head-1080p24-final:libx264:fast lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "preset_rate_quality_coverage",
+      "message": "talking-head-1080p24-final:videotoolbox:default lacks distinct native RC points within the same preset"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "natural-detail-1080p24-final\u241flibsvtav1 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "film-grain-1080p24-final\u241flibsvtav1 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "dark-gradients-shadows has no canonical fitting workload for libsvtav1"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "animation-1080p24-final\u241flibsvtav1 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "talking-head-1080p24-final\u241flibsvtav1 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "dark-gradients-shadows has no canonical fitting workload for libx264"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "talking-head-1080p24-final\u241flibx264 has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "film-grain-1080p24-final\u241flibx265 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "dark-gradients-shadows has no canonical fitting workload for libx265"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "animation-1080p24-final\u241flibx265 has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "film-grain-1080p24-final\u241fnvenc has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "dark-gradients-shadows has no canonical fitting workload for nvenc"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "talking-head-1080p24-final\u241fnvenc has 0 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "film-grain-1080p24-final\u241fvideotoolbox has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "dark-gradients-shadows has no canonical fitting workload for videotoolbox"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "talking-head-1080p24-final\u241fvideotoolbox has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "animation-1080p24-final\u241flibvpx-vp9 has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "film-grain-1080p24-final\u241flibopenh264 has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "natural-detail-1080p24-final\u241flibaom-av1 has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "rate_quality_coverage",
+      "message": "screen-text-1080p24-final\u241flibopenh264 has 1 accepted recipe point(s); need 2"
+    },
+    {
+      "code": "missing_golden_scenario",
+      "message": "Missing golden decision for BALANCED"
+    },
+    {
+      "code": "missing_golden_scenario",
+      "message": "Missing golden decision for QUALITY"
+    },
+    {
+      "code": "missing_golden_scenario",
+      "message": "Missing golden decision for STORAGE"
+    },
+    {
+      "code": "missing_golden_scenario",
+      "message": "Missing golden decision for REALTIME"
+    },
+    {
+      "code": "missing_holdout_dimension",
+      "message": "Missing holdout evaluation for HARDWARE_FAMILY"
+    },
+    {
+      "code": "missing_holdout_dimension",
+      "message": "Missing holdout evaluation for ENCODER_FAMILY"
+    },
+    {
+      "code": "missing_holdout_dimension",
+      "message": "Missing holdout evaluation for CONTENT_CLASS"
+    },
+    {
+      "code": "missing_holdout_dimension",
+      "message": "Missing holdout evaluation for RECIPE_RANGE"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libaom-av1"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libopenh264"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libsvtav1"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libvpx-vp9"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libx264"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:libx265"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:nvenc"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for encoder:videotoolbox"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for hardware:nvenc"
+    },
+    {
+      "code": "top_result_review",
+      "message": "Missing affirmative knowledgeable top-result review for hardware:videotoolbox"
+    },
+    {
+      "code": "missing_metric_sanity_case",
+      "message": "Missing metric sanity review for DISAGREEMENT"
+    },
+    {
+      "code": "missing_metric_sanity_case",
+      "message": "Missing metric sanity review for GRAIN_OR_NOISE"
+    },
+    {
+      "code": "missing_metric_sanity_case",
+      "message": "Missing metric sanity review for DARK_OR_GRADIENT"
+    },
+    {
+      "code": "missing_metric_sanity_case",
+      "message": "Missing metric sanity review for LOCALIZED_TAIL"
+    },
+    {
+      "code": "freeze_record",
+      "message": "Production score-context and evidence-policy freeze record is missing"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "draft_status",
+      "message": "Calibration evidence is explicitly DRAFT; production freeze is forbidden"
+    }
+  ],
+  "coverage": {
+    "contentClasses": [
+      "animation-flat-fields",
+      "film-grain-noise",
+      "fine-natural-detail",
+      "high-motion-sports",
+      "screen-text",
+      "talking-head"
+    ],
+    "encoderImplementations": [
+      "libaom-av1",
+      "libopenh264",
+      "libsvtav1",
+      "libvpx-vp9",
+      "libx264",
+      "libx265",
+      "nvenc",
+      "videotoolbox"
+    ],
+    "hardwareFamilies": [
+      "nvenc",
+      "videotoolbox"
+    ],
+    "machineSources": [
+      "installation-3569f9d49855c02b183458161105102622a2ef46bfcfb739183eb390ba89a0b4",
+      "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "installation-816441fa39f02e9649bc586b8078f17693c08b92f0ba1980ab05d1f402dbd81b"
+    ],
+    "calibrationEvidenceCount": 220,
+    "holdoutEvidenceCount": 32,
+    "suspectEvidenceCount": 0
+  }
+}

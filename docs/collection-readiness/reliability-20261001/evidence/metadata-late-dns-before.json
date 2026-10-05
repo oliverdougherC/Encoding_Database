@@ -1,0 +1,9 @@
+{
+  "cliExit": 10,
+  "cliReturned": true,
+  "ownedWorkersAfterDeadline": 1,
+  "collectorAcquiredAfterDeadline": true,
+  "httpRequestAfterDeadlineDuringMeasurement": true,
+  "actualRequestsReceived": 1,
+  "finalOwnedWorkers": 0
+}

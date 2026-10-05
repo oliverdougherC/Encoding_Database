@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertObservedValidationCpu, validationMeasurementGroup } from './validation-measurement-group.mjs';
 import { resolveValidationPath } from './validation-path-bindings.mjs';
+import { validationRecipeRules, assertValidationProtocolRules } from './calibration-validation-protocol.mjs';
 
 const args = new Map();
 for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i], process.argv[i + 1]);
@@ -28,6 +29,7 @@ if (artifacts.SERVER_CANONICAL_PROTOCOL_VERSION !== '7.1') throw new Error('The 
 const hash = (value) => persistence.sha256Hex(persistence.canonicalJsonString(value));
 async function hashFile(file) { const digest = createHash('sha256'); for await (const chunk of createReadStream(file)) digest.update(chunk); return digest.digest('hex'); }
 const receipt = JSON.parse(await readFile(path.resolve(args.get('--campaign')), 'utf8'));
+const canonicalRecipeRules = validationRecipeRules(receipt);
 const registryDocument = JSON.parse(await readFile(process.env.VALIDATION_SOURCE_REGISTRY_PATH, 'utf8'));
 const pathBindings = args.get('--path-bindings') ? JSON.parse(await readFile(path.resolve(args.get('--path-bindings')), 'utf8')) : null;
 if (receipt.schemaVersion !== 'encodingdb-controlled-validation-campaign/v1' || receipt.validationOnly !== true || receipt.protocolVersion !== '7.1') throw new Error('Not a corrected validation campaign receipt');
@@ -52,7 +54,8 @@ const service = new artifacts.ArtifactPipelineService(store, new artifacts.Ffmpe
 const result = { schemaVersion: 'encodingdb-controlled-validation-import/v1', validationOnly: true, sourceRegistrationHash: hash(source), originalReferencePath: receipt.referencePath, retainedReferencePath: referencePath, pathBindingsHash: pathBindings ? hash(pathBindings) : null, runs: [] };
 try {
   const protocol = await db.benchmarkProtocol.upsert({ where: { protocolVersion_sourceSuiteVersion_metricWorkerVersion: { protocolVersion: '7.1', sourceSuiteVersion: sources.VALIDATION_SOURCE_SUITE, metricWorkerVersion: artifacts.DEFAULT_ANALYZER_VERSION } },
-    create: { protocolVersion: '7.1', sourceSuiteVersion: sources.VALIDATION_SOURCE_SUITE, minimumClientVersion: 'client/0.3.0', canonicalRecipeRules: { validationOnly: true, warmupRuns: 1, minimumMeasuredRuns: 2 }, canonicalOutputRules: { singleVideoStream: true, noAudio: true }, metricWorkerVersion: artifacts.DEFAULT_ANALYZER_VERSION }, update: {} });
+    create: { protocolVersion: '7.1', sourceSuiteVersion: sources.VALIDATION_SOURCE_SUITE, minimumClientVersion: 'client/0.3.0', canonicalRecipeRules, canonicalOutputRules: { singleVideoStream: true, noAudio: true }, metricWorkerVersion: artifacts.DEFAULT_ANALYZER_VERSION }, update: {} });
+  assertValidationProtocolRules(protocol, canonicalRecipeRules);
   const clipData = { suiteId: sources.VALIDATION_SOURCE_SUITE, suiteVersion: sources.VALIDATION_SOURCE_SUITE, manifestVersion: 'validation-source/v1', clipKey: source.workloadId, displayName: source.workloadId, workloadId: source.workloadId, contentClass: source.contentClass,
     sourceProvenance: { fileName: `${source.workloadId}.mkv`, referencePath, validationSource: source, validationSourceHash: hash(source) }, sha256: source.sourceSha256, byteSize: source.byteSize, exactFrameCount: source.frameCount, exactDurationSeconds: source.durationSeconds,
     frameRateNumerator: 24, frameRateDenominator: 1, width: 1920, height: 1080, pixelFormat: 'yuv420p', bitDepth: 8, chromaSubsampling: '4:2:0', colorPrimaries: 'bt709', transferCharacteristics: 'bt709', matrixCoefficients: 'bt709', colorRange: 'tv' };

@@ -1,0 +1,54 @@
+{
+  "frontend": {
+    "testsPassed": 93,
+    "testFiles": 18,
+    "lintPassed": true,
+    "typecheckPassed": true,
+    "productionBuildPassed": true,
+    "responsiveViewports": [
+      {
+        "width": 1440,
+        "height": 1000
+      },
+      {
+        "width": 390,
+        "height": 844
+      }
+    ],
+    "browserChecks": [
+      "comparison Tab/ShiftTab loop",
+      "comparison Escape and trigger focus restoration",
+      "result detail Escape and trigger focus restoration",
+      "mobile navigation",
+      "dark-theme browse",
+      "methodology Bitrate tab and no viewport overflow",
+      "directory Browse filter links"
+    ],
+    "fixtureUiQa": true,
+    "realReadOnlyApiUiQa": {
+      "hardwareGroups": 6,
+      "encoderGroups": 11
+    }
+  },
+  "client": {
+    "testsPassed": 748,
+    "elapsedSeconds": 300.67
+  },
+  "server": {
+    "testsPassed": 285,
+    "testsFailed": 0,
+    "testsSkipped": 0,
+    "testConcurrency": 4,
+    "realPostgresBindings": 8,
+    "elapsedSeconds": 25.46,
+    "environment": "isolated throwaway test databases and container"
+  },
+  "ci": {
+    "allChecksPassedClaimed": true,
+    "verifiedSourceHead": "a5b38ab46e030de635f5701b9319c8314d01e4e5",
+    "checksPassed": 13,
+    "status": "All13 checks passed including preflight, stack-smoke, audits and all3 native builds. Subsequent evidence-only documentation changes do not alter this tested source."
+  },
+  "recommendationReady": false,
+  "releaseOrMergeApproval": false
+}

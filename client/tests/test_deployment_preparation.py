@@ -66,6 +66,32 @@ class DeploymentIsolationTests(unittest.TestCase):
         self.assertEqual(values['ALLOW_TEST_ONLY_REFERENCE_CONTEXTS'], '0')
         self.assertEqual(values['ARTIFACT_VALIDATE_MEDIA_BEFORE_PUBLISH'], '1')
 
+    def test_minimal_suite_preparation_runtime_imports_in_isolation(self):
+        import os
+        import shlex
+        import shutil
+        import sys
+        import tempfile
+        with tempfile.TemporaryDirectory() as folder:
+            context = Path(folder)
+            for line in (ROOT / 'scripts/suite-preparation.Dockerfile').read_text().splitlines():
+                if not line.startswith('COPY '):
+                    continue
+                fields = shlex.split(line)
+                destination = context / fields[-1].removeprefix('./').lstrip('/')
+                directory = fields[-1].endswith('/')
+                (destination if directory else destination.parent).mkdir(parents=True, exist_ok=True)
+                for source in fields[1:-1]:
+                    target = destination / Path(source).name if directory else destination
+                    shutil.copy2(ROOT / source, target)
+            env = dict(os.environ)
+            env.pop('PYTHONPATH', None)
+            result = subprocess.run([sys.executable,
+                str(context / 'scripts/materialize_final_suite.py'), '--help'],
+                cwd=context, env=env, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertIn('usage:', result.stdout)
+
     def test_production_smoke_requires_current_corpus_page_and_rejects_error_pages(self):
         class Handler(BaseHTTPRequestHandler):
             homepage = '<html><title>EncodingDB</title><h1>Compare encoding performance</h1></html>'

@@ -1,0 +1,51 @@
+{
+  "sourceEvidenceHash": "b1515c6428437eff2f9c7d21e1c1d6d32226b9ed14cdbda5ff2fafdde3aebf4f",
+  "recordCount": 384,
+  "liveRetentionVerified": false,
+  "coverage": [
+    {
+      "workloadId": "athletic-action-1080p24-final",
+      "accepted": 128,
+      "minimumVmaf": 78.010791,
+      "maximumVmaf": 99.820307
+    },
+    {
+      "workloadId": "natural-detail-1080p24-final",
+      "accepted": 68,
+      "minimumVmaf": 75.388861,
+      "maximumVmaf": 97.911658
+    },
+    {
+      "workloadId": "film-grain-1080p24-final",
+      "accepted": 22,
+      "minimumVmaf": 76.602349,
+      "maximumVmaf": 87.49038
+    },
+    {
+      "workloadId": "dark-gradients-1080p24-final",
+      "accepted": 0,
+      "minimumVmaf": null,
+      "maximumVmaf": null
+    },
+    {
+      "workloadId": "animation-1080p24-final",
+      "accepted": 44,
+      "minimumVmaf": 41.26136,
+      "maximumVmaf": 95.495273
+    },
+    {
+      "workloadId": "screen-text-1080p24-final",
+      "accepted": 106,
+      "minimumVmaf": 95.482376,
+      "maximumVmaf": 99.989973
+    },
+    {
+      "workloadId": "talking-head-1080p24-final",
+      "accepted": 16,
+      "minimumVmaf": 90.670648,
+      "maximumVmaf": 91.201627
+    }
+  ],
+  "status": "CONTEXT_BLOCKED",
+  "reason": "Missing retained authoritative evidence for workload dark-gradients-1080p24-final"
+}

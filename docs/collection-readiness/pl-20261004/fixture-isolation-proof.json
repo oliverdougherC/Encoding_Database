@@ -1,0 +1,149 @@
+{
+  "checkedAt": "2026-10-05T07:13:15.380Z",
+  "oldDatabase": "encodingdb_calibration_20261004",
+  "newIntakeDatabase": "encodingdb_calibration_intake_20261005",
+  "newRunCount": 10,
+  "oldMatchesByCampaignRunAndBothPayloadHashes": [],
+  "protocolSemanticsEqual": true,
+  "sourceRegistrationSemanticsEqual": true,
+  "protocol": {
+    "protocolVersion": "7.1",
+    "sourceSuiteVersion": "encodingdb-test-suite-v1",
+    "metricWorkerVersion": "authoritative-analysis/v2",
+    "minimumClientVersion": "client/0.3.0",
+    "canonicalRecipeRules": {
+      "warmupRuns": 1,
+      "maxAdaptiveRepeats": 2,
+      "minimumMeasuredRuns": 2,
+      "artifactUploadRequired": true,
+      "stabilityThresholdRatio": 0.03
+    },
+    "canonicalOutputRules": {
+      "noAudio": true,
+      "singleVideoStream": true
+    }
+  },
+  "newRows": [
+    {
+      "id": "cmuuwroty000fqh01etagba3c",
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "payloadHash": "a530d65f629c891aa32eb1d2b4248da0afb0ce1fe9d1b2d08846b12346fd15ac",
+      "immutablePayloadHash": "c7c85d14fb9bbac44419d7d79a25c4af28b34dc3b03910f2251f9792726a363e",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwrpe5000kqh01jw0vig6k",
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "payloadHash": "63e2a45a6f5ac09d23a00dcd87da30eb5b52ef8660909eaa4a27637c8870d42c",
+      "immutablePayloadHash": "086d2cc24df94c88c4c8a3b8fe0eecb930ec313ead14fcfadd2bc924ace53d9b",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwrod1000aqh01nxt4ny9l",
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "payloadHash": "44c6583be631b48d3cc76bc5219e9224c9129c355f196f7b3f41d56c7ca736ef",
+      "immutablePayloadHash": "964e5a9a595fbaac9b471c4b3282e87350643a2bb631571119a7e3e2273b6386",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwrsqt000rqh016gqy3sam",
+      "campaignId": "campaign-64ab5105b58bc379",
+      "payloadHash": "8553ed063be463511cae1a321ece86de3f70b8c4245aeba59ed251dbe8d0ccdd",
+      "immutablePayloadHash": "c3b3772615458cd9324e6d2665d627045c2264f1dab6ffdb99d67f8b3a451b6c",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "talking-head-1080p24-final",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwry6g0012qh01jpq3kmq1",
+      "campaignId": "campaign-b8361a4b22783c05",
+      "payloadHash": "60c77276c5a60bac9393de355c913a6e2ab90a1758121d7d28bc5d0bc45c5160",
+      "immutablePayloadHash": "afc19dbbe71e48e1e0fe1666a704e587530dedd9b6427e4b3d9b2098fe3fedbd",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwsbih001dqh0130f8yede",
+      "campaignId": "campaign-003783b958dac812",
+      "payloadHash": "b30e692b0fe0a01749bb45ab6c9715385cbd51f43c822881d4a5e40b5d43672e",
+      "immutablePayloadHash": "eaa7d19a256cfcb33cf3321c07ab984ff2d167da0bfe119335cf2b4226172083",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "talking-head-1080p24-final",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwruy8000wqh01lfwsml09",
+      "campaignId": "campaign-64ab5105b58bc379",
+      "payloadHash": "c49182feb31b2192d84175e643e2e26b4f9c349c4cb4bca2a1021dcd84d4255e",
+      "immutablePayloadHash": "c1aec26b0d65ec5578f56c41fd7274fcbda4b8b7c9cd6682e14aace7e6ac8e22",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "talking-head-1080p24-final",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuws8560017qh01uvjj2lqk",
+      "campaignId": "campaign-b8361a4b22783c05",
+      "payloadHash": "0cbbc080aeb7816c56fa3cba4dfa19dfd89f85597811deab913a39aa9a3baf56",
+      "immutablePayloadHash": "fb0847bd57722e953163d9a6d1ff7ef2a79da6ca8bd197ea2e3906971fbaa74c",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwsdwq001iqh01l5bqnz97",
+      "campaignId": "campaign-003783b958dac812",
+      "payloadHash": "b76d1ecf99bc1179bb4e162e7ed0b680adf7bdd9a7aaf354ccdbb210a732823e",
+      "immutablePayloadHash": "95ce6a994c82d31ddcd1f65e8bedc6d68ba21c4dfb080bfa57f519a85cdbc88f",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "talking-head-1080p24-final",
+        "sha256": "ac85d1350e5e668d5c0798b25fd7de16f8da05e831f396680a8f0f0ab05bcaf3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    },
+    {
+      "id": "cmuuwr2he0005qh01y2wnp7r7",
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "payloadHash": "c64d24f2e14fe1801d90a504875c013212f8395fc3850b1d066250d6f541422a",
+      "immutablePayloadHash": "1b65c42318c3eb5646b76e40e05e60fe93d6b6a9008d9f6f9c5180f274cc23c7",
+      "benchmarkProtocolId": "cmuuwr2dj0000qh012hn2feui",
+      "testClip": {
+        "workloadId": "dark-gradients-1080p24-final",
+        "sha256": "3377e6927fdd256633961520ace19f6b5b1494f689841ed3a29831e48e0d27c3",
+        "suiteVersion": "encodingdb-test-suite-v1"
+      }
+    }
+  ],
+  "clientPayloadContract": "runCreate uses benchmarkProtocol semantic fields and testClip source hashes; client code does not carry server benchmarkProtocolId/activeProtocolId. No payload or measurement was manually rewritten."
+}

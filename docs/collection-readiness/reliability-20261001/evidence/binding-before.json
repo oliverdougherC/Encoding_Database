@@ -1,0 +1,18 @@
+{
+  "sourceCheckout": "<isolated-source-checkout>",
+  "productionModulesImported": true,
+  "foreignCompleteAnalysisOnUnacceptedRun": {
+    "benchmarkRunId": "run-own",
+    "artifactId": "artifact-own",
+    "payloadHash": "1d402f91abbeeca81770741843a69ef947fa8d39ac88b0d234b45de52ecb998b",
+    "artifactSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "artifactByteSize": 3,
+    "storageState": "UPLOADED",
+    "uploadConfirmed": true,
+    "analysisAccepted": true,
+    "analysisStatus": "COMPLETE"
+  },
+  "malformedIdentityAccepted": true,
+  "fabricatedMarkerWithoutEnvelopeOrAck": "verified",
+  "foreignPairWithoutLocalIdentity": "verified"
+}

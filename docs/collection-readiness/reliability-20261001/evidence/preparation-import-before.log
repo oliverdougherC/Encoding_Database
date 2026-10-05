@@ -1,0 +1,22 @@
+test_minimal_suite_preparation_runtime_imports_in_isolation (test_deployment_preparation.DeploymentIsolationTests.test_minimal_suite_preparation_runtime_imports_in_isolation) ... FAIL
+
+======================================================================
+FAIL: test_minimal_suite_preparation_runtime_imports_in_isolation (test_deployment_preparation.DeploymentIsolationTests.test_minimal_suite_preparation_runtime_imports_in_isolation)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "<user-home>/Developer/EncodingDB-worktrees/reliability-20260928/client/tests/test_deployment_preparation.py", line 92, in test_minimal_suite_preparation_runtime_imports_in_isolation
+    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+AssertionError: 1 != 0 : Traceback (most recent call last):
+  File "/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpxrlohnw1/scripts/materialize_final_suite.py", line 13, in <module>
+    from client import suite
+  File "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpxrlohnw1/client/suite.py", line 12, in <module>
+    from .campaign import (check_preparation_cancelled, preparation_progress, run_measurement_process,
+  File "/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpxrlohnw1/client/campaign.py", line 18, in <module>
+    from . import acknowledgments, config
+ImportError: cannot import name 'acknowledgments' from 'client' (/private/var/folders/l3/kq0r_qb136zdny5w_13ytp6w0000gn/T/tmpxrlohnw1/client/__init__.py)
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.063s
+
+FAILED (failures=1)

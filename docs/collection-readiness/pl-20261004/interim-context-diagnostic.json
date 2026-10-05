@@ -1,0 +1,53 @@
+{
+  "sourceEvidenceHash": "ebc02906ed8789a08a4f9fa3681283c3ae90b09f2306e39dd63119cd487d770a",
+  "calibrationRecordCount": 220,
+  "holdoutRowsExcludedFromFitting": 0,
+  "liveRetainedBytesVerified": false,
+  "productionActivationPerformed": false,
+  "parameters": "Unchanged provisional defaults, not newly calibrated constants",
+  "perWorkloadDiagnostics": [
+    {
+      "workloadId": "athletic-action-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 2495586.545553,
+      "frontierPoints": 9
+    },
+    {
+      "workloadId": "natural-detail-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 3390726.230028,
+      "frontierPoints": 8
+    },
+    {
+      "workloadId": "film-grain-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 8287042.317466,
+      "frontierPoints": 7
+    },
+    {
+      "workloadId": "dark-gradients-1080p24-final",
+      "status": "BLOCKED",
+      "reason": "No retained accepted benchmark evidence is available"
+    },
+    {
+      "workloadId": "animation-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 9905347.184332,
+      "frontierPoints": 8
+    },
+    {
+      "workloadId": "screen-text-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 103702.552355,
+      "frontierPoints": 5
+    },
+    {
+      "workloadId": "talking-head-1080p24-final",
+      "status": "DIAGNOSTIC_REFERENCE_BRACKET_FOUND",
+      "referenceBitrateBps": 1062203.986015,
+      "frontierPoints": 3
+    }
+  ],
+  "status": "CONTEXT_BLOCKED",
+  "reason": "Missing retained authoritative evidence for workload dark-gradients-1080p24-final"
+}

@@ -66,3 +66,24 @@ describe("fetchCorpusResult", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("coverage directories", () => {
+  afterEach(() => { delete process.env.INTERNAL_API_BASE_URL; vi.restoreAllMocks(); });
+  it.each(["hardware", "encoders"])("fetches %s coverage without a scored default slice", async (kind) => {
+    process.env.INTERNAL_API_BASE_URL = "http://backend.test";
+    const payload = { kind, items: [], truncated: false };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify(payload)));
+    const api = await import("./api");
+    expect(await (kind === "hardware" ? api.fetchHardwareDirectory() : api.fetchEncoderDirectory())).toEqual(payload);
+    expect(String(fetchMock.mock.calls[0][0])).toBe(`http://backend.test/analytics/${kind}?mode=coverage`);
+  });
+});
+
+it("rejects an older analytics response rather than treating it as coverage", async () => {
+  vi.stubEnv("INTERNAL_API_BASE_URL", "http://backend.test");
+  const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("[]"));
+  try {
+    const { fetchHardwareDirectory } = await import("./api");
+    await expect(fetchHardwareDirectory()).rejects.toThrow("Hardware coverage is unavailable");
+  } finally { fetchMock.mockRestore(); vi.unstubAllEnvs(); }
+});

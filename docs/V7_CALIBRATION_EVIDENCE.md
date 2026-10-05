@@ -209,3 +209,83 @@ python -m client --base-url http://127.0.0.1:3001 --resume-campaign '<completed 
 clips. `--upload-only` retries queued bytes. Hardware VBR uses
 `--target-bitrate-kbps`; implementations must be available exactly as named.
 Generators cannot fill review identities, preferences, approvals or measured data.
+
+
+## 2026-10-04 objective preparation
+
+The [dated evidence](collection-readiness/pl-20261004/) records a new bounded
+objective preparation pass. It is **not** a COMPLETE calibration or production
+activation. Seven additive canonical x264-fast anchor cells completed on the
+physical Mac under the original timing/environment gates; original journals and
+encoded media were sealed before publication to an isolated calibration database.
+Actual authoritative quality results and any remaining gaps are reported in the
+dated handoff, separately from successful timing.
+
+The generator now selects only required summary/identity columns instead of
+loading every per-frame distribution and raw client log. The original broad
+query exhausted a 4 GiB test-container budget on the real corpus; the bounded
+projection exported 384 qualified rows. An original/new generator comparison
+produced an identical complete document and evidence hash on a retained cohort.
+Whole measurement groups remain checked, with verification cached only for the
+current export. Newest-analysis and reviewer-head ordering are unchanged.
+
+When historical installation IDs alias the same physical machine, pass an
+explicit, independently verified source-ID scope:
+
+```sh
+node scripts/generate-calibration-evidence.mjs \
+  --benchmark-protocol-id '<protocol ID>' \
+  --quality-model-id vmaf-v1-sdr-1080p \
+  --calibration-version '<new version>' \
+  --physical-source-ids '<verified source IDs.json>' \
+  --output '<new draft.json>'
+```
+
+This filters membership without rewriting an original ID or pretending that
+sessions/aliases are independent machines. The dated physical-source receipt
+binds one verified cohort each for Mac, Linux and Windows.
+
+Fitting coverage is now checked for **every canonical fitting workload**, even
+when multiple workloads share a content class. Validation-only HOLDOUT workloads
+cannot replace canonical fitting workloads according to input row order. Missing
+fitting classes and insufficient native rate-control points remain blockers.
+
+The operator-only `scripts/build-calibration-review-packet.mjs` creates a new,
+immutable-input inspection packet from a draft. Optional `--media-map` provides
+SHA-keyed original media links; `--reference-map` supplies hash-bound,
+frame-verified lossless preview receipts. Both reject executable, ambiguous and
+traversing URL paths. The packet separates the exact remaining review categories
+from the larger observed-media catalog. It does not ask reviewers to sign off
+on incomplete objective experiments, populate reviewer identities or decisions,
+or turn an inspection packet into calibration evidence. Full review, actual
+independently fitted holdout rankings and live retained-byte verification remain
+required before freeze.
+
+### Imported holdout protocol metadata
+
+The retained holdout importer previously stored only `validationOnly`,
+`warmupRuns` and `minimumMeasuredRuns` in its protocol row, omitting the declared
+`maxAdaptiveRepeats` and `stabilityThresholdRatio`. A real completed two-member
+holdout group therefore failed the ordinary measurement gate with
+`incompatible-protocol`. The importer now verifies all original receipt rules
+against `CANONICAL_MEASUREMENT_RULES` before writing, stores the complete rules,
+and refuses an existing incomplete/conflicting protocol instead of updating it.
+
+For already imported evidence, `scripts/repair-calibration-protocol-snapshot.mjs`
+creates a **new derived sealed snapshot**, leaving the original database,
+snapshot, journal and media untouched. It requires SHA-bound original campaign
+receipts, complete counted membership, the unchanged 3% spread gate, exact
+source/recipe/environment identities, and a successful recomputation of every
+original measured payload hash. Only missing rule metadata and an explicitly
+mapped protocol foreign key change. Existing conflicting rules are rejected;
+SUSPECT/invalid metrics, timing, worker identity, analysis IDs and original bytes
+are preserved. The original importer payload digest does not include its database
+protocol foreign key; the repair independently verifies that exact original digest
+contract and records before/after full-row hashes rather than claiming the entire
+row is unchanged.
+
+The new snapshot seal includes its original snapshot hash, audited receipt hashes,
+old/new rule hashes, deterministic protocol aliases and the exact changed fields.
+The existing isolated-calibration import contract applies its usual strict
+namespace, retained-byte and semantic-alias checks. This is a transparent metadata
+correction, not a new measurement or authorization to change an experiment's rules.

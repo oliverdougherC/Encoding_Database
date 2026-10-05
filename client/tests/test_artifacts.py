@@ -107,6 +107,7 @@ class _ArtifactFlowHandler(BaseHTTPRequestHandler):
         return {
             "benchmarkRun": {
                 "id": run["id"],
+                "payloadHash": run["payloadHash"],
                 "status": "ACCEPTED" if run.get("uploaded") else "PENDING",
                 "statusReason": None,
                 "workloadId": "sports-action-960x540-24p",
@@ -114,6 +115,7 @@ class _ArtifactFlowHandler(BaseHTTPRequestHandler):
             },
             "artifact": {
                 "id": f"artifact-{run['id']}",
+                "benchmarkRunId": run["id"],
                 "role": "ENCODED",
                 "sha256": _artifact_sha256(),
                 "byteSize": len(_artifact_bytes()),
@@ -152,6 +154,7 @@ class _ArtifactFlowHandler(BaseHTTPRequestHandler):
             if run is None:
                 run = {
                     "id": f"run-{len(type(self).created_runs) + 1}",
+                    "payloadHash": payload_hash,
                     "clientQualityDebug": body.get("clientQualityDebug"),
                     "uploaded": False,
                 }

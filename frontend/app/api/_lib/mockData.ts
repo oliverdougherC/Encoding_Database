@@ -435,3 +435,20 @@ export function buildMockEncoders() {
     },
   ];
 }
+
+// Development-only coverage fixture, enabled by the existing explicit mock gate.
+export function buildMockCoverage(kind: "hardware" | "encoders") {
+  return {
+    kind,
+    truncated: false,
+    items: MOCK_QUERY_ROWS.map(row => ({
+      id: row.id,
+      acceptedCount: row.sampleCounts.accepted,
+      suspectCount: row.sampleCounts.suspect,
+      configurationCount: 1,
+      ...(kind === "hardware"
+        ? { cpuModel: row.cpuModel, gpuModel: row.gpuModel, encoderCount: 1, codecFamilies: [row.codecFamily], browseFilters: { cpu: row.cpuModel, ...(row.gpuModel ? { gpu: row.gpuModel } : {}) } }
+        : { encoderName: row.encoderName, codecFamily: row.codecFamily, browseFilters: { search: row.encoderName } }),
+    })),
+  };
+}

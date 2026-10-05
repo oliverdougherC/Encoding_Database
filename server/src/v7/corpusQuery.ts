@@ -1,11 +1,13 @@
 import { Prisma, type PrismaClient } from '@prisma/client';
 import { MEASUREMENT_GROUP_STATE_VERSION, measurementGroupStateHashSql, measurementGroupScopeForDerived } from './measurementGroup.js';
 import { DEFAULT_ANALYZER_VERSION } from './artifacts.js';
-import { buildPublicCorpusRows, getPublicReferenceContextVersions, type PublicCorpusRow } from './corpus.js';
+import { buildPublicCorpusRows, getPublicReferenceContextVersions, HARDWARE_ENCODER_FAMILIES, HARDWARE_ENCODER_SUFFIXES, type PublicCorpusRow } from './corpus.js';
 
 /** Hard bounds apply to detail, list and hydration, irrespective of HTTP input. */
 export const MAX_PUBLIC_CORPUS_PAGE_SIZE = 100;
-const HARDWARE_SUFFIXES = ['_videotoolbox', '_nvenc', '_qsv', '_amf', '_vaapi', '_v4l2m2m', '_omx'];
+export function hardwareEncoderPredicate(column: Prisma.Sql): Prisma.Sql {
+  return Prisma.sql`(${column} = ANY(${[...HARDWARE_ENCODER_FAMILIES]}::text[]) OR ${Prisma.join(HARDWARE_ENCODER_SUFFIXES.map(suffix => Prisma.sql`right(${column}, ${suffix.length}::int) = ${suffix}`), ' OR ')})`;
+}
 type CorpusQuery = Record<string, string | undefined>;
 type GroupSummary = {
   id: string; runId: string; artifactId: string; analysisId: string; derivedId: string | null; verifiedDerivedId?: string | null;
@@ -29,7 +31,7 @@ export function buildPublicCorpusPageSql(query: CorpusQuery, take: number, skip:
     if (query[key]?.trim()) filters.push(Prisma.sql`${Prisma.raw(column)} ILIKE ${containsPattern(query[key]!.trim())}`);
   }
   if (query.encoderType === 'hardware' || query.encoderType === 'software') {
-    const hardware = Prisma.join(HARDWARE_SUFFIXES.map(s => Prisma.sql`right(p."encoderImplementation", ${s.length}::int) = ${s}`), ' OR ');
+    const hardware = hardwareEncoderPredicate(Prisma.sql`p."encoderImplementation"`);
     filters.push(query.encoderType === 'hardware' ? Prisma.sql`(${hardware})` : Prisma.sql`NOT (${hardware})`);
   }
   if (query.search?.trim()) {

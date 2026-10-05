@@ -1,0 +1,17 @@
+[
+  {
+    "file": "screenshots/browse-desktop-fixture.png",
+    "meaning": "Development-only fixture corpus; no scientific evidence",
+    "sha256": "a2a922693c7817fcc57e9951f7441a74ce2494d674847b4b1ff01420a81bd8c9"
+  },
+  {
+    "file": "screenshots/downloads-desktop.png",
+    "meaning": "Existing public rc.5 download state; not publication of the acceptance candidate",
+    "sha256": "d7e2814226dee4483948eef87fac12b9e514fb39512102bf003c3ce3f042e85d"
+  },
+  {
+    "file": "screenshots/encoders-mobile-real-data.png",
+    "meaning": "Read-only isolated backend data at capture time; coverage counts, not recommendations",
+    "sha256": "2decf2c2fc181ef344ad982a595dac584d0d8c3b1c48ad957a28fc2281432feb"
+  }
+]

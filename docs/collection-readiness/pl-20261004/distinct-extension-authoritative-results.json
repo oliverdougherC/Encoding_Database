@@ -1,0 +1,198 @@
+{
+  "capturedAt": "2026-10-05T07:28:03.977Z",
+  "expected": 10,
+  "count": 10,
+  "pending": 0,
+  "rows": [
+    {
+      "id": "cmuuwrod1000aqh01nxt4ny9l",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwrol6000dqh01l323puqm",
+          "status": "COMPLETE",
+          "vmafMean": 95.563988,
+          "vmafP5": 92.046393,
+          "xpsnr": 42.4998,
+          "videoBitrateBps": 97412381.6,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwroty000fqh01etagba3c",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwrp2m000iqh01o9ffa025",
+          "status": "COMPLETE",
+          "vmafMean": 95.563988,
+          "vmafP5": 92.046393,
+          "xpsnr": 42.4998,
+          "videoBitrateBps": 97412381.6,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwrpe5000kqh01jw0vig6k",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwrpjr000nqh018b2402uj",
+          "status": "COMPLETE",
+          "vmafMean": 95.563988,
+          "vmafP5": 92.046393,
+          "xpsnr": 42.4998,
+          "videoBitrateBps": 97412381.6,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwrsqt000rqh016gqy3sam",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-64ab5105b58bc379",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwrurj000uqh01zy0ii9x3",
+          "status": "SUSPECT",
+          "vmafMean": 81.444626,
+          "vmafP5": 78.850282,
+          "xpsnr": 30.9669,
+          "videoBitrateBps": 397976,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwry6g0012qh01jpq3kmq1",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-b8361a4b22783c05",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuws7wb0015qh01lo0249oq",
+          "status": "SUSPECT",
+          "vmafMean": 86.694308,
+          "vmafP5": 77.66208,
+          "xpsnr": 35.2286,
+          "videoBitrateBps": 25597778.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwsbih001dqh0130f8yede",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-003783b958dac812",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwsdle001gqh01w40ao07e",
+          "status": "COMPLETE",
+          "vmafMean": 87.125063,
+          "vmafP5": 85.13016,
+          "xpsnr": 32.5639,
+          "videoBitrateBps": 682934.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwr2he0005qh01y2wnp7r7",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-aab88d54ffcfbb6f",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwro270008qh01qw8mtekv",
+          "status": "COMPLETE",
+          "vmafMean": 95.563988,
+          "vmafP5": 92.046393,
+          "xpsnr": 42.4998,
+          "videoBitrateBps": 97412381.6,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuws8560017qh01uvjj2lqk",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-b8361a4b22783c05",
+      "workloadId": "dark-gradients-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuws8au001aqh0176cypsgq",
+          "status": "SUSPECT",
+          "vmafMean": 86.694308,
+          "vmafP5": 77.66208,
+          "xpsnr": 35.2286,
+          "videoBitrateBps": 25597778.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwsdwq001iqh01l5bqnz97",
+      "status": "ACCEPTED",
+      "statusReason": null,
+      "campaignId": "campaign-003783b958dac812",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwse4e001lqh014mqrykiw",
+          "status": "COMPLETE",
+          "vmafMean": 87.125063,
+          "vmafP5": 85.13016,
+          "xpsnr": 32.5639,
+          "videoBitrateBps": 682934.4,
+          "lastError": null
+        }
+      ]
+    },
+    {
+      "id": "cmuuwruy8000wqh01lfwsml09",
+      "status": "SUSPECT",
+      "statusReason": "Metric disagreement diagnostics flagged the run for review",
+      "campaignId": "campaign-64ab5105b58bc379",
+      "workloadId": "talking-head-1080p24-final",
+      "physicalSourceId": "installation-3820b0df7603b3762db3549c1ef0eaf9e174b927bb63ba54ea71887c9e1b59ee",
+      "qualityAnalyses": [
+        {
+          "id": "cmuuwrv49000zqh019jndmoe3",
+          "status": "SUSPECT",
+          "vmafMean": 81.444626,
+          "vmafP5": 78.850282,
+          "xpsnr": 30.9669,
+          "videoBitrateBps": 397976,
+          "lastError": null
+        }
+      ]
+    }
+  ]
+}

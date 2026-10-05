@@ -3,6 +3,7 @@ import { fetchWorkbenchPage } from "./lib/api";
 import { buildWorkbenchSearchString, parseWorkbenchSearchParams } from "./lib/queryState";
 import BenchmarksTable from "./components/BenchmarksTable";
 import styles from "./page.module.css";
+import DataUnavailable from "./components/DataUnavailable";
 
 export const revalidate = 60;
 function toParams(raw: Record<string, string | string[] | undefined> | undefined) {
@@ -24,7 +25,8 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
     rows = data.rows;
     totalCount = data.totalCount;
   } catch (cause) {
-    error = cause instanceof Error ? cause.message : "Unable to load benchmark results";
+    console.error("Unable to load benchmark results", cause);
+    error = "unavailable";
   }
   const accepted = rows.reduce((sum, row) => sum + row.sampleCounts.accepted, 0);
   const suspect = rows.reduce((sum, row) => sum + row.sampleCounts.suspect, 0);
@@ -33,7 +35,7 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
       <section className={styles.intro}>
         <p className={styles.kicker}>Community benchmark corpus</p>
         <h1>Compare encoding performance.</h1>
-        <p className={styles.lede}>See how encoders and presets behave on specific hardware and settings — then add your own measurements with the guided client.</p>
+        <p className={styles.lede}>Real measurements of encoding speed, quality, and file size. Explore a result or contribute your own.</p>
         <div className={styles.ctaRow}>
           <a className="btn btn-primary" href="/run">Download &amp; run a benchmark</a>
           <a className="btn" href="/methodology">How scoring works</a>
@@ -43,14 +45,14 @@ export default async function Home({ searchParams }: { searchParams?: Promise<Re
           : <p className={styles.statusLine}><strong>{accepted.toLocaleString()} accepted · {suspect.toLocaleString()} suspect</strong> runs on this page. Public scores stay blank until a public reference context is published.</p>}
       </section>
       <div className={styles.sectionHead} id="results">
-        <div><h2>Browse results</h2><p>Open a row to inspect recipe and environment identity, evidence tier, bitrate, confidence, and version lineage.</p></div>
+        <div><h2>Browse results</h2><p>Select results to compare, or open a row for its measurements and evidence.</p></div>
       </div>
       {error
-        ? <div className={styles.error}>Unable to load results: {error}</div>
+        ? <DataUnavailable href={buildWorkbenchSearchString(state) ? `/?${buildWorkbenchSearchString(state)}` : "/"} />
         : <BenchmarksTable initialData={rows} totalCount={totalCount} currentPage={state.page} />}
       <aside className={styles.note}>
         <strong>About this corpus</strong>
-        <span>Each row aggregates repeated measurements of one recipe on one machine. Suspect measurements remain visible for review, and submission-specific notes or personal media are never attached to a corpus row.</span>
+        <span>Each row combines repeated measurements of one recipe on one machine. Suspect runs remain visible for review.</span>
         <a href={`/methodology?${buildWorkbenchSearchString(state)}`}>Read methodology</a>
       </aside>
     </div>

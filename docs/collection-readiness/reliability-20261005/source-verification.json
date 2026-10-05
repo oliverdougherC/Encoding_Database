@@ -1,0 +1,21 @@
+{
+  "reviewedBase": "b991f523c42a7a0e206c7e599cd69b0f11339f6c",
+  "primaryRegressionsFailedBefore": 8,
+  "newRegressionsPassed": 13,
+  "affectedTestsPassed": 66,
+  "fullClientTestsPassed": 761,
+  "fullClientDurationSeconds": 277.41,
+  "deploymentGuardTestsPassed": 6,
+  "independentF8Review": "approved",
+  "independentStorageGuardReview": "approved",
+  "newNativePackageAcceptanceClaimed": false,
+  "files": {
+    "client/main.py": "da732cc62bd4f6a8bc0d7b92f217d5cacfd03018fec7851043ba1e6f4bac9260",
+    "client/tests/test_reconstruction_failure_isolation.py": "9c96505e3abc8779b317b450ee15094cb3b80c68b5422ffdcd11dbaa0afbb67c",
+    "client/tests/test_publication_recovery_integrity.py": "7570a3f8c34b48040c7157598f98e3601c735e1b61acbf5993346a8f21fef31a",
+    "scripts/verify-deployment-volumes.mjs": "7ff838b98a1873b6797f48a07a38e4d3d72658ea67355efabab50708ea57b8b5",
+    "server/test/deployment-volumes.test.js": "814ac98c27b131deef26c3659ec5f300c20b87a449fa7a8dd7d3cb64cfda5a85",
+    "release.json": "b57ef8d45dd2b0f5a8c0f59108f84ab91492fa878dcbb11b37a83e05b90829e4",
+    "client/tests/test_release_preflight.py": "e4ce72072f9a56b68de6947deb53387f4360be5951ec1f6c3d1912e3faafebee"
+  }
+}

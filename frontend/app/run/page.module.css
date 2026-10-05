@@ -1,4 +1,4 @@
-.page { display:grid; gap:20px; }
+.page { display:grid; gap:28px; }
 .header { max-width:820px; }
 .kicker { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.085em; text-transform:uppercase; }
 .page h1 { margin-top:5px; font-size:28px; line-height:1.16; letter-spacing:-.025em; }
@@ -6,9 +6,9 @@
 .callout { padding:12px 14px; border-left:3px solid var(--accent); border-radius:0 7px 7px 0; background:var(--accent-soft); color:var(--text-2); font-size:12px; max-width:900px; }
 
 .platforms { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
-.card { display:grid; align-content:start; gap:10px; padding:18px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); min-width:0; }
+.card { display:flex; flex-direction:column; gap:14px; padding:22px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); min-width:0; }
 .card h2 { font-size:15px; }
-.card .btn { width:100%; }
+.card > :global(.btn) { width:100%; }
 .fileName { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
 .steps { display:grid; gap:6px; padding-left:18px; color:var(--text-2); font-size:12px; line-height:1.5; }
 .steps li { overflow-wrap:anywhere; }
@@ -32,3 +32,6 @@
 .assetList li { font-size:12px; color:var(--muted); overflow-wrap:anywhere; }
 .assetList a { color:var(--accent); }
 .disclosureBody pre { max-width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:7px; background:var(--surface-3); font:12px var(--mono); overflow-x:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+
+.summary { min-height:58px; color:var(--muted); font-size:13px; line-height:1.55; }.platformDetails { margin-top:auto; border-top:1px solid var(--border); padding-top:12px; }.platformDetails summary { color:var(--muted); font-size:12px; padding:3px 0; }.platformDetails>div { display:grid; gap:10px; padding-top:12px; }.howto { padding-top:24px; gap:24px; }.steps { font-size:13px; line-height:1.6; }.beforeRun { max-width:none; border:0; padding:0; background:transparent; }.disclosure { box-shadow:none; }.callout { max-width:none; line-height:1.6; }
+@media(max-width:600px) { .summary { min-height:0; }.card { padding:20px; }.howto { grid-template-columns:1fr 1fr; gap:22px 16px; } }
