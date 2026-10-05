@@ -174,7 +174,8 @@ type PublicCorpusSortOrder = {
 };
 
 const PUBLIC_REFERENCE_CONTEXT_DIRECTORY = new URL('../../config/reference-contexts/', import.meta.url);
-const HARDWARE_ENCODER_SUFFIXES = ['_videotoolbox', '_nvenc', '_qsv', '_amf', '_vaapi', '_v4l2m2m', '_omx'];
+export const HARDWARE_ENCODER_FAMILIES = ['videotoolbox', 'nvenc', 'qsv', 'amf', 'vaapi', 'v4l2m2m', 'omx'] as const;
+export const HARDWARE_ENCODER_SUFFIXES = HARDWARE_ENCODER_FAMILIES.map(family => `_${family}`);
 const ENCODED_ARTIFACT_STATES: readonly EncodedArtifactState[] = ['VERIFIED', 'RETAINED'] as const;
 const ELIGIBLE_ANALYSIS_STATUSES: readonly ServerAnalysisStatus[] = ['COMPLETE', 'SUSPECT'] as const;
 
@@ -408,9 +409,10 @@ export function buildPublicCorpusWhere(query: Record<string, string | undefined>
     andFilters.push({ recipe: { preset: containsInsensitive(query.preset.trim()) } });
   }
   if (query.encoderType === 'hardware' || query.encoderType === 'software') {
-    const hardwareMatchers = HARDWARE_ENCODER_SUFFIXES.map((suffix) => ({
-      recipe: { encoderImplementation: { endsWith: suffix } },
-    }));
+    const hardwareMatchers: Prisma.BenchmarkRunWhereInput[] = [
+      { recipe: { encoderImplementation: { in: [...HARDWARE_ENCODER_FAMILIES] } } },
+      ...HARDWARE_ENCODER_SUFFIXES.map((suffix) => ({ recipe: { encoderImplementation: { endsWith: suffix } } })),
+    ];
     andFilters.push(query.encoderType === 'hardware'
       ? { OR: hardwareMatchers }
       : { NOT: { OR: hardwareMatchers } });

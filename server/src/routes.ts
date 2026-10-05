@@ -10,6 +10,7 @@ import {
 } from './analytics.js';
 import { buildDecisionPayload, type DecisionCandidate, type EvidenceTier } from './v7/decision.js';
 import { isPublicCorpusBusyError, loadPublicCorpusPage } from './v7/corpusQuery.js';
+import { DiscoveryQueryError, loadCorpusDiscovery, parseDiscoveryFilters } from './v7/corpusDiscovery.js';
 import { buildPublicTestVideoCatalog } from './v7/suite.js';
 import { createArtifactPipelineRouter } from './v7/artifacts.js';
 
@@ -1636,6 +1637,10 @@ router.get('/analytics/leaderboards', async (req, res) => {
 
 router.get('/analytics/hardware', async (req, res) => {
   try {
+    if (req.query.mode !== undefined) {
+      const coverage = await loadCorpusDiscovery(prisma, 'hardware', parseDiscoveryFilters(req.query));
+      return res.json(coverage);
+    }
     const query = req.query as Record<string, string | undefined>;
     const filters = parseAnalyticsFilters(query);
     const cacheKey = JSON.stringify({ path: 'hardware', filters });
@@ -1671,6 +1676,8 @@ router.get('/analytics/hardware', async (req, res) => {
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
+    if (err instanceof DiscoveryQueryError) return res.status(400).json({ error: err.message });
+    if (isPublicCorpusBusyError(err)) return res.setHeader('Retry-After', '2').status(503).json({ error: 'Corpus coverage is temporarily unavailable; retry shortly' });
     logError('GET /analytics/hardware', err);
     res.status(500).json({ error: 'Failed to fetch hardware analytics' });
   }
@@ -1678,6 +1685,10 @@ router.get('/analytics/hardware', async (req, res) => {
 
 router.get('/analytics/encoders', async (req, res) => {
   try {
+    if (req.query.mode !== undefined) {
+      const coverage = await loadCorpusDiscovery(prisma, 'encoders', parseDiscoveryFilters(req.query));
+      return res.json(coverage);
+    }
     const query = req.query as Record<string, string | undefined>;
     const filters = parseAnalyticsFilters(query);
     const cacheKey = JSON.stringify({ path: 'encoders', filters });
@@ -1712,6 +1723,8 @@ router.get('/analytics/encoders', async (req, res) => {
     analyticsCache.set(cacheKey, payload);
     res.json(payload);
   } catch (err) {
+    if (err instanceof DiscoveryQueryError) return res.status(400).json({ error: err.message });
+    if (isPublicCorpusBusyError(err)) return res.setHeader('Retry-After', '2').status(503).json({ error: 'Corpus coverage is temporarily unavailable; retry shortly' });
     logError('GET /analytics/encoders', err);
     res.status(500).json({ error: 'Failed to fetch encoder analytics' });
   }
