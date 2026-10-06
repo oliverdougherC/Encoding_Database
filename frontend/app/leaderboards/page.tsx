@@ -1,7 +1,10 @@
+import { pageMetadata } from "../lib/seo";
 import { fetchLeaderboards } from "../lib/api";
 import { buildAnalyticsSearchString, parseAnalyticsSearchParams, type PlFitMode } from "../lib/queryState";
 import DataUnavailable from "../components/DataUnavailable";
 import LeaderboardsPanel from "../components/LeaderboardsPanel";
+
+export const metadata = pageMetadata("/leaderboards", "Video Encoder Benchmark Leaderboards | EncodingDB", "Explore video encoder leaderboards with workload filters, evidence requirements, and separate quality, storage, and realtime comparison modes.");
 
 function toParams(raw: Record<string, string | string[] | undefined> | undefined) {
   const params = new URLSearchParams();

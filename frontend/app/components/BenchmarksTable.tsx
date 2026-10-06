@@ -44,7 +44,7 @@ const COLUMNS: Column[] = [
   },
   {
     head: "Encoder", sort: "codec", width: "",
-    cell: (row) => <><strong title={row.encoderName}>{row.encoderName}</strong><small>{row.codecFamily.toUpperCase()} · FFmpeg {row.environment.ffmpegVersion}</small></>,
+    cell: (row) => <><strong title={row.encoderName}><a href={`/results/${encodeURIComponent(row.id)}`}>{row.encoderName}</a></strong><small>{row.codecFamily.toUpperCase()} · FFmpeg {row.environment.ffmpegVersion}</small></>,
   },
   {
     head: "Configuration", sort: "preset", width: "",

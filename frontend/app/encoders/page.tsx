@@ -1,7 +1,10 @@
 import { fetchEncoderDirectory } from "../lib/api";
 import type { EncoderDirectory } from "../lib/types";
 import DataUnavailable from "../components/DataUnavailable";
+import { pageMetadata } from "../lib/seo";
 import styles from "./page.module.css";
+
+export const metadata = pageMetadata("/encoders", "Video Encoder Benchmarks: H.264, HEVC & AV1 | EncodingDB", "Browse video encoder and codec coverage in EncodingDB. Open an FFmpeg encoder to compare its presets, speed, VMAF quality, and bitrate measurements.");
 
 export const dynamic = "force-dynamic";
 

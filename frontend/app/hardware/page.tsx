@@ -1,8 +1,11 @@
 import { fetchHardwareDirectory } from "../lib/api";
 import type { HardwareDirectory } from "../lib/types";
+import { pageMetadata } from "../lib/seo";
 import { realGpu } from "../lib/hardwareLabel";
 import DataUnavailable from "../components/DataUnavailable";
 import styles from "./page.module.css";
+
+export const metadata = pageMetadata("/hardware", "CPU & GPU Video Encoding Benchmarks | EncodingDB", "Browse CPU and GPU hardware in the EncodingDB video benchmark database. Explore encoder coverage, accepted and suspect runs, and measured configurations.");
 
 export const dynamic = "force-dynamic";
 

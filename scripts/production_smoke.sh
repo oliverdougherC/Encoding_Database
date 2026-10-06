@@ -91,7 +91,7 @@ if not isinstance(payload, list) or len(payload) != 7:
   app_base="${APP_URL%/}"
   log "Checking frontend at $app_base"
   homepage="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/")"
-  grep -q '<title>EncodingDB</title>' <<<"$homepage" || die "frontend homepage did not contain the EncodingDB title"
+  grep -q '<title>Video Codec Database &amp; Encoding Benchmarks | EncodingDB</title>' <<<"$homepage" || die "frontend homepage did not contain the EncodingDB title"
   grep -q 'Compare encoding performance' <<<"$homepage" || die "frontend homepage did not contain the Compare encoding performance"
   fetch_status "$app_base/api/corpus?limit=5" | assert_json_array
   methodology="$(curl -fsSL --connect-timeout "$TIMEOUT_SECONDS" --max-time "$TIMEOUT_SECONDS" "$app_base/methodology")"

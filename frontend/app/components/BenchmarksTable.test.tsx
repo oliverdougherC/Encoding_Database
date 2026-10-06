@@ -177,6 +177,18 @@ describe("results table structure", () => {
     expect(heads.map((th) => th.textContent?.trim()).slice(1)).toEqual(["Hardware", "Encoder", "Configuration", "FPS", "VMAF", "Bitrate", "Evidence", "Runs", "Details"]);
   });
 
+  it("links encoder names to encoded result URLs while preserving the View dialog", () => {
+    const id = "protocol::workload/a + b";
+    renderTable([makeRow({ id })]);
+    expect(screen.getByRole("link", { name: "libx265" })).toHaveAttribute("href", `/results/${encodeURIComponent(id)}`);
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getByRole("dialog", { name: "Benchmark result details" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Result link" })).toHaveAttribute("href", `/results/${encodeURIComponent(id)}`);
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
   it("exposes sorting through real columnheaders with aria-sort", () => {
     renderTable([makeRow()]);
     const before = screen.getByRole("button", { name: "FPS" }).closest("th");

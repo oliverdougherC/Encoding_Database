@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import AppShell from "./components/AppShell";
+import { HOME_DESCRIPTION, HOME_TITLE, SITE_URL } from "./lib/seo";
 
 export const metadata: Metadata = {
-  title: "EncodingDB",
-  description: "Community-submitted FFmpeg performance, quality, and efficiency data.",
+  metadataBase: new URL(SITE_URL),
+  title: HOME_TITLE,
+  description: HOME_DESCRIPTION,
 };
 
 export default function RootLayout({

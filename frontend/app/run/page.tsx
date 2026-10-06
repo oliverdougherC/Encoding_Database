@@ -1,5 +1,8 @@
+import { pageMetadata } from "../lib/seo";
 import styles from "./page.module.css";
 import { cliTag, currentWindowsConsole, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
+
+export const metadata = pageMetadata("/run", "Download the Video Encoding Benchmark Client | EncodingDB", "Run reproducible FFmpeg video encoding benchmarks on Windows, macOS, or Linux and contribute hardware, speed, bitrate, and quality measurements to EncodingDB.");
 
 export const dynamic = "force-dynamic";
 
