@@ -3,6 +3,7 @@
 .kicker { color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.085em; text-transform:uppercase; }
 .page h1 { font-size:clamp(26px,3.4vw,34px); line-height:1.14; letter-spacing:-.03em; }
 .lede { color:var(--muted); font-size:15px; line-height:1.6; }
+.lede a { color:var(--accent); text-decoration:underline; text-underline-offset:3px; }
 .ctaRow { display:flex; flex-wrap:wrap; gap:10px; margin-top:6px; }
 .statusLine { margin-top:6px; color:var(--muted); font-size:12px; line-height:1.6; }
 .statusLine strong { color:var(--text); }

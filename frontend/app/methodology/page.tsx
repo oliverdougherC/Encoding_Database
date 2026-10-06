@@ -1,7 +1,10 @@
+import { pageMetadata } from "../lib/seo";
 import { DEFAULT_PL_SCORE_V7_POLICY } from "../lib/plScore";
 import FormulaExplorer from "./FormulaExplorer";
 import KatexMath from "./KatexMath";
 import styles from "./page.module.css";
+
+export const metadata = pageMetadata("/methodology", "Video Encoding Benchmark Methodology & VMAF | EncodingDB", "Learn how EncodingDB measures video quality, bitrate efficiency, and encoding speed, and how PL Score v7 handles evidence, reference workloads, and confidence.");
 
 const { qualityExponent, scoreFormulaVersion, speedCurveRate, speedSaturationRealtime } =
   DEFAULT_PL_SCORE_V7_POLICY;
