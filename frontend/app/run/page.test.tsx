@@ -82,7 +82,6 @@ describe("RunPage", () => {
     expect(screen.getByRole("link", { name: "Download for macOS (Apple Silicon)" })).toHaveAttribute("href", `${plannedBase}/EncodingDB-macOS-arm64.dmg`);
     expect(screen.getByRole("link", { name: "Download for Windows (GUI)" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-windows.exe`);
     expect(screen.getByRole("link", { name: "Download for Linux (x86-64)" })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-linux.tar.gz`);
-    expect(screen.getByRole("link", { name: `Windows console (${projectTag})` })).toHaveAttribute("href", `${plannedBase}/encodingdb-client-windows-console.exe`);
     const macCard = screen.getByRole("link", { name: "Download for macOS (Apple Silicon)" }).closest("article");
     expect(macCard?.textContent?.indexOf("requires macOS 27 or later")).toBeLessThan(macCard?.textContent?.indexOf("Download for macOS") ?? 0);
     const windowsCard = screen.getByRole("link", { name: "Download for Windows (GUI)" }).closest("article");

@@ -9,7 +9,7 @@ Encoding Database is an open benchmarking platform for video encoding performanc
 
 ## Current release status
 
-**[1.3.0-rc.10 is published](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.10)** and the updated website is deployed. Download the macOS DMG, Windows GUI/console or Linux archive from the [live run page](https://encodingdb.platinumlabs.dev/run), and verify the published SHA-256 checksums. The release is marked prerelease.
+**[1.3.0-rc.10 is published](https://github.com/oliverdougherC/Encoding_Database/releases/tag/1.3.0-rc.10)** and the updated website is deployed. Download the macOS DMG, Windows GUI or Linux archive from the [live run page](https://encodingdb.platinumlabs.dev/run), and verify the published SHA-256 checksums. The release is marked prerelease.
 
 Collection and production upload acceptance passed for the named release builds. **PL remains provisional**, and scheduled production backup/failure-alert integration is still open; this is not yet an unattended-operations completion claim. See the [current release handoff](docs/FINAL_RELEASE_HANDOFF.md).
 
