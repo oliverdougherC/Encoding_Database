@@ -107,6 +107,6 @@ describe("RunPage", () => {
     // 1.2.0 stays honest about incompatibility.
     expect(screen.getByText(/cannot submit to the server version shipped with this page/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Linux (0.2.0)" })).toHaveAttribute("href", expect.stringContaining(`/download/${historicalTag}/encodingdb-client-linux`));
-    expect(screen.getByRole("link", { name: /1.2.0 requirements/ })).toHaveAttribute("href", `${repoReleases}/tag/${historicalTag}`);
+    expect(screen.getByRole("link", { name: /1\.2\.0 release notes/ })).toHaveAttribute("href", `${repoReleases}/tag/${historicalTag}`);
   });
 });
