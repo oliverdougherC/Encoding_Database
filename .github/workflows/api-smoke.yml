@@ -11,51 +11,41 @@ permissions:
 jobs:
   smoke:
     runs-on: ubuntu-latest
-    env:
-      API_BASE_URL: ${{ secrets.API_BASE_URL }}
     steps:
-      - name: Check required configuration
-        id: configuration
+      - name: Check readiness, query, and submission guards
         env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
           EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          if [ -n "${API_BASE_URL:-}" ]; then
-            api_base="$API_BASE_URL"
-            while [[ "$api_base" == */ ]]; do api_base="${api_base%/}"; done
-            echo "API_BASE_URL=$api_base" >> "$GITHUB_ENV"
-            echo "configured=true" >> "$GITHUB_OUTPUT"
+          if [[ -z "$API_BASE_URL" ]]; then
+            if [[ "$EVENT_NAME" == workflow_dispatch ]]; then
+              echo "::error::API_BASE_URL is required for a manually dispatched smoke test."
+              exit 1
+            fi
+            echo "::notice::Skipping the scheduled smoke test because API_BASE_URL is not configured."
             exit 0
           fi
 
-          echo "configured=false" >> "$GITHUB_OUTPUT"
-          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
-            echo "::error::API_BASE_URL is required for a manually dispatched smoke test."
+          api_base="$API_BASE_URL"
+          while [[ "$api_base" == */ ]]; do api_base="${api_base%/}"; done
+          response="$(mktemp)"
+          trap 'rm -f "$response"' EXIT
+          ready_url="$(curl -fsSL --max-time 20 --proto-redir '=https' \
+            --output "$response" --write-out '%{url_effective}' "$api_base/health/ready")"
+          jq -e '.status == "ok"' "$response" >/dev/null
+          if [[ "$ready_url" != https://*/health/ready ]]; then
+            echo "::error::Expected readiness at an HTTPS /health/ready endpoint."
             exit 1
           fi
+          api_base="${ready_url%/health/ready}"
+          curl -fsS --max-time 20 "$api_base/query" | jq -e 'type == "array"' >/dev/null
 
-          echo "::notice::Skipping the scheduled smoke test because API_BASE_URL is not configured."
-
-      - name: Health check
-        if: ${{ steps.configuration.outputs.configured == 'true' }}
-        run: |
-          set -euo pipefail
-          curl -fsS --max-time 20 "$API_BASE_URL/health/ready" | jq -e ' .status == "ok" '
-
-      - name: Query should return JSON array
-        if: ${{ steps.configuration.outputs.configured == 'true' }}
-        run: |
-          set -euo pipefail
-          curl -fsS --max-time 20 "$API_BASE_URL/query" | jq -e 'type == "array"' >/dev/null
-
-      - name: Validation and method guard
-        if: ${{ steps.configuration.outputs.configured == 'true' }}
-        run: |
-          set -euo pipefail
           expect_status() {
             local expected="$1" status
             shift
-            status=$(curl --silent --show-error --max-time 20 --output /dev/null --write-out '%{http_code}' "$@" "$API_BASE_URL/submit")
+            status="$(curl --silent --show-error --max-time 20 --output /dev/null \
+              --write-out '%{http_code}' "$@" "$api_base/submit")"
             if [[ "$status" != "$expected" ]]; then
               echo "::error::Expected HTTP $expected from /submit, got $status."
               return 1
