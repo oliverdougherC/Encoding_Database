@@ -29,7 +29,7 @@ The frozen suite fingerprint is `d40bff563dead0e78003af90b2626003bd80afcc12220ab
 | Windows GUI and console | Windows 11 x86-64; unsigned, so SmartScreen may warn |
 | Linux archive | Ubuntu 24.04 x86-64; other distributions unverified |
 
-Use the public [SHA256SUMS](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.3.0-rc.10/SHA256SUMS) and [shared release manifest](https://github.com/oliverdougherC/Encoding_Database/releases/download/1.3.0-rc.10/client-release-manifest.json). A compact copy of the four verified download identities is in [publication evidence](collection-readiness/release-20261005/publication.json).
+The [publication evidence](collection-readiness/release-20261005/publication.json) records the verified download hashes and sizes, including the Windows console build tested during acceptance.
 
 ## Executed acceptance
 

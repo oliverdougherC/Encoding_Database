@@ -34,3 +34,17 @@ versions, frozen-suite fingerprints and runtime identities. The output gives
 per-asset sizes and hashes for the release page. It does not publish an asset
 or replace the platform-specific G01 checks in Linear PLA-90. Promotion also
 requires rehashing the public download and matching its bytes to the manifest.
+
+After native acceptance and review, push the version tag at the candidate's
+exact build revision and publish with the same spec:
+
+```bash
+python scripts/publish_client_release.py --spec candidate-spec.json --notes release-notes.md
+```
+
+Add `--prerelease` for a prerelease. GitHub receives one download per platform:
+the Linux archive, macOS disk image, and Windows GUI executable. Record the
+three SHA-256 values in the release notes or link to the verified publication
+record. Keep native build and acceptance evidence with the corresponding CI
+run or release evidence. The frozen suite and runtime locks use their existing
+distribution URLs.

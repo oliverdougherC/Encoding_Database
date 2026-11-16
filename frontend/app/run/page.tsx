@@ -1,6 +1,6 @@
 import { pageMetadata } from "../lib/seo";
 import styles from "./page.module.css";
-import { cliTag, currentWindowsConsole, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
+import { cliTag, downloadModel, historicalTag, projectTag, repoReleases, supersededAssets, supersededTag } from "./releaseAssets";
 
 export const metadata = pageMetadata("/run", "Download the Video Encoding Benchmark Client | EncodingDB", "Run reproducible FFmpeg video encoding benchmarks on Windows, macOS, or Linux and contribute hardware, speed, bitrate, and quality measurements to EncodingDB.");
 
@@ -22,7 +22,6 @@ export default function RunPage() {
   const historical = `${repoReleases}/download/${historicalTag}`;
   const superseded = `${repoReleases}/download/${supersededTag}`;
   const cliBase = `${repoReleases}/download/${cliTag}`;
-  const currentBase = `${repoReleases}/download/${projectTag}`;
   return <div className={`page ${styles.page}`}>
     <header className={styles.header}>
       <p className={styles.kicker}>Contribute results</p>
@@ -84,12 +83,6 @@ export default function RunPage() {
           </li>)}
         </ul>
 
-        <h3>Current command-line access ({projectTag})</h3>
-        <p>For Windows scripts, use the console executable from the current release. The current macOS and Linux command-line entry points are inside their packages above.</p>
-        <p>{downloads.published
-          ? <a href={`${currentBase}/${currentWindowsConsole.file}`}>Windows console ({projectTag})</a>
-          : <span>Windows console ({projectTag}) available when current downloads are enabled</span>} · <code>{currentWindowsConsole.file}</code> · SHA-256 <code>{currentWindowsConsole.sha256}</code></p>
-
         <h3>Historical plain executables ({cliTag})</h3>
         <p>These protocol-compatible files predate the packaged apps and current shared-core repairs. The macOS file is a bare extensionless executable. Use the current packages above for contribution.</p>
         <ul className={styles.assetList}>
@@ -104,10 +97,9 @@ export default function RunPage() {
         <p>The 1.2.0 downloads (client/0.2.0, protocol 7.0) remain reachable for reference, but they cannot submit to the server version shipped with this page. Treat them as archived, not as recommended downloads.</p>
         <ul className={styles.assetList}>
           <li><a href={`${historical}/encodingdb-client-windows.exe`}>Windows GUI (0.2.0)</a> · <code>encodingdb-client-windows.exe</code></li>
-          <li><a href={`${historical}/encodingdb-client-windows-console.exe`}>Windows console (0.2.0)</a> · <code>encodingdb-client-windows-console.exe</code></li>
           <li><a href={`${historical}/encodingdb-client-linux`}>Linux (0.2.0)</a> · <code>encodingdb-client-linux</code></li>
           <li><a href={`${historical}/encodingdb-client-macos`}>macOS (0.2.0)</a> · <code>encodingdb-client-macos</code></li>
-          <li><a href={`${repoReleases}/tag/${historicalTag}`}>1.2.0 requirements, checksums, and release evidence</a></li>
+          <li><a href={`${repoReleases}/tag/${historicalTag}`}>1.2.0 release notes</a></li>
         </ul>
 
         <h3>Advanced: source checkout and scripted CLI (optional)</h3>

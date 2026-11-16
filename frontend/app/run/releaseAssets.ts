@@ -1,5 +1,5 @@
 // Public rc.10 packages built from daa3e8e99e17e4cf99fb9440a90f96cbc25bdb2f.
-// Anonymous public re-downloads verified all four hashes and sizes on 2026-10-05.
+// Anonymous public re-downloads verified the three primary download hashes and sizes on 2026-10-05.
 // COLLECTION_DOWNLOAD_BASE must still name the exact current release tag.
 
 export const projectTag = "1.3.0-rc.10";
@@ -49,14 +49,6 @@ export const primaryAssets: ReleaseAsset[] = [
     support: "Tested on Ubuntu 24.04 x86-64; other Linux distributions are unverified. Unsigned archive; unpack it and run the launcher inside. Same guided flow; includes the command-line entry point for scripts.",
   },
 ];
-
-export const currentWindowsConsole: ReleaseAsset = {
-  file: "encodingdb-client-windows-console.exe",
-  label: "Windows console",
-  sha256: "ed7e18064ee99459301cf4c7c464827114b9d77e9d02543ce7f39fcbba6d2098",
-  byteSize: 182731033,
-  support: "Command-line entry point from the current release, built alongside the Windows GUI.",
-};
 
 // Preserve the actual published rc.5 asset identities for rollback and verification.
 export const supersededAssets: ReleaseAsset[] = [
